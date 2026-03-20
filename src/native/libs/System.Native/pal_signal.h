@@ -44,7 +44,8 @@ typedef enum
     PosixSignalSIGWINCH = -7,
     PosixSignalSIGTTIN = -8,
     PosixSignalSIGTTOU = -9,
-    PosixSignalSIGTSTP = -10
+    PosixSignalSIGTSTP = -10,
+    PosixSignalSIGKILL = -11
 } PosixSignal;
 
 typedef int32_t (*PosixSignalHandler)(int32_t signalCode, PosixSignal signal);

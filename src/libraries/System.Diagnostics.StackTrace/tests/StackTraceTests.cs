@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Threading.Tasks;
@@ -541,24 +542,7 @@ namespace System.Diagnostics.Tests
                 }
             }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
 
-            // Assembly.Load(Byte[]) case
-            RemoteExecutor.Invoke((asmPath, asmName, p) =>
-            {
-                AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
-                var inMemBlob = File.ReadAllBytes(asmPath);
-                var asm2 = Assembly.Load(inMemBlob);
-                try
-                {
-                    asm2.GetType("Program").GetMethod("Foo").Invoke(null, null);
-                }
-                catch (Exception e)
-                {
-                    Assert.Contains(asmName, e.InnerException.StackTrace);
-                    Assert.Matches(p, e.InnerException.StackTrace);
-                }
-            }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
-
-            // AssmblyBuilder.DefineDynamicAssembly() case
+            // AssemblyBuilder.DefineDynamicAssembly() case
             RemoteExecutor.Invoke((p) =>
             {
                 AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
@@ -583,37 +567,78 @@ namespace System.Diagnostics.Tests
             }, regPattern).Dispose();
         }
 
+        // Assembly.Load(byte[]) triggers an AMSI (Antimalware Scan Interface) scan via Windows Defender.
+        // On some Windows x86 CI machines the AMSI RPC call hangs indefinitely,
+        // so we retry with a shorter timeout to work around the transient OS issue.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ToString_ShowILOffset_ByteArrayLoad()
+        {
+            string AssemblyName = "ExceptionTestAssembly.dll";
+            string SourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, AssemblyName);
+            string regPattern = @":token 0x([a-f0-9]*)\+0x([a-f0-9]*)";
+
+            const int maxAttempts = 3;
+            for (int attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    var options = new RemoteInvokeOptions { TimeOut = 30_000 };
+                    RemoteExecutor.Invoke((asmPath, asmName, p) =>
+                    {
+                        AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
+                        var inMemBlob = File.ReadAllBytes(asmPath);
+                        var asm = Assembly.Load(inMemBlob);
+                        TargetInvocationException ex = Assert.Throws<TargetInvocationException>(
+                            () => asm.GetType("Program").GetMethod("Foo").Invoke(null, null));
+                        Assert.Contains(asmName, ex.InnerException.StackTrace);
+                        Assert.Matches(p, ex.InnerException.StackTrace);
+                    }, SourceTestAssemblyPath, AssemblyName, regPattern, options).Dispose();
+                    break;
+                }
+                catch (RemoteExecutionException ex) when (OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X86 && attempt < maxAttempts && ex.Message.Contains("Timed out"))
+                {
+                    // AMSI hang: on some Windows x86 CI machines, Assembly.Load(byte[]) triggers an AMSI scan
+                    // whose RPC call hangs indefinitely. Retry with a fresh process.
+                }
+            }
+        }
+
+        // On Android, stack traces do not include file names and line numbers
+        // Tracking issue: https://github.com/dotnet/runtime/issues/124087
+        private static string FileInfoPattern(string fileLinePattern) =>
+            PlatformDetection.IsAndroid ? "" : fileLinePattern;
+
         public static Dictionary<string, string[]> MethodExceptionStrings = new()
         {
             { "Foo", new[] {
                 @"Exception from Foo2",
-                @"V2Methods\.Foo2\(Int32.*Foo2.*\.cs:line 10",
-                @"V2Methods\.Foo1\(Int32.*Foo1.*\.cs:line 6",
+                @"V2Methods\.Foo2\(Int32" + FileInfoPattern(@".*Foo2.*\.cs:line 10"),
+                @"V2Methods\.Foo1\(Int32" + FileInfoPattern(@".*Foo1.*\.cs:line 6"),
                 @"V1Methods.*Test1",
                 @"V1Methods.*Test0",
-                @"V2Methods\.Foo\(\).*Foo.*\.cs:line 6"
+                @"V2Methods\.Foo\(\)" + FileInfoPattern(@".*Foo.*\.cs:line 6")
             }},
             { "Bar", new[] {
                 @"Exception from Bar",
-                @"V2Methods\.Bar\(Int32.*Bar.*\.cs:line 4",
-                @"V2Methods\.Bar\(Int32.*Bar.*\.cs:line 5"
+                @"V2Methods\.Bar\(Int32" + FileInfoPattern(@".*Bar.*\.cs:line 4"),
+                @"V2Methods\.Bar\(Int32" + FileInfoPattern(@".*Bar.*\.cs:line 5")
             }},
             {"Quux", new[] {
                 @"Exception from Quux1",
-                @"V2Methods\.Quux1\(Int32.*Quux1.*\.cs:line 6",
+                @"V2Methods\.Quux1\(Int32" + FileInfoPattern(@".*Quux1.*\.cs:line 6"),
                 @"V1Methods.*Test1",
                 @"V1Methods.*Test0",
-                @"V2Methods\.Quux\(\).*Quux.*\.cs:line 6"
+                @"V2Methods\.Quux\(\)" + FileInfoPattern(@".*Quux.*\.cs:line 6")
             }},
             { "Quuux", new[] {
                 @"Exception from Quuux2",
-                @"V2Methods\.Quuux2\(\).*Quuux2.*\.cs:line 4",
-                @"V2Methods\.Quuux\(\).*Quuux.*\.cs:line [35]" // if yield finishes before Task is awaited, line 3 else line 5. Either is ok.
+                @"V2Methods\.Quuux2\(\)" + FileInfoPattern(@".*Quuux2.*\.cs:line 4"),
+                @"V2Methods\.Quuux\(\)" + FileInfoPattern(@".*Quuux.*\.cs:line [35]") // if yield finishes before Task is awaited, line 3 else line 5. Either is ok.
             }},
             {"Bux", new[] {
                 @"Exception from Baz method.",
-                @"V2Methods\.Baz\(\).*Baz.*\.cs:line 4",
-                @"V2Methods\.Bux\(\).*Bux.*\.cs:line 6"
+                @"V2Methods\.Baz\(\)" + FileInfoPattern(@".*Baz.*\.cs:line 4"),
+                @"V2Methods\.Bux\(\)" + FileInfoPattern(@".*Bux.*\.cs:line 6")
             }},
         };
 
@@ -626,8 +651,6 @@ namespace System.Diagnostics.Tests
             yield return new object[] { () => V2Methods.Bux(), MethodExceptionStrings["Bux"] };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123979", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124015", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
         [MemberData(nameof(Ctor_Async_TestData))]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

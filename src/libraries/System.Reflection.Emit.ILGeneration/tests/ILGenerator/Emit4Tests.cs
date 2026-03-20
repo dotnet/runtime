@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -170,6 +172,116 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(result, resultValue);
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void TestDynamicMethodEmitCalliFnPtrManaged()
+        {
+            Type fnPtrType = Type.MakeFunctionPointerSignatureType(typeof(int), [typeof(int), typeof(int)]);
+            DynamicMethod dynamicMethod = new("Test", typeof(int), [typeof(nint)]);
+
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldc_I4_S, (byte)10);
+            il.Emit(OpCodes.Ldc_I4_S, (byte)5);
+            il.Emit(OpCodes.Ldarg_0);
+            il.EmitCalli(fnPtrType);
+            il.Emit(OpCodes.Ret);
+
+            object resultValue = dynamicMethod.Invoke(null, [((Func<int, int, int>)Int32Sum).Method.MethodHandle.GetFunctionPointer()]);
+
+            Assert.Equal(15, resultValue);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void TestDynamicMethodEmitCalliFnPtrStdCall()
+        {
+            int a = 1, b = 1, result = 2;
+
+            Type returnType = typeof(int);
+
+            var dynamicMethod = new DynamicMethod("F", returnType, [typeof(nint), typeof(int), typeof(int)]);
+
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldarg_2);
+            il.Emit(OpCodes.Ldarg_0);
+            il.EmitCalli(Type.MakeFunctionPointerSignatureType(
+                returnType,
+                parameterTypes: [typeof(int), typeof(int)],
+                isUnmanaged: true,
+                callingConventions: [typeof(CallConvStdcall)]));
+            il.Emit(OpCodes.Ret);
+
+            var del = new Int32SumStdCall(Int32Sum);
+            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
+
+            object resultValue = dynamicMethod
+                .Invoke(null, [funcPtr, a, b]);
+
+            GC.KeepAlive(del);
+
+            Assert.IsType(returnType, resultValue);
+            Assert.Equal(result, resultValue);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public unsafe void TestDynamicMethodEmitCalli_NestedFunctionPointer()
+        {
+            // delegate*<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, int>
+            Type type = Type.MakeFunctionPointerSignatureType(
+                typeof(int),
+                [Type.MakeFunctionPointerSignatureType(typeof(bool), [typeof(short)], true, [typeof(CallConvStdcall), typeof(CallConvMemberFunction)])]);
+
+            DynamicMethod dynamicMethod = new("F", typeof(int), [typeof(nint)]);
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Conv_I);
+            il.Emit(OpCodes.Ldarg_0);
+            il.EmitCalli(type);
+            il.Emit(OpCodes.Ret);
+
+            object result = dynamicMethod.Invoke(null, [(nint)(delegate*<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, int>)(&ComplexSignature)]);
+            Assert.Equal(5, (int)result);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public unsafe void TestDynamicMethodEmitCalli_NestedFunctionPointer2()
+        {
+            // delegate*<delegate* unmanaged[Cdecl]<delegate*<delegate* unmanaged[Fastcall, SuppressGCTransition]<List<short>*>>>, delegate*<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, int>>
+            Type type = Type.MakeFunctionPointerSignatureType(
+                Type.MakeFunctionPointerSignatureType(
+                    typeof(int),
+                    [Type.MakeFunctionPointerSignatureType(
+                        typeof(bool),
+                        [typeof(short)], true,
+                        [typeof(CallConvStdcall), typeof(CallConvMemberFunction)])], false),
+                [Type.MakeFunctionPointerSignatureType(
+                    Type.MakeFunctionPointerSignatureType(
+                        Type.MakeFunctionPointerSignatureType(
+                            typeof(List<>).MakeGenericType(typeof(short)).MakePointerType(),
+                            [], true,
+                            [typeof(CallConvFastcall), typeof(CallConvSuppressGCTransition)]),
+                        [], false),
+                    [], true,
+                    [typeof(CallConvCdecl)])]);
+
+            DynamicMethod dynamicMethod = new("F", typeof(nint), [typeof(nint)]);
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Conv_I);
+            il.Emit(OpCodes.Ldarg_0);
+            il.EmitCalli(type);
+            il.Emit(OpCodes.Ret);
+
+            object result = dynamicMethod.Invoke(
+                null,
+                [(nint)(delegate*<delegate* unmanaged[Cdecl]<delegate*<delegate* unmanaged[Fastcall, SuppressGCTransition]<List<short>*>>>,
+                delegate*<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, int>>)(&EvenMoreComplexSignature)]);
+            Assert.Equal((nint)(delegate*<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, int>)(&ComplexSignature), (nint)result);
+        }
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate int Int32SumStdCall(int a, int b);
 
@@ -179,5 +291,10 @@ namespace System.Reflection.Emit.Tests
         private static int Int32Sum(int a, int b) => a + b;
 
         private static string StringReverse(string a) => string.Join("", a.Reverse());
+
+        private unsafe static int ComplexSignature(delegate* unmanaged[Stdcall, MemberFunction]<short, bool> arg) => 5;
+
+        private unsafe static delegate*<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, int> EvenMoreComplexSignature(
+            delegate* unmanaged[Cdecl]<delegate*<delegate* unmanaged[Fastcall, SuppressGCTransition]<List<short>*>>> arg) => &ComplexSignature;
     }
 }

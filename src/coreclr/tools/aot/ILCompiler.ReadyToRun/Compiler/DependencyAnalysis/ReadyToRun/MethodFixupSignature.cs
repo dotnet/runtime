@@ -113,7 +113,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             MethodWithToken method = _method;
 
-            if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method) && !method.Method.IsAsyncVariant())
+            // If the method can be uniquely identified by a single token in the version bubble, use that instead of the full MethodSpec.
+            if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method) && method.Method.IsPrimaryMethodDesc())
             {
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
                 {

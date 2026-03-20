@@ -12,3 +12,4 @@ Apply https://github.com/libunwind/libunwind/pull/734
 Apply https://github.com/libunwind/libunwind/pull/758
 Apply https://github.com/libunwind/libunwind/pull/741
 Apply https://github.com/libunwind/libunwind/pull/931
+Apply https://github.com/libunwind/libunwind/pull/940

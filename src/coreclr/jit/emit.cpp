@@ -1496,13 +1496,9 @@ void emitter::dispIns(instrDesc* id)
     // For LoongArch64 using the emitDisInsName().
     NYI_LOONGARCH64("Not used on LOONGARCH64.");
 }
-#elif defined(TARGET_RISCV64)
-void emitter::dispIns(instrDesc* id)
-{
-    // For RISCV64 using the emitDisInsName().
-    NYI_RISCV64("Not used on RISCV64.");
-}
 #else
+// Note:
+//    For RISCV64, `emitter::emitInsSanityCheck` is left empty.
 void emitter::dispIns(instrDesc* id)
 {
 #ifdef DEBUG
@@ -1719,20 +1715,12 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     if (m_debugInfoSize > 0)
     {
-        instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
-        memset(info, 0, sizeof(instrDescDebugInfo));
-
-        // These fields should have been zero-ed by the above
-        assert(info->idVarRefOffs == 0);
-        assert(info->idMemCookie == 0);
-        assert(info->idFlags == GTF_EMPTY);
-        assert(info->idFinallyCall == false);
-        assert(info->idCatchRet == false);
-        assert(info->idCallSig == nullptr);
-        assert(info->idTargetBlock == nullptr);
+        instrDescDebugInfo* info =
+            new (emitGetMem(sizeof(instrDescDebugInfo)), jitstd::placement_t()) instrDescDebugInfo();
 
         info->idNum  = emitInsCount;
         info->idSize = sz;
+
         id->idDebugOnlyInfo(info);
     }
 
@@ -7811,13 +7799,13 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
 
     /* Allocate a data section descriptor and add it to the list */
 
-    dataSection* secDesc = emitDataSecCur = (dataSection*)emitGetMem(roundUp(sizeof(*secDesc) + size));
+    dataSection* secDesc = emitDataSecCur = (dataSection*)emitGetMem(sizeof(*secDesc));
+    secDesc->dsType                       = dataSection::data;
+    secDesc->Data()                       = (BYTE*)emitGetMem(size);
 
     secDesc->dsSize = size;
 
     secDesc->dsAlignment = alignment;
-
-    secDesc->dsType = dataSection::data;
 
     secDesc->dsDataType = dataType;
 
@@ -7864,13 +7852,13 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 
     /* Allocate a data section descriptor and add it to the list */
 
-    secDesc = emitDataSecCur = (dataSection*)emitGetMem(roundUp(sizeof(*secDesc) + numEntries * sizeof(BasicBlock*)));
+    secDesc = emitDataSecCur = (dataSection*)emitGetMem(sizeof(*secDesc));
+    secDesc->dsType          = relativeAddr ? dataSection::blockRelative32 : dataSection::blockAbsoluteAddr;
+    secDesc->Blocks()        = (BasicBlock**)emitGetMem(numEntries * sizeof(BasicBlock*));
 
     secDesc->dsSize = emittedSize;
 
     secDesc->dsAlignment = elemSize;
-
-    secDesc->dsType = relativeAddr ? dataSection::blockRelative32 : dataSection::blockAbsoluteAddr;
 
     secDesc->dsDataType = TYP_UNKNOWN;
 
@@ -7905,14 +7893,15 @@ void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecO
     unsigned       emittedSize = sizeof(CORINFO_AsyncResumeInfo) * numEntries;
     emitConsDsc.dsdOffs += emittedSize;
 
-    dataSection* secDesc = (dataSection*)emitGetMem(roundUp(sizeof(dataSection) + numEntries * sizeof(emitLocation)));
+    dataSection* secDesc = (dataSection*)emitGetMem(sizeof(dataSection));
+    secDesc->dsType      = dataSection::asyncResumeInfo;
+    secDesc->Locations() = (emitLocation*)emitGetMem(numEntries * sizeof(emitLocation));
 
     for (unsigned i = 0; i < numEntries; i++)
-        new (secDesc->dsCont + i * sizeof(emitLocation), jitstd::placement_t()) emitLocation();
+        new (&secDesc->Locations()[i], jitstd::placement_t()) emitLocation();
 
     secDesc->dsSize      = emittedSize;
     secDesc->dsAlignment = TARGET_POINTER_SIZE;
-    secDesc->dsType      = dataSection::asyncResumeInfo;
     secDesc->dsDataType  = TYP_UNKNOWN;
     secDesc->dsNext      = nullptr;
 
@@ -7949,7 +7938,7 @@ void emitter::emitDataGenData(unsigned offs, const void* data, UNATIVE_OFFSET si
 
     assert(emitDataSecCur->dsType == dataSection::data);
 
-    memcpy(emitDataSecCur->dsCont + offs, data, size);
+    memcpy(emitDataSecCur->Data() + offs, data, size);
 }
 
 /*****************************************************************************
@@ -7967,7 +7956,7 @@ void emitter::emitDataGenData(unsigned index, BasicBlock* label)
 
     assert(emitDataSecCur->dsSize >= emittedElemSize * (index + 1));
 
-    ((BasicBlock**)(emitDataSecCur->dsCont))[index] = label;
+    emitDataSecCur->Blocks()[index] = label;
 }
 
 /*****************************************************************************
@@ -8011,7 +8000,7 @@ UNATIVE_OFFSET emitter::emitDataGenFind(const void* cnsAddr, unsigned cnsSize, u
         //
         if ((secDesc->dsType == dataSection::data) && (secDesc->dsSize >= cnsSize) && ((curOffs % alignment) == 0))
         {
-            if (memcmp(cnsAddr, secDesc->dsCont, cnsSize) == 0)
+            if (memcmp(cnsAddr, secDesc->Data(), cnsSize) == 0)
             {
                 cnum = curOffs;
 
@@ -8393,7 +8382,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
             target_size_t* bDstRW   = (target_size_t*)dstRW;
             for (unsigned i = 0; i < numElems; i++)
             {
-                BasicBlock* block = ((BasicBlock**)dsc->dsCont)[i];
+                BasicBlock* block = dsc->Blocks()[i];
 
                 // Convert the BasicBlock* value to an IG address
                 insGroup* lab = (insGroup*)emitCodeGetCookie(block);
@@ -8424,7 +8413,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
             for (unsigned i = 0; i < numElems; i++)
             {
-                BasicBlock* block = ((BasicBlock**)dsc->dsCont)[i];
+                BasicBlock* block = dsc->Blocks()[i];
 
                 // Convert the BasicBlock* value to an IG address
                 insGroup* lab = (insGroup*)emitCodeGetCookie(block);
@@ -8444,19 +8433,50 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
             CORINFO_AsyncResumeInfo* aDstRW = (CORINFO_AsyncResumeInfo*)dstRW;
             for (size_t i = 0; i < numElems; i++)
             {
-                emitLocation* emitLoc = &((emitLocation*)dsc->dsCont)[i];
+                emitLocation* emitLoc = &dsc->Locations()[i];
 
                 // Async call may have been removed very late, after we have introduced suspension/resumption.
                 // In those cases just encode null.
                 BYTE* target           = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
                 aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
+
                 if (m_compiler->opts.compReloc)
                 {
-                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
+#ifdef TARGET_ARM
+                    // The runtime and ILC will handle setting the thumb bit on the async resumption stub entrypoint,
+                    // either directly in the emitAsyncResumeStubEntryPoint value (runtime) or will add the thumb bit
+                    // to the symbol definition (ilc). ReadyToRun is different here: it emits method symbols without the
+                    // thumb bit, then during fixups, the runtime adds the thumb bit. This works for all cases where
+                    // the method entrypoint is fixed up at runtime, but doesn't hold for the resumption stub, which is
+                    // emitted as a direct call without the typical indirection cell + fixup. This is okay in this case
+                    // (while regular method calls could not do this) because the async method and its resumption stub
+                    // are tightly coupled and effectively funclets of the same method. However, this means that
+                    // crossgen needs the reloc for the resumption stubs entrypoint to include the thumb bit. Until we
+                    // unify the behavior of crossgen with the runtime and ilc, we will work around this by emitting the
+                    // reloc with the addend for the thumb bit.
+                    if (m_compiler->IsReadyToRun())
+                    {
+                        emitRecordRelocationWithAddlDelta(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint,
+                                                          CorInfoReloc::DIRECT, 1);
+                    }
+                    else
+#endif
+                    {
+                        emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
+                    }
                     if (target != nullptr)
                     {
-                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
+#ifdef TARGET_ARM
+                        if (m_compiler->IsReadyToRun())
+                        {
+                            emitRecordRelocationWithAddlDelta(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT, 1);
+                        }
+                        else
+#endif
+                        {
+                            emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
+                        }
                     }
                 }
 
@@ -8468,7 +8488,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
             // Simple binary data: copy the bytes to the target
             assert(dsc->dsType == dataSection::data);
 
-            memcpy(dstRW, dsc->dsCont, dscSize);
+            memcpy(dstRW, dsc->Data(), dscSize);
 
 #ifdef DEBUG
             if (EMITVERBOSE)
@@ -8477,7 +8497,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
                 for (size_t i = 0; i < dscSize; i++)
                 {
-                    printf("%02x ", dsc->dsCont[i]);
+                    printf("%02x ", dsc->Data()[i]);
                     if ((((i + 1) % 16) == 0) && (i + 1 != dscSize))
                     {
                         printf("\n\t\t\t\t\t");
@@ -8487,10 +8507,10 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                 {
                     case TYP_FLOAT:
                         printf(" ; float  %9.6g",
-                               FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&dsc->dsCont)));
+                               FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(dsc->Data())));
                         break;
                     case TYP_DOUBLE:
-                        printf(" ; double %12.9g", *reinterpret_cast<double*>(&dsc->dsCont));
+                        printf(" ; double %12.9g", *reinterpret_cast<double*>(dsc->Data()));
                         break;
                     default:
                         break;
@@ -8551,7 +8571,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                     printf(labelFormat, "");
                 }
 
-                BasicBlock* block = reinterpret_cast<BasicBlock**>(data->dsCont)[i];
+                BasicBlock* block = data->Blocks()[i];
                 insGroup*   ig    = static_cast<insGroup*>(emitCodeGetCookie(block));
 
                 const char* blockLabel = emitLabelString(ig);
@@ -8617,7 +8637,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                     printf(labelFormat, label);
                 }
 
-                emitLocation* emitLoc = &((emitLocation*)data->dsCont)[i];
+                emitLocation* emitLoc = &data->Locations()[i];
 
                 printf("\tdq\t%s\n", resumeStubName);
 
@@ -8668,9 +8688,9 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                         {
                             printf("\t<Unexpected data size %d (expected >= 4)\n", data->dsSize);
                         }
-                        printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->dsCont[i]));
+                        printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->Data()[i]));
                         printf("\t; %9.6g",
-                               FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&data->dsCont[i])));
+                               FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&data->Data()[i])));
                         i += 4;
                         break;
 
@@ -8679,8 +8699,8 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                         {
                             printf("\t<Unexpected data size %d (expected >= 8)\n", data->dsSize);
                         }
-                        printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
-                        printf("\t; %12.9g", *reinterpret_cast<double*>(&data->dsCont[i]));
+                        printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->Data()[i]));
+                        printf("\t; %12.9g", *reinterpret_cast<double*>(&data->Data()[i]));
                         i += 8;
                         break;
 
@@ -8688,12 +8708,12 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                         switch (elemSize)
                         {
                             case 1:
-                                printf("\tdb\t%02Xh", *reinterpret_cast<uint8_t*>(&data->dsCont[i]));
+                                printf("\tdb\t%02Xh", *reinterpret_cast<uint8_t*>(&data->Data()[i]));
                                 for (j = 1; j < 16; j++)
                                 {
                                     if (i + j >= data->dsSize)
                                         break;
-                                    printf(", %02Xh", *reinterpret_cast<uint8_t*>(&data->dsCont[i + j]));
+                                    printf(", %02Xh", *reinterpret_cast<uint8_t*>(&data->Data()[i + j]));
                                 }
                                 i += j;
                                 break;
@@ -8703,12 +8723,12 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                                 {
                                     printf("\t<Unexpected data size %d (expected size%%2 == 0)\n", data->dsSize);
                                 }
-                                printf("\tdw\t%04Xh", *reinterpret_cast<uint16_t*>(&data->dsCont[i]));
+                                printf("\tdw\t%04Xh", *reinterpret_cast<uint16_t*>(&data->Data()[i]));
                                 for (j = 2; j < 24; j += 2)
                                 {
                                     if (i + j >= data->dsSize)
                                         break;
-                                    printf(", %04Xh", *reinterpret_cast<uint16_t*>(&data->dsCont[i + j]));
+                                    printf(", %04Xh", *reinterpret_cast<uint16_t*>(&data->Data()[i + j]));
                                 }
                                 i += j;
                                 break;
@@ -8719,12 +8739,12 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                                 {
                                     printf("\t<Unexpected data size %d (expected size%%4 == 0)\n", data->dsSize);
                                 }
-                                printf("\tdd\t%08Xh", *reinterpret_cast<uint32_t*>(&data->dsCont[i]));
+                                printf("\tdd\t%08Xh", *reinterpret_cast<uint32_t*>(&data->Data()[i]));
                                 for (j = 4; j < 24; j += 4)
                                 {
                                     if (i + j >= data->dsSize)
                                         break;
-                                    printf(", %08Xh", *reinterpret_cast<uint32_t*>(&data->dsCont[i + j]));
+                                    printf(", %08Xh", *reinterpret_cast<uint32_t*>(&data->Data()[i + j]));
                                 }
                                 i += j;
                                 break;
@@ -8737,12 +8757,12 @@ void emitter::emitDispDataSec(dataSecDsc* section, AllocMemChunk* dataChunks)
                                 {
                                     printf("\t<Unexpected data size %d (expected size%%8 == 0)\n", data->dsSize);
                                 }
-                                printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
+                                printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->Data()[i]));
                                 for (j = 8; j < 64; j += 8)
                                 {
                                     if (i + j >= data->dsSize)
                                         break;
-                                    printf(", %016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i + j]));
+                                    printf(", %016llXh", *reinterpret_cast<uint64_t*>(&data->Data()[i + j]));
                                 }
                                 i += j;
                                 break;
@@ -9776,7 +9796,8 @@ insGroup* emitter::emitAllocIG()
     ig        = (insGroup*)emitGetMem(sz);
 
 #ifdef DEBUG
-    ig->igSelf = ig;
+    ig->igSelf     = ig;
+    ig->igDataSize = 0;
 #endif
 
 #if EMITTER_STATS
@@ -9843,6 +9864,8 @@ void emitter::emitInitIG(insGroup* ig)
     // Explicitly call init, since IGs don't actually have a constructor.
     ig->igBlocks.jitstd::list<BasicBlock*>::init(m_compiler->getAllocator(CMK_DebugOnly));
 #endif
+
+    ig->igData = nullptr;
 }
 
 /*****************************************************************************

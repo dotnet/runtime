@@ -70,6 +70,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     disassembler.cpp
     domainassembly.cpp
     dynamicmethod.cpp
+    ebr.cpp
     ecall.cpp
     eedbginterfaceimpl.cpp
     eehash.cpp
@@ -87,6 +88,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     gchandleutilities.cpp
     genericdict.cpp
     generics.cpp
+    genmeth.cpp
     hash.cpp
     ilinstrumentation.cpp
     ilstubcache.cpp
@@ -169,6 +171,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     disassembler.h
     domainassembly.h
     dynamicmethod.h
+    ebr.h
     ecall.h
     eedbginterfaceimpl.h
     eedbginterfaceimpl.inl
@@ -333,7 +336,6 @@ set(VM_SOURCES_WKS
     gcenv.ee.common.cpp
     gchelpers.cpp
     genanalysis.cpp
-    genmeth.cpp
     hosting.cpp
     hostinformation.cpp
     ilmarshalers.cpp

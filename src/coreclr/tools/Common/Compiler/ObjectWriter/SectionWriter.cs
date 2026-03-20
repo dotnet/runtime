@@ -31,6 +31,8 @@ namespace ILCompiler.ObjectWriter
             public LengthEncodeFormat LengthEncodeFormat;
         }
 
+        public bool HasLengthPrefix => _params.LengthEncodeFormat != LengthEncodeFormat.None;
+
         internal SectionWriter(
             ObjectWriter objectWriter,
             int sectionIndex,
@@ -43,7 +45,7 @@ namespace ILCompiler.ObjectWriter
             _params = ps;
         }
 
-        private readonly void EmitLengthPrefix(ulong length)
+        public readonly void EmitLengthPrefix(ulong length)
         {
             switch (_params.LengthEncodeFormat)
             {
@@ -54,6 +56,17 @@ namespace ILCompiler.ObjectWriter
                     break;
                 default:
                     throw new InvalidOperationException("Length prefix encoding not specified");
+            }
+        }
+
+        public readonly uint LengthPrefixSize(int length)
+        {
+            switch (_params.LengthEncodeFormat)
+            {
+                case LengthEncodeFormat.ULEB128:
+                    return DwarfHelper.SizeOfULEB128((ulong)length);
+                default:
+                    return 0;
             }
         }
 

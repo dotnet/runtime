@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Enable Roslyn async2 codegen so the JIT creates continuation MethodTables -->
+    <Features>$(Features);runtime-async=on</Features>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <NoWarn>$(NoWarn);CA2007;CA2252</NoWarn>
+    <!-- Full dump needed so that module metadata is available for type lookup -->
+    <DumpTypes>Full</DumpTypes>
+  </PropertyGroup>
+</Project>

@@ -81,7 +81,7 @@ namespace System.Security.Cryptography.X509Certificates
                         {
                             fixed (byte* pin = rawData)
                             {
-                                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
+                                ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
 
                                 using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
                                 {

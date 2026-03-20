@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
     {
         private const string _loggerName = "test";
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void LogAfterDisposeWritesLog()
         {
             // Arrange
@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(2, sink.Writes.Count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void LogsFlushedAfterDispose()
         {
             // Arrange
@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(2*repetitions, sink.Writes.Count); // 2 writes per message (category and msg)
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(-1)]
         [InlineData(0)]
         public static void MaxQueueLength_SetInvalid_Throws(int invalidMaxQueueLength)
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Throws<ArgumentOutOfRangeException>(() => processor.MaxQueueLength = invalidMaxQueueLength);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void FullMode_SetInvalid_Throws()
         {
             // Arrange
@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void CheckForNotificationWhenQueueIsFull(bool okToDrop)
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ThrowDuringProcessLog_ShutsDownGracefully()
         {
             var console = new TimesWriteCalledConsole();

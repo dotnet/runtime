@@ -143,28 +143,7 @@ C_FUNC(\Name):
 
 .endm
 
-// Loads the address of a thread-local variable into the target register,
-// which cannot be a0. Preserves all other registers.
-.macro INLINE_GET_TLS_VAR target, var
-    .ifc  \target, $a0
-        .error "target cannot be a0"
-    .endif
-
-    addi.d  $sp, $sp, -16
-    st.d  $a0, $sp, 0
-    st.d  $ra, $sp, 8
-
-    // This instruction is recognized and potentially patched
-    // by the linker (GD->IE/LE relaxation).
-    la.tls.desc  $a0, \var
-
-    ori  \target, $tp, 0
-    add.d  \target, \target, $a0
-
-    ld.d  $a0, $sp, 0
-    ld.d  $ra, $sp, 8
-    addi.d $sp, $sp, 16
-.endm
+#include <loongarch64/InlineTls.inc>
 
 // Inlined version of RhpGetThread. Target cannot be a0.
 .macro INLINE_GETTHREAD target
@@ -198,6 +177,7 @@ C_FUNC(\Name):
 #define PTFF_SAVE_SP            0x00000200
 #define PTFF_SAVE_R4            0x00000800
 #define PTFF_SAVE_R5            0x00001000
+#define PTFF_SAVE_R6            0x00002000
 #define PTFF_SAVE_ALL_PRESERVED 0x000001FF // NOTE: r23-r31
 #define PTFF_THREAD_HIJACK      0x80000000
 

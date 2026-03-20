@@ -25,18 +25,32 @@
 #ifdef TEST_DATA_CONSISTENCY
 #include "crst.h"
 
-void DacDbiInterfaceImpl::TestCrst(VMPTR_Crst vmCrst)
+HRESULT DacDbiInterfaceImpl::TestCrst(VMPTR_Crst vmCrst)
 {
     DD_ENTER_MAY_THROW;
 
-    DebugTryCrst(vmCrst.GetDacPtr());
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+
+        DebugTryCrst(vmCrst.GetDacPtr());
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 
-void DacDbiInterfaceImpl::TestRWLock(VMPTR_SimpleRWLock vmRWLock)
+HRESULT DacDbiInterfaceImpl::TestRWLock(VMPTR_SimpleRWLock vmRWLock)
 {
     DD_ENTER_MAY_THROW;
 
-    DebugTryRWLock(vmRWLock.GetDacPtr());
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+
+        DebugTryRWLock(vmRWLock.GetDacPtr());
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
 }
 #endif
 
