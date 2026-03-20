@@ -9,7 +9,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal readonly struct ConditionalWeakTable_1 : IConditionalWeakTable
 {
     private const string CWTNamespace = "System.Runtime.CompilerServices";
-    // cDAC depends on these field and type names — do not rename without updating this contract
     private const string CWTTypeName = "ConditionalWeakTable`2";
     private const string ContainerTypeName = "ConditionalWeakTable`2+Container";
     private const string EntryTypeName = "ConditionalWeakTable`2+Entry";
