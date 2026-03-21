@@ -161,17 +161,18 @@ namespace System.Reflection.Tests
 
         private interface IStaticInterface
         {
-            public static virtual string? StaticVirtual() => null;
+            public static virtual string? StaticVirtual(string? s) => s;
         }
 
         [Fact]
         public void CreateDelegate_StaticVirtual()
         {
             MethodInfo miStaticVirtual = GetMethod(typeof(IStaticInterface), nameof(IStaticInterface.StaticVirtual));
+            const string testString = "test";
 
             Func<string?> methodDelegate = miStaticVirtual.CreateDelegate<Func<string?>>();
-            string? returnValue = methodDelegate();
-            Assert.Null(returnValue);
+            string? returnValue = methodDelegate(testString);
+            Assert.Equal(testString, returnValue);
         }
 
         [Theory]
