@@ -7516,13 +7516,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             break;
     }
 
-    if (opts.OptimizationEnabled() && fgGlobalMorph)
-    {
-        GenTree* morphed = fgMorphReduceAddOrSubOps(tree);
-        if (morphed != tree)
-            return fgMorphTree(morphed);
-    }
-
     /*-------------------------------------------------------------------------
      * Process the first operand, if any
      */
@@ -15439,104 +15432,6 @@ bool Compiler::fgCanTailCallViaJitHelper(GenTreeCall* call)
 
     return true;
 #endif
-}
-
-//------------------------------------------------------------------------
-// fgMorphReduceAddOrSubOps: reduce successive variable adds/subs into a single multiply,
-// e.g., i + i + i + i => i * 4.
-// e.g., i - i - i - i => - i * 2.
-//
-// Arguments:
-//    tree - tree for reduction
-//
-// Return Value:
-//    reduced tree if pattern matches, original tree otherwise
-//
-GenTree* Compiler::fgMorphReduceAddOrSubOps(GenTree* tree)
-{
-    // ADD(_, V0) OR SUB(_, V0) starts the pattern match.
-    if (!tree->OperIs(GT_ADD, GT_SUB) || tree->gtOverflow())
-    {
-        return tree;
-    }
-
-    genTreeOps targetOp = tree->OperGet();
-#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-    // Transforming 64-bit ADD/SUB to 64-bit MUL on 32-bit system results in replacing
-    // ADD/SUB ops with a helper function call. Don't apply optimization in that case.
-    if (tree->TypeIs(TYP_LONG))
-    {
-        return tree;
-    }
-#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
-
-    GenTree* lclVarTree = tree->AsOp()->gtOp2;
-    GenTree* consTree   = tree->AsOp()->gtOp1;
-
-    GenTree* op1 = consTree;
-    GenTree* op2 = lclVarTree;
-
-    if ((!op2->OperIs(GT_LCL_VAR) && (!op2->OperIs(GT_IND) || !op2->AsIndir()->Base()->OperIs(GT_LCL_VAR))) ||
-        !varTypeIsIntegral(op2))
-    {
-        return tree;
-    }
-
-    int      foldCount = 0;
-    unsigned lclNum    = op2->OperIs(GT_LCL_VAR) ? op2->AsLclVarCommon()->GetLclNum()
-                                                 : op2->AsIndir()->Base()->AsLclVarCommon()->GetLclNum();
-
-    // Search for pattern of shape ADD(ADD(ADD(lclNum, lclNum), lclNum), lclNum) OR SUB(SUB(SUB(lclNum, lclNum),
-    // lclNum), lclNum).
-    while (true)
-    {
-        // ADD(lclNum, lclNum) OR SUB(lclNum, lclNum), end of tree
-        if ((op1->OperIs(GT_LCL_VAR) && op1->AsLclVarCommon()->GetLclNum() == lclNum && op2->OperIs(GT_LCL_VAR) &&
-             op2->AsLclVarCommon()->GetLclNum() == lclNum) ||
-            (op1->OperIs(GT_IND) && op1->AsIndir()->Base()->OperIs(GT_LCL_VAR) &&
-             op1->AsIndir()->Base()->AsLclVarCommon()->GetLclNum() == lclNum && op2->OperIs(GT_IND) &&
-             op2->AsIndir()->Base()->OperIs(GT_LCL_VAR) &&
-             op2->AsIndir()->Base()->AsLclVarCommon()->GetLclNum() == lclNum))
-        {
-            if (targetOp == GT_ADD)
-            {
-                foldCount += 2;
-            }
-            break;
-        }
-        // ADD(ADD(X, Y), lclNum) OR SUB(SUB(X, Y), lclNum), keep descending
-        else if (op1->OperIs(targetOp) && !op1->gtOverflow() &&
-                 ((op2->OperIs(GT_LCL_VAR) && op2->AsLclVarCommon()->GetLclNum() == lclNum) ||
-                  (op2->OperIs(GT_IND) && op2->AsIndir()->Base()->OperIs(GT_LCL_VAR) &&
-                   op2->AsIndir()->Base()->AsLclVarCommon()->GetLclNum() == lclNum)))
-        {
-            if (targetOp == GT_ADD)
-            {
-                foldCount++;
-            }
-            else
-            {
-                foldCount--;
-            }
-            op2 = op1->AsOp()->gtOp2;
-            op1 = op1->AsOp()->gtOp1;
-        }
-        // Any other case is a pattern we won't attempt to fold for now.
-        else
-        {
-            return tree;
-        }
-    }
-
-    // V0 + V0 ... + V0 becomes V0 * foldCount,
-    // V0 - V0 ... - V0 becomes V0 * (- foldCount + 2), where postorder transform will optimize
-    // accordingly
-    consTree->BashToConst(foldCount, tree->TypeGet());
-
-    GenTree* morphed = gtNewOperNode(GT_MUL, tree->TypeGet(), lclVarTree, consTree);
-    DEBUG_DESTROY_NODE(tree);
-
-    return morphed;
 }
 
 //------------------------------------------------------------------------

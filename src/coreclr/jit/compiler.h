@@ -6690,8 +6690,6 @@ private:
 
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
 
-    GenTree* fgMorphReduceAddOrSubOps(GenTree* tree);
-
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
 
@@ -8471,6 +8469,7 @@ public:
     GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);
+    GenTree*     optVNBasedFoldAddOrSubExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
 
     AssertionIndex GetAssertionCount()
     {
