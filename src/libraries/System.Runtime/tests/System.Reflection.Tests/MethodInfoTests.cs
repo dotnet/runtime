@@ -170,7 +170,7 @@ namespace System.Reflection.Tests
             MethodInfo miStaticVirtual = GetMethod(typeof(IStaticInterface), nameof(IStaticInterface.StaticVirtual));
             const string testString = "test";
 
-            Func<string?> methodDelegate = miStaticVirtual.CreateDelegate<Func<string?>>();
+            Func<string?, string?> methodDelegate = miStaticVirtual.CreateDelegate<Func<string?, string?>>();
             string? returnValue = methodDelegate(testString);
             Assert.Equal(testString, returnValue);
         }
