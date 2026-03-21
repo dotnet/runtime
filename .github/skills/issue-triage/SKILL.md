@@ -461,6 +461,12 @@ Key points:
   with these explicit instructions; the constraint above prevents *autonomous*
   actions before the human decision, not user-directed actions after it.
 
+  When posting any content to GitHub (issue comments, label changes with explanations)
+  under a user's credentials -- i.e., the account is **not** a dedicated "copilot"
+  or "bot" account/app -- you **MUST** include a concise, visible note (e.g. a
+  `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. Skip this if
+  the user explicitly asks you to omit it.
+
 - **NEVER** use `gh issue close`, `gh issue edit`, `gh issue comment`, or
   `gh pr review --approve`/`--request-changes` **unless the user explicitly
   asks you to** after picking an outcome.
