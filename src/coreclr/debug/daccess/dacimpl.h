@@ -16,8 +16,6 @@
 #include <minipal/mutex.h>
 #include "gcinterface.dac.h"
 //---------------------------------------------------------------------------------------
-// Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
-// storing code:DAC_INSTANCE .  Otherwise, the DAC uses SHash.
 extern minipal_mutex g_dacMutex;
 
 // Convert between CLRDATA_ADDRESS and TADDR.
@@ -615,13 +613,7 @@ struct DAC_INSTANCE_PUSH
 // Not all the way down to the LSB, though, as there generally
 // won't be individual accesses at the byte level.  Assume that
 // most accesses will be natural-word aligned.
-#define DAC_INSTANCE_HASH_BITS 10
 #define DAC_INSTANCE_HASH_SHIFT 2
-
-#define DAC_INSTANCE_HASH(addr) \
-    (((ULONG32)(ULONG_PTR)(addr) >> DAC_INSTANCE_HASH_SHIFT) & \
-     ((1 << DAC_INSTANCE_HASH_BITS) - 1))
-#define DAC_INSTANCE_HASH_SIZE (1 << DAC_INSTANCE_HASH_BITS)
 
 
 struct DumpMemoryReportStatics
@@ -674,50 +666,15 @@ private:
         m_blockMemUsage = 0;
         m_numInst = 0;
         m_instMemUsage = 0;
-#ifdef DAC_HASHTABLE
-        ZeroMemory(m_hash, sizeof(m_hash));
-#endif
         m_superseded = NULL;
         m_instPushed = NULL;
     }
-
-#if defined(DAC_HASHTABLE)
-
-    typedef struct _HashInstanceKey {
-        TADDR addr;
-        DAC_INSTANCE* instance;
-    } HashInstanceKey;
-
-    typedef struct _HashInstanceKeyBlock {
-        // Blocks are chained in reverse order of allocation so that the most recently allocated
-        // block is searched first.
-        _HashInstanceKeyBlock* next;
-
-        // Entries to a block are added from the max index on down so that recently added
-        // entries are at the start of the block.
-        DWORD firstElement;
-        HashInstanceKey instanceKeys[] ;
-    } HashInstanceKeyBlock;
-
-// The hashing function does a good job of distributing the entries across buckets. To handle a
-// SO on x86, we have under 250 entries in a bucket. A 4K block size allows 511 entries on x86 and
-// about half that on x64. On x64, the number of entries added to the hash table is significantly
-// smaller than on x86 (and the max recursion depth for default stack sizes is also far less), so
-// 4K is generally adequate.
-
-#define HASH_INSTANCE_BLOCK_ALLOC_SIZE (4 * 1024)
-#define HASH_INSTANCE_BLOCK_NUM_ELEMENTS ((HASH_INSTANCE_BLOCK_ALLOC_SIZE - offsetof(_HashInstanceKeyBlock, instanceKeys))/sizeof(HashInstanceKey))
-#endif // #if defined(DAC_HASHTABLE)
 
     DAC_INSTANCE_BLOCK* m_blocks;
     DAC_INSTANCE_BLOCK* m_unusedBlock;
     ULONG64 m_blockMemUsage;
     ULONG32 m_numInst;
     ULONG64 m_instMemUsage;
-
-#if defined(DAC_HASHTABLE)
-    HashInstanceKeyBlock* m_hash[DAC_INSTANCE_HASH_SIZE];
-#else //DAC_HASHTABLE
 
     // SHash-based hash table for DAC instances, keyed by target address.
     // The custom hash function avoids pseudo-randomizing in favor of a simple
@@ -742,7 +699,6 @@ private:
     typedef SHash<DacInstanceSHashTraits> DacInstanceHash;
     typedef DacInstanceHash::Iterator DacInstanceHashIterator;
     DacInstanceHash m_hash;
-#endif //DAC_HASHTABLE
 
     DAC_INSTANCE* m_superseded;
     DAC_INSTANCE_PUSH* m_instPushed;
