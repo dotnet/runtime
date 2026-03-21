@@ -134,6 +134,40 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
         => _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
     int IXCLRDataTask.GetName(uint bufLen, uint* nameLen, char* nameBuffer)
         => _legacyImpl is not null ? _legacyImpl.GetName(bufLen, nameLen, nameBuffer) : HResults.E_NOTIMPL;
-    int IXCLRDataTask.GetLastExceptionState(/*IXCLRDataExceptionState*/ void** exception)
-        => _legacyImpl is not null ? _legacyImpl.GetLastExceptionState(exception) : HResults.E_NOTIMPL;
+    int IXCLRDataTask.GetLastExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception)
+    {
+        int hr = HResults.S_OK, hrLocal = HResults.S_OK;
+        IXCLRDataExceptionState? legacyExceptionState = null;
+
+        if (_legacyImpl is not null)
+        {
+            DacComNullableByRef<IXCLRDataExceptionState> legacyExceptionStateOut = new(isNullRef: false);
+            hrLocal = _legacyImpl.GetLastExceptionState(legacyExceptionStateOut);
+            legacyExceptionState = legacyExceptionStateOut.Interface;
+        }
+        try
+        {
+            Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(_address);
+            TargetPointer thrownObjectHandle = threadData.LastThrownObjectHandle;
+            if (thrownObjectHandle == TargetPointer.Null)
+            {
+                throw Marshal.GetExceptionForHR(/*E_NOINTERFACE*/ HResults.COR_E_INVALIDCAST)!;
+            }
+            else
+            {
+                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL, thrownObjectHandle, TargetPointer.Null, legacyExceptionState);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 }

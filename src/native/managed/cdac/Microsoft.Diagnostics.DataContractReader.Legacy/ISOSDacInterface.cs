@@ -387,13 +387,6 @@ public struct DacpGcHeapAnalyzeData
     public int heap_analyze_success; // BOOL
 }
 
-public struct DacpCOMInterfacePointerData
-{
-    public ClrDataAddress methodTable;
-    public ClrDataAddress interfacePtr;
-    public ClrDataAddress comContext;
-}
-
 [GeneratedComInterface]
 [Guid("286CA186-E763-4F61-9760-487D43AE4341")]
 public unsafe partial interface ISOSEnum
@@ -582,6 +575,30 @@ public unsafe partial interface ISOSMemoryEnum : ISOSEnum
 {
     [PreserveSig]
     int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMemoryRegion[] memRegions, uint* pNeeded);
+}
+
+public struct DacpCCWData
+{
+    public ClrDataAddress outerIUnknown;
+    public ClrDataAddress managedObject;
+    public ClrDataAddress handle;
+    public ClrDataAddress ccwAddress;
+    public int refCount;
+    public int interfaceCount;
+    public Interop.BOOL isNeutered;
+    public int jupiterRefCount;
+    public Interop.BOOL isPegged;
+    public Interop.BOOL isGlobalPegged;
+    public Interop.BOOL hasStrongRef;
+    public Interop.BOOL isExtendsCOMObject;
+    public Interop.BOOL isAggregated;
+}
+
+public struct DacpCOMInterfacePointerData
+{
+    public ClrDataAddress methodTable;
+    public ClrDataAddress interfacePtr;
+    public ClrDataAddress comContext;
 }
 
 public struct DacpRCWData
@@ -804,7 +821,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]
-    int GetCCWData(ClrDataAddress ccw, /*struct DacpCCWData */ void* data);
+    int GetCCWData(ClrDataAddress ccw, DacpCCWData* data);
     [PreserveSig]
     int GetCCWInterfaces(ClrDataAddress ccw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]
