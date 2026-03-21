@@ -66,9 +66,5 @@ namespace System.IO.Compression
 
         protected override long GetMaxCompressedLength(long inputSize) =>
             GZipEncoder.GetMaxCompressedLength(inputSize);
-
-        #region GZip-specific Tests
-
-        #endregion
     }
 }

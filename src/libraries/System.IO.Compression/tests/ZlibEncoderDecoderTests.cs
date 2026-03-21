@@ -66,9 +66,5 @@ namespace System.IO.Compression
 
         protected override long GetMaxCompressedLength(long inputSize) =>
             ZLibEncoder.GetMaxCompressedLength(inputSize);
-
-        #region ZLib-specific Tests
-
-        #endregion
     }
 }
