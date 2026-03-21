@@ -13,7 +13,7 @@ internal sealed partial class __ThirdModelNoNamespaceValidator__
     /// <returns>Validation result.</returns>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
     #if !NET
-    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+    [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
          Justification = "The created ValidationContext object is used in a way that never call reflection")]
     #endif
     public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::ThirdModelNoNamespace options)
@@ -49,7 +49,7 @@ partial class FirstValidatorNoNamespace
     /// <returns>Validation result.</returns>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
     #if !NET
-    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+    [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
          Justification = "The created ValidationContext object is used in a way that never call reflection")]
     #endif
     public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::FirstModelNoNamespace options)
@@ -95,7 +95,7 @@ partial class SecondValidatorNoNamespace
     /// <returns>Validation result.</returns>
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
     #if !NET
-    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+    [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
          Justification = "The created ValidationContext object is used in a way that never call reflection")]
     #endif
     public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SecondModelNoNamespace options)
@@ -133,7 +133,7 @@ namespace CustomAttr
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::CustomAttr.FirstModel options)
@@ -182,7 +182,7 @@ namespace Enumeration
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Enumeration.SecondModel options)
@@ -222,7 +222,7 @@ namespace Enumeration
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Enumeration.ThirdModel options)
@@ -260,7 +260,7 @@ namespace Enumeration
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Enumeration.FirstModel options)
@@ -420,7 +420,7 @@ namespace Enumeration
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Enumeration.SecondModel options)
@@ -459,7 +459,7 @@ namespace FileScopedNamespace
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::FileScopedNamespace.FirstModel options)
@@ -498,7 +498,7 @@ namespace FunnyStrings
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::FunnyStrings.FirstModel options)
@@ -537,7 +537,7 @@ namespace Generics
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Generics.SecondModel options)
@@ -576,7 +576,7 @@ namespace Generics
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Generics.FirstModel<T> options)
@@ -620,7 +620,7 @@ namespace MultiModelValidator
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::MultiModelValidator.FirstModel options)
@@ -658,7 +658,7 @@ namespace MultiModelValidator
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::MultiModelValidator.SecondModel options)
@@ -698,7 +698,7 @@ namespace Nested
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.ThirdModel options)
@@ -739,7 +739,7 @@ namespace Nested
             /// <returns>Validation result.</returns>
             [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
             #if !NET
-            [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+            [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
                  Justification = "The created ValidationContext object is used in a way that never call reflection")]
             #endif
             public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.SecondModel options)
@@ -783,7 +783,7 @@ namespace Nested
                 /// <returns>Validation result.</returns>
                 [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
                 #if !NET
-                [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+                [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
                      Justification = "The created ValidationContext object is used in a way that never call reflection")]
                 #endif
                 public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.FirstModel options)
@@ -838,7 +838,7 @@ namespace Nested
             /// <returns>Validation result.</returns>
             [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
             #if !NET
-            [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+            [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
                  Justification = "The created ValidationContext object is used in a way that never call reflection")]
             #endif
             public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.SecondModel options)
@@ -882,7 +882,7 @@ namespace Nested
                 /// <returns>Validation result.</returns>
                 [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
                 #if !NET
-                [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+                [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
                      Justification = "The created ValidationContext object is used in a way that never call reflection")]
                 #endif
                 public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.SecondModel options)
@@ -927,7 +927,7 @@ namespace Nested
                 /// <returns>Validation result.</returns>
                 [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
                 #if !NET
-                [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+                [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
                      Justification = "The created ValidationContext object is used in a way that never call reflection")]
                 #endif
                 public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Nested.Container1.SecondModel options)
@@ -968,7 +968,7 @@ namespace RandomMembers
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RandomMembers.FirstModel options)
@@ -1008,7 +1008,7 @@ namespace RecordTypes
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RecordTypes.ThirdModel options)
@@ -1047,7 +1047,7 @@ namespace RecordTypes
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RecordTypes.FirstModel options)
@@ -1098,7 +1098,7 @@ namespace RecordTypes
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RecordTypes.SecondModel options)
@@ -1137,7 +1137,7 @@ namespace RecordTypes
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RecordTypes.SecondModel options)
@@ -1177,7 +1177,7 @@ namespace RepeatedTypes
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RepeatedTypes.SecondModel options)
@@ -1221,7 +1221,7 @@ namespace RepeatedTypes
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RepeatedTypes.ThirdModel options)
@@ -1260,7 +1260,7 @@ namespace RepeatedTypes
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::RepeatedTypes.FirstModel options)
@@ -1334,7 +1334,7 @@ namespace SelfValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SelfValidation.SecondModel options)
@@ -1376,7 +1376,7 @@ namespace SelfValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SelfValidation.FirstModel options)
@@ -1433,7 +1433,7 @@ namespace SelfValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SelfValidation.SelfValidateOptions options)
@@ -1466,7 +1466,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RangeAttributeModelDouble options)
@@ -1505,7 +1505,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RequiredAttributeModel options)
@@ -1544,7 +1544,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.TypeWithoutOptionsValidator options)
@@ -1597,7 +1597,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.AttributePropertyModel options)
@@ -1645,7 +1645,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.ComplexModel options)
@@ -1683,7 +1683,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.CustomTypeCustomValidationAttributeModel options)
@@ -1721,7 +1721,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.CustomValidationAttributeModel options)
@@ -1759,7 +1759,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.DataTypeAttributeModel options)
@@ -1797,7 +1797,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.DerivedModel options)
@@ -1855,7 +1855,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.EmailAttributeModel options)
@@ -1893,7 +1893,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.LeafModel options)
@@ -1951,7 +1951,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.MultipleAttributeModel options)
@@ -2020,7 +2020,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.OptionsUsingRangeWithTimeSpan options)
@@ -2088,7 +2088,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RangeAttributeModelDate options)
@@ -2126,7 +2126,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RangeAttributeModelDouble options)
@@ -2164,7 +2164,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RangeAttributeModelInt options)
@@ -2202,7 +2202,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RegularExpressionAttributeModel options)
@@ -2240,7 +2240,7 @@ namespace TestClasses.OptionsValidation
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::TestClasses.OptionsValidation.RequiredAttributeModel options)
@@ -2279,7 +2279,7 @@ namespace ValueTypes
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public static global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::ValueTypes.SecondModel options)
@@ -2318,7 +2318,7 @@ namespace ValueTypes
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::ValueTypes.FirstModel options)
