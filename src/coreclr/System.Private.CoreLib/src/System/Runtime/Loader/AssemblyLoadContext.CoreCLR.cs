@@ -112,16 +112,17 @@ namespace System.Runtime.Loader
         // implementation.
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static unsafe void ResolveUnmanagedDll(char* pUnmanagedDllName, IntPtr gchAssemblyLoadContext, IntPtr* pResult, Exception* pException)
+        private static unsafe IntPtr ResolveUnmanagedDll(char* pUnmanagedDllName, IntPtr gchAssemblyLoadContext, Exception* pException)
         {
             try
             {
                 AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
-                *pResult = context.LoadUnmanagedDll(new string(pUnmanagedDllName));
+                return context.LoadUnmanagedDll(new string(pUnmanagedDllName));
             }
             catch (Exception ex)
             {
                 *pException = ex;
+                return default;
             }
         }
 
@@ -129,16 +130,17 @@ namespace System.Runtime.Loader
         // after trying all other means of resolution.
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static unsafe void ResolveUnmanagedDllUsingEvent(char* pUnmanagedDllName, Assembly* pAssembly, IntPtr gchAssemblyLoadContext, IntPtr* pResult, Exception* pException)
+        private static unsafe IntPtr ResolveUnmanagedDllUsingEvent(char* pUnmanagedDllName, Assembly* pAssembly, IntPtr gchAssemblyLoadContext, Exception* pException)
         {
             try
             {
                 AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
-                *pResult = context.GetResolvedUnmanagedDll(*pAssembly, new string(pUnmanagedDllName));
+                return context.GetResolvedUnmanagedDll(*pAssembly, new string(pUnmanagedDllName));
             }
             catch (Exception ex)
             {
                 *pException = ex;
+                return default;
             }
         }
 

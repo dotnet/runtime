@@ -320,15 +320,17 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void ConvertToNative(string* pStr, IntPtr pNativeBuffer, IntPtr* pResult, Exception* pException)
+        [RequiresUnsafe]
+        private static unsafe IntPtr ConvertToNative(string* pStr, IntPtr pNativeBuffer, Exception* pException)
         {
             try
             {
-                *pResult = ConvertToNative(*pStr, pNativeBuffer);
+                return ConvertToNative(*pStr, pNativeBuffer);
             }
             catch (Exception ex)
             {
                 *pException = ex;
+                return default;
             }
         }
 

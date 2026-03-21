@@ -28,15 +28,16 @@ namespace System.Runtime.InteropServices
 
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static unsafe void LoadLibraryCallbackStub(char* pLibraryName, Assembly* pAssembly, bool hasDllImportSearchPathFlags, uint dllImportSearchPathFlags, IntPtr* pResult, Exception* pException)
+        private static unsafe IntPtr LoadLibraryCallbackStub(char* pLibraryName, Assembly* pAssembly, bool hasDllImportSearchPathFlags, uint dllImportSearchPathFlags, Exception* pException)
         {
             try
             {
-                *pResult = LoadLibraryCallbackStub(new string(pLibraryName), *pAssembly, hasDllImportSearchPathFlags, dllImportSearchPathFlags);
+                return LoadLibraryCallbackStub(new string(pLibraryName), *pAssembly, hasDllImportSearchPathFlags, dllImportSearchPathFlags);
             }
             catch (Exception ex)
             {
                 *pException = ex;
+                return default;
             }
         }
     }

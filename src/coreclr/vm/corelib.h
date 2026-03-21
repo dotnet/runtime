@@ -494,7 +494,7 @@ DEFINE_METHOD(MARSHAL,              DESTROY_STRUCTURE,                 DestroySt
 DEFINE_METHOD(MARSHAL,              SIZEOF_TYPE,                       SizeOf,                        SM_Type_RetInt)
 
 DEFINE_CLASS(NATIVELIBRARY, Interop, NativeLibrary)
-DEFINE_METHOD(NATIVELIBRARY,        LOADLIBRARYCALLBACKSTUB, LoadLibraryCallbackStub, SM_PtrChar_PtrAssemblyBase_CLR_BOOL_UInt_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(NATIVELIBRARY,        LOADLIBRARYCALLBACKSTUB, LoadLibraryCallbackStub, SM_PtrChar_PtrAssemblyBase_CLR_BOOL_UInt_PtrException_RetIntPtr)
 
 DEFINE_CLASS(VECTOR64T,             Intrinsics,             Vector64`1)
 DEFINE_CLASS(VECTOR128T,            Intrinsics,             Vector128`1)
@@ -1002,8 +1002,8 @@ DEFINE_FIELD_U(_state,                      AssemblyLoadContextBaseObject, _stat
 DEFINE_FIELD_U(_isCollectible,              AssemblyLoadContextBaseObject, _isCollectible)
 DEFINE_CLASS(ASSEMBLYLOADCONTEXT,  Loader,                AssemblyLoadContext)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVE,                       Resolve,                       SM_IntPtr_PtrAssemblyName_PtrAssemblyBase_PtrException_RetVoid)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLL,           ResolveUnmanagedDll,           SM_PtrChar_IntPtr_PtrIntPtr_PtrException_RetVoid)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLLUSINGEVENT, ResolveUnmanagedDllUsingEvent, SM_PtrChar_PtrAssemblyBase_IntPtr_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLL,           ResolveUnmanagedDll,           SM_PtrChar_IntPtr_PtrException_RetIntPtr)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLLUSINGEVENT, ResolveUnmanagedDllUsingEvent, SM_PtrChar_PtrAssemblyBase_IntPtr_PtrException_RetIntPtr)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUSINGEVENT,             ResolveUsingEvent,             SM_IntPtr_PtrAssemblyName_PtrAssemblyBase_PtrException_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVESATELLITEASSEMBLY,      ResolveSatelliteAssembly,      SM_IntPtr_PtrAssemblyName_PtrAssemblyBase_PtrException_RetVoid)
 DEFINE_FIELD(ASSEMBLYLOADCONTEXT,   ASSEMBLY_LOAD,              AssemblyLoad)
@@ -1095,7 +1095,7 @@ DEFINE_METHOD(FIXEDWSTRMARSHALER,  CONVERT_TO_MANAGED,     ConvertToManaged,    
 DEFINE_CLASS(BSTRMARSHALER,         StubHelpers,            BSTRMarshaler)
 DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_NATIVE,      ConvertToNative,            SM_Str_IntPtr_RetIntPtr)
 DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_RetStr)
-DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_NATIVE_UCO,  ConvertToNative,            SM_PtrStr_IntPtr_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_NATIVE_UCO,  ConvertToNative,            SM_PtrStr_IntPtr_PtrException_RetIntPtr)
 DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_MANAGED_UCO, ConvertToManaged,           SM_IntPtr_PtrStr_PtrException_RetVoid)
 DEFINE_METHOD(BSTRMARSHALER,        CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
 

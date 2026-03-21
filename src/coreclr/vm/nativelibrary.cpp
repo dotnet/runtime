@@ -267,7 +267,6 @@ namespace
         }
 #endif // !TARGET_UNIX
 
-        NATIVE_LIBRARY_HANDLE hmod = NULL;
         PEAssembly *pManifestFile = pAssembly->GetPEAssembly();
         PTR_AssemblyBinder pBinder = pManifestFile->GetAssemblyBinder();
 
@@ -291,9 +290,7 @@ namespace
 
         // Invoke System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
         UnmanagedCallersOnlyCaller resolveUnmanagedDll(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
-        resolveUnmanagedDll.InvokeThrowing(wszLibName, ptrAssemblyLoadContext, &hmod);
-
-        return hmod;
+        return (NATIVE_LIBRARY_HANDLE)resolveUnmanagedDll.InvokeThrowing_Ret<INT_PTR>(wszLibName, ptrAssemblyLoadContext);
     }
 
     // Return the AssemblyLoadContext for an assembly
@@ -330,7 +327,7 @@ namespace
         // argument, it will involve another pInvoke to the runtime. So AssemblyLoadContext is passed in
         // as an additional argument.
         UnmanagedCallersOnlyCaller resolveUnmanagedDllUsingEvent(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLLUSINGEVENT);
-        resolveUnmanagedDllUsingEvent.InvokeThrowing(wszLibName, &assemblyRef, ptrAssemblyLoadContext, &hmod);
+        hmod = (NATIVE_LIBRARY_HANDLE)resolveUnmanagedDllUsingEvent.InvokeThrowing_Ret<INT_PTR>(wszLibName, &assemblyRef, ptrAssemblyLoadContext);
 
         GCPROTECT_END();
 
@@ -365,7 +362,7 @@ namespace
         assemblyRef = pAssembly->GetExposedObject();
 
         UnmanagedCallersOnlyCaller loadLibraryCallbackStub(METHOD__NATIVELIBRARY__LOADLIBRARYCALLBACKSTUB);
-        loadLibraryCallbackStub.InvokeThrowing(wszLibName, &assemblyRef, CLR_BOOL_ARG(hasDllImportSearchPathFlags), dllImportSearchPathFlags, (INT_PTR*)&handle);
+        handle = (NATIVE_LIBRARY_HANDLE)loadLibraryCallbackStub.InvokeThrowing_Ret<INT_PTR>(wszLibName, &assemblyRef, CLR_BOOL_ARG(hasDllImportSearchPathFlags), dllImportSearchPathFlags);
         GCPROTECT_END();
 
         return handle;
