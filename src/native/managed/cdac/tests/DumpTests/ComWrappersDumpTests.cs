@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// Dump-based integration tests for the ComWrappers contract's
 /// <see cref="IComWrappers.GetComWrappersRCWForObject"/> and
 /// <see cref="IComWrappers.GetMOWs"/> APIs.
-/// Uses the ComWrappersRCW debuggee which creates exactly one MOW and
+/// Uses the ComWrappers debuggee which creates exactly one MOW and
 /// exactly one RCW for a single managed object before crashing.
 /// </summary>
 public class ComWrappersDumpTests : DumpTestBase
