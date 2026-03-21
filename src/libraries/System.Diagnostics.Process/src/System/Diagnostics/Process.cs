@@ -1299,9 +1299,7 @@ namespace System.Diagnostics
 
             try
             {
-                // On Windows, ShellExecute does not provide an ability to set standard handles.
-                // On Unix, we emulate it and require the handles.
-                if (!startInfo.UseShellExecute || !OperatingSystem.IsWindows())
+                if (anyRedirection)
                 {
                     // Windows supports creating non-inheritable pipe in atomic way.
                     // When it comes to Unixes, it depends whether they support pipe2 sys-call or not.
@@ -1309,7 +1307,7 @@ namespace System.Diagnostics
                     // Some process could be started in the meantime, so in order to prevent accidental handle inheritance,
                     // a WriterLock is used around the pipe creation code.
 
-                    bool requiresLock = anyRedirection && !SupportsAtomicNonInheritablePipeCreation;
+                    bool requiresLock = !SupportsAtomicNonInheritablePipeCreation;
 
                     if (requiresLock)
                     {
@@ -1322,39 +1320,15 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out childInputPipeHandle, out parentInputPipeHandle);
                         }
-                        else if (OperatingSystem.IsWindows())
-                        {
-                            childInputPipeHandle = Console.OpenStandardInputHandle();
-                        }
-                        else
-                        {
-                            childInputPipeHandle = new SafeFileHandle(0, ownsHandle: false);
-                        }
 
                         if (startInfo.RedirectStandardOutput)
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputPipeHandle, asyncRead: OperatingSystem.IsWindows());
                         }
-                        else if (OperatingSystem.IsWindows())
-                        {
-                            childOutputPipeHandle = Console.OpenStandardOutputHandle();
-                        }
-                        else
-                        {
-                            childOutputPipeHandle = new SafeFileHandle(1, ownsHandle: false);
-                        }
 
                         if (startInfo.RedirectStandardError)
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorPipeHandle, asyncRead: OperatingSystem.IsWindows());
-                        }
-                        else if (OperatingSystem.IsWindows())
-                        {
-                            childErrorPipeHandle = Console.OpenStandardErrorHandle();
-                        }
-                        else
-                        {
-                            childErrorPipeHandle = new SafeFileHandle(2, ownsHandle: false);
                         }
                     }
                     finally
@@ -1381,10 +1355,8 @@ namespace System.Diagnostics
             }
             finally
             {
-                // We MUST close the parent copies of the child handles, otherwise the parent
+                // We MUST close the child handles, otherwise the parent
                 // process will not receive EOF when the child process closes its handles.
-                // It's OK to do it for handles returned by Console.OpenStandard*Handle APIs,
-                // because these handles are not owned and won't be closed by Dispose.
                 childInputPipeHandle?.Dispose();
                 childOutputPipeHandle?.Dispose();
                 childErrorPipeHandle?.Dispose();
