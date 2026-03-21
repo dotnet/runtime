@@ -212,9 +212,9 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
         return hr;
     }
 
-    int IXCLRDataExceptionState.IsSameState(/*EXCEPTION_RECORD64*/ void* exRecord, uint contextSize, byte* cxRecord)
+    int IXCLRDataExceptionState.IsSameState(EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord)
         => _legacyImpl is not null ? _legacyImpl.IsSameState(exRecord, contextSize, cxRecord) : HResults.E_NOTIMPL;
-    int IXCLRDataExceptionState.IsSameState2(uint flags, /*EXCEPTION_RECORD64*/ void* exRecord, uint contextSize, byte* cxRecord)
+    int IXCLRDataExceptionState.IsSameState2(uint flags, EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord)
         => _legacyImpl is not null ? _legacyImpl.IsSameState2(flags, exRecord, contextSize, cxRecord) : HResults.E_NOTIMPL;
     int IXCLRDataExceptionState.GetTask(DacComNullableByRef<IXCLRDataTask> task)
     {
