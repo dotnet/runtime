@@ -1,15 +1,29 @@
 {
-  "version": 1,
-  "description": "Lifecycle hooks for dotnet/runtime — AI disclosure guardrails",
   "hooks": {
-    "preToolUse": [
+    "PreToolUse": [
       {
-        "matcher": "Bash|PowerShell|create|comment|update|edit|review|push|merge",
-        "type": "command",
-        "bash": "d=; while IFS= read -r l; do d=$d$l; done; case $d in *'gh pr create'*|*'gh pr comment'*|*'gh pr review'*|*'gh pr edit'*|*'gh pr merge'*|*'gh issue create'*|*'gh issue comment'*|*'gh issue edit'*|*'gh issue close'*|*github*) echo 'Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md' >&2;; esac; :",
-        "powershell": "$d = [Console]::In.ReadToEnd(); if ($d -match 'gh (pr|issue) (create|comment|review|edit|merge|close)' -or $d -match 'github') { [Console]::Error.WriteLine('Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md') }",
-        "timeoutSec": 5,
-        "description": "Remind about AI disclosure when posting to GitHub via gh CLI or MCP tools"
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const a=JSON.parse(d).toolArgs||'';if(/gh\\s+(pr|issue)\\s+(create|comment|review|edit|merge|close)/.test(a))process.stderr.write('Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md\\n')}catch{}})\"",
+            "bash": "d=; while IFS= read -r l; do d=$d$l; done; case $d in *'gh pr create'*|*'gh pr comment'*|*'gh pr review'*|*'gh pr edit'*|*'gh pr merge'*|*'gh issue create'*|*'gh issue comment'*|*'gh issue edit'*|*'gh issue close'*) echo 'Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md' >&2;; esac; :",
+            "powershell": "$d = [Console]::In.ReadToEnd(); if ($d -match 'gh (pr|issue) (create|comment|review|edit|merge|close)') { [Console]::Error.WriteLine('Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md') }",
+            "timeout": 5
+          }
+        ],
+        "description": "Remind about AI disclosure when posting to GitHub via gh CLI"
+      },
+      {
+        "matcher": "create|comment|update|edit|review|push|merge",
+        "hooks": [
+          {
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const i=JSON.parse(d);if(/github/i.test(i.toolName||''))process.stderr.write('Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md\\n')}catch{}})\"",
+            "bash": "d=; while IFS= read -r l; do d=$d$l; done; case $d in *github*) echo 'Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md' >&2;; esac; :",
+            "powershell": "$d = [Console]::In.ReadToEnd(); if ($d -match 'github') { [Console]::Error.WriteLine('Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md') }",
+            "timeout": 5
+          }
+        ],
+        "description": "Remind about AI disclosure for write-capable GitHub MCP tools"
       }
     ]
   }
