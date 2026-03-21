@@ -1,0 +1,17 @@
+{
+  "description": "Lifecycle hooks for dotnet/runtime — AI disclosure guardrails",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const i=JSON.parse(d);const cmd=i.tool_input?.command||'';if(/gh\\s+(pr|issue)\\s+(create|comment|edit|review|merge)/.test(cmd)){console.error('AI-GENERATED CONTENT DISCLOSURE: When posting to GitHub under a user account (not a bot/copilot app account), include a visible note (e.g. \\'> [!NOTE]\\') indicating the content was AI/Copilot-generated. Skip only if the user explicitly asked to omit it.')}}catch{}})\""
+          }
+        ],
+        "description": "Remind to include AI-generated content disclosure when posting to GitHub via gh CLI"
+      }
+    ]
+  }
+}
