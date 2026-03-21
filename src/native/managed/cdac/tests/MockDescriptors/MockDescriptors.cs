@@ -73,10 +73,6 @@ internal partial class MockDescriptors
     private static readonly TypeFields ObjectHeaderFields = new TypeFields()
     {
         DataType = DataType.ObjectHeader,
-        Fields =
-        [
-            new(nameof(Data.ObjectHeader.SyncBlockValue), DataType.uint32),
-        ]
     };
 
     private static readonly TypeFields StringFields = new TypeFields()
@@ -249,18 +245,30 @@ internal partial class MockDescriptors
         Dictionary<DataType, Target.TypeInfo> types = new();
         foreach (var toAdd in typeFields)
         {
-            TargetTestHelpers.LayoutResult layout = GetLayout(helpers, toAdd);
-            // manually add the ObjectHeader type since its size is not equal to the stride
             if (toAdd.DataType == DataType.ObjectHeader)
             {
+                List<TargetTestHelpers.Field> objectHeaderFields = new();
+                if (helpers.Arch.Is64Bit)
+                    objectHeaderFields.Add(new("Padding", DataType.uint32));
+                objectHeaderFields.Add(new(nameof(Data.ObjectHeader.SyncBlockValue), DataType.uint32));
+                TargetTestHelpers.Field[] fields = objectHeaderFields.ToArray();
+                TypeFields objectHeaderTypeFields = new TypeFields()
+                {
+                    DataType = DataType.ObjectHeader,
+                    Fields = fields,
+                };
+
+                TargetTestHelpers.LayoutResult layout = GetLayout(helpers, objectHeaderTypeFields);
+
                 types[toAdd.DataType] = new Target.TypeInfo()
                 {
-                    Fields = helpers.LayoutFields(ObjectHeaderFields.Fields).Fields,
-                    Size = 8, // sizeof(OBJECTHEADER) is 8 bytes on both 32-bit and 64-bit
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
                 };
             }
             else
             {
+                TargetTestHelpers.LayoutResult layout = GetLayout(helpers, toAdd);
                 types[toAdd.DataType] = new Target.TypeInfo()
                 {
                     Fields = layout.Fields,
