@@ -51,46 +51,30 @@ public class Color
         Assert.Throws<PlatformNotSupportedException>(() => Console.BackgroundColor = ConsoleColor.Red);
     }
 
-    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    [Fact]
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void RedirectedOutputDoesNotUseAnsiSequences()
     {
-        // Run in a child process with redirected stdout so that no in-process
-        // test framework output (e.g. xunit skip messages) can pollute the stream.
-        var startInfo = new ProcessStartInfo { RedirectStandardOutput = true };
-        using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () =>
-        {
-            Console.Error.WriteLine($"IsOutputRedirected: {Console.IsOutputRedirected}");
-            Console.Error.WriteLine($"TERM: {Environment.GetEnvironmentVariable("TERM")}");
-            Console.Write("1");
-            Console.ForegroundColor = ConsoleColor.Blue;
-            Console.Write("2");
-            Console.BackgroundColor = ConsoleColor.Red;
-            Console.Write("3");
-            Console.ResetColor();
-            Console.Write("4");
-            Console.Error.WriteLine($"Done writing");
-        }, new RemoteInvokeOptions { StartInfo = startInfo });
+        // Make sure that redirecting to a memory stream causes Console not to write out the ANSI sequences
 
-        string capturedOutput = handle.Process.StandardOutput.ReadToEnd();
-        byte[] rawBytes = System.Text.Encoding.UTF8.GetBytes(capturedOutput);
-        Console.Error.WriteLine($"Output length: {rawBytes.Length}");
-        Console.Error.WriteLine($"Output hex: {BitConverter.ToString(rawBytes)}");
-        Console.Error.Write("Output chars: ");
-        foreach (char c in capturedOutput)
+        Helpers.RunInRedirectedOutput((data) =>
         {
-            if (c >= 32 && c < 127)
-                Console.Error.Write(c);
-            else
-                Console.Error.Write($"[0x{(int)c:X2}]");
-        }
-        Console.Error.WriteLine();
-        Console.Error.WriteLine($"capturedOutput[0] = 0x{(int)capturedOutput[0]:X2}");
-        Console.Error.WriteLine($"capturedOutput == \"1234\": {capturedOutput == "1234"}");
-        Console.Error.WriteLine($"Contains ESC: {capturedOutput.Contains(Esc)}");
-        Console.Error.WriteLine($"Esc char value: 0x{(int)Esc:X2}");
-        Assert.DoesNotContain(Esc.ToString(), capturedOutput);
-        Assert.Equal("1234", capturedOutput);
+            Console.Write('1');
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.Write('2');
+            Console.BackgroundColor = ConsoleColor.Red;
+            Console.Write('3');
+            Console.ResetColor();
+            Console.Write('4');
+
+            string output = Encoding.UTF8.GetString(data.ToArray());
+
+            // Use char-level check rather than string search: culture-sensitive string
+            // comparison treats control characters like ESC (\x1B) as ignorable, so
+            // Assert.DoesNotContain(Esc.ToString(), ...) would always pass.
+            Assert.Equal(0, output.Count(c => c == Esc));
+            Assert.Equal("1234", output);
+        });
     }
 
     public static bool TermIsSetAndRemoteExecutorIsSupported
