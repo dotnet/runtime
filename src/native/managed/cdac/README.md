@@ -81,7 +81,7 @@ Use the `dotnet.sh` (or `dotnet.cmd`) script in the repo root:
 
 ```bash
 ./dotnet.sh build /t:Test \
-  src/native/managed/cdac/tests/Microsoft.Diagnostics.DataContractReader.Tests.csproj \
+  src/native/managed/cdac/tests/Microsoft.Diagnostics.DataContractReader.Tests/Microsoft.Diagnostics.DataContractReader.Tests.csproj \
   -c Debug -p:RuntimeConfiguration=Debug -p:LibrariesConfiguration=Release
 ```
 

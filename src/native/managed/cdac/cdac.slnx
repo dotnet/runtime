@@ -12,7 +12,8 @@
     <Project Path="mscordaccore_universal/mscordaccore_universal.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Microsoft.Diagnostics.DataContractReader.Tests.csproj" />
+    <Project Path="tests/Microsoft.Diagnostics.Internal.RuntimeMemoryMocks/Microsoft.Diagnostics.Internal.RuntimeMemoryMocks.csproj" />
+    <Project Path="tests/Microsoft.Diagnostics.DataContractReader.Tests/Microsoft.Diagnostics.DataContractReader.Tests.csproj" />
     <Project Path="tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj" />
   </Folder>
 </Solution>
