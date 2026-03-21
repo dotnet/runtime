@@ -6,16 +6,16 @@
       {
         "matcher": "Bash|PowerShell",
         "type": "command",
-        "bash": "d=; while IFS= read -r l; do d=$d$l; done; case $d in *github*|*'gh '*) echo 'AI-GENERATED CONTENT DISCLOSURE: When posting content to GitHub under a user account (not a bot/copilot app account), include a visible note (e.g. > [!NOTE]) indicating the content was AI/Copilot-generated. Skip only if the user explicitly asked to omit it.' >&2;; esac; :",
-        "powershell": "$d = [Console]::In.ReadToEnd(); if ($d -match 'github|\\bgh\\b') { [Console]::Error.WriteLine('AI-GENERATED CONTENT DISCLOSURE: When posting content to GitHub under a user account (not a bot/copilot app account), include a visible note (e.g. > [!NOTE]) indicating the content was AI/Copilot-generated. Skip only if the user explicitly asked to omit it.') }",
+        "bash": "d=; while IFS= read -r l; do d=$d$l; done; case $d in *'gh pr create'*|*'gh pr comment'*|*'gh pr review'*|*'gh pr edit'*|*'gh pr merge'*|*'gh issue create'*|*'gh issue comment'*|*'gh issue edit'*|*'gh issue close'*) echo 'Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md' >&2;; esac; :",
+        "powershell": "$d = [Console]::In.ReadToEnd(); if ($d -match 'gh (pr|issue) (create|comment|review|edit|merge|close)') { [Console]::Error.WriteLine('Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md') }",
         "timeoutSec": 5,
-        "description": "Remind about AI disclosure when shell commands interact with GitHub"
+        "description": "Remind about AI disclosure when posting to GitHub via gh CLI"
       },
       {
         "matcher": "create|comment|update|edit|review|push|merge",
         "type": "command",
-        "bash": "d=; while IFS= read -r l; do d=$d$l; done; case $d in *github*) echo 'AI-GENERATED CONTENT DISCLOSURE: When posting content to GitHub under a user account (not a bot/copilot app account), include a visible note (e.g. > [!NOTE]) indicating the content was AI/Copilot-generated. Skip only if the user explicitly asked to omit it.' >&2;; esac; :",
-        "powershell": "$d = [Console]::In.ReadToEnd(); if ($d -match 'github') { [Console]::Error.WriteLine('AI-GENERATED CONTENT DISCLOSURE: When posting content to GitHub under a user account (not a bot/copilot app account), include a visible note (e.g. > [!NOTE]) indicating the content was AI/Copilot-generated. Skip only if the user explicitly asked to omit it.') }",
+        "bash": "d=; while IFS= read -r l; do d=$d$l; done; case $d in *github*) echo 'Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md' >&2;; esac; :",
+        "powershell": "$d = [Console]::In.ReadToEnd(); if ($d -match 'github') { [Console]::Error.WriteLine('Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md') }",
         "timeoutSec": 5,
         "description": "Remind about AI disclosure for write-capable GitHub MCP tools"
       }
