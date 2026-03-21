@@ -481,7 +481,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.GetExceptionStateByExceptionRecord(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionState*/ void** exState)
         => _legacyProcess is not null ? _legacyProcess.GetExceptionStateByExceptionRecord(record, exState) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.TranslateExceptionRecordToNotification(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionNotification*/ void* notify)
+    int IXCLRDataProcess.TranslateExceptionRecordToNotification(/*struct EXCEPTION_RECORD64*/ void* record, IXCLRDataExceptionNotification notify)
     {
         // Note: there is intentionally no DEBUG block calling the legacy implementation here.
         // TranslateExceptionRecordToNotification fires callbacks on the provided notify object;
@@ -510,14 +510,12 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             if (notifyType == NotificationType.Unknown)
                 return HResults.E_INVALIDARG;
 
-            // Wrap the incoming COM notify pointer so we can QI for the various notification interfaces.
-            StrategyBasedComWrappers cw = new();
-            object notifyObj = cw.GetOrCreateObjectForComInstance((nint)notify, CreateObjectFlags.None);
-            IXCLRDataExceptionNotification? notify1 = notifyObj as IXCLRDataExceptionNotification;
-            IXCLRDataExceptionNotification2? notify2 = notifyObj as IXCLRDataExceptionNotification2;
-            IXCLRDataExceptionNotification3? notify3 = notifyObj as IXCLRDataExceptionNotification3;
-            IXCLRDataExceptionNotification4? notify4 = notifyObj as IXCLRDataExceptionNotification4;
-            IXCLRDataExceptionNotification5? notify5 = notifyObj as IXCLRDataExceptionNotification5;
+            // notify is typed as IXCLRDataExceptionNotification; cast to the extended interfaces for
+            // notifications that require them.
+            IXCLRDataExceptionNotification2? notify2 = notify as IXCLRDataExceptionNotification2;
+            IXCLRDataExceptionNotification3? notify3 = notify as IXCLRDataExceptionNotification3;
+            IXCLRDataExceptionNotification4? notify4 = notify as IXCLRDataExceptionNotification4;
+            IXCLRDataExceptionNotification5? notify5 = notify as IXCLRDataExceptionNotification5;
 
             switch (notifyType)
             {
@@ -525,9 +523,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 {
                     if (!notifications.TryParseModuleLoadNotification(exInfo, out TargetPointer moduleAddress))
                         return HResults.E_FAIL;
-
-                    if (notify1 is null)
-                        return HResults.COR_E_INVALIDCAST /*E_NOINTERFACE*/;
 
                     IXCLRDataModule? legacyModule = null;
                     if (_legacyImpl is not null)
@@ -538,14 +533,14 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                     }
 
                     ClrDataModule module = new(moduleAddress, _target, legacyModule);
-                    nint moduleCcw = cw.GetOrCreateComInterfaceForObject(module, CreateComInterfaceFlags.None);
+                    void* moduleCcw = ComInterfaceMarshaller<IXCLRDataModule>.ConvertToUnmanaged(module);
                     try
                     {
-                        notify1.OnModuleLoaded((void*)moduleCcw);
+                        notify.OnModuleLoaded(moduleCcw);
                     }
                     finally
                     {
-                        Marshal.Release(moduleCcw);
+                        ComInterfaceMarshaller<IXCLRDataModule>.Free(moduleCcw);
                     }
                     hr = HResults.S_OK;
                     break;
@@ -556,9 +551,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                     if (!notifications.TryParseModuleUnloadNotification(exInfo, out TargetPointer moduleAddress))
                         return HResults.E_FAIL;
 
-                    if (notify1 is null)
-                        return HResults.COR_E_INVALIDCAST /*E_NOINTERFACE*/;
-
                     IXCLRDataModule? legacyModule = null;
                     if (_legacyImpl is not null)
                     {
@@ -568,14 +560,14 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                     }
 
                     ClrDataModule module = new(moduleAddress, _target, legacyModule);
-                    nint moduleCcw = cw.GetOrCreateComInterfaceForObject(module, CreateComInterfaceFlags.None);
+                    void* moduleCcw = ComInterfaceMarshaller<IXCLRDataModule>.ConvertToUnmanaged(module);
                     try
                     {
-                        notify1.OnModuleUnloaded((void*)moduleCcw);
+                        notify.OnModuleUnloaded(moduleCcw);
                     }
                     finally
                     {
-                        Marshal.Release(moduleCcw);
+                        ComInterfaceMarshaller<IXCLRDataModule>.Free(moduleCcw);
                     }
                     hr = HResults.S_OK;
                     break;
@@ -586,9 +578,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                     if (!notifications.TryParseJITNotification(exInfo, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress))
                         return HResults.E_FAIL;
 
-                    if (notify1 is null)
-                        return HResults.COR_E_INVALIDCAST /*E_NOINTERFACE*/;
-
                     TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
                     TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
 
@@ -596,15 +585,15 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                     MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescAddress);
 
                     ClrDataMethodInstance methodInst = new(_target, methodDesc, appDomain, null);
-                    nint methodInstCcw = cw.GetOrCreateComInterfaceForObject(methodInst, CreateComInterfaceFlags.None);
+                    void* methodInstCcw = ComInterfaceMarshaller<IXCLRDataMethodInstance>.ConvertToUnmanaged(methodInst);
                     try
                     {
-                        notify1.OnCodeGenerated((IXCLRDataMethodInstance*)methodInstCcw);
+                        notify.OnCodeGenerated((IXCLRDataMethodInstance*)methodInstCcw);
                         notify5?.OnCodeGenerated2((IXCLRDataMethodInstance*)methodInstCcw, nativeCodeAddress.ToClrDataAddress(_target));
                     }
                     finally
                     {
-                        Marshal.Release(methodInstCcw);
+                        ComInterfaceMarshaller<IXCLRDataMethodInstance>.Free(methodInstCcw);
                     }
                     hr = HResults.S_OK;
                     break;
@@ -627,14 +616,14 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                         thrownObjectHandle,
                         threadData.FirstNestedException,
                         null);
-                    nint exStateCcw = cw.GetOrCreateComInterfaceForObject(exState, CreateComInterfaceFlags.None);
+                    void* exStateCcw = ComInterfaceMarshaller<IXCLRDataExceptionState>.ConvertToUnmanaged(exState);
                     try
                     {
-                        notify2.OnException((void*)exStateCcw);
+                        notify2.OnException(exStateCcw);
                     }
                     finally
                     {
-                        Marshal.Release(exStateCcw);
+                        ComInterfaceMarshaller<IXCLRDataExceptionState>.Free(exStateCcw);
                     }
                     hr = HResults.S_OK;
                     break;
@@ -672,14 +661,14 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                         MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescAddress);
 
                         ClrDataMethodInstance methodInst = new(_target, methodDesc, appDomain, null);
-                        nint methodInstCcw = cw.GetOrCreateComInterfaceForObject(methodInst, CreateComInterfaceFlags.None);
+                        void* methodInstCcw = ComInterfaceMarshaller<IXCLRDataMethodInstance>.ConvertToUnmanaged(methodInst);
                         try
                         {
                             notify4.ExceptionCatcherEnter((IXCLRDataMethodInstance*)methodInstCcw, nativeOffset);
                         }
                         finally
                         {
-                            Marshal.Release(methodInstCcw);
+                            ComInterfaceMarshaller<IXCLRDataMethodInstance>.Free(methodInstCcw);
                         }
                     }
                     hr = HResults.S_OK;

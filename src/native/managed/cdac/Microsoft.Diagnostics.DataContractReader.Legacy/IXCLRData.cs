@@ -227,7 +227,7 @@ public unsafe partial interface IXCLRDataProcess
     [PreserveSig]
     int GetExceptionStateByExceptionRecord(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionState*/ void** exState);
     [PreserveSig]
-    int TranslateExceptionRecordToNotification(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionNotification*/ void* notify);
+    int TranslateExceptionRecordToNotification(/*struct EXCEPTION_RECORD64*/ void* record, IXCLRDataExceptionNotification notify);
 
     [PreserveSig]
     int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
