@@ -591,8 +591,75 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.GetCCWData(ClrDataAddress ccw, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetCCWData(ccw, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetCCWData(ClrDataAddress ccw, DacpCCWData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ccw == 0 || data == null)
+                throw new ArgumentException();
+
+            *data = default;
+            Contracts.IBuiltInCOM contract = _target.Contracts.BuiltInCOM;
+            // Try to resolve as a COM interface pointer; if not recognised, treat as a direct CCW pointer.
+            TargetPointer ccwPtr = contract.GetCCWFromInterfacePointer(ccw.ToTargetPointer(_target));
+            if (ccwPtr == TargetPointer.Null)
+                ccwPtr = ccw.ToTargetPointer(_target);
+
+            // Navigate to the start wrapper, mirroring DACGetCCWFromAddress.
+            ccwPtr = contract.GetStartWrapper(ccwPtr);
+
+            SimpleComCallWrapperData sccwData = contract.GetSimpleComCallWrapperData(ccwPtr);
+            int refCount = (int)sccwData.RefCount;
+
+            data->outerIUnknown = sccwData.OuterIUnknown.ToClrDataAddress(_target);
+            TargetPointer handle = contract.GetObjectHandle(ccwPtr);
+            data->handle = handle.ToClrDataAddress(_target);
+            if (handle != TargetPointer.Null)
+            {
+                data->managedObject = _target.ReadPointer(handle).ToClrDataAddress(_target);
+            }
+            data->ccwAddress = ccwPtr.ToClrDataAddress(_target);
+            data->refCount = refCount;
+            data->interfaceCount = contract.GetCCWInterfaces(ccwPtr).Count();
+            data->isNeutered = sccwData.IsNeutered ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->jupiterRefCount = 0;
+            data->isPegged = Interop.BOOL.FALSE;
+            data->isGlobalPegged = Interop.BOOL.FALSE;
+            data->hasStrongRef = (refCount > 0) && !sccwData.IsHandleWeak ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isExtendsCOMObject = sccwData.IsExtendsCOMObject ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isAggregated = sccwData.IsAggregated ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpCCWData dataLocal = default;
+            int hrLocal = _legacyImpl.GetCCWData(ccw, &dataLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->outerIUnknown == dataLocal.outerIUnknown, $"cDAC outerIUnknown: {data->outerIUnknown:x}, DAC: {dataLocal.outerIUnknown:x}");
+                Debug.Assert(data->managedObject == dataLocal.managedObject, $"cDAC managedObject: {data->managedObject:x}, DAC: {dataLocal.managedObject:x}");
+                Debug.Assert(data->handle == dataLocal.handle, $"cDAC handle: {data->handle:x}, DAC: {dataLocal.handle:x}");
+                Debug.Assert(data->ccwAddress == dataLocal.ccwAddress, $"cDAC ccwAddress: {data->ccwAddress:x}, DAC: {dataLocal.ccwAddress:x}");
+                Debug.Assert(data->refCount == dataLocal.refCount, $"cDAC refCount: {data->refCount}, DAC: {dataLocal.refCount}");
+                Debug.Assert(data->interfaceCount == dataLocal.interfaceCount, $"cDAC interfaceCount: {data->interfaceCount}, DAC: {dataLocal.interfaceCount}");
+                Debug.Assert(data->isNeutered == dataLocal.isNeutered, $"cDAC isNeutered: {data->isNeutered}, DAC: {dataLocal.isNeutered}");
+                Debug.Assert(data->jupiterRefCount == dataLocal.jupiterRefCount, $"cDAC jupiterRefCount: {data->jupiterRefCount}, DAC: {dataLocal.jupiterRefCount}");
+                Debug.Assert(data->isPegged == dataLocal.isPegged, $"cDAC isPegged: {data->isPegged}, DAC: {dataLocal.isPegged}");
+                Debug.Assert(data->isGlobalPegged == dataLocal.isGlobalPegged, $"cDAC isGlobalPegged: {data->isGlobalPegged}, DAC: {dataLocal.isGlobalPegged}");
+                Debug.Assert(data->hasStrongRef == dataLocal.hasStrongRef, $"cDAC hasStrongRef: {data->hasStrongRef}, DAC: {dataLocal.hasStrongRef}");
+                Debug.Assert(data->isExtendsCOMObject == dataLocal.isExtendsCOMObject, $"cDAC isExtendsCOMObject: {data->isExtendsCOMObject}, DAC: {dataLocal.isExtendsCOMObject}");
+                Debug.Assert(data->isAggregated == dataLocal.isAggregated, $"cDAC isAggregated: {data->isAggregated}, DAC: {dataLocal.isAggregated}");
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded)
     {
         int hr = HResults.S_OK;
@@ -655,7 +722,7 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            DacpCOMInterfacePointerData[]? interfacesLocal = count > 0 && interfaces != null ? new DacpCOMInterfacePointerData[(int)count] : null;
+            DacpCOMInterfacePointerData[]? interfacesLocal = interfaces != null ? new DacpCOMInterfacePointerData[(int)count] : null;
             uint pNeededLocal = 0;
             int hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocal, pNeeded == null && interfacesLocal == null ? null : &pNeededLocal);
             Debug.ValidateHResult(hr, hrLocal);
