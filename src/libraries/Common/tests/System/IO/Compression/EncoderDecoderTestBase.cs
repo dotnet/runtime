@@ -330,22 +330,28 @@ namespace System.IO.Compression
         {
             using var encoder = CreateEncoder(ValidQuality, ValidWindowLog);
             byte[] input = CreateTestData();
-            byte[] compressed = new byte[input.Length * 10];
+            int maxLen = checked((int)GetMaxCompressedLength(input.Length));
+            byte[] compressBuffer = new byte[maxLen];
+            byte[] flushBuffer = new byte[maxLen];
 
-            OperationStatus result = encoder.Compress(input, compressed, out int bytesConsumed, out int compressWritten, isFinalBlock: false);
+            OperationStatus result = encoder.Compress(input, compressBuffer, out int bytesConsumed, out int compressWritten, isFinalBlock: false);
             Assert.Equal(OperationStatus.Done, result);
             Assert.Equal(input.Length, bytesConsumed);
 
-            result = encoder.Flush(compressed.AsSpan(compressWritten), out int flushWritten);
+            result = encoder.Flush(flushBuffer, out int flushWritten);
             Assert.Equal(OperationStatus.Done, result);
 
             int totalWritten = compressWritten + flushWritten;
             Assert.True(totalWritten > 0);
 
-            // Verify the flushed output is decompressible
+            // Combine compress + flush output and verify decompression
+            byte[] combined = new byte[totalWritten];
+            Array.Copy(compressBuffer, 0, combined, 0, compressWritten);
+            Array.Copy(flushBuffer, 0, combined, compressWritten, flushWritten);
+
             byte[] decompressed = new byte[input.Length];
             using var decoder = CreateDecoder();
-            OperationStatus decompressResult = decoder.Decompress(compressed.AsSpan(0, totalWritten), decompressed, out _, out int decompressWritten);
+            OperationStatus decompressResult = decoder.Decompress(combined, decompressed, out _, out int decompressWritten);
             Assert.Equal(OperationStatus.Done, decompressResult);
             Assert.Equal(input.Length, decompressWritten);
             Assert.Equal(input, decompressed);
