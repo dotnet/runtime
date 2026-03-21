@@ -4,20 +4,12 @@
   "hooks": {
     "preToolUse": [
       {
-        "matcher": "Bash|PowerShell",
+        "matcher": "Bash|PowerShell|create|comment|update|edit|review|push|merge",
         "type": "command",
-        "bash": "d=; while IFS= read -r l; do d=$d$l; done; case $d in *'gh pr create'*|*'gh pr comment'*|*'gh pr review'*|*'gh pr edit'*|*'gh pr merge'*|*'gh issue create'*|*'gh issue comment'*|*'gh issue edit'*|*'gh issue close'*) echo 'Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md' >&2;; esac; :",
-        "powershell": "$d = [Console]::In.ReadToEnd(); if ($d -match 'gh (pr|issue) (create|comment|review|edit|merge|close)') { [Console]::Error.WriteLine('Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md') }",
+        "bash": "d=; while IFS= read -r l; do d=$d$l; done; case $d in *'gh pr create'*|*'gh pr comment'*|*'gh pr review'*|*'gh pr edit'*|*'gh pr merge'*|*'gh issue create'*|*'gh issue comment'*|*'gh issue edit'*|*'gh issue close'*|*github*) echo 'Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md' >&2;; esac; :",
+        "powershell": "$d = [Console]::In.ReadToEnd(); if ($d -match 'gh (pr|issue) (create|comment|review|edit|merge|close)' -or $d -match 'github') { [Console]::Error.WriteLine('Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md') }",
         "timeoutSec": 5,
-        "description": "Remind about AI disclosure when posting to GitHub via gh CLI"
-      },
-      {
-        "matcher": "create|comment|update|edit|review|push|merge",
-        "type": "command",
-        "bash": "d=; while IFS= read -r l; do d=$d$l; done; case $d in *github*) echo 'Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md' >&2;; esac; :",
-        "powershell": "$d = [Console]::In.ReadToEnd(); if ($d -match 'github') { [Console]::Error.WriteLine('Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md') }",
-        "timeoutSec": 5,
-        "description": "Remind about AI disclosure for write-capable GitHub MCP tools"
+        "description": "Remind about AI disclosure when posting to GitHub via gh CLI or MCP tools"
       }
     ]
   }
