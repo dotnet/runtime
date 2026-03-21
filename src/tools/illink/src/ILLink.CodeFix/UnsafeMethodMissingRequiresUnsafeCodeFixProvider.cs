@@ -24,7 +24,8 @@ namespace ILLink.CodeFix
         public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         [
             DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.UnsafeMethodMissingRequiresUnsafe),
-            DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ExternMethodMissingRequiresUnsafe)
+            DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ExternMethodMissingRequiresUnsafe),
+            DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.LibraryImportMethodMissingRequiresUnsafe)
         ];
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds =>

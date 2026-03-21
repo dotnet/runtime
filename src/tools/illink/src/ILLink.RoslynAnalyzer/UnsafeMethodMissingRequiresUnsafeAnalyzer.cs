@@ -14,9 +14,10 @@ namespace ILLink.RoslynAnalyzer
     public sealed class UnsafeMethodMissingRequiresUnsafeAnalyzer : DiagnosticAnalyzer
     {
         private static readonly DiagnosticDescriptor s_pointerRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnsafeMethodMissingRequiresUnsafe, diagnosticSeverity: DiagnosticSeverity.Info);
-        private static readonly DiagnosticDescriptor s_externLibraryImportRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.ExternMethodMissingRequiresUnsafe, diagnosticSeverity: DiagnosticSeverity.Info);
+        private static readonly DiagnosticDescriptor s_externRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.ExternMethodMissingRequiresUnsafe, diagnosticSeverity: DiagnosticSeverity.Info);
+        private static readonly DiagnosticDescriptor s_libraryImportRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.LibraryImportMethodMissingRequiresUnsafe, diagnosticSeverity: DiagnosticSeverity.Info);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [s_pointerRule, s_externLibraryImportRule];
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [s_pointerRule, s_externRule, s_libraryImportRule];
 
         public override void Initialize (AnalysisContext context)
         {
@@ -55,9 +56,10 @@ namespace ILLink.RoslynAnalyzer
                 return;
             }
 
-            if (IsExternOrLibraryImportMethod (method)) {
+            var externOrLibraryImportRule = GetExternOrLibraryImportRule (method);
+            if (externOrLibraryImportRule is not null) {
                 foreach (var location in method.Locations) {
-                    context.ReportDiagnostic (Diagnostic.Create (s_externLibraryImportRule, location, method.GetDisplayName ()));
+                    context.ReportDiagnostic (Diagnostic.Create (externOrLibraryImportRule, location, method.GetDisplayName ()));
                 }
             }
         }
@@ -77,7 +79,7 @@ namespace ILLink.RoslynAnalyzer
 
         private static bool IsPointerType (ITypeSymbol type) => type is IPointerTypeSymbol or IFunctionPointerTypeSymbol;
 
-        private static bool IsExternOrLibraryImportMethod (IMethodSymbol method)
+        private static DiagnosticDescriptor? GetExternOrLibraryImportRule (IMethodSymbol method)
         {
             if (method.IsExtern) {
                 // Consider all InternalCall methods as not requiring unsafe today.
@@ -93,11 +95,11 @@ namespace ILLink.RoslynAnalyzer
                                 _ => null
                             };
                             if (value.HasValue && (value.Value & (int)MethodImplOptions.InternalCall) != 0)
-                                return false;
+                                return null;
                         }
                     }
                 }
-                return true;
+                return s_externRule;
             }
 
             // Since all [LibraryImport] methods are partial, we can check if the method is partial
@@ -105,11 +107,11 @@ namespace ILLink.RoslynAnalyzer
             if (method.IsPartialDefinition) {
                 foreach (AttributeData? attr in method.GetAttributes ()) {
                     if (attr.AttributeClass?.HasName ("System.Runtime.InteropServices.LibraryImportAttribute") == true)
-                        return true;
+                        return s_libraryImportRule;
                 }
             }
 
-            return false;
+            return null;
         }
     }
 }

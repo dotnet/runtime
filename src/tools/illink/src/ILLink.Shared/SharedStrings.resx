@@ -1300,9 +1300,15 @@
     <value>Method '{0}' has pointer types in its signature but is not annotated with 'RequiresUnsafeAttribute'.</value>
   </data>
   <data name="ExternMethodMissingRequiresUnsafeTitle" xml:space="preserve">
-    <value>extern and LibraryImport Methods should be annotated with 'RequiresUnsafeAttribute'.</value>
+    <value>extern methods should be annotated with 'RequiresUnsafeAttribute'.</value>
   </data>
   <data name="ExternMethodMissingRequiresUnsafeMessage" xml:space="preserve">
-    <value>Method '{0}' is either extern or LibraryImport but is not annotated with 'RequiresUnsafeAttribute'.</value>
+    <value>Method '{0}' is extern but is not annotated with 'RequiresUnsafeAttribute'.</value>
+  </data>
+  <data name="LibraryImportMethodMissingRequiresUnsafeTitle" xml:space="preserve">
+    <value>LibraryImport methods should be annotated with 'RequiresUnsafeAttribute'.</value>
+  </data>
+  <data name="LibraryImportMethodMissingRequiresUnsafeMessage" xml:space="preserve">
+    <value>Method '{0}' has LibraryImportAttribute but is not annotated with 'RequiresUnsafeAttribute'.</value>
   </data>
 </root>

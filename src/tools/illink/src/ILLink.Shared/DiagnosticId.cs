@@ -230,6 +230,7 @@ namespace ILLink.Shared
         RequiresUnsafeOnEntryPoint = 5003,
         UnsafeMethodMissingRequiresUnsafe = 5004,
         ExternMethodMissingRequiresUnsafe = 5005,
+        LibraryImportMethodMissingRequiresUnsafe = 5006,
         _EndRequiresUnsafeWarningsSentinel,
 #endif
     }

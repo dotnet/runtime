@@ -304,7 +304,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 source,
                 fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.ExternMethodMissingRequiresUnsafe)
+                    VerifyCS.Diagnostic(DiagnosticId.LibraryImportMethodMissingRequiresUnsafe)
                         .WithSpan(7, 25, 7, 37)
                         .WithArguments("C.NativeMethod()")
                         .WithSeverity(DiagnosticSeverity.Info)
