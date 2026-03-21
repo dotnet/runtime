@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -38,6 +39,7 @@ namespace System.Text
          * but fallback mechanism must be consulted for non-Latin-1 chars.
          */
 
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(char* chars, int count)
         {
             if (chars is null)
@@ -100,6 +102,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private unsafe int GetByteCountCommon(char* pChars, int charCount)
         {
             // Common helper method for all non-EncoderNLS entry points to GetByteCount.
@@ -130,6 +133,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetByteCountCommon
+        [RequiresUnsafe]
         private protected sealed override unsafe int GetByteCountFast(char* pChars, int charsLength, EncoderFallback? fallback, out int charsConsumed)
         {
             // Can we short-circuit the entire calculation? If so, the output byte count
@@ -171,6 +175,7 @@ namespace System.Text
          * but fallback mechanism must be consulted for non-Latin-1 chars.
          */
 
+        [RequiresUnsafe]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
             if (chars is null || bytes is null)
@@ -287,6 +292,7 @@ namespace System.Text
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private unsafe int GetBytesCommon(char* pChars, int charCount, byte* pBytes, int byteCount, bool throwForDestinationOverflow = true)
         {
             // Common helper method for all non-EncoderNLS entry points to GetBytes.
@@ -316,6 +322,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetBytesCommon
+        [RequiresUnsafe]
         private protected sealed override unsafe int GetBytesFast(char* pChars, int charsLength, byte* pBytes, int bytesLength, out int charsConsumed)
         {
             int bytesWritten = (int)Latin1Utility.NarrowUtf16ToLatin1(pChars, pBytes, (uint)Math.Min(charsLength, bytesLength));
@@ -330,6 +337,7 @@ namespace System.Text
          * We never consult the fallback mechanism during decoding.
          */
 
+        [RequiresUnsafe]
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
             if (bytes is null)
@@ -380,6 +388,7 @@ namespace System.Text
             return bytes.Length;
         }
 
+        [RequiresUnsafe]
         private protected override unsafe int GetCharCountFast(byte* pBytes, int bytesLength, DecoderFallback? fallback, out int bytesConsumed)
         {
             // We never consult the fallback mechanism during GetChars.
@@ -407,6 +416,7 @@ namespace System.Text
          * We never consult the fallback mechanism during decoding.
          */
 
+        [RequiresUnsafe]
         public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
             if (bytes is null || chars is null)
@@ -593,6 +603,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private unsafe int GetCharsCommon(byte* pBytes, int byteCount, char* pChars, int charCount)
         {
             // Common helper method for all non-DecoderNLS entry points to GetChars.
@@ -616,6 +627,7 @@ namespace System.Text
         }
 
         // called by the fallback mechanism
+        [RequiresUnsafe]
         private protected sealed override unsafe int GetCharsFast(byte* pBytes, int bytesLength, char* pChars, int charsLength, out int bytesConsumed)
         {
             int charsWritten = Math.Min(bytesLength, charsLength);

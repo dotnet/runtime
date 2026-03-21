@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "jitassert.h"
 #include "dumpable.h"
 
 // Maximum number of buckets in a histogram (including overflow bucket)

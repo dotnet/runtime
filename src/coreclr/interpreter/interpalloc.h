@@ -54,4 +54,17 @@ using InterpArenaAllocator = ArenaAllocatorT<InterpMemKindTraits>;
 // It wraps ArenaAllocator and tracks allocations by InterpMemKind.
 using InterpAllocator = CompAllocatorT<InterpMemKindTraits>;
 
+// MemPoolAllocator provides an allocator interface for use with TArray and other
+// data structures. It wraps the InterpCompiler's arena allocator with a specific
+// memory kind for statistics tracking.
+class MemPoolAllocator
+{
+    InterpAllocator m_allocator;
+public:
+    MemPoolAllocator(InterpAllocator allocator)
+        : m_allocator(allocator) {}
+    void* Alloc(size_t sz) const;
+    void Free(void* ptr) const;
+};
+
 #endif // _INTERPALLOC_H_

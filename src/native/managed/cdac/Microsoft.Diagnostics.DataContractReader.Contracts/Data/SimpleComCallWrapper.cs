@@ -12,10 +12,16 @@ internal sealed class SimpleComCallWrapper : IData<SimpleComCallWrapper>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.SimpleComCallWrapper);
 
+        OuterIUnknown = target.ReadPointer(address + (ulong)type.Fields[nameof(OuterIUnknown)].Offset);
         RefCount = target.Read<ulong>(address + (ulong)type.Fields[nameof(RefCount)].Offset);
         Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
+        MainWrapper = target.ReadPointer(address + (ulong)type.Fields[nameof(MainWrapper)].Offset);
+        VTablePtr = address + (ulong)type.Fields[nameof(VTablePtr)].Offset;
     }
 
+    public TargetPointer OuterIUnknown { get; init; }
     public ulong RefCount { get; init; }
     public uint Flags { get; init; }
+    public TargetPointer MainWrapper { get; init; }
+    public TargetPointer VTablePtr { get; init; }
 }

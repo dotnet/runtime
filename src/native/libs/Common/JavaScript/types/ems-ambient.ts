@@ -60,6 +60,7 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
         gitHash?: string;
     };
     BROWSER_HOST: {};
+    BROWSER_UTILS: {};
 
     Module: EmscriptenModuleInternal;
     ENVIRONMENT_IS_NODE: boolean;

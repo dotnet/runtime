@@ -254,6 +254,7 @@ struct MethodDescCodeData final
 {
 #ifdef FEATURE_CODE_VERSIONING
     PTR_MethodDescVersioningState VersioningState;
+    NativeCodeVersion::OptimizationTier OptimizationTier;
 #endif // FEATURE_CODE_VERSIONING
     PCODE TemporaryEntryPoint;
 #ifdef FEATURE_INTERPRETER
@@ -1619,6 +1620,10 @@ public:
     void EnsurePortableEntryPoint();
 
     PCODE GetPortableEntryPoint();
+
+    PCODE GetPortableEntryPointIfExists();
+
+    void ResetPortableEntryPoint();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     //*******************************************************************************
@@ -1706,9 +1711,21 @@ public:
                                                                      TypeHandle instType,
                                                                      Instantiation methodInst);
 
+    inline bool HasAsyncOtherVariant() const
+    {
+        return IsAsyncVariantMethod() || ReturnsTaskOrValueTask();
+    }
+
     MethodDesc* GetAsyncOtherVariant(BOOL allowInstParam = TRUE)
     {
+        _ASSERTE(HasAsyncOtherVariant());
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
+    }
+
+    MethodDesc* GetAsyncOtherVariantNoCreate(BOOL allowInstParam = TRUE)
+    {
+        _ASSERTE(HasAsyncOtherVariant());
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, FALSE, AsyncVariantLookup::AsyncOtherVariant);
     }
 
     MethodDesc* GetAsyncVariant(BOOL allowInstParam = TRUE)
@@ -1872,6 +1889,18 @@ public:
             return NULL;
         return interpreterCode;
     }
+
+    bool IsInterpreterCodeInitialized(PTR_InterpByteCodeStart& pCode) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        pCode = VolatileLoadWithoutBarrier(&m_interpreterCode);
+        if (pCode == NULL)
+            return false;
+        if (dac_cast<TADDR>(pCode) == INTERPRETER_CODE_POISON)
+            pCode = NULL;
+        return true;
+    }
+
     void SetInterpreterCode(PTR_InterpByteCodeStart interpreterCode)
     {
         LIMITED_METHOD_CONTRACT;
@@ -1932,8 +1961,10 @@ public:
 #ifdef FEATURE_CODE_VERSIONING
 #ifndef DACCESS_COMPILE
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+    void SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier);
 #endif // !DACCESS_COMPILE
     PTR_MethodDescVersioningState GetMethodDescVersionState();
+    NativeCodeVersion::OptimizationTier GetMethodDescOptimizationTier();
 #endif // FEATURE_CODE_VERSIONING
 
 public:
@@ -2315,20 +2346,6 @@ public:
 
 #ifdef FEATURE_TIERED_COMPILATION
 public:
-    bool WasTieringDisabledBeforeJitting() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_wasTieringDisabledBeforeJitting;
-    }
-
-    void SetWasTieringDisabledBeforeJitting()
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
-
-        m_wasTieringDisabledBeforeJitting = true;
-    }
-
     bool ShouldCountCalls() const
     {
         WRAPPER_NO_CONTRACT;
@@ -2437,7 +2454,6 @@ private:
 
 #ifdef FEATURE_TIERED_COMPILATION
 private:
-    bool m_wasTieringDisabledBeforeJitting;
     bool m_shouldCountCalls;
 #endif
 
@@ -3026,6 +3042,13 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubDelegateShuffleThunk;
+    }
+    bool IsAsyncResumptionStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        ILStubType type = GetILStubType();
+        return type == DynamicMethodDesc::StubAsyncResume;
     }
 
     // Whether the stub takes a context argument that is an interop MethodDesc.

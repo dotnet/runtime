@@ -459,7 +459,7 @@ public:
                                                   CORINFO_METHOD_HANDLE* methodHandle,
                                                   CORINFO_CLASS_HANDLE* classHandle);
 
-    void recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk, CORINFO_METHOD_HANDLE result);
+    void recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool variantIsThunk, CORINFO_METHOD_HANDLE result);
     void dmpGetAsyncOtherVariant(DWORDLONG key, DLD value);
     CORINFO_METHOD_HANDLE repGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk);
 

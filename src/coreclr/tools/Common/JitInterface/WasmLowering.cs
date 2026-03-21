@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using ILCompiler;
 using ILCompiler.DependencyAnalysis.Wasm;
+
 using Internal.TypeSystem;
 
 namespace Internal.JitInterface
@@ -154,8 +156,9 @@ namespace Internal.JitInterface
                 returnIsVoid = true;
             }
 
-            // Reserve space for potential implicit this, stack pointer parameter, portable entrypoint parameter, and return buffer
-            ArrayBuilder<WasmValueType> result = new(signature.Length + 4);
+            // Reserve space for potential implicit this, stack pointer parameter, portable entrypoint parameter,
+            // generic context, async continuation, and return buffer
+            ArrayBuilder<WasmValueType> result = new(signature.Length + 6);
 
             if (!signature.IsStatic)
             {
@@ -187,6 +190,16 @@ namespace Internal.JitInterface
                 {
                     result.Add(pointerType);
                 }
+            }
+
+            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg())
+            {
+                result.Add(pointerType); // generic context
+            }
+
+            if (method.IsAsyncCall())
+            {
+                result.Add(pointerType); // async continuation
             }
 
             for (int i = explicitThis ? 1 : 0; i < signature.Length; i++)

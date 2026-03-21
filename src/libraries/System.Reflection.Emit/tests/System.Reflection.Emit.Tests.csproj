@@ -122,6 +122,7 @@
     <Compile Include="TypeBuilder\TypeBuilderMakeArrayType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderMakeByRefType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderMakeGenericType.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderMakeFunctionPointerType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderMakePointerType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderName.cs" />
     <Compile Include="TypeBuilder\TypeBuilderNamespace.cs" />

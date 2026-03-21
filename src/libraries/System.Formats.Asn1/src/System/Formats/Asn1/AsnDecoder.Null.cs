@@ -93,4 +93,36 @@ namespace System.Formats.Asn1
             _data = _data.Slice(consumed);
         }
     }
+
+    public ref partial struct ValueAsnReader
+    {
+        /// <summary>
+        ///   Reads the next value as a NULL with a specified tag.
+        /// </summary>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 5).
+        /// </param>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        public void ReadNull(Asn1Tag? expectedTag = null)
+        {
+            AsnDecoder.ReadNull(_data, RuleSet, out int consumed, expectedTag);
+            _data = _data.Slice(consumed);
+        }
+    }
 }

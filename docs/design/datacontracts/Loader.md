@@ -62,6 +62,7 @@ TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
 TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva);
+TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
 IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
 IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
@@ -86,6 +87,7 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
+IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
 ```
 
 ## Version 1
@@ -129,6 +131,7 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `PEImageLayout` | `Base` | Base address of the image layout |
 | `PEImageLayout` | `Size` | Size of the image layout |
 | `PEImageLayout` | `Flags` | Flags associated with the PEImageLayout |
+| `PEImageLayout` | `Format` | Format discriminator (PE or Webcil) for the image layout |
 | `CGrowableSymbolStream` | `Buffer` | Pointer to the raw symbol stream buffer start |
 | `CGrowableSymbolStream` | `Size` | Size of the raw symbol stream buffer |
 | `AppDomain` | `RootAssembly` | Pointer to the root assembly |
@@ -140,7 +143,15 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `LoaderAllocator` | `HighFrequencyHeap` | High-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `LowFrequencyHeap` | Low-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `StubHeap` | Stub heap of LoaderAllocator |
+| `LoaderAllocator` | `StaticsHeap` | Statics heap of LoaderAllocator |
+| `LoaderAllocator` | `ExecutableHeap` | Executable heap of LoaderAllocator |
+| `LoaderAllocator` | `FixupPrecodeHeap` | FixupPrecode heap of LoaderAllocator (optional, present when `HAS_FIXUP_PRECODE`) |
+| `LoaderAllocator` | `NewStubPrecodeHeap` | NewStubPrecode heap of LoaderAllocator (optional, present when not `FEATURE_PORTABLE_ENTRYPOINTS`) |
+| `LoaderAllocator` | `DynamicHelpersStubHeap` | DynamicHelpers stub heap of LoaderAllocator (optional, present when `FEATURE_READYTORUN && FEATURE_STUBPRECODE_DYNAMIC_HELPERS`) |
+| `LoaderAllocator` | `VirtualCallStubManager` | Pointer to the VirtualCallStubManager of LoaderAllocator |
 | `LoaderAllocator` | `ObjectHandle` | object handle of LoaderAllocator |
+| `VirtualCallStubManager` | `IndcellHeap` | Indirection cell heap of VirtualCallStubManager |
+| `VirtualCallStubManager` | `CacheEntryHeap` | Cache entry heap of VirtualCallStubManager (optional, present when `FEATURE_VIRTUAL_STUB_DISPATCH`) |
 | `ArrayListBase` | `Count` | Total number of elements in the ArrayListBase |
 | `ArrayListBase` | `FirstBlock` | First ArrayListBlock |
 | `ArrayListBlock` | `Next` | Next ArrayListBlock in chain |
@@ -159,6 +170,11 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
 | `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
 | `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
+| `WebcilHeader` | `CoffSections` | Number of COFF sections in the Webcil image |
+| `WebcilSectionHeader` | `VirtualSize` | Virtual size of the section |
+| `WebcilSectionHeader` | `VirtualAddress` | RVA of the section |
+| `WebcilSectionHeader` | `SizeOfRawData` | Size of the section's raw data |
+| `WebcilSectionHeader` | `PointerToRawData` | File offset to the section's raw data |
 
 
 
@@ -173,6 +189,8 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED` | uint | Flag in Assembly NotifyFlags indicating the Assembly will notify profilers. | `0x1` |
+| `DefaultDomainFriendlyName` | string | Friendly name returned when `AppDomain.FriendlyName` is null (matches native `DEFAULT_DOMAIN_FRIENDLY_NAME`) | `"DefaultDomain"` |
+| `MaxWebcilSections` | ushort | Maximum number of COFF sections supported in a Webcil image (must stay in sync with native `WEBCIL_MAX_SECTIONS`) | `16` |
 
 Contracts used:
 | Contract Name |
@@ -195,6 +213,13 @@ private enum PEImageFlags : uint
 {
     FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
 };
+
+// Must stay in sync with native PEImageLayout::ImageFormat values.
+private enum ImageFormat : uint
+{
+    PE = 0,
+    Webcil = 1,
+}
 ```
 
 ### Method Implementations
@@ -318,8 +343,11 @@ string ILoader.GetAppDomainFriendlyName()
 {
     TargetPointer appDomainPointer = target.ReadGlobalPointer("AppDomain");
     TargetPointer appDomain = target.ReadPointer(appDomainPointer)
-    TargetPointer pathStart = appDomain + /* AppDomain::FriendlyName offset */;
-    char[] name = // Read<char> from target starting at pathStart until null terminator
+    TargetPointer namePtr = appDomain + /* AppDomain::FriendlyName offset */;
+    // Match native AppDomain::GetFriendlyName(): return "DefaultDomain" when pointer is null.
+    if (namePtr == TargetPointer.Null)
+        return "DefaultDomain";
+    char[] name = // Read<char> from target starting at namePtr until null terminator
     return new string(name);
 }
 
@@ -360,7 +388,17 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
 
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
 {
-    if (rva == 0)
+    return GetRvaData(peAssemblyPtr, rva, isNullOk: false);
+}
+
+TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva)
+{
+    return GetRvaData(peAssemblyPtr, rva, isNullOk: true);
+}
+
+private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNullOk)
+{
+    if (rva == 0 && !isNullOk)
         return TargetPointer.Null;
     TargetPointer peImage = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
     if(peImage == TargetPointer.Null)
@@ -383,48 +421,90 @@ TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
     }
     else
     {
-        // find NT headers using DOS header
-        uint dosHeaderLfanew = target.Read<uint>(baseAddress + /* ImageDosHeader::LfanewOffset */);
-        TargetPointer ntHeadersPtr = baseAddress + dosHeaderLfanew;
-
-        TargetPointer optionalHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */;
-
-        // Get number of sections from file header
-        TargetPointer fileHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::FileHeaderOffset */;
-        uint numberOfSections = target.Read<uint>(fileHeaderPtr + /* ImageFileHeader::NumberOfSectionsOffset */);
-
-        // Calculate first section address (after NT headers and optional header)
-        uint imageFileHeaderSize = target.Read<ushort>(fileHeaderPtr + /* ImageFileHeader::SizeOfOptionalHeaderOffset */);
-        TargetPointer firstSectionPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */ + imageFileHeaderSize;
-
-        // Find the section containing this RVA
-        TargetPointer sectionPtr = TargetPointer.Null;
-        uint sectionHeaderSize = /* sizeof(ImageSectionHeader native struct) */;
-
-        for (uint i = 0; i < numberOfSections; i++)
-        {
-            TargetPointer currentSectionPtr = firstSectionPtr + (i * sectionHeaderSize);
-            uint virtualAddress = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
-            uint sizeOfRawData = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::SizeOfRawDataOffset */);
-
-            if (rva >= VirtualAddress && rva < VirtualAddress + SizeOfRawData)
-            {
-                sectionPtr = currentSectionPtr;
-            }
-        }
-        if (sectionPtr == TargetPointer.Null)
-        {
-            throw new InvalidOperationException("Failed to read from image.");
-        }
-        else
-        {
-            // Convert RVA to file offset using section information
-            uint sectionVirtualAddress = target.Read<uint>(sectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
-            uint sectionPointerToRawData = target.Read<uint>(sectionPtr + /* ImageSectionHeader::PointerToRawDataOffset */);
-            offset = ((rva - sectionVirtualAddress) + sectionPointerToRawData);
-        }
+        offset = RvaToOffset(rva, peImageLayout);
     }
     return baseAddress + offset;
+}
+
+uint RvaToOffset(int rva, Data.PEImageLayout imageLayout)
+{
+    uint format = target.Read<uint>(imageLayout + /* PEImageLayout::Format offset */);
+    if (format == (uint)ImageFormat.Webcil)
+        return WebcilRvaToOffset(rva, imageLayout);
+
+    TargetPointer baseAddress = target.ReadPointer(imageLayout + /* PEImageLayout::Base offset */);
+
+    // find NT headers using DOS header
+    uint dosHeaderLfanew = target.Read<uint>(baseAddress + /* ImageDosHeader::LfanewOffset */);
+    TargetPointer ntHeadersPtr = baseAddress + dosHeaderLfanew;
+
+    // Get number of sections from file header
+    TargetPointer fileHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::FileHeaderOffset */;
+    uint numberOfSections = target.Read<uint>(fileHeaderPtr + /* ImageFileHeader::NumberOfSectionsOffset */);
+
+    // Calculate first section address (after NT headers and optional header)
+    uint imageFileHeaderSize = target.Read<ushort>(fileHeaderPtr + /* ImageFileHeader::SizeOfOptionalHeaderOffset */);
+    TargetPointer firstSectionPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */ + imageFileHeaderSize;
+
+    // Find the section containing this RVA
+    TargetPointer sectionPtr = TargetPointer.Null;
+    uint sectionHeaderSize = /* sizeof(ImageSectionHeader native struct) */;
+
+    for (uint i = 0; i < numberOfSections; i++)
+    {
+        TargetPointer currentSectionPtr = firstSectionPtr + (i * sectionHeaderSize);
+        uint virtualAddress = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
+        uint sizeOfRawData = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::SizeOfRawDataOffset */);
+
+        if (rva >= virtualAddress && rva < virtualAddress + sizeOfRawData)
+        {
+            sectionPtr = currentSectionPtr;
+        }
+    }
+    if (sectionPtr == TargetPointer.Null)
+    {
+        throw new InvalidOperationException("Failed to read from image.");
+    }
+
+    // Convert RVA to file offset using section information
+    uint sectionVirtualAddress = target.Read<uint>(sectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
+    uint sectionPointerToRawData = target.Read<uint>(sectionPtr + /* ImageSectionHeader::PointerToRawDataOffset */);
+    return (rva - sectionVirtualAddress) + sectionPointerToRawData;
+}
+
+uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
+{
+    if (rva < 0)
+        throw new InvalidOperationException("Negative RVA in Webcil image.");
+
+    TargetPointer headerBase = imageLayout.Base;
+    Data.WebcilHeader webcilHeader = // read WebcilHeader at headerBase
+    uint webcilHeaderSize = /* sizeof(WebcilHeader) from type info */;
+    uint webcilSectionSize = /* sizeof(WebcilSectionHeader) from type info */;
+
+    ushort numSections = webcilHeader.CoffSections;
+    if (numSections == 0 || numSections > MaxWebcilSections)
+        throw new InvalidOperationException("Invalid Webcil section count.");
+
+    TargetPointer sectionTableBase = headerBase + webcilHeaderSize;
+
+    for (int i = 0; i < numSections; i++)
+    {
+        TargetPointer sectionPtr = sectionTableBase + (uint)(i * (int)webcilSectionSize);
+        Data.WebcilSectionHeader section = // read WebcilSectionHeader at sectionPtr
+
+        uint rvaUnsigned = (uint)rva;
+        if (rvaUnsigned >= section.VirtualAddress)
+        {
+            uint offset = rvaUnsigned - section.VirtualAddress;
+            if (offset < section.VirtualSize && offset < section.SizeOfRawData)
+            {
+                return offset + section.PointerToRawData;
+            }
+        }
+    }
+
+    throw new InvalidOperationException("Failed to resolve RVA in Webcil image.");
 }
 
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
@@ -648,6 +728,44 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer)
 {
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::ObjectHandle offset */);
+}
+
+IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
+{
+    // Read LoaderAllocator data
+    LoaderAllocator la = // read LoaderAllocator object at loaderAllocatorPointer
+
+    // Always-present heaps
+    Dictionary<string, TargetPointer> heaps = {
+        ["LowFrequencyHeap"] = la.LowFrequencyHeap,
+        ["HighFrequencyHeap"] = la.HighFrequencyHeap,
+        ["StaticsHeap"] = la.StaticsHeap,
+        ["StubHeap"] = la.StubHeap,
+        ["ExecutableHeap"] = la.ExecutableHeap,
+    };
+
+    // Feature-conditional heaps: only included when the data descriptor field exists
+    if (LoaderAllocator type has "FixupPrecodeHeap" field)
+        heaps["FixupPrecodeHeap"] = la.FixupPrecodeHeap;
+
+    if (LoaderAllocator type has "NewStubPrecodeHeap" field)
+        heaps["NewStubPrecodeHeap"] = la.NewStubPrecodeHeap;
+
+    if (LoaderAllocator type has "DynamicHelpersStubHeap" field)
+        heaps["DynamicHelpersStubHeap"] = la.DynamicHelpersStubHeap;
+
+    // VirtualCallStubManager heaps: only included when VirtualCallStubManager is non-null
+    if (la.VirtualCallStubManager != null)
+    {
+        VirtualCallStubManager vcsMgr = // read VirtualCallStubManager object at la.VirtualCallStubManager
+
+        heaps["IndcellHeap"] = vcsMgr.IndcellHeap;
+
+        if (VirtualCallStubManager type has "CacheEntryHeap" field)
+            heaps["CacheEntryHeap"] = vcsMgr.CacheEntryHeap;
+    }
+
+    return heaps;
 }
 
 private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>

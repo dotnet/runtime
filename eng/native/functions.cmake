@@ -608,7 +608,7 @@ function(disable_pax_mprotect targetName)
   # Disabling PAX hardening only makes sense in systems that use Elf image formats. Particularly, looking
   # for paxctl in macOS is problematic as it collides with popular software for that OS that performs completely
   # unrelated functionality. Only look for it when we'll generate Elf images.
-  if (CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+  if (CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_OPENBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
     # Try to locate the paxctl tool. Failure to find it is not fatal,
     # but the generated executables won't work on a system where PAX is set
     # to prevent applications to create executable memory mappings.
@@ -622,7 +622,7 @@ function(disable_pax_mprotect targetName)
         COMMAND "${PAXCTL}" -c -m $<TARGET_FILE:${targetName}>
         )
     endif()
-  endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+  endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_OPENBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 endfunction()
 
 # add_linker_flag(Flag [Config1 Config2 ...])
