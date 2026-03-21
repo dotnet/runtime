@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.FileProviders.Composite
         private List<IDirectoryContents>? _directories;
 
         /// <summary>
-        /// Creates a new instance of <see cref="CompositeDirectoryContents"/> to represents the result of a call composition of
+        /// Initializes a new instance of the <see cref="CompositeDirectoryContents"/> class to represent the result of a call composition of
         /// <see cref="IFileProvider.GetDirectoryContents(string)"/>.
         /// </summary>
         /// <param name="fileProviders">The list of <see cref="IFileProvider"/> for which the results have to be composed.</param>

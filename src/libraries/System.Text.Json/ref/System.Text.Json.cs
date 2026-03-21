@@ -1050,7 +1050,7 @@ namespace System.Text.Json.Serialization
     {
         public JsonExtensionDataAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Interface | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonIgnoreAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonIgnoreAttribute() { }
@@ -1078,6 +1078,13 @@ namespace System.Text.Json.Serialization
         SnakeCaseUpper = 3,
         KebabCaseLower = 4,
         KebabCaseUpper = 5,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=false)]
+    public partial class JsonNamingPolicyAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonNamingPolicyAttribute(System.Text.Json.Serialization.JsonKnownNamingPolicy namingPolicy) { }
+        protected JsonNamingPolicyAttribute(System.Text.Json.JsonNamingPolicy namingPolicy) { }
+        public System.Text.Json.JsonNamingPolicy NamingPolicy { get { throw null; } }
     }
     public enum JsonKnownReferenceHandler
     {

@@ -9,7 +9,7 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
-        private static volatile NullableBool _procMatchesPidNamespace;
+        private static NullableBool _procMatchesPidNamespace;
 
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
         public static int[] GetProcessIds() => new List<int>(EnumerateProcessIds()).ToArray();

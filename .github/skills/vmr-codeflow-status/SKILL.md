@@ -11,6 +11,8 @@ Analyze the health of VMR codeflow PRs in both directions:
 
 > 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed. Approval and blocking are human-only actions.
 
+> 📝 **AI-generated content disclosure:** When posting any content to GitHub (PR comments, analysis summaries) under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
+
 **Workflow**: Run the script → read the human-readable output + `[CODEFLOW_SUMMARY]` JSON → synthesize recommendations yourself. The script collects data; you generate the advice.
 
 ## Prerequisites

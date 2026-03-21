@@ -1352,43 +1352,68 @@ HRESULT DacReplacePatchesInHostMemory(MemoryRange range, PVOID pBuffer)
         return S_OK;
     }
 
+    if (g_dacImpl == nullptr)
+    {
+        return E_UNEXPECTED;
+    }
+
+    // Cache the patches as the target is not running during DAC operations, and hash
+    // table iteration is pretty slow.
+    const SArray<DacPatchCacheEntry>& entries = g_dacImpl->m_patchCache.GetEntries();
+
+    CORDB_ADDRESS address = (CORDB_ADDRESS)(dac_cast<TADDR>(range.StartAddress()));
+    SIZE_T        cbSize  = range.Size();
+
+    for (COUNT_T i = 0; i < entries.GetCount(); i++)
+    {
+        const DacPatchCacheEntry& entry = entries[i];
+
+        if (IsPatchInRequestedRange(address, cbSize, entry.address))
+        {
+            CORDbgSetInstructionEx(reinterpret_cast<PBYTE>(pBuffer), address, entry.address, entry.opcode, cbSize);
+        }
+    }
+
+    return S_OK;
+}
+
+const SArray<DacPatchCacheEntry>& DacPatchCache::GetEntries()
+{
+    Populate();
+    return m_entries;
+}
+
+void DacPatchCache::Populate()
+{
+    SUPPORTS_DAC;
+
+    if (m_isPopulated)
+    {
+        return;
+    }
+
+    // Clear any stale entries from previous failed population attempts
+    m_entries.Clear();
+
     HASHFIND info;
 
     DebuggerPatchTable *      pTable = DebuggerController::GetPatchTable();
     DebuggerControllerPatch * pPatch = pTable->GetFirstPatch(&info);
 
-    // <PERF>
-    // The unwinder needs to read the stack very often to restore pushed registers, retrieve the
-    // return addres, etc.  However, stack addresses should never be patched.
-    // One way to optimize this code is to pass the stack base and the stack limit of the thread to this
-    // function and use those two values to filter out stack addresses.
-    //
-    // Another thing we can do is instead of enumerating the patches, we could enumerate the address.
-    // This is more efficient when we have a large number of patches and a small memory range.  Perhaps
-    // we could do a hybrid approach, i.e. use the size of the range and the number of patches to dynamically
-    // determine which enumeration is more efficient.
-    // </PERF>
     while (pPatch != NULL)
     {
         CORDB_ADDRESS patchAddress = (CORDB_ADDRESS)dac_cast<TADDR>(pPatch->address);
 
         if (patchAddress != (CORDB_ADDRESS)NULL)
         {
-            PRD_TYPE opcode = pPatch->opcode;
-
-            CORDB_ADDRESS address = (CORDB_ADDRESS)(dac_cast<TADDR>(range.StartAddress()));
-            SIZE_T        cbSize  = range.Size();
-
-            // Check if the address of the patch is in the specified memory range.
-            if (IsPatchInRequestedRange(address, cbSize, patchAddress))
-            {
-                // Replace the patch in the buffer with the original opcode.
-                CORDbgSetInstructionEx(reinterpret_cast<PBYTE>(pBuffer), address, patchAddress, opcode, cbSize);
-            }
+            DacPatchCacheEntry entry;
+            entry.address = patchAddress;
+            entry.opcode = pPatch->opcode;
+            m_entries.Append(entry);
         }
 
         pPatch = pTable->GetNextPatch(&info);
     }
 
-    return S_OK;
+    m_isPopulated = true;
 }

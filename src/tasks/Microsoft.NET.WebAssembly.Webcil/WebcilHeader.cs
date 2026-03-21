@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.WebAssembly.Webcil;
@@ -13,9 +14,13 @@ namespace Microsoft.NET.WebAssembly.Webcil;
 /// The header is a subset of the PE, COFF and CLI headers that are needed by the mono runtime to load managed assemblies.
 /// </remarks>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct WebcilHeader
+public struct WebcilHeader
 {
-    public fixed byte Id[4];
+#if NET
+    public InlineArray4<byte> Id;
+#else
+    public unsafe fixed byte Id[4];
+#endif
     // 4 bytes
     public ushort VersionMajor;
     public ushort VersionMinor;
