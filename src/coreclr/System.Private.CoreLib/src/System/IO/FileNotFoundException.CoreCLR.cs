@@ -15,7 +15,7 @@ namespace System.IO
         }
 
         // Do not delete: this is invoked from native code.
-        // Used when the requesting assembly chain is known, to provide assembly load dependency context.
+        // Used when the requesting assembly is known, to provide assembly load dependency context.
         private FileNotFoundException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {

@@ -18,9 +18,7 @@ namespace System.IO
         }
 
         // Do not delete: this is invoked from native code.
-        // Used when the requesting assembly chain is known, to provide assembly load dependency context.
-        // The requestingAssemblyChain parameter is a newline-separated list of assembly display names,
-        // from immediate parent to root ancestor.
+        // Used when the requesting assembly is known, to provide assembly load dependency context.
         private FileLoadException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
