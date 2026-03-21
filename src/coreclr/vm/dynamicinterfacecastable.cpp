@@ -19,18 +19,15 @@ namespace
         } CONTRACT_END;
 
         struct {
-            OBJECTREF obj;
             OBJECTREF managedType;
         } gc;
-        gc.obj = NULL;
         gc.managedType = NULL;
         CLR_BOOL isImplemented = FALSE;
         GCPROTECT_BEGIN(gc);
-        gc.obj = *objPROTECTED;
         gc.managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
 
         UnmanagedCallersOnlyCaller isInterfaceImplemented(METHOD__DYNAMICINTERFACECASTABLEHELPERS__IS_INTERFACE_IMPLEMENTED);
-        isInterfaceImplemented.InvokeThrowing(&gc.obj, &gc.managedType, CLR_BOOL_ARG(throwIfNotImplemented), &isImplemented);
+        isInterfaceImplemented.InvokeThrowing(objPROTECTED, &gc.managedType, CLR_BOOL_ARG(throwIfNotImplemented), &isImplemented);
         GCPROTECT_END();
 
         RETURN isImplemented;
@@ -48,19 +45,16 @@ namespace
         } CONTRACT_END;
 
         struct {
-            OBJECTREF obj;
             OBJECTREF managedType;
             OBJECTREF result;
         } gc;
-        gc.obj = NULL;
         gc.managedType = NULL;
         gc.result = NULL;
         GCPROTECT_BEGIN(gc);
-        gc.obj = *objPROTECTED;
         gc.managedType = interfaceTypeHandle.GetManagedClassObject(); // GC triggers
 
         UnmanagedCallersOnlyCaller getInterfaceImplementation(METHOD__DYNAMICINTERFACECASTABLEHELPERS__GET_INTERFACE_IMPLEMENTATION);
-        getInterfaceImplementation.InvokeThrowing(&gc.obj, &gc.managedType, &gc.result);
+        getInterfaceImplementation.InvokeThrowing(objPROTECTED, &gc.managedType, &gc.result);
         GCPROTECT_END();
 
         RETURN gc.result;
