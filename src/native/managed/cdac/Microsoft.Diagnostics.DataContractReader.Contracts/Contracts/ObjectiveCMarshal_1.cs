@@ -23,7 +23,7 @@ internal readonly struct ObjectiveCMarshal_1 : IObjectiveCMarshal
 
     public TargetPointer GetTaggedMemory(TargetPointer address, out TargetNUInt size)
     {
-        size = new TargetNUInt(2 * (ulong)_target.PointerSize);
+        size = default;
 
         ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
         Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
@@ -38,6 +38,9 @@ internal readonly struct ObjectiveCMarshal_1 : IObjectiveCMarshal
         ulong offsetInSyncTableEntries = index * (ulong)_target.GetTypeInfo(DataType.SyncTableEntry).Size!;
         Data.SyncTableEntry entry = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + offsetInSyncTableEntries);
 
-        return entry.SyncBlock?.InteropInfo?.TaggedMemory ?? TargetPointer.Null;
+        TargetPointer taggedMemory = entry.SyncBlock?.InteropInfo?.TaggedMemory ?? TargetPointer.Null;
+        if (taggedMemory != TargetPointer.Null)
+            size = new TargetNUInt(2 * (ulong)_target.PointerSize);
+        return taggedMemory;
     }
 }
