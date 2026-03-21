@@ -22,24 +22,6 @@ using CreateObjectFlags = InteropLib::Com::CreateObjectFlags;
 
 namespace
 {
-    int CallICustomQueryInterface(
-        _In_ OBJECTREF* implPROTECTED,
-        _In_ REFGUID iid,
-        _Outptr_result_maybenull_ void** ppObject)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            MODE_COOPERATIVE;
-            PRECONDITION(implPROTECTED != NULL);
-            PRECONDITION(ppObject != NULL);
-        }
-        CONTRACTL_END;
-
-        UnmanagedCallersOnlyCaller callICustomQueryInterface(METHOD__COMWRAPPERS__CALL_ICUSTOMQUERYINTERFACE);
-        return callICustomQueryInterface.InvokeThrowing_Ret<INT32>(implPROTECTED, &iid, ppObject);
-    }
-
     BOOL g_isGlobalPeggingOn = TRUE;
 }
 
@@ -365,7 +347,7 @@ namespace InteropLibImports
             ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
             gc.objRef = ObjectFromHandle(objectHandle);
 
-            result = (TryInvokeICustomQueryInterfaceResult)CallICustomQueryInterface(&gc.objRef, iid, obj);
+            result = (TryInvokeICustomQueryInterfaceResult)UnmanagedCallersOnlyCaller(METHOD__COMWRAPPERS__CALL_ICUSTOMQUERYINTERFACE).InvokeThrowing_Ret<INT32>(&gc.objRef, &iid, obj);
 
             GCPROTECT_END();
         }
