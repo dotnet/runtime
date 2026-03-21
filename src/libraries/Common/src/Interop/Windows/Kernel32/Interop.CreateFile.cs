@@ -14,6 +14,7 @@ internal static partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use CreateFile.
         /// </summary>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateFileW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial SafeFileHandle CreateFilePrivate(
             string lpFileName,
