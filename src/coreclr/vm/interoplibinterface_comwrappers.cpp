@@ -347,7 +347,8 @@ namespace InteropLibImports
             ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
             gc.objRef = ObjectFromHandle(objectHandle);
 
-            result = (TryInvokeICustomQueryInterfaceResult)UnmanagedCallersOnlyCaller(METHOD__COMWRAPPERS__CALL_ICUSTOMQUERYINTERFACE).InvokeThrowing_Ret<INT32>(&gc.objRef, &iid, obj);
+            UnmanagedCallersOnlyCaller callICustomQueryInterface(METHOD__COMWRAPPERS__CALL_ICUSTOMQUERYINTERFACE);
+            result = (TryInvokeICustomQueryInterfaceResult)callICustomQueryInterface.InvokeThrowing_Ret<INT32>(&gc.objRef, &iid, obj);
 
             GCPROTECT_END();
         }
