@@ -6,23 +6,8 @@ using Xunit;
 
 namespace System.IO.Compression
 {
-    public class GZipEncoderDecoderTests : EncoderDecoderTestBase
+    public class GZipEncoderDecoderTests : ZLibEncoderDecoderTestBase
     {
-        protected override bool SupportsDictionaries => false;
-        protected override bool SupportsReset => false;
-
-        protected override string WindowLogParamName => "windowLog";
-        protected override string InputLengthParamName => "inputLength";
-
-        // Quality maps to zlib compression level (0-9)
-        protected override int ValidQuality => 6;
-        protected override int ValidWindowLog => 15;
-
-        protected override int InvalidQualityTooLow => -2;
-        protected override int InvalidQualityTooHigh => 10;
-        protected override int InvalidWindowLogTooLow => 7;
-        protected override int InvalidWindowLogTooHigh => 16;
-
         public class GZipEncoderAdapter : EncoderAdapter
         {
             private readonly GZipEncoder _encoder;
@@ -64,17 +49,11 @@ namespace System.IO.Compression
         protected override EncoderAdapter CreateEncoder(int quality, int windowLog) =>
             new GZipEncoderAdapter(new GZipEncoder(quality, windowLog));
 
-        protected override EncoderAdapter CreateEncoder(DictionaryAdapter dictionary, int windowLog) =>
-            throw new NotSupportedException();
+        protected override EncoderAdapter CreateEncoder(ZLibCompressionOptions options) =>
+            new GZipEncoderAdapter(new GZipEncoder(options));
 
         protected override DecoderAdapter CreateDecoder() =>
             new GZipDecoderAdapter(new GZipDecoder());
-
-        protected override DecoderAdapter CreateDecoder(DictionaryAdapter dictionary) =>
-            throw new NotSupportedException();
-
-        protected override DictionaryAdapter CreateDictionary(ReadOnlySpan<byte> dictionaryData, int quality) =>
-            throw new NotSupportedException();
 
         protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
             GZipEncoder.TryCompress(source, destination, out bytesWritten);
@@ -82,69 +61,13 @@ namespace System.IO.Compression
         protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog) =>
             GZipEncoder.TryCompress(source, destination, out bytesWritten, quality, windowLog);
 
-        protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary, int windowLog) =>
-            throw new NotSupportedException();
-
         protected override bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
             GZipDecoder.TryDecompress(source, destination, out bytesWritten);
-
-        protected override bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary) =>
-            throw new NotSupportedException();
 
         protected override long GetMaxCompressedLength(long inputSize) =>
             GZipEncoder.GetMaxCompressedLength(inputSize);
 
         #region GZip-specific Tests
-
-        [Fact]
-        public void GZipEncoder_Ctor_NullOptions_Throws()
-        {
-            Assert.Throws<ArgumentNullException>(() => new GZipEncoder(null!));
-        }
-
-        [Theory]
-        [InlineData(ZLibCompressionStrategy.Default)]
-        [InlineData(ZLibCompressionStrategy.Filtered)]
-        [InlineData(ZLibCompressionStrategy.HuffmanOnly)]
-        [InlineData(ZLibCompressionStrategy.RunLengthEncoding)]
-        [InlineData(ZLibCompressionStrategy.Fixed)]
-        public void GZipEncoder_CompressionStrategies(ZLibCompressionStrategy strategy)
-        {
-            byte[] input = CreateTestData();
-            var options = new ZLibCompressionOptions
-            {
-                CompressionLevel = 6,
-                CompressionStrategy = strategy
-            };
-            using var encoder = new GZipEncoder(options);
-            byte[] destination = new byte[GetMaxCompressedLength(input.Length)];
-
-            OperationStatus status = encoder.Compress(input, destination, out int consumed, out int written, isFinalBlock: true);
-
-            Assert.Equal(OperationStatus.Done, status);
-            Assert.Equal(input.Length, consumed);
-            Assert.True(written > 0);
-        }
-
-        [Fact]
-        public void GZipEncoder_WithOptions()
-        {
-            byte[] input = CreateTestData();
-            var options = new ZLibCompressionOptions
-            {
-                CompressionLevel = 9,
-                CompressionStrategy = ZLibCompressionStrategy.Filtered
-            };
-
-            using var encoder = new GZipEncoder(options);
-            byte[] destination = new byte[GetMaxCompressedLength(input.Length)];
-
-            OperationStatus status = encoder.Compress(input, destination, out int consumed, out int written, isFinalBlock: true);
-
-            Assert.Equal(OperationStatus.Done, status);
-            Assert.Equal(input.Length, consumed);
-            Assert.True(written > 0);
-        }
 
         #endregion
     }

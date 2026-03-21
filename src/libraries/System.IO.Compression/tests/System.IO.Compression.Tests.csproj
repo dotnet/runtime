@@ -48,6 +48,7 @@
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
     <Compile Include="ZLibCompressionOptionsUnitTests.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\EncoderDecoderTestBase.cs" Link="Common\System\IO\Compression\EncoderDecoderTestBase.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\ZLibEncoderDecoderTestBase.cs" Link="Common\System\IO\Compression\ZLibEncoderDecoderTestBase.cs" />
     <Compile Include="DeflateEncoderDecoderTests.cs" />
     <Compile Include="ZlibEncoderDecoderTests.cs" />
     <Compile Include="GZipEncoderDecoderTests.cs" />
