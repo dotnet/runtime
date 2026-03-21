@@ -55,7 +55,7 @@ namespace ILLink.RoslynAnalyzer
                 return;
             }
 
-            if (IsExternOrLibraryImportMethod (method)){
+            if (IsExternOrLibraryImportMethod (method)) {
                 foreach (var location in method.Locations) {
                     context.ReportDiagnostic (Diagnostic.Create (s_externLibraryImportRule, location, method.GetDisplayName ()));
                 }
