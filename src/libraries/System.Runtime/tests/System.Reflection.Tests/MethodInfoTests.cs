@@ -171,7 +171,7 @@ namespace System.Reflection.Tests
 
             Func<string?> methodDelegate = miStaticVirtual.CreateDelegate<Func<string?>>();
             string? returnValue = methodDelegate();
-            Assert.Equal(null, returnValue);
+            Assert.Null(returnValue);
         }
 
         [Theory]
