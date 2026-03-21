@@ -250,11 +250,24 @@ internal partial class MockDescriptors
         foreach (var toAdd in typeFields)
         {
             TargetTestHelpers.LayoutResult layout = GetLayout(helpers, toAdd);
-            types[toAdd.DataType] = new Target.TypeInfo()
+            // manually add the ObjectHeader type since its size is not equal to the stride
+            if (toAdd.DataType == DataType.ObjectHeader)
             {
-                Fields = layout.Fields,
-                Size = layout.Stride,
-            };
+                types[toAdd.DataType] = new Target.TypeInfo()
+                {
+                    Fields = helpers.LayoutFields(ObjectHeaderFields.Fields).Fields,
+                    Size = 8, // sizeof(OBJECTHEADER) is 8 bytes on both 32-bit and 64-bit
+                };
+            }
+            else
+            {
+                types[toAdd.DataType] = new Target.TypeInfo()
+                {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+                };
+            }
+
         }
         return types;
 
