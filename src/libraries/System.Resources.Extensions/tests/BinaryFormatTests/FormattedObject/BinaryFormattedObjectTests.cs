@@ -102,7 +102,9 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         // Everything in the second keys is a string reference.
         SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)systemClass.GetSerializationRecord("Keys")!;
         SerializationRecord[] array = arrayRecord.GetArray();
-        Assert.Equivalent(new string[] { "TheOther", "That", "This" }, array.OfType<PrimitiveTypeRecord<string>>().Select(sr => sr.Value).ToArray());
+        Assert.Equal(
+            new string[] { "TheOther", "That", "This" }.Order(),
+            array.OfType<PrimitiveTypeRecord<string>>().Select(sr => sr.Value).Order());
     }
 
     [Fact]

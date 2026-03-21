@@ -8,7 +8,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using SourceGenerators.Tests;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {

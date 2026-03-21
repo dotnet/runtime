@@ -7,6 +7,9 @@
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
     <TestRunnerName>XUnitV3</TestRunnerName>
     <OutputType>Exe</OutputType>
+    <!-- CS0618: ConditionalTheory(params string[]) is obsolete in xunit v3 extensions.
+         Suppress until all call sites are migrated to the (Type, string[]) overload. -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
 
   <Import Project="..\..\..\subproject.props" />
