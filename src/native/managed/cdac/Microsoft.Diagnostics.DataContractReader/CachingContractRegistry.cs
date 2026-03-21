@@ -49,6 +49,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(ISignatureDecoder)] = new SignatureDecoderFactory(),
             [typeof(ISyncBlock)] = new SyncBlockFactory(),
             [typeof(IBuiltInCOM)] = new BuiltInCOMFactory(),
+            [typeof(IObjectiveCMarshal)] = new ObjectiveCMarshalFactory(),
             [typeof(IConditionalWeakTable)] = new ConditionalWeakTableFactory(),
         };
 

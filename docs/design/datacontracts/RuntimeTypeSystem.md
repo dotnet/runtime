@@ -72,6 +72,8 @@ partial interface IRuntimeTypeSystem : IContract
     public TargetPointer GetGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr);
     public TargetPointer GetNonGCThreadStaticsBasePointer(TypeHandle typeHandle, TargetPointer threadPtr);
     public TargetPointer GetFieldDescList(TypeHandle typeHandle);
+    // True if the MethodTable represents a type tracked as an Objective-C reference type with a finalizer
+    public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle);
     public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle);
     public TargetPointer GetNonGCStaticsBasePointer(TypeHandle typeHandle);
     public virtual ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle);
@@ -534,6 +536,8 @@ Contracts used:
     public ushort GetNumThreadStaticFields(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? (ushort)0 : GetClassData(typeHandle).NumThreadStaticFields;
 
     public TargetPointer GetFieldDescList(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(typeHandle).FieldDescList;
+
+    public bool IsTrackedReferenceWithFinalizer(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsTrackedReferenceWithFinalizer;
 
     public TargetPointer GetGCStaticsBasePointer(TypeHandle typeHandle)
     {
