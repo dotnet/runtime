@@ -446,8 +446,8 @@ DEFINE_METASIG_T(SM(PtrException_PtrException_RetVoid, P(C(EXCEPTION)) P(C(EXCEP
 DEFINE_METASIG_T(SM(PtrChar_PtrException_PtrObj_PtrException_RetVoid, P(u) P(C(EXCEPTION)) P(j) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrChar_PtrStr_PtrException_RetVoid, P(u) P(s) P(C(EXCEPTION)), v))
 
-DEFINE_METASIG_T(SM(PtrGuid_PtrException_RetVoid, P(C(GUID)) P(C(EXCEPTION)), v))
-DEFINE_METASIG_T(SM(PtrGuid_PtrGuid_PtrException_RetVoid, P(C(GUID)) P(C(GUID)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrGuid_PtrException_RetVoid, P(g(GUID)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrGuid_PtrGuid_PtrException_RetVoid, P(g(GUID)) P(g(GUID)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrLock_Int_UInt_PtrException_RetVoid, P(C(LOCK)) i K P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrThread_PtrException_RetVoid, P(C(THREAD)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrChar_PtrVoid_PtrException_RetVoid, P(u) P(v) P(C(EXCEPTION)), v))
@@ -468,7 +468,7 @@ DEFINE_METASIG_T(SM(PtrChar_PtrAssemblyBase_IntPtr_PtrException_RetIntPtr, P(u) 
 DEFINE_METASIG_T(SM(PtrComObject_PtrException_RetVoid, P(C(COM_OBJECT)) P(C(EXCEPTION)), v))
 #endif // FEATURE_COMINTEROP
 #ifdef FEATURE_COMWRAPPERS
-DEFINE_METASIG_T(SM(PtrManagedObjectWrapperHolder_PtrGuid_PtrIntPtr_PtrInt_PtrException_RetVoid, P(C(MANAGED_OBJECT_WRAPPER_HOLDER)) P(C(GUID)) P(I) P(i) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrManagedObjectWrapperHolder_PtrGuid_PtrIntPtr_PtrInt_PtrException_RetVoid, P(C(MANAGED_OBJECT_WRAPPER_HOLDER)) P(g(GUID)) P(I) P(i) P(C(EXCEPTION)), v))
 #endif // FEATURE_COMWRAPPERS
 
 // fields - e.g.:
