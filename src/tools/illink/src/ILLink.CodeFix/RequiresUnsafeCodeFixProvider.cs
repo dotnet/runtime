@@ -25,11 +25,7 @@ namespace ILLink.CodeFix
     {
         private const string WrapInUnsafeBlockTitle = "Wrap in unsafe block";
 
-        public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        [
-            DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.UnsafeMethodMissingRequiresUnsafe),
-            DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ExternMethodMissingRequiresUnsafe)
-        ];
+        public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.RequiresUnsafe));
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds => SupportedDiagnostics.Select(dd => dd.Id).ToImmutableArray();
 
