@@ -24,6 +24,8 @@ namespace System.IO.Compression
 
         protected abstract int ValidQuality { get; }
         protected abstract int ValidWindowLog { get; }
+        protected abstract int MinQuality { get; }
+        protected abstract int MaxQuality { get; }
         protected abstract int InvalidQualityTooLow { get; }
         protected abstract int InvalidQualityTooHigh { get; }
         protected abstract int InvalidWindowLogTooLow { get; }
@@ -262,17 +264,10 @@ namespace System.IO.Compression
             Assert.Equal(0, bytesWritten);
         }
 
-        [Theory]
-        [MemberData(nameof(BooleanTestData))]
-        public void TryDecompress_RandomData_ReturnsFalse(bool useDictionary)
+        [Fact]
+        public void TryDecompress_InvalidData_ReturnsFalse()
         {
-            if (useDictionary && !SupportsDictionaries)
-                return;
-
-            // 0xFF is an invalid first byte for all three formats:
-            // - GZip requires magic bytes 0x1F 0x8B
-            // - ZLib requires a valid CMF byte (0x78 for deflate with window size)
-            // - Deflate (raw) encodes BTYPE in bits 1-2; 0xFF sets BTYPE=11 which is a reserved invalid block type
+            // 0xFF is an invalid first byte for all supported compression formats.
             Span<byte> source = new byte[100];
             source.Fill(0xFF);
             Span<byte> destination = new byte[5 * source.Length];
@@ -684,7 +679,7 @@ namespace System.IO.Compression
         {
             byte[] input = CreateTestData();
 
-            for (int quality = 0; quality <= 9; quality++)
+            for (int quality = MinQuality; quality <= MaxQuality; quality++)
             {
                 byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
                 using var encoder = CreateEncoder(quality, ValidWindowLog);

@@ -17,6 +17,8 @@ namespace System.IO.Compression
         // Quality maps to zlib compression level (0-9)
         protected override int ValidQuality => 6;
         protected override int ValidWindowLog => 15;
+        protected override int MinQuality => 0;
+        protected override int MaxQuality => 9;
 
         protected override int InvalidQualityTooLow => -2;
         protected override int InvalidQualityTooHigh => 10;
