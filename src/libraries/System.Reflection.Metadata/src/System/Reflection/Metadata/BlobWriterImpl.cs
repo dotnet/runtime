@@ -156,7 +156,7 @@ namespace System.Reflection.Metadata
         {
             if (value == null)
             {
-                // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a 32-bit.
+                // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a 4-byte zero.
                 BinaryPrimitives.WriteUInt32LittleEndian(bytes, 0);
                 return sizeof(uint);
             }
@@ -253,7 +253,7 @@ namespace System.Reflection.Metadata
         {
             if (value == null)
             {
-                // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a 32-bit.
+                // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a 4-byte zero.
                 writer.WriteUInt32(0);
                 return;
             }
@@ -326,7 +326,7 @@ namespace System.Reflection.Metadata
         {
             if (value == null)
             {
-                // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a 32-bit.
+                // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a 4-byte zero.
                 writer.WriteUInt32(0);
                 return;
             }
