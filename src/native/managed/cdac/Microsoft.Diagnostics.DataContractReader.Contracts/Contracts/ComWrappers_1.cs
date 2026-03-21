@@ -25,7 +25,7 @@ internal struct ComWrappers_1 : IComWrappers
     private static readonly Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
     private const int CallerDefinedIUnknown = 1;
     private TargetPointer? _mowTableAddr = null;
-    private TargetPointer? _nativeObjectWrapperCWTFieldDescAddr = null;
+    private TargetPointer? _nativeObjectWrapperCWTAddr = null;
     private uint? _listItemsOffset = null;
     private uint? _listSizeOffset = null;
     private readonly Target _target;
@@ -134,7 +134,7 @@ internal struct ComWrappers_1 : IComWrappers
 
         List<TargetPointer> mows = new List<TargetPointer>();
 
-        if (_mowTableAddr is null)
+        if (_mowTableAddr.Value == TargetPointer.Null)
             return mows;
         IConditionalWeakTable cwt = _target.Contracts.ConditionalWeakTable;
         if (cwt.TryGetValue(_mowTableAddr.Value, obj, out TargetPointer mowListObj))
@@ -187,16 +187,15 @@ internal struct ComWrappers_1 : IComWrappers
     public TargetPointer GetComWrappersRCWForObject(TargetPointer obj)
     {
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        if (_nativeObjectWrapperCWTFieldDescAddr is null)
+        if (_nativeObjectWrapperCWTAddr is null)
         {
             rts.GetCoreLibFieldDescAndDef(ComWrappersNamespace, ComWrappersName, NativeObjectWrapperCWTFieldName, out TargetPointer fieldDescAddr, out _);
-            _nativeObjectWrapperCWTFieldDescAddr = fieldDescAddr;
+            _nativeObjectWrapperCWTAddr = _target.ReadPointer(rts.GetFieldDescStaticAddress(fieldDescAddr);
         }
-        TargetPointer cwtAddr = _target.ReadPointer(rts.GetFieldDescStaticAddress(_nativeObjectWrapperCWTFieldDescAddr ?? TargetPointer.Null));
-        if (cwtAddr == TargetPointer.Null)
+        if (_nativeObjectWrapperCWTAddr.Value == TargetPointer.Null)
             return TargetPointer.Null;
         IConditionalWeakTable cwt = _target.Contracts.ConditionalWeakTable;
-        _ = cwt.TryGetValue(cwtAddr, obj, out TargetPointer rcw);
+        _ = cwt.TryGetValue(_nativeObjectWrapperCWTAddr.Value, obj, out TargetPointer rcw);
         return rcw;
     }
 }
