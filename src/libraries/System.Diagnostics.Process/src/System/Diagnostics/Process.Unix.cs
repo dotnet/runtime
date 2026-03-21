@@ -386,9 +386,10 @@ namespace System.Diagnostics
             // Unix applications expect the terminal to be in an echoing state by default.
             // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
             // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
-            bool usesTerminal = (stdinHandle is not null && Interop.Sys.IsATty(stdinHandle))
-                || (stdoutHandle is not null && Interop.Sys.IsATty(stdoutHandle))
-                || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle));
+            // When a handle is null, the child inherits the parent's standard stream which could be a terminal.
+            bool usesTerminal = (stdinHandle is null || Interop.Sys.IsATty(stdinHandle))
+                || (stdoutHandle is null || Interop.Sys.IsATty(stdoutHandle))
+                || (stderrHandle is null || Interop.Sys.IsATty(stderrHandle));
 
             if (startInfo.UseShellExecute)
             {
