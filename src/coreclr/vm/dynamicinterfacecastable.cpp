@@ -18,7 +18,8 @@ namespace
             POSTCONDITION(!throwIfNotImplemented || RETVAL);
         } CONTRACT_END;
 
-        struct {
+        struct
+        {
             OBJECTREF managedType;
         } gc;
         gc.managedType = NULL;
@@ -44,7 +45,8 @@ namespace
             POSTCONDITION(RETVAL != NULL);
         } CONTRACT_END;
 
-        struct {
+        struct
+        {
             OBJECTREF managedType;
             OBJECTREF result;
         } gc;
