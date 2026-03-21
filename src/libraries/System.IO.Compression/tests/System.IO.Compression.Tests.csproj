@@ -50,7 +50,7 @@
     <Compile Include="$(CommonTestPath)System\IO\Compression\EncoderDecoderTestBase.cs" Link="Common\System\IO\Compression\EncoderDecoderTestBase.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\ZLibEncoderDecoderTestBase.cs" Link="Common\System\IO\Compression\ZLibEncoderDecoderTestBase.cs" />
     <Compile Include="DeflateEncoderDecoderTests.cs" />
-    <Compile Include="ZlibEncoderDecoderTests.cs" />
+    <Compile Include="ZLibEncoderDecoderTests.cs" />
     <Compile Include="GZipEncoderDecoderTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
