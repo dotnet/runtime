@@ -70,6 +70,13 @@ namespace System.IO.Compression
 
             int resolvedWindowLog = windowLog == -1 ? ZLibNative.DefaultWindowLog : windowLog;
 
+            // zlib-ng rejects windowBits 8 for raw deflate and gzip; classic zlib silently upgrades to 9.
+            // Clamp to 9 for these formats to match DeflateStream behavior.
+            if (format != CompressionFormat.ZLib)
+            {
+                resolvedWindowLog = Math.Max(resolvedWindowLog, 9);
+            }
+
             // Compute windowBits based on the compression format:
             // - Deflate: negative windowLog produces raw deflate (no header/trailer)
             // - ZLib: positive windowLog produces zlib format
@@ -98,6 +105,13 @@ namespace System.IO.Compression
 
             // -1 means use the default window log
             int windowLog = options.WindowLog == -1 ? ZLibNative.DefaultWindowLog : options.WindowLog;
+
+            // zlib-ng rejects windowBits 8 for raw deflate and gzip; classic zlib silently upgrades to 9.
+            // Clamp to 9 for these formats to match DeflateStream behavior.
+            if (format != CompressionFormat.ZLib)
+            {
+                windowLog = Math.Max(windowLog, 9);
+            }
 
             // Compute windowBits based on the compression format:
             int windowBits = format switch
