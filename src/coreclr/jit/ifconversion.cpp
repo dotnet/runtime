@@ -114,10 +114,13 @@ bool OptIfConversionDsc::IfConvertCheck()
                     GenTreeLclVar* prevStore = tree->AsLclVar();
                     if (prevStore->GetLclNum() == lclNum)
                     {
-                        m_doElseConversion    = true;
-                        m_elseOperation.block = m_startBlock;
-                        m_elseOperation.stmt  = stmt;
-                        m_elseOperation.node  = tree;
+                        if (prevStore->Data()->IsInvariant())
+                        {
+                            m_doElseConversion    = true;
+                            m_elseOperation.block = m_startBlock;
+                            m_elseOperation.stmt  = stmt;
+                            m_elseOperation.node  = tree;
+                        }
 
                         break;
                     }
