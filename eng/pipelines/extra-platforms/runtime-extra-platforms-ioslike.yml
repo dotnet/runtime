@@ -227,8 +227,10 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
+      # Keep the diagnostic run scoped to the dedicated runtime-ioslike pipeline.
+      - ${{ if eq(parameters.isiOSLikeOnlyBuild, true) }}:
+        - ios_arm64
       # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
       # - tvos_arm64
     variables:
       # map dependencies variables to local variables

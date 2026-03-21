@@ -10,7 +10,16 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildTestsOnHelix)' == 'true'">
+    <!-- Log Rosetta state before invoking the x64 Helix dotnet-cli on Apple device hosts. -->
+    <_RosettaDiagnosticsCommand Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">echo "=== Rosetta diagnostics ==="; uname -m; </_RosettaDiagnosticsCommand>
+    <_RosettaDiagnosticsCommand Condition="'$(_RosettaDiagnosticsCommand)' != ''">$(_RosettaDiagnosticsCommand) PROC_TRANSLATED=`/usr/sbin/sysctl -n sysctl.proc_translated 2&gt;/dev/null || true`; if [ -n "$PROC_TRANSLATED" ]; then echo "proc_translated=$PROC_TRANSLATED"; else echo "proc_translated=unavailable"; fi; </_RosettaDiagnosticsCommand>
+    <_RosettaDiagnosticsCommand Condition="'$(_RosettaDiagnosticsCommand)' != ''">$(_RosettaDiagnosticsCommand) if /usr/sbin/pkgutil --pkg-info com.apple.pkg.RosettaUpdateAuto 2&gt;/dev/null; then echo "rosetta_receipt=present"; else echo "rosetta_receipt=missing"; fi; </_RosettaDiagnosticsCommand>
+    <_RosettaDiagnosticsCommand Condition="'$(_RosettaDiagnosticsCommand)' != ''">$(_RosettaDiagnosticsCommand) if [ -e /Library/Apple/usr/libexec/oah/libRosettaRuntime ]; then echo "rosetta_runtime=present"; else echo "rosetta_runtime=missing"; fi; </_RosettaDiagnosticsCommand>
+    <_RosettaDiagnosticsCommand Condition="'$(_RosettaDiagnosticsCommand)' != ''">$(_RosettaDiagnosticsCommand) if /usr/bin/arch -x86_64 /usr/bin/true &gt;/dev/null 2&gt;&amp;1; then echo "x64_exec_works=true"; else echo "x64_exec_works=false"; fi; echo "DOTNET_ROOT=$DOTNET_ROOT"; </_RosettaDiagnosticsCommand>
+    <_RosettaDiagnosticsCommand Condition="'$(_RosettaDiagnosticsCommand)' != ''">$(_RosettaDiagnosticsCommand) if [ -n "$DOTNET_ROOT" ] &amp;&amp; [ -e "$DOTNET_ROOT/dotnet" ]; then echo "dotnet_host=$DOTNET_ROOT/dotnet"; /usr/bin/file "$DOTNET_ROOT/dotnet" || true; else echo "dotnet_host=missing"; fi; echo "=== End Rosetta diagnostics ==="; </_RosettaDiagnosticsCommand>
+
     <_AOTBuildCommand>export PATH=$HELIX_CORRELATION_PAYLOAD/build/cmake/cmake-3.28.0-macos-universal/CMake.app/Contents/bin:$PATH &amp;&amp; </_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(_RosettaDiagnosticsCommand)' != ''">$(_AOTBuildCommand) $(_RosettaDiagnosticsCommand) &amp;&amp; </_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
