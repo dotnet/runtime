@@ -46,6 +46,7 @@ When NOT running under CCA, guidance for creating commits and pushing changes:
 - Never push to an active PR without being explicitly asked, even in autopilot/yolo mode. Always wait for explicit instruction to push.
 - Never chain commit and push in the same command. Always commit first, report what was committed, then wait for an explicit push instruction. This creates a mandatory decision point.
 - Prefer creating a new commit rather than amending an existing one. Exceptions: (1) explicitly asked to amend, or (2) the existing commit is obviously broken with something minor (e.g., typo or comment fix) and hasn't been pushed yet.
+- **AI-generated content disclosure:** When posting to GitHub under a user account (not a bot/copilot app), include a visible `> [!NOTE]` indicating AI/Copilot-generated content. Enforced automatically via [`.github/hooks/hooks.json`](.github/hooks/hooks.json); skip only if the user explicitly opts out.
 
 ---
 
