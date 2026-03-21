@@ -273,9 +273,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
             string relWatchDir = watchDir.Length > _root.Length
                 ? watchDir.Substring(_root.Length).Replace(Path.DirectorySeparatorChar, '/')
                 : string.Empty;
+
             string remainingRelPath = relWatchDir.Length > 0
                 ? filePath.Substring(relWatchDir.Length + 1) // skip "relWatchDir/"
                 : filePath;
+
             string[] remainingComponents = remainingRelPath.Split('/');
 
             // Key by filePath so each watched path has its own cascading watcher.
@@ -289,11 +291,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     }
 
                     // Stale watcher (already fired); remove it and create a fresh one.
-#if NET
-                    _pendingCreationWatchers.TryRemove(new KeyValuePair<string, PendingCreationWatcher>(filePath, existing));
-#else
                     _pendingCreationWatchers.TryRemove(filePath, out _);
-#endif
                     // Do not dispose here – cleanup is already scheduled via Cts.Token.Register.
                 }
 
@@ -686,7 +684,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             public readonly CancellationTokenSource Cts = new();
             private FileSystemWatcher? _watcher; // protected by _advanceLock
-            private Queue<string> _remainingComponents; // protected by _advanceLock
+            private ArraySegment<string> _remainingComponents; // protected by _advanceLock
             private readonly string _root;
             private readonly string _filePath;
             private readonly object _advanceLock = new();
@@ -701,7 +699,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 _root = root;
                 _filePath = filePath;
-                _remainingComponents = new Queue<string>(remainingComponents);
+                _remainingComponents = new ArraySegment<string>(remainingComponents);
                 lock (_advanceLock)
                 {
                     SetupWatcherNoLock(existingDirectory);
@@ -747,15 +745,16 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 {
                     // Phase 1: fast-forward through components that already exist.
                     while (_remainingComponents.Count > 1 &&
-                           Directory.Exists(Path.Combine(startDir, _remainingComponents.Peek())))
+                           Directory.Exists(Path.Combine(startDir, _remainingComponents.At(0))))
                     {
-                        startDir = Path.Combine(startDir, _remainingComponents.Dequeue());
+                        startDir = Path.Combine(startDir, _remainingComponents.At(0));
+                        _remainingComponents = _remainingComponents.Slice(1);
                     }
 
                     // If the final target already exists, fire immediately without starting a watcher.
                     if (_remainingComponents.Count == 1)
                     {
-                        string target = Path.Combine(startDir, _remainingComponents.Peek());
+                        string target = Path.Combine(startDir, _remainingComponents.At(0));
                         if (File.Exists(target) || Directory.Exists(target))
                         {
                             Cts.Cancel();
@@ -787,7 +786,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         return;
                     }
 
-                    string next = _remainingComponents.Peek();
+                    string next = _remainingComponents.At(0);
                     string nextPath = Path.Combine(startDir, next);
 
                     if (_remainingComponents.Count == 1)
@@ -811,7 +810,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     // created and loop to advance to the next level without firing the token.
                     ScheduleDispose(_watcher);
                     _watcher = null;
-                    _remainingComponents.Dequeue();
+                    _remainingComponents = _remainingComponents.Slice(1);
                     startDir = nextPath;
                     // continue looping
                 }
@@ -838,12 +837,12 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     }
 
                     // Only react to the creation of the expected next path component.
-                    if (!string.Equals(e.Name, _remainingComponents.Peek(), StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(e.Name, _remainingComponents.At(0), StringComparison.OrdinalIgnoreCase))
                     {
                         return;
                     }
 
-                    _remainingComponents.Dequeue();
+                    _remainingComponents = _remainingComponents.Slice(1);
 
                     // Schedule disposal of the current watcher before replacing it, so that
                     // Dispose() is never called on the watcher's own event thread.
@@ -913,11 +912,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     consumed++;
                 }
 
-                _remainingComponents = new Queue<string>();
-                for (int i = consumed; i < allComponents.Length; i++)
-                {
-                    _remainingComponents.Enqueue(allComponents[i]);
-                }
+                _remainingComponents = new ArraySegment<string>(allComponents, consumed, allComponents.Length - consumed);
 
                 SetupWatcherNoLock(dir);
             }
