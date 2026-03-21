@@ -13,7 +13,7 @@ public class Runtime_125805
     {
         ExceptionReuse().GetAwaiter().GetResult();
     }
-    
+
     private static async Task ExceptionReuse()
     {
         try
@@ -21,7 +21,7 @@ public class Runtime_125805
             await Throws();
             Assert.Fail("Expected throw");
         }
-        catch (Exception)
+        catch (NullReferenceException)
         {
         }
 
@@ -39,7 +39,7 @@ public class Runtime_125805
     private static async Task Throws()
     {
         await Task.Yield();
-        throw new Exception();
+        throw new NullReferenceException();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
