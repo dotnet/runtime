@@ -4197,10 +4197,8 @@ void OleVariant::ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj)
     if (bstr == NULL)
         return;
 
-    GCPROTECT_BEGIN(*pStringObj);
     UnmanagedCallersOnlyCaller convertToManaged(METHOD__BSTRMARSHALER__CONVERT_TO_MANAGED_UCO);
     convertToManaged.InvokeThrowing((INT_PTR)bstr, pStringObj);
-    GCPROTECT_END();
 }
 
 BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
