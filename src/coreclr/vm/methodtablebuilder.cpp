@@ -2697,9 +2697,9 @@ MethodTableBuilder::EnumerateClassMethods()
     // In a worst case the number of declared methods can double
     // as each async method may have two variants.
     // The method count is typically a modest number though.
-    // We will reserve twice the size for the builder, up to the max, just in case.
-    // TODO: VS "3" only if has covariant returns (or methodimpls?), otherwise 2.
-    DWORD cMethUpperBound = cMethAndGaps * 3;
+    // If we have covariant overrides, then overrides from Task<T> -> Task we will need 3 method descs.
+    // Reserve the space conservatively, up to the max, for the worst case scenario.
+    DWORD cMethUpperBound = cMethAndGaps * (bmtMetaData->fHasCovariantOverride ? 3 : 2);
     if ((DWORD)MAX_SLOT_INDEX <= cMethUpperBound)
     {
         cMethUpperBound = MAX_SLOT_INDEX - 1;
@@ -3395,7 +3395,7 @@ MethodTableBuilder::EnumerateClassMethods()
             }
             else
             {
-                // Second pass, add the async variant.
+                // Extra pass, add an async variant.
 
                 ULONG cAsyncThunkMemberSignature;
                 ULONG taskTokenOffsetFromAsyncDetailsOffset;
@@ -3423,6 +3423,11 @@ MethodTableBuilder::EnumerateClassMethods()
 
                 if (insertCount == 2)
                 {
+                    // This is a rare case when we need two async variants and this is the second one.
+                    // The need arises when a Task-returning method has a Task<T> returning virtual override.
+                    // We need an extra void-returning thunk that can override the void-returning async variant in the base,
+                    // while the thunk's implementation simply forwards to the T-returning async variant and ignores the return.
+
                     // from ". . . Task<tk> . . . Method(args);"    we construct
                     //      ". . .    void  . . . Method(args);"
 
@@ -3536,32 +3541,21 @@ MethodTableBuilder::EnumerateClassMethods()
                 break;
             }
 
+            // In rare cases we need a void-returning async variant in addition to the T-returning one.
+            // It is ok to add a void-returning thunk and end up not using it, but we do not want waste.
+            // Thus we try to filter closer to the cases when the thunk is most certainly will be used.
             if (insertCount == 1)
             {
-                // if we return Task<T>
-                if (!returnsValueTask &&
-                    returnKind == MethodReturnKind::GenericTaskReturningMethod &&
-                    !this->IsValueClass() &&
-                    !IsMdAbstract(dwMemberAttrs) &&
-                    IsMdVirtual(dwMemberAttrs))
+                if (implType != METHOD_IMPL ||
+                    returnsValueTask ||
+                    returnKind != MethodReturnKind::GenericTaskReturningMethod ||
+                    this->IsValueClass() ||
+                    !IsMdVirtual(dwMemberAttrs) ||
+                    !bmtMetaData->fHasCovariantOverride)
                 {
-                    //// also this is a methodimpl
-                    //if (pNewMethod->GetMethodImplType() == METHOD_IMPL)
-                    //{
-                    //    // check if "need to check for covariance" and add void returning variant
-
-                    //    // TODO: base may be Object-returning, then we do not care. Probably ok.
-
-                    //    // for starters add void returning variant always.
-
-                    //    // void returning should classify as IsAsyncVariant. It is always a thunk.
-
-                    //    // when matching to base we should either require return match for variants or skip/overwrite when see void returning.
-                    //}
-                    continue;
+                    // No need for another variant
+                    break;
                 }
-
-                break;
             }
         }
     }
