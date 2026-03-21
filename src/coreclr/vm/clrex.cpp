@@ -1770,34 +1770,6 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
             EX_END_CATCH
 
             pException->SetRequestingAssembly(requestingChain);
-
-            // Walk the inner exception chain and append the full chain to each
-            // inner exception, so that every exception in the chain
-            // carries the full dependency path from its perspective
-            EEFileLoadException *pInnerFLE = NULL;
-            Exception *pWalk = inner2;
-            int depth = 0;
-            while (pWalk != NULL && depth < 20)
-            {
-                if (EEFileLoadException::CheckType(pWalk))
-                {
-                    pInnerFLE = (EEFileLoadException*)pWalk;
-                    if (!pInnerFLE->m_requestingAssemblyName.IsEmpty())
-                    {
-                        StackSString updatedChain;
-                        updatedChain.Set(pInnerFLE->m_requestingAssemblyName);
-                        updatedChain.Append(W("\n"));
-                        updatedChain.Append(requestingChain);
-                        pInnerFLE->SetRequestingAssembly(updatedChain);
-                    }
-                    pWalk = pInnerFLE->m_innerException;
-                }
-                else
-                {
-                    break;
-                }
-                depth++;
-            }
         }
 
         STRESS_LOG3(LF_EH, LL_INFO100, "EX_THROW_WITH_INNER Type = 0x%x HR = 0x%x, "
