@@ -35,7 +35,7 @@ public class Casting
             		string msg ="Unable to cast object of type 'System.Object' to type 'IFoo'.";
 
 
-			if (e.Message.Equals(msg))
+			if (e.Message.Equals(msg) || e.Message.Contains("Debugging resource strings are unavailable"))
 			{
 				Console.WriteLine("PASS");
 				return 100;

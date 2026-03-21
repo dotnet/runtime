@@ -318,7 +318,7 @@ namespace System.Runtime.Loader.Tests
             // The message should include the full generic type names with the differing argument
             // and the ALC context names.
             Assert.Contains(nameof(StrongBox<InvalidCastSharedType>), ice.Message);
-            Assert.Contains(nameof(InvalidCastSharedType), ice.Message);
+            Assert.Contains("generic argument '", ice.Message);
             Assert.Contains("Default", ice.Message);
             Assert.Contains("TestALC", ice.Message);
         }
