@@ -13,14 +13,14 @@ namespace System
         {
             get
             {
-                // The flag starts at Undefined.  If it's no longer Undefined, it's False or True.
+                // The flag starts at Undefined. If it's no longer Undefined, it's False or True.
                 NullableBool emitAnsiColorCodes = s_emitAnsiColorCodes;
                 if (emitAnsiColorCodes != NullableBool.Undefined)
                 {
                     return emitAnsiColorCodes == NullableBool.True;
                 }
 
-                // We've not yet computed whether to emit codes or not.  We may race with
+                // We've not yet computed whether to emit codes or not. We may race with
                 // other threads, and that's ok; this is idempotent unless someone is currently changing
                 // the value of the relevant environment variables, in which case behavior here is undefined.
 
