@@ -45,7 +45,6 @@ namespace ILLink.CodeFix
                 n => n is Microsoft.CodeAnalysis.CSharp.Syntax.BaseMethodDeclarationSyntax
                   or Microsoft.CodeAnalysis.CSharp.Syntax.LocalFunctionStatementSyntax
                   or Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax
-                  or Microsoft.CodeAnalysis.CSharp.Syntax.ExternAliasDirectiveSyntax
                   or Microsoft.CodeAnalysis.CSharp.Syntax.IndexerDeclarationSyntax);
             if (declarationNode is null)
                 return;
