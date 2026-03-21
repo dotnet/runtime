@@ -26,6 +26,8 @@ namespace System.IO.Compression
         protected abstract int ValidWindowLog { get; }
         protected abstract int MinQuality { get; }
         protected abstract int MaxQuality { get; }
+        protected abstract int MinWindowLog { get; }
+        protected abstract int MaxWindowLog { get; }
         protected abstract int InvalidQualityTooLow { get; }
         protected abstract int InvalidQualityTooHigh { get; }
         protected abstract int InvalidWindowLogTooLow { get; }
@@ -321,6 +323,60 @@ namespace System.IO.Compression
             Assert.Equal(OperationStatus.DestinationTooSmall, result);
             Assert.Equal(0, bytesConsumed);
             Assert.Equal(0, bytesWritten);
+        }
+
+        [Fact]
+        public void Flush_AfterCompress_ProducesOutput()
+        {
+            using var encoder = CreateEncoder(ValidQuality, ValidWindowLog);
+            byte[] input = CreateTestData();
+            byte[] compressed = new byte[input.Length * 10];
+
+            OperationStatus result = encoder.Compress(input, compressed, out int bytesConsumed, out int compressWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.Done, result);
+            Assert.Equal(input.Length, bytesConsumed);
+
+            result = encoder.Flush(compressed.AsSpan(compressWritten), out int flushWritten);
+            Assert.Equal(OperationStatus.Done, result);
+
+            int totalWritten = compressWritten + flushWritten;
+            Assert.True(totalWritten > 0);
+
+            // Verify the flushed output is decompressible
+            byte[] decompressed = new byte[input.Length];
+            using var decoder = CreateDecoder();
+            OperationStatus decompressResult = decoder.Decompress(compressed.AsSpan(0, totalWritten), decompressed, out _, out int decompressWritten);
+            Assert.Equal(OperationStatus.Done, decompressResult);
+            Assert.Equal(input.Length, decompressWritten);
+            Assert.Equal(input, decompressed);
+        }
+
+        [Fact]
+        public void Flush_MultipleTimes_ProducesValidOutput()
+        {
+            using var encoder = CreateEncoder(ValidQuality, ValidWindowLog);
+            byte[] input = CreateTestData();
+            byte[] compressed = new byte[GetMaxCompressedLength(input.Length * 2)];
+            int totalWritten = 0;
+
+            // First chunk + flush
+            byte[] chunk1 = input.AsSpan(0, input.Length / 2).ToArray();
+            encoder.Compress(chunk1, compressed, out _, out int written, isFinalBlock: false);
+            totalWritten += written;
+            encoder.Flush(compressed.AsSpan(totalWritten), out written);
+            totalWritten += written;
+
+            // Second chunk + final block
+            byte[] chunk2 = input.AsSpan(input.Length / 2).ToArray();
+            OperationStatus result = encoder.Compress(chunk2, compressed.AsSpan(totalWritten), out _, out written, isFinalBlock: true);
+            totalWritten += written;
+            Assert.Equal(OperationStatus.Done, result);
+
+            // Verify full round-trip
+            byte[] decompressed = new byte[input.Length];
+            using var decoder = CreateDecoder();
+            decoder.Decompress(compressed.AsSpan(0, totalWritten), decompressed, out _, out _);
+            Assert.Equal(input, decompressed);
         }
 
         [Fact]
@@ -669,12 +725,43 @@ namespace System.IO.Compression
             {
                 byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
                 using var encoder = CreateEncoder(quality, ValidWindowLog);
-                encoder.Compress(input, compressed, out _, out int compressedSize, isFinalBlock: true);
+                OperationStatus compressStatus = encoder.Compress(input, compressed, out int bytesConsumed, out int compressedSize, isFinalBlock: true);
+
+                Assert.Equal(OperationStatus.Done, compressStatus);
+                Assert.Equal(input.Length, bytesConsumed);
 
                 byte[] decompressed = new byte[input.Length];
                 using var decoder = CreateDecoder();
-                decoder.Decompress(compressed.AsSpan(0, compressedSize), decompressed, out _, out _);
+                OperationStatus decompressStatus = decoder.Decompress(compressed.AsSpan(0, compressedSize), decompressed, out int decompressConsumed, out int decompressWritten);
 
+                Assert.Equal(OperationStatus.Done, decompressStatus);
+                Assert.Equal(compressedSize, decompressConsumed);
+                Assert.Equal(input.Length, decompressWritten);
+                Assert.Equal(input, decompressed);
+            }
+        }
+
+        [Fact]
+        public void RoundTrip_AllWindowLogs()
+        {
+            byte[] input = CreateTestData();
+
+            for (int windowLog = MinWindowLog; windowLog <= MaxWindowLog; windowLog++)
+            {
+                byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
+                using var encoder = CreateEncoder(ValidQuality, windowLog);
+                OperationStatus compressStatus = encoder.Compress(input, compressed, out int bytesConsumed, out int compressedSize, isFinalBlock: true);
+
+                Assert.Equal(OperationStatus.Done, compressStatus);
+                Assert.Equal(input.Length, bytesConsumed);
+
+                byte[] decompressed = new byte[input.Length];
+                using var decoder = CreateDecoder();
+                OperationStatus decompressStatus = decoder.Decompress(compressed.AsSpan(0, compressedSize), decompressed, out int decompressConsumed, out int decompressWritten);
+
+                Assert.Equal(OperationStatus.Done, decompressStatus);
+                Assert.Equal(compressedSize, decompressConsumed);
+                Assert.Equal(input.Length, decompressWritten);
                 Assert.Equal(input, decompressed);
             }
         }
