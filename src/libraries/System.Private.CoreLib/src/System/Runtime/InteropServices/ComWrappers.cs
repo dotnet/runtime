@@ -1298,6 +1298,11 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        internal void RemoveWrappersFromCache(IEnumerable<NativeObjectWrapper> wrappers)
+        {
+            _rcwCache.RemoveAll(wrappers);
+        }
+
         private sealed class RcwCache
         {
             private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
@@ -1406,22 +1411,45 @@ namespace System.Runtime.InteropServices
                 _lock.EnterWriteLock();
                 try
                 {
-                    // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
-                    // in the time between the GC cleared the contents of the GC handle but before the
-                    // NativeObjectWrapper finalizer ran.
-                    // Only remove the entry if the target of the GC handle is the NativeObjectWrapper
-                    // or is null (indicating that the corresponding NativeObjectWrapper has been scheduled for finalization).
-                    if (_cache.TryGetValue(comPointer, out GCHandle cachedRef)
-                        && (wrapper == cachedRef.Target
-                            || cachedRef.Target is null))
+                    Remove_Locked(comPointer, wrapper);
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
+                }
+            }
+
+            public void RemoveAll(IEnumerable<NativeObjectWrapper> wrappers)
+            {
+                _lock.EnterWriteLock();
+                try
+                {
+                    foreach (NativeObjectWrapper wrapper in wrappers)
                     {
-                        _cache.Remove(comPointer);
-                        cachedRef.Free();
+                        Remove_Locked(wrapper.ExternalComObject, wrapper);
                     }
                 }
                 finally
                 {
                     _lock.ExitWriteLock();
+                }
+            }
+
+            private void Remove_Locked(IntPtr comPointer, NativeObjectWrapper wrapper)
+            {
+                Debug.Assert(_lock.IsWriteLockHeld);
+                // This method is used in a scenario where we already have a lock on the cache, so we can skip acquiring the lock again.
+                // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
+                // in the time between the GC cleared the contents of the GC handle but before the
+                // NativeObjectWrapper finalizer ran.
+                // Only remove the entry if the target of the GC handle is the NativeObjectWrapper
+                // or is null (indicating that the corresponding NativeObjectWrapper has been scheduled for finalization).
+                if (_cache.TryGetValue(comPointer, out GCHandle cachedRef)
+                    && (wrapper == cachedRef.Target
+                        || cachedRef.Target is null))
+                {
+                    _cache.Remove(comPointer);
+                    cachedRef.Free();
                 }
             }
         }

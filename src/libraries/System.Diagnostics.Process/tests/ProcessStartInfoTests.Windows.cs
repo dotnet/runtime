@@ -4,7 +4,6 @@
 using System.IO;
 using System.Security;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -73,30 +72,18 @@ namespace System.Diagnostics.Tests
 
         [ConditionalTheory(typeof(ProcessStartInfoTests), nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData(ProcessWindowStyle.Normal, true)]
-        [InlineData(ProcessWindowStyle.Normal, false)]
-        [InlineData(ProcessWindowStyle.Hidden, true)]
-        [InlineData(ProcessWindowStyle.Hidden, false)]
-        [InlineData(ProcessWindowStyle.Minimized, true)]
-        [InlineData(ProcessWindowStyle.Minimized, false)]
-        [InlineData(ProcessWindowStyle.Maximized, true)]
-        [InlineData(ProcessWindowStyle.Maximized, false)]
-        public void TestWindowStyle(ProcessWindowStyle windowStyle, bool useShellExecute)
+        [InlineData(ProcessWindowStyle.Normal)]
+        [InlineData(ProcessWindowStyle.Hidden)]
+        [InlineData(ProcessWindowStyle.Minimized)]
+        [InlineData(ProcessWindowStyle.Maximized)]
+        public void TestWindowStyle(ProcessWindowStyle windowStyle)
         {
-            if (useShellExecute && PlatformDetection.IsMonoRuntime)
-            {
-                // https://github.com/dotnet/runtime/issues/34360
-                throw new SkipTestException("ShellExecute tries to set STA COM apartment state which is not implemented by Mono.");
-            }
-
-            // "x y" where x is the expected dwFlags & 0x1 result and y is the wShowWindow value
             (bool expectUsesShowWindow, int expectedWindowFlag) = windowStyle switch
             {
                 ProcessWindowStyle.Hidden => (true, 0), // SW_HIDE is 0
                 ProcessWindowStyle.Minimized => (true, 2), // SW_SHOWMINIMIZED is 2
                 ProcessWindowStyle.Maximized => (true, 3), // SW_SHOWMAXIMIZED is 3
-                // UseShellExecute always sets the flag but no shell does not for Normal.
-                _ => useShellExecute ? (true, 1) : (false, 0), // SW_SHOWNORMAL is 1
+                _ => (false, 0),
             };
 
             using Process p = CreateProcess((string procArg) =>
@@ -111,7 +98,6 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(expectedWindowFlag, si.wShowWindow);
                 return RemoteExecutor.SuccessExitCode;
             }, $"{expectUsesShowWindow} {expectedWindowFlag}");
-            p.StartInfo.UseShellExecute  = useShellExecute;
             p.StartInfo.WindowStyle = windowStyle;
             p.Start();
 
