@@ -421,7 +421,7 @@ DEFINE_CLASS(COMWRAPPERS,                 Interop,          ComWrappers)
 DEFINE_CLASS(CREATEOBJECTFLAGS,           Interop,          CreateObjectFlags)
 DEFINE_CLASS(MANAGED_OBJECT_WRAPPER_HOLDER,Interop,         ComWrappers+ManagedObjectWrapperHolder)
 DEFINE_CLASS(NATIVE_OBJECT_WRAPPER,       Interop,         ComWrappers+NativeObjectWrapper) // cDAC depends on the exact namespace and name
-DEFINE_METHOD(COMWRAPPERS,     CALL_ICUSTOMQUERYINTERFACE,  CallICustomQueryInterface,  SM_PtrManagedObjectWrapperHolder_PtrGuid_PtrIntPtr_PtrInt_PtrException_RetVoid)
+DEFINE_METHOD(COMWRAPPERS,     CALL_ICUSTOMQUERYINTERFACE,  CallICustomQueryInterface,  SM_PtrManagedObjectWrapperHolder_PtrGuid_PtrIntPtr_PtrException_RetInt)
 DEFINE_METHOD(COMWRAPPERS, GET_OR_CREATE_COM_INTERFACE_FOR_OBJECT_WITH_GLOBAL_MARSHALLING_INSTANCE, GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance, SM_PtrObj_PtrIntPtr_PtrException_RetVoid)
 DEFINE_METHOD(COMWRAPPERS, GET_OR_CREATE_OBJECT_FOR_COM_INSTANCE_WITH_GLOBAL_MARSHALLING_INSTANCE, GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance, SM_IntPtr_Int_PtrObj_PtrException_RetVoid)
 DEFINE_FIELD(COMWRAPPERS, NAITVE_OBJECT_WRAPPER_TABLE, s_nativeObjectWrapperTable)

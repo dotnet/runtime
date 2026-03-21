@@ -36,12 +36,8 @@ namespace
         }
         CONTRACTL_END;
 
-        int result = 0;
-
         UnmanagedCallersOnlyCaller callICustomQueryInterface(METHOD__COMWRAPPERS__CALL_ICUSTOMQUERYINTERFACE);
-        callICustomQueryInterface.InvokeThrowing(implPROTECTED, &iid, ppObject, &result);
-
-        return result;
+        return callICustomQueryInterface.InvokeThrowing_Ret<INT32>(implPROTECTED, &iid, ppObject);
     }
 
     BOOL g_isGlobalPeggingOn = TRUE;

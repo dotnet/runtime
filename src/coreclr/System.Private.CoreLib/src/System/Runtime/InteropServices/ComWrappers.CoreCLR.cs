@@ -70,15 +70,16 @@ namespace System.Runtime.InteropServices
 
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static unsafe void CallICustomQueryInterface(ManagedObjectWrapperHolder* pHolder, Guid* pIid, IntPtr* ppObject, int* pResult, Exception* pException)
+        private static unsafe int CallICustomQueryInterface(ManagedObjectWrapperHolder* pHolder, Guid* pIid, IntPtr* ppObject, Exception* pException)
         {
             try
             {
-                *pResult = CallICustomQueryInterface(*pHolder, ref *pIid, out *ppObject);
+                return CallICustomQueryInterface(*pHolder, ref *pIid, out *ppObject);
             }
             catch (Exception ex)
             {
                 *pException = ex;
+                return default;
             }
         }
 

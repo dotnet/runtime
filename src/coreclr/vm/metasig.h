@@ -468,7 +468,7 @@ DEFINE_METASIG_T(SM(PtrChar_PtrAssemblyBase_IntPtr_PtrException_RetIntPtr, P(u) 
 DEFINE_METASIG_T(SM(PtrComObject_PtrException_RetVoid, P(C(COM_OBJECT)) P(C(EXCEPTION)), v))
 #endif // FEATURE_COMINTEROP
 #ifdef FEATURE_COMWRAPPERS
-DEFINE_METASIG_T(SM(PtrManagedObjectWrapperHolder_PtrGuid_PtrIntPtr_PtrInt_PtrException_RetVoid, P(C(MANAGED_OBJECT_WRAPPER_HOLDER)) P(g(GUID)) P(I) P(i) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrManagedObjectWrapperHolder_PtrGuid_PtrIntPtr_PtrException_RetInt, P(C(MANAGED_OBJECT_WRAPPER_HOLDER)) P(g(GUID)) P(I) P(C(EXCEPTION)), i))
 #endif // FEATURE_COMWRAPPERS
 
 // fields - e.g.:
