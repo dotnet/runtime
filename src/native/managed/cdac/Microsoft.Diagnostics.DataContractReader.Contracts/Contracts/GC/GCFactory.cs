@@ -13,9 +13,10 @@ public sealed class GCFactory : IContractFactory<IGC>
         byte blockInvalid = target.ReadGlobal<byte>(Constants.Globals.BlockInvalid);
         TargetPointer debugDestroyedHandleValue = target.ReadGlobalPointer(Constants.Globals.DebugDestroyedHandleValue);
         uint handleMaxInternalTypes = target.ReadGlobal<uint>(Constants.Globals.HandleMaxInternalTypes);
+        uint handleSegmentSize = target.ReadGlobal<uint>(Constants.Globals.HandleSegmentSize);
         return version switch
         {
-            1 => new GC_1(target, handlesPerBlock, blockInvalid, debugDestroyedHandleValue, handleMaxInternalTypes),
+            1 => new GC_1(target, handlesPerBlock, blockInvalid, debugDestroyedHandleValue, handleMaxInternalTypes, handleSegmentSize),
             _ => default(GC),
         };
     }
