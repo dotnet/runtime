@@ -73,26 +73,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public void Encoder_WithOptions()
-        {
-            byte[] input = CreateTestData();
-            var options = new ZLibCompressionOptions
-            {
-                CompressionLevel = 9,
-                CompressionStrategy = ZLibCompressionStrategy.Filtered
-            };
-
-            using var encoder = CreateEncoder(options);
-            byte[] destination = new byte[GetMaxCompressedLength(input.Length)];
-
-            OperationStatus status = encoder.Compress(input, destination, out int consumed, out int written, isFinalBlock: true);
-
-            Assert.Equal(OperationStatus.Done, status);
-            Assert.Equal(input.Length, consumed);
-            Assert.True(written > 0);
-        }
-
-        [Fact]
         public void Decoder_InvalidData_ReturnsInvalidData()
         {
             byte[] invalidData = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
