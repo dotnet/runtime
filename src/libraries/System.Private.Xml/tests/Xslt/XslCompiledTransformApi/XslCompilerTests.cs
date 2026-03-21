@@ -131,6 +131,22 @@ namespace System.Xml.XslCompiledTransformApiTests
             // Non-ASCII digit system - Arabic-Indic digits (string.Create path, shift != 0)
             { "123", "\u0661", "", "\u0661\u0662\u0663" },
             { "1234", "\u0661", "", "\u0661\u0662\u0663\u0664" },
+            // Non-ASCII digits with grouping separator (shift != 0 AND groupSize != 0)
+            { "1234", "\u0661", @"grouping-separator="","" grouping-size=""3""", "\u0661,\u0662\u0663\u0664" },
+            // Non-ASCII digits with zero padding (shift != 0, pad with non-ASCII zero)
+            { "5", "\u0660\u0661", "", "\u0660\u0665" },
+            // Non-standard grouping size (grouping-size="2")
+            { "12345", "1", @"grouping-separator="","" grouping-size=""2""", "1,23,45" },
+            // Padding that creates additional groups
+            { "42", "0000001", @"grouping-separator="","" grouping-size=""3""", "0,000,042" },
+            // Single digit with grouping enabled (no separator should appear)
+            { "5", "1", @"grouping-separator="","" grouping-size=""3""", "5" },
+            // Number already exceeds format token length (no padding needed)
+            { "100", "01", "", "100" },
+            // Thai digits (another non-ASCII decimal system, shift != 0)
+            { "42", "\u0E51", "", "\u0E54\u0E52" },
+            // Non-ASCII digits with grouping AND padding
+            { "42", "\u0660\u0660\u0660\u0660\u0661", @"grouping-separator="","" grouping-size=""3""", "\u0660\u0660,\u0660\u0664\u0662" },
         };
 
         [Theory]
