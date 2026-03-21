@@ -89,10 +89,14 @@ namespace System.IO.Compression
                 _ => throw new ArgumentOutOfRangeException(nameof(format))
             };
 
+            int memLevel = quality == (int)ZLibNative.CompressionLevel.NoCompression
+                ? ZLibNative.Deflate_NoCompressionMemLevel
+                : ZLibNative.Deflate_DefaultMemLevel;
+
             _state = ZLibNative.ZLibStreamHandle.CreateForDeflate(
                 (ZLibNative.CompressionLevel)quality,
                 windowBits,
-                ZLibNative.Deflate_DefaultMemLevel,
+                memLevel,
                 ZLibNative.CompressionStrategy.DefaultStrategy);
         }
 
@@ -122,10 +126,14 @@ namespace System.IO.Compression
                 _ => throw new ArgumentOutOfRangeException(nameof(format))
             };
 
+            int memLevel = options.CompressionLevel == (int)ZLibNative.CompressionLevel.NoCompression
+                ? ZLibNative.Deflate_NoCompressionMemLevel
+                : ZLibNative.Deflate_DefaultMemLevel;
+
             _state = ZLibNative.ZLibStreamHandle.CreateForDeflate(
                 (ZLibNative.CompressionLevel)options.CompressionLevel,
                 windowBits,
-                ZLibNative.Deflate_DefaultMemLevel,
+                memLevel,
                 (ZLibNative.CompressionStrategy)options.CompressionStrategy);
         }
 
