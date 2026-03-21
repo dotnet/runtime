@@ -1,15 +1,14 @@
 {
+  "version": 1,
   "description": "Lifecycle hooks for dotnet/runtime — AI disclosure guardrails",
   "hooks": {
-    "PreToolUse": [
+    "preToolUse": [
       {
         "matcher": "Bash|PowerShell",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "grep -qE 'gh\\s+(pr|issue)\\s+(create|comment|edit|review|merge)' && echo 'AI-GENERATED CONTENT DISCLOSURE: When posting to GitHub under a user account (not a bot/copilot app account), include a visible note (e.g. > [!NOTE]) indicating the content was AI/Copilot-generated. Skip only if the user explicitly asked to omit it.' >&2; :"
-          }
-        ],
+        "type": "command",
+        "bash": "d=; while IFS= read -r l; do d=$d$l; done; case $d in *'gh pr '*|*'gh issue '*) echo 'AI-GENERATED CONTENT DISCLOSURE: When posting to GitHub under a user account (not a bot/copilot app account), include a visible note (e.g. > [!NOTE]) indicating the content was AI/Copilot-generated. Skip only if the user explicitly asked to omit it.' >&2;; esac; :",
+        "powershell": "$d = [Console]::In.ReadToEnd(); if ($d -match 'gh\\s+(pr|issue)\\s') { [Console]::Error.WriteLine('AI-GENERATED CONTENT DISCLOSURE: When posting to GitHub under a user account (not a bot/copilot app account), include a visible note (e.g. > [!NOTE]) indicating the content was AI/Copilot-generated. Skip only if the user explicitly asked to omit it.') }",
+        "timeoutSec": 5,
         "description": "Remind to include AI-generated content disclosure when posting to GitHub via gh CLI"
       }
     ]
