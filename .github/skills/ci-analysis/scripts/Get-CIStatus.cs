@@ -1,4 +1,3 @@
-#!/usr/bin/env dotnet run
 #:sdk Microsoft.NET.Sdk
 #:property TargetFramework=net10.0
 #:property LangVersion=preview
