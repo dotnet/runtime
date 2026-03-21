@@ -190,7 +190,7 @@ internal struct ComWrappers_1 : IComWrappers
         if (_nativeObjectWrapperCWTAddr is null)
         {
             rts.GetCoreLibFieldDescAndDef(ComWrappersNamespace, ComWrappersName, NativeObjectWrapperCWTFieldName, out TargetPointer fieldDescAddr, out _);
-            _nativeObjectWrapperCWTAddr = _target.ReadPointer(rts.GetFieldDescStaticAddress(fieldDescAddr);
+            _nativeObjectWrapperCWTAddr = _target.ReadPointer(rts.GetFieldDescStaticAddress(fieldDescAddr));
         }
         if (_nativeObjectWrapperCWTAddr.Value == TargetPointer.Null)
             return TargetPointer.Null;
