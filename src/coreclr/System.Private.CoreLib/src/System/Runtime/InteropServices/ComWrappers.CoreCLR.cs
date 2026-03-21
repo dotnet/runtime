@@ -108,6 +108,7 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIReferenceTrackerTargetVftbl")]
         [SuppressGCTransition]
+        [RequiresUnsafe]
         private static partial IntPtr GetDefaultIReferenceTrackerTargetVftbl();
 
         private static IntPtr CreateDefaultIReferenceTrackerTargetVftbl()
@@ -120,11 +121,13 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetTaggedImpl")]
         [SuppressGCTransition]
+        [RequiresUnsafe]
         private static partial IntPtr GetTaggedImpl();
 
         internal sealed partial class ManagedObjectWrapperHolder
         {
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_RegisterIsRootedCallback")]
+            [RequiresUnsafe]
             private static partial void RegisterIsRootedCallback();
 
             private static IntPtr AllocateRefCountedHandle(ManagedObjectWrapperHolder holder)
@@ -133,6 +136,7 @@ namespace System.Runtime.InteropServices
             }
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_AllocateRefCountedHandle")]
+            [RequiresUnsafe]
             private static partial IntPtr AllocateRefCountedHandle(ObjectHandleOnStack obj);
         }
     }

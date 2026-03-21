@@ -510,6 +510,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToNative")]
+        [RequiresUnsafe]
         private static partial void ConvertToNative(ObjectHandleOnStack objSrc, IntPtr pDstVariant);
 
         internal static object ConvertToManaged(IntPtr pSrcVariant)
@@ -520,6 +521,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToManaged")]
+        [RequiresUnsafe]
         private static partial void ConvertToManaged(IntPtr pSrcVariant, ObjectHandleOnStack retObject);
 
         internal static unsafe void ClearNative(IntPtr pVariant)
@@ -587,6 +589,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToNative")]
+        [RequiresUnsafe]
         private static partial IntPtr ConvertToNative(ObjectHandleOnStack objSrc, IntPtr itfMT, IntPtr classMT, int flag);
 
         internal static object? ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags)
@@ -645,6 +648,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ConvertSpaceToNative")]
+        [RequiresUnsafe]
         private static partial void ConvertSpaceToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
         internal static void ConvertContentsToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
@@ -654,6 +658,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ConvertContentsToNative")]
+        [RequiresUnsafe]
         private static partial void ConvertContentsToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
         internal static void ConvertSpaceToManaged(IntPtr pMarshalState, ref object? pManagedHome, IntPtr pNativeHome,
@@ -665,6 +670,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ConvertSpaceToManaged")]
+        [RequiresUnsafe]
         private static partial void ConvertSpaceToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome,
                                                          int cElements);
 
@@ -675,6 +681,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ConvertContentsToManaged")]
+        [RequiresUnsafe]
         private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
         internal static unsafe void ClearNative(IntPtr pMarshalState, IntPtr pNativeHome, int cElements)
@@ -689,6 +696,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ClearNativeContents")]
+        [RequiresUnsafe]
         internal static partial void ClearNativeContents(IntPtr pMarshalState, IntPtr pNativeHome, int cElements);
     }  // class MngdNativeArrayMarshaler
 
@@ -740,6 +748,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ConvertContentsToNative")]
+        [RequiresUnsafe]
         private static partial void ConvertContentsToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
         internal static void ConvertSpaceToManaged(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome)
@@ -750,6 +759,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ConvertSpaceToManaged")]
+        [RequiresUnsafe]
         private static partial void ConvertSpaceToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
         internal static void ConvertContentsToManaged(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
@@ -759,6 +769,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ConvertContentsToManaged")]
+        [RequiresUnsafe]
         private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
 #pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
@@ -769,6 +780,7 @@ namespace System.StubHelpers
 #pragma warning restore IDE0060
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdFixedArrayMarshaler_ClearNativeContents")]
+        [RequiresUnsafe]
         private static partial void ClearNativeContents(IntPtr pMarshalState, IntPtr pNativeHome);
     }  // class MngdFixedArrayMarshaler
 
@@ -778,6 +790,7 @@ namespace System.StubHelpers
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_CreateMarshaler")]
         [SuppressGCTransition]
+        [RequiresUnsafe]
         internal static partial void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int iRank, int dwFlags, IntPtr pManagedMarshaler);
 
         internal static void ConvertSpaceToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
@@ -787,6 +800,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertSpaceToNative")]
+        [RequiresUnsafe]
         private static partial void ConvertSpaceToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
         internal static void ConvertContentsToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome, object pOriginalManagedObject)
@@ -797,6 +811,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertContentsToNative")]
+        [RequiresUnsafe]
         private static partial void ConvertContentsToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, ObjectHandleOnStack pOriginalManagedObject);
 
         internal static void ConvertSpaceToManaged(IntPtr pMarshalState, ref object? pManagedHome, IntPtr pNativeHome)
@@ -807,6 +822,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertSpaceToManaged")]
+        [RequiresUnsafe]
         private static partial void ConvertSpaceToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
         internal static void ConvertContentsToManaged(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
@@ -816,6 +832,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertContentsToManaged")]
+        [RequiresUnsafe]
         private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
 #pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
@@ -826,6 +843,7 @@ namespace System.StubHelpers
 #pragma warning restore IDE0060
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ClearNative")]
+        [RequiresUnsafe]
         private static partial void ClearNative(IntPtr pMarshalState, IntPtr pNativeHome);
     }  // class MngdSafeArrayMarshaler
 #endif // FEATURE_COMINTEROP
@@ -1434,6 +1452,7 @@ namespace System.StubHelpers
         internal static extern void SetLastError();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropParamException")]
+        [RequiresUnsafe]
         internal static partial void ThrowInteropParamException(int resID, int paramIdx);
 
         internal static IntPtr AddToCleanupList(ref CleanupWorkListElement? pCleanupWorkList, SafeHandle handle)
@@ -1471,6 +1490,7 @@ namespace System.StubHelpers
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe MethodTable* GetComInterfaceFromMethodDesc(IntPtr pCPCMD);
 #endif // FEATURE_COMINTEROP
 
@@ -1495,6 +1515,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshaler")]
+        [RequiresUnsafe]
         internal static partial void CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType, ObjectHandleOnStack customMarshaler);
 
 #if FEATURE_COMINTEROP
@@ -1653,9 +1674,11 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]
+        [RequiresUnsafe]
         internal static partial void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToUnmanagedVaList")]
+        [RequiresUnsafe]
         internal static partial void MarshalToUnmanagedVaList(IntPtr va_list, uint vaListSize, IntPtr pArgIterator);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1665,12 +1688,14 @@ namespace System.StubHelpers
         internal static extern void LogPinnedArgument(IntPtr localDesc, IntPtr nativeArg);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateObject")]
+        [RequiresUnsafe]
         private static partial void ValidateObject(ObjectHandleOnStack obj, IntPtr pMD);
 
         internal static void ValidateObject(object obj, IntPtr pMD)
             => ValidateObject(ObjectHandleOnStack.Create(ref obj), pMD);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateByref")]
+        [RequiresUnsafe]
         internal static partial void ValidateByref(IntPtr byref, IntPtr pMD); // the byref is pinned so we can safely "cast" it to IntPtr
 
         [Intrinsic]
@@ -1683,6 +1708,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MulticastDebuggerTraceHelper")]
+        [RequiresUnsafe]
         private static partial void MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack obj, int count);
 
         [Intrinsic]

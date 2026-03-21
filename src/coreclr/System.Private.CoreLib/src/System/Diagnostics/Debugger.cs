@@ -4,6 +4,7 @@
 // The Debugger class is a part of the System.Diagnostics package
 // and is used for communicating with a debugger.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -12,6 +13,7 @@ namespace System.Diagnostics
     public static partial class Debugger
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Break")]
+        [RequiresUnsafe]
         private static partial void BreakInternal();
 
         // Break causes a breakpoint to be signalled to an attached debugger.  If no debugger
@@ -63,6 +65,7 @@ namespace System.Diagnostics
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsManagedDebuggerAttached")]
         [SuppressGCTransition]
+        [RequiresUnsafe]
         private static partial int IsManagedDebuggerAttached();
 
         // Posts a message for the attached debugger.  If there is no
@@ -78,12 +81,14 @@ namespace System.Diagnostics
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsLoggingHelper")]
         [SuppressGCTransition]
+        [RequiresUnsafe]
         private static partial int IsLoggingInternal();
 
         // Posts a custom notification for the attached debugger.  If there is no
         // debugger attached, has no effect.  The debugger may or may not
         // report the notification depending on its settings.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_CustomNotification")]
+        [RequiresUnsafe]
         private static partial void CustomNotification(ObjectHandleOnStack data);
 
         // implementation of CORINFO_HELP_USER_BREAKPOINT

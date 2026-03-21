@@ -3,6 +3,7 @@
 
 #if DEBUG
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -12,9 +13,10 @@ namespace ILLink.RoslynAnalyzer
     [DiagnosticAnalyzer (LanguageNames.CSharp)]
     public sealed class UnsafeMethodMissingRequiresUnsafeAnalyzer : DiagnosticAnalyzer
     {
-        private static readonly DiagnosticDescriptor s_rule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnsafeMethodMissingRequiresUnsafe, diagnosticSeverity: DiagnosticSeverity.Info);
+        private static readonly DiagnosticDescriptor s_pointerRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnsafeMethodMissingRequiresUnsafe, diagnosticSeverity: DiagnosticSeverity.Info);
+        private static readonly DiagnosticDescriptor s_externLibraryImportRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.ExternMethodMissingRequiresUnsafe, diagnosticSeverity: DiagnosticSeverity.Info);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_rule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [s_pointerRule, s_externLibraryImportRule];
 
         public override void Initialize (AnalysisContext context)
         {
@@ -38,9 +40,6 @@ namespace ILLink.RoslynAnalyzer
             if (context.Symbol is not IMethodSymbol method)
                 return;
 
-            if (!HasPointerInSignature (method))
-                return;
-
             if (method.HasAttribute (RequiresUnsafeAnalyzer.RequiresUnsafeAttributeName))
                 return;
 
@@ -49,8 +48,17 @@ namespace ILLink.RoslynAnalyzer
                 && property.HasAttribute (RequiresUnsafeAnalyzer.RequiresUnsafeAttributeName))
                 return;
 
-            foreach (var location in method.Locations) {
-                context.ReportDiagnostic (Diagnostic.Create (s_rule, location, method.GetDisplayName ()));
+            if (HasPointerInSignature (method)) {
+                foreach (var location in method.Locations) {
+                    context.ReportDiagnostic (Diagnostic.Create (s_pointerRule, location, method.GetDisplayName ()));
+                }
+                return;
+            }
+
+            if (IsExternOrLibraryImportMethod (method)){
+                foreach (var location in method.Locations) {
+                    context.ReportDiagnostic (Diagnostic.Create (s_externLibraryImportRule, location, method.GetDisplayName ()));
+                }
             }
         }
 
@@ -60,7 +68,7 @@ namespace ILLink.RoslynAnalyzer
                 return true;
 
             foreach (var param in method.Parameters) {
-                if (IsPointerType (param.Type))
+                if (IsPointerType(param.Type))
                     return true;
             }
 
@@ -68,6 +76,41 @@ namespace ILLink.RoslynAnalyzer
         }
 
         private static bool IsPointerType (ITypeSymbol type) => type is IPointerTypeSymbol or IFunctionPointerTypeSymbol;
+
+        private static bool IsExternOrLibraryImportMethod (IMethodSymbol method)
+        {
+            if (method.IsExtern) {
+                // Consider all InternalCall methods as not requiring unsafe today.
+                // We might revisit this in the future.
+                foreach (AttributeData? attr in method.GetAttributes ()) {
+                    if (attr.AttributeClass?.HasName ("System.Runtime.CompilerServices.MethodImplAttribute") == true) {
+                        foreach (TypedConstant arg in attr.ConstructorArguments) {
+                            // MethodImplAttribute has two ctors: one taking MethodImplOptions (int enum) and
+                            // one taking short (legacy). Normalize both to int before testing the bitmask.
+                            int? value = arg.Value switch {
+                                int i => i,
+                                short s => (int)s,
+                                _ => null
+                            };
+                            if (value.HasValue && (value.Value & (int)MethodImplOptions.InternalCall) != 0)
+                                return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            // Since all [LibraryImport] methods are partial, we can check if the method is partial
+            // before looking for the attribute to avoid unnecessary attribute lookups on non-partial methods.
+            if (method.IsPartialDefinition) {
+                foreach (AttributeData? attr in method.GetAttributes ()) {
+                    if (attr.AttributeClass?.HasName ("System.Runtime.InteropServices.LibraryImportAttribute") == true)
+                        return true;
+                }
+            }
+
+            return false;
+        }
     }
 }
 #endif

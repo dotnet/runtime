@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -244,6 +245,7 @@ namespace System.Runtime
             => _InternalAllocWithGCTransition(ObjectHandleOnStack.Create(ref target), ObjectHandleOnStack.Create(ref dependent));
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DependentHandle_InternalAllocWithGCTransition")]
+        [RequiresUnsafe]
         private static partial IntPtr _InternalAllocWithGCTransition(ObjectHandleOnStack target, ObjectHandleOnStack dependent);
 
 #if DEBUG
@@ -276,6 +278,7 @@ namespace System.Runtime
             => _InternalFreeWithGCTransition(dependentHandle);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DependentHandle_InternalFreeWithGCTransition")]
+        [RequiresUnsafe]
         private static partial void _InternalFreeWithGCTransition(IntPtr dependentHandle);
     }
 }

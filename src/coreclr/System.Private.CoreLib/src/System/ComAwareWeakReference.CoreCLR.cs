@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -10,6 +11,7 @@ namespace System
     internal sealed partial class ComAwareWeakReference
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWeakRefToObject")]
+        [RequiresUnsafe]
         private static partial void ComWeakRefToObject(IntPtr pComWeakRef, ObjectHandleOnStack retRcw);
 
         internal static object? ComWeakRefToObject(IntPtr pComWeakRef, object? context)
@@ -39,6 +41,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectToComWeakRef")]
+        [RequiresUnsafe]
         private static partial IntPtr ObjectToComWeakRef(ObjectHandleOnStack retRcw);
 
         internal static nint ObjectToComWeakRef(object target, out object? context)

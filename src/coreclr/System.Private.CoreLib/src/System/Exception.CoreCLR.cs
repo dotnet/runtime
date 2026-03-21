@@ -56,6 +56,7 @@ namespace System
         private static extern bool IsImmutableAgileException(Exception e);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetMethodFromStackTrace")]
+        [RequiresUnsafe]
         private static partial void GetMethodFromStackTrace(ObjectHandleOnStack stackTrace, ObjectHandleOnStack method);
 
         private MethodBase? GetExceptionMethodFromStackTrace()
@@ -215,6 +216,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetMessageFromNativeResources")]
+        [RequiresUnsafe]
         private static partial void GetMessageFromNativeResources(ExceptionMessageKind kind, StringHandleOnStack retMesg);
 
         internal readonly struct DispatchState
@@ -238,6 +240,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetFrozenStackTrace")]
+        [RequiresUnsafe]
         private static partial void GetFrozenStackTrace(ObjectHandleOnStack exception, ObjectHandleOnStack stackTrace);
 
         internal DispatchState CaptureDispatchState()

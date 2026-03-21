@@ -22,7 +22,10 @@ namespace ILLink.CodeFix
     public sealed class UnsafeMethodMissingRequiresUnsafeCodeFixProvider : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider
     {
         public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-            ImmutableArray.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.UnsafeMethodMissingRequiresUnsafe));
+        [
+            DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.UnsafeMethodMissingRequiresUnsafe),
+            DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.ExternMethodMissingRequiresUnsafe)
+        ];
 
         public sealed override ImmutableArray<string> FixableDiagnosticIds =>
             SupportedDiagnostics.Select(dd => dd.Id).ToImmutableArray();

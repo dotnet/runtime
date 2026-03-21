@@ -102,6 +102,7 @@ namespace System.Reflection.Emit
         private static partial int GetTypeRef(QCallModule module, string strFullName, QCallModule refedModule, int tkResolution);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleBuilder_GetMemberRef")]
+        [RequiresUnsafe]
         private static partial int GetMemberRef(QCallModule module, QCallModule refedModule, int tr, int defToken);
 
         private int GetMemberRef(Module? refedModule, int tr, int defToken)
@@ -122,6 +123,7 @@ namespace System.Reflection.Emit
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleBuilder_GetMemberRefOfMethodInfo")]
+        [RequiresUnsafe]
         private static partial int GetMemberRefOfMethodInfo(QCallModule module, int tr, RuntimeMethodHandleInternal method);
 
         private int GetMemberRefOfMethodInfo(int tr, RuntimeMethodInfo method)
@@ -145,6 +147,7 @@ namespace System.Reflection.Emit
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleBuilder_GetMemberRefOfFieldInfo")]
+        [RequiresUnsafe]
         private static partial int GetMemberRefOfFieldInfo(QCallModule module, int tkType, QCallTypeHandle declaringType, int tkField);
 
         private int GetMemberRefOfFieldInfo(int tkType, RuntimeTypeHandle declaringType, RuntimeFieldInfo runtimeField)
