@@ -57,6 +57,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static void CallClassConstructor(void* cctor, void* instantiatingArg, Exception* pException)
         {
             try

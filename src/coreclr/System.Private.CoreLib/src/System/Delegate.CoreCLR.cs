@@ -480,6 +480,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_Construct")]
+        [RequiresUnsafe]
         private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -525,6 +526,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_FindMethodHandle")]
+        [RequiresUnsafe]
         private static partial void FindMethodHandle(ObjectHandleOnStack d, ObjectHandleOnStack retMethodInfo);
 
         private static bool InternalEqualMethodHandles(Delegate left, Delegate right)
@@ -542,6 +544,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_AdjustTarget")]
+        [RequiresUnsafe]
         private static partial IntPtr AdjustTarget(ObjectHandleOnStack target, IntPtr methodPtr);
 
         internal void InitializeVirtualCallStub(IntPtr methodPtr)
@@ -551,6 +554,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
+        [RequiresUnsafe]
         private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
 
         internal virtual object? GetTarget()

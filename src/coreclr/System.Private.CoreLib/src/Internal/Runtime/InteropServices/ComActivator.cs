@@ -711,6 +711,7 @@ namespace Internal.Runtime.InteropServices
         private Type? _targetRcwType;
 
         [UnsafeAccessor(UnsafeAccessorKind.Method)]
+        [RequiresUnsafe]
         private static extern void SetSavedLicenseKey(
             [UnsafeAccessorType(LicenseContextTypeName)] object licContext,
             Type type,
@@ -718,6 +719,7 @@ namespace Internal.Runtime.InteropServices
 
         [UnconditionalSuppressMessage("Trimming", "IL2111", Justification = "Manually validated that the annotations are kept in sync.")]
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+        [RequiresUnsafe]
         private static extern object? CreateWithContext(
             [UnsafeAccessorType(LicenseManagerTypeName)] object? licManager,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
@@ -725,6 +727,7 @@ namespace Internal.Runtime.InteropServices
         );
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+        [RequiresUnsafe]
         private static extern bool ValidateAndRetrieveLicenseDetails(
             [UnsafeAccessorType(LicenseInteropHelperTypeName)] object? licInteropHelper,
             [UnsafeAccessorType(LicenseContextTypeName)] object? licContext,
@@ -733,6 +736,7 @@ namespace Internal.Runtime.InteropServices
             out string? licenseKey);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+        [RequiresUnsafe]
         [return: UnsafeAccessorType(LicenseContextTypeName)]
         private static extern object? GetCurrentContextInfo(
             [UnsafeAccessorType(LicenseInteropHelperTypeName)] object? licInteropHelper,
@@ -741,12 +745,14 @@ namespace Internal.Runtime.InteropServices
             out string? key);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+        [RequiresUnsafe]
         [return: UnsafeAccessorType(CLRLicenseContextTypeName)]
         private static extern object CreateDesignContext(
             [UnsafeAccessorType(CLRLicenseContextTypeName)] object? context,
             Type type);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+        [RequiresUnsafe]
         [return: UnsafeAccessorType(CLRLicenseContextTypeName)]
         private static extern object CreateRuntimeContext(
             [UnsafeAccessorType(CLRLicenseContextTypeName)] object? context,
@@ -754,10 +760,12 @@ namespace Internal.Runtime.InteropServices
             string? key);
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [RequiresUnsafe]
         [return:UnsafeAccessorType(LicInfoHelperLicenseContextTypeName)]
         private static extern object CreateLicInfoHelperLicenseContext();
 
         [UnsafeAccessor(UnsafeAccessorKind.Method)]
+        [RequiresUnsafe]
         private static extern bool Contains(
             [UnsafeAccessorType(LicInfoHelperLicenseContextTypeName)] object? licInfoHelperContext,
             string assemblyName);

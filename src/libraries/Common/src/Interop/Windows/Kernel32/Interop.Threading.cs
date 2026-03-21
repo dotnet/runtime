@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -13,15 +14,19 @@ internal static partial class Interop
         internal const int WAIT_IO_COMPLETION = 0x000000C0;
 
         [LibraryImport(Libraries.Kernel32)]
+        [RequiresUnsafe]
         internal static partial uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, BOOL bWaitAll, uint dwMilliseconds, BOOL bAlertable);
 
         [LibraryImport(Libraries.Kernel32)]
+        [RequiresUnsafe]
         internal static partial uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
         [LibraryImport(Libraries.Kernel32)]
+        [RequiresUnsafe]
         internal static partial uint WaitForSingleObjectEx(IntPtr hHandle, uint dwMilliseconds, BOOL bAlertable);
 
         [LibraryImport(Libraries.Kernel32)]
+        [RequiresUnsafe]
         internal static partial uint SignalObjectAndWait(IntPtr hObjectToSignal, IntPtr hObjectToWaitOn, uint dwMilliseconds, BOOL bAlertable);
 
         internal const uint CREATE_SUSPENDED = 0x00000004;
@@ -40,6 +45,7 @@ internal static partial class Interop
         internal static partial uint ResumeThread(SafeWaitHandle hThread);
 
         [LibraryImport(Libraries.Kernel32)]
+        [RequiresUnsafe]
         internal static partial IntPtr GetCurrentThread();
 
         internal const int DUPLICATE_SAME_ACCESS = 2;

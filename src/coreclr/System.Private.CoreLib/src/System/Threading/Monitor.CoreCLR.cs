@@ -13,6 +13,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -49,6 +50,7 @@ namespace System.Threading
         private static extern IntPtr GetLockHandleIfExists(object obj);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_GetOrCreateLockObject")]
+        [RequiresUnsafe]
         private static partial void GetOrCreateLockObject(ObjectHandleOnStack obj, ObjectHandleOnStack lockObj);
 
         #endregion

@@ -3429,6 +3429,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetComObjectGuid")]
+        [RequiresUnsafe]
         private static unsafe partial void GetComObjectGuid(ObjectHandleOnStack type, Guid* result);
 #endif // FEATURE_COMINTEROP
 
@@ -4114,6 +4115,7 @@ namespace System
 
 #if FEATURE_COMINTEROP
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_InvokeDispMethod")]
+        [RequiresUnsafe]
         private static partial void InvokeDispMethod(
             ObjectHandleOnStack type,
             ObjectHandleOnStack name,

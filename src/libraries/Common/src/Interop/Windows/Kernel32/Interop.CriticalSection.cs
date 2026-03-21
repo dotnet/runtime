@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -20,15 +21,19 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.Kernel32)]
+        [RequiresUnsafe]
         internal static unsafe partial void InitializeCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
         [LibraryImport(Libraries.Kernel32)]
+        [RequiresUnsafe]
         internal static unsafe partial void EnterCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
         [LibraryImport(Libraries.Kernel32)]
+        [RequiresUnsafe]
         internal static unsafe partial void LeaveCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
         [LibraryImport(Libraries.Kernel32)]
+        [RequiresUnsafe]
         internal static unsafe partial void DeleteCriticalSection(CRITICAL_SECTION* lpCriticalSection);
     }
 }

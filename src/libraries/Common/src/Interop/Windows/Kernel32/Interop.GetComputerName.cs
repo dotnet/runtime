@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -9,6 +10,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32, EntryPoint = "GetComputerNameW")]
+        [RequiresUnsafe]
         private static unsafe partial int GetComputerName(char* lpBuffer, uint* nSize);
 
         // maximum length of the NETBIOS name (not including NULL)

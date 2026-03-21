@@ -93,6 +93,7 @@ namespace System.Runtime.InteropServices
         private static unsafe partial IntPtr FindPrecachedExternalTypeMapEntry(QCallModule module, QCallTypeHandle groupType, string key);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry")]
+        [RequiresUnsafe]
         private static unsafe partial IntPtr FindPrecachedProxyTypeMapEntry(QCallModule module, QCallTypeHandle groupType, QCallTypeHandle type);
 
         public ref struct Utf16SharedBuffer

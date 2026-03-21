@@ -1299,4 +1299,10 @@
   <data name="UnsafeMethodMissingRequiresUnsafeMessage" xml:space="preserve">
     <value>Method '{0}' has pointer types in its signature but is not annotated with 'RequiresUnsafeAttribute'.</value>
   </data>
+  <data name="ExternMethodMissingRequiresUnsafeTitle" xml:space="preserve">
+    <value>extern and LibraryImport Methods should be annotated with 'RequiresUnsafeAttribute'.</value>
+  </data>
+  <data name="ExternMethodMissingRequiresUnsafeMessage" xml:space="preserve">
+    <value>Method '{0}' is either extern or LibraryImport but is not annotated with 'RequiresUnsafeAttribute'.</value>
+  </data>
 </root>

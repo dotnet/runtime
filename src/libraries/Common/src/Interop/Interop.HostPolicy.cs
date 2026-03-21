@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -27,6 +28,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.HostPolicy)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+        [RequiresUnsafe]
         internal static partial IntPtr corehost_set_error_writer(IntPtr errorWriter);
 #pragma warning restore CS3016 // Arrays as attribute arguments is not CLS-compliant
     }

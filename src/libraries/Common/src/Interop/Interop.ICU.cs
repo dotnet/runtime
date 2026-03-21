@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -10,6 +11,7 @@ internal static partial class Interop
     internal static partial class Globalization
     {
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICU")]
+        [RequiresUnsafe]
         internal static partial int LoadICU();
 
         internal static void InitICUFunctions(IntPtr icuuc, IntPtr icuin, ReadOnlySpan<char> version, ReadOnlySpan<char> suffix)
@@ -24,6 +26,7 @@ internal static partial class Interop
         internal static partial void InitICUFunctions(IntPtr icuuc, IntPtr icuin, string version, string? suffix);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetICUVersion")]
+        [RequiresUnsafe]
         internal static partial int GetICUVersion();
     }
 }

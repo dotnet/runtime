@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -20,12 +21,15 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.Advapi32)]
+        [RequiresUnsafe]
         internal static partial IntPtr GetSidIdentifierAuthority(IntPtr sid);
 
         [LibraryImport(Interop.Libraries.Advapi32)]
+        [RequiresUnsafe]
         internal static partial IntPtr GetSidSubAuthority(IntPtr sid, int index);
 
         [LibraryImport(Interop.Libraries.Advapi32)]
+        [RequiresUnsafe]
         internal static partial IntPtr GetSidSubAuthorityCount(IntPtr sid);
     }
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -13,6 +14,7 @@ internal static partial class Interop
         internal static unsafe partial SafeThreadPoolIOHandle CreateThreadpoolIo(SafeHandle fl, delegate* unmanaged<IntPtr, IntPtr, IntPtr, uint, UIntPtr, IntPtr, void> pfnio, IntPtr context, IntPtr pcbe);
 
         [LibraryImport(Libraries.Kernel32)]
+        [RequiresUnsafe]
         internal static unsafe partial void CloseThreadpoolIo(IntPtr pio);
 
         [LibraryImport(Libraries.Kernel32)]

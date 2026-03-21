@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -48,6 +49,7 @@ internal static partial class Interop
         internal const string LOCALE_NAME_SYSTEM_DEFAULT = "!x-sys-default-locale";
 
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
+        [RequiresUnsafe]
         internal static unsafe partial int LCIDToLocaleName(int locale, char* pLocaleName, int cchName, uint dwFlags);
 
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
@@ -79,6 +81,7 @@ internal static partial class Interop
                     IntPtr sortHandle);
 
         [LibraryImport("kernel32.dll", EntryPoint = "CompareStringEx")]
+        [RequiresUnsafe]
         internal static unsafe partial int CompareStringEx(
                     char* lpLocaleName,
                     uint dwCmpFlags,
@@ -117,6 +120,7 @@ internal static partial class Interop
                     int cchStr);
 
         [LibraryImport("kernel32.dll")]
+        [RequiresUnsafe]
         internal static unsafe partial BOOL GetUserPreferredUILanguages(uint dwFlags, uint* pulNumLanguages, char* pwszLanguagesBuffer, uint* pcchLanguagesBuffer);
 
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
@@ -137,9 +141,11 @@ internal static partial class Interop
         internal static partial int GetCalendarInfoEx(string? lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, IntPtr lpValue);
 
         [LibraryImport("kernel32.dll")]
+        [RequiresUnsafe]
         internal static partial int GetUserGeoID(int geoClass);
 
         [LibraryImport("kernel32.dll", EntryPoint = "GetGeoInfoW")]
+        [RequiresUnsafe]
         internal static unsafe partial int GetGeoInfo(int location, int geoType, char* lpGeoData, int cchData, int LangId);
 
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]

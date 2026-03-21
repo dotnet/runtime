@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -9,12 +10,15 @@ internal static partial class Interop
     internal static partial class Ole32
     {
         [LibraryImport(Libraries.Ole32)]
+        [RequiresUnsafe]
         internal static partial IntPtr CoTaskMemAlloc(nuint cb);
 
         [LibraryImport(Libraries.Ole32)]
+        [RequiresUnsafe]
         internal static partial IntPtr CoTaskMemRealloc(IntPtr pv, nuint cb);
 
         [LibraryImport(Libraries.Ole32)]
+        [RequiresUnsafe]
         internal static partial void CoTaskMemFree(IntPtr ptr);
     }
 }

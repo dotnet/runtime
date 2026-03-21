@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -10,6 +11,7 @@ internal static partial class Interop
     {
         // https://msdn.microsoft.com/en-us/library/windows/desktop/ms680600(v=vs.85).aspx
         [LibraryImport(Libraries.NtDll)]
+        [RequiresUnsafe]
         public static partial uint RtlNtStatusToDosError(int Status);
     }
 }

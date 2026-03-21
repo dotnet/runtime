@@ -24,6 +24,7 @@ namespace System.Diagnostics.Tracing
             uint numProviders);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Disable")]
+        [RequiresUnsafe]
         internal static partial void Disable(ulong sessionID);
 
         //
@@ -43,6 +44,7 @@ namespace System.Diagnostics.Tracing
         internal static partial IntPtr GetProvider(string providerName);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DeleteProvider")]
+        [RequiresUnsafe]
         internal static partial void DeleteProvider(IntPtr provHandle);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_EventActivityIdControl")]

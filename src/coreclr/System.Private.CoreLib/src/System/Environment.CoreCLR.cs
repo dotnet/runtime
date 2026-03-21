@@ -21,6 +21,7 @@ namespace System
         // Terminates this process with the given exit code.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_Exit")]
         [DoesNotReturn]
+        [RequiresUnsafe]
         private static partial void _Exit(int exitCode);
 
         [DoesNotReturn]
@@ -105,6 +106,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
+        [RequiresUnsafe]
         internal static partial int GetProcessorCount();
 
         [UnmanagedCallersOnly]

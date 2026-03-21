@@ -58,9 +58,11 @@ namespace System.Reflection.Emit
 
         #region Private Static FCalls
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParentType")]
+        [RequiresUnsafe]
         private static partial void SetParentType(QCallModule module, int tdTypeDef, int tkParent);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_AddInterfaceImpl")]
+        [RequiresUnsafe]
         private static partial void AddInterfaceImpl(QCallModule module, int tdTypeDef, int tkInterface);
         #endregion
 
@@ -103,13 +105,16 @@ namespace System.Reflection.Emit
         internal static partial int DefineEvent(QCallModule module, int tkParent, string name, EventAttributes attributes, int tkEventType);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodSemantics")]
+        [RequiresUnsafe]
         internal static partial void DefineMethodSemantics(QCallModule module, int tkAssociation,
             MethodSemanticsAttributes semantics, int tkMethod);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineMethodImpl")]
+        [RequiresUnsafe]
         internal static partial void DefineMethodImpl(QCallModule module, int tkType, int tkBody, int tkDecl);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetMethodImpl")]
+        [RequiresUnsafe]
         internal static partial void SetMethodImpl(QCallModule module, int tkMethod, MethodImplAttributes MethodImplAttributes);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParamInfo", StringMarshalling = StringMarshalling.Utf16)]
@@ -120,9 +125,11 @@ namespace System.Reflection.Emit
         internal static partial int GetTokenFromSig(QCallModule module, byte[] signature, int sigLength);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetFieldLayoutOffset")]
+        [RequiresUnsafe]
         internal static partial void SetFieldLayoutOffset(QCallModule module, int fdToken, int iOffset);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetClassLayout")]
+        [RequiresUnsafe]
         internal static partial void SetClassLayout(QCallModule module, int tk, PackingSize iPackingSize, int iTypeSize);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetConstantValue")]
@@ -543,6 +550,7 @@ namespace System.Reflection.Emit
             string name, int tkParent, GenericParameterAttributes attributes, int position, int[] constraints);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_TermCreateClass")]
+        [RequiresUnsafe]
         private static partial void TermCreateClass(QCallModule module, int tk, ObjectHandleOnStack type);
         #endregion
 

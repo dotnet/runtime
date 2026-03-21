@@ -227,6 +227,7 @@ namespace ILLink.Shared
         RequiresUnsafeOnStaticConstructor = 5002,
         RequiresUnsafeOnEntryPoint = 5003,
         UnsafeMethodMissingRequiresUnsafe = 5004,
+        ExternMethodMissingRequiresUnsafe = 5005,
         _EndRequiresUnsafeWarningsSentinel,
 #endif
     }

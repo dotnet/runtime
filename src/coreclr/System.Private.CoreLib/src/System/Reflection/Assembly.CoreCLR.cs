@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -54,6 +55,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExecutingAssembly")]
+        [RequiresUnsafe]
         private static partial void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
 
         internal static RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark)
@@ -82,6 +84,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryAssembly")]
+        [RequiresUnsafe]
         private static partial void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly);
 
         private static RuntimeAssembly? GetEntryAssemblyInternal()
@@ -93,6 +96,7 @@ namespace System.Reflection
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetAssemblyCount")]
         [SuppressGCTransition]
+        [RequiresUnsafe]
         internal static partial uint GetAssemblyCount();
     }
 }

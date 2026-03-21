@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -10,10 +11,12 @@ namespace System.Diagnostics.Tracing
     {
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogContentionLockCreated")]
+        [RequiresUnsafe]
         private static partial void LogContentionLockCreated(nint LockID, nint AssociatedObjectID, ushort ClrInstanceID);
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogContentionStart")]
+        [RequiresUnsafe]
         private static partial void LogContentionStart(
             ContentionFlagsMap ContentionFlags,
             ushort ClrInstanceID,
@@ -23,6 +26,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogContentionStop")]
+        [RequiresUnsafe]
         private static partial void LogContentionStop(
             ContentionFlagsMap ContentionFlags,
             ushort ClrInstanceID,
@@ -30,30 +34,37 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadStart")]
+        [RequiresUnsafe]
         private static partial void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop")]
+        [RequiresUnsafe]
         private static partial void LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait")]
+        [RequiresUnsafe]
         private static partial void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolMinMaxThreads")]
+        [RequiresUnsafe]
         private static partial void LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID);
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample")]
+        [RequiresUnsafe]
         private static partial void LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID);
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentAdjustment")]
+        [RequiresUnsafe]
         private static partial void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID);
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentStats")]
+        [RequiresUnsafe]
         private static partial void LogThreadPoolWorkerThreadAdjustmentStats(
             double Duration,
             double Throughput,
@@ -77,6 +88,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolIODequeue")]
+        [RequiresUnsafe]
         private static partial void LogThreadPoolIODequeue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
@@ -84,12 +96,14 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount")]
+        [RequiresUnsafe]
         private static partial void LogThreadPoolWorkingThreadCount(
             uint Count,
             ushort ClrInstanceID);
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogThreadPoolIOPack")]
+        [RequiresUnsafe]
         private static partial void LogThreadPoolIOPack(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
@@ -97,6 +111,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogWaitHandleWaitStart")]
+        [RequiresUnsafe]
         private static partial void LogWaitHandleWaitStart(
             WaitHandleWaitSourceMap WaitSource,
             IntPtr AssociatedObjectID,
@@ -104,6 +119,7 @@ namespace System.Diagnostics.Tracing
 
         [NonEvent]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeRuntimeEventSource_LogWaitHandleWaitStop")]
+        [RequiresUnsafe]
         private static partial void LogWaitHandleWaitStop(ushort ClrInstanceID);
     }
 }
