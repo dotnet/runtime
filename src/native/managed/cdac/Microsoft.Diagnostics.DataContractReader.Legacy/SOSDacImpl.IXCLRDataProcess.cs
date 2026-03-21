@@ -482,7 +482,217 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         => _legacyProcess is not null ? _legacyProcess.GetExceptionStateByExceptionRecord(record, exState) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.TranslateExceptionRecordToNotification(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionNotification*/ void* notify)
-        => _legacyProcess is not null ? _legacyProcess.TranslateExceptionRecordToNotification(record, notify) : HResults.E_NOTIMPL;
+    {
+        // Note: there is intentionally no DEBUG block calling the legacy implementation here.
+        // TranslateExceptionRecordToNotification fires callbacks on the provided notify object;
+        // calling both the cDAC and legacy implementations would double-fire every callback.
+        int hr = HResults.E_FAIL;
+        try
+        {
+            // EXCEPTION_RECORD64 is a Windows-standard structure; its layout is not stored in the
+            // data descriptor.  ExceptionInformation starts at offset 32 (after ExceptionCode(4),
+            // ExceptionFlags(4), ExceptionRecord(8), ExceptionAddress(8), NumberParameters(4),
+            // __unusedAlignment(4)) and contains ExceptionMaximumParameters (15) DWORD64 elements.
+            const int ExceptionMaximumParameters = 15;
+            const int ExceptionInformationOffset = 32;
+
+            byte* recordBytes = (byte*)record;
+            TargetPointer[] exInfo = new TargetPointer[ExceptionMaximumParameters];
+            for (int i = 0; i < ExceptionMaximumParameters; i++)
+            {
+                ulong value = *(ulong*)(recordBytes + ExceptionInformationOffset + i * sizeof(ulong));
+                exInfo[i] = new TargetPointer(value);
+            }
+
+            INotifications notifications = _target.Contracts.Notifications;
+            NotificationType notifyType = notifications.GetNotificationType(exInfo);
+
+            if (notifyType == NotificationType.Unknown)
+                return HResults.E_INVALIDARG;
+
+            // Wrap the incoming COM notify pointer so we can QI for the various notification interfaces.
+            StrategyBasedComWrappers cw = new();
+            object notifyObj = cw.GetOrCreateObjectForComInstance((nint)notify, CreateObjectFlags.None);
+            IXCLRDataExceptionNotification? notify1 = notifyObj as IXCLRDataExceptionNotification;
+            IXCLRDataExceptionNotification2? notify2 = notifyObj as IXCLRDataExceptionNotification2;
+            IXCLRDataExceptionNotification3? notify3 = notifyObj as IXCLRDataExceptionNotification3;
+            IXCLRDataExceptionNotification4? notify4 = notifyObj as IXCLRDataExceptionNotification4;
+            IXCLRDataExceptionNotification5? notify5 = notifyObj as IXCLRDataExceptionNotification5;
+
+            switch (notifyType)
+            {
+                case NotificationType.ModuleLoad:
+                {
+                    if (!notifications.TryParseModuleLoadNotification(exInfo, out TargetPointer moduleAddress))
+                        return HResults.E_FAIL;
+
+                    if (notify1 is null)
+                        return HResults.COR_E_INVALIDCAST /*E_NOINTERFACE*/;
+
+                    IXCLRDataModule? legacyModule = null;
+                    if (_legacyImpl is not null)
+                    {
+                        DacComNullableByRef<IXCLRDataModule> legacyModuleOut = new(isNullRef: false);
+                        _legacyImpl.GetModule(moduleAddress.ToClrDataAddress(_target), legacyModuleOut);
+                        legacyModule = legacyModuleOut.Interface;
+                    }
+
+                    ClrDataModule module = new(moduleAddress, _target, legacyModule);
+                    nint moduleCcw = cw.GetOrCreateComInterfaceForObject(module, CreateComInterfaceFlags.None);
+                    try
+                    {
+                        notify1.OnModuleLoaded((void*)moduleCcw);
+                    }
+                    finally
+                    {
+                        Marshal.Release(moduleCcw);
+                    }
+                    hr = HResults.S_OK;
+                    break;
+                }
+
+                case NotificationType.ModuleUnload:
+                {
+                    if (!notifications.TryParseModuleUnloadNotification(exInfo, out TargetPointer moduleAddress))
+                        return HResults.E_FAIL;
+
+                    if (notify1 is null)
+                        return HResults.COR_E_INVALIDCAST /*E_NOINTERFACE*/;
+
+                    IXCLRDataModule? legacyModule = null;
+                    if (_legacyImpl is not null)
+                    {
+                        DacComNullableByRef<IXCLRDataModule> legacyModuleOut = new(isNullRef: false);
+                        _legacyImpl.GetModule(moduleAddress.ToClrDataAddress(_target), legacyModuleOut);
+                        legacyModule = legacyModuleOut.Interface;
+                    }
+
+                    ClrDataModule module = new(moduleAddress, _target, legacyModule);
+                    nint moduleCcw = cw.GetOrCreateComInterfaceForObject(module, CreateComInterfaceFlags.None);
+                    try
+                    {
+                        notify1.OnModuleUnloaded((void*)moduleCcw);
+                    }
+                    finally
+                    {
+                        Marshal.Release(moduleCcw);
+                    }
+                    hr = HResults.S_OK;
+                    break;
+                }
+
+                case NotificationType.Jit:
+                {
+                    if (!notifications.TryParseJITNotification(exInfo, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress))
+                        return HResults.E_FAIL;
+
+                    if (notify1 is null)
+                        return HResults.COR_E_INVALIDCAST /*E_NOINTERFACE*/;
+
+                    TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+                    TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+
+                    IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                    MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescAddress);
+
+                    ClrDataMethodInstance methodInst = new(_target, methodDesc, appDomain, null);
+                    nint methodInstCcw = cw.GetOrCreateComInterfaceForObject(methodInst, CreateComInterfaceFlags.None);
+                    try
+                    {
+                        notify1.OnCodeGenerated((IXCLRDataMethodInstance*)methodInstCcw);
+                        notify5?.OnCodeGenerated2((IXCLRDataMethodInstance*)methodInstCcw, nativeCodeAddress.ToClrDataAddress(_target));
+                    }
+                    finally
+                    {
+                        Marshal.Release(methodInstCcw);
+                    }
+                    hr = HResults.S_OK;
+                    break;
+                }
+
+                case NotificationType.Exception:
+                {
+                    if (!notifications.TryParseExceptionNotification(exInfo, out TargetPointer threadAddress))
+                        return HResults.E_FAIL;
+
+                    if (notify2 is null)
+                        return HResults.E_INVALIDARG;
+
+                    Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadAddress);
+                    TargetPointer thrownObjectHandle = _target.Contracts.Thread.GetCurrentExceptionHandle(threadAddress);
+                    ClrDataExceptionState exState = new(
+                        _target,
+                        threadAddress,
+                        (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+                        thrownObjectHandle,
+                        threadData.FirstNestedException,
+                        null);
+                    nint exStateCcw = cw.GetOrCreateComInterfaceForObject(exState, CreateComInterfaceFlags.None);
+                    try
+                    {
+                        notify2.OnException((void*)exStateCcw);
+                    }
+                    finally
+                    {
+                        Marshal.Release(exStateCcw);
+                    }
+                    hr = HResults.S_OK;
+                    break;
+                }
+
+                case NotificationType.Gc:
+                {
+                    if (!notifications.TryParseGCNotification(exInfo, out GcEventData gcEventData))
+                        return HResults.E_FAIL;
+
+                    if (notify3 is not null)
+                    {
+                        GcEvtArgs gcEvtArgs = new()
+                        {
+                            type = (GcEvtArgs.GcEvt_t)(int)gcEventData.EventType,
+                            condemnedGeneration = gcEventData.CondemnedGeneration,
+                        };
+                        notify3.OnGcEvent(gcEvtArgs);
+                    }
+                    hr = HResults.S_OK;
+                    break;
+                }
+
+                case NotificationType.ExceptionCatcherEnter:
+                {
+                    if (!notifications.TryParseExceptionCatcherEnterNotification(exInfo, out TargetPointer methodDescAddress, out uint nativeOffset))
+                        return HResults.E_FAIL;
+
+                    if (notify4 is not null)
+                    {
+                        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+                        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+
+                        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                        MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescAddress);
+
+                        ClrDataMethodInstance methodInst = new(_target, methodDesc, appDomain, null);
+                        nint methodInstCcw = cw.GetOrCreateComInterfaceForObject(methodInst, CreateComInterfaceFlags.None);
+                        try
+                        {
+                            notify4.ExceptionCatcherEnter((IXCLRDataMethodInstance*)methodInstCcw, nativeOffset);
+                        }
+                        finally
+                        {
+                            Marshal.Release(methodInstCcw);
+                        }
+                    }
+                    hr = HResults.S_OK;
+                    break;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        return hr;
+    }
 
     int IXCLRDataProcess.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
         => _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
