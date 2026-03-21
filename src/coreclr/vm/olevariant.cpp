@@ -4225,10 +4225,8 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
         RETURN NULL;
     }
 
-    GCPROTECT_BEGIN(*pStringObj);
     UnmanagedCallersOnlyCaller convertToNative(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE_UCO);
     bstr = (BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj, (INT_PTR)nullptr);
-    GCPROTECT_END();
     RETURN bstr;
 }
 
