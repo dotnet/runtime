@@ -50,7 +50,7 @@ void* SystemNative_AlignedRealloc(void* ptr, uintptr_t alignment, uintptr_t new_
         uintptr_t old_size = MALLOC_SIZE(ptr);
         assert((ptr != NULL) || (old_size == 0));
 
-        uintptr_t size_to_copy = (new_size < old_size) ? new_size : old_size
+        uintptr_t size_to_copy = (new_size < old_size) ? new_size : old_size;
 #else
         // Less efficient implementation for platforms that do not provide MALLOC_SIZE.
         ptr = realloc(ptr, new_size);
