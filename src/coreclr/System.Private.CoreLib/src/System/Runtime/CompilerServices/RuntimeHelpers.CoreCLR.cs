@@ -244,8 +244,10 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(typeof(TDelegate) is RuntimeType);
             Debug.Assert(typeof(TDelegate).IsAssignableTo(typeof(Delegate)));
 
+            MethodTable* methodTable = ((RuntimeType)typeof(TDelegate)).GetNativeTypeHandle().AsMethodTable();
+
             TDelegate? newDelegate = null;
-            CreateDelegate(method, ((RuntimeType)typeof(TDelegate)).GetNativeTypeHandle().AsMethodTable(), ObjectHandleOnStack.Create(ref newDelegate));
+            CreateDelegate(method, methodTable, ObjectHandleOnStack.Create(ref newDelegate));
 
             if (newDelegate is null)
             {

@@ -300,7 +300,7 @@ namespace System.Runtime.CompilerServices
                 throw new PlatformNotSupportedException();
             }
 
-            RuntimeMethodInfo invokeMethod = Unsafe.As<RuntimeType>(typeof(TDelegate)).GetRuntimeTypeInfo().GetInvokeMethod();
+            RuntimeMethodInfo invokeMethod = ((RuntimeType)typeof(TDelegate)).GetRuntimeTypeInfo().GetInvokeMethod();
             ReadOnlySpan<ParameterInfo> parameters = methodBase.GetParametersAsSpan();
 
             int invokeCount = invokeMethod.GetParametersAsSpan().Length;

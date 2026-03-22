@@ -7,6 +7,7 @@ using System.Diagnostics.Tracing;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
@@ -140,7 +141,9 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(typeof(TDelegate).IsAssignableTo(typeof(Delegate)));
 
             // TODO: impl
-            throw new NotImplementedException();
+            TDelegate newDelegate = null!;
+
+            return Interlocked.CompareExchange(ref storage, newDelegate, null) ?? newDelegate;
         }
 
         public static void RunModuleConstructor(ModuleHandle module)

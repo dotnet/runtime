@@ -14,7 +14,7 @@ public static class Program
     private static int _errors;
 
     [Fact]
-    public static int Main()
+    public static int TestEntryPoint()
     {
         TestNonGeneric();
 
@@ -31,6 +31,21 @@ public static class Program
         TestGeneric<string[]>();
         TestGeneric<StringBuilder[]>();
         TestGeneric<Stream[]>();
+
+        AssertThrows<ArgumentNullException>(() =>
+        {
+            Action? a = null;
+            RuntimeHelpers.GetDelegate(0, ref a);
+        });
+
+        // the JIT can optimize out accesses to the ref while expanding the intrinsic so disable optimizations here
+        [MethodImpl(MethodImplOptions.NoOptimization)]
+        static unsafe void NullTest()
+        {
+            RuntimeHelpers.GetDelegate((nint)(delegate*<void>)&NullTest, ref Unsafe.NullRef<Action?>());
+        }
+
+        AssertThrows<NullReferenceException>(NullTest);
 
         return 100 + _errors;
     }
