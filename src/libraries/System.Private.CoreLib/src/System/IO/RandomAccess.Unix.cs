@@ -271,6 +271,6 @@ namespace System.IO
         /// and returns true if the error indicates a non-seekable file type (ENXIO or ESPIPE).
         /// </summary>
         private static bool ShouldFallBackToNonOffsetSyscall(Interop.ErrorInfo lastError)
-            => lastError.Error == Interop.Error.ENXIO || lastError.Error == Interop.Error.ESPIPE;
+            => lastError.Error is Interop.Error.ENXIO or Interop.Error.ESPIPE;
     }
 }
