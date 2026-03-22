@@ -300,7 +300,7 @@ namespace TestLibrary
         {
             if (process.TryGetProcessId(out int pid))
             {
-                Process.Start("sudo", $"-n kill -9 {pid}")?.WaitForExit();
+                Process.Start("sudo", $"-n kill -9 {pid}").WaitForExit();
             }
         }
 
