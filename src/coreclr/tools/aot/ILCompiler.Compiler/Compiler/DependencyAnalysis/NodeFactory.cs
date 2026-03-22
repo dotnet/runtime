@@ -1787,7 +1787,6 @@ namespace ILCompiler.DependencyAnalysis
 
             public SerializedFrozenObjectKey(MetadataType ownerType, int allocationSiteId, TypePreinit.ISerializableReference obj)
             {
-                Debug.Assert(ownerType.HasStaticConstructor);
                 OwnerType = ownerType;
                 AllocationSiteId = allocationSiteId;
                 SerializableObject = obj;

@@ -1296,7 +1296,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
     return UNCHECKED_OBJECTREF_TO_OBJECTREF(oref);
 }
 
-OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
+OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT, bool allowReferences)
 {
     CONTRACTL {
         THROWS;
@@ -1308,7 +1308,7 @@ OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
 
     SetTypeHandleOnThreadForAlloc(TypeHandle(pObjMT));
 
-    if (pObjMT->ContainsGCPointers() || pObjMT->IsComObjectType())
+    if ((!allowReferences && pObjMT->ContainsGCPointers()) || pObjMT->IsComObjectType())
     {
         return NULL;
     }

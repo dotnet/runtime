@@ -132,6 +132,17 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static TDelegate CreateSharedDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
+        {
+            ArgumentNullException.ThrowIfNull(method);
+
+            Debug.Assert(typeof(TDelegate).IsAssignableTo(typeof(Delegate)));
+
+            // TODO: impl
+            throw new NotImplementedException();
+        }
+
         public static void RunModuleConstructor(ModuleHandle module)
         {
             if (module == ModuleHandle.EmptyHandle)

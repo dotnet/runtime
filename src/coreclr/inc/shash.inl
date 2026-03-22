@@ -955,7 +955,6 @@ BOOL MapSHash<KEY, VALUE, TRAITS>::Lookup(KEY key, VALUE* pValue) const
     {
         NOTHROW_UNLESS_TRAITS_THROWS;
         GC_NOTRIGGER;
-        PRECONDITION(key != (KEY)0);
     }
     CONTRACTL_END;
 

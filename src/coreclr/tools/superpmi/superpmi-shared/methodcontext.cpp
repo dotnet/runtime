@@ -2602,6 +2602,41 @@ InfoAccessType MethodContext::repConstructStringLiteral(CORINFO_MODULE_HANDLE mo
     return (InfoAccessType)value.B;
 }
 
+void MethodContext::recConstructDelegateLiteral(CORINFO_METHOD_HANDLE method,
+                                                CORINFO_CLASS_HANDLE  delegateType,
+                                                CORINFO_OBJECT_HANDLE result)
+{
+    if (ConstructDelegateLiteral == nullptr)
+        ConstructDelegateLiteral = new LightWeightMap<DLDL, DWORDLONG>();
+
+    DLDL key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(method);
+    key.B = CastHandle(delegateType);
+
+    DWORDLONG value = CastPointer(result);
+
+    ConstructDelegateLiteral->Add(key, value);
+    DEBUG_REC(dmpConstructDelegateLiteral(key, value));
+}
+void MethodContext::dmpConstructDelegateLiteral(DLDL key, DWORDLONG value)
+{
+    printf("ConstructDelegateLiteral key method-%016" PRIX64 " type-%016" PRIX64 ", value pp-%016" PRIX64, key.A, key.B, value);
+}
+CORINFO_OBJECT_HANDLE MethodContext::repConstructDelegateLiteral(CORINFO_METHOD_HANDLE method, CORINFO_CLASS_HANDLE delegateType)
+{
+    DLDL key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(method);
+    key.B = CastHandle(delegateType);
+
+    DWORDLONG value = LookupByKeyOrMiss(ConstructDelegateLiteral, key, ": key %016" PRIX64 "", CastHandle(method));
+
+    DEBUG_REP(dmpConstructDelegateLiteral(key, value));
+
+    return (CORINFO_OBJECT_HANDLE)value;
+}
+
 void MethodContext::recConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert, bool result)
 {
     if (ConvertPInvokeCalliToCall == nullptr)

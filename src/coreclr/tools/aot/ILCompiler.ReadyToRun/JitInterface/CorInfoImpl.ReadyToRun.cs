@@ -1523,6 +1523,12 @@ namespace Internal.JitInterface
             return InfoAccessType.IAT_PPVALUE;
         }
 
+        private CORINFO_OBJECT_STRUCT_* constructDelegateLiteral(CORINFO_METHOD_STRUCT_* methodHandle, CORINFO_CLASS_STRUCT_* delegateType)
+        {
+            // not supported in R2R
+            return null;
+        }
+
         enum EHInfoFields
         {
             Flags = 0,

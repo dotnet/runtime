@@ -233,6 +233,28 @@ namespace System.Runtime.CompilerServices
             PrepareDelegate(ObjectHandleOnStack.Create(ref d));
         }
 
+        [LibraryImport(QCall, EntryPoint = "Delegate_CreateDelegate")]
+        private static unsafe partial void CreateDelegate(nint method, MethodTable* pMT, ObjectHandleOnStack objHandle);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe TDelegate CreateSharedDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
+        {
+            ArgumentNullException.ThrowIfNull(method);
+
+            Debug.Assert(typeof(TDelegate) is RuntimeType);
+            Debug.Assert(typeof(TDelegate).IsAssignableTo(typeof(Delegate)));
+
+            TDelegate? newDelegate = null;
+            CreateDelegate(method, ((RuntimeType)typeof(TDelegate)).GetNativeTypeHandle().AsMethodTable(), ObjectHandleOnStack.Create(ref newDelegate));
+
+            if (newDelegate is null)
+            {
+                throw new NotSupportedException();
+            }
+
+            return Interlocked.CompareExchange(ref storage, null, newDelegate) ?? newDelegate;
+        }
+
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
         /// returned.

@@ -1505,6 +1505,16 @@ InfoAccessType WrapICorJitInfo::constructStringLiteral(
     return temp;
 }
 
+CORINFO_OBJECT_HANDLE WrapICorJitInfo::constructDelegateLiteral(
+          CORINFO_METHOD_HANDLE method,
+          CORINFO_CLASS_HANDLE delegateType)
+{
+    API_ENTER(constructDelegateLiteral);
+    CORINFO_OBJECT_HANDLE temp = wrapHnd->constructDelegateLiteral(method, delegateType);
+    API_LEAVE(constructDelegateLiteral);
+    return temp;
+}
+
 InfoAccessType WrapICorJitInfo::emptyStringLiteral(
           void** ppValue)
 {

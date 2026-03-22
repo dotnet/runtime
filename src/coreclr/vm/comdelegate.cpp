@@ -775,6 +775,48 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 static ShuffleThunkCache* s_pShuffleThunkCache = NULL;
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
+struct FrozenDelegateKey {
+    MethodDesc* method;
+    MethodTable* type;
+    FrozenDelegateKey() = default;
+    FrozenDelegateKey(MethodDesc* method, MethodTable* type) : method(method), type(type) {}
+};
+
+class EMPTY_BASES_DECL DelegateSHashTraits : public DefaultSHashTraits< KeyValuePair<FrozenDelegateKey,DelegateObject*> >
+{
+public:
+    // explicitly declare local typedefs for these traits types, otherwise
+    // the compiler may get confused
+    typedef typename DefaultSHashTraits< KeyValuePair<FrozenDelegateKey,DelegateObject*> >::element_t element_t;
+    typedef typename DefaultSHashTraits< KeyValuePair<FrozenDelegateKey,DelegateObject*> >::count_t count_t;
+
+    typedef FrozenDelegateKey key_t;
+
+    static key_t GetKey(element_t e)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return e.Key();
+    }
+    static BOOL Equals(key_t k1, key_t k2)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return k1.method == k2.method && k1.type == k2.type;
+    }
+    static count_t Hash(key_t k)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (count_t)((size_t)k.method ^ (size_t)k.type);
+    }
+
+    static const element_t Null() { LIMITED_METHOD_CONTRACT; return element_t(key_t(),NULL); }
+    static const element_t Deleted() { LIMITED_METHOD_CONTRACT; return element_t(key_t((MethodDesc*)-1, NULL), NULL); }
+    static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.Key().method == NULL; }
+    static bool IsDeleted(const element_t &e) { return e.Key().method == (MethodDesc*)-1; }
+};
+
+static MapSHash<FrozenDelegateKey, DelegateObject*, DelegateSHashTraits> s_frozenDelegateMap;
+static CrstStatic s_crst;
+
 // One time init.
 void COMDelegate::Init()
 {
@@ -788,6 +830,8 @@ void COMDelegate::Init()
 #if defined(FEATURE_PORTABLE_SHUFFLE_THUNKS) || defined(TARGET_X86)
     s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
 #endif
+
+    s_crst.Init(CrstFrozenDelegate);
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -1235,7 +1279,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
         // Since open instance delegates on value type methods require unboxed objects we cannot use the
         // virtual dispatch stub for them. On the other hand, virtual methods on value types don't need
         // to be dispatched because value types cannot be derived. So we treat them like non-virtual methods.
-        if (pTargetMethod->IsVirtual() && !pTargetMethod->GetMethodTable()->IsValueType())
+        if (!pTargetMethod->IsStatic() && pTargetMethod->IsVirtual() && !pTargetMethod->GetMethodTable()->IsValueType())
         {
             // Since this is an open delegate over a virtual method we cannot virtualize the call target now. So the shuffle thunk
             // needs to jump to another stub (this time provided by the VirtualStubManager) that will virtualize the call at
@@ -1808,6 +1852,132 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     }
 
     GCPROTECT_END();
+    END_QCALL;
+}
+
+DELEGATEREF COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* pMT, bool requireFrozen)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    assert(pTargetMD != NULL);
+    assert(pMT != NULL);
+
+    if (TypeHandle(pMT).IsCanonicalSubtype())
+    {
+        // this should only be reachable from the JIT
+        assert(requireFrozen);
+        return NULL;
+    }
+
+    assert(pMT->IsDelegate());
+
+    MethodTable* declaringType = pTargetMD->GetMethodTable();
+    MethodDesc* pDelegateInvoke = FindDelegateInvokeMethod(pMT);
+
+    UINT invokeCount = MethodDescToNumFixedArgs(pDelegateInvoke);
+    UINT methodCount = MethodDescToNumFixedArgs(pTargetMD);
+    bool isStatic = pTargetMD->IsStatic();
+    if (!isStatic)
+    {
+        methodCount++; // count 'this'
+    }
+
+    bool isOpen = invokeCount == methodCount;
+
+    // reject cases needing valid instances
+    if (!isOpen)
+    {
+        // we block delegates closed over null valuetypes since we'd just always NRE in the unboxing stub
+        if (isStatic)
+        {
+            MetaSig sig(pTargetMD);
+            if (sig.NextArgNormalized() == ELEMENT_TYPE_END || sig.GetLastTypeHandleThrowing().IsValueType())
+            {
+                return NULL;
+            }
+        }
+        else
+        {
+            // reject instance methods on static types, those require proper targets
+            if (declaringType->IsValueType() || declaringType->GetNumGenericArgs() != 0)
+            {
+                return NULL;
+            }
+        }
+    }
+
+    // we create delegates without a target here
+    OBJECTREF target = NULL;
+
+    if (!NeedsWrapperDelegate(pTargetMD) &&
+        !IsDynamicScope(GetScopeHandle(pMT->GetModule())) &&
+        !IsDynamicScope(GetScopeHandle(pTargetMD->GetModule())))
+    {
+        // we need to lock to access the global map
+        CrstHolder crst(&s_crst);
+
+        FrozenDelegateKey key = FrozenDelegateKey(pTargetMD, pMT);
+
+        // cache frozen delegates on VM side
+        DelegateObject* cachedValue;
+        if (s_frozenDelegateMap.Lookup(key, &cachedValue))
+        {
+            return (DELEGATEREF)ObjectToOBJECTREF(cachedValue);
+        }
+
+        DELEGATEREF frozen = (DELEGATEREF)TryAllocateFrozenObject(pMT, true);
+        if (frozen != NULL)
+        {
+            BindToMethod(&frozen, &target, pTargetMD, declaringType, isOpen);
+
+            // make sure the delegate is still FOH safe
+            assert(GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(OBJECTREFToObject(frozen)));
+            assert(frozen->GetTarget() == NULL || frozen->GetTarget() == frozen);
+            assert(frozen->GetInvocationList() == NULL);
+
+            s_frozenDelegateMap.Add(key, OBJECTREFToObject(frozen));
+            return frozen;
+        }
+    }
+
+    // fail if we can't alloc frozen
+    if (requireFrozen)
+    {
+        return NULL;
+    }
+
+    // use normal alloc for fallback
+    DELEGATEREF delegate = NULL;
+
+    GCPROTECT_BEGIN(delegate);
+    delegate = (DELEGATEREF)AllocateObject(pMT);
+    BindToMethod(&delegate, &target, pTargetMD, declaringType, isOpen);
+    GCPROTECT_END();
+
+    return delegate;
+}
+
+extern "C" void QCALLTYPE Delegate_CreateDelegate(PCODE method, MethodTable* pMT, QCall::ObjectHandleOnStack objHandle)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(method != (PCODE)NULL);
+    BEGIN_QCALL;
+
+    MethodDesc* methodDesc = NonVirtualEntry2MethodDesc(method);
+
+    {
+        GCX_COOP();
+        DELEGATEREF delegate = COMDelegate::CreateShared(methodDesc, pMT);
+        objHandle.Set(delegate);
+    }
+
     END_QCALL;
 }
 

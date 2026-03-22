@@ -351,6 +351,10 @@ public:
     void dmpConstructStringLiteral(DLD key, DLD value);
     InfoAccessType repConstructStringLiteral(CORINFO_MODULE_HANDLE module, mdToken metaTok, void** ppValue);
 
+    void recConstructDelegateLiteral(CORINFO_METHOD_HANDLE method, CORINFO_CLASS_HANDLE delegateType, CORINFO_OBJECT_HANDLE result);
+    void dmpConstructDelegateLiteral(DLDL key, DWORDLONG value);
+    CORINFO_OBJECT_HANDLE repConstructDelegateLiteral(CORINFO_METHOD_HANDLE method, CORINFO_CLASS_HANDLE delegateType);
+
     void recConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert, bool result);
     void dmpConvertPInvokeCalliToCall(DLD key, DWORDLONG value);
     bool repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert);
@@ -1222,6 +1226,7 @@ enum mcPackets
     Packet_GetWasmTypeSymbol = 235,
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
+    Packet_ConstructDelegateLiteral = 238,
 };
 
 void SetDebugDumpVariables();

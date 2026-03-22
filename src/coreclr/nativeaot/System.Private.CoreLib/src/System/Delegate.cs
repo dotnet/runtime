@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Reflection.Runtime.General;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -418,6 +419,12 @@ namespace System
 
             Delegate del = (Delegate)RuntimeImports.RhNewObject(delegateEEType);
 
+            FillDelegate(del, ldftnResult, thisObject, isStatic, isOpen);
+            return del;
+        }
+
+        internal static void FillDelegate(Delegate del, nint ldftnResult, object thisObject, bool isStatic, bool isOpen)
+        {
             // What? No constructor call? That's right, and it's not an oversight. All "construction" work happens in
             // the Initialize() methods. This helper has a hard dependency on this invariant.
 
@@ -446,7 +453,6 @@ namespace System
                     del.InitializeClosedInstanceWithoutNullCheck(thisObject, ldftnResult);
                 }
             }
-            return del;
         }
 
         private unsafe Delegate NewMulticastDelegate(Wrapper[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)

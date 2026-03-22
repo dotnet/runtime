@@ -12327,6 +12327,40 @@ InfoAccessType CEECodeGenInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scop
 }
 
 /*********************************************************************/
+CORINFO_OBJECT_HANDLE CEECodeGenInfo::constructDelegateLiteral(CORINFO_METHOD_HANDLE method,
+                                                               CORINFO_CLASS_HANDLE delegateType)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_OBJECT_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle type(delegateType);
+    MethodDesc* pMD = GetMethod(method);
+
+    {
+        GCX_COOP();
+        // JIT requires frozen objects to bake them in safely
+        DELEGATEREF delegate = COMDelegate::CreateShared(pMD, type.GetMethodTable(), true);
+
+        if (delegate != NULL)
+        {
+            _ASSERT(GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(OBJECTREFToObject(delegate)));
+            result = getJitHandleForObject(delegate);
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
 InfoAccessType CEECodeGenInfo::emptyStringLiteral(void ** ppValue)
 {
     CONTRACTL {
@@ -15097,6 +15131,13 @@ void CEEInfo::setEHinfo (
 InfoAccessType CEEInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd,
                                                mdToken metaTok,
                                                void **ppValue)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+CORINFO_OBJECT_HANDLE CEEInfo::constructDelegateLiteral(CORINFO_METHOD_HANDLE method,
+                                                        CORINFO_CLASS_HANDLE delegateType)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.
