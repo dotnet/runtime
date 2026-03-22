@@ -148,6 +148,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         }
                     };
 
+                    bool succeeded = false;
                     try
                     {
                         using (HttpClient client = new HttpClient(handler))
@@ -159,16 +160,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                         Assert.NotNull(getDotNetCert);
                         Assert.NotNull(getDotNetCert.Subject);
+                        succeeded = true;
                         return getDotNetCert;
                     }
                     catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
                     {
-                        getDotNetCert?.Dispose();
                         lastException = ex;
 
                         if (attempt < MaxAttempts - 1)
                         {
                             await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+                        }
+                    }
+                    finally
+                    {
+                        if (!succeeded)
+                        {
+                            getDotNetCert?.Dispose();
                         }
                     }
                 }
