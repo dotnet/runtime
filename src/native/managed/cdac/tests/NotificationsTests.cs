@@ -112,10 +112,23 @@ public class NotificationsTests
         int condemnedGeneration = 2;
         ReadOnlySpan<TargetPointer> exInfo = MakeExInfo(Gc, gcMarkEndType, (ulong)condemnedGeneration);
 
-        contract.ParseGCNotification(exInfo, out GcEventData eventData);
+        bool result = contract.ParseGCNotification(exInfo, out GcEventData eventData);
 
+        Assert.True(result);
         Assert.Equal(GcEventType.MarkEnd, eventData.EventType);
         Assert.Equal(condemnedGeneration, eventData.CondemnedGeneration);
+    }
+
+    [Fact]
+    public void ParseGCNotification_ReturnsFalseForUnsupportedEventType()
+    {
+        INotifications contract = CreateContract();
+        ulong unsupportedGcEventType = (ulong)GcEventType.MarkEnd + 1;
+        ReadOnlySpan<TargetPointer> exInfo = MakeExInfo(Gc, unsupportedGcEventType, 0);
+
+        bool result = contract.ParseGCNotification(exInfo, out GcEventData eventData);
+
+        Assert.False(result);
     }
 
     [Fact]
