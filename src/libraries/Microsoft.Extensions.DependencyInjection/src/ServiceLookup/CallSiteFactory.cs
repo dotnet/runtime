@@ -809,7 +809,25 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 // We special case IEnumerable since it isn't explicitly registered in the container
                 // yet we can manifest instances of it when requested.
-                return genericDefinition == typeof(IEnumerable<>) || _descriptorLookup.ContainsKey(serviceIdentifier.GetGenericTypeDefinition());
+                if (genericDefinition == typeof(IEnumerable<>))
+                {
+                    return true;
+                }
+
+                if (_descriptorLookup.TryGetValue(serviceIdentifier.GetGenericTypeDefinition(), out ServiceDescriptorCacheItem descriptors) &&
+                    HasMatchingOpenGenericDescriptor(serviceType, descriptors))
+                {
+                    return true;
+                }
+
+                if (serviceIdentifier.ServiceKey != null &&
+                    _descriptorLookup.TryGetValue(new ServiceIdentifier(KeyedService.AnyKey, genericDefinition), out descriptors) &&
+                    HasMatchingOpenGenericDescriptor(serviceType, descriptors))
+                {
+                    return true;
+                }
+
+                return false;
             }
 
             // These are the built in service types that aren't part of the list of service descriptors
@@ -818,6 +836,35 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                    serviceType == typeof(IServiceScopeFactory) ||
                    serviceType == typeof(IServiceProviderIsService) ||
                    serviceType == typeof(IServiceProviderIsKeyedService);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
+            Justification = "MakeGenericType here is used to check if the closed generic type arguments satisfy the constraints of the implementation type. " +
+            "Trimming annotations on the generic types are verified when 'Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability' is set.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "MakeGenericType is only used to check if the type arguments satisfy the generic constraints. " +
+            "AOT compatibility is verified separately when services are actually resolved.")]
+        private static bool HasMatchingOpenGenericDescriptor(Type serviceType, ServiceDescriptorCacheItem descriptors)
+        {
+            Type[] genericTypeArguments = serviceType.GenericTypeArguments;
+            for (int i = 0; i < descriptors.Count; i++)
+            {
+                Type? implementationType = descriptors[i].GetImplementationType();
+                if (implementationType is not null && implementationType.IsGenericTypeDefinition)
+                {
+                    try
+                    {
+                        implementationType.MakeGenericType(genericTypeArguments);
+                        return true;
+                    }
+                    catch (ArgumentException)
+                    {
+                        // Constraints not satisfied, try next descriptor
+                    }
+                }
+            }
+
+            return false;
         }
 
         private struct ServiceDescriptorCacheItem

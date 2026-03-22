@@ -123,5 +123,50 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.True(serviceProviderIsService.IsService(typeof(IServiceScopeFactory)));
             Assert.True(serviceProviderIsService.IsService(typeof(IServiceProviderIsService)));
         }
+
+        [Fact]
+        public void ConstrainedOpenGenericWithIsServiceReturnsFalseWhenConstraintNotSatisfied()
+        {
+            if (!SupportsIServiceProviderIsService)
+            {
+                return;
+            }
+
+            // Arrange
+            var collection = new TestServiceCollection();
+            collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(ConstrainedFakeOpenGenericService<>));
+            var provider = CreateServiceProvider(collection);
+
+            // Act
+            var serviceProviderIsService = provider.GetService<IServiceProviderIsService>();
+
+            // Assert
+            Assert.NotNull(serviceProviderIsService);
+            Assert.True(serviceProviderIsService.IsService(typeof(IFakeOpenGenericService<PocoClass>)));
+            Assert.False(serviceProviderIsService.IsService(typeof(IFakeOpenGenericService<IFakeService>)));
+        }
+
+        [Fact]
+        public void ConstrainedOpenGenericWithIsServiceReturnsTrueWhenAtLeastOneDescriptorSatisfiesConstraint()
+        {
+            if (!SupportsIServiceProviderIsService)
+            {
+                return;
+            }
+
+            // Arrange
+            var collection = new TestServiceCollection();
+            collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+            collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(ConstrainedFakeOpenGenericService<>));
+            var provider = CreateServiceProvider(collection);
+
+            // Act
+            var serviceProviderIsService = provider.GetService<IServiceProviderIsService>();
+
+            // Assert
+            Assert.NotNull(serviceProviderIsService);
+            Assert.True(serviceProviderIsService.IsService(typeof(IFakeOpenGenericService<PocoClass>)));
+            Assert.True(serviceProviderIsService.IsService(typeof(IFakeOpenGenericService<IFakeService>)));
+        }
     }
 }
