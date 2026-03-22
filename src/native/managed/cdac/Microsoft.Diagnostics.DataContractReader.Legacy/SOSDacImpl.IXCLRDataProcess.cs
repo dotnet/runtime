@@ -478,10 +478,10 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         ClrDataAddress* displacement)
         => _legacyProcess is not null ? _legacyProcess.GetDataByAddress(address, flags, appDomain, tlsTask, bufLen, nameLen, nameBuf, value, displacement) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.GetExceptionStateByExceptionRecord(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionState*/ void** exState)
+    int IXCLRDataProcess.GetExceptionStateByExceptionRecord(ExceptionRecord64* record, DacComNullableByRef<IXCLRDataExceptionState> exState)
         => _legacyProcess is not null ? _legacyProcess.GetExceptionStateByExceptionRecord(record, exState) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.TranslateExceptionRecordToNotification(/*struct EXCEPTION_RECORD64*/ void* record, IXCLRDataExceptionNotification notify)
+    int IXCLRDataProcess.TranslateExceptionRecordToNotification(ExceptionRecord64* record, IXCLRDataExceptionNotification notify)
     {
         // Note: there is intentionally no DEBUG block calling the legacy implementation here.
         // TranslateExceptionRecordToNotification fires callbacks on the provided notify object;
@@ -489,16 +489,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         int hr = HResults.E_FAIL;
         try
         {
-            const int ExceptionMaximumParameters = 15;
-            const int ExceptionInformationOffset = 32;
-
-            byte* recordBytes = (byte*)record;
-            TargetPointer[] exInfo = new TargetPointer[ExceptionMaximumParameters];
-            for (int i = 0; i < ExceptionMaximumParameters; i++)
-            {
-                ulong value = *(ulong*)(recordBytes + ExceptionInformationOffset + i * sizeof(ulong));
-                exInfo[i] = new TargetPointer(value);
-            }
+            TargetPointer[] exInfo = new TargetPointer[ExceptionRecord64.ExceptionMaximumParameters];
+            for (int i = 0; i < ExceptionRecord64.ExceptionMaximumParameters; i++)
+                exInfo[i] = new TargetPointer(record->ExceptionInformation[i]);
 
             INotifications notifications = _target.Contracts.Notifications;
             NotificationType notifyType = notifications.GetNotificationType(exInfo);
@@ -506,8 +499,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             if (notifyType == NotificationType.Unknown)
                 return HResults.E_INVALIDARG;
 
-            // notify is typed as IXCLRDataExceptionNotification; cast to the extended interfaces for
-            // notifications that require them.
             IXCLRDataExceptionNotification2? notify2 = notify as IXCLRDataExceptionNotification2;
             IXCLRDataExceptionNotification3? notify3 = notify as IXCLRDataExceptionNotification3;
             IXCLRDataExceptionNotification4? notify4 = notify as IXCLRDataExceptionNotification4;
@@ -517,8 +508,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             {
                 case NotificationType.ModuleLoad:
                 {
-                    if (!notifications.TryParseModuleLoadNotification(exInfo, out TargetPointer moduleAddress))
-                        return HResults.E_FAIL;
+                    notifications.ParseModuleLoadNotification(exInfo, out TargetPointer moduleAddress);
 
                     IXCLRDataModule? legacyModule = null;
                     if (_legacyImpl is not null)
@@ -528,24 +518,14 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                         legacyModule = legacyModuleOut.Interface;
                     }
 
-                    ClrDataModule module = new(moduleAddress, _target, legacyModule);
-                    void* moduleCcw = ComInterfaceMarshaller<IXCLRDataModule>.ConvertToUnmanaged(module);
-                    try
-                    {
-                        notify.OnModuleLoaded(moduleCcw);
-                    }
-                    finally
-                    {
-                        ComInterfaceMarshaller<IXCLRDataModule>.Free(moduleCcw);
-                    }
+                    notify.OnModuleLoaded(new ClrDataModule(moduleAddress, _target, legacyModule));
                     hr = HResults.S_OK;
                     break;
                 }
 
                 case NotificationType.ModuleUnload:
                 {
-                    if (!notifications.TryParseModuleUnloadNotification(exInfo, out TargetPointer moduleAddress))
-                        return HResults.E_FAIL;
+                    notifications.ParseModuleUnloadNotification(exInfo, out TargetPointer moduleAddress);
 
                     IXCLRDataModule? legacyModule = null;
                     if (_legacyImpl is not null)
@@ -555,24 +535,14 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                         legacyModule = legacyModuleOut.Interface;
                     }
 
-                    ClrDataModule module = new(moduleAddress, _target, legacyModule);
-                    void* moduleCcw = ComInterfaceMarshaller<IXCLRDataModule>.ConvertToUnmanaged(module);
-                    try
-                    {
-                        notify.OnModuleUnloaded(moduleCcw);
-                    }
-                    finally
-                    {
-                        ComInterfaceMarshaller<IXCLRDataModule>.Free(moduleCcw);
-                    }
+                    notify.OnModuleUnloaded(new ClrDataModule(moduleAddress, _target, legacyModule));
                     hr = HResults.S_OK;
                     break;
                 }
 
                 case NotificationType.Jit:
                 {
-                    if (!notifications.TryParseJITNotification(exInfo, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress))
-                        return HResults.E_FAIL;
+                    notifications.ParseJITNotification(exInfo, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress);
 
                     TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
                     TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
@@ -581,72 +551,48 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                     MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescAddress);
 
                     ClrDataMethodInstance methodInst = new(_target, methodDesc, appDomain, null);
-                    void* methodInstCcw = ComInterfaceMarshaller<IXCLRDataMethodInstance>.ConvertToUnmanaged(methodInst);
-                    try
-                    {
-                        notify.OnCodeGenerated((IXCLRDataMethodInstance*)methodInstCcw);
-                        notify5?.OnCodeGenerated2((IXCLRDataMethodInstance*)methodInstCcw, nativeCodeAddress.ToClrDataAddress(_target));
-                    }
-                    finally
-                    {
-                        ComInterfaceMarshaller<IXCLRDataMethodInstance>.Free(methodInstCcw);
-                    }
+                    notify.OnCodeGenerated(methodInst);
+                    notify5?.OnCodeGenerated2(methodInst, nativeCodeAddress.ToClrDataAddress(_target));
                     hr = HResults.S_OK;
                     break;
                 }
 
                 case NotificationType.Exception:
                 {
-                    if (!notifications.TryParseExceptionNotification(exInfo, out TargetPointer threadAddress))
-                        return HResults.E_FAIL;
-
                     if (notify2 is null)
                         return HResults.E_INVALIDARG;
 
+                    notifications.ParseExceptionNotification(exInfo, out TargetPointer threadAddress);
+
                     Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadAddress);
                     TargetPointer thrownObjectHandle = _target.Contracts.Thread.GetCurrentExceptionHandle(threadAddress);
-                    ClrDataExceptionState exState = new(
+                    notify2.OnException(new ClrDataExceptionState(
                         _target,
                         threadAddress,
                         (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
                         thrownObjectHandle,
                         threadData.FirstNestedException,
-                        null);
-                    void* exStateCcw = ComInterfaceMarshaller<IXCLRDataExceptionState>.ConvertToUnmanaged(exState);
-                    try
-                    {
-                        notify2.OnException(exStateCcw);
-                    }
-                    finally
-                    {
-                        ComInterfaceMarshaller<IXCLRDataExceptionState>.Free(exStateCcw);
-                    }
+                        null));
                     hr = HResults.S_OK;
                     break;
                 }
 
                 case NotificationType.Gc:
                 {
-                    if (!notifications.TryParseGCNotification(exInfo, out GcEventData gcEventData))
-                        return HResults.E_FAIL;
+                    notifications.ParseGCNotification(exInfo, out GcEventData gcEventData);
 
-                    if (notify3 is not null)
+                    notify3?.OnGcEvent(new GcEvtArgs
                     {
-                        GcEvtArgs gcEvtArgs = new()
-                        {
-                            type = (GcEvtArgs.GcEvt_t)(int)gcEventData.EventType,
-                            condemnedGeneration = gcEventData.CondemnedGeneration,
-                        };
-                        notify3.OnGcEvent(gcEvtArgs);
-                    }
+                        type = (GcEvtArgs.GcEvt_t)(int)gcEventData.EventType,
+                        condemnedGeneration = gcEventData.CondemnedGeneration,
+                    });
                     hr = HResults.S_OK;
                     break;
                 }
 
                 case NotificationType.ExceptionCatcherEnter:
                 {
-                    if (!notifications.TryParseExceptionCatcherEnterNotification(exInfo, out TargetPointer methodDescAddress, out uint nativeOffset))
-                        return HResults.E_FAIL;
+                    notifications.ParseExceptionCatcherEnterNotification(exInfo, out TargetPointer methodDescAddress, out uint nativeOffset);
 
                     if (notify4 is not null)
                     {
@@ -656,16 +602,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                         MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescAddress);
 
-                        ClrDataMethodInstance methodInst = new(_target, methodDesc, appDomain, null);
-                        void* methodInstCcw = ComInterfaceMarshaller<IXCLRDataMethodInstance>.ConvertToUnmanaged(methodInst);
-                        try
-                        {
-                            notify4.ExceptionCatcherEnter((IXCLRDataMethodInstance*)methodInstCcw, nativeOffset);
-                        }
-                        finally
-                        {
-                            ComInterfaceMarshaller<IXCLRDataMethodInstance>.Free(methodInstCcw);
-                        }
+                        notify4.ExceptionCatcherEnter(new ClrDataMethodInstance(_target, methodDesc, appDomain, null), nativeOffset);
                     }
                     hr = HResults.S_OK;
                     break;

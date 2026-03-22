@@ -38,47 +38,19 @@ public interface INotifications : IContract
 
     void SetGcNotification(int condemnedGeneration) => throw new NotImplementedException();
 
-    /// <summary>
-    /// Returns the <see cref="NotificationType"/> for the given exception information arguments,
-    /// decoupling the public surface from the private DACNotify enumeration values.
-    /// </summary>
     NotificationType GetNotificationType(ReadOnlySpan<TargetPointer> exceptionInformation) => throw new NotImplementedException();
 
-    /// <summary>
-    /// Parses a module-load notification from the exception information arguments.
-    /// </summary>
-    /// <returns><see langword="true"/> if the arguments represent a valid module-load notification.</returns>
-    bool TryParseModuleLoadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress) => throw new NotImplementedException();
+    void ParseModuleLoadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress) => throw new NotImplementedException();
 
-    /// <summary>
-    /// Parses a module-unload notification from the exception information arguments.
-    /// </summary>
-    /// <returns><see langword="true"/> if the arguments represent a valid module-unload notification.</returns>
-    bool TryParseModuleUnloadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress) => throw new NotImplementedException();
+    void ParseModuleUnloadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress) => throw new NotImplementedException();
 
-    /// <summary>
-    /// Parses a JIT compilation notification from the exception information arguments.
-    /// </summary>
-    /// <returns><see langword="true"/> if the arguments represent a valid JIT notification.</returns>
-    bool TryParseJITNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress) => throw new NotImplementedException();
+    void ParseJITNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress) => throw new NotImplementedException();
 
-    /// <summary>
-    /// Parses an exception notification from the exception information arguments.
-    /// </summary>
-    /// <returns><see langword="true"/> if the arguments represent a valid exception notification.</returns>
-    bool TryParseExceptionNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer threadAddress) => throw new NotImplementedException();
+    void ParseExceptionNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer threadAddress) => throw new NotImplementedException();
 
-    /// <summary>
-    /// Parses a GC notification from the exception information arguments.
-    /// </summary>
-    /// <returns><see langword="true"/> if the arguments represent a valid GC notification.</returns>
-    bool TryParseGCNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out GcEventData eventData) => throw new NotImplementedException();
+    void ParseGCNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out GcEventData eventData) => throw new NotImplementedException();
 
-    /// <summary>
-    /// Parses an exception catcher-enter notification from the exception information arguments.
-    /// </summary>
-    /// <returns><see langword="true"/> if the arguments represent a valid exception-catcher-enter notification.</returns>
-    bool TryParseExceptionCatcherEnterNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out uint nativeOffset) => throw new NotImplementedException();
+    void ParseExceptionCatcherEnterNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out uint nativeOffset) => throw new NotImplementedException();
 }
 
 public readonly struct Notifications : INotifications

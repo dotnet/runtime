@@ -7,10 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Notifications_1 : INotifications
 {
-    // Internal representation of DACNotify notification types from src/coreclr/vm/util.hpp.
-    // These values must not be exposed publicly to decouple the public surface from the
-    // private runtime implementation.
-    private enum DacNotificationType : ulong
+    private enum NotificationType_1 : uint
     {
         ModuleLoad = 1,
         ModuleUnload = 2,
@@ -46,86 +43,48 @@ internal readonly struct Notifications_1 : INotifications
         if (exceptionInformation.IsEmpty)
             return NotificationType.Unknown;
 
-        return (DacNotificationType)exceptionInformation[0].Value switch
+        return (NotificationType_1)(uint)exceptionInformation[0].Value switch
         {
-            DacNotificationType.ModuleLoad => NotificationType.ModuleLoad,
-            DacNotificationType.ModuleUnload => NotificationType.ModuleUnload,
-            DacNotificationType.Jit2 => NotificationType.Jit,
-            DacNotificationType.Exception => NotificationType.Exception,
-            DacNotificationType.Gc => NotificationType.Gc,
-            DacNotificationType.ExceptionCatcherEnter => NotificationType.ExceptionCatcherEnter,
+            NotificationType_1.ModuleLoad => NotificationType.ModuleLoad,
+            NotificationType_1.ModuleUnload => NotificationType.ModuleUnload,
+            NotificationType_1.Jit2 => NotificationType.Jit,
+            NotificationType_1.Exception => NotificationType.Exception,
+            NotificationType_1.Gc => NotificationType.Gc,
+            NotificationType_1.ExceptionCatcherEnter => NotificationType.ExceptionCatcherEnter,
             _ => NotificationType.Unknown,
         };
     }
 
-    bool INotifications.TryParseModuleLoadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress)
+    void INotifications.ParseModuleLoadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress)
     {
-        moduleAddress = TargetPointer.Null;
-        if (exceptionInformation.Length < 2 || (DacNotificationType)exceptionInformation[0].Value != DacNotificationType.ModuleLoad)
-            return false;
-
         moduleAddress = exceptionInformation[1];
-        return true;
     }
 
-    bool INotifications.TryParseModuleUnloadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress)
+    void INotifications.ParseModuleUnloadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress)
     {
-        moduleAddress = TargetPointer.Null;
-        if (exceptionInformation.Length < 2 || (DacNotificationType)exceptionInformation[0].Value != DacNotificationType.ModuleUnload)
-            return false;
-
         moduleAddress = exceptionInformation[1];
-        return true;
     }
 
-    bool INotifications.TryParseJITNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress)
+    void INotifications.ParseJITNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress)
     {
-        methodDescAddress = TargetPointer.Null;
-        nativeCodeAddress = TargetPointer.Null;
-        if (exceptionInformation.Length < 3 || (DacNotificationType)exceptionInformation[0].Value != DacNotificationType.Jit2)
-            return false;
-
         methodDescAddress = exceptionInformation[1];
         nativeCodeAddress = exceptionInformation[2];
-        return true;
     }
 
-    bool INotifications.TryParseExceptionNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer threadAddress)
+    void INotifications.ParseExceptionNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer threadAddress)
     {
-        threadAddress = TargetPointer.Null;
-        if (exceptionInformation.Length < 2 || (DacNotificationType)exceptionInformation[0].Value != DacNotificationType.Exception)
-            return false;
-
         threadAddress = exceptionInformation[1];
-        return true;
     }
 
-    bool INotifications.TryParseGCNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out GcEventData eventData)
+    void INotifications.ParseGCNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out GcEventData eventData)
     {
-        eventData = default;
-        if (exceptionInformation.Length < 3 || (DacNotificationType)exceptionInformation[0].Value != DacNotificationType.Gc)
-            return false;
-
         GcEventType eventType = (GcEventType)(uint)exceptionInformation[1].Value;
-        switch (eventType)
-        {
-            case GcEventType.MarkEnd:
-                eventData = new GcEventData(eventType, (int)(uint)exceptionInformation[2].Value);
-                return true;
-            default:
-                return false;
-        }
+        eventData = new GcEventData(eventType, (int)(uint)exceptionInformation[2].Value);
     }
 
-    bool INotifications.TryParseExceptionCatcherEnterNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out uint nativeOffset)
+    void INotifications.ParseExceptionCatcherEnterNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out uint nativeOffset)
     {
-        methodDescAddress = TargetPointer.Null;
-        nativeOffset = 0;
-        if (exceptionInformation.Length < 3 || (DacNotificationType)exceptionInformation[0].Value != DacNotificationType.ExceptionCatcherEnter)
-            return false;
-
         methodDescAddress = exceptionInformation[1];
         nativeOffset = (uint)exceptionInformation[2].Value;
-        return true;
     }
 }
