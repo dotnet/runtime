@@ -489,10 +489,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         int hr = HResults.E_FAIL;
         try
         {
-            // EXCEPTION_RECORD64 is a Windows-standard structure; its layout is not stored in the
-            // data descriptor.  ExceptionInformation starts at offset 32 (after ExceptionCode(4),
-            // ExceptionFlags(4), ExceptionRecord(8), ExceptionAddress(8), NumberParameters(4),
-            // __unusedAlignment(4)) and contains ExceptionMaximumParameters (15) DWORD64 elements.
             const int ExceptionMaximumParameters = 15;
             const int ExceptionInformationOffset = 32;
 
