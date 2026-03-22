@@ -294,27 +294,10 @@ namespace TestLibrary
             return collectedDump;
         }
 
-        // Kills a process tree rooted at the given process using 'sudo kill -9',
-        // which is required when the processes run as root (e.g. launched via 'sudo').
-        // Note: there is an inherent race where new children could be spawned after GetChildren
-        // is called, but createdump is not expected to spawn children after startup.
-        static void KillProcessTreeWithSudo(Process process)
+        // Kills the given process using 'sudo kill -9', which is required when the process runs
+        // as root (e.g. launched via 'sudo') and cannot be killed by a non-root process (EPERM).
+        static void KillWithSudo(Process process)
         {
-            // Kill children first (depth-first), then the process itself.
-            try
-            {
-                foreach (Process child in process.GetChildren())
-                {
-                    KillProcessTreeWithSudo(child);
-                    child.Dispose();
-                }
-            }
-            catch (Exception e)
-            {
-                // Process may have already exited, or enumeration failed.
-                Console.WriteLine($"KillProcessTreeWithSudo: exception enumerating children (process may have exited): {e}");
-            }
-
             if (process.TryGetProcessId(out int pid))
             {
                 using Process sudoKill = new Process();
@@ -332,14 +315,14 @@ namespace TestLibrary
                     bool exited = sudoKill.WaitForExit(5_000);
                     if (!exited)
                     {
-                        Console.WriteLine($"KillProcessTreeWithSudo: sudo kill -9 {pid} did not exit within timeout; terminating sudo process.");
+                        Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} did not exit within timeout; terminating sudo process.");
                         try
                         {
                             sudoKill.Kill(entireProcessTree: true);
                         }
                         catch (Exception killEx)
                         {
-                            Console.WriteLine($"KillProcessTreeWithSudo: exception terminating hung sudo process for pid {pid}: {killEx}");
+                            Console.WriteLine($"KillWithSudo: exception terminating hung sudo process for pid {pid}: {killEx}");
                         }
                     }
                     else if (sudoKill.ExitCode != 0)
@@ -353,14 +336,14 @@ namespace TestLibrary
                         }
                         catch (Exception ioEx)
                         {
-                            Console.WriteLine($"KillProcessTreeWithSudo: exception reading sudo output for pid {pid}: {ioEx}");
+                            Console.WriteLine($"KillWithSudo: exception reading sudo output for pid {pid}: {ioEx}");
                         }
-                        Console.WriteLine($"KillProcessTreeWithSudo: sudo kill -9 {pid} exited with code {sudoKill.ExitCode}. stdout: {stdOut} stderr: {stdErr}");
+                        Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} exited with code {sudoKill.ExitCode}. stdout: {stdOut} stderr: {stdErr}");
                     }
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"KillProcessTreeWithSudo: exception killing pid {pid}: {e}");
+                    Console.WriteLine($"KillWithSudo: exception killing pid {pid}: {e}");
                 }
             }
         }
@@ -428,7 +411,7 @@ namespace TestLibrary
                 // createdump was launched via 'sudo', so the process and its children run as root.
                 // We cannot send SIGKILL to root-owned processes from a non-root process (EPERM).
                 // Use 'sudo kill' to terminate the timed-out process tree.
-                KillProcessTreeWithSudo(createdump);
+                KillWithSudo(createdump);
             }
 
             return fSuccess && createdump.ExitCode == 0;
