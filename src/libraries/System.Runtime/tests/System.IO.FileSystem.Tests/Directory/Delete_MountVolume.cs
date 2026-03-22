@@ -13,7 +13,6 @@ using System.IO;
 using System.Text;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -73,7 +72,7 @@ namespace System.IO.Tests
                                 dirNameWithoutRoot = dirName.Substring(3);
                                 dirNameReferredFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
                                 Directory.Delete(dirNameReferredFromMountedDrive, true);
-                                Task.Delay(300).Wait();
+                                WaitForDirectoryGone(dirName);
                                 Eval(!Directory.Exists(dirName), "Err_20387g! Directory {0} still exist: {1}", dirName, Directory.Exists(dirName));
                             }
                         }
@@ -121,7 +120,7 @@ namespace System.IO.Tests
                                 dirNameWithoutRoot = dirName.Substring(3);
                                 dirNameReferredFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
                                 Directory.Delete(dirNameReferredFromMountedDrive, true);
-                                Task.Delay(300).Wait();
+                                WaitForDirectoryGone(dirName);
                                 Eval(!Directory.Exists(dirName), "Err_794aiu! Directory {0} still exist: {1}", dirName, Directory.Exists(dirName));
                             }
                         }
@@ -166,7 +165,7 @@ namespace System.IO.Tests
                                 dirNameWithoutRoot = dirName.Substring(3);
                                 dirNameReferredFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
                                 Directory.Delete(dirNameReferredFromMountedDrive, true);
-                                Task.Delay(300).Wait();
+                                WaitForDirectoryGone(dirName);
                                 Eval(!Directory.Exists(dirName), "Err_195whv! Directory {0} still exist: {1}", dirName, Directory.Exists(dirName));
                             }
                         }
@@ -211,7 +210,7 @@ namespace System.IO.Tests
                                 dirNameWithoutRoot = dirName.Substring(3);
                                 dirNameReferredFromMountedDrive = Path.Combine(mountedDirName, dirNameWithoutRoot);
                                 Directory.Delete(dirNameReferredFromMountedDrive, true);
-                                Task.Delay(300).Wait();
+                                WaitForDirectoryGone(dirName);
                                 Eval(!Directory.Exists(dirName), "Err_493yin! Directory {0} still exist: {1}", dirName, Directory.Exists(dirName));
                             }
                         }
@@ -250,7 +249,7 @@ namespace System.IO.Tests
                             MountHelper.Mount(Directory.GetCurrentDirectory().Substring(0, 2), mountedDirName);
 
                             Directory.Delete(mountedDirName, true);
-                            Task.Delay(300).Wait();
+                            WaitForDirectoryGone(mountedDirName);
                         }
                         finally
                         {
@@ -298,7 +297,7 @@ namespace System.IO.Tests
                                         MountHelper.Mount(Directory.GetCurrentDirectory().Substring(0, 2), mountedDirName);
                                         //now lets call delete on the parent directory
                                         Directory.Delete(dirName, true);
-                                        Task.Delay(300).Wait();
+                                        WaitForDirectoryGone(dirName);
                                         Eval(!Directory.Exists(dirName), "Err_006jsf! Directory {0} still exist: {1}", dirName, Directory.Exists(dirName));
                                         Console.WriteLine("Completed Scenario 3.4");
                                     }
@@ -354,7 +353,7 @@ namespace System.IO.Tests
                                         MountHelper.Mount(Directory.GetCurrentDirectory().Substring(0, 2), mountedDirName);
                                         //now lets call delete on the parent directory
                                         Directory.Delete(dirName, true);
-                                        Task.Delay(300).Wait();
+                                        WaitForDirectoryGone(dirName);
                                         Eval(!Directory.Exists(dirName), "Err_900edl! Directory {0} still exist: {1}", dirName, Directory.Exists(dirName));
                                         Console.WriteLine("Completed Scenario 3.5: {0}", mountedDirName);
                                     }
@@ -412,10 +411,19 @@ namespace System.IO.Tests
                         if (--maxAttempts == 0)
                             throw;
                         else
-                            Task.Delay(300).Wait();
+                            Thread.Sleep(300);
                     }
                 }
             }
+        }
+
+        private static void WaitForDirectoryGone(string path)
+        {
+            const int TimeoutMs = 10_000;
+            const int PollIntervalMs = 100;
+            long start = Environment.TickCount64;
+            while (Directory.Exists(path) && Environment.TickCount64 - start < TimeoutMs)
+                Thread.Sleep(PollIntervalMs);
         }
 
         //Checks for error
