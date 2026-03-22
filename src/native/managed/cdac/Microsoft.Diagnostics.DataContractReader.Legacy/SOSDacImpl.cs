@@ -5436,8 +5436,79 @@ public sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface9
 
     #region ISOSDacInterface10
-    int ISOSDacInterface10.GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded)
-        => _legacyImpl10 is not null ? _legacyImpl10.GetObjectComWrappersData(objAddr, rcw, count, mowList, pNeeded) : HResults.E_NOTIMPL;
+    int ISOSDacInterface10.GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? mowList, uint* pNeeded)
+    {
+        int hr = HResults.S_FALSE;
+        try
+        {
+            if (objAddr == 0 || (count > 0 && mowList == null))
+                throw new ArgumentException();
+
+            if (pNeeded != null)
+                *pNeeded = 0;
+
+            if (rcw != null)
+                *rcw = 0;
+
+            Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
+            TargetPointer objPtr = objAddr.ToTargetPointer(_target);
+
+            TargetPointer rcwObj = comWrappersContract.GetComWrappersRCWForObject(objPtr);
+            if (rcwObj != TargetPointer.Null)
+            {
+                if (rcw != null)
+                    *rcw = rcwObj.ToClrDataAddress(_target) | _rcwMask;
+                hr = HResults.S_OK;
+            }
+
+            List<TargetPointer> mows = comWrappersContract.GetMOWs(objPtr, out bool hasMOWTable);
+            if (hasMOWTable)
+                hr = HResults.S_OK;
+            if (mows.Count > 0)
+            {
+                if (pNeeded != null)
+                    *pNeeded = (uint)mows.Count;
+
+                if (count < (uint)mows.Count)
+                    hr = HResults.S_FALSE;
+
+                for (int i = 0; i < (int)count && i < mows.Count; i++)
+                {
+                    TargetPointer comIdentity = comWrappersContract.GetIdentityForMOW(mows[i]);
+                    mowList![i] = comIdentity.ToClrDataAddress(_target);
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl10 is not null)
+        {
+            ClrDataAddress rcwLocal = 0;
+            uint neededLocal = 0;
+            ClrDataAddress[]? mowListLocal =  count > 0 ? new ClrDataAddress[count] : null;
+            int hrLocal = _legacyImpl10.GetObjectComWrappersData(objAddr, rcw == null ? null : &rcwLocal, count, mowListLocal, &neededLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                if (rcw != null)
+                    Debug.Assert(*rcw == rcwLocal);
+                if (pNeeded != null)
+                    Debug.Assert(*pNeeded == neededLocal);
+                if (mowList != null)
+                {
+                    for (int i = 0; i < (int)neededLocal && i < count; i++)
+                    {
+                        Debug.Assert(mowList[i] == mowListLocal![i]);
+                    }
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface10.IsComWrappersCCW(ClrDataAddress ccw, Interop.BOOL* isComWrappersCCW)
     {
         int hr = HResults.S_OK;
