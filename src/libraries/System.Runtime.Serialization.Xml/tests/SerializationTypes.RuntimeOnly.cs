@@ -935,6 +935,49 @@ namespace SerializationTypes
         }
     }
 
+    [DataContract]
+    public class MyType_NoStreamingContext
+    {
+        [IgnoreDataMember]
+        public bool OnSerializingMethodInvoked;
+
+        [IgnoreDataMember]
+        public bool OnSerializedMethodInvoked;
+
+        [IgnoreDataMember]
+        public bool OnDeserializingMethodInvoked;
+
+        [IgnoreDataMember]
+        public bool OnDeserializedMethodInvoked;
+
+        [DataMember]
+        public object Value;
+
+        [OnSerializing()]
+        private void OnSerializingMethod()
+        {
+            OnSerializingMethodInvoked = true;
+        }
+
+        [OnSerialized()]
+        private void OnSerializedMethod()
+        {
+            OnSerializedMethodInvoked = true;
+        }
+
+        [OnDeserializing()]
+        private void OnDeserializingMethod()
+        {
+            OnDeserializingMethodInvoked = true;
+        }
+
+        [OnDeserialized()]
+        private void OnDeserializedMethod()
+        {
+            OnDeserializedMethodInvoked = true;
+        }
+    }
+
     public struct EnumerableStruct : IEnumerable<string>
     {
         private List<string> _values;

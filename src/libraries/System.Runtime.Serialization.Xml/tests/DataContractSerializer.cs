@@ -1335,6 +1335,23 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_MyDataContractResolver_NoStreamingContext()
+    {
+        var myresolver = new MyResolver();
+        var settings = new DataContractSerializerSettings() { DataContractResolver = myresolver, KnownTypes = new Type[] { typeof(MyOtherType) } };
+        var input = new MyType_NoStreamingContext() { Value = new MyOtherType() { Str = "Hello World" } };
+        var output = DataContractSerializerHelper.SerializeAndDeserialize<MyType_NoStreamingContext>(input, @"<MyType_NoStreamingContext xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Value i:type=""MyOtherType""><Str>Hello World</Str></Value></MyType_NoStreamingContext>", settings);
+
+        Assert.True(myresolver.ResolveNameInvoked, "myresolver.ResolveNameInvoked is false");
+        Assert.True(myresolver.TryResolveTypeInvoked, "myresolver.TryResolveTypeInvoked is false");
+        Assert.True(myresolver.DeclaredTypeIsNotNull, "myresolver.DeclaredTypeIsNotNull is false");
+        Assert.True(input.OnSerializingMethodInvoked, "input.OnSerializingMethodInvoked is false");
+        Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
+        Assert.True(output.OnDeserializingMethodInvoked, "output.OnDeserializingMethodInvoked is false");
+        Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
+    }
+
+    [Fact]
     public static void DCS_WriteObject_Use_DataContractResolver()
     {
         var settings = new DataContractSerializerSettings() { DataContractResolver = null, KnownTypes = new Type[] { typeof(MyOtherType) } };
