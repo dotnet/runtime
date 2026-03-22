@@ -4,6 +4,7 @@
 [![Help Wanted](https://img.shields.io/github/issues/dotnet/runtime/help%20wanted?style=flat-square&color=%232EA043&label=help%20wanted)](https://github.com/dotnet/runtime/labels/help%20wanted)
 [![Good First Issue](https://img.shields.io/github/issues/dotnet/runtime/good%20first%20issue?style=flat-square&color=%232EA043&label=good%20first%20issue)](https://github.com/dotnet/runtime/labels/good%20first%20issue)
 [![Discord](https://img.shields.io/discord/732297728826277939?style=flat-square&label=Discord&logo=discord&logoColor=white&color=7289DA)](https://aka.ms/dotnet-discord)
+[![gitcgr](https://gitcgr.com/badge/dotnet/runtime.svg)](https://gitcgr.com/dotnet/runtime)
 
 * [What is .NET?](#what-is-net)
 * [How can I contribute?](#how-can-i-contribute)
