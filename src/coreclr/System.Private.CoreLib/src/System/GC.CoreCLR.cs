@@ -91,6 +91,7 @@ namespace System
         internal static partial int _StartNoGCRegion(long totalSize, [MarshalAs(UnmanagedType.Bool)] bool lohSizeKnown, long lohSize, [MarshalAs(UnmanagedType.Bool)] bool disallowFullBlockingGC);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EndNoGCRegion")]
+        [RequiresUnsafe]
         internal static partial int _EndNoGCRegion();
 
         // keep in sync with GC_ALLOC_FLAGS in gcinterface.h
@@ -102,9 +103,11 @@ namespace System
         };
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AllocateNewArray")]
+        [RequiresUnsafe]
         private static partial void AllocateNewArray(IntPtr typeHandlePtr, int length, GC_ALLOC_FLAGS flags, ObjectHandleOnStack ret);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
+        [RequiresUnsafe]
         private static partial long GetTotalMemory();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_Collect")]
@@ -126,9 +129,11 @@ namespace System
         internal static extern ulong GetGenerationSize(int gen);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AddMemoryPressure")]
+        [RequiresUnsafe]
         private static partial void _AddMemoryPressure(ulong bytesAllocated);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RemoveMemoryPressure")]
+        [RequiresUnsafe]
         private static partial void _RemoveMemoryPressure(ulong bytesAllocated);
 
         public static void AddMemoryPressure(long bytesAllocated)
@@ -340,6 +345,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
+        [RequiresUnsafe]
         private static partial void _WaitForPendingFinalizers();
 
         public static void WaitForPendingFinalizers()
@@ -369,6 +375,7 @@ namespace System
         // where calling ReRegisterForFinalize is useful is inside a finalizer that
         // needs to resurrect itself or an object that it references.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_ReRegisterForFinalize")]
+        [RequiresUnsafe]
         private static partial void ReRegisterForFinalize(ObjectHandleOnStack o);
 
         public static unsafe void ReRegisterForFinalize(object obj)
@@ -413,9 +420,11 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RegisterFrozenSegment")]
+        [RequiresUnsafe]
         private static partial IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, nint sectionSize);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_UnregisterFrozenSegment")]
+        [RequiresUnsafe]
         private static partial void _UnregisterFrozenSegment(IntPtr segmentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -432,6 +441,7 @@ namespace System
         private static extern long GetTotalAllocatedBytesApproximate();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalAllocatedBytesPrecise")]
+        [RequiresUnsafe]
         private static partial long GetTotalAllocatedBytesPrecise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -441,9 +451,11 @@ namespace System
         private static extern bool _CancelFullGCNotification();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCApproach")]
+        [RequiresUnsafe]
         private static partial int _WaitForFullGCApproach(int millisecondsTimeout);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCComplete")]
+        [RequiresUnsafe]
         private static partial int _WaitForFullGCComplete(int millisecondsTimeout);
 
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold)
@@ -770,6 +782,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetGenerationBudget")]
+        [RequiresUnsafe]
         internal static partial long _GetGenerationBudget(int generation);
 
         internal static void UnregisterMemoryLoadChangeNotification(Action notification)
@@ -1004,6 +1017,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RefreshMemoryLimit")]
+        [RequiresUnsafe]
         internal static partial int _RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
 
         internal struct GCHeapHardLimitInfo

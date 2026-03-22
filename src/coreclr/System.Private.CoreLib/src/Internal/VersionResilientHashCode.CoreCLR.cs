@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,6 +15,7 @@ namespace Internal
     internal static partial class VersionResilientHashCode
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "VersionResilientHashCode_TypeHashCode")]
+        [RequiresUnsafe]
         private static partial int TypeHashCode(QCallTypeHandle typeHandle);
 
         public static int TypeHashCode(RuntimeType type)

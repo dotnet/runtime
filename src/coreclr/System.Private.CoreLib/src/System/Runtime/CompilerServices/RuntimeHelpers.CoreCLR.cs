@@ -164,6 +164,7 @@ namespace System.Runtime.CompilerServices
         // exception when it ran.
 
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunClassConstructor")]
+        [RequiresUnsafe]
         private static partial void RunClassConstructor(QCallTypeHandle type);
 
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
@@ -184,6 +185,7 @@ namespace System.Runtime.CompilerServices
         // exception when it ran.
 
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunModuleConstructor")]
+        [RequiresUnsafe]
         private static partial void RunModuleConstructor(QCallModule module);
 
         public static void RunModuleConstructor(ModuleHandle module)
@@ -195,6 +197,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_CompileMethod")]
+        [RequiresUnsafe]
         internal static partial void CompileMethod(RuntimeMethodHandleInternal method);
 
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
@@ -221,6 +224,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareDelegate")]
+        [RequiresUnsafe]
         private static partial void PrepareDelegate(ObjectHandleOnStack d);
 
         public static void PrepareDelegate(Delegate d)
@@ -241,6 +245,7 @@ namespace System.Runtime.CompilerServices
         internal static extern int TryGetHashCode(object? o);
 
         [LibraryImport(QCall, EntryPoint = "ObjectNative_GetHashCodeSlow")]
+        [RequiresUnsafe]
         private static partial int GetHashCodeSlow(ObjectHandleOnStack o);
 
         public static int GetHashCode(object? o)
@@ -348,6 +353,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [LibraryImport(QCall, EntryPoint = "ObjectNative_AllocateUninitializedClone")]
+        [RequiresUnsafe]
         internal static partial void AllocateUninitializedClone(ObjectHandleOnStack objHandle);
 
         /// <returns>true if given type is bitwise equatable (memcmp can be used for equality checking)</returns>
@@ -517,9 +523,11 @@ namespace System.Runtime.CompilerServices
         }
 
         [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
+        [RequiresUnsafe]
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
         [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned")]
+        [RequiresUnsafe]
         private static partial IntPtr AllocateTypeAssociatedMemoryAligned(QCallTypeHandle type, uint size, uint alignment);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -627,6 +635,7 @@ namespace System.Runtime.CompilerServices
 
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_SizeOf")]
         [SuppressGCTransition]
+        [RequiresUnsafe]
         private static partial int SizeOf(QCallTypeHandle handle);
 
         /// <summary>

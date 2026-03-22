@@ -37,6 +37,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodBase_GetCurrentMethod")]
+        [RequiresUnsafe]
         private static partial RuntimeMethodHandleInternal GetCurrentMethod(StackCrawlMarkHandle stackMark);
 
         [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]

@@ -56,6 +56,7 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppContext_SetFirstChanceExceptionHandler")]
         [SuppressGCTransition]
+        [RequiresUnsafe]
         private static partial void SetFirstChanceExceptionHandlerInternal();
     }
 }

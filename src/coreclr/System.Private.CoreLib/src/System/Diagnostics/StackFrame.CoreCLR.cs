@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -57,6 +58,7 @@ namespace System.Diagnostics
 #pragma warning restore IDE0060
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StackFrame_GetMethodDescFromNativeIP")]
+        [RequiresUnsafe]
         private static partial RuntimeMethodHandleInternal GetMethodDescFromNativeIP(IntPtr ip);
 
         /// <summary>

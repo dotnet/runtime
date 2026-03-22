@@ -401,6 +401,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetFullyQualifiedName")]
+        [RequiresUnsafe]
         private static partial void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString);
 
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
@@ -416,6 +417,7 @@ namespace System.Reflection
         public override string FullyQualifiedName => GetFullyQualifiedName();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetTypes")]
+        [RequiresUnsafe]
         private static partial void GetTypes(QCallModule module, ObjectHandleOnStack retTypes, ObjectHandleOnStack retExceptions);
 
         internal RuntimeType[] GetDefinedTypes()
@@ -482,6 +484,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetScopeName")]
+        [RequiresUnsafe]
         private static partial void GetScopeName(QCallModule module, StringHandleOnStack retString);
 
         public override string ScopeName

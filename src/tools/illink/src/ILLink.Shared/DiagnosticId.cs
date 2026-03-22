@@ -222,11 +222,15 @@ namespace ILLink.Shared
 
 #if DEBUG
         // RequiresUnsafe diagnostics are in the 5000 range, separate from other diagnostics.
+        // TODO: The "IL" prefix for these diagnostics may not be ideal long-term since these are not
+        // ILLink-specific warnings. This should be reconsidered before these diagnostics become stable/public.
         RequiresUnsafe = 5000,
         RequiresUnsafeAttributeMismatch = 5001,
         RequiresUnsafeOnStaticConstructor = 5002,
         RequiresUnsafeOnEntryPoint = 5003,
         UnsafeMethodMissingRequiresUnsafe = 5004,
+        ExternMethodMissingRequiresUnsafe = 5005,
+        LibraryImportMethodMissingRequiresUnsafe = 5006,
         _EndRequiresUnsafeWarningsSentinel,
 #endif
     }

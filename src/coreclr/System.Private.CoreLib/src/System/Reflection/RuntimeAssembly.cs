@@ -140,6 +140,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetFullName")]
+        [RequiresUnsafe]
         private static partial void GetFullName(QCallAssembly assembly, StringHandleOnStack retString);
 
         public override string? FullName
@@ -160,6 +161,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryPoint")]
+        [RequiresUnsafe]
         private static partial void GetEntryPoint(QCallAssembly assembly, ObjectHandleOnStack retMethod);
 
         public override MethodInfo? EntryPoint
@@ -236,6 +238,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExportedTypes")]
+        [RequiresUnsafe]
         private static partial void GetExportedTypes(QCallAssembly assembly, ObjectHandleOnStack retTypes);
 
         [RequiresUnreferencedCode("Types might be removed")]
@@ -464,6 +467,7 @@ namespace System.Reflection
 
         // Returns the names of all the resources
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetManifestResourceNames")]
+        [RequiresUnsafe]
         private static partial void GetManifestResourceNames(QCallAssembly assembly, ObjectHandleOnStack retResourceNames);
 
         // Returns the names of all the resources
@@ -477,6 +481,7 @@ namespace System.Reflection
 
         // Returns the names of all the resources
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetReferencedAssemblies")]
+        [RequiresUnsafe]
         private static partial void GetReferencedAssemblies(QCallAssembly assembly, ObjectHandleOnStack retReferencedAssemblies);
 
         [RequiresUnreferencedCode("Assembly references might be removed")]
@@ -511,6 +516,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLocation")]
+        [RequiresUnsafe]
         private static partial void GetLocation(QCallAssembly assembly, StringHandleOnStack retString);
 
         public override string Location
@@ -527,6 +533,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetImageRuntimeVersion")]
+        [RequiresUnsafe]
         private static partial void GetImageRuntimeVersion(QCallAssembly assembly, StringHandleOnStack retString);
 
         public override string ImageRuntimeVersion
@@ -560,6 +567,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLocale")]
+        [RequiresUnsafe]
         private static partial void GetLocale(QCallAssembly assembly, StringHandleOnStack retString);
 
         private CultureInfo GetLocale()
@@ -589,6 +597,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetSimpleName")]
+        [RequiresUnsafe]
         private static partial void GetSimpleName(QCallAssembly assembly, StringHandleOnStack retSimpleName);
 
         internal string GetSimpleName()
@@ -600,6 +609,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetHashAlgorithm")]
+        [RequiresUnsafe]
         private static partial AssemblyHashAlgorithm GetHashAlgorithm(QCallAssembly assembly);
 
         private AssemblyHashAlgorithm GetHashAlgorithm()
@@ -609,6 +619,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetFlags")]
+        [RequiresUnsafe]
         private static partial AssemblyNameFlags GetFlags(QCallAssembly assembly);
 
         private AssemblyNameFlags GetFlags()
@@ -618,6 +629,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetPublicKey")]
+        [RequiresUnsafe]
         private static partial void GetPublicKey(QCallAssembly assembly, ObjectHandleOnStack retPublicKey);
 
         internal byte[]? GetPublicKey()
@@ -716,6 +728,7 @@ namespace System.Reflection
         private static extern RuntimeModule? GetManifestModule(RuntimeAssembly assembly);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyHandle_GetManifestModuleSlow")]
+        [RequiresUnsafe]
         private static partial void GetManifestModuleSlow(ObjectHandleOnStack assembly, ObjectHandleOnStack module);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -804,6 +817,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetForwardedType")]
+        [RequiresUnsafe]
         private static partial void GetForwardedType(QCallAssembly assembly, MetadataToken mdtExternalType, ObjectHandleOnStack type);
     }
 }

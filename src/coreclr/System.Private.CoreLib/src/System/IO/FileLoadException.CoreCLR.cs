@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -32,9 +33,11 @@ namespace System.IO
         }
 
         [LibraryImport(RuntimeHelpers.QCall)]
+        [RequiresUnsafe]
         private static partial void GetFileLoadExceptionMessage(int hResult, StringHandleOnStack retString);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FileLoadException_GetMessageForHR")]
+        [RequiresUnsafe]
         private static partial void GetMessageForHR(int hresult, StringHandleOnStack retString);
     }
 }

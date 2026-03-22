@@ -40,10 +40,12 @@ namespace System.Diagnostics
 #pragma warning restore 414
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [RequiresUnsafe]
         [return: UnsafeAccessorType("System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         private static extern object CreateStackTraceSymbols();
 
         [UnsafeAccessor(UnsafeAccessorKind.Method)]
+        [RequiresUnsafe]
         private static extern void GetSourceLineInfo(
             [UnsafeAccessorType("System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")] object target,
             Assembly? assembly, string assemblyPath, IntPtr loadedPeAddress,

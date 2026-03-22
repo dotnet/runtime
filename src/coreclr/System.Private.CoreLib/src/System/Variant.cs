@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -19,6 +20,7 @@ namespace System
         internal static bool IsSystemDrawingColor(Type type) => type.FullName == "System.Drawing.Color"; // Matches the behavior of IsTypeRefOrDef
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertValueTypeToRecord")]
+        [RequiresUnsafe]
         private static partial void ConvertValueTypeToRecord(ObjectHandleOnStack obj, out ComVariant pOle);
 
         internal static ComVariant GetIUnknownOrIDispatchFromObject(object? obj)
