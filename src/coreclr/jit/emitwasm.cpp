@@ -386,6 +386,19 @@ static unsigned GetInsOpcode(instruction ins)
     return insOpcodes[ins];
 }
 
+static bool HasOpcodePrefix(instruction ins)
+{
+    static const bool hasPrefix[] = {
+#define INST(id, nm, info, fmt, opcode)                                                                                \
+    (static_cast<uint8_t>(opcode) == 0xFB || static_cast<uint8_t>(opcode) == 0xFC ||                                   \
+     static_cast<uint8_t>(opcode) == 0xFD),
+#include "instrs.h"
+    };
+
+    assert(ins < ArrLen(hasPrefix));
+    return hasPrefix[ins];
+}
+
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
     if (emitIsSmallInsDsc(id))
@@ -468,7 +481,7 @@ unsigned emitter::instrDesc::idCodeSize() const
 
     // Currently, all our instructions have 1 or 2 byte opcodes.
     assert(FitsIn<uint8_t>(opcode) || FitsIn<uint16_t>(opcode));
-    unsigned size = FitsIn<uint8_t>(opcode) ? 1 : 2;
+    unsigned size = HasOpcodePrefix(idIns()) ? 2 : 1;
     switch (idInsFmt())
     {
         case IF_OPCODE:
@@ -605,7 +618,7 @@ size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
     unsigned opcode = GetInsOpcode(ins);
 
     assert(FitsIn<uint16_t>(opcode));
-    if (FitsIn<uint8_t>(opcode))
+    if (!HasOpcodePrefix(ins))
     {
         emitOutputByte(dst, opcode);
         sz += 1;
