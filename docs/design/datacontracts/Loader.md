@@ -62,6 +62,7 @@ TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
 TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva);
+TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
 IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
 IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
@@ -387,7 +388,17 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
 
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
 {
-    if (rva == 0)
+    return GetRvaData(peAssemblyPtr, rva, isNullOk: false);
+}
+
+TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva)
+{
+    return GetRvaData(peAssemblyPtr, rva, isNullOk: true);
+}
+
+private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNullOk)
+{
+    if (rva == 0 && !isNullOk)
         return TargetPointer.Null;
     TargetPointer peImage = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
     if(peImage == TargetPointer.Null)
