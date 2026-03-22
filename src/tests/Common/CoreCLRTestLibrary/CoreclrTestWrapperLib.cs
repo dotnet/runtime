@@ -295,7 +295,7 @@ namespace TestLibrary
         }
 
         // Kills the given process using 'sudo kill -9', which is required when the process runs
-        // as root (e.g. launched via 'sudo') and cannot be killed by a non-root process (EPERM).
+        // as root (e.g. launched via 'sudo') and cannot be killed by a non-root process.
         static void KillWithSudo(Process process)
         {
             if (process.TryGetProcessId(out int pid))
@@ -325,7 +325,7 @@ namespace TestLibrary
                     Task.WaitAll(stdOutTask, stdErrTask);
                     if (sudoKill.ExitCode != 0)
                     {
-                        Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} exited with code {sudoKill.ExitCode}. stdout: {stdOutTask.Result} stderr: {stdErrTask.Result}");
+                        Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} exited with code {sudoKill.ExitCode}.{Environment.NewLine}stdout: {stdOutTask.Result}{Environment.NewLine}stderr: {stdErrTask.Result}");
                     }
                 }
             }
