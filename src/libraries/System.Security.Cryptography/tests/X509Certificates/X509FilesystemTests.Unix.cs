@@ -128,31 +128,52 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             static async Task<X509Certificate2> GetGetDotNetCert()
             {
-                X509Certificate2 getDotNetCert = null;
+                const int MaxAttempts = 3;
+                Exception lastException = null;
 
-                SocketsHttpHandler handler = new SocketsHttpHandler
+                for (int attempt = 0; attempt < MaxAttempts; attempt++)
                 {
-                    SslOptions =
+                    X509Certificate2 getDotNetCert = null;
+
+                    SocketsHttpHandler handler = new SocketsHttpHandler
                     {
-                        RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
+                        SslOptions =
                         {
-                            getDotNetCert = X509CertificateLoader.LoadCertificate(certificate.Export(X509ContentType.Cert));
-                            Assert.NotNull(getDotNetCert.Subject);
-                            return errors == SslPolicyErrors.None;
+                            RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
+                            {
+                                getDotNetCert = X509CertificateLoader.LoadCertificate(certificate.Export(X509ContentType.Cert));
+                                Assert.NotNull(getDotNetCert.Subject);
+                                return errors == SslPolicyErrors.None;
+                            }
+                        }
+                    };
+
+                    try
+                    {
+                        using (HttpClient client = new HttpClient(handler))
+                        using (CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(60)))
+                        {
+                            using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Head, "https://get.dot.net/");
+                            using HttpResponseMessage response = await client.SendAsync(req, cts.Token).ConfigureAwait(false);
+                        }
+
+                        Assert.NotNull(getDotNetCert);
+                        Assert.NotNull(getDotNetCert.Subject);
+                        return getDotNetCert;
+                    }
+                    catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+                    {
+                        getDotNetCert?.Dispose();
+                        lastException = ex;
+
+                        if (attempt < MaxAttempts - 1)
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
                         }
                     }
-                };
-
-                using (HttpClient client = new HttpClient(handler))
-                using (CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
-                {
-                    using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Head, "https://get.dot.net/");
-                    using HttpResponseMessage response = await client.SendAsync(req, cts.Token).ConfigureAwait(false);
                 }
 
-                Assert.NotNull(getDotNetCert);
-                Assert.NotNull(getDotNetCert.Subject);
-                return getDotNetCert;
+                throw new Exception($"Failed to retrieve certificate from https://get.dot.net/ after {MaxAttempts} attempts.", lastException);
             }
         }
 
