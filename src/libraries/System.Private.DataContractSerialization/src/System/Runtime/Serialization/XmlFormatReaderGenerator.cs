@@ -289,9 +289,6 @@ namespace System.Runtime.Serialization
 
             private void InvokeOnDeserializing(ClassDataContract classContract)
             {
-                Debug.Assert(_objectLocal != null);
-                Debug.Assert(_objectType != null);
-
                 if (classContract.BaseClassContract != null)
                     InvokeOnDeserializing(classContract.BaseClassContract);
 
@@ -300,9 +297,6 @@ namespace System.Runtime.Serialization
 
             private void InvokeOnDeserialized(ClassDataContract classContract)
             {
-                Debug.Assert(_objectLocal != null);
-                Debug.Assert(_objectType != null);
-
                 if (classContract.BaseClassContract != null)
                     InvokeOnDeserialized(classContract.BaseClassContract);
 
@@ -311,6 +305,9 @@ namespace System.Runtime.Serialization
 
             private void InvokeDeserializationEventMethod(MethodInfo? method)
             {
+                Debug.Assert(_objectLocal != null);
+                Debug.Assert(_objectType != null);
+
                 if (method != null)
                 {
                     _ilg.LoadAddress(_objectLocal);
