@@ -953,13 +953,25 @@ namespace System.IO.Tests
                 watcher.Filters.Add(fileTwo.Name);
 
                 ExpectEvent(watcher, WatcherChangeTypes.Deleted, fileOne.Delete,
-                    cleanup: () => { SpinWait.SpinUntil(() => !File.Exists(fileOne.FullName), 2000); fileOne.Create().Dispose(); },
+                    cleanup: () =>
+                    {
+                        Assert.True(SpinWait.SpinUntil(() => !File.Exists(fileOne.FullName), 2000), $"Timed out waiting for '{fileOne.FullName}' to be deleted.");
+                        fileOne.Create().Dispose();
+                    },
                     expectedPath: fileOne.FullName);
                 ExpectEvent(watcher, WatcherChangeTypes.Deleted, fileTwo.Delete,
-                    cleanup: () => { SpinWait.SpinUntil(() => !File.Exists(fileTwo.FullName), 2000); fileTwo.Create().Dispose(); },
+                    cleanup: () =>
+                    {
+                        Assert.True(SpinWait.SpinUntil(() => !File.Exists(fileTwo.FullName), 2000), $"Timed out waiting for '{fileTwo.FullName}' to be deleted.");
+                        fileTwo.Create().Dispose();
+                    },
                     expectedPath: fileTwo.FullName);
                 ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, fileThree.Delete,
-                    cleanup: () => { SpinWait.SpinUntil(() => !File.Exists(fileThree.FullName), 2000); fileThree.Create().Dispose(); },
+                    cleanup: () =>
+                    {
+                        Assert.True(SpinWait.SpinUntil(() => !File.Exists(fileThree.FullName), 2000), $"Timed out waiting for '{fileThree.FullName}' to be deleted.");
+                        fileThree.Create().Dispose();
+                    },
                     expectedPath: fileThree.FullName);
             }
         }
@@ -1028,13 +1040,25 @@ namespace System.IO.Tests
                 watcher.Filters.Add(Path.GetFileName(directoryTwo.FullName));
 
                 ExpectEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryOne.Delete(),
-                    cleanup: () => { SpinWait.SpinUntil(() => !Directory.Exists(directoryOne.FullName), 2000); directoryOne.Create(); },
+                    cleanup: () =>
+                    {
+                        Assert.True(SpinWait.SpinUntil(() => !Directory.Exists(directoryOne.FullName), 2000), $"Timed out waiting for '{directoryOne.FullName}' to be deleted.");
+                        directoryOne.Create();
+                    },
                     expectedPath: directoryOne.FullName);
                 ExpectEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryTwo.Delete(),
-                    cleanup: () => { SpinWait.SpinUntil(() => !Directory.Exists(directoryTwo.FullName), 2000); directoryTwo.Create(); },
+                    cleanup: () =>
+                    {
+                        Assert.True(SpinWait.SpinUntil(() => !Directory.Exists(directoryTwo.FullName), 2000), $"Timed out waiting for '{directoryTwo.FullName}' to be deleted.");
+                        directoryTwo.Create();
+                    },
                     expectedPath: directoryTwo.FullName);
                 ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryThree.Delete(),
-                    cleanup: () => { SpinWait.SpinUntil(() => !Directory.Exists(directoryThree.FullName), 2000); directoryThree.Create(); },
+                    cleanup: () =>
+                    {
+                        Assert.True(SpinWait.SpinUntil(() => !Directory.Exists(directoryThree.FullName), 2000), $"Timed out waiting for '{directoryThree.FullName}' to be deleted.");
+                        directoryThree.Create();
+                    },
                     expectedPath: directoryThree.FullName);
             }
         }
