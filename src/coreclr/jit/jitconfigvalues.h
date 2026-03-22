@@ -599,6 +599,8 @@ OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
 // a continuation is being reused.
 OPT_CONFIG_STRING(JitAsyncPreservedValueAnalysisRange, "JitAsyncPreservedValueAnalysisRange")
 
+// Enable continuation reuse based on method hash range
+OPT_CONFIG_STRING(JitAsyncReuseContinuationsRange, "JitAsyncReuseContinuationsRange")
 // Save and reuse continuation instances in runtime async functions. Also
 // implies use of shared continuation layouts for all suspension points.
 RELEASE_CONFIG_INTEGER(JitAsyncReuseContinuations, "JitAsyncReuseContinuations", 1)
@@ -873,6 +875,14 @@ CONFIG_INTEGER(JitUseScalableVectorT, "JitUseScalableVectorT", 0)
 // Disable emitDispIns by default
 CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #endif // defined(TARGET_LOONGARCH64)
+
+#if defined(TARGET_WASM)
+// Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
+CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
+// Specify methods that will fail with R2R unsupported after codegen.
+// Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
+CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
+#endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.
 RELEASE_CONFIG_INTEGER(JitEnregStructLocals, "JitEnregStructLocals", 1)

@@ -530,6 +530,7 @@ NESTED_END TheUMEntryPrestub, _TEXT
 
 GenerateRedirectedStubWithFrame RedirectForThreadAbort, ThrowControlForThread
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
 //
@@ -618,6 +619,7 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
     EPILOG_BRANCH_REG  $t4
 NESTED_END ResolveWorkerAsmStub, _TEXT
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_HIJACK
 // ------------------------------------------------------------------
