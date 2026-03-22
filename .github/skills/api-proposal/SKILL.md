@@ -290,7 +290,7 @@ Format as a table or grouped list:
 | File | Description |
 |------|-------------|
 | `src/libraries/System.Linq/src/System/Linq/Where.cs` | Replaced manual null-check + throw with `ArgumentNullException.ThrowIfNull` |
-| `src/libraries/System.Collections/src/System/Collections/Generic/Queue.cs` | Replaced bounds-check boilerplate |
+| `src/libraries/System.Private.CoreLib/src/System/Collections/Generic/Queue.cs` | Replaced bounds-check boilerplate |
 
 #### Candidates for follow-up
 
