@@ -541,6 +541,38 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
     return result;
 }
 
+static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32 = nullptr;
+static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32(void * arg0)
+{
+    int64_t args[1] = { (int64_t)arg0 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.TypeMapLazyDictionary, System.Private.CoreLib", "NewPrecachedExternalTypeMap", &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32);
+    }
+
+    int32_t result;
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32);
+    return result;
+}
+
+static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32 = nullptr;
+static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32(void * arg0)
+{
+    int64_t args[1] = { (int64_t)arg0 };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32)
+    {
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.TypeMapLazyDictionary, System.Private.CoreLib", "NewPrecachedProxyTypeMap", &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32);
+    }
+
+    int32_t result;
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32);
+    return result;
+}
+
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32 = nullptr;
 static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32(void * arg0, void * arg1)
 {
@@ -831,6 +863,8 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 3765950975, "LoadAssemblyBytes#6:System.Private.CoreLib:Internal.Runtime.InteropServices:ComponentActivator", { &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32 } },
     { 705270488, "ManagedStartup#2:System.Private.CoreLib:System:StartupHookProvider", { &MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid } },
     { 343912841, "NewExternalTypeEntry#2:System.Private.CoreLib:System.Runtime.InteropServices:TypeMapLazyDictionary", { &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32 } },
+    { 3515006989, "NewPrecachedExternalTypeMap#1:System.Private.CoreLib:System.Runtime.InteropServices:TypeMapLazyDictionary", { &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32, (void*)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32 } },
+    { 1731038108, "NewPrecachedProxyTypeMap#1:System.Private.CoreLib:System.Runtime.InteropServices:TypeMapLazyDictionary", { &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32, (void*)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32 } },
     { 3327247096, "NewProxyTypeEntry#2:System.Private.CoreLib:System.Runtime.InteropServices:TypeMapLazyDictionary", { &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32 } },
     { 3837429452, "OnAssemblyLoad#2:System.Private.CoreLib:System.Runtime.Loader:AssemblyLoadContext", { &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid } },
     { 1632250712, "OnAssemblyResolve#4:System.Private.CoreLib:System.Runtime.Loader:AssemblyLoadContext", { &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid } },
