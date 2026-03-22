@@ -12,6 +12,9 @@ namespace System.IO.Tests
 {
     public partial class Directory_Delete_str_bool : Directory_Delete_str
     {
+        private const int ErrorPathNotFound = 3;
+        private const int ErrorNotAReparsePoint = 4390;
+
         private static bool IsPrivilegedAndNtfs =>
             PlatformDetection.IsPrivilegedProcess && FileSystemDebugInfo.IsCurrentDriveNTFS();
 
@@ -84,7 +87,7 @@ namespace System.IO.Tests
                 if (Directory.Exists(mountPoint))
                 {
                     try { MountHelper.Unmount(mountPoint); }
-                    catch (Win32Exception ex) when (ex.NativeErrorCode is 4390 or 3) { }
+                    catch (Win32Exception ex) when (ex.NativeErrorCode is ErrorNotAReparsePoint or ErrorPathNotFound) { }
                     Directory.Delete(mountPoint);
                 }
             }

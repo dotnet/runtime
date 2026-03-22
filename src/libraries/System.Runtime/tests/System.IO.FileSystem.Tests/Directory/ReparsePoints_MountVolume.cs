@@ -17,6 +17,8 @@ namespace System.IO.Tests
     public class Directory_ReparsePoints_MountVolume
     {
         private const string MountPrefixName = "LaksMount";
+        private const int ErrorPathNotFound = 3;
+        private const int ErrorNotAReparsePoint = 4390;
 
         private static bool IsNtfs =>
             FileSystemDebugInfo.IsCurrentDriveNTFS();
@@ -79,7 +81,7 @@ namespace System.IO.Tests
                 if (Directory.Exists(mountedDirName))
                 {
                     try { MountHelper.Unmount(mountedDirName); }
-                    catch (Win32Exception ex) when (ex.NativeErrorCode is 4390 or 3) { }
+                    catch (Win32Exception ex) when (ex.NativeErrorCode is ErrorNotAReparsePoint or ErrorPathNotFound) { }
                     DeleteDir(mountedDirName, true);
                 }
             }
@@ -137,7 +139,7 @@ namespace System.IO.Tests
                 if (Directory.Exists(mountedDirName))
                 {
                     try { MountHelper.Unmount(mountedDirName); }
-                    catch (Win32Exception ex) when (ex.NativeErrorCode is 4390 or 3) { }
+                    catch (Win32Exception ex) when (ex.NativeErrorCode is ErrorNotAReparsePoint or ErrorPathNotFound) { }
                     DeleteDir(mountedDirName, true);
                 }
             }
@@ -194,7 +196,7 @@ namespace System.IO.Tests
                 if (Directory.Exists(mountedDirName))
                 {
                     try { MountHelper.Unmount(mountedDirName); }
-                    catch (Win32Exception ex) when (ex.NativeErrorCode is 4390 or 3) { }
+                    catch (Win32Exception ex) when (ex.NativeErrorCode is ErrorNotAReparsePoint or ErrorPathNotFound) { }
                     DeleteDir(mountedDirName, true);
                 }
             }
@@ -251,7 +253,7 @@ namespace System.IO.Tests
                 if (Directory.Exists(mountedDirName))
                 {
                     try { MountHelper.Unmount(mountedDirName); }
-                    catch (Win32Exception ex) when (ex.NativeErrorCode is 4390 or 3) { }
+                    catch (Win32Exception ex) when (ex.NativeErrorCode is ErrorNotAReparsePoint or ErrorPathNotFound) { }
                     DeleteDir(mountedDirName, true);
                 }
             }
