@@ -131,7 +131,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             string result = contract.GetSimpleName(handle);
 
             if (string.IsNullOrEmpty(result))
-                return HResults.E_FAIL;
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
             OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, result);
         }

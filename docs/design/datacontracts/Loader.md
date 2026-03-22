@@ -580,8 +580,8 @@ ModuleFlags GetFlags(ModuleHandle handle)
 string GetSimpleName(ModuleHandle handle)
 {
     TargetPointer simpleNameStart = target.ReadPointer(handle.Address + /* Module::SimpleName offset */);
-    byte[] simpleName = // Read bytes from target starting at simpleNameStart until null terminator
-    return Encoding.UTF8.GetString(simpleName);
+    byte[] simpleName = // Read<byte> from target starting at simpleNameStart until null terminator
+    return new string(simpleName);
 }
 
 string GetPath(ModuleHandle handle)
