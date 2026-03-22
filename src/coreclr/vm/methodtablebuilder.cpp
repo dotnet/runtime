@@ -3425,8 +3425,8 @@ MethodTableBuilder::EnumerateClassMethods()
                 {
                     // This is a rare case when we need two async variants and this is the second one.
                     // The need arises when a Task-returning method has a Task<T> returning virtual override.
-                    // We need an extra void-returning thunk that can override the void-returning async variant in the base,
-                    // while the thunk's implementation simply forwards to the T-returning async variant and ignores the return.
+                    // We need an extra void-returning thunk that can override the void-returning async variant in the base.
+                    // The thunk's implementation simply calls the T-returning async variant and ignores the return.
 
                     // from ". . . Task<tk> . . . Method(args);"    we construct
                     //      ". . .    void  . . . Method(args);"
@@ -6047,11 +6047,22 @@ MethodTableBuilder::ProcessMethodImpls()
                             }
 
                             if (asyncVariantOfDeclToFind == AsyncVariantLookup::Async &&
-                                (declMethod.IsNull() || !MethodSignature::SignaturesEquivalent(declMethod.GetMethodSignature(), it->GetMethodSignature(), FALSE)))
+                                (declMethod.IsNull() ||
+                                    !MethodSignature::SignaturesEquivalent(declMethod.GetMethodSignature(), it->GetMethodSignature(), FALSE)))
                             {
-                                // when implementing/overriding, we may see a Task-returning method
-                                // which matches a T-returning method in the interface/base, which would not have variants.
-                                // in such case the async variant of the Task-returning method does not implement/override anything.
+                                // There are two scenarios when an async variant may not find a base to override:
+                                // 
+                                // 1. We have a Task-returning method than is a Task-returning due to generic substitution of the return type.
+                                //    The base method is T-returning and thus does not have an async variant that we can override.
+                                // 
+                                // 2. We may have added a void-returning async thunk in anticipation of covariant Task -> Task<T> override.
+                                //    The thunk is added very early based on limited type system information and it is not 100% guaranteed that
+                                //    we actually have Task -> Task<T> situation. (i.e. we may have Object -> Task<T> override or some other case...)
+                                //    When this happens the thunk does not override anything.
+                                // 
+                                // It is ok in the above cases to not have a base. It means that the "impl" method should not be called
+                                // polymorphically.
+                                //
                                 continue;
                             }
 

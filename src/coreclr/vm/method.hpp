@@ -2058,6 +2058,9 @@ public:
             if (!HasAsyncMethodData())
                 return false;
 
+            // Note: AsyncVariantLookup::Async only matches regular async variants. ReturnDroppingThunk intentionally
+            //       does not match any lookups. Noone should call ReturnDroppingThunk directly. The only way it gets
+            //       invoked is when it adds itself as a virtual override to a regular async variant.
             AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
             return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant) && !hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
         }
