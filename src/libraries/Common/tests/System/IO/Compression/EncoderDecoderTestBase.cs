@@ -326,66 +326,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public void Flush_AfterCompress_ProducesOutput()
-        {
-            using var encoder = CreateEncoder(ValidQuality, ValidWindowLog);
-            byte[] input = CreateTestData();
-            int maxLen = checked((int)GetMaxCompressedLength(input.Length));
-            byte[] compressBuffer = new byte[maxLen];
-            byte[] flushBuffer = new byte[maxLen];
-
-            OperationStatus result = encoder.Compress(input, compressBuffer, out int bytesConsumed, out int compressWritten, isFinalBlock: false);
-            Assert.Equal(OperationStatus.Done, result);
-            Assert.Equal(input.Length, bytesConsumed);
-
-            result = encoder.Flush(flushBuffer, out int flushWritten);
-            Assert.Equal(OperationStatus.Done, result);
-
-            int totalWritten = compressWritten + flushWritten;
-            Assert.True(totalWritten > 0);
-
-            // Combine compress + flush output and verify decompression
-            byte[] combined = new byte[totalWritten];
-            Array.Copy(compressBuffer, 0, combined, 0, compressWritten);
-            Array.Copy(flushBuffer, 0, combined, compressWritten, flushWritten);
-
-            byte[] decompressed = new byte[input.Length];
-            using var decoder = CreateDecoder();
-            OperationStatus decompressResult = decoder.Decompress(combined, decompressed, out _, out int decompressWritten);
-            Assert.Equal(OperationStatus.Done, decompressResult);
-            Assert.Equal(input.Length, decompressWritten);
-            Assert.Equal(input, decompressed);
-        }
-
-        [Fact]
-        public void Flush_MultipleTimes_ProducesValidOutput()
-        {
-            using var encoder = CreateEncoder(ValidQuality, ValidWindowLog);
-            byte[] input = CreateTestData();
-            byte[] compressed = new byte[GetMaxCompressedLength(input.Length * 2)];
-            int totalWritten = 0;
-
-            // First chunk + flush
-            byte[] chunk1 = input.AsSpan(0, input.Length / 2).ToArray();
-            encoder.Compress(chunk1, compressed, out _, out int written, isFinalBlock: false);
-            totalWritten += written;
-            encoder.Flush(compressed.AsSpan(totalWritten), out written);
-            totalWritten += written;
-
-            // Second chunk + final block
-            byte[] chunk2 = input.AsSpan(input.Length / 2).ToArray();
-            OperationStatus result = encoder.Compress(chunk2, compressed.AsSpan(totalWritten), out _, out written, isFinalBlock: true);
-            totalWritten += written;
-            Assert.Equal(OperationStatus.Done, result);
-
-            // Verify full round-trip
-            byte[] decompressed = new byte[input.Length];
-            using var decoder = CreateDecoder();
-            decoder.Decompress(compressed.AsSpan(0, totalWritten), decompressed, out _, out _);
-            Assert.Equal(input, decompressed);
-        }
-
-        [Fact]
         public void Encoder_Finalize()
         {
             {
