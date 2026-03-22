@@ -145,7 +145,7 @@
     <value>Serialization Callback '{1}' in type '{0}' must return void. </value>
   </data>
   <data name="CallbackParameterInvalid" xml:space="preserve">
-    <value>Serialization Callback '{1}' in type '{0}' must have a single parameter of type '{2}'. </value>
+    <value>Serialization Callback '{1}' in type '{0}' must have a single parameter of type '{2}' or parameter-less. </value>
   </data>
   <data name="CallbacksCannotBeVirtualMethods" xml:space="preserve">
     <value>Virtual Method '{0}' of type '{1}' cannot be marked with '{2}' attribute. </value>

@@ -175,25 +175,31 @@ namespace System.Runtime.Serialization.Json
             {
                 if (classContract.BaseClassContract != null)
                     InvokeOnSerializing(classContract.BaseClassContract);
-                if (classContract.OnSerializing != null)
-                {
-                    _ilg.LoadAddress(_objectLocal);
-                    _ilg.Load(_contextArg);
-                    _ilg.Call(XmlFormatGeneratorStatics.GetStreamingContextMethod);
-                    _ilg.Call(classContract.OnSerializing);
-                }
+
+                InvokeSerializationEventMethod(classContract.OnSerializing);
             }
 
             private void InvokeOnSerialized(ClassDataContract classContract)
             {
                 if (classContract.BaseClassContract != null)
                     InvokeOnSerialized(classContract.BaseClassContract);
-                if (classContract.OnSerialized != null)
+
+                InvokeSerializationEventMethod(classContract.OnSerialized);
+            }
+
+            private static void InvokeSerializationEventMethod(MethodInfo? method)
+            {
+                if (method != null)
                 {
                     _ilg.LoadAddress(_objectLocal);
-                    _ilg.Load(_contextArg);
-                    _ilg.Call(XmlFormatGeneratorStatics.GetStreamingContextMethod);
-                    _ilg.Call(classContract.OnSerialized);
+
+                    if (method.GetParameters()?.Length == 1)
+                    {
+                        _ilg.Load(_contextArg);
+                        _ilg.Call(XmlFormatGeneratorStatics.GetStreamingContextMethod);
+                    }
+
+                    _ilg.Call(method);
                 }
             }
 

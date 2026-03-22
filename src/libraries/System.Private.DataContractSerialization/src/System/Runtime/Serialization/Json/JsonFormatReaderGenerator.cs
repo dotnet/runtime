@@ -233,27 +233,32 @@ namespace System.Runtime.Serialization.Json
             {
                 if (classContract.BaseClassContract != null)
                     InvokeOnDeserializing(classContract.BaseClassContract);
-                if (classContract.OnDeserializing != null)
-                {
-                    _ilg.LoadAddress(_objectLocal);
-                    _ilg.ConvertAddress(_objectLocal.LocalType, _objectType!);
-                    _ilg.Load(_contextArg);
-                    _ilg.LoadMember(XmlFormatGeneratorStatics.GetStreamingContextMethod);
-                    _ilg.Call(classContract.OnDeserializing);
-                }
+
+                InvokeDeserializationEventMethod(classContract.OnDeserializing);
             }
 
             private void InvokeOnDeserialized(ClassDataContract classContract)
             {
                 if (classContract.BaseClassContract != null)
                     InvokeOnDeserialized(classContract.BaseClassContract);
-                if (classContract.OnDeserialized != null)
+
+                InvokeDeserializationEventMethod(classContract.OnDeserialized);
+            }
+
+            private static void InvokeDeserializationEventMethod(MethodInfo? method)
+            {
+                if (method != null)
                 {
                     _ilg.LoadAddress(_objectLocal);
                     _ilg.ConvertAddress(_objectLocal.LocalType, _objectType!);
-                    _ilg.Load(_contextArg);
-                    _ilg.LoadMember(XmlFormatGeneratorStatics.GetStreamingContextMethod);
-                    _ilg.Call(classContract.OnDeserialized);
+
+                    if (method.GetParameters()?.Length == 1)
+                    {
+                        _ilg.Load(_contextArg);
+                        _ilg.Call(XmlFormatGeneratorStatics.GetStreamingContextMethod);
+                    }
+
+                    _ilg.Call(method);
                 }
             }
 
