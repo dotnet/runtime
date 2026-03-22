@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Text;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
@@ -11,6 +12,9 @@ namespace System.IO.Tests
 {
     public partial class Directory_Delete_str_bool : Directory_Delete_str
     {
+        private const int ErrorPathNotFound = 3;
+        private const int ErrorNotAReparsePoint = 4390;
+
         private static bool IsPrivilegedAndNtfs =>
             PlatformDetection.IsPrivilegedProcess && FileSystemDebugInfo.IsCurrentDriveNTFS();
 
@@ -82,7 +86,8 @@ namespace System.IO.Tests
             {
                 if (Directory.Exists(mountPoint))
                 {
-                    MountHelper.Unmount(mountPoint);
+                    try { MountHelper.Unmount(mountPoint); }
+                    catch (Win32Exception ex) when (ex.NativeErrorCode is ErrorNotAReparsePoint or ErrorPathNotFound) { }
                     Directory.Delete(mountPoint);
                 }
             }

@@ -11,6 +11,7 @@ This is meant to contain useful utilities for IO related work in ReparsePoints
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 #if !NETFRAMEWORK
@@ -251,7 +252,7 @@ public static partial class MountHelper
 
         bool r = DeleteVolumeMountPoint(mountPoint);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
+            throw new Win32Exception(Marshal.GetLastWin32Error(), $"Failed to unmount volume at '{mountPoint}'.");
     }
 
     private static ProcessStartInfo CreateProcessStartInfo(string fileName, params string[] arguments)
