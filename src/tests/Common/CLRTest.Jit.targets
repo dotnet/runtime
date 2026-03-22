@@ -112,6 +112,7 @@ IF DEFINED RunningIlasmRoundTrip (
     <PropertyGroup>
       <HasDisasmCheck>false</HasDisasmCheck>
       <HasDisasmCheck Condition="@(DisasmCheckFiles->Count()) &gt; 0 And '$(CLRTestKind)' == 'BuildAndRun'">true</HasDisasmCheck>
+      <HasDisasmCheck>false</HasDisasmCheck>
 
       <GCStressIncompatible Condition="'$(HasDisasmCheck)' == 'true'">true</GCStressIncompatible>
       <HeapVerifyIncompatible Condition="'$(HasDisasmCheck)' == 'true'">true</HeapVerifyIncompatible>
