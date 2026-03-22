@@ -319,13 +319,44 @@ namespace TestLibrary
             {
                 using Process sudoKill = new Process();
                 sudoKill.StartInfo.FileName = "sudo";
-                sudoKill.StartInfo.Arguments = $"kill -9 {pid}";
+                // Use -n (non-interactive) so sudo fails fast instead of prompting if passwordless
+                // sudo is not configured, rather than hanging.
+                sudoKill.StartInfo.Arguments = $"-n kill -9 {pid}";
                 sudoKill.StartInfo.UseShellExecute = false;
+                sudoKill.StartInfo.RedirectStandardOutput = true;
+                sudoKill.StartInfo.RedirectStandardError = true;
                 try
                 {
                     sudoKill.Start();
                     // A kill -9 should complete almost immediately; use a short timeout.
-                    sudoKill.WaitForExit(5_000);
+                    bool exited = sudoKill.WaitForExit(5_000);
+                    if (!exited)
+                    {
+                        Console.WriteLine($"KillProcessTreeWithSudo: sudo kill -9 {pid} did not exit within timeout; terminating sudo process.");
+                        try
+                        {
+                            sudoKill.Kill(entireProcessTree: true);
+                        }
+                        catch (Exception killEx)
+                        {
+                            Console.WriteLine($"KillProcessTreeWithSudo: exception terminating hung sudo process for pid {pid}: {killEx}");
+                        }
+                    }
+                    else if (sudoKill.ExitCode != 0)
+                    {
+                        string stdOut = string.Empty;
+                        string stdErr = string.Empty;
+                        try
+                        {
+                            stdOut = sudoKill.StandardOutput.ReadToEnd();
+                            stdErr = sudoKill.StandardError.ReadToEnd();
+                        }
+                        catch (Exception ioEx)
+                        {
+                            Console.WriteLine($"KillProcessTreeWithSudo: exception reading sudo output for pid {pid}: {ioEx}");
+                        }
+                        Console.WriteLine($"KillProcessTreeWithSudo: sudo kill -9 {pid} exited with code {sudoKill.ExitCode}. stdout: {stdOut} stderr: {stdErr}");
+                    }
                 }
                 catch (Exception e)
                 {
