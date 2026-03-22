@@ -306,21 +306,10 @@ namespace TestLibrary
                     {
                         FileName = "sudo",
                         Arguments = $"-n kill -9 {pid}",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
                     }
                 };
                 sudoKill.Start();
-                Task<string> stdOutTask = sudoKill.StandardOutput.ReadToEndAsync();
-                Task<string> stdErrTask = sudoKill.StandardError.ReadToEndAsync();
                 sudoKill.WaitForExit();
-                Task.WaitAll(stdOutTask, stdErrTask);
-                if (sudoKill.ExitCode != 0)
-                {
-                    Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} exited with code {sudoKill.ExitCode}.");
-                    Console.WriteLine($"stdout: {stdOutTask.Result}");
-                    Console.WriteLine($"stderr: {stdErrTask.Result}");
-                }
             }
         }
 
