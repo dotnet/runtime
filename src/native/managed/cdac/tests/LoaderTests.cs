@@ -84,6 +84,40 @@ public unsafe class LoaderTests
         }
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetSimpleName(MockTarget.Architecture arch)
+    {
+        // Set up the target
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
+
+        string expected = "TestModule";
+
+        // Add the modules
+        TargetPointer moduleAddr = loader.AddModule(simpleName: expected);
+        TargetPointer moduleAddrEmptyName = loader.AddModule();
+
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
+        // Validate the expected module data
+        Contracts.ILoader contract = target.Contracts.Loader;
+        Assert.NotNull(contract);
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+            string actual = contract.GetSimpleName(handle);
+            Assert.Equal(expected, actual);
+        }
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddrEmptyName);
+            string actual = contract.GetSimpleName(handle);
+            Assert.Equal(string.Empty, actual);
+        }
+    }
+
     private static readonly Dictionary<string, TargetPointer> MockHeapDictionary = new()
     {
         ["LowFrequencyHeap"] = new(0x1000),
