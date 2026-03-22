@@ -2390,7 +2390,7 @@ bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
     return false;
 }
 
-MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
+MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, ULONG* elementTypeLength, bool *isValueTask)
 {
     // Without runtime async, every declared method is classified as a NormalMethod.
     // Thus code that handles runtime async scenarios becomes unreachable.
@@ -2440,7 +2440,12 @@ MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG
             if ((strcmp(name, *isValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
             {
                 if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
+                {
+                    PCCOR_SIGNATURE elementStart = sig.GetPtr();
+                    sig.SkipExactlyOne();
+                    *elementTypeLength = (ULONG)(sig.GetPtr() - elementStart);
                     return MethodReturnKind::GenericTaskReturningMethod;
+                }
             }
         }
     }

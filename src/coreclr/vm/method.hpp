@@ -76,6 +76,8 @@ enum class AsyncMethodFlags
     IsAsyncVariantForValueTask = 8,
     // Method has synthetic body, which forwards to the other variant.
     Thunk                      = 16,
+    // A special thunk to drop return value in covariant return scenario
+    ReturnDroppingThunk        = 32,
     // The rest of the methods that are not in any of the above groups.
     // Such methods are not interesting to the Runtime Async feature.
     // Note: Generic T-returning methods are classified as "None", even if T could be a Task.
@@ -95,7 +97,7 @@ enum class AsyncMethodFlags
     //   Example: "Task<int> Foo();"  ===> "int Foo();"
     //   Example: "ValueTask Bar();"  ===> "void Bar();"
     //
-    // It is possible to get from one variant to another via GetAsyncOtherVariant.
+    // It is possible to get from one variant to another via GetAsyncVariant/GetOrdinaryVariant.
     //
     // NOTE: Not all AsyncCall methods are "variants" from a pair.
     //       Methods that are explicitly declared as MethodImpl.Async in metadata while
@@ -265,8 +267,8 @@ using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 
 enum class AsyncVariantLookup
 {
-    MatchingAsyncVariant = 0,
-    AsyncOtherVariant
+    Ordinary = 0,
+    Async
 };
 
 enum class MethodReturnKind
@@ -277,7 +279,7 @@ enum class MethodReturnKind
 };
 
 bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk);
-MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask);
+MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, ULONG* elementTypeLength, bool *isValueTask);
 
 inline bool IsTaskReturning(MethodReturnKind input)
 {
@@ -1701,25 +1703,42 @@ public:
                                                         BOOL forceBoxedEntryPoint,
                                                         Instantiation methodInst,
                                                         BOOL allowInstParam,
+                                                        AsyncVariantLookup variantLookup,
                                                         BOOL forceRemotableMethod = FALSE,
                                                         BOOL allowCreate = TRUE,
-                                                        AsyncVariantLookup variantLookup = AsyncVariantLookup::MatchingAsyncVariant,
                                                         ClassLoadLevel level = CLASS_LOADED);
 
-    // Normalize methoddesc for reflection
-    static MethodDesc* FindOrCreateAssociatedMethodDescForReflection(MethodDesc *pMethod,
-                                                                     TypeHandle instType,
-                                                                     Instantiation methodInst);
-
-    inline bool HasAsyncOtherVariant() const
+    // Common Case: same async variant kind as pPrimaryMD
+    static MethodDesc* FindOrCreateAssociatedMethodDesc(MethodDesc* pPrimaryMD,
+                                                        MethodTable* pExactMT,
+                                                        BOOL forceBoxedEntryPoint,
+                                                        Instantiation methodInst,
+                                                        BOOL allowInstParam,
+                                                        BOOL forceRemotableMethod = FALSE,
+                                                        BOOL allowCreate = TRUE,
+                                                        ClassLoadLevel level = CLASS_LOADED)
     {
-        return IsAsyncVariantMethod() || ReturnsTaskOrValueTask();
+        return FindOrCreateAssociatedMethodDesc(
+            pPrimaryMD,
+            pExactMT,
+            forceBoxedEntryPoint,
+            methodInst,
+            allowInstParam,
+            pPrimaryMD->IsAsyncVariantMethod() ? AsyncVariantLookup::Async : AsyncVariantLookup::Ordinary,
+            forceRemotableMethod,
+            allowCreate,
+            level);
     }
 
-    MethodDesc* GetAsyncOtherVariant(BOOL allowInstParam = TRUE)
+    // Normalize methoddesc for reflection
+    static MethodDesc* FindOrCreateAssociatedMethodDescForReflection(MethodDesc* pMethod,
+        TypeHandle instType,
+        Instantiation methodInst);
+
+    MethodDesc* GetOrdinaryVariant(BOOL allowInstParam = TRUE)
     {
-        _ASSERTE(HasAsyncOtherVariant());
-        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
+        _ASSERT(IsAsyncVariantMethod());
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Ordinary, FALSE, TRUE);
     }
 
     MethodDesc* GetAsyncOtherVariantNoCreate(BOOL allowInstParam = TRUE)
@@ -1730,8 +1749,8 @@ public:
 
     MethodDesc* GetAsyncVariant(BOOL allowInstParam = TRUE)
     {
-        _ASSERT(!IsAsyncVariantMethod());
-        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
+        _ASSERT(!IsAsyncVariantMethod() || IsReturnDroppingThunk());
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Async, FALSE, TRUE);
     }
 
     // same as above, but with allowCreate = FALSE
@@ -1739,7 +1758,7 @@ public:
     MethodDesc* GetAsyncVariantNoCreate(BOOL allowInstParam = TRUE)
     {
         _ASSERT(!IsAsyncVariantMethod());
-        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, FALSE, AsyncVariantLookup::AsyncOtherVariant);
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Async, FALSE, FALSE);
     }
 
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
@@ -2017,6 +2036,38 @@ public:
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant);
     }
 
+    inline bool IsReturnDroppingThunk() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
+    }
+
+    inline bool MatchesAsyncVariantLookup(AsyncVariantLookup lookup) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        if (lookup == AsyncVariantLookup::Ordinary)
+            return !IsAsyncVariantMethod();
+
+        if (lookup == AsyncVariantLookup::Async)
+        {
+            if (!HasAsyncMethodData())
+                return false;
+
+            // Note: AsyncVariantLookup::Async only matches regular async variants. ReturnDroppingThunk intentionally
+            //       does not match any lookups. Noone should call ReturnDroppingThunk directly. The only way it gets
+            //       invoked is when it adds itself as a virtual override to a regular async variant.
+            AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+            return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant) && !hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
+        }
+
+        return false;
+    }
+
     // Is this an Async variant method for a method that
     // returns ValueTask or ValueTask<T> ?
     inline bool IsAsyncVariantForValueTaskReturningMethod() const
@@ -2225,7 +2276,9 @@ private:
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     void EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
     void EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig& msig, ILStubLinker* pSL);
+    void EmitReturnDroppingThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
     SigPointer GetAsyncThunkResultTypeSig();
+    int GetTokenForThunkTarget(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
 public:
