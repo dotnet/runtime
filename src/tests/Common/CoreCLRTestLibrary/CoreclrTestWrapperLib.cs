@@ -310,44 +310,23 @@ namespace TestLibrary
                         RedirectStandardError = true,
                     }
                 };
-                try
+                sudoKill.Start();
+                Task<string> stdOutTask = sudoKill.StandardOutput.ReadToEndAsync();
+                Task<string> stdErrTask = sudoKill.StandardError.ReadToEndAsync();
+                // A kill -9 should complete almost immediately; use a short timeout.
+                bool exited = sudoKill.WaitForExit(5_000);
+                if (!exited)
                 {
-                    sudoKill.Start();
-                    var stdOutTask = sudoKill.StandardOutput.ReadToEndAsync();
-                    var stdErrTask = sudoKill.StandardError.ReadToEndAsync();
-                    // A kill -9 should complete almost immediately; use a short timeout.
-                    bool exited = sudoKill.WaitForExit(5_000);
-                    if (!exited)
-                    {
-                        Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} did not exit within timeout; terminating sudo process.");
-                        try
-                        {
-                            sudoKill.Kill(entireProcessTree: true);
-                        }
-                        catch (Exception killEx)
-                        {
-                            Console.WriteLine($"KillWithSudo: exception terminating hung sudo process for pid {pid}: {killEx}");
-                        }
-                    }
-                    else if (sudoKill.ExitCode != 0)
-                    {
-                        string stdOut = string.Empty;
-                        string stdErr = string.Empty;
-                        try
-                        {
-                            stdOut = stdOutTask.GetAwaiter().GetResult();
-                            stdErr = stdErrTask.GetAwaiter().GetResult();
-                        }
-                        catch (Exception ioEx)
-                        {
-                            Console.WriteLine($"KillWithSudo: exception reading sudo output for pid {pid}: {ioEx}");
-                        }
-                        Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} exited with code {sudoKill.ExitCode}. stdout: {stdOut} stderr: {stdErr}");
-                    }
+                    Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} did not exit within timeout; terminating sudo process.");
+                    sudoKill.Kill(entireProcessTree: true);
                 }
-                catch (Exception e)
+                else
                 {
-                    Console.WriteLine($"KillWithSudo: exception killing pid {pid}: {e}");
+                    Task.WaitAll(stdOutTask, stdErrTask);
+                    if (sudoKill.ExitCode != 0)
+                    {
+                        Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} exited with code {sudoKill.ExitCode}. stdout: {stdOutTask.Result} stderr: {stdErrTask.Result}");
+                    }
                 }
             }
         }
