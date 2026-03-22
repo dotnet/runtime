@@ -78,6 +78,7 @@ namespace System.Threading
             throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
         }
 
+#if !FEATURE_SINGLE_THREADED
         #region Object->Condition mapping
 
         private static readonly ConditionalWeakTable<object, Condition> s_conditionTable = [];
@@ -116,6 +117,32 @@ namespace System.Threading
         }
 
         #endregion
+#else
+#pragma warning disable CS0169, CS0414, CA1805, CA1823 // Stub field required by CoreCLR VM via corelib.h
+        private static readonly object? s_conditionTable = null;
+#pragma warning restore CS0169, CS0414, CA1805, CA1823
+
+        #region Public Wait/Pulse methods
+
+        [UnsupportedOSPlatform("browser")]
+        public static bool Wait(object obj, int millisecondsTimeout)
+        {
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+            return default;
+        }
+
+        public static void Pulse(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+        }
+
+        public static void PulseAll(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+        }
+
+        #endregion
+#endif
 
         #region Metrics
 

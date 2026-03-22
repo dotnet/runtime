@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !FEATURE_SINGLE_THREADED
+
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -532,3 +534,5 @@ namespace System.Threading
         }
     }
 }
+
+#endif // !FEATURE_SINGLE_THREADED

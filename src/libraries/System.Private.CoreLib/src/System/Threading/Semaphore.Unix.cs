@@ -10,6 +10,36 @@ namespace System.Threading
 {
     public sealed partial class Semaphore
     {
+#if FEATURE_SINGLE_THREADED
+#pragma warning disable CA1822, IDE0060
+        private void CreateSemaphoreCore(int initialCount, int maximumCount)
+        {
+            ValidateArguments(initialCount, maximumCount);
+        }
+
+        private void CreateSemaphoreCore(
+            int initialCount,
+            int maximumCount,
+            string? name,
+            NamedWaitHandleOptionsInternal options,
+            out bool createdNew)
+        {
+            ValidateArguments(initialCount, maximumCount);
+            createdNew = true;
+        }
+
+        private static OpenExistingResult OpenExistingWorker(
+            string name,
+            NamedWaitHandleOptionsInternal options,
+            out Semaphore? result)
+        {
+            result = null;
+            return OpenExistingResult.NameNotFound;
+        }
+
+        private int ReleaseCore(int releaseCount) => 0;
+#pragma warning restore CA1822, IDE0060
+#else
         private void CreateSemaphoreCore(int initialCount, int maximumCount)
         {
             ValidateArguments(initialCount, maximumCount);
@@ -64,5 +94,6 @@ namespace System.Threading
                 waitHandle.DangerousRelease();
             }
         }
+#endif
     }
 }

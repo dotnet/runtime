@@ -87,7 +87,7 @@ namespace System.Threading
                     case ObjectKind.Lock:
                         return ((Lock)Unsafe.AsRef<object>(_objectPtr)).OwningManagedThreadId;
 
-#if !MONO
+#if !MONO && !FEATURE_SINGLE_THREADED
                     case ObjectKind.Condition:
                         Debug.Assert(_objectKind == ObjectKind.Condition);
                         return ((Condition)Unsafe.AsRef<object>(_objectPtr)).AssociatedLock.OwningManagedThreadId;
@@ -108,7 +108,7 @@ namespace System.Threading
             public Scope(Lock lockObj, int timeoutMs) : this(lockObj, ObjectKind.Lock, timeoutMs) { }
 #pragma warning restore CS9216
 
-#if !MONO
+#if !MONO && !FEATURE_SINGLE_THREADED
             public Scope(Condition condition, int timeoutMs) : this(condition, ObjectKind.Condition, timeoutMs) { }
 #endif
 

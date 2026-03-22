@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !FEATURE_SINGLE_THREADED
+
 #pragma warning disable 0420 //passing volatile fields by ref
 
 using System.Diagnostics;
@@ -168,3 +170,5 @@ namespace System.Threading
         }
     }
 }
+
+#endif // !FEATURE_SINGLE_THREADED

@@ -38,9 +38,21 @@ namespace System.Threading
         // the closest analog to Sleep(0) on Unix is sched_yield
         internal static void UninterruptibleSleep0() => Thread.Yield();
 
+#if FEATURE_SINGLE_THREADED
+        private static void SleepInternal(int millisecondsTimeout) =>
+            throw new PlatformNotSupportedException();
+#else
         private static void SleepInternal(int millisecondsTimeout) => WaitSubsystem.Sleep(millisecondsTimeout);
+#endif
 
 #if !MONO
+#if FEATURE_SINGLE_THREADED
+#pragma warning disable CA1822
+        private bool JoinInternal(int millisecondsTimeout) => throw new PlatformNotSupportedException();
+
+        private void SetJoinHandle() { }
+#pragma warning restore CA1822
+#else
         private bool JoinInternal(int millisecondsTimeout)
         {
             // This method assumes the thread has been started
@@ -88,6 +100,7 @@ namespace System.Threading
                 waitHandle.DangerousRelease();
             }
         }
+#endif // !FEATURE_SINGLE_THREADED
 #endif
 
         // sched_getcpu doesn't exist on all platforms. On those it doesn't exist on, the shim returns -1
