@@ -319,20 +319,20 @@ namespace System.Diagnostics
                             if (argEnd != -1)
                             {
                                 name = GetUntruncatedNameFromArg(argRemainder.Slice(0, argEnd), prefix: stat.comm);
-                                return name ?? stat.comm;
+                                return name ?? GetExeBasenameOrComm(procPid, stat.comm);
                             }
                         }
 
                         if (n == 0)
                         {
-                            return stat.comm;
+                            return GetExeBasenameOrComm(procPid, stat.comm);
                         }
                     }
                 }
             }
             catch (IOException)
             {
-                return stat.comm;
+                return GetExeBasenameOrComm(procPid, stat.comm);
             }
             finally
             {
@@ -357,6 +357,28 @@ namespace System.Diagnostics
                     return null;
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets the process name from /proc/pid/exe basename, falling back to the stat comm field.
+        /// Using /proc/pid/exe is more reliable than stat.comm during the fork/exec race window:
+        /// the exe symlink is updated early in execve (when the new memory map is created), before
+        /// stat.comm is updated, so it reflects the new binary even if stat.comm still shows the
+        /// parent's name.
+        /// </summary>
+        private static string GetExeBasenameOrComm(Interop.procfs.ProcPid procPid, string comm)
+        {
+            string? exePath = GetExePath(procPid);
+            if (exePath is not null)
+            {
+                string exeBasename = Path.GetFileName(exePath);
+                if (exeBasename.Length > 0)
+                {
+                    return exeBasename;
+                }
+            }
+
+            return comm;
         }
 
         // ----------------------------------
