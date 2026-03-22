@@ -952,9 +952,15 @@ namespace System.IO.Tests
                 watcher.Filters.Add(fileOne.Name);
                 watcher.Filters.Add(fileTwo.Name);
 
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, fileOne.Delete, cleanup: () => fileOne.Create().Dispose(), expectedPath : fileOne.FullName);
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, fileTwo.Delete, cleanup: () => fileTwo.Create().Dispose(), expectedPath: fileTwo.FullName );
-                ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, fileThree.Delete, cleanup: () => fileThree.Create().Dispose(), expectedPath: fileThree.FullName);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, fileOne.Delete,
+                    cleanup: () => { SpinWait.SpinUntil(() => !File.Exists(fileOne.FullName), 2000); fileOne.Create().Dispose(); },
+                    expectedPath: fileOne.FullName);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, fileTwo.Delete,
+                    cleanup: () => { SpinWait.SpinUntil(() => !File.Exists(fileTwo.FullName), 2000); fileTwo.Create().Dispose(); },
+                    expectedPath: fileTwo.FullName);
+                ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, fileThree.Delete,
+                    cleanup: () => { SpinWait.SpinUntil(() => !File.Exists(fileThree.FullName), 2000); fileThree.Create().Dispose(); },
+                    expectedPath: fileThree.FullName);
             }
         }
 
