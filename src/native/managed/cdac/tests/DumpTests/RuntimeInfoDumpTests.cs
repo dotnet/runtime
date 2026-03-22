@@ -15,7 +15,7 @@ public class RuntimeInfoDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "BasicThreads";
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeInfo_ArchitectureMatchesDumpMetadata(TestConfiguration config)
     {
@@ -39,7 +39,7 @@ public class RuntimeInfoDumpTests : DumpTestBase
         Assert.Equal(expected, arch);
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     public void RuntimeInfo_OperatingSystemMatchesDumpMetadata(TestConfiguration config)
     {

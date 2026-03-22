@@ -11,8 +11,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Collections.Immutable.Tests
 {
     public partial class ImmutableArrayTest : SimpleElementImmutablesTestBase
@@ -2290,9 +2288,13 @@ namespace System.Collections.Immutable.Tests
                 .Select(array => array[0])
                 .Cast<IEnumerable<int>>();
 
-            return SharedComparers<int>()
-                .OfType<IEqualityComparer>()
-                .Except(new IEqualityComparer[] { null })
+            var comparers = new IEqualityComparer[]
+            {
+                EqualityComparer<int>.Default,
+                StructuralComparisons.StructuralEqualityComparer
+            };
+
+            return comparers
                 .SelectMany(comparer => enumerables.Select(enumerable => new object[] { enumerable, comparer }));
         }
 

@@ -11,8 +11,6 @@ using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 {
     public class BidirectionStreamingTest : HttpClientHandlerTestBase

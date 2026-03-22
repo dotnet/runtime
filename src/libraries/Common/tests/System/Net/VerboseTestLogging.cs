@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace System.Net.Test.Common
 {
@@ -14,9 +14,24 @@ namespace System.Net.Test.Common
         {
         }
 
+        public string Output => throw new NotSupportedException();
+
         public static VerboseTestLogging GetInstance()
         {
             return s_instance;
+        }
+
+        public void Write(string message)
+        {
+            EventSourceTestLogging.Log.TestVerboseMessage(message);
+            Debug.Write(message);
+        }
+
+        public void Write(string message, params object[] args)
+        {
+            string formattedMessage = string.Format(message, args);
+            EventSourceTestLogging.Log.TestVerboseMessage(formattedMessage);
+            Debug.Write(formattedMessage);
         }
 
         public void WriteLine(string message)

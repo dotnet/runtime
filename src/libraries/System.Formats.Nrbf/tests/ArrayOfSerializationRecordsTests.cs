@@ -100,16 +100,13 @@ namespace System.Formats.Nrbf.Tests
             Assert.Equal(Text, stringRecord.Value);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(ElementType.Object)]
         [InlineData(ElementType.NonGeneric)]
         [InlineData(ElementType.Generic)]
         public void CanReadArrayThatContainsMemberPrimitiveTypedRecord_SZ(ElementType elementType)
         {
-            if (elementType != ElementType.Object && !IsPatched)
-            {
-                throw new SkipTestException("Current machine has not been patched with the most recent BinaryFormatter fix.");
-            }
+            Assert.SkipWhen(elementType != ElementType.Object && !IsPatched, "Current machine has not been patched with the most recent BinaryFormatter fix.");
 
             const int Integer = 123;
             Array input = elementType switch
@@ -128,16 +125,13 @@ namespace System.Formats.Nrbf.Tests
             Assert.Equal(Integer, intRecord.Value);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(ElementType.Object)]
         [InlineData(ElementType.NonGeneric)]
         [InlineData(ElementType.Generic)]
         public void CanReadArrayThatContainsMemberPrimitiveTypedRecord_MD(ElementType elementType)
         {
-            if (elementType != ElementType.Object && !IsPatched)
-            {
-                throw new SkipTestException("Current machine has not been patched with the most recent BinaryFormatter fix.");
-            }
+            Assert.SkipWhen(elementType != ElementType.Object && !IsPatched, "Current machine has not been patched with the most recent BinaryFormatter fix.");
 
             const int Integer = 123;
             Array input = elementType switch
@@ -157,16 +151,13 @@ namespace System.Formats.Nrbf.Tests
             Assert.Equal(Integer, intRecord.Value);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(ElementType.Object)]
         [InlineData(ElementType.NonGeneric)]
         [InlineData(ElementType.Generic)]
         public void CanReadArrayThatContainsMemberPrimitiveTypedRecord_Jagged(ElementType elementType)
         {
-            if (elementType != ElementType.Object && !IsPatched)
-            {
-                throw new SkipTestException("Current machine has not been patched with the most recent BinaryFormatter fix.");
-            }
+            Assert.SkipWhen(elementType != ElementType.Object && !IsPatched, "Current machine has not been patched with the most recent BinaryFormatter fix.");
 
             const int Integer = 123;
             Array input = elementType switch

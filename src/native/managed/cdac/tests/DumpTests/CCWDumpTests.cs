@@ -47,7 +47,7 @@ public class CCWDumpTests : DumpTestBase
         return ccwPtrs;
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
     public void CCW_HasInterfaces(TestConfiguration config)
@@ -74,7 +74,7 @@ public class CCWDumpTests : DumpTestBase
             $"Expected at least three CCWs with exactly one interface, got {ccwsWithOneInterface}");
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
     public void CCW_InterfaceMethodTablesAreReadable(TestConfiguration config)
@@ -103,7 +103,7 @@ public class CCWDumpTests : DumpTestBase
         }
     }
 
-    [ConditionalTheory]
+    [Theory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
     public void CCW_GetCCWData_FieldsAreConsistent(TestConfiguration config)

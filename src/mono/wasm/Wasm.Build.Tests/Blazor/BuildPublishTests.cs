@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 using Microsoft.Playwright;
 using System.Runtime.InteropServices;
@@ -41,7 +40,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { false })]
+    [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), new object[] { false })]
     public void DefaultTemplate_NoAOT_WithWorkload(Configuration config, bool testUnicode)
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_no_aot", appendUnicodeToPath: testUnicode);
@@ -49,7 +48,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { true })]
+    [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), new object[] { true })]
     [TestCategory("native")]
     public void DefaultTemplate_AOT_WithWorkload(Configuration config, bool testUnicode)
     {

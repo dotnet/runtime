@@ -3,6 +3,15 @@
     <!-- Microsoft.Net.Test.Sdk brings a lot of satellite assemblies in. -->
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <TestRunnerConfigPath>$(MSBuildThisFileDirectory)xunit.runner.json</TestRunnerConfigPath>
+    <!-- Mobile and WASM platforms use custom test runners that load the test assembly
+         as a library. Setting Exe on these platforms triggers NETSDK1084 because no
+         application host exists for their RIDs. -->
+    <OutputType Condition="'$(TargetsMobile)' != 'true'">Exe</OutputType>
+    <!-- UseAppHost is set in xunit.targets instead of here because the
+         xunit.v3.core.mtp-v1 package's buildTransitive props unconditionally
+         set UseAppHost=true and NuGet props are imported after Directory.Build.props.
+         Setting it in xunit.targets (imported after NuGet targets) ensures our
+         value wins. -->
     <!-- xUnit1051 recommends TestContext.Current.CancellationToken (v3 pattern) which
          is not yet adopted; suppress until a full v3 migration is performed. -->
     <NoWarn>$(NoWarn);xUnit1051</NoWarn>
@@ -10,13 +19,12 @@
 
   <ItemGroup>
     <!-- Excluding xunit.core/build as it enables deps file generation. -->
-    <PackageReference Include="xunit.core" Version="$(XUnitVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" ExcludeAssets="build" />
-    <PackageReference Include="xunit.analyzers" Version="$(XUnitAnalyzersVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" />
+    <PackageReference Include="xunit.v3.core" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" ExcludeAssets="build" />
 
-    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
 
-    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" Condition="'$(IncludeRemoteExecutor)' == 'true'" />
 
     <!--

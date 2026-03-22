@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml.Schema;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.XmlSchemaTests
 {
     public class TC_SchemaSet_Add_Schema : TC_SchemaSetBase

@@ -140,16 +140,13 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(null)]
         [InlineData(new byte[0])]
         [InlineData(new byte[3] { 0, 0, 0 })]
         public void Socket_Get_KeepAlive_Time_AsByteArray_BufferNullOrTooSmall_Failure(byte[]? buffer)
         {
-            if (PlatformDetection.IsQemuLinux && (buffer == null || buffer.Length == 0))
-            {
-                throw new SkipTestException("Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104545)]");
-            }
+            Assert.SkipWhen(PlatformDetection.IsQemuLinux && (buffer == null || buffer.Length == 0), "Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104545)]");
 
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {

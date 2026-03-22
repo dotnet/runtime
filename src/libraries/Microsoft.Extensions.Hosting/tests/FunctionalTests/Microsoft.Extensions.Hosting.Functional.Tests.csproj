@@ -5,6 +5,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <!-- ActiveIssue in AssemblyInfo.cs -->
     <IgnoreForCI>true</IgnoreForCI>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>

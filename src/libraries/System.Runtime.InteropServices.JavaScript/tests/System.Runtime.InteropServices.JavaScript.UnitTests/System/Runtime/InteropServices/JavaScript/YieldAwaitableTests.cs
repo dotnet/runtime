@@ -40,13 +40,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(JavaScriptTestHelper.IsPromiseThenHit());
         }
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             await JavaScriptTestHelper.InitializeAsync();
             await Task.Delay(100);
         }
 
-        public async Task DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             await JavaScriptTestHelper.DisposeAsync();
         }

@@ -2,15 +2,20 @@
 using System.Formats.Cbor.Tests.DataModel;
 using System.Linq;
 using FsCheck;
+using FsCheck.Fluent;
 
 namespace System.Formats.Cbor.Tests
 {
-    public static class CborRandomGenerators
+    public class CborRandomGenerators
     {
+        // Custom ArbMap that includes all arbitraries in this class for reflective generation of CborDocument
+        private static readonly IArbMap s_customArbMap = ArbMap.Default
+            .Merge<CborRandomGenerators>();
+
         public static Arbitrary<CborPropertyTestContext> PropertyTestInput()
         {
-            Arbitrary<NonEmptyArray<CborDocument>> documentArb = Arb.Default.NonEmptyArray<CborDocument>();
-            Arbitrary<bool> convertArb = Arb.Default.Bool();
+            Arbitrary<NonEmptyArray<CborDocument>> documentArb = s_customArbMap.ArbFor<NonEmptyArray<CborDocument>>();
+            Arbitrary<bool> convertArb = s_customArbMap.ArbFor<bool>();
             Gen<CborConformanceMode> conformanceModes = Gen.Elements(
                 CborConformanceMode.Lax,
                 CborConformanceMode.Strict,
@@ -37,17 +42,17 @@ namespace System.Formats.Cbor.Tests
         }
 
         // Do not generate null strings and byte arrays
-        public static Arbitrary<string> String() => Arb.Default.String().Filter(s => s is not null);
-        public static Arbitrary<byte[]> ByteArray() => Arb.Default.Array<byte>().Filter(s => s is not null);
+        public static Arbitrary<string> String() => ArbMap.Default.ArbFor<string>().Filter(s => s is not null);
+        public static Arbitrary<byte[]> ByteArray() => ArbMap.Default.ArbFor<byte[]>().Filter(s => s is not null);
 
         // forgo NaN value generation in order to simplify equality checks
-        public static Arbitrary<float> Single() => Arb.Default.Float32().Filter(s => !float.IsNaN(s));
-        public static Arbitrary<double> Double() => Arb.Default.Float().Filter(s => !double.IsNaN(s));
+        public static Arbitrary<float> Single() => ArbMap.Default.ArbFor<float>().Filter(s => !float.IsNaN(s));
+        public static Arbitrary<double> Double() => ArbMap.Default.ArbFor<double>().Filter(s => !double.IsNaN(s));
 
         // FsCheck has no built-in System.Half generator, define one here
         public static Arbitrary<Half> Half()
         {
-            Arbitrary<float> singleArb = Arb.Default.Float32();
+            Arbitrary<float> singleArb = ArbMap.Default.ArbFor<float>();
 
             Gen<Half> generator =
                 from f in singleArb.Generator

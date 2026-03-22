@@ -128,14 +128,11 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(1, reference.TransformChain.Count);
         }
 
-        [ConditionalFact]
+        [Fact]
         public void LoadXsltTransforms()
         {
 #if NET
-            if (!RuntimeFeature.IsDynamicCodeSupported)
-            {
-                throw new SkipTestException("XSLTs are only supported when dynamic code is supported. See https://github.com/dotnet/runtime/issues/84389");
-            }
+            Assert.SkipUnless(RuntimeFeature.IsDynamicCodeSupported, "XSLTs are only supported when dynamic code is supported. See https://github.com/dotnet/runtime/issues/84389");
 #endif
             string test = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms>";
             test += "<Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xslt-19991116\">";

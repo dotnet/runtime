@@ -12,7 +12,7 @@ namespace System.Text.Tests
 {
     public static partial class RuneTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNlsGlobalization))] // the localization tables used by our test data only exist on Win8+
+        [Theory] // the localization tables used by our test data only exist on Win8+
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData('0', '0', '0', "en-US")]
         [InlineData('a', 'A', 'a', "en-US")]
@@ -31,6 +31,7 @@ namespace System.Text.Tests
         [InlineData(0x10428, 0x10400, 0x10428, "en-US")] // U+10428 DESERET SMALL LETTER LONG I
         public static void Casing_CultureAware(int original, int upper, int lower, string culture)
         {
+            Assert.SkipUnless(PlatformDetection.IsWindows && PlatformDetection.IsNlsGlobalization, "Requires IsWindows and IsNlsGlobalization");
             var rune = new Rune(original);
             var cultureInfo = CultureInfo.GetCultureInfo(culture);
             Assert.Equal(new Rune(upper), Rune.ToUpper(rune, cultureInfo));
@@ -38,7 +39,7 @@ namespace System.Text.Tests
         }
 
         // Invariant ToUpper / ToLower doesn't modify Turkish I or majuscule Eszett
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNlsGlobalization))] // the localization tables used by our test data only exist on Win8+
+        [Theory] // the localization tables used by our test data only exist on Win8+
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData('0', '0', '0')]
         [InlineData('a', 'A', 'a')]
@@ -53,12 +54,13 @@ namespace System.Text.Tests
         [InlineData('\u1E9E', '\u1E9E', '\u1E9E')] // U+1E9E LATIN CAPITAL LETTER SHARP S
         public static void Casing_Invariant(int original, int upper, int lower)
         {
+            Assert.SkipUnless(PlatformDetection.IsWindows && PlatformDetection.IsNlsGlobalization, "Requires IsWindows and IsNlsGlobalization");
             var rune = new Rune(original);
             Assert.Equal(new Rune(upper), Rune.ToUpperInvariant(rune));
             Assert.Equal(new Rune(lower), Rune.ToLowerInvariant(rune));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
+        [Theory]
         // HybridGlobalization on Apple mobile platforms has issues with casing dotless I
         [InlineData('0', '0', '0')]
         [InlineData('a', 'A', 'a')]
@@ -74,6 +76,7 @@ namespace System.Text.Tests
         [InlineData(0x10428, 0x10400, 0x10428)] // U+10428 DESERET SMALL LETTER LONG I
         public static void ICU_Casing_Invariant(int original, int upper, int lower)
         {
+            Assert.SkipUnless(PlatformDetection.IsIcuGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform, "Requires IsIcuGlobalization and IsNotHybridGlobalizationOnApplePlatform");
             var rune = new Rune(original);
             Assert.Equal(new Rune(upper), Rune.ToUpperInvariant(rune));
             Assert.Equal(new Rune(lower), Rune.ToLowerInvariant(rune));

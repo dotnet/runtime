@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.MemoryMappedFiles.Tests
 {
@@ -82,7 +83,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             yield return new object[] { MemoryMappedFileAccess.Read, MemoryMappedFileAccess.CopyOnWrite };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(AccessLevelCombinationsData))]
         public void ValidAccessLevelCombinations(MemoryMappedFileAccess mapAccess, MemoryMappedFileAccess viewAccess)
         {
@@ -104,7 +105,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                         (viewAccess == MemoryMappedFileAccess.ReadExecute || viewAccess == MemoryMappedFileAccess.ReadWriteExecute))
                     {
                         // Containers and OSXlike platforms with SIP enabled do not have execute permissions by default.
-                        throw new SkipTestException("Insufficient execute permission.");
+                        throw SkipException.ForSkip("Insufficient execute permission.");
                     }
 
                     throw;

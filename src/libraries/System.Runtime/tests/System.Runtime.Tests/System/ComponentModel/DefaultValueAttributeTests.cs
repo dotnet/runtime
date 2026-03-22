@@ -77,11 +77,12 @@ namespace System.ComponentModel.Tests
             Assert.Equal(42, ((CustomType)attr.Value).Value);
         }
 
-        [ConditionalTheory(typeof(DefaultValueAttributeTests), nameof(DefaultValueAttributeIsSupported))]
+        [Theory]
         [InlineData(typeof(CustomType2))]
         [InlineData(typeof(DefaultValueAttribute))]
         public static void Ctor_DefaultTypeConverter_Null(Type type)
         {
+            Assert.SkipUnless(DefaultValueAttributeIsSupported, "Requires DefaultValueAttributeIsSupported");
             DefaultValueAttribute attr = new DefaultValueAttribute(type, "42");
             Assert.Null(attr.Value);
         }

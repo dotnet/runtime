@@ -7,7 +7,8 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Text;
-using Xunit.Abstractions;
+using Xunit;
+using Xunit.Sdk;
 
 namespace TestUtilities;
 

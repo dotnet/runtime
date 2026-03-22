@@ -14,8 +14,6 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace SampleSynthesisTests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // No SAPI on Nano or Server Core

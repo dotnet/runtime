@@ -71,9 +71,9 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>3ccdcc4cf9b93bf3504275d4506144cf68c15b2c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitAssert" Version="2.9.3-beta.26166.111">
+    <Dependency Name="Microsoft.DotNet.XUnitAssert" Version="3.2.2-beta.26168.106">
       <Uri>https://github.com/dotnet/dotnet</Uri>
-      <Sha>3ccdcc4cf9b93bf3504275d4506144cf68c15b2c</Sha>
+      <Sha>803eb28628f5623c108f1bf33504c86e19815821</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="11.0.0-beta.26166.111">
       <Uri>https://github.com/dotnet/dotnet</Uri>

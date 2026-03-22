@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using System.Xml;
 using System.Xml.Schema;
-using Xunit.Abstractions;
+using Xunit;
 
 public enum NodeFlags
 {

@@ -4,7 +4,11 @@
       <Type Name="System.Collections.Generic.List`1" Dynamic="Required All" />
     </Assembly>
 
-    <Assembly Name="Xunit.Assert">
+    <Assembly Name="xunit.v3.assert">
+      <Type Name="Xunit.Assert" Dynamic="Required All" />
+    </Assembly>
+
+    <Assembly Name="Microsoft.DotNet.XUnitAssert">
       <Type Name="Xunit.Assert" Dynamic="Required All" />
     </Assembly>
 

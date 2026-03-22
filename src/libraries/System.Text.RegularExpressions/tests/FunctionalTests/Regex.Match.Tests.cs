@@ -1463,7 +1463,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Takes several minutes on .NET Framework")]
         [OuterLoop("Takes several seconds")]
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_VaryingLengthStrings_Huge(RegexEngine engine)
         {
@@ -1491,10 +1491,7 @@ namespace System.Text.RegularExpressions.Tests
 
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                if (!RemoteExecutor.IsSupported)
-                {
-                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
-                }
+                Assert.SkipUnless(RemoteExecutor.IsSupported, "RemoteExecutor is not supported on this platform.");
 
                 RemoteExecutor.Invoke(func, engine.ToString()).Dispose();
             }
@@ -2604,7 +2601,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [OuterLoop("Can take over a minute")]
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(StressTestDeepNestingOfConcat_TestData))]
         public async Task StressTestDeepNestingOfConcat(RegexEngine engine, string pattern, string anchor, string input, int pattern_repetition, int input_repetition)
         {
@@ -2638,10 +2635,7 @@ namespace System.Text.RegularExpressions.Tests
 
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                if (!RemoteExecutor.IsSupported)
-                {
-                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
-                }
+                Assert.SkipUnless(RemoteExecutor.IsSupported, "RemoteExecutor is not supported on this platform.");
 
                 RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();
             }
@@ -2700,10 +2694,7 @@ namespace System.Text.RegularExpressions.Tests
 
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                if (!RemoteExecutor.IsSupported)
-                {
-                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
-                }
+                Assert.SkipUnless(RemoteExecutor.IsSupported, "RemoteExecutor is not supported on this platform.");
 
                 RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();
             }
@@ -2713,7 +2704,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix is not available on .NET Framework")]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task CharClassSubtraction_DeepNesting_DoesNotStackOverflow(RegexEngine engine)

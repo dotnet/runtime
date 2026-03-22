@@ -11,7 +11,7 @@ using Kerberos.NET.Configuration;
 using Kerberos.NET.Crypto;
 using Kerberos.NET.Server;
 using Kerberos.NET.Logging;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace System.Net.Security.Kerberos;
 
@@ -102,7 +102,7 @@ public class KerberosExecutor : IDisposable
         _principalService.Add(name, principal);
         _servicePrincipals.Add(principal);
     }
- 
+
     public void AddUser(string name, string password = DefaultUserPassword)
     {
         var principal = new FakeKerberosPrincipal(PrincipalType.User, name, _realm, Encoding.Unicode.GetBytes(password));

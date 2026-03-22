@@ -50,7 +50,7 @@ public partial class TarWriter_WriteEntryAsync_File_Tests : TarWriter_File_Base
         }
     }
 
-    [ConditionalTheory]
+    [Theory]
     [InlineData(TarEntryFormat.V7)]
     [InlineData(TarEntryFormat.Ustar)]
     [InlineData(TarEntryFormat.Pax)]
@@ -58,10 +58,7 @@ public partial class TarWriter_WriteEntryAsync_File_Tests : TarWriter_File_Base
     public async Task Add_Non_Symlink_ReparsePoint_Throws_Async(TarEntryFormat format)
     {
         string? appExecLinkPath = MountHelper.GetAppExecLinkPath();
-        if (appExecLinkPath is null)
-        {
-            throw new SkipTestException("Could not find an appexeclink in this machine.");
-        }
+        Assert.SkipWhen(appExecLinkPath is null, "Could not find an appexeclink in this machine.");
 
         await using MemoryStream archive = new MemoryStream();
         await using TarWriter writer = new TarWriter(archive, format);

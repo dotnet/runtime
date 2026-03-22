@@ -652,11 +652,12 @@ namespace System.Tests
             Assert.Throws(expectedException, () => Type.GetType(typeName, throwOnError: true, ignoreCase: false));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [Theory]
         [InlineData(".GlobalStructStartingWithDot")]
         [InlineData(" GlobalStructStartingWithSpace")]
         public void GetTypeByName_NonRoundtrippable(string typeName)
         {
+            Assert.SkipUnless(PlatformDetection.IsNotBuiltWithAggressiveTrimming, "Requires IsNotBuiltWithAggressiveTrimming");
             Type type = Assembly.Load("System.TestStructs").GetTypes().Single((t) => t.FullName == typeName);
             string assemblyQualifiedName = type.AssemblyQualifiedName;
             Assert.Null(Type.GetType(assemblyQualifiedName));
@@ -1011,11 +1012,12 @@ namespace System.Tests
                }, options).Dispose();
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Theory]
         [InlineData("System.Collections.Generic.Dictionary`2[[Program, TestLoadAssembly], [Program2, TestLoadAssembly]]")]
         [InlineData("")]
         public void GetTypeByName_NoSuchType_ThrowsTypeLoadException(string typeName)
         {
+            Assert.SkipUnless(RemoteExecutor.IsSupported, "Requires IsSupported");
             RemoteExecutor.Invoke(marshalledTypeName =>
             {
                 Assert.Throws<TypeLoadException>(() => Type.GetType(marshalledTypeName, assemblyloader, typeloader, true));
