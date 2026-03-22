@@ -383,6 +383,10 @@ namespace System.IO.Tests
                 }
                 catch (IOException) when (attempts > 1)
                 {
+                    // IOException can occur transiently here when the volume is still being
+                    // unmounted (e.g. the reparse point directory is momentarily locked by
+                    // the kernel while the mount is being torn down). Retry with a short
+                    // delay to let the unmount complete.
                     attempts--;
                     Thread.Sleep(PollIntervalMs);
                 }
