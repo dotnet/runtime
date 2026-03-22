@@ -296,6 +296,8 @@ namespace TestLibrary
 
         // Kills a process tree rooted at the given process using 'sudo kill -9',
         // which is required when the processes run as root (e.g. launched via 'sudo').
+        // Note: there is an inherent race where new children could be spawned after GetChildren
+        // is called, but createdump is not expected to spawn children after startup.
         static void KillProcessTreeWithSudo(Process process)
         {
             // Kill children first (depth-first), then the process itself.
@@ -307,9 +309,10 @@ namespace TestLibrary
                     child.Dispose();
                 }
             }
-            catch
+            catch (Exception e)
             {
-                // Process may have already exited.
+                // Process may have already exited, or enumeration failed.
+                Console.WriteLine($"KillProcessTreeWithSudo: exception enumerating children (process may have exited): {e}");
             }
 
             if (process.TryGetProcessId(out int pid))
@@ -321,11 +324,12 @@ namespace TestLibrary
                 try
                 {
                     sudoKill.Start();
-                    sudoKill.WaitForExit(30_000);
+                    // A kill -9 should complete almost immediately; use a short timeout.
+                    sudoKill.WaitForExit(5_000);
                 }
-                catch
+                catch (Exception e)
                 {
-                    // Best effort — process may have already exited.
+                    Console.WriteLine($"KillProcessTreeWithSudo: exception killing pid {pid}: {e}");
                 }
             }
         }
