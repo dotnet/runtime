@@ -444,7 +444,6 @@ class ModuleBase
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
-    friend class NativeImageDumper;
 #endif
 
     friend class DataImage;
@@ -603,7 +602,6 @@ class Module : public ModuleBase
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
-    friend class NativeImageDumper;
 #endif
 
     friend class DataImage;
@@ -620,6 +618,7 @@ private:
 
     enum {
         // These are the values set in m_dwTransientFlags.
+        // [cDAC] [Loader]: Contract depends on the values of MODULE_IS_TENURED, IS_EDIT_AND_CONTINUE, and IS_REFLECTION_EMIT.
 
         MODULE_IS_TENURED           = 0x00000001,   // Set once we know for sure the Module will not be freed until the appdomain itself exits
         // unused                   = 0x00000002,
@@ -823,6 +822,9 @@ private:
     // Set the given bit on m_dwTransientFlags. Return true if we won the race to set the bit.
     BOOL SetTransientFlagInterlocked(DWORD dwFlag);
 
+    // Set bits on the m_dwTransientFlags according to the given mask.
+    void SetTransientFlagInterlockedWithMask(DWORD dwFlag, DWORD dwMask);
+
     // Cannoically-cased hashtable of the available class names for
     // case insensitive lookup.  Contains pointers into
     // m_pAvailableClasses.
@@ -971,7 +973,7 @@ private:
         SUPPORTS_DAC;
         _ASSERTE(IsEditAndContinueCapable());
         LOG((LF_ENC, LL_INFO100, "M:EnableEditAndContinue: this:%p, %s\n", this, GetDebugName()));
-        m_dwTransientFlags |= IS_EDIT_AND_CONTINUE;
+        SetTransientFlagInterlocked(IS_EDIT_AND_CONTINUE);
     }
 
 public:
@@ -1604,7 +1606,7 @@ protected:
     void SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules()
     {
         LIMITED_METHOD_CONTRACT;
-        m_dwPersistedFlags |= COMPUTED_WRAP_EXCEPTIONS;
+        m_dwPersistedFlags = m_dwPersistedFlags | COMPUTED_WRAP_EXCEPTIONS;
     }
 public:
 

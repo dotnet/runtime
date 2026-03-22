@@ -543,7 +543,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         await Assert.ThrowsAsync<InvalidOperationException>(
             async () => await Serializer.DeserializeWrapper<BaseClassRecursive>(json, options));
 
-        json = """{}""";
+        json = "{}";
         await Assert.ThrowsAsync<InvalidOperationException>(
             async () => await Serializer.DeserializeWrapper<BaseClassRecursive>(json, options));
     }

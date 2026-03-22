@@ -32,7 +32,7 @@ void* PortableEntryPoint::GetActualCode(PCODE addr)
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(portableEntryPoint->HasNativeCode());
+    _ASSERTE_ALL_BUILDS(portableEntryPoint->HasNativeCode());
     return portableEntryPoint->_pActualCode;
 }
 
@@ -41,7 +41,7 @@ void PortableEntryPoint::SetActualCode(PCODE addr, PCODE actualCode)
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(actualCode != (PCODE)NULL);
+    _ASSERTE_ALL_BUILDS(actualCode != (PCODE)NULL);
 
     // This is a lock free write. It can either be NULL or was already set to the same value.
     _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == (void*)PCODEToPINSTR(actualCode));
@@ -111,6 +111,18 @@ void PortableEntryPoint::Init(void* nativeEntryPoint)
     _ASSERTE(nativeEntryPoint != NULL);
     _pActualCode = nativeEntryPoint;
     _pMD = NULL;
+    _pInterpreterData = NULL;
+    _flags = kNone;
+    INDEBUG(_canary = CANARY_VALUE);
+}
+
+void PortableEntryPoint::Init(void* nativeEntryPoint, MethodDesc* pMD)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(nativeEntryPoint != NULL);
+    _ASSERTE(pMD != NULL);
+    _pActualCode = nativeEntryPoint;
+    _pMD = pMD;
     _pInterpreterData = NULL;
     _flags = kNone;
     INDEBUG(_canary = CANARY_VALUE);

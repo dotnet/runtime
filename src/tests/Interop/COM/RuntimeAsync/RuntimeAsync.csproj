@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- RequiresProcessIsolation required for CLRTestEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <NoWarn>$(NoWarn);SYSLIB5007</NoWarn>
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
   <ItemGroup>

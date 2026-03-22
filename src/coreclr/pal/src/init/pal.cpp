@@ -119,10 +119,6 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv);
 static LPWSTR INIT_GetCurrentEXEPath();
 static BOOL INIT_SharedFilesPath(void);
 
-#ifdef _DEBUG
-extern void PROCDumpThreadList(void);
-#endif
-
 /*++
 Function:
   PAL_Initialize
@@ -392,17 +388,6 @@ Initialize(
             // we use large numbers of threads or have many open files.
         }
 
-        //
-        // Initialize global process data
-        //
-
-        palError = InitializeProcessData();
-        if (NO_ERROR != palError)
-        {
-            ERROR("Unable to initialize process data\n");
-            goto CLEANUP1;
-        }
-
 #if HAVE_MACH_EXCEPTIONS
         // Mach exception port needs to be set up before the thread
         // data or threads are set up.
@@ -424,8 +409,6 @@ Initialize(
             ERROR("Unable to create initial thread data\n");
             goto CLEANUP1a;
         }
-
-        PROCAddThread(pThread, pThread);
 
         //
         // It's now safe to access our thread data
@@ -605,7 +588,9 @@ Initialize(
         }
 
         TRACE("First-time PAL initialization complete.\n");
-        init_count++;
+        // Incrementing the init_count here serves as a synchronization point,
+        // since it is a Volatile<T> variable, and modifying it will have release semantics.
+        init_count.Store(init_count.Load() + 1);
 
         /* Set LastError to a non-good value - functions within the
            PAL startup may set lasterror to a nonzero value. */
@@ -614,7 +599,7 @@ Initialize(
     }
     else
     {
-        init_count++;
+        init_count.Store(init_count.Load() + 1);
 
         TRACE("Initialization count increases to %d\n", init_count.Load());
 
@@ -702,7 +687,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
         return ERROR_SUCCESS;
     }
 
-#ifndef TARGET_WASM // we don't use shared libraries on wasm
+#ifndef TARGET_WASM // we don't use shared libraries on wasm and don't support dbg mini dump
     // Now that the PAL is initialized it's safe to call the initialization methods for the code that used to
     // be dynamically loaded libraries but is now statically linked into CoreCLR just like the PAL, i.e. the
     // PAL RT and mscorwks.
@@ -710,13 +695,12 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         return ERROR_DLL_INIT_FAILED;
     }
-#endif // !TARGET_WASM
-
     if (!PROCAbortInitialize())
     {
         printf("PROCAbortInitialize FAILED %d (%s)\n", errno, strerror(errno));
         return ERROR_PALINIT_PROCABORT_INITIALIZE;
     }
+#endif // !TARGET_WASM
 
     return ERROR_SUCCESS;
 }
@@ -817,10 +801,6 @@ PALCommonCleanup()
         // Let the synchronization manager know we're about to shutdown
         //
         CPalSynchMgrController::PrepareForShutdown();
-
-#ifdef _DEBUG
-        PROCDumpThreadList();
-#endif
     }
 }
 

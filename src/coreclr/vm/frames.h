@@ -596,7 +596,12 @@ protected:
 
 #ifndef DACCESS_COMPILE
 #if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
-    static void UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP);
+    // Pseudo-virtual method for updating floating point registers during stack walk
+    void UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targetSP);
+public:
+    // Public dispatch method for UpdateFloatingPointRegisters
+    void UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP);
+protected:
 #endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
 #endif // DACCESS_COMPILE
 
@@ -2240,7 +2245,7 @@ public:
 
 #ifndef DACCESS_COMPILE
 #if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
-    void UpdateFloatingPointRegisters(const PREGDISPLAY pRD);
+    void UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targetSP);
 #endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
 #endif // DACCESS_COMPILE
 
@@ -2518,6 +2523,12 @@ public:
     void ExceptionUnwind_Impl();
 #endif
 
+#ifndef DACCESS_COMPILE
+#if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
+    void UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targetSP);
+#endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
+#endif // DACCESS_COMPILE
+
     PTR_InterpMethodContextFrame GetTopInterpMethodContextFrame();
 
     void SetContextToInterpMethodContextFrame(T_CONTEXT * pContext);
@@ -2554,6 +2565,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_isFaulting = isFaulting;
+    }
+
+    Interception GetInterception_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_isFaulting ? INTERCEPTION_EXCEPTION : INTERCEPTION_NONE;
     }
 
     void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)

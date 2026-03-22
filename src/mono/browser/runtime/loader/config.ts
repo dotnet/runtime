@@ -12,6 +12,7 @@ import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryI
 import { mono_exit } from "./exit";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 import { appendUniqueQuery } from "./assets";
+import { browserVirtualAppBase } from "./globals";
 
 export function deep_merge_config (target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // no need to merge the same object
@@ -188,6 +189,10 @@ export function normalizeConfig () {
 
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
         config.debugLevel = -1;
+    }
+
+    if (config.virtualWorkingDirectory === undefined) {
+        config.virtualWorkingDirectory = browserVirtualAppBase;
     }
 
     if (!config.applicationEnvironment) {

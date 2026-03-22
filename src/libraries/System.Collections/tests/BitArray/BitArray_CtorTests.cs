@@ -271,6 +271,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public static void Clone_LongLength_Works()
         {
             BitArray bitArray = new BitArray(int.MaxValue - 30);

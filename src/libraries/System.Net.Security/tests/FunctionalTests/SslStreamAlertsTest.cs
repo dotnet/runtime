@@ -153,6 +153,61 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Fact]
+        public async Task SslStream_WriteAfterRemoteCloseNotify_MayThrowIOException()
+        {
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (var client = new SslStream(clientStream, true, AllowAnyServerCertificate))
+            using (var server = new SslStream(serverStream))
+            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            {
+                string targetHost = certificate.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = certificate,
+                    EnabledSslProtocols = SslProtocols.Tls12
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = targetHost,
+                    EnabledSslProtocols = SslProtocols.Tls12
+                };
+
+                await Task.WhenAll(
+                    server.AuthenticateAsServerAsync(serverOptions),
+                    client.AuthenticateAsClientAsync(clientOptions)
+                ).WaitAsync(TestConfiguration.PassingTestTimeout);
+
+                var buffer = new byte[1024];
+
+                // Server initiates shutdown
+                await server.ShutdownAsync().WaitAsync(TestConfiguration.PassingTestTimeout);
+
+                // Client reads the close_notify
+                int bytesRead = await client.ReadAsync(buffer, 0, buffer.Length).WaitAsync(TestConfiguration.PassingTestTimeout);
+                Assert.Equal(0, bytesRead);
+
+                // Client attempts to write after receiving close_notify
+                // On macOS with Secure Transport, this throws immediately
+                // On Linux/Windows, the first write may succeed, subsequent operations fail
+                try
+                {
+                    await client.WriteAsync(buffer, 0, buffer.Length).WaitAsync(TestConfiguration.PassingTestTimeout);
+
+                    // Write succeeded - this is expected on Linux/Windows
+                    Assert.False(PlatformDetection.IsOSX, "Write after close_notify should throw on macOS");
+                }
+                catch (IOException)
+                {
+                    // IOException is expected on macOS, but also acceptable on other platforms
+                }
+            }
+        }
+
         private bool FailClientCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             return false;

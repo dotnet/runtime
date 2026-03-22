@@ -369,25 +369,25 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateCompilationWithConstructorInitOnlyProperties()
         {
             string source = """
-                using System.Text.Json.Serialization;
+                    using System.Text.Json.Serialization;
 
-                namespace HelloWorld
-                { 
-                    public class MyClass
-                    {
-                        public MyClass(int value)
+                    namespace HelloWorld
+                    { 
+                        public class MyClass
                         {
-                            Value = value;
+                            public MyClass(int value)
+                            {
+                                Value = value;
+                            }
+
+                            public int Value { get; init; }
                         }
 
-                        public int Value { get; init; }
+                        [JsonSerializable(typeof(MyClass))]
+                        public partial class MyJsonContext : JsonSerializerContext
+                        {
+                        }
                     }
-
-                    [JsonSerializable(typeof(MyClass))]
-                    public partial class MyJsonContext : JsonSerializerContext
-                    {
-                    }
-                }
                 """;
 
             return CreateCompilation(source);
@@ -396,26 +396,26 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateCompilationWithMixedInitOnlyProperties()
         {
             string source = """
-                using System.Text.Json.Serialization;
+                    using System.Text.Json.Serialization;
 
-                namespace HelloWorld
-                {
-                    public class MyClass
+                    namespace HelloWorld
                     {
-                        public MyClass(int value)
+                        public class MyClass
                         {
-                            Value = value;
+                            public MyClass(int value)
+                            {
+                                Value = value;
+                            }
+
+                            public int Value { get; init; }
+                            public string Orphaned { get; init; }
                         }
 
-                        public int Value { get; init; }
-                        public string Orphaned { get; init; }
+                        [JsonSerializable(typeof(MyClass))]
+                        public partial class MyJsonContext : JsonSerializerContext
+                        {
+                        }
                     }
-
-                    [JsonSerializable(typeof(MyClass))]
-                    public partial class MyJsonContext : JsonSerializerContext
-                    {
-                    }
-                }
                 """;
 
             return CreateCompilation(source);
@@ -425,26 +425,26 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateCompilationWithRequiredProperties()
         {
             string source = """
-                using System.Text.Json.Serialization;
+                    using System.Text.Json.Serialization;
 
-                namespace HelloWorld
-                {
-                    public class MyClass
+                    namespace HelloWorld
                     {
-                        public required string Required1 { get; set; }
-                        public required string Required2 { get; set; }
-
-                        public MyClass(string required1)
+                        public class MyClass
                         {
-                            Required1 = required1;
+                            public required string Required1 { get; set; }
+                            public required string Required2 { get; set; }
+
+                            public MyClass(string required1)
+                            {
+                                Required1 = required1;
+                            }
+                        }
+
+                        [JsonSerializable(typeof(MyClass))]
+                        public partial class MyJsonContext : JsonSerializerContext
+                        {
                         }
                     }
-
-                    [JsonSerializable(typeof(MyClass))]
-                    public partial class MyJsonContext : JsonSerializerContext
-                    {
-                    }
-                }
                 """;
 
             CSharpParseOptions parseOptions = CreateParseOptions(LanguageVersion.CSharp11);
@@ -670,45 +670,45 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateTypesWithInvalidJsonConverterAttributeType()
         {
             string source = """
-                using System;
-                using System.Text.Json;
-                using System.Text.Json.Serialization;
+                    using System;
+                    using System.Text.Json;
+                    using System.Text.Json.Serialization;
 
-                namespace HelloWorld
-                {
-                    [JsonSerializable(typeof(MyClass))]
-                    internal partial class JsonContext : JsonSerializerContext
+                    namespace HelloWorld
                     {
-                    }
-
-                    public class MyClass
-                    {
-                        [JsonConverter(null)]
-                        public int Value1 { get; set; }
-
-                        [JsonConverter(typeof(int))]
-                        public int Value2 { get; set; }
-
-                        [JsonConverter(typeof(InacessibleConverter))]
-                        public int Value3 { get; set; }
-                    }
-
-                    public class InacessibleConverter : JsonConverter<int>
-                    {
-                        private InacessibleConverter()
-                        { }
-
-                        public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                        [JsonSerializable(typeof(MyClass))]
+                        internal partial class JsonContext : JsonSerializerContext
                         {
-                            throw new NotImplementedException();
                         }
 
-                        public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+                        public class MyClass
                         {
-                            throw new NotImplementedException();
+                            [JsonConverter(null)]
+                            public int Value1 { get; set; }
+
+                            [JsonConverter(typeof(int))]
+                            public int Value2 { get; set; }
+
+                            [JsonConverter(typeof(InacessibleConverter))]
+                            public int Value3 { get; set; }
+                        }
+
+                        public class InacessibleConverter : JsonConverter<int>
+                        {
+                            private InacessibleConverter()
+                            { }
+
+                            public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                            {
+                                throw new NotImplementedException();
+                            }
+
+                            public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+                            {
+                                throw new NotImplementedException();
+                            }
                         }
                     }
-                }
                 """;
 
             return CreateCompilation(source);
@@ -829,6 +829,30 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreateTypeAnnotatedWithJsonIgnoreAlways()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyClass))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+                    public class MyClass
+                    {
+                        public string? MyString { get; set; }
+                        public int MyInt { get; set; }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
         internal static void AssertEqualDiagnosticMessages(
             IEnumerable<DiagnosticData> expectedDiags,
             IEnumerable<Diagnostic> actualDiags)
@@ -857,6 +881,327 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             using NumberedSourceFileWriter lineWriter = new(logger);
             tree.GetRoot().WriteTo(lineWriter);
             lineWriter.WriteLine(string.Empty);
+        }
+
+        public static Compilation CreateTypesWithGenericConverterArityMismatch()
+        {
+            string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(TypeWithArityMismatch<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonConverter(typeof(ConverterWithTwoParams<,>))]
+                    public class TypeWithArityMismatch<T>
+                    {
+                        public T Value { get; set; }
+                    }
+
+                    public sealed class ConverterWithTwoParams<T1, T2> : JsonConverter<TypeWithArityMismatch<T1>>
+                    {
+                        public override TypeWithArityMismatch<T1> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                            => throw new NotImplementedException();
+
+                        public override void Write(Utf8JsonWriter writer, TypeWithArityMismatch<T1> value, JsonSerializerOptions options)
+                            => throw new NotImplementedException();
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateTypesWithGenericConverterTypeMismatch()
+        {
+            string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(TypeWithConverterMismatch<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonConverter(typeof(DifferentTypeConverter<>))]
+                    public class TypeWithConverterMismatch<T>
+                    {
+                        public T Value { get; set; }
+                    }
+
+                    public class DifferentType<T>
+                    {
+                        public T Value { get; set; }
+                    }
+
+                    public sealed class DifferentTypeConverter<T> : JsonConverter<DifferentType<T>>
+                    {
+                        public override DifferentType<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                            => throw new NotImplementedException();
+
+                        public override void Write(Utf8JsonWriter writer, DifferentType<T> value, JsonSerializerOptions options)
+                            => throw new NotImplementedException();
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateTypesWithNestedGenericConverter()
+        {
+            string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(TypeWithNestedConverter<int, string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonConverter(typeof(Container<>.NestedConverter<>))]
+                    public class TypeWithNestedConverter<T1, T2>
+                    {
+                        public T1 Value1 { get; set; }
+                        public T2 Value2 { get; set; }
+                    }
+
+                    public class Container<T>
+                    {
+                        public sealed class NestedConverter<U> : JsonConverter<TypeWithNestedConverter<T, U>>
+                        {
+                            public override TypeWithNestedConverter<T, U> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                            {
+                                if (reader.TokenType != JsonTokenType.StartObject)
+                                    throw new JsonException();
+
+                                var result = new TypeWithNestedConverter<T, U>();
+                                while (reader.Read())
+                                {
+                                    if (reader.TokenType == JsonTokenType.EndObject)
+                                        break;
+
+                                    if (reader.TokenType != JsonTokenType.PropertyName)
+                                        throw new JsonException();
+
+                                    string propertyName = reader.GetString()!;
+                                    reader.Read();
+
+                                    if (propertyName == "Value1")
+                                        result.Value1 = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                                    else if (propertyName == "Value2")
+                                        result.Value2 = JsonSerializer.Deserialize<U>(ref reader, options)!;
+                                }
+                                return result;
+                            }
+
+                            public override void Write(Utf8JsonWriter writer, TypeWithNestedConverter<T, U> value, JsonSerializerOptions options)
+                            {
+                                writer.WriteStartObject();
+                                writer.WritePropertyName("Value1");
+                                JsonSerializer.Serialize(writer, value.Value1, options);
+                                writer.WritePropertyName("Value2");
+                                JsonSerializer.Serialize(writer, value.Value2, options);
+                                writer.WriteEndObject();
+                            }
+                        }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateTypesWithConstrainedGenericConverter()
+        {
+            string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(TypeWithSatisfiedConstraint<string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonConverter(typeof(ConverterWithClassConstraint<>))]
+                    public class TypeWithSatisfiedConstraint<T>
+                    {
+                        public T Value { get; set; }
+                    }
+
+                    public sealed class ConverterWithClassConstraint<T> : JsonConverter<TypeWithSatisfiedConstraint<T>> where T : class
+                    {
+                        public override TypeWithSatisfiedConstraint<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                        {
+                            if (reader.TokenType != JsonTokenType.StartObject)
+                                throw new JsonException();
+
+                            var result = new TypeWithSatisfiedConstraint<T>();
+                            while (reader.Read())
+                            {
+                                if (reader.TokenType == JsonTokenType.EndObject)
+                                    break;
+
+                                if (reader.TokenType != JsonTokenType.PropertyName)
+                                    throw new JsonException();
+
+                                string propertyName = reader.GetString()!;
+                                reader.Read();
+
+                                if (propertyName == "Value")
+                                    result.Value = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                            }
+                            return result;
+                        }
+
+                        public override void Write(Utf8JsonWriter writer, TypeWithSatisfiedConstraint<T> value, JsonSerializerOptions options)
+                        {
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("Value");
+                            JsonSerializer.Serialize(writer, value.Value, options);
+                            writer.WriteEndObject();
+                        }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateTypesWithDeeplyNestedGenericConverter()
+        {
+            string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(TypeWithDeeplyNestedConverter<int, string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonConverter(typeof(OuterGeneric<>.MiddleNonGeneric.InnerConverter<>))]
+                    public class TypeWithDeeplyNestedConverter<T1, T2>
+                    {
+                        public T1 Value1 { get; set; }
+                        public T2 Value2 { get; set; }
+                    }
+
+                    public class OuterGeneric<T>
+                    {
+                        public class MiddleNonGeneric
+                        {
+                            public sealed class InnerConverter<U> : JsonConverter<TypeWithDeeplyNestedConverter<T, U>>
+                            {
+                                public override TypeWithDeeplyNestedConverter<T, U> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                                    => throw new NotImplementedException();
+
+                                public override void Write(Utf8JsonWriter writer, TypeWithDeeplyNestedConverter<T, U> value, JsonSerializerOptions options)
+                                    => throw new NotImplementedException();
+                            }
+                        }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateTypesWithNonGenericOuterGenericConverter()
+        {
+            string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(TypeWithNonGenericOuterConverter<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonConverter(typeof(NonGenericOuter.SingleLevelConverter<>))]
+                    public class TypeWithNonGenericOuterConverter<T>
+                    {
+                        public T Value { get; set; }
+                    }
+
+                    public class NonGenericOuter
+                    {
+                        public sealed class SingleLevelConverter<T> : JsonConverter<TypeWithNonGenericOuterConverter<T>>
+                        {
+                            public override TypeWithNonGenericOuterConverter<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                                => throw new NotImplementedException();
+
+                            public override void Write(Utf8JsonWriter writer, TypeWithNonGenericOuterConverter<T> value, JsonSerializerOptions options)
+                                => throw new NotImplementedException();
+                        }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateTypesWithManyParamsAsymmetricNestedConverter()
+        {
+            string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(TypeWithManyParams<int, string, bool, double, long>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonConverter(typeof(Level1<,,>.Level2<>.Level3Converter<>))]
+                    public class TypeWithManyParams<T1, T2, T3, T4, T5>
+                    {
+                        public T1 Value1 { get; set; }
+                        public T2 Value2 { get; set; }
+                        public T3 Value3 { get; set; }
+                        public T4 Value4 { get; set; }
+                        public T5 Value5 { get; set; }
+                    }
+
+                    public class Level1<A, B, C>
+                    {
+                        public class Level2<D>
+                        {
+                            public sealed class Level3Converter<E> : JsonConverter<TypeWithManyParams<A, B, C, D, E>>
+                            {
+                                public override TypeWithManyParams<A, B, C, D, E> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                                    => throw new NotImplementedException();
+
+                                public override void Write(Utf8JsonWriter writer, TypeWithManyParams<A, B, C, D, E> value, JsonSerializerOptions options)
+                                    => throw new NotImplementedException();
+                            }
+                        }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
         }
 
         private static readonly string FileSeparator = new string('=', 140);

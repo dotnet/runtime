@@ -1003,4 +1003,10 @@
     <Left>netstandard2.1/netstandard.dll</Left>
     <Right>net11.0/netstandard.dll</Right>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
 </Suppressions>

@@ -3962,6 +3962,48 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        public void Package_OpenOrCreate_ReadEntryWithoutWrite_DoesNotThrowOnDispose()
+        {
+            // Regression test: Opening a package with OpenOrCreate/ReadWrite on a non-expandable
+            // MemoryStream, then reading an entry without writing, should not throw on Dispose.
+            // Previously, the ZipArchive would attempt to rewrite even when no changes were made.
+
+            // First, create a valid package
+            byte[] packageData;
+            using (var ms = new MemoryStream())
+            {
+                using (Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+                {
+                    var partUri = PackUriHelper.CreatePartUri(new Uri("test.xml", UriKind.Relative));
+                    PackagePart part = package.CreatePart(partUri, Mime_MediaTypeNames_Text_Xml);
+                    using (Stream partStream = part.GetStream())
+                    using (StreamWriter sw = new StreamWriter(partStream))
+                    {
+                        sw.Write(s_DocumentXml);
+                    }
+                }
+                packageData = ms.ToArray();
+            }
+
+            // Create a non-expandable MemoryStream (fixed-size buffer)
+            byte[] originalData = (byte[])packageData.Clone();
+            var stream = new MemoryStream(packageData, writable: true);
+
+            // This should not throw - opening and disposing without changes
+            using (Package package = Package.Open(stream, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            {
+                // Just access parts without modifying
+                var parts = package.GetParts();
+                Assert.NotEmpty(parts);
+            }
+
+            // Verify the stream was not modified (no rewrite occurred)
+            Assert.Equal(originalData.Length, stream.Length);
+            Assert.True(originalData.AsSpan().SequenceEqual(packageData),
+                "Stream content should be unchanged when no modifications were made");
+        }
+
+        [Fact]
         public void Cannot_Modify_Package_On_Unseekable_Stream()
         {
             var ba = File.ReadAllBytes("plain.docx");

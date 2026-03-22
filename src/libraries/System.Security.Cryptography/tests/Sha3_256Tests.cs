@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Tests
         protected override ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken) =>
             SHA3_256.HashDataAsync(source, cancellationToken);
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(Sha3_256Tests), nameof(IsSupported))]
         public void SHA3_256_Kats()
         {
             foreach ((string Msg, string MD) kat in Fips202Kats)
@@ -52,19 +52,19 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(Sha3_256Tests), nameof(IsSupported))]
         public void SHA3_256_Empty_Stream()
         {
             VerifyRepeating("", 0, "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a");
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(Sha3_256Tests), nameof(IsSupported))]
         public async Task SHA3_256_Empty_Stream_Async()
         {
             await VerifyRepeatingAsync("", 0, "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a");
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(Sha3_256Tests), nameof(IsSupported))]
         public void SHA3_256_VerifyLargeStream_MultipleOf4096()
         {
             // Verified with:
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Tests
                 "5e80dd4330d9124adce40a043f166d7e0f6853050fd99919c7b1436ee0a538e9");
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(Sha3_256Tests), nameof(IsSupported))]
         public void SHA3_256_VerifyLargeStream_NotMultipleOf4096()
         {
             // Verified with:
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Tests
                 "5dbbd15ba5745412a79835cc4bec1bede925da06eca7a5bbf50c38a6ec1c49bc");
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(Sha3_256Tests), nameof(IsSupported))]
         public async Task SHA3_256_VerifyLargeStream_NotMultipleOf4096_Async()
         {
             // Verified with:
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Tests
                 "5dbbd15ba5745412a79835cc4bec1bede925da06eca7a5bbf50c38a6ec1c49bc");
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(Sha3_256Tests), nameof(IsSupported))]
         public async Task SHA3_256_VerifyLargeStream_MultipleOf4096_Async()
         {
             // Verified with:

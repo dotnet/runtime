@@ -31,6 +31,14 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
     private readonly Target _target = target;
     private readonly IExecutionManager _eman = target.Contracts.ExecutionManager;
 
+    bool IDebugInfo.HasDebugInfo(TargetCodePointer pCode)
+    {
+        if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
+            return false;
+
+        return _eman.GetDebugInfo(cbh, out _) != TargetPointer.Null;
+    }
+
     IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset)
     {
         // Get the method's DebugInfo
@@ -40,6 +48,9 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
 
         TargetCodePointer nativeCodeStart = _eman.GetStartAddress(cbh);
         codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
+
+        if (debugInfo == TargetPointer.Null)
+            return [];
 
         return RestoreBoundaries(debugInfo, preferUninstrumented);
     }

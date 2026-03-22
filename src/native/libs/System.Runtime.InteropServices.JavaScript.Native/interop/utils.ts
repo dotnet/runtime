@@ -3,32 +3,12 @@
 
 import type { TimeStamp } from "./types";
 
-import { dotnetAssert, dotnetDiagnosticsExports, dotnetLoaderExports } from "./cross-module";
+import { dotnetAssert, dotnetLoaderExports, Module } from "./cross-module";
 import { jsInteropState } from "./marshal";
 import { ENVIRONMENT_IS_WEB } from "./per-module";
 
 export function fixupPointer(signature: any, shiftAmount: number): any {
     return ((signature as any) >>> shiftAmount) as any;
-}
-
-export function normalizeException(ex: any) {
-    let res = "unknown exception";
-    if (ex) {
-        res = ex.toString();
-        const stack = ex.stack;
-        if (stack) {
-            // Some JS runtimes insert the error message at the top of the stack, some don't,
-            //  so normalize it by using the stack as the result if it already contains the error
-            if (stack.startsWith(res))
-                res = stack;
-            else
-                res += "\n" + stack;
-        }
-        if (dotnetDiagnosticsExports.symbolicateStackTrace) {
-            res = dotnetDiagnosticsExports.symbolicateStackTrace(res);
-        }
-    }
-    return res;
 }
 
 export function isRuntimeRunning(): boolean {
@@ -64,9 +44,12 @@ export function endMeasure(start: TimeStamp, block: string, id?: string) {
 
 let textDecoderUtf8Relaxed: TextDecoder | undefined = undefined;
 export function utf8ToStringRelaxed(buffer: Uint8Array): string {
-    if (textDecoderUtf8Relaxed === undefined) {
-        textDecoderUtf8Relaxed = new TextDecoder("utf-8", { fatal: false });
+    if (textDecoderUtf8Relaxed === undefined && typeof globalThis.TextDecoder !== "undefined") {
+        textDecoderUtf8Relaxed = new globalThis.TextDecoder("utf-8", { fatal: false });
+    } else if (textDecoderUtf8Relaxed === undefined) {
+        return Module.UTF8ArrayToString(buffer, 0, buffer.byteLength);
     }
+
     // TODO-WASM: When threading is enabled, TextDecoder does not accept a view of a
     // SharedArrayBuffer, we must make a copy of the array first.
     // See https://github.com/whatwg/encoding/issues/172

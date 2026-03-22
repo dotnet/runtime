@@ -1,4 +1,4 @@
-# WebCIL assembly format
+# Webcil assembly format
 
 ## Version
 
@@ -12,7 +12,7 @@ customers that certain users are unable to use their apps because firewalls and 
 may prevent browsers from downloading or caching assemblies with a .DLL extension and PE contents.
 
 This document defines a new container format for ECMA-335 assemblies that uses the `.wasm` extension
-and uses a new WebCIL metadata payload format wrapped in a WebAssembly module.
+and uses a new Webcil metadata payload format wrapped in a WebAssembly module.
 
 
 ## Specification
@@ -111,21 +111,21 @@ The Webcil headers consist of a Webcil header followed by a sequence of section 
 
 ``` c
 struct WebcilHeader {
-	uint8_t id[4]; // 'W' 'b' 'I' 'L'
-	// 4 bytes
-	uint16_t version_major; // 0
-	uint16_t version_minor; // 0
-	// 8 bytes
-	uint16_t coff_sections;
-	uint16_t reserved0; // 0
-	// 12 bytes
+    uint8_t Id[4]; // 'W' 'b' 'I' 'L'
+    // 4 bytes
+    uint16_t VersionMajor; // 0
+    uint16_t VersionMinor; // 0
+    // 8 bytes
+    uint16_t CoffSections;
+    uint16_t Reserved0; // 0
+    // 12 bytes
 
-	uint32_t pe_cli_header_rva;
-	uint32_t pe_cli_header_size;
-	// 20 bytes
+    uint32_t PeCliHeaderRva;
+    uint32_t PeCliHeaderSize;
+    // 20 bytes
 
-    uint32_t pe_debug_rva;
-    uint32_t pe_debug_size;
+    uint32_t PeDebugRva;
+    uint32_t PeDebugSize;
     // 28 bytes
 };
 ```
@@ -139,7 +139,7 @@ of the CLI header, as well as the directory entry for the PE debug directory.
 
 #### Section header table
 
-Immediately following the Webcil header is a sequence (whose length is given by `coff_sections`
+Immediately following the Webcil header is a sequence (whose length is given by `CoffSections`
 above) of section headers giving their virtual address and virtual size, as well as the offset in
 the Webcil payload and the size in the file.  This is a subset of the PE section header that includes
 enough information to correctly interpret the RVAs from the webcil header and from the .NET
@@ -147,18 +147,29 @@ metadata. Other information (such as the section names) are not included.
 
 ``` c
 struct SectionHeader {
-    uint32_t st_virtual_size;
-    uint32_t st_virtual_address;
-    uint32_t st_raw_data_size;
-    uint32_t st_raw_data_ptr;
+    uint32_t VirtualSize;
+    uint32_t VirtualAddress;
+    uint32_t SizeOfRawData;
+    uint32_t PointerToRawData;
 };
 ```
 
-(**Note**: the `st_raw_data_ptr` member is an offset from the beginning of the Webcil payload, not from the beginning of the WebAssembly wrapper module.)
+(**Note**: the `PointerToRawData` member is an offset from the beginning of the Webcil payload, not from the beginning of the WebAssembly wrapper module.)
 
 #### Sections
 
-Immediately following the section table are the sections.  These are copied verbatim from the PE file.
+The section data starts at the first 16-byte-aligned offset after the end of the
+section header table. Any gap between the last section header and the first section's
+raw data is filled with zero-valued padding bytes. Each subsequent section likewise
+begins at a 16-byte-aligned offset. This alignment guarantees that RVA static fields
+(such as those backing `ReadOnlySpan<T>` over types up to `Vector128<T>`) retain
+their natural alignment when the payload is loaded into memory at a 16-byte-aligned
+base address.
+
+Because PE `SizeOfRawData` is normally a multiple of the PE `FileAlignment` (≥ 512),
+the inter-section padding is almost always zero bytes. In the worst case a single
+assembly may gain up to ~30 bytes of padding total (header-to-first-section plus
+one boundary per additional section).
 
 ### Rationale
 

@@ -10,5 +10,6 @@
     <ProjectReference Include="..\dll\hfa_nested_f32_common.csproj" />
     <ProjectReference Include="..\dll\hfa_nested_f32_interop_cpp.csproj" />
     <CMakeProjectReference Include="..\dll\CMakeLists.txt" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

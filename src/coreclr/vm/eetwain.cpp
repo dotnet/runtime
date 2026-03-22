@@ -1825,7 +1825,16 @@ void EECodeManager::UpdateSSP(PREGDISPLAY pRD)
 #endif // HOST_AMD64 && HOST_WINDOWS
 
 #ifdef FEATURE_INTERPRETER
-DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
+
+#if !defined(TARGET_WASM)
+// ASM helper that creates a TransitionBlock and calls CallInterpreterFuncletWorker
+extern "C" DWORD_PTR STDCALL CallInterpreterFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
+#endif // !TARGET_WASM
+
+// Worker function that executes an interpreter funclet with a TransitionBlock
+// On non-WASM platforms, this is called from the ASM helper CallInterpreterFunclet
+// On WASM, this is called directly from InterpreterCodeManager::CallFunclet
+extern "C" DWORD_PTR STDCALL CallInterpreterFuncletWorker(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter, TransitionBlock *pTransitionBlock)
 {
     Thread *pThread = GetThread();
     InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
@@ -1843,7 +1852,7 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
         {
         }
     }
-    frames(NULL);
+    frames(pTransitionBlock);
 
     // Use the InterpreterFrame address as a representation of the caller SP of the funclet
     // Note: this needs to match what the VirtualUnwindInterpreterCallFrame sets as the SP
@@ -1880,6 +1889,19 @@ DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandle
         // The catch funclet returns the address to resume at after the catch returns.
         return (DWORD_PTR)retVal.data.s;
     }
+}
+
+DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
+{
+#if !defined(TARGET_WASM)
+    // Call the ASM helper which creates a real TransitionBlock
+    return CallInterpreterFunclet(throwable, pHandler, pRD, pExInfo, isFilter);
+#else
+    // For WASM, create the TransitionBlock in C++ and call the worker directly
+    TransitionBlock transitionBlock{};
+    transitionBlock.m_ReturnAddress = (TADDR)&CallInterpreterFuncletWorker;
+    return CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, &transitionBlock);
+#endif
 }
 
 void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted)

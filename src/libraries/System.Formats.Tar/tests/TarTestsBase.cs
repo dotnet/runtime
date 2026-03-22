@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -501,6 +502,8 @@ namespace System.Formats.Tar.Tests
             return entryType;
         }
 
+        protected static TarEntryType GetRegularFileEntryTypeForFormat(TarEntryFormat format) => format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+
         protected TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName, bool setATimeCTime = false)
         {
             TarEntry entry = (targetFormat, setATimeCTime) switch
@@ -558,6 +561,22 @@ namespace System.Formats.Tar.Tests
             {
                 yield return new object[] { testFormat };
             }
+        }
+
+        public static IEnumerable<object[]> GetTarEntryFormats()
+        {
+            yield return new object[] { TarEntryFormat.V7 };
+            yield return new object[] { TarEntryFormat.Ustar };
+            yield return new object[] { TarEntryFormat.Pax };
+            yield return new object[] { TarEntryFormat.Gnu };
+        }
+
+        public static IEnumerable<object[]> GetInvalidTarEntryFormats()
+        {
+            yield return new object[] { TarEntryFormat.Unknown };
+            yield return new object[] { (TarEntryFormat)67 };
+            yield return new object[] { (TarEntryFormat)int.MaxValue };
+            yield return new object[] { (TarEntryFormat)int.MinValue };
         }
 
         public static IEnumerable<object[]> GetFormatsAndLinks()
@@ -884,6 +903,17 @@ namespace System.Formats.Tar.Tests
             Name,
             NameAndPrefix,
             Unlimited
+        }
+
+        internal static void WriteHeaderChecksum(byte[] header)
+        {
+            int checksum = 0;
+            for (int i = 0; i < header.Length; i++)
+            {
+                checksum += (i >= 148 && i < 156) ? (byte)' ' : header[i];
+            }
+            string checksumStr = Convert.ToString(checksum, 8).PadLeft(6, '0') + "\0 ";
+            Encoding.UTF8.GetBytes(checksumStr).CopyTo(header.AsSpan(148, 8));
         }
 
         internal void WriteTarArchiveWithOneEntry(Stream s, TarEntryFormat entryFormat, TarEntryType entryType)

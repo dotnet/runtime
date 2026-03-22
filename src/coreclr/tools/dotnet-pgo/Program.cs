@@ -207,8 +207,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
 
             var extension = Path.GetExtension(inputFileName);
-            if (string.Compare(extension, ".zip", StringComparison.OrdinalIgnoreCase) == 0 ||
-                string.Compare(extension, ".vspx", StringComparison.OrdinalIgnoreCase) == 0)
+            if (string.Equals(extension, ".zip", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(extension, ".vspx", StringComparison.OrdinalIgnoreCase))
             {
                 string unzipedEtlFile;
                 if (inputFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))

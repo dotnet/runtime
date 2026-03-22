@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { globalThisAny } from "./per-module";
 import type { RuntimeAPI } from "./types";
 
 let runtimeList: RuntimeList;
@@ -12,7 +13,7 @@ class RuntimeList {
         if (api.runtimeId === undefined) {
             api.runtimeId = Object.keys(this.list).length;
         }
-        this.list[api.runtimeId] = new (globalThis as any).WeakRef(api);
+        this.list[api.runtimeId] = new globalThisAny.WeakRef(api);
         return api.runtimeId;
     }
 
@@ -23,7 +24,6 @@ class RuntimeList {
 }
 
 export function registerRuntime(api: RuntimeAPI): number {
-    const globalThisAny = globalThis as any;
     // this code makes it possible to find dotnet runtime on a page via global namespace, even when there are multiple runtimes at the same time
     if (!globalThisAny.getDotnetRuntime) {
         globalThisAny.getDotnetRuntime = (runtimeId: string) => globalThisAny.getDotnetRuntime.__list.getRuntime(runtimeId);

@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
     <DefaultExcludesInProjectFolder>$(DefaultExcludesInProjectFolder);Templates\*.*</DefaultExcludesInProjectFolder>
   </PropertyGroup>

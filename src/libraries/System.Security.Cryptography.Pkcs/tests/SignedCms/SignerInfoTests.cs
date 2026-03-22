@@ -771,7 +771,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static bool SlhDsaAndRsaSha1SignaturesSupported =>
             SignatureSupport.SupportsRsaSha1Signatures && SlhDsa.IsSupported;
 
-        [ConditionalTheory(nameof(SlhDsaAndRsaSha1SignaturesSupported))]
+        [ConditionalTheory(typeof(SignerInfoTests), nameof(SlhDsaAndRsaSha1SignaturesSupported))]
         [MemberData(nameof(AddCounterSignerSlhDsaTestData))]
         public static void AddCounterSigner_SlhDsa(SubjectIdentifierType identifierType, string digestOid, SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
         {
@@ -818,7 +818,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
         public static bool MLDsaAndRsaSha1SignaturesSupported => SignatureSupport.SupportsRsaSha1Signatures && SupportsDraft10Pkcs8;
 
-        [ConditionalTheory(nameof(MLDsaAndRsaSha1SignaturesSupported))]
+        [ConditionalTheory(typeof(SignerInfoTests), nameof(MLDsaAndRsaSha1SignaturesSupported))]
         [MemberData(nameof(AddCounterSignerMLDsaTestData))]
         public static void AddCounterSigner_MLDsa(SubjectIdentifierType identifierType, string digestOid, MLDsaAlgorithm algorithm)
         {

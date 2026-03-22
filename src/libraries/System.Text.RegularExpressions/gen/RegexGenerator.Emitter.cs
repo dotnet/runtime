@@ -1106,6 +1106,7 @@ namespace System.Text.RegularExpressions.Generator
                                 noMatchFoundLabelNeeded = true;
                                 Goto(NoMatchFound);
                             }
+                            writer.WriteLine("base.runtextpos = pos;");
                         }
                         writer.WriteLine();
                         break;
@@ -3481,19 +3482,59 @@ namespace System.Text.RegularExpressions.Generator
                     subsequent?.FindStartingLiteralNode() is RegexNode literalNode &&
                     TryEmitIndexOf(requiredHelpers, literalNode, useLast: true, negate: false, out int literalLength, out string? indexOfExpr))
                 {
-                    writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
-
-                    string setEndingPosCondition = $"    ({endingPos} = inputSpan.Slice({startingPos}, ";
-                    setEndingPosCondition = literalLength > 1 ?
-                        $"{setEndingPosCondition}Math.Min(inputSpan.Length, {endingPos} + {literalLength - 1}) - {startingPos})" :
-                        $"{setEndingPosCondition}{endingPos} - {startingPos})";
-
-                    using (EmitBlock(writer, $"{setEndingPosCondition}.{indexOfExpr}) < 0)"))
+                    // If CanReduceLoopBacktrackingToSinglePosition determines only the last consumed character
+                    // can succeed, we can just check it directly instead of repeatedly searching with LastIndexOf.
+                    if (subsequent is not null && RegexNode.CanReduceLoopBacktrackingToSinglePosition(node, subsequent))
                     {
-                        Goto(doneLabel);
+                        using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
+                        {
+                            Goto(doneLabel);
+                        }
+                        writer.WriteLine($"{endingPos}--;");
+
+                        string charAccessExpr = $"inputSpan[{endingPos}]";
+                        string condition = literalNode.Kind switch
+                        {
+                            RegexNodeKind.One or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy =>
+                                $"{charAccessExpr} != {Literal(literalNode.Ch)}",
+                            RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy =>
+                                $"{charAccessExpr} == {Literal(literalNode.Ch)}",
+                            RegexNodeKind.Multi =>
+                                $"{charAccessExpr} != {Literal(literalNode.Str![0])}",
+                            _ => // Set, Setloop, Setloopatomic, Setlazy
+                                $"!{MatchCharacterClass(charAccessExpr, literalNode.Str!, negate: false, additionalDeclarations, requiredHelpers)}",
+                        };
+                        using (EmitBlock(writer, $"if ({condition})"))
+                        {
+                            Goto(doneLabel);
+                        }
+
+                        writer.WriteLine($"pos = {endingPos};");
+
+                        // We've now checked the only backtrack position that can succeed. Force any
+                        // subsequent backtrack to fail immediately by setting endingPos to 0, which
+                        // guarantees the "startingPos >= endingPos" guard (emitted above) will be true
+                        // on re-entry. Note: if the emitter's backtracking structure changes (e.g. the
+                        // guard condition or how endingPos is used beyond the guard and stack save/restore),
+                        // this assumption would need to be revisited.
+                        writer.WriteLine($"{endingPos} = 0;");
                     }
-                    writer.WriteLine($"{endingPos} += {startingPos};");
-                    writer.WriteLine($"pos = {endingPos};");
+                    else
+                    {
+                        writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
+
+                        string setEndingPosCondition = $"    ({endingPos} = inputSpan.Slice({startingPos}, ";
+                        setEndingPosCondition = literalLength > 1 ?
+                            $"{setEndingPosCondition}Math.Min(inputSpan.Length, {endingPos} + {literalLength - 1}) - {startingPos})" :
+                            $"{setEndingPosCondition}{endingPos} - {startingPos})";
+
+                        using (EmitBlock(writer, $"{setEndingPosCondition}.{indexOfExpr}) < 0)"))
+                        {
+                            Goto(doneLabel);
+                        }
+                        writer.WriteLine($"{endingPos} += {startingPos};");
+                        writer.WriteLine($"pos = {endingPos};");
+                    }
                 }
                 else
                 {

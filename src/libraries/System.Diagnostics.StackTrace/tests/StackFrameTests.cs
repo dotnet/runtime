@@ -37,6 +37,7 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/mono/mono/issues/15187", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         [InlineData(StackFrame.OFFSET_UNKNOWN, true)]
         [InlineData(0, true)]
         [InlineData(1, true)]
