@@ -141,28 +141,24 @@ public class InstUnBoxThunks
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/121781", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void NoArgGenericUnbox()
     {
         Assert.Equal("System.String", CallStruct1M0().Result);
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/121781", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void ManyArgGenericUnbox()
     {
         Assert.Equal("System.String", CallStruct1M1().Result);
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/121781", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void NoArgGenericInstantiating()
     {
         Assert.Equal("System.String", CallStruct1M0b().Result);
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/121781", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void ManyArgGenericInstantiating()
     {
         Assert.Equal("System.String", CallStruct1M1b().Result);
@@ -247,14 +243,12 @@ public class InstUnBoxThunks
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/121781", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void NoArgDefaultMethod()
     {
         Assert.Equal("System.String", CallClass3M0().Result);
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/121781", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void ManyArgDefaultMethod()
     {
         Assert.Equal("System.String", CallClass3M1().Result);

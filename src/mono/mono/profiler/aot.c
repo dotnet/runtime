@@ -28,9 +28,10 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#ifndef HOST_WIN32
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
-#else
+#endif
+#ifdef HOST_WIN32
 #define sleep(t)                 Sleep((t) * 1000)
 #endif
 #include <glib.h>

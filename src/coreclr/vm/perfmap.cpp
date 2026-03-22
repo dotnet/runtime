@@ -28,6 +28,7 @@
 #endif
 
 Volatile<bool> PerfMap::s_enabled = false;
+Volatile<bool> PerfMap::s_dependenciesReady = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 bool PerfMap::s_GroupStubsOfSameType = false;
@@ -121,6 +122,17 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
     if (sendExisting)
     {
+        // When Enable is called very early in startup (e.g., via DiagnosticServer IPC before
+        // SystemDomain::Attach and ExecutionManager::Init), the AppDomain and EEJitManager
+        // may not exist yet. We use s_dependenciesReady (a Volatile<bool>) to guard against
+        // this, rather than null-checking individual pointers which would have race conditions
+        // due to non-Volatile statics like m_pEEJitManager.
+        // Safe to skip: no assemblies are loaded and no code is JIT'd at that point.
+        if (!s_dependenciesReady)
+        {
+            return;
+        }
+
         AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<Assembly *> pAssembly;
@@ -206,6 +218,15 @@ void PerfMap::Disable()
         // PAL_PerfJitDump_Finish is lock protected and can safely be called multiple times
         PAL_PerfJitDump_Finish();
     }
+}
+
+// Signal that all dependencies (AppDomain, ExecutionManager) are ready.
+// This method must be called before any code is JITed or restored from R2R image.
+void PerfMap::SignalDependenciesReady()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    s_dependenciesReady = true;
 }
 
 // Construct a new map for the process.
@@ -318,7 +339,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
                 s_Current->WriteLine(line);
             }
 
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
+            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
     }
     EX_CATCH{} EX_END_CATCH
@@ -359,7 +380,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
         if (methodRegionInfo.hotSize > 0)
         {
             CrstHolder ch(&(s_csPerfMap));
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, nullptr);
+            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
 
         if (methodRegionInfo.coldSize > 0)
@@ -372,7 +393,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
                 name.Append(W("[PreJit-cold]"));
             }
 
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, nullptr);
+            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
     }
     EX_CATCH{} EX_END_CATCH
@@ -429,7 +450,14 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
                 s_Current->WriteLine(line);
             }
 
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
+            // For block-level stub allocations, the memory may be reserved but not yet committed.
+            // Emitting code bytes in that case can cause jitdump logging to fail, and the bytes
+            // are optional in the jitdump specification.
+            //
+            // Even when the memory is committed, block-level stubs are reported at commit time
+            // before the actual stub code has been written, so the code bytes would be zeros or
+            // uninitialized. We therefore skip code bytes for block allocations entirely.
+            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/ stubAllocationType != PerfMapStubType::Block);
         }
     }
     EX_CATCH{} EX_END_CATCH

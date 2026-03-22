@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.Cose
 
             if (reader.BytesRemaining != 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapCborEncodedValueNotValid));
+                throw new InvalidOperationException(SR.CoseHeaderMapCborEncodedValueNotValid);
             }
 
             return retVal;
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography.Cose
 
             if (reader.BytesRemaining != 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapCborEncodedValueNotValid));
+                throw new InvalidOperationException(SR.CoseHeaderMapCborEncodedValueNotValid);
             }
 
             return retVal;
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.Cose
 
             if (reader.BytesRemaining != 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapCborEncodedValueNotValid));
+                throw new InvalidOperationException(SR.CoseHeaderMapCborEncodedValueNotValid);
             }
 
             return retVal;
@@ -225,7 +225,7 @@ namespace System.Security.Cryptography.Cose
 
             if (reader.BytesRemaining != 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.CoseHeaderMapCborEncodedValueNotValid));
+                throw new InvalidOperationException(SR.CoseHeaderMapCborEncodedValueNotValid);
             }
 
             return bytesWritten;

@@ -98,12 +98,12 @@ namespace System.Data
 
         internal static string GenUniqueColumnName(string proposedName, DataTable table)
         {
-            if (table.Columns.IndexOf(proposedName) >= 0)
+            if (table.Columns.Contains(proposedName))
             {
                 for (int i = 0; i <= table.Columns.Count; i++)
                 {
                     string tempName = proposedName + "_" + (i).ToString(CultureInfo.InvariantCulture);
-                    if (table.Columns.IndexOf(tempName) >= 0)
+                    if (table.Columns.Contains(tempName))
                     {
                         continue;
                     }
@@ -2834,7 +2834,7 @@ namespace System.Data
         }
 
         //        internal bool IsTopLevelElement (XmlSchemaElement node) {
-        //            return (elements.IndexOf(node) != -1);
+        //            return (elements.Contains(node));
         //        }
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]

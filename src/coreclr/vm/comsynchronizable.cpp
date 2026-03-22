@@ -855,7 +855,7 @@ FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_AcquireThinLock, Object* obj)
 {
     FCALL_CONTRACT;
 
-    return obj->GetHeader()->AcquireHeaderThinLock(GetThread()->GetThreadId());
+    return obj->GetHeader()->AcquireHeaderThinLock(GetThread());
 }
 FCIMPLEND
 
@@ -863,7 +863,7 @@ FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj)
 {
     FCALL_CONTRACT;
 
-    return obj->GetHeader()->ReleaseHeaderThinLock(GetThread()->GetThreadId());
+    return obj->GetHeader()->ReleaseHeaderThinLock(GetThread());
 }
 FCIMPLEND
 

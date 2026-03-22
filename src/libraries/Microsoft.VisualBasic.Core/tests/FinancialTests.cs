@@ -55,7 +55,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Financial.FV(Rate, NPer, Pmt, PV, Due), s_precision + relativePrecision);
         }
 
-        [ConditionalTheory(nameof(IsNotArmNorArm64NorAlpine))]
+        [ConditionalTheory(typeof(FinancialTests), nameof(IsNotArmNorArm64NorAlpine))]
         [InlineData(1e+25, 12, 1797, 0, (DueDate)1, -1.797000000000002e+303, -10)] // overFlow
         public void FV_Overflow(double Rate, double NPer, double Pmt, double PV, DueDate Due, double expected, int relativePrecision)
         {
@@ -300,7 +300,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Financial.SYD(Cost, Salvage, Life, Period), s_precision + relativePrecision);
         }
 
-        [ConditionalTheory(nameof(IsNotArmNorArm64NorAlpine))]
+        [ConditionalTheory(typeof(FinancialTests), nameof(IsNotArmNorArm64NorAlpine))]
         [InlineData(9.9999999999999e+305, 0, 100, 10, 1.801980198019784e+304, -10)] // overflow
         public void SYD_Overflow(double Cost, double Salvage, double Life, double Period, double expected, int relativePrecision)
         {

@@ -505,7 +505,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
             FALSE,              // allowInstParam
             TRUE);              // forceRemotableMethod
 
-        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD, false));
+        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD));
     }
 #endif // !FEATURE_COMINTEROP
 
@@ -536,8 +536,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 #ifdef FEATURE_COMINTEROP
 //==========================================================================================
 // get the method desc given the interface method desc on a COM implemented server
-// (if fNullOk is set then NULL is an allowable return value)
-MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, bool fNullOk)
+MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
 {
     CONTRACT(MethodDesc*)
     {
@@ -547,7 +546,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(IsComObjectType());
-        POSTCONDITION(fNullOk || CheckPointer(RETVAL));
+        POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
 
@@ -577,17 +576,12 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 
         // The interface is not in the static class definition so we need to look at the
         // dynamic interfaces.
-        else if (FindDynamicallyAddedInterface(pItfMT))
-        {
-            // This interface was added to the class dynamically so it is implemented
-            // by the COM object. We treat this dynamically added interfaces the same
-            // way we treat COM objects. That is by using the interface vtable.
-            RETURN(pItfMD);
-        }
-        else
-        {
-            RETURN(NULL);
-        }
+        _ASSERTE(FindDynamicallyAddedInterface(pItfMT));
+
+        // This interface was added to the class dynamically so it is implemented
+        // by the COM object. We treat this dynamically added interface the same
+        // way we treat COM objects. That is by using the interface vtable.
+        RETURN(pItfMD);
     }
 }
 #endif // FEATURE_COMINTEROP
@@ -1466,8 +1460,7 @@ BOOL MethodTable::ArrayIsInstanceOf(MethodTable* pTargetMT, TypeHandlePairList* 
         PRECONDITION(pTargetMT->IsArray());
     } CONTRACTL_END;
 
-    // GetRank touches EEClass. Try to avoid it for SZArrays.
-    if (pTargetMT->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
+    if (!pTargetMT->IsMultiDimArray())
     {
         if (this->IsMultiDimArray())
         {
@@ -1768,7 +1761,7 @@ bool MethodTable::InterfaceMapIterator::CurrentInterfaceEquivalentTo(MethodTable
 
     if (pCurrentMethodTable == pMT)
         return true;
-        
+
     if (pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pCurrentMethodTable->HasSameTypeDefAs(pMT))
     {
         // Any matches need to use the special marker type logic
@@ -1785,7 +1778,7 @@ bool MethodTable::InterfaceMapIterator::CurrentInterfaceEquivalentTo(MethodTable
 #ifndef DACCESS_COMPILE
                 if (pMT->IsFullyLoaded())
                     SetInterface(pMT);
-#endif 
+#endif
                 return true;
             }
             else
@@ -3583,23 +3576,9 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
 
         // Call the code method without touching MethodDesc if possible
         PCODE pCctorCode = pCanonMT->GetRestoredSlot(pCanonMT->GetClassConstructorSlot());
-
-        if (pCanonMT->IsSharedByGenericInstantiations())
-        {
-            PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pCctorCode);
-            DECLARE_ARGHOLDER_ARRAY(args, 1);
-            args[ARGNUM_0] = PTR_TO_ARGHOLDER(this);
-            CATCH_HANDLER_FOUND_NOTIFICATION_CALLSITE;
-            CALL_MANAGED_METHOD_NORET(args);
-        }
-        else
-        {
-            PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pCctorCode);
-            DECLARE_ARGHOLDER_ARRAY(args, 0);
-            CATCH_HANDLER_FOUND_NOTIFICATION_CALLSITE;
-            CALL_MANAGED_METHOD_NORET(args);
-        }
-
+        MethodTable* instantiatingArg = pCanonMT->IsSharedByGenericInstantiations() ? this : nullptr;
+        UnmanagedCallersOnlyCaller caller(METHOD__INITHELPERS__CALLCLASSCONSTRUCTOR);
+        caller.InvokeThrowing(pCctorCode, instantiatingArg);
         STRESS_LOG1(LF_CLASSLOADER, LL_INFO100000, "RunClassInit: Returned Successfully from class constructor for type %pT\n", this);
 
         fRet = TRUE;
@@ -4360,7 +4339,7 @@ VOID DoAccessibilityCheckForConstraintSignature(Module *pModule, SigPointer *pSi
         case ELEMENT_TYPE_TYPEDBYREF:
             // Primitive types and such. Nothing to check
             break;
-        
+
         case ELEMENT_TYPE_VAR:
         case ELEMENT_TYPE_MVAR:
         {
@@ -4786,7 +4765,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
             for (DWORD i = 0; i < formalParams.GetNumArgs(); i++)
             {
-                // This call to Bounded/DoAccessibilityCheckForConstraints will also cause constraint Variance rules to be checked 
+                // This call to Bounded/DoAccessibilityCheckForConstraints will also cause constraint Variance rules to be checked
                 // via the call to GetConstraints which will eventually call EEClass::CheckVarianceInSig
                 BOOL Bounded(TypeVarTypeDesc *tyvar, DWORD depth);
 
@@ -7796,15 +7775,6 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
         if (pClass.IsValid())
         {
-            if (IsArray())
-            {
-                // This is kind of a workaround, in that ArrayClass is derived from EEClass, but
-                // it's not virtual, we only cast if the IsArray() predicate holds above.
-                // For minidumps, DAC will choke if we don't have the full size given
-                // by ArrayClass available. If ArrayClass becomes more complex, it
-                // should get it's own EnumMemoryRegions().
-                DacEnumMemoryRegion(dac_cast<TADDR>(pClass), sizeof(ArrayClass));
-            }
             pClass->EnumMemoryRegions(flags, this);
         }
         else

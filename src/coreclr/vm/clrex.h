@@ -30,6 +30,7 @@ enum StackTraceElementFlags
 
     // Set if the element references a method that needs a keep alive object
     STEF_KEEPALIVE = 0x0004,
+    STEF_CONTINUATION = 0x0008,
 };
 
 // This struct is used by SOS in the diagnostic repo.
@@ -69,8 +70,10 @@ class StackTraceInfo
     static OBJECTREF GetKeepAliveObject(MethodDesc* pMethod);
     static void EnsureStackTraceArray(StackTraceArrayProtect *pStackTraceArrayProtected, size_t neededSize);
     static void EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t neededSize);
+    static void AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf, Thread* pThread, BOOL fRaisingForeignException);
 public:
     static void AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
+    static void AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
 };
 
 

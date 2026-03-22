@@ -237,6 +237,6 @@
     <value>The maximum allowed number of replacement strings is 255.</value>
   </data>
   <data name="LogAlreadyExistsAsSource" xml:space="preserve">
-    <value>Log {0} has already been registered as a source on the local computer.</value>
+    <value>Log {0} has already been registered as a source on machine '{1}'.</value>
   </data>
 </root>

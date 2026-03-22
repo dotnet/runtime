@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="NestedClass02.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

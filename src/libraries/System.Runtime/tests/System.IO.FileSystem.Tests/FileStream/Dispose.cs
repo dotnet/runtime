@@ -95,7 +95,7 @@ namespace System.IO.Tests
 
         private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
 
-        [ConditionalFact(nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(FileStream_Dispose), nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
         public void NoDispose_CallsVirtualDisposeFalseArg_ThrowsDuringFlushWriteBuffer_FinalizerWontThrow()
         {
             RemoteExecutor.Invoke(() =>

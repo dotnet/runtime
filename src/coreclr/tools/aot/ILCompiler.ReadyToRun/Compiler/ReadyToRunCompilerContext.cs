@@ -11,11 +11,11 @@ namespace ILCompiler
 {
     partial class CompilerTypeSystemContext
     {
-        private readonly MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
-
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details)
         {
+            _virtualMethodAlgorithm = new AsyncAwareVirtualMethodResolutionAlgorithm(this);
+            _continuationTypeHashtable = new(this);
             _genericsMode = genericsMode;
         }
 
@@ -103,6 +103,7 @@ namespace ILCompiler
         {
             get
             {
+#if FEATURE_DYNAMIC_CODE_COMPILED
                 if (Target.OperatingSystem is TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator)
                 {
                     return false;
@@ -114,6 +115,9 @@ namespace ILCompiler
                 }
 
                 return true;
+#else
+                return false;
+#endif
             }
         }
 

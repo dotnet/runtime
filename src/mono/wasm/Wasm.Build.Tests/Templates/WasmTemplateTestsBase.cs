@@ -124,7 +124,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             """;
         }
 
-        if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+        if (s_buildEnv.IsCoreClrRuntime)
         {
             // TODO-WASM: https://github.com/dotnet/sdk/issues/51213
             string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
@@ -418,6 +418,19 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new() { Timeout = 1 * 60 * 1000 });
+
+        if (runOptions is BlazorRunOptions)
+        {
+            // DOMContentLoaded fires as soon as the initial HTML is parsed,
+            // but Blazor WebAssembly still needs to download the runtime,
+            // assemblies, and render the component tree. Wait for actual
+            // Blazor content to appear before interacting with the page.
+            // The ".page" class comes from MainLayout.razor and is only
+            // present after Blazor has rendered (client-side apps) or is
+            // included in the initial server-rendered HTML (Blazor Web apps).
+            _testOutput.WriteLine("Waiting for Blazor to finish rendering");
+            await page.Locator(".page").WaitForAsync(new() { Timeout = 1 * 60 * 1000 });
+        }
 
         if (runOptions.ExecuteAfterLoaded is not null)
         {

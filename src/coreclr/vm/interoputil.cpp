@@ -259,6 +259,8 @@ ErrExit:
     return iLCIDParam;
 }
 
+#ifdef FEATURE_COMINTEROP
+
 //---------------------------------------------------------------------------
 // Transforms an LCID into a CultureInfo.
 void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
@@ -273,26 +275,50 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
     }
     CONTRACTL_END;
 
-    OBJECTREF CultureObj = NULL;
-    GCPROTECT_BEGIN(CultureObj)
-    {
-        // Allocate a CultureInfo with the specified LCID.
-        CultureObj = AllocateObject(CoreLibBinder::GetClass(CLASS__CULTURE_INFO));
-
-        MethodDescCallSite cultureInfoCtor(METHOD__CULTURE_INFO__INT_CTOR, &CultureObj);
-
-        // Call the CultureInfo(int culture) constructor.
-        ARG_SLOT pNewArgs[] = {
-            ObjToArgSlot(CultureObj),
-            (ARG_SLOT)lcid
-        };
-        cultureInfoCtor.Call(pNewArgs);
-
-        // Set the returned culture object.
-        *pCultureObj = CultureObj;
-    }
-    GCPROTECT_END();
+    UnmanagedCallersOnlyCaller cultureInfoCtor(METHOD__CULTUREINFOMARSHALER__CREATE_CULTURE_INFO);
+    cultureInfoCtor.InvokeThrowing((int)lcid, pCultureObj);
 }
+
+//---------------------------------------------------------------------------
+// Gets the current culture or UI culture for the current thread.
+OBJECTREF GetCurrentCulture(BOOL bUICulture)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    OBJECTREF pCurrentCulture = NULL;
+    GCPROTECT_BEGIN(pCurrentCulture);
+
+    UnmanagedCallersOnlyCaller propGet(METHOD__CULTUREINFOMARSHALER__GET_CURRENT_CULTURE);
+    propGet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), &pCurrentCulture);
+
+    GCPROTECT_END();
+
+    return pCurrentCulture;
+}
+
+//---------------------------------------------------------------------------
+// Sets the current culture or UI culture for the current thread.
+void SetCurrentCulture(OBJECTREF* CultureObj, BOOL bUICulture)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    UnmanagedCallersOnlyCaller propSet(METHOD__CULTUREINFOMARSHALER__SET_CURRENT_CULTURE);
+    propSet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), CultureObj);
+}
+
+#endif // FEATURE_COMINTEROP
 
 
 //---------------------------------------------------------------------------
@@ -2146,14 +2172,8 @@ void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, OBJECTREF *pDestSysColo
     }
     CONTRACTL_END;
 
-    MethodDescCallSite oleColorToSystemColor(METHOD__COLORMARSHALER__CONVERT_TO_MANAGED);
-
-    ARG_SLOT Args[] =
-    {
-        PtrToArgSlot(&SrcOleColor)
-    };
-
-    *pDestSysColor = oleColorToSystemColor.Call_RetOBJECTREF(Args);
+    UnmanagedCallersOnlyCaller oleColorToSystemColor(METHOD__COLORMARSHALER__CONVERT_TO_MANAGED_UCO);
+    oleColorToSystemColor.InvokeThrowing((int)SrcOleColor, pDestSysColor);
 }
 
 //--------------------------------------------------------------------------------
@@ -2169,22 +2189,10 @@ OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj)
     CONTRACTL_END;
 
     OLE_COLOR result;
-    OBJECTREF sysColor = NULL;
 
-    GCPROTECT_BEGIN(sysColor);
+    UnmanagedCallersOnlyCaller sysColorToOleColor(METHOD__COLORMARSHALER__CONVERT_TO_NATIVE_UCO);
+    sysColorToOleColor.InvokeThrowing(pSrcObj, &result);
 
-    sysColor = *pSrcObj;
-
-    MethodDescCallSite sysColorToOleColor(METHOD__COLORMARSHALER__CONVERT_TO_NATIVE);
-
-    ARG_SLOT Args[] =
-    {
-        ObjToArgSlot(sysColor)
-    };
-
-    result = (OLE_COLOR)sysColorToOleColor.Call_RetI4(Args);
-
-    GCPROTECT_END();
     return result;
 }
 

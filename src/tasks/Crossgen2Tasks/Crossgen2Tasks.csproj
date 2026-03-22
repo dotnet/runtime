@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(BundledNETCoreAppTargetFramework)</TargetFramework>
-    <NoWarn>$(NoWarn);CA1050;CA1852;CA1861;CA2249;IDE0059;IDE0060;IDE0074</NoWarn>
+    <NoWarn>$(NoWarn);CA1050;CA1852;CA1861;IDE0059;IDE0060;IDE0074</NoWarn>
     <Nullable>annotations</Nullable>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <!-- TODO: Remove when a newer SDK with that property exposed is available. -->

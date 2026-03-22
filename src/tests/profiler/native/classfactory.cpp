@@ -6,6 +6,7 @@
 #include "enumthreadsprofiler/enumthreadsprofiler.h"
 #include "eventpipeprofiler/eventpipereadingprofiler.h"
 #include "eventpipeprofiler/eventpipewritingprofiler.h"
+#include "exceptionprofiler/exceptionprofiler.h"
 #include "getappdomainstaticaddress/getappdomainstaticaddress.h"
 #include "gcallocateprofiler/gcallocateprofiler.h"
 #include "nongcheap/nongcheap.h"
@@ -95,6 +96,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == EventPipeWritingProfiler::GetClsid())
     {
         profiler = new EventPipeWritingProfiler();
+    }
+    else if (clsid == ExceptionProfiler::GetClsid())
+    {
+        profiler = new ExceptionProfiler();
     }
     else if (clsid == MetaDataGetDispenser::GetClsid())
     {

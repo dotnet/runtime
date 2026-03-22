@@ -956,6 +956,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA
     { FIRST_NI_AVXVNNI, LAST_NI_AVXVNNI },                      // AVXVNNI
+    { FIRST_NI_AVX512BMM, LAST_NI_AVX512BMM },                  // AVX512BMM
     { FIRST_NI_GFNI, LAST_NI_GFNI },                            // GFNI
     { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },                  // GFNI_V256
     { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },                  // GFNI_V512
@@ -978,7 +979,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      AVX512v2_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512v3_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX10v1_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX10v2_X64
+    { FIRST_NI_AVX10v2_X64, LAST_NI_AVX10v2_X64 },              // AVX10v2_X64
     { NI_Illegal, NI_Illegal },                                 //      AES_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT_X64
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA_X64
@@ -999,6 +1000,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      Atomics
     { FIRST_NI_Vector64, LAST_NI_Vector64 },                    // Vector64
     { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
+    { NI_Illegal, NI_Illegal },                                 // VectorT
     { NI_Illegal, NI_Illegal },                                 //      Dczva
     { NI_Illegal, NI_Illegal },                                 //      Rcpc
     { NI_Illegal, NI_Illegal },                                 //      VectorT128
@@ -2488,9 +2490,21 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
                     case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
                     case NI_Sve_GatherVectorUInt32ZeroExtend:
-                    case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
-                    case NI_Sve_GatherVectorWithByteOffsets:
                     case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+                    case NI_Sve_GatherVectorWithByteOffsets:
+                    case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
+                    case NI_Sve2_GatherVectorByteZeroExtendNonTemporal:
+                    case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
+                    case NI_Sve2_GatherVectorInt16WithByteOffsetsSignExtendNonTemporal:
+                    case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
+                    case NI_Sve2_GatherVectorInt32WithByteOffsetsSignExtendNonTemporal:
+                    case NI_Sve2_GatherVectorNonTemporal:
+                    case NI_Sve2_GatherVectorSByteSignExtendNonTemporal:
+                    case NI_Sve2_GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal:
+                    case NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal:
+                    case NI_Sve2_GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal:
+                    case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
+                    case NI_Sve2_GatherVectorWithByteOffsetsNonTemporal:
                         assert(varTypeIsSIMD(op3->TypeGet()));
                         if (numArgs == 3)
                         {

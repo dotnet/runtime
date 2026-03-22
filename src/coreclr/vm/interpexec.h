@@ -61,6 +61,39 @@ struct InterpThreadContext
 
     FrameDataAllocator frameDataAllocator;
 
+#ifdef DEBUGGING_SUPPORTED
+    // Breakpoint bypass state. When the debugger wants the interpreter to skip
+    // a breakpoint and execute the original opcode, it sets these fields.
+    // Stored on thread context rather than frame context to avoid bloating
+    // the hot InterpMethodContextFrame struct with debug-only fields.
+    const int32_t *m_bypassAddress;   // Address of breakpoint to bypass (NULL = no bypass)
+    int32_t        m_bypassOpcode;    // Original opcode to execute instead of INTOP_BREAKPOINT
+
+    void SetBypass(const int32_t* address, int32_t opcode)
+    {
+        _ASSERTE(m_bypassAddress == NULL);
+        m_bypassAddress = address;
+        m_bypassOpcode = opcode;
+    }
+
+    void ClearBypass()
+    {
+        m_bypassAddress = NULL;
+        m_bypassOpcode = 0;
+    }
+
+    bool HasBypass(const int32_t* address, int32_t* pOpcode) const
+    {
+        if (m_bypassAddress == address)
+        {
+            if (pOpcode != NULL)
+                *pOpcode = m_bypassOpcode;
+            return true;
+        }
+        return false;
+    }
+#endif // DEBUGGING_SUPPORTED
+
     InterpThreadContext();
     ~InterpThreadContext();
 };
@@ -78,9 +111,9 @@ struct ExceptionClauseArgs
 };
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs = NULL);
-extern "C" void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont, uint8_t* resultStorage);
+EXTERN_C FCDECL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage);
 
-extern "C" void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
+extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
 
 CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod);
@@ -124,5 +157,8 @@ struct UnmanagedMethodWithTransitionParam
     int8_t *pRet;
     PCODE callTarget;
 };
+
+void InterpDispatchCache_ReclaimAll();
+void InterpDispatchCache_ClearForLoaderAllocator(LoaderAllocator* pLoaderAllocator);
 
 #endif // _INTERPEXEC_H_

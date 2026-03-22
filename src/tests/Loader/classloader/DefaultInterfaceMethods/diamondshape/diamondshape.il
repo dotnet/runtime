@@ -8,16 +8,19 @@
 }
 .assembly extern xunit.core {}
 // TODO: use the contract once this is exposed from contracts
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
+
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 
 .assembly diamondshape
 {
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
 
   // --- The following custom attribute is added automatically, do not uncomment -------
-  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
+  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
 
   .hash algorithm 0x00008004
   .ver 0:0:0:0
@@ -35,7 +38,7 @@
 
 .class interface private abstract auto ansi IFoo
 {
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  Foo(int32 a) cil managed
   {
     // Code size       7 (0x7)
@@ -47,7 +50,7 @@
     IL_0003:  br.s       IL_0005
 
     IL_0005:  ldloc.0
-    IL_0006:  ret                 
+    IL_0006:  ret
   } // end of method IFoo::Foo
 
 } // end of class IFoo
@@ -55,7 +58,7 @@
 .class interface private abstract auto ansi IFoo2
        implements IFoo
 {
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance int32  Foo(int32 a) cil managed
   {
     .override IFoo::Foo
@@ -81,7 +84,7 @@
 .class interface private abstract auto ansi IFooEx
        implements IFoo
 {
-  .method public hidebysig newslot virtual final 
+  .method public hidebysig newslot virtual final
           instance int32  IFoo.Foo(int32 a) cil managed
   {
     .override IFoo::Foo
@@ -109,7 +112,7 @@
                   IFoo,
                   IFooEx
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -124,7 +127,7 @@
 
 .class interface private abstract auto ansi I1
 {
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance int32  Func(int32 a) cil managed
   {
   } // end of method I1::Func
@@ -134,7 +137,7 @@
 .class interface private abstract auto ansi I2
        implements I1
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance int32  I1.Func(int32 a) cil managed
   {
     .override I1::Func
@@ -153,13 +156,13 @@
 
     IL_0012:  ldloc.0
     IL_0013:  ret
-  } // end of method I2::I1.Func    
+  } // end of method I2::I1.Func
 } // end of class I2
 
 .class interface private abstract auto ansi I3
        implements I1
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance int32  I1.Func(int32 a) cil managed
   {
     .override I1::Func
@@ -178,7 +181,7 @@
 
     IL_0012:  ldloc.0
     IL_0013:  ret
-  } // end of method I3::I1.Func    
+  } // end of method I3::I1.Func
 } // end of class I3
 
 .class interface private abstract auto ansi I4
@@ -186,7 +189,7 @@
                   I1,
                   I3
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance int32  I1.Func(int32 a) cil managed
   {
     .override I1::Func
@@ -205,7 +208,7 @@
 
     IL_0012:  ldloc.0
     IL_0013:  ret
-  } // end of method I4::I1.Func   
+  } // end of method I4::I1.Func
 } // end of class I4
 
 .class private auto ansi beforefieldinit I4Class
@@ -215,7 +218,7 @@
                   I1,
                   I3
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -231,7 +234,7 @@
 .class interface private abstract auto ansi I5
        implements I1
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance int32  I1.Func(int32 a) cil managed
   {
     .override I1::Func
@@ -250,13 +253,13 @@
 
     IL_0012:  ldloc.0
     IL_0013:  ret
-  } // end of method I5::I1.Func  
+  } // end of method I5::I1.Func
 } // end of class I5
 
 .class interface private abstract auto ansi I6
        implements I1
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance int32  I1.Func(int32 a) cil managed
   {
     .override I1::Func
@@ -275,7 +278,7 @@
 
     IL_0012:  ldloc.0
     IL_0013:  ret
-  } // end of method I6::I1.Func  
+  } // end of method I6::I1.Func
 } // end of class I6
 
 .class interface private abstract auto ansi I7
@@ -283,7 +286,7 @@
                   I1,
                   I6
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance int32  I1.Func(int32 a) cil managed
   {
     .override I1::Func
@@ -302,7 +305,7 @@
 
     IL_0012:  ldloc.0
     IL_0013:  ret
-  } // end of method I7::I1.Func  
+  } // end of method I7::I1.Func
 } // end of class I7
 
 .class interface private abstract auto ansi I8
@@ -314,7 +317,7 @@
                   I5,
                   I6
 {
-  .method private hidebysig newslot virtual final 
+  .method private hidebysig newslot virtual final
           instance int32  I1.Func(int32 a) cil managed
   {
     .override I1::Func
@@ -333,7 +336,7 @@
 
     IL_0012:  ldloc.0
     IL_0013:  ret
-  } // end of method I8::I1.Func  
+  } // end of method I8::I1.Func
 } // end of class I8
 
 .class private auto ansi beforefieldinit I47Class
@@ -346,7 +349,7 @@
                   I5,
                   I6
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -368,9 +371,9 @@
                   I3,
                   I7,
                   I5,
-                  I6 
+                  I6
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -381,21 +384,21 @@
     IL_0007:  ret
   } // end of method I8Class::.ctor
 
-} // end of class I8Class  
+} // end of class I8Class
 
 .class interface private abstract auto ansi GI1`1<T>
 {
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance int32  Func<S>([out] class [mscorlib]System.Type[]& types) cil managed
   {
-  } // end of method GI1`1::'GI1<T>.Func' 
+  } // end of method GI1`1::'GI1<T>.Func'
 
 } // end of class GI1`1
 
 .class interface private abstract auto ansi GI2`1<T>
        implements class GI1`1<!T>
 {
-.method private hidebysig newslot virtual final 
+.method private hidebysig newslot virtual final
           instance int32  'GI1<T>.Func'<S>([out] class [mscorlib]System.Type[]& types) cil managed
   {
     .override  method instance int32 class GI1`1<!T>::Func<[1]>(class [mscorlib]System.Type[]&)
@@ -446,13 +449,13 @@
 
     IL_0062:  ldloc.0
     IL_0063:  ret
-  } // end of method G2`1::'GI1<T>.Func' 
+  } // end of method G2`1::'GI1<T>.Func'
 } // end of class GI2`1
 
 .class interface private abstract auto ansi GI3`1<T>
        implements class GI1`1<!T>
 {
-.method private hidebysig newslot virtual final 
+.method private hidebysig newslot virtual final
           instance int32  'GI1<T>.Func'<S>([out] class [mscorlib]System.Type[]& types) cil managed
   {
     .override  method instance int32 class GI1`1<!T>::Func<[1]>(class [mscorlib]System.Type[]&)
@@ -503,7 +506,7 @@
 
     IL_0062:  ldloc.0
     IL_0063:  ret
-  } // end of method GI3`1::'GI1<T>.Func' 
+  } // end of method GI3`1::'GI1<T>.Func'
 } // end of class GI3`1
 
 .class interface private abstract auto ansi GI4`1<T>
@@ -511,7 +514,7 @@
                   class GI1`1<!T>,
                   class GI3`1<!T>
 {
- .method private hidebysig newslot virtual final 
+ .method private hidebysig newslot virtual final
           instance int32  'GI1<T>.Func'<S>([out] class [mscorlib]System.Type[]& types) cil managed
   {
     .override  method instance int32 class GI1`1<!T>::Func<[1]>(class [mscorlib]System.Type[]&)
@@ -562,7 +565,7 @@
 
     IL_0062:  ldloc.0
     IL_0063:  ret
-  } // end of method GI4`1::'GI1<T>.Func' 
+  } // end of method GI4`1::'GI1<T>.Func'
 } // end of class GI4`1
 
 .class private auto ansi beforefieldinit GI23Class`1<T>
@@ -571,7 +574,7 @@
                   class GI1`1<!T>,
                   class GI3`1<!T>
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -591,7 +594,7 @@
                   class GI1`1<!T>,
                   class GI3`1<!T>
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -737,7 +740,7 @@
       IL_00de:  leave.s    IL_00e0
 
     }  // end handler
-    IL_00e0:  ret 
+    IL_00e0:  ret
   } // end of method Program::Negative
 
   .method public hidebysig static void  Positive() cil managed
@@ -830,6 +833,16 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/54399')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsAppleMobile')
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/54399')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsMonoInterpreter')
+    }
     .entrypoint
     // Code size       23 (0x17)
     .maxstack  1
@@ -847,7 +860,7 @@
     IL_0016:  ret
   } // end of method Program::Main
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -916,7 +929,7 @@
     IL_002e:  ret
   } // end of method Test::Assert
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -927,7 +940,7 @@
     IL_0007:  ret
   } // end of method Test::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       7 (0x7)

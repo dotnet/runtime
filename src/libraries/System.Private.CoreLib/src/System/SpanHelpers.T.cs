@@ -3974,7 +3974,7 @@ namespace System
                         return ComputeFirstIndex(ref searchSpace, ref current, inRangeVector);
                     }
 
-                    current = ref Unsafe.Add(ref current, Vector256<T>.Count);
+                    current = ref Unsafe.Add(ref current, Vector512<T>.Count);
                 }
                 while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd));
 

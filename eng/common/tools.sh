@@ -184,6 +184,8 @@ function InstallDotNet {
   local version=$2
   local runtime=$4
 
+  # For performance this check is duplicated in src/Microsoft.DotNet.Arcade.Sdk/src/InstallDotNetCore.cs
+  # if you are making changes here, consider if you need to make changes there as well.
   local dotnetVersionLabel="'$runtime v$version'"
   if [[ -n "${4:-}" ]] && [ "$4" != 'sdk' ]; then
     runtimePath="$root"
@@ -522,7 +524,13 @@ function MSBuild-Core {
     }
   }
 
-  RunBuildTool "$_InitializeBuildToolCommand" /m /nologo /clp:Summary /v:$verbosity /nr:$node_reuse $warnaserror_switch /p:TreatWarningsAsErrors=$warn_as_error /p:ContinuousIntegrationBuild=$ci "$@"
+  # Add -mt flag for MSBuild multithreaded mode if enabled via environment variable
+  local mt_switch=""
+  if [[ "${MSBUILD_MT_ENABLED:-}" == "1" ]]; then
+    mt_switch="-mt"
+  fi
+
+  RunBuildTool "$_InitializeBuildToolCommand" /m /nologo /clp:Summary /v:$verbosity /nr:$node_reuse $warnaserror_switch $mt_switch /p:TreatWarningsAsErrors=$warn_as_error /p:ContinuousIntegrationBuild=$ci "$@"
 }
 
 function GetDarc {

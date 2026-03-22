@@ -100,7 +100,7 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsGenericType => IsConstructedGenericType || IsGenericTypeDefinition;
 
         //  Don't seal since we may need to convert any modified types to unmodified.
-        public override Type[] GetGenericArguments() => GetGenericArgumentsNoCopy().CloneArray();
+        public override Type[] GetGenericArguments() => GetGenericArgumentsNoCopy().CloneArray<Type>();
 
         protected internal abstract RoType[] GetGenericArgumentsNoCopy();
 
@@ -136,7 +136,7 @@ namespace System.Reflection.TypeLoading
         protected abstract RoType? ComputeDeclaringType();
         internal RoType? GetRoDeclaringType() => _lazyDeclaringType ??= ComputeDeclaringType();
         internal RoType? Call_ComputeDeclaringType() => ComputeDeclaringType();
-        private volatile RoType? _lazyDeclaringType;
+        private RoType? _lazyDeclaringType;
 
         public abstract override MethodBase? DeclaringMethod { get; }
         // .NET Framework compat: For types, ReflectedType == DeclaringType. Nested types are always looked up as if BindingFlags.DeclaredOnly was passed.
@@ -167,7 +167,7 @@ namespace System.Reflection.TypeLoading
             }
             return baseType;
         }
-        private volatile RoType? _lazyBaseType = Sentinels.RoType;
+        private RoType? _lazyBaseType = Sentinels.RoType;
 
         //
         // This internal method implements BaseType without the following .NET Framework quirk:
@@ -239,7 +239,7 @@ namespace System.Reflection.TypeLoading
             return arr;
         }
 
-        private volatile RoType[]? _lazyInterfaces;
+        private RoType[]? _lazyInterfaces;
 
         public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType) => throw new NotSupportedException(SR.NotSupported_InterfaceMapping);
 
@@ -324,7 +324,7 @@ namespace System.Reflection.TypeLoading
         // Enum methods
         public sealed override Type GetEnumUnderlyingType() => _lazyUnderlyingEnumType ??= ComputeEnumUnderlyingType();
         protected internal abstract RoType ComputeEnumUnderlyingType();
-        private volatile RoType? _lazyUnderlyingEnumType;
+        private RoType? _lazyUnderlyingEnumType;
         public sealed override Array GetEnumValues() => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
 #if NET

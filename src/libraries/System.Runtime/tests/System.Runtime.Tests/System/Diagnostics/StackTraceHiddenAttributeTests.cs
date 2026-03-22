@@ -138,5 +138,29 @@ namespace System.Tests
             [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
             internal string GetStackTraceMethodC() => Environment.StackTrace;
         }
+
+        [Fact]
+        public void InterfaceHidden_EnvironmentStackTrace()
+        {
+            string stacktrace = ((IHiddenInterface)new HiddenInterfaceImpl()).GetStackTraceMethodA();
+            Assert.DoesNotContain(nameof(IHiddenInterface.GetStackTraceMethodA), stacktrace);
+            Assert.DoesNotContain(nameof(IHiddenInterface.GetStackTraceMethodB), stacktrace);
+            Assert.DoesNotContain(nameof(IHiddenInterface.GetStackTraceMethodC), stacktrace);
+        }
+
+        [StackTraceHidden]
+        internal interface IHiddenInterface
+        {
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            string GetStackTraceMethodA() => GetStackTraceMethodB();
+
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            string GetStackTraceMethodB() => GetStackTraceMethodC();
+
+            [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+            string GetStackTraceMethodC() => Environment.StackTrace;
+        }
+
+        internal class HiddenInterfaceImpl : IHiddenInterface { }
     }
 }

@@ -632,6 +632,7 @@ public class ArrayMarshal
     }
     #endregion
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/81674", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     [SkipOnMono("needs triage")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/81674", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]

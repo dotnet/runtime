@@ -1238,7 +1238,7 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { false, ActivityIdFormat.W3C };
         }
 
-        [ConditionalTheory(nameof(EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported))]
+        [ConditionalTheory(typeof(DiagnosticsTest), nameof(EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported))]
         [InlineData("true")]
         [InlineData("1")]
         [InlineData("0")]

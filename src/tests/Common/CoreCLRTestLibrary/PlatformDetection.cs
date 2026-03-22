@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace TestLibrary
 {
@@ -13,10 +14,21 @@ namespace TestLibrary
         public static bool Is64BitProcess => IntPtr.Size == 8;
 
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
+        public static bool IsX64Process => RuntimeInformation.ProcessArchitecture == Architecture.X64;
         public static bool IsNotX86Process => !IsX86Process;
+        public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsArm64Process => RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
+        public static bool IsRiscv64Process => RuntimeInformation.ProcessArchitecture == Architecture.RiscV64;
 
         public static bool IsWindows => OperatingSystem.IsWindows();
+
+        public static bool IsNotWindows => !OperatingSystem.IsWindows();
+
+        public static bool IsOSX => OperatingSystem.IsMacOS();
+
+        public static bool IsAndroid => OperatingSystem.IsAndroid();
+
+        public static bool IsSimulator => RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator") || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
 
         public static bool IsBuiltInComEnabled => IsWindows && !Utilities.IsCoreClrInterpreter
                                             && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
@@ -63,15 +75,75 @@ namespace TestLibrary
 
         static string _variant = Environment.GetEnvironmentVariable("DOTNET_RUNTIME_VARIANT");
 
+        public static bool IsMonoMiniJIT => _variant == "minijit";
         public static bool IsMonoLLVMAOT => _variant == "llvmaot";
         public static bool IsMonoLLVMFULLAOT => _variant == "llvmfullaot";
         public static bool IsMonoMINIFULLAOT => _variant == "minifullaot";
         public static bool IsMonoFULLAOT => IsMonoLLVMFULLAOT || IsMonoMINIFULLAOT;
-        public static bool IsMonoInterpreter => _variant == "monointerpreter";
+        public static bool IsMonoAnyAOT => IsMonoFULLAOT || IsMonoLLVMAOT;
+        public static bool IsMonoInterpreter
+        {
+            get
+            {
+                // If DOTNET_RUNTIME_VARIANT is not set,
+                // use the same logic as the libraries tests to detect the interpreter.
+                // This is useful for XHarness-based targets where we don't pass through our custom environment variables.
+                if (_variant is null)
+                {
+                    return IsMonoRuntime && RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled;
+                }
+                return _variant == "monointerpreter";
+            }
+        }
 
         // These platforms have not had their infrastructure updated to support native test assets.
         public static bool PlatformDoesNotSupportNativeTestAssets =>
             OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsAndroid() || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi();
         public static bool IsAppleMobile => OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst();
+
+        // wasm properties
+        public static bool IsBrowser => OperatingSystem.IsBrowser();
+        public static bool IsWasi => OperatingSystem.IsWasi();
+        public static bool IsWasm => IsBrowser || IsWasi;
+        public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
+
+        // TODO-WASM: https://github.com/dotnet/runtime/issues/124748
+        // this is compiled with 11.0.0-preview.1.26104.118\ref
+        // which doesn't have the RuntimeFeature.IsMultithreadingSupported API yet.
+        // after we update to a newer ref, we should use RuntimeFeature.IsMultithreadingSupported directly.
+        // public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
+        public static bool IsMultithreadingSupported { get; } = GetIsMultithreadingSupported();
+
+        private static bool GetIsMultithreadingSupported()
+        {
+            if (!IsWasm)
+                return true;
+
+            try
+            {
+                Type runtimeFeatureType = typeof(System.Runtime.CompilerServices.RuntimeFeature);
+
+                PropertyInfo isMultithreadingSupportedProperty = runtimeFeatureType.GetProperty("IsMultithreadingSupported", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (isMultithreadingSupportedProperty != null)
+                {
+                    return (bool)isMultithreadingSupportedProperty.GetValue(null);
+                }
+            }
+            catch
+            {
+                // if any of the reflection calls fail, assume multithreading is not supported.
+            }
+            return false;
+        }
+
+        private static bool IsEnvironmentVariableTrue(string variableName)
+        {
+            if (!IsBrowser)
+                return false;
+
+            return Environment.GetEnvironmentVariable(variableName) is "true";
+        }
+
+        public static bool IsUsingSynthesizedPgoData => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CrossGen2SynthesizePgo"));
     }
 }

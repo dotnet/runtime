@@ -68,6 +68,16 @@ void CodeGen::genArm64EmitterUnitTestsGeneral()
     theEmitter->emitIns_R_R_I(INS_stur, EA_8BYTE, REG_R8, REG_R9, 1);
     theEmitter->emitIns_R_R_I(INS_ldursw, EA_8BYTE, REG_R8, REG_R9, 1);
 
+    theEmitter->emitIns_R_R_I(INS_stlurb, EA_1BYTE, REG_R7, REG_R10, 0);
+    theEmitter->emitIns_R_R_I(INS_stlurh, EA_2BYTE, REG_R2, REG_R10, 154);
+    theEmitter->emitIns_R_R_I(INS_stlur, EA_4BYTE, REG_R30, REG_R10, -256);
+    theEmitter->emitIns_R_R_I(INS_stlur, EA_8BYTE, REG_R23, REG_R10, 255);
+
+    theEmitter->emitIns_R_R_I(INS_ldapurb, EA_1BYTE, REG_R13, REG_R9, -256);
+    theEmitter->emitIns_R_R_I(INS_ldapurh, EA_2BYTE, REG_R7, REG_R10, 101);
+    theEmitter->emitIns_R_R_I(INS_ldapur, EA_4BYTE, REG_R27, REG_R11, 19);
+    theEmitter->emitIns_R_R_I(INS_ldapur, EA_8BYTE, REG_R2, REG_R12, -173);
+
     // SP and ZR tests
     theEmitter->emitIns_R_R_I(INS_ldur, EA_8BYTE, REG_R8, REG_SP, 1);
     theEmitter->emitIns_R_R_I(INS_ldurb, EA_8BYTE, REG_ZR, REG_R9, 1);
@@ -1220,12 +1230,6 @@ void CodeGen::genArm64EmitterUnitTestsGeneral()
     theEmitter->emitIns_R_R_R(INS_sdiv, EA_4BYTE, REG_R8, REG_R9, REG_R10);
     theEmitter->emitIns_R_R_R(INS_mul, EA_4BYTE, REG_R8, REG_R9, REG_R10);
     theEmitter->emitIns_R_R_R(INS_mneg, EA_4BYTE, REG_R8, REG_R9, REG_R10);
-    theEmitter->emitIns_R_R_R(INS_smull, EA_4BYTE, REG_R8, REG_R9, REG_R10);
-    theEmitter->emitIns_R_R_R(INS_smnegl, EA_4BYTE, REG_R8, REG_R9, REG_R10);
-    theEmitter->emitIns_R_R_R(INS_smulh, EA_4BYTE, REG_R8, REG_R9, REG_R10);
-    theEmitter->emitIns_R_R_R(INS_umull, EA_4BYTE, REG_R8, REG_R9, REG_R10);
-    theEmitter->emitIns_R_R_R(INS_umnegl, EA_4BYTE, REG_R8, REG_R9, REG_R10);
-    theEmitter->emitIns_R_R_R(INS_umulh, EA_4BYTE, REG_R8, REG_R9, REG_R10);
     theEmitter->emitIns_R_R_R(INS_lslv, EA_4BYTE, REG_R8, REG_R9, REG_R10);
     theEmitter->emitIns_R_R_R(INS_lsrv, EA_4BYTE, REG_R8, REG_R9, REG_R10);
     theEmitter->emitIns_R_R_R(INS_asrv, EA_4BYTE, REG_R8, REG_R9, REG_R10);
@@ -1609,10 +1613,6 @@ void CodeGen::genArm64EmitterUnitTestsGeneral()
 
     theEmitter->emitIns_R_R_R_R(INS_madd, EA_4BYTE, REG_R0, REG_R12, REG_R27, REG_R10);
     theEmitter->emitIns_R_R_R_R(INS_msub, EA_4BYTE, REG_R1, REG_R13, REG_R28, REG_R11);
-    theEmitter->emitIns_R_R_R_R(INS_smaddl, EA_4BYTE, REG_R2, REG_R14, REG_R0, REG_R12);
-    theEmitter->emitIns_R_R_R_R(INS_smsubl, EA_4BYTE, REG_R3, REG_R15, REG_R1, REG_R13);
-    theEmitter->emitIns_R_R_R_R(INS_umaddl, EA_4BYTE, REG_R4, REG_R19, REG_R2, REG_R14);
-    theEmitter->emitIns_R_R_R_R(INS_umsubl, EA_4BYTE, REG_R5, REG_R20, REG_R3, REG_R15);
 
     theEmitter->emitIns_R_R_R_R(INS_madd, EA_8BYTE, REG_R6, REG_R21, REG_R4, REG_R19);
     theEmitter->emitIns_R_R_R_R(INS_msub, EA_8BYTE, REG_R7, REG_R22, REG_R5, REG_R20);
@@ -1900,15 +1900,10 @@ void CodeGen::genArm64EmitterUnitTestsAdvSimd()
     theEmitter->emitIns_R_R_I(INS_stur, EA_8BYTE, REG_V7, REG_R10, 9);
     theEmitter->emitIns_R_R_I(INS_stur, EA_16BYTE, REG_V7, REG_R10, 17);
 
-    theEmitter->emitIns_R_R_I(INS_stlurb, EA_1BYTE, REG_V7, REG_R10, 0);
-    theEmitter->emitIns_R_R_I(INS_stlurh, EA_2BYTE, REG_V7, REG_R10, 0);
-    theEmitter->emitIns_R_R_I(INS_stlur, EA_4BYTE, REG_V7, REG_R10, 0);
-    theEmitter->emitIns_R_R_I(INS_stlur, EA_8BYTE, REG_V7, REG_R10, 0);
-
-    theEmitter->emitIns_R_R_I(INS_ldapurb, EA_1BYTE, REG_V8, REG_R9, 0);
-    theEmitter->emitIns_R_R_I(INS_ldapurh, EA_2BYTE, REG_V8, REG_R9, 0);
-    theEmitter->emitIns_R_R_I(INS_ldapur, EA_4BYTE, REG_V8, REG_R9, 0);
-    theEmitter->emitIns_R_R_I(INS_ldapur, EA_8BYTE, REG_V8, REG_R9, 0);
+    theEmitter->emitIns_R_R_I(INS_ldapur, EA_1BYTE, REG_V27, REG_R19, 255);
+    theEmitter->emitIns_R_R_I(INS_ldapur, EA_2BYTE, REG_V15, REG_R9, -255);
+    theEmitter->emitIns_R_R_I(INS_ldapur, EA_4BYTE, REG_V1, REG_R25, 17);
+    theEmitter->emitIns_R_R_I(INS_ldapur, EA_8BYTE, REG_V8, REG_R2, -3);
 
     // load/store pair
     theEmitter->emitIns_R_R_R(INS_ldnp, EA_8BYTE, REG_V0, REG_V1, REG_R10);
@@ -4558,6 +4553,34 @@ void CodeGen::genArm64EmitterUnitTestsAdvSimd()
     theEmitter->emitIns_R_R_R_R(INS_fmsub, EA_8BYTE, REG_V5, REG_V13, REG_V21, REG_V29);
     theEmitter->emitIns_R_R_R_R(INS_fnmadd, EA_8BYTE, REG_V6, REG_V14, REG_V22, REG_V30);
     theEmitter->emitIns_R_R_R_R(INS_fnmsub, EA_8BYTE, REG_V7, REG_V15, REG_V23, REG_V31);
+
+    // IF_DV_2U
+    theEmitter->emitIns_R_R(INS_sha1h, EA_4BYTE, REG_V3, REG_V17);
+    theEmitter->emitIns_R_R(INS_sha1su1, EA_16BYTE, REG_V22, REG_V15, INS_OPTS_4S);
+    theEmitter->emitIns_R_R(INS_sha256su0, EA_16BYTE, REG_V31, REG_V1, INS_OPTS_4S);
+
+    // IF_DV_2V
+    theEmitter->emitIns_R_R(INS_sha512su0, EA_16BYTE, REG_V31, REG_V12, INS_OPTS_2D);
+    theEmitter->emitIns_R_R(INS_sm4e, EA_16BYTE, REG_V12, REG_V5, INS_OPTS_4S);
+
+    // IF_DV_3H
+    theEmitter->emitIns_R_R_R(INS_sha512h, EA_16BYTE, REG_V3, REG_V31, REG_V8, INS_OPTS_2D);
+    theEmitter->emitIns_R_R_R(INS_sha512h2, EA_16BYTE, REG_V7, REG_V1, REG_V7, INS_OPTS_2D);
+    theEmitter->emitIns_R_R_R(INS_sha512su1, EA_16BYTE, REG_V31, REG_V10, REG_V31, INS_OPTS_2D);
+    theEmitter->emitIns_R_R_R(INS_rax1, EA_16BYTE, REG_V9, REG_V18, REG_V11, INS_OPTS_2D);
+    theEmitter->emitIns_R_R_R(INS_sm3partw1, EA_16BYTE, REG_V1, REG_V22, REG_V17, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_sm3partw2, EA_16BYTE, REG_V21, REG_V21, REG_V16, INS_OPTS_4S);
+    theEmitter->emitIns_R_R_R(INS_sm4ekey, EA_16BYTE, REG_V19, REG_V30, REG_V3, INS_OPTS_4S);
+
+    // IF_DV_3I
+    theEmitter->emitIns_R_R_R_I(INS_xar, EA_16BYTE, REG_V2, REG_V30, REG_V1, 4, INS_OPTS_2D);
+    theEmitter->emitIns_R_R_R_I(INS_xar, EA_16BYTE, REG_V31, REG_V12, REG_V3, 63, INS_OPTS_2D);
+    theEmitter->emitIns_R_R_R_I(INS_xar, EA_16BYTE, REG_V23, REG_V9, REG_V31, 54, INS_OPTS_2D);
+
+    // IF_DV_4B
+    theEmitter->emitIns_R_R_R_R(INS_eor3, EA_16BYTE, REG_V31, REG_V1, REG_V19, REG_V1, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R_R(INS_bcax, EA_16BYTE, REG_V12, REG_V27, REG_V6, REG_V4, INS_OPTS_16B);
+    theEmitter->emitIns_R_R_R_R(INS_sm3ss1, EA_16BYTE, REG_V7, REG_V5, REG_V28, REG_V15, INS_OPTS_4S);
 }
 
 /*****************************************************************************
@@ -6967,11 +6990,11 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     // IF_SVE_EJ_3A
     theEmitter->emitIns_R_R_R_I(INS_sve_cdot, EA_SCALABLE, REG_V0, REG_V1, REG_V2, 0,
                                 INS_OPTS_SCALABLE_S); // CDOT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>, <const>
-    theEmitter->emitIns_R_R_R_I(INS_sve_cdot, EA_SCALABLE, REG_V3, REG_V4, REG_V5, 90,
+    theEmitter->emitIns_R_R_R_I(INS_sve_cdot, EA_SCALABLE, REG_V3, REG_V4, REG_V5, 1,
                                 INS_OPTS_SCALABLE_S); // CDOT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>, <const>
-    theEmitter->emitIns_R_R_R_I(INS_sve_cdot, EA_SCALABLE, REG_V6, REG_V7, REG_V8, 180,
+    theEmitter->emitIns_R_R_R_I(INS_sve_cdot, EA_SCALABLE, REG_V6, REG_V7, REG_V8, 2,
                                 INS_OPTS_SCALABLE_D); // CDOT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>, <const>
-    theEmitter->emitIns_R_R_R_I(INS_sve_cdot, EA_SCALABLE, REG_V9, REG_V10, REG_V11, 270,
+    theEmitter->emitIns_R_R_R_I(INS_sve_cdot, EA_SCALABLE, REG_V9, REG_V10, REG_V11, 3,
                                 INS_OPTS_SCALABLE_D); // CDOT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>, <const>
 
     // IF_SVE_EK_3A

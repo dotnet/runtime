@@ -722,14 +722,16 @@ void SystemDomain::Attach()
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeStubManager::Init();
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
     JumpStubStubManager::Init();
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
     RangeSectionStubManager::Init();
     ILStubManager::Init();
+    PInvokeStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
     TailCallStubManager::Init();
+    AsyncThunkStubManager::Init();
 #ifdef FEATURE_TIERED_COMPILATION
     CallCountingStubManager::Init();
 #endif
@@ -1123,7 +1125,7 @@ void SystemDomain::LoadBaseSystemClasses()
         // all base system classes are loaded.  Profilers are not allowed to call any type-loading
         // APIs until g_profControlBlock.fBaseSystemClassesLoaded is TRUE.  It is important that
         // all base system classes need to be loaded before profilers can trigger the type loading.
-        g_profControlBlock.fBaseSystemClassesLoaded = TRUE;
+        g_profControlBlock.fBaseSystemClassesLoaded = true;
     #endif // PROFILING_SUPPORTED
 
     #if defined(_DEBUG)
@@ -2535,15 +2537,15 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     }
     CONTRACT_END;
 
-    Assembly *pAssembly = pLock->GetAssembly();
-
     // Make sure we release the lock on exit
     FileLoadLockRefHolder lockRef(pLock);
 
     // Do a quick out check for the already loaded case.
     if (pLock->GetLoadLevel() >= targetLevel)
     {
+        Assembly* pAssembly = pLock->GetAssembly();
         _ASSERTE(pAssembly != nullptr);
+
         pAssembly->ThrowIfError(targetLevel);
 
         RETURN pAssembly;
@@ -2614,7 +2616,7 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
              fileLoadLevelName[pLock->GetLoadLevel()]));
     }
 
-    pAssembly = pLock->GetAssembly();
+    Assembly* pAssembly = pLock->GetAssembly();
     _ASSERTE(pAssembly != nullptr); // We should always be loading to at least FILE_LOAD_ALLOCATE, so the assembly should be created
 
     // There may have been an error stored on the domain file by another thread, or from a previous load
@@ -3365,17 +3367,12 @@ void AppDomain::RaiseLoadingAssemblyEvent(Assembly *pAssembly)
             } gc;
             gc.orThis = NULL;
 
-            ARG_SLOT args[1];
             GCPROTECT_BEGIN(gc);
 
             gc.orThis = pAssembly->GetExposedObject();
 
-            MethodDescCallSite onAssemblyLoad(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_LOAD);
-
-            // GetExposedAssemblyObject may cause a gc, so call this before filling args[0]
-            args[0] = ObjToArgSlot(gc.orThis);
-
-            onAssemblyLoad.Call(args);
+            UnmanagedCallersOnlyCaller onAssemblyLoad(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_LOAD);
+            onAssemblyLoad.InvokeThrowing(&gc.orThis);
 
             GCPROTECT_END();
         }
@@ -3399,12 +3396,8 @@ void AppDomain::OnUnhandledException(OBJECTREF* pThrowable)
 
     EX_TRY
     {
-        MethodDescCallSite raiseEvent(METHOD__APPCONTEXT__ON_UNHANDLED_EXCEPTION);
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(*pThrowable)
-        };
-        raiseEvent.Call(args);
+        UnmanagedCallersOnlyCaller raiseEvent(METHOD__APPCONTEXT__ON_UNHANDLED_EXCEPTION);
+        raiseEvent.InvokeThrowing(pThrowable);
     }
     EX_CATCH
     {
@@ -3426,8 +3419,8 @@ void AppDomain::RaiseExitProcessEvent()
 
     _ASSERTE (GetThread()->PreemptiveGCDisabled());
 
-    MethodDescCallSite onProcessExit(METHOD__APPCONTEXT__ON_PROCESS_EXIT);
-    onProcessExit.Call(NULL);
+    UnmanagedCallersOnlyCaller onProcessExit(METHOD__APPCONTEXT__ON_PROCESS_EXIT);
+    onProcessExit.InvokeThrowing();
 }
 
 DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
@@ -3654,34 +3647,27 @@ Assembly* AppDomain::RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR s
 
     struct {
         ASSEMBLYREF AssemblyRef;
-        STRINGREF str;
+        ASSEMBLYREF ResultRef;
     } gc;
     gc.AssemblyRef = NULL;
-    gc.str = NULL;
+    gc.ResultRef = NULL;
 
     GCPROTECT_BEGIN(gc);
 
     if (pAssembly != NULL)
         gc.AssemblyRef = (ASSEMBLYREF)pAssembly->GetExposedObject();
 
-    MethodDescCallSite onTypeResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_TYPE_RESOLVE);
+    UnmanagedCallersOnlyCaller onTypeResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_TYPE_RESOLVE);
+    onTypeResolve.InvokeThrowing(&gc.AssemblyRef, szName, &gc.ResultRef);
 
-    gc.str = StringObject::NewString(szName);
-    ARG_SLOT args[2] =
+    if (gc.ResultRef != NULL)
     {
-        ObjToArgSlot(gc.AssemblyRef),
-        ObjToArgSlot(gc.str)
-    };
-    gc.AssemblyRef = (ASSEMBLYREF) onTypeResolve.Call_RetOBJECTREF(args);
+        _ASSERTE(CoreLibBinder::IsClass(gc.ResultRef->GetMethodTable(), CLASS__ASSEMBLY));
 
-    if (gc.AssemblyRef != NULL)
-    {
-        _ASSERTE(CoreLibBinder::IsClass(gc.AssemblyRef->GetMethodTable(), CLASS__ASSEMBLY));
-
-        pResolvedAssembly = gc.AssemblyRef->GetAssembly();
+        pResolvedAssembly = gc.ResultRef->GetAssembly();
 
         if (pResultingAssemblyRef)
-            *pResultingAssemblyRef = gc.AssemblyRef;
+            *pResultingAssemblyRef = gc.ResultRef;
         else
         {
             if (pResolvedAssembly->IsCollectible())
@@ -3714,29 +3700,23 @@ Assembly* AppDomain::RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szNam
 
     struct {
         ASSEMBLYREF AssemblyRef;
-        STRINGREF str;
+        ASSEMBLYREF ResultRef;
     } gc;
     gc.AssemblyRef = NULL;
-    gc.str = NULL;
+    gc.ResultRef = NULL;
 
     GCPROTECT_BEGIN(gc);
 
     if (pAssembly != NULL)
         gc.AssemblyRef=(ASSEMBLYREF)pAssembly->GetExposedObject();
 
-    MethodDescCallSite onResourceResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_RESOURCE_RESOLVE);
-    gc.str = StringObject::NewString(szName);
-    ARG_SLOT args[2] =
+    UnmanagedCallersOnlyCaller onResourceResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_RESOURCE_RESOLVE);
+    onResourceResolve.InvokeThrowing(&gc.AssemblyRef, szName, &gc.ResultRef);
+    if (gc.ResultRef != NULL)
     {
-        ObjToArgSlot(gc.AssemblyRef),
-        ObjToArgSlot(gc.str)
-    };
-    gc.AssemblyRef = (ASSEMBLYREF) onResourceResolve.Call_RetOBJECTREF(args);
-    if (gc.AssemblyRef != NULL)
-    {
-        _ASSERTE(CoreLibBinder::IsClass(gc.AssemblyRef->GetMethodTable(), CLASS__ASSEMBLY));
+        _ASSERTE(CoreLibBinder::IsClass(gc.ResultRef->GetMethodTable(), CLASS__ASSEMBLY));
 
-        pResolvedAssembly = gc.AssemblyRef->GetAssembly();
+        pResolvedAssembly = gc.ResultRef->GetAssembly();
         if (pResolvedAssembly->IsCollectible())
         {
             COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleAssemblyResolve"));
@@ -3778,10 +3758,10 @@ AppDomain::RaiseAssemblyResolveEvent(
 
     struct {
         ASSEMBLYREF AssemblyRef;
-        STRINGREF str;
+        ASSEMBLYREF ResultRef;
     } gc;
     gc.AssemblyRef = NULL;
-    gc.str = NULL;
+    gc.ResultRef = NULL;
 
     GCPROTECT_BEGIN(gc);
     {
@@ -3790,21 +3770,14 @@ AppDomain::RaiseAssemblyResolveEvent(
             gc.AssemblyRef=(ASSEMBLYREF)pSpec->GetParentAssembly()->GetExposedObject();
         }
 
-        MethodDescCallSite onAssemblyResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_RESOLVE);
+        UnmanagedCallersOnlyCaller onAssemblyResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_RESOLVE);
+        onAssemblyResolve.InvokeThrowing(&gc.AssemblyRef, ssName.GetUnicode(), &gc.ResultRef);
 
-        gc.str = StringObject::NewString(ssName);
-        ARG_SLOT args[2] = {
-            ObjToArgSlot(gc.AssemblyRef),
-            ObjToArgSlot(gc.str)
-        };
-
-        gc.AssemblyRef = (ASSEMBLYREF) onAssemblyResolve.Call_RetOBJECTREF(args);
-
-        if (gc.AssemblyRef != NULL)
+        if (gc.ResultRef != NULL)
         {
-            _ASSERTE(CoreLibBinder::IsClass(gc.AssemblyRef->GetMethodTable(), CLASS__ASSEMBLY));
+            _ASSERTE(CoreLibBinder::IsClass(gc.ResultRef->GetMethodTable(), CLASS__ASSEMBLY));
 
-            pAssembly = gc.AssemblyRef->GetAssembly();
+            pAssembly = gc.ResultRef->GetAssembly();
             if (pAssembly->IsCollectible())
             {
                 COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleAssemblyResolve"));
@@ -4136,18 +4109,8 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToBindWith
             // This is not invoked for TPA Binder since it always returns NULL.
             tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::AssemblyLoadContextLoad);
 
-            // Finally, setup arguments for invocation
-            MethodDescCallSite methLoadAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVE);
-
-            // Setup the arguments for the call
-            ARG_SLOT args[2] =
-            {
-                PtrToArgSlot(pAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
-                ObjToArgSlot(_gcRefs.oRefAssemblyName), // AssemblyName instance
-            };
-
-            // Make the call
-            _gcRefs.oRefLoadedAssembly = (ASSEMBLYREF) methLoadAssembly.Call_RetOBJECTREF(args);
+            UnmanagedCallersOnlyCaller methLoadAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVE);
+            methLoadAssembly.InvokeThrowing(pAssemblyLoadContextToBindWithin, &_gcRefs.oRefAssemblyName, &_gcRefs.oRefLoadedAssembly);
             if (_gcRefs.oRefLoadedAssembly != NULL)
             {
                 fResolvedAssembly = true;
@@ -4184,17 +4147,8 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToBindWith
             // Finally, setup arguments for invocation
             tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::ResolveSatelliteAssembly);
 
-            MethodDescCallSite methResolveSateliteAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVESATELLITEASSEMBLY);
-
-            // Setup the arguments for the call
-            ARG_SLOT args[2] =
-            {
-                PtrToArgSlot(pAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
-                ObjToArgSlot(_gcRefs.oRefAssemblyName), // AssemblyName instance
-            };
-
-            // Make the call
-            _gcRefs.oRefLoadedAssembly = (ASSEMBLYREF) methResolveSateliteAssembly.Call_RetOBJECTREF(args);
+            UnmanagedCallersOnlyCaller methResolveSateliteAssembly(METHOD__ASSEMBLYLOADCONTEXT__RESOLVESATELLITEASSEMBLY);
+            methResolveSateliteAssembly.InvokeThrowing(pAssemblyLoadContextToBindWithin, &_gcRefs.oRefAssemblyName, &_gcRefs.oRefLoadedAssembly);
             if (_gcRefs.oRefLoadedAssembly != NULL)
             {
                 // Set the flag indicating we found the assembly
@@ -4213,17 +4167,8 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToBindWith
             // Finally, setup arguments for invocation
             tracer.GoToStage(BinderTracing::ResolutionAttemptedOperation::Stage::AssemblyLoadContextResolvingEvent);
 
-            MethodDescCallSite methResolveUsingEvent(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUSINGEVENT);
-
-            // Setup the arguments for the call
-            ARG_SLOT args[2] =
-            {
-                PtrToArgSlot(pAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
-                ObjToArgSlot(_gcRefs.oRefAssemblyName), // AssemblyName instance
-            };
-
-            // Make the call
-            _gcRefs.oRefLoadedAssembly = (ASSEMBLYREF) methResolveUsingEvent.Call_RetOBJECTREF(args);
+            UnmanagedCallersOnlyCaller methResolveUsingEvent(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUSINGEVENT);
+            methResolveUsingEvent.InvokeThrowing(pAssemblyLoadContextToBindWithin, &_gcRefs.oRefAssemblyName, &_gcRefs.oRefLoadedAssembly);
             if (_gcRefs.oRefLoadedAssembly != NULL)
             {
                 // Set the flag indicating we found the assembly

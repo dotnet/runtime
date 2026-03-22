@@ -438,6 +438,15 @@ Compiler::Compiler(ArenaAllocator*       arena,
 
     compMaxUncheckedOffsetForNullObject = eeInfo->maxUncheckedOffsetForNullObject;
 
+#if defined(DEBUG) && defined(TARGET_WASM)
+    // TODO-WASM: remove once we no longer need to use x86/arm collections for wasm replay
+    // if we are cross-replaying wasm, override compMaxUncheckedOffsetForNullObject
+    if (!info.compMatchedVM)
+    {
+        compMaxUncheckedOffsetForNullObject = 1024 - 1;
+    }
+#endif
+
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
 
     info.compCode         = methodInfo->ILCode;
@@ -746,6 +755,38 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         structSize = info.compCompHnd->getClassSize(clsHnd);
     }
     assert(structSize > 0);
+
+#if defined(TARGET_WASM)
+    CorInfoWasmType abiType = info.compCompHnd->getWasmLowering(clsHnd);
+
+    if (abiType == CORINFO_WASM_TYPE_VOID)
+    {
+        howToReturnStruct = SPK_ByReference;
+        useType           = TYP_UNKNOWN;
+    }
+    else
+    {
+        howToReturnStruct = SPK_PrimitiveType;
+        useType           = WasmClassifier::ToJitType(abiType);
+    }
+
+    if (wbReturnStruct != nullptr)
+    {
+        *wbReturnStruct = howToReturnStruct;
+    }
+
+    return useType;
+#else
+#ifdef DEBUG
+    // Extra query to facilitate wasm replay of native collections.
+    // TODO-WASM: delete once we can get a wasm collection.
+    //
+    if (JitConfig.EnableExtraSuperPmiQueries() && IsReadyToRun())
+    {
+        info.compCompHnd->getWasmLowering(clsHnd);
+    }
+#endif // DEBUG
+#endif // defined(TARGET_WASM)
 
 #ifdef SWIFT_SUPPORT
     if (callConv == CorInfoCallConvExtension::Swift)
@@ -1533,10 +1574,10 @@ void Compiler::compShutdown()
     if (s_dspMemStats)
     {
         jitprintf("\nAll allocations:\n");
-        ArenaAllocator::dumpAggregateMemStats(jitstdout());
+        JitMemStatsInfo::dumpAggregateMemStats(jitstdout());
 
         jitprintf("\nLargest method:\n");
-        ArenaAllocator::dumpMaxMemStats(jitstdout());
+        JitMemStatsInfo::dumpMaxMemStats(jitstdout());
 
         jitprintf("\n");
         jitprintf("---------------------------------------------------\n");
@@ -3974,9 +4015,8 @@ const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMapping
         return nullptr;
     }
 
-    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
+    for (const ParameterRegisterLocalMapping& mapping : m_paramRegLocalMappings->BottomUpOrder())
     {
-        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
         if (mapping.RegisterSegment->GetRegister() == reg)
         {
             return &mapping;
@@ -4006,9 +4046,8 @@ const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMapping
         return nullptr;
     }
 
-    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
+    for (const ParameterRegisterLocalMapping& mapping : m_paramRegLocalMappings->BottomUpOrder())
     {
-        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
         if ((mapping.LclNum == lclNum) && (mapping.Offset == offset))
         {
             return &mapping;
@@ -4715,7 +4754,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             else
             {
                 // At least do local var liveness; lowering depends on this.
-                fgLocalVarLiveness();
+                fgSsaLiveness();
             }
 
             if (doEarlyProp)
@@ -4889,10 +4928,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
-    // Create any throw helper blocks that might be needed
-    //
-    DoPhase(this, PHASE_CREATE_THROW_HELPERS, &Compiler::fgCreateThrowHelperBlocks);
-
     if (opts.OptimizationEnabled())
     {
         // Conditional to switch conversion, and switch peeling
@@ -4953,9 +4988,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
 #ifdef TARGET_WASM
-    // Transform any strongly connected components into reducible flow.
+    // Make EH continuation flow explicit
+    //
+    DoPhase(this, PHASE_WASM_EH_FLOW, &Compiler::fgWasmEhFlow);
+
+    // Clean up unreachable blocks.
     //
     DoPhase(this, PHASE_DFS_BLOCKS_WASM, &Compiler::fgDfsBlocksAndRemove);
+
+    // Transform any strongly connected components into reducible flow.
+    //
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
 #endif
 
@@ -5910,6 +5952,16 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
             }
+
+#ifdef DEBUG
+            if (JitConfig.JitUseScalableVectorT() &&
+                currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT))
+            {
+                // Vector<T> will use SVE instead of NEON.
+                instructionSetFlags.RemoveInstructionSet(InstructionSet_VectorT128);
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT);
+            }
+#endif
         }
 
         instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
@@ -6279,11 +6331,9 @@ void Compiler::compCompileFinish()
 
 #if MEASURE_MEM_ALLOC
     {
-        compArenaAllocator->finishMemStats();
+        JitMemStatsInfo::finishMemStats(compArenaAllocator);
         memAllocHist.record((unsigned)((compArenaAllocator->getTotalBytesAllocated() + 1023) / 1024));
         memUsedHist.record((unsigned)((compArenaAllocator->getTotalBytesUsed() + 1023) / 1024));
-
-        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
     }
 
 #ifdef DEBUG
@@ -6294,6 +6344,11 @@ void Compiler::compCompileFinish()
     }
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
+
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
+    }
 
 #if LOOP_HOIST_STATS
     AddLoopHoistStats();
@@ -6318,8 +6373,8 @@ void Compiler::compCompileFinish()
         (info.compLocalsCount <= 32) && !opts.MinOpts() && // We may have too many local variables, etc
         (getJitStressLevel() == 0) &&                      // We need extra memory for stress
         !opts.optRepeat &&                                 // We need extra memory to repeat opts
-        !compArenaAllocator->bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for
-                                                      // DirectAlloc
+        !JitMemKindTraits::bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for
+                                                    // DirectAlloc
         // Factor of 2x is because data-structures are bigger under DEBUG
         (compArenaAllocator->getTotalBytesAllocated() > (2 * ArenaAllocator::getDefaultPageSize())) &&
         // RyuJIT backend needs memory tuning! TODO-Cleanup: remove this case when memory tuning is complete.
@@ -6498,7 +6553,10 @@ void Compiler::compCompileFinish()
     }
 
     JITDUMP("Final metrics:\n");
-    Metrics.report(this);
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.report(this);
+    }
     DBEXEC(verbose, Metrics.dump());
 
     if (verbose)
@@ -6537,7 +6595,12 @@ void Compiler::compCompileFinish()
 #endif
         }
     }
-#endif // DEBUG
+#else  // DEBUG
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.report(this);
+    }
+#endif // !DEBUG
 }
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
@@ -7706,7 +7769,8 @@ START:
     result = param.result;
 
 if (!inlineInfo &&
-    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION ||
+     result == CORJIT_R2R_UNSUPPORTED) &&
     !jitFallbackCompile)
 {
     // If we failed the JIT, reattempt with debuggable code.
@@ -10380,7 +10444,7 @@ bool Compiler::killGCRefs(GenTree* tree)
 // Return Value:
 //    true       - this is an OSR compile and this local requires special treatment
 //    false      - not an OSR compile, or not an interesting local for OSR
-
+//
 bool Compiler::lvaIsOSRLocal(unsigned varNum)
 {
     LclVarDsc* const varDsc = lvaGetDesc(varNum);
@@ -10407,6 +10471,37 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 #endif
 
     return varDsc->lvIsOSRLocal;
+}
+
+//------------------------------------------------------------------------
+// lvaOSRLocalTier0FrameOffset:
+//   Get the offset in the tier0 frame for a specified OSR local.
+//
+// Arguments:
+//   varNum - variable of interest
+//
+// Return Value:
+//   The offset into the tier 0 frame.
+//
+int Compiler::lvaOSRLocalTier0FrameOffset(unsigned varNum)
+{
+    assert(lvaIsOSRLocal(varNum));
+
+    if (varNum == lvaMonAcquired)
+    {
+        return info.compPatchpointInfo->MonitorAcquiredOffset();
+    }
+    if (varNum == lvaAsyncExecutionContextVar)
+    {
+        return info.compPatchpointInfo->AsyncExecutionContextOffset();
+    }
+    if (varNum == lvaAsyncSynchronizationContextVar)
+    {
+        return info.compPatchpointInfo->AsyncSynchronizationContextOffset();
+    }
+
+    assert(varNum < info.compPatchpointInfo->NumberOfLocals());
+    return info.compPatchpointInfo->Offset(varNum);
 }
 
 //------------------------------------------------------------------------------
@@ -10476,7 +10571,7 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
         case CORINFO_DEVIRTUALIZATION_SUCCESS:
             return "success";
         case CORINFO_DEVIRTUALIZATION_FAILED_CANON:
-            return "object class was canonical";
+            return "object class or method was canonical";
         case CORINFO_DEVIRTUALIZATION_FAILED_COM:
             return "object class was com";
         case CORINFO_DEVIRTUALIZATION_FAILED_CAST:
@@ -10510,8 +10605,6 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "Decl method cannot be represented in R2R image";
         case CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE:
             return "Support for type equivalence in devirtualization is not yet implemented in crossgen2";
-        case CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL:
-            return "Devirtualization of generic virtual methods is not yet implemented in crossgen2";
         default:
             return "undefined";
     }
@@ -10722,6 +10815,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_externallyVisibleImplicitly++;
                     break;
 
+                case AddressExposedReason::SMALL_TYPE_PARTIAL_DEF:
+                    m_smallTypePartialDef++;
+                    break;
+
                 default:
                     unreached();
                     break;
@@ -10818,5 +10915,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
     PRINT_STATS(m_stressPoisonImplicitByrefs, m_addrExposed);
     PRINT_STATS(m_externallyVisibleImplicitly, m_addrExposed);
+    PRINT_STATS(m_smallTypePartialDef, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

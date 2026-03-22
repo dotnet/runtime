@@ -573,7 +573,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             if (string.IsNullOrEmpty(name) || char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]) ||
-                (s_isFlagsEnum && name.AsSpan().IndexOf(',') >= 0))
+                (s_isFlagsEnum && name.Contains(',')))
             {
                 // Reject null or empty strings or strings with leading or trailing whitespace.
                 // In the case of flags additionally reject strings containing commas.

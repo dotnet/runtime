@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -108,6 +109,7 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
+        [RequiresUnsafe]
         private static unsafe partial Interop.BOOL StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName, ObjectHandleOnStack exception);
 
         // Called from the runtime
@@ -145,7 +147,7 @@ namespace System.Threading
         /// </summary>
         public static void SpinWait(int iterations)
         {
-            if (Thread.IsSingleThreaded) return;
+            if (!RuntimeFeature.IsMultithreadingSupported) return;
 
             if (iterations < SpinWaitCoopThreshold)
             {
@@ -486,13 +488,6 @@ namespace System.Threading
         /// Get the ThreadStaticBase used for this threads TLS data. This ends up being a pointer to the pNativeThread field on the ThreadLocalData,
         /// which is at a well known offset from the start of the ThreadLocalData
         /// </summary>
-        ///
-        /// <remarks>
-        /// We use BypassReadyToRunAttribute to ensure that this method is not compiled using ReadyToRun. This avoids an issue where we might
-        /// fail to use the JIT_GetNonGCThreadStaticBaseOptimized2 JIT helpers to access the field, which would result in a stack overflow, as accessing
-        /// this field would recursively call this method.
-        /// </remarks>
-        [System.Runtime.BypassReadyToRunAttribute]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DebuggerHidden]
         [DebuggerStepThrough]
@@ -591,6 +586,7 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]
+        [RequiresUnsafe]
         internal static unsafe partial int ReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
 
         internal static void CheckForPendingInterrupt()

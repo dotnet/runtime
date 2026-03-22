@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tests
         /// ctrpp.exe -legacy provider.man
         /// rc.exe /r /i "c:\Program Files\Microsoft SDKs\Windows\v6.0\Include" provider.rc
         /// </summary>
-        [ConditionalFact(nameof(PerformanceDataTests.IsRunnableEnvironment))]
+        [ConditionalFact(typeof(PerformanceDataTests), nameof(PerformanceDataTests.IsRunnableEnvironment))]
         public void PerformanceCounter_PerformanceData()
         {
             // We run test in isolated process to avoid interferences on internal performance counter shared state with other tests.

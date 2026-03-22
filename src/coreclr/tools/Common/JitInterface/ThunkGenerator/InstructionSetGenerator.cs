@@ -949,41 +949,59 @@ namespace Internal.JitInterface
                             string nestedName = managedName[(managedName.IndexOf('_') + 1)..];
                             tr.Write($@"
                 {{
-                    var parentType = context.SystemModule.GetType(""{ns}""u8, ""{parentName}""u8, true);
-                    yield return parentType;
-                    yield return parentType.GetNestedType(""{nestedName}""u8);");
+                    var parentType = context.SystemModule.GetType(""{ns}""u8, ""{parentName}""u8, false);
+                    if (parentType != null)
+                    {{
+                        yield return parentType;
+                        var nestedType = parentType.GetNestedType(""{nestedName}""u8);
+                        if (nestedType != null)
+                        {{
+                            yield return nestedType;");
 
                             if (hasSixtyFourBitInstructionSet)
                             {
                                 string sixtyFourBitSuffix = ArchToManagedInstructionSetSuffixArch(architecture);
                                 tr.Write($@"
-                    if (instructionSet == InstructionSet.{architecture}_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)})
-                    {{
-                        yield return parentType.GetNestedType(""{nestedName}_{sixtyFourBitSuffix}""u8);
-                    }}");
+                            if (instructionSet == InstructionSet.{architecture}_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)})
+                            {{
+                                var nestedType64 = parentType.GetNestedType(""{nestedName}_{sixtyFourBitSuffix}""u8);
+                                if (nestedType64 != null)
+                                {{
+                                    yield return nestedType64;
+                                }}
+                            }}");
                             }
 
                         tr.Write($@"
+                        }}
+                    }}
                 }}");
                         }
                         else
                         {
                             tr.Write($@"
                 {{
-                    var type = context.SystemModule.GetType(""{ns}""u8, ""{managedName}""u8, true);
-                    yield return type;");
+                    var type = context.SystemModule.GetType(""{ns}""u8, ""{managedName}""u8, false);
+                    if (type != null)
+                    {{
+                        yield return type;");
 
                             if (hasSixtyFourBitInstructionSet)
                             {
                                 string sixtyFourBitSuffix = ArchToManagedInstructionSetSuffixArch(architecture);
                                 tr.Write($@"
-                    if (instructionSet == InstructionSet.{architecture}_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)})
-                    {{
-                        yield return type.GetNestedType(""{sixtyFourBitSuffix}""u8);
-                    }}");
+                        if (instructionSet == InstructionSet.{architecture}_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)})
+                        {{
+                            var nestedType = type.GetNestedType(""{sixtyFourBitSuffix}""u8);
+                            if (nestedType != null)
+                            {{
+                                yield return nestedType;
+                            }}
+                        }}");
                             }
 
                         tr.Write($@"
+                    }}
                 }}");
                         }
                     }

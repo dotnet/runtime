@@ -38,9 +38,16 @@
 
 #include "pal_crypto_config.h"
 #include "pal_compiler.h"
+#define OPENSSL_VERSION_4_0_RTM 0x40000000L
 #define OPENSSL_VERSION_3_0_RTM 0x30000000L
 #define OPENSSL_VERSION_1_1_1_RTM 0x10101000L
 #define OPENSSL_VERSION_1_1_0_RTM 0x10100000L
+
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_4_0_RTM
+#define OSSL4CONST const
+#else
+#define OSSL4CONST
+#endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include <openssl/provider.h>
@@ -50,9 +57,19 @@
 #include <openssl/kdf.h>
 #endif
 
-#if HAVE_OPENSSL_ENGINE
 // Some Linux distributions build without engine support.
+#if HAVE_OPENSSL_ENGINE
+// HAVE_OPENSSL_ENGINE might be true with OSSL4 headers, because there's
+// no good state to be in where 3.x says yes (deprecated since 1.1) and 4.0 says no
+// (in 4.0 it's deprecated without regard to OPENSSL_API_COMPAT).
+//
+// So, if it's on, and we're 4, turn it off.  (Portable will turn it back on, later).
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_4_0_RTM
 #include <openssl/engine.h>
+#else
+#undef HAVE_OPENSSL_ENGINE
+#define HAVE_OPENSSL_ENGINE 0
+#endif
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
@@ -185,6 +202,10 @@ int SSL_set_ciphersuites(SSL *s, const char *str);
 const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
 #endif
 
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_4_0_RTM
+#include "osslcompat_40.h"
+#endif
+
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_RTM
 #include "osslcompat_30.h"
 #endif
@@ -276,6 +297,8 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(ASN1_OCTET_STRING_set) \
     REQUIRED_FUNCTION(ASN1_STRING_dup) \
     REQUIRED_FUNCTION(ASN1_STRING_free) \
+    REQUIRED_FUNCTION(ASN1_STRING_get0_data) \
+    REQUIRED_FUNCTION(ASN1_STRING_length) \
     REQUIRED_FUNCTION(ASN1_STRING_print_ex) \
     REQUIRED_FUNCTION(ASN1_TIME_new) \
     REQUIRED_FUNCTION(ASN1_TIME_set) \
@@ -409,23 +432,27 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_aes_128_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_128_ecb) \
     REQUIRED_FUNCTION(EVP_aes_128_gcm) \
+    REQUIRED_FUNCTION(EVP_aes_128_wrap_pad) \
     REQUIRED_FUNCTION(EVP_aes_192_cbc) \
     REQUIRED_FUNCTION(EVP_aes_192_ccm) \
     REQUIRED_FUNCTION(EVP_aes_192_cfb128) \
     REQUIRED_FUNCTION(EVP_aes_192_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_192_ecb) \
     REQUIRED_FUNCTION(EVP_aes_192_gcm) \
+    REQUIRED_FUNCTION(EVP_aes_192_wrap_pad) \
     REQUIRED_FUNCTION(EVP_aes_256_cbc) \
     REQUIRED_FUNCTION(EVP_aes_256_ccm) \
     REQUIRED_FUNCTION(EVP_aes_256_cfb128) \
     REQUIRED_FUNCTION(EVP_aes_256_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_256_ecb) \
     REQUIRED_FUNCTION(EVP_aes_256_gcm) \
+    REQUIRED_FUNCTION(EVP_aes_256_wrap_pad) \
     LIGHTUP_FUNCTION(EVP_chacha20_poly1305) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_ctrl) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_free) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_new) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_reset) \
+    REQUIRED_FUNCTION(EVP_CIPHER_CTX_set_flags) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_set_key_length) \
     REQUIRED_FUNCTION(EVP_CIPHER_CTX_set_padding) \
     RENAMED_FUNCTION(EVP_CIPHER_get_nid, EVP_CIPHER_nid) \
@@ -583,6 +610,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(OPENSSL_sk_pop) \
     REQUIRED_FUNCTION(OPENSSL_sk_pop_free) \
     REQUIRED_FUNCTION(OPENSSL_sk_push) \
+    LIGHTUP_FUNCTION(OPENSSL_sk_set_thunks) \
     REQUIRED_FUNCTION(OPENSSL_sk_value) \
     REQUIRED_FUNCTION(OpenSSL_version_num) \
     LIGHTUP_FUNCTION(OSSL_LIB_CTX_free) \
@@ -757,6 +785,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(X509_NAME_entry_count) \
     REQUIRED_FUNCTION(X509_NAME_ENTRY_get_data) \
     REQUIRED_FUNCTION(X509_NAME_ENTRY_get_object) \
+    REQUIRED_FUNCTION(X509_NAME_dup) \
     REQUIRED_FUNCTION(X509_NAME_free) \
     REQUIRED_FUNCTION(X509_NAME_get_entry) \
     REQUIRED_FUNCTION(X509_NAME_get_index_by_NID) \
@@ -765,7 +794,9 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(X509_PUBKEY_get) \
     REQUIRED_FUNCTION(X509_PUBKEY_get0_param) \
     REQUIRED_FUNCTION(X509_set_ex_data) \
+    REQUIRED_FUNCTION(X509_set_issuer_name) \
     REQUIRED_FUNCTION(X509_set_pubkey) \
+    REQUIRED_FUNCTION(X509_set_subject_name) \
     REQUIRED_FUNCTION(X509_sign) \
     REQUIRED_FUNCTION(X509_subject_name_hash) \
     REQUIRED_FUNCTION(X509_STORE_add_cert) \
@@ -831,6 +862,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define ASN1_OCTET_STRING_set ASN1_OCTET_STRING_set_ptr
 #define ASN1_STRING_dup ASN1_STRING_dup_ptr
 #define ASN1_STRING_free ASN1_STRING_free_ptr
+#define ASN1_STRING_get0_data ASN1_STRING_get0_data_ptr
+#define ASN1_STRING_length ASN1_STRING_length_ptr
 #define ASN1_STRING_print_ex ASN1_STRING_print_ex_ptr
 #define ASN1_TIME_free ASN1_TIME_free_ptr
 #define ASN1_TIME_new ASN1_TIME_new_ptr
@@ -964,23 +997,27 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_aes_128_ecb EVP_aes_128_ecb_ptr
 #define EVP_aes_128_gcm EVP_aes_128_gcm_ptr
 #define EVP_aes_128_ccm EVP_aes_128_ccm_ptr
+#define EVP_aes_128_wrap_pad EVP_aes_128_wrap_pad_ptr
 #define EVP_aes_192_cbc EVP_aes_192_cbc_ptr
 #define EVP_aes_192_cfb8 EVP_aes_192_cfb8_ptr
 #define EVP_aes_192_cfb128 EVP_aes_192_cfb128_ptr
 #define EVP_aes_192_ecb EVP_aes_192_ecb_ptr
 #define EVP_aes_192_gcm EVP_aes_192_gcm_ptr
 #define EVP_aes_192_ccm EVP_aes_192_ccm_ptr
+#define EVP_aes_192_wrap_pad EVP_aes_192_wrap_pad_ptr
 #define EVP_aes_256_cbc EVP_aes_256_cbc_ptr
 #define EVP_aes_256_cfb8 EVP_aes_256_cfb8_ptr
 #define EVP_aes_256_cfb128 EVP_aes_256_cfb128_ptr
 #define EVP_aes_256_ecb EVP_aes_256_ecb_ptr
 #define EVP_aes_256_gcm EVP_aes_256_gcm_ptr
 #define EVP_aes_256_ccm EVP_aes_256_ccm_ptr
+#define EVP_aes_256_wrap_pad EVP_aes_256_wrap_pad_ptr
 #define EVP_chacha20_poly1305 EVP_chacha20_poly1305_ptr
 #define EVP_CIPHER_CTX_ctrl EVP_CIPHER_CTX_ctrl_ptr
 #define EVP_CIPHER_CTX_free EVP_CIPHER_CTX_free_ptr
 #define EVP_CIPHER_CTX_new EVP_CIPHER_CTX_new_ptr
 #define EVP_CIPHER_CTX_reset EVP_CIPHER_CTX_reset_ptr
+#define EVP_CIPHER_CTX_set_flags EVP_CIPHER_CTX_set_flags_ptr
 #define EVP_CIPHER_CTX_set_key_length EVP_CIPHER_CTX_set_key_length_ptr
 #define EVP_CIPHER_CTX_set_padding EVP_CIPHER_CTX_set_padding_ptr
 #define EVP_CIPHER_get_nid EVP_CIPHER_get_nid_ptr
@@ -1141,6 +1178,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define OPENSSL_sk_pop OPENSSL_sk_pop_ptr
 #define OPENSSL_sk_pop_free OPENSSL_sk_pop_free_ptr
 #define OPENSSL_sk_push OPENSSL_sk_push_ptr
+#define OPENSSL_sk_set_thunks OPENSSL_sk_set_thunks_ptr
 #define OPENSSL_sk_value OPENSSL_sk_value_ptr
 #define OpenSSL_version_num OpenSSL_version_num_ptr
 #define OSSL_LIB_CTX_free OSSL_LIB_CTX_free_ptr
@@ -1318,6 +1356,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define X509_NAME_entry_count X509_NAME_entry_count_ptr
 #define X509_NAME_ENTRY_get_data X509_NAME_ENTRY_get_data_ptr
 #define X509_NAME_ENTRY_get_object X509_NAME_ENTRY_get_object_ptr
+#define X509_NAME_dup X509_NAME_dup_ptr
 #define X509_NAME_free X509_NAME_free_ptr
 #define X509_NAME_get0_der X509_NAME_get0_der_ptr
 #define X509_NAME_get_entry X509_NAME_get_entry_ptr
@@ -1326,7 +1365,9 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define X509_PUBKEY_get0_param X509_PUBKEY_get0_param_ptr
 #define X509_PUBKEY_get X509_PUBKEY_get_ptr
 #define X509_set_ex_data X509_set_ex_data_ptr
+#define X509_set_issuer_name X509_set_issuer_name_ptr
 #define X509_set_pubkey X509_set_pubkey_ptr
+#define X509_set_subject_name X509_set_subject_name_ptr
 #define X509_subject_name_hash X509_subject_name_hash_ptr
 #define X509_sign X509_sign_ptr
 #define X509_STORE_add_cert X509_STORE_add_cert_ptr
@@ -1381,9 +1422,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define sk_SSL_CIPHER_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(SSL_CIPHER)*)0))
 #define sk_X509_NAME_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509_NAME)*)0))
 #define sk_X509_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509)*)0))
-
-// type-safe OPENSSL_sk_new_null
-#define sk_X509_new_null() (STACK_OF(X509)*)OPENSSL_sk_new_null()
 
 // type-safe OPENSSL_sk_push
 #define sk_X509_push(stack,value) OPENSSL_sk_push((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0), (const void*)(1 ? value : (X509*)0))
