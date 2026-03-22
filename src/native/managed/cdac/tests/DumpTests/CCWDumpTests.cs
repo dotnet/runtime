@@ -9,14 +9,14 @@ using Xunit;
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
-/// Dump-based integration tests for the BuiltInCOM contract.
-/// Uses the CCWInterfaces debuggee dump, which creates COM callable wrappers (CCWs)
+/// Dump-based integration tests for the CCW (COM Callable Wrapper).
+/// Uses the CCW debuggee dump, which creates COM callable wrappers (CCWs)
 /// on Windows then crashes via FailFast.
 /// All tests are skipped on non-Windows dumps because CCWs require Windows COM support.
 /// </summary>
-public class BuiltInCOMDumpTests : DumpTestBase
+public class CCWDumpTests : DumpTestBase
 {
-    protected override string DebuggeeName => "CCWInterfaces";
+    protected override string DebuggeeName => "CCW";
     protected override string DumpType => "full";
 
     /// <summary>
@@ -50,30 +50,34 @@ public class BuiltInCOMDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
-    public void BuiltInCOM_CCW_HasInterfaces(TestConfiguration config)
+    public void CCW_HasInterfaces(TestConfiguration config)
     {
         InitializeDumpTest(config);
         IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
 
         List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
-        Assert.True(ccwPtrs.Count >= 3, "Expected at least three objects with an active CCW from strong handles");
+        Assert.True(ccwPtrs.Count >= 4, "Expected at least four objects with an active CCW from strong handles");
 
+        int ccwsWithOneInterface = 0;
         foreach (TargetPointer ccwPtr in ccwPtrs)
         {
             List<COMInterfacePointerData> interfaces = builtInCOM.GetCCWInterfaces(ccwPtr).ToList();
-
-            Assert.True(interfaces.Count > 0,
-                $"Expected at least one interface entry for CCW at 0x{ccwPtr:X}");
-
-            // Non-slot-0 entries (from IComTestInterface) should have a valid MethodTable.
-            Assert.Contains(interfaces, static i => i.MethodTable != TargetPointer.Null);
+            if (interfaces.Count == 1)
+            {
+                ccwsWithOneInterface++;
+                // Non-slot-0 entries (from IComTestInterface) should have a valid MethodTable.
+                Assert.Contains(interfaces, static i => i.MethodTable != TargetPointer.Null);
+            }
         }
+
+        Assert.True(ccwsWithOneInterface >= 3,
+            $"Expected at least three CCWs with exactly one interface, got {ccwsWithOneInterface}");
     }
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
-    public void BuiltInCOM_CCW_InterfaceMethodTablesAreReadable(TestConfiguration config)
+    public void CCW_InterfaceMethodTablesAreReadable(TestConfiguration config)
     {
         InitializeDumpTest(config);
         IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
@@ -102,19 +106,58 @@ public class BuiltInCOMDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
-    public void BuiltInCOM_CCW_RefCountIsPositive(TestConfiguration config)
+    public void CCW_GetCCWData_FieldsAreConsistent(TestConfiguration config)
     {
         InitializeDumpTest(config);
         IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
 
         List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
-        Assert.True(ccwPtrs.Count > 0, "Expected at least one object with an active CCW from strong handles");
+        Assert.True(ccwPtrs.Count >= 4, "Expected at least four objects with an active CCW from strong handles");
+        bool foundAggregated = false;
+        bool foundNonAggregated = false;
 
         foreach (TargetPointer ccwPtr in ccwPtrs)
         {
-            ulong refCount = builtInCOM.GetRefCount(ccwPtr);
-            Assert.True(refCount > 0,
-                $"Expected positive ref count for CCW at 0x{ccwPtr:X}, got {refCount}");
+            SimpleComCallWrapperData sccwData = builtInCOM.GetSimpleComCallWrapperData(ccwPtr);
+
+            // A live CCW (not neutered) should have a positive ref count and a strong ref.
+            Assert.False(sccwData.IsNeutered,
+                $"Expected non-neutered CCW at 0x{ccwPtr:X}");
+            Assert.True(sccwData.RefCount > 0,
+                $"Expected positive ref count for CCW at 0x{ccwPtr:X}, got {sccwData.RefCount}");
+            Assert.False(sccwData.IsHandleWeak,
+                $"Expected strong handle for CCW at 0x{ccwPtr:X}");
+
+            // None of the test objects extend a COM base class.
+            Assert.False(sccwData.IsExtendsCOMObject,
+                $"Expected IsExtendsCOMObject to be false for CCW at 0x{ccwPtr:X}");
+
+            if (sccwData.IsAggregated)
+            {
+                foundAggregated = true;
+                // Aggregated CCWs should have a non-null outer IUnknown.
+                Assert.True(sccwData.OuterIUnknown != TargetPointer.Null,
+                    $"Expected non-null OuterIUnknown for aggregated CCW at 0x{ccwPtr:X}");
+            }
+            else
+            {
+                foundNonAggregated = true;
+                // Non-aggregated CCWs should have a null outer IUnknown.
+                Assert.True(sccwData.OuterIUnknown == TargetPointer.Null,
+                    $"Expected null OuterIUnknown for non-aggregated CCW at 0x{ccwPtr:X}");
+            }
+
+            // The handle should be populated and dereferenceable to a managed object.
+            TargetPointer handle = builtInCOM.GetObjectHandle(ccwPtr);
+            Assert.True(handle != TargetPointer.Null,
+                $"Expected non-null handle for CCW at 0x{ccwPtr:X}");
+            TargetPointer objectPtr = Target.ReadPointer(handle);
+            Assert.True(objectPtr != TargetPointer.Null,
+                $"Expected non-null object pointer for CCW at 0x{ccwPtr:X}");
         }
+
+        // The debuggee creates both regular and aggregated CCWs.
+        Assert.True(foundAggregated, "Expected at least one aggregated CCW in the dump");
+        Assert.True(foundNonAggregated, "Expected at least one non-aggregated CCW in the dump");
     }
 }
