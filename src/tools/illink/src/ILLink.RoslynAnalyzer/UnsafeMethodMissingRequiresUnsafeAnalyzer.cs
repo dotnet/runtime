@@ -55,10 +55,13 @@ namespace ILLink.RoslynAnalyzer
                 }
             }
 
-            DiagnosticDescriptor? externOrLibraryImportRule = GetExternOrLibraryImportRule (method);
-            if (externOrLibraryImportRule is not null) {
+            if (IsExtern (method)) {
                 foreach (var location in method.Locations) {
-                    context.ReportDiagnostic (Diagnostic.Create (externOrLibraryImportRule, location, method.GetDisplayName ()));
+                    context.ReportDiagnostic (Diagnostic.Create (s_externRule, location, method.GetDisplayName ()));
+                }
+            } else if (IsLibraryImport (method)) {
+                foreach (var location in method.Locations) {
+                    context.ReportDiagnostic (Diagnostic.Create (s_libraryImportRule, location, method.GetDisplayName ()));
                 }
             }
         }
@@ -78,39 +81,44 @@ namespace ILLink.RoslynAnalyzer
 
         private static bool IsPointerType (ITypeSymbol type) => type is IPointerTypeSymbol or IFunctionPointerTypeSymbol;
 
-        private static DiagnosticDescriptor? GetExternOrLibraryImportRule (IMethodSymbol method)
+        private static bool IsExtern (IMethodSymbol method)
         {
-            if (method.IsExtern) {
-                // Consider all InternalCall methods as not requiring unsafe today.
-                // We might revisit this in the future.
-                foreach (AttributeData? attr in method.GetAttributes ()) {
-                    if (attr.AttributeClass?.HasName ("System.Runtime.CompilerServices.MethodImplAttribute") == true) {
-                        foreach (TypedConstant arg in attr.ConstructorArguments) {
-                            // MethodImplAttribute has two ctors: one taking MethodImplOptions (int enum) and
-                            // one taking short (legacy).
-                            MethodImplOptions mio = arg.Value switch {
-                                int intVal => (MethodImplOptions)intVal,
-                                short shortVal => (MethodImplOptions)shortVal,
-                                _ => default
-                            };
-                            if ((mio & (int)MethodImplOptions.InternalCall) != 0)
-                                return null;
-                        }
+            if (!method.IsExtern)
+                return false;
+
+            // Consider all InternalCall methods as not requiring unsafe today.
+            // We might revisit this in the future.
+            foreach (AttributeData? attr in method.GetAttributes ()) {
+                if (attr.AttributeClass?.HasName ("System.Runtime.CompilerServices.MethodImplAttribute") == true) {
+                    foreach (TypedConstant arg in attr.ConstructorArguments) {
+                        // MethodImplAttribute has two ctors: one taking MethodImplOptions (int enum) and
+                        // one taking short (legacy).
+                        MethodImplOptions mio = arg.Value switch {
+                            int intVal => (MethodImplOptions)intVal,
+                            short shortVal => (MethodImplOptions)shortVal,
+                            _ => default
+                        };
+                        if ((mio & MethodImplOptions.InternalCall) != 0)
+                            return false;
                     }
                 }
-                return s_externRule;
             }
+            return true;
+        }
 
+        private static bool IsLibraryImport (IMethodSymbol method)
+        {
             // Since all [LibraryImport] methods are partial, we can check if the method is partial
             // before looking for the attribute to avoid unnecessary attribute lookups on non-partial methods.
-            if (method.IsPartialDefinition) {
-                foreach (AttributeData? attr in method.GetAttributes ()) {
-                    if (attr.AttributeClass?.HasName ("System.Runtime.InteropServices.LibraryImportAttribute") == true)
-                        return s_libraryImportRule;
-                }
+            if (!method.IsPartialDefinition)
+                return false;
+
+            foreach (AttributeData? attr in method.GetAttributes ()) {
+                if (attr.AttributeClass?.HasName ("System.Runtime.InteropServices.LibraryImportAttribute") == true)
+                    return true;
             }
 
-            return null;
+            return false;
         }
     }
 }
