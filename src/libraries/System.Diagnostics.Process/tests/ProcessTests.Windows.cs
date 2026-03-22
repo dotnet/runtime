@@ -35,13 +35,7 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
         {
-            Process process;
-            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(CreateMainWindowWithTitle, new RemoteInvokeOptions { Start = false }))
-            {
-                process = handle.Process;
-                handle.Process = null;
-            }
-
+            Process process = CreateProcess(CreateMainWindowWithTitle);
             process.Start();
             try
             {
@@ -68,13 +62,7 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
         {
-            Process process;
-            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(CreateMainWindowWithTitle, new RemoteInvokeOptions { Start = false }))
-            {
-                process = handle.Process;
-                handle.Process = null;
-            }
-
+            Process process = CreateProcess(CreateMainWindowWithTitle);
             process.Start();
             try
             {
