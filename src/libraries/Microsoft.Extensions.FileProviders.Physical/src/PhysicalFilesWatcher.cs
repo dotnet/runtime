@@ -298,7 +298,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 PendingCreationWatcher newWatcher;
                 try
                 {
-                    newWatcher = new PendingCreationWatcher(_root, filePath, watchDir, remainingComponents);
+                    newWatcher = new PendingCreationWatcher(watchDir, remainingComponents);
                 }
                 catch
                 {
@@ -685,8 +685,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
             public readonly CancellationTokenSource Cts = new();
             private FileSystemWatcher? _watcher; // protected by _advanceLock
             private ArraySegment<string> _remainingComponents; // protected by _advanceLock
-            private readonly string _root;
-            private readonly string _filePath;
             private readonly object _advanceLock = new();
             private int _disposed;
 
@@ -695,10 +693,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
             [UnsupportedOSPlatform("ios")]
             [UnsupportedOSPlatform("tvos")]
             [SupportedOSPlatform("maccatalyst")]
-            public PendingCreationWatcher(string root, string filePath, string existingDirectory, string[] remainingComponents)
+            public PendingCreationWatcher(string existingDirectory, string[] remainingComponents)
             {
-                _root = root;
-                _filePath = filePath;
                 _remainingComponents = new ArraySegment<string>(remainingComponents);
                 lock (_advanceLock)
                 {
@@ -794,7 +790,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         // Target file – if it appeared during setup, fire and clean up.
                         if (File.Exists(nextPath) || Directory.Exists(nextPath))
                         {
-                            ScheduleDispose(_watcher);
+                            _watcher.Dispose();
                             _watcher = null;
                             Cts.Cancel();
                         }
@@ -808,7 +804,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
                     // The next directory appeared during setup.  Dispose the watcher we just
                     // created and loop to advance to the next level without firing the token.
-                    ScheduleDispose(_watcher);
+                    _watcher.Dispose();
                     _watcher = null;
                     _remainingComponents = _remainingComponents.Slice(1);
                     startDir = nextPath;
@@ -844,9 +840,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
                     _remainingComponents = _remainingComponents.Slice(1);
 
-                    // Schedule disposal of the current watcher before replacing it, so that
-                    // Dispose() is never called on the watcher's own event thread.
-                    ScheduleDispose(_watcher);
+                    _watcher.Dispose();
                     _watcher = null;
 
                     if (_remainingComponents.Count == 0)
@@ -869,9 +863,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
             [SupportedOSPlatform("maccatalyst")]
             private void OnError(object sender, ErrorEventArgs e)
             {
-                // The watched directory may have been deleted or an internal buffer overflow
-                // occurred.  Reset to the deepest still-existing ancestor so that the watch
-                // can recover without cancelling the CTS prematurely.
+                // The watched directory may have been deleted or another error may have occurred.
+                // In either case, cancel the token to trigger re-registration, and dispose the watcher.
                 lock (_advanceLock)
                 {
                     if (sender != _watcher || Cts.IsCancellationRequested)
@@ -879,59 +872,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         return;
                     }
 
-                    ScheduleDispose(_watcher);
+                    _watcher?.Dispose();
                     _watcher = null;
-                    RewatchFromDeepestAncestorNoLock();
+                    Cts.Cancel();
                 }
-            }
-
-            // Must be called with _advanceLock held and _watcher == null.
-            // Recomputes the deepest existing ancestor of _filePath from _root, rebuilds
-            // _remainingComponents, and restarts the watch without cancelling the CTS.
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("wasi")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
-            [SupportedOSPlatform("maccatalyst")]
-            private void RewatchFromDeepestAncestorNoLock()
-            {
-                string[] allComponents = _filePath.Split('/');
-                // _root may end with the OS directory separator; Path.Combine handles that correctly.
-                string dir = _root;
-                int consumed = 0;
-
-                while (consumed < allComponents.Length - 1)
-                {
-                    string candidate = Path.Combine(dir, allComponents[consumed]);
-                    if (!Directory.Exists(candidate))
-                    {
-                        break;
-                    }
-
-                    dir = candidate;
-                    consumed++;
-                }
-
-                _remainingComponents = new ArraySegment<string>(allComponents, consumed, allComponents.Length - consumed);
-
-                SetupWatcherNoLock(dir);
-            }
-
-            // Schedules disposal of a FileSystemWatcher on a thread-pool thread so that
-            // it is never called on the watcher's own event-dispatching thread.
-            private static void ScheduleDispose(FileSystemWatcher? watcher)
-            {
-                if (watcher is null)
-                {
-                    return;
-                }
-
-                Task.Factory.StartNew(
-                    static w => ((FileSystemWatcher)w!).Dispose(),
-                    watcher,
-                    CancellationToken.None,
-                    TaskCreationOptions.DenyChildAttach,
-                    TaskScheduler.Default);
             }
 
             [UnsupportedOSPlatform("browser")]
@@ -953,9 +897,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     _watcher = null;
                 }
 
-                // Use ScheduleDispose so that FileSystemWatcher.Dispose() is never called
-                // on the watcher's own event thread, which could cause a deadlock.
-                ScheduleDispose(w);
+                w?.Dispose();
                 Cts.Cancel();
                 Cts.Dispose();
             }

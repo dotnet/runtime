@@ -274,7 +274,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             IChangeToken token = physicalFilesWatcher.GetOrAddFilePathChangeToken("level1/level2/file.txt");
 
             var tcs = new TaskCompletionSource<bool>();
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             cts.Token.Register(() => tcs.TrySetCanceled());
             token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
 
@@ -296,24 +296,21 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
-        public async Task GetOrAddFilePathChangeToken_FiresWhenFileCreated_AfterDirectoryDeletedAndRecreated()
+        public async Task GetOrAddFilePathChangeToken_FiresWhenWatchedDirectoryIsDeleted()
         {
-            // Verifies that the token fires exactly once – when the target file is finally created –
-            // even if the parent directory is deleted and re-created in the interim.  The watcher
-            // must recover from the deletion without cancelling the CTS prematurely.
+            // Verifies that the token fires when a watched directory is deleted (error event).
             using var root = new TempDirectory(GetTestFilePath());
             string dir = Path.Combine(root.Path, "dir");
-            string targetFile = Path.Combine(dir, "file.txt");
 
             using var physicalFilesWatcher = new PhysicalFilesWatcher(
-                root.Path + Path.DirectorySeparatorChar,
+                root.Path,
                 new FileSystemWatcher(root.Path),
                 pollForChanges: false);
 
             IChangeToken token = physicalFilesWatcher.GetOrAddFilePathChangeToken("dir/file.txt");
 
             var tcs = new TaskCompletionSource<bool>();
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             cts.Token.Register(() => tcs.TrySetCanceled());
             token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
 
@@ -322,18 +319,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             await Task.Delay(WaitTimeForTokenToFire);
             Assert.False(tcs.Task.IsCompleted, "Token must not fire when dir is created");
 
-            // Delete the directory – token must NOT fire (watcher recovers internally)
+            // Delete the directory – token fires because the watcher encounters an error
             Directory.Delete(dir);
-            await Task.Delay(WaitTimeForTokenToFire);
-            Assert.False(tcs.Task.IsCompleted, "Token must not fire when dir is deleted");
-
-            // Re-create the directory – token must NOT fire
-            Directory.CreateDirectory(dir);
-            await Task.Delay(WaitTimeForTokenToFire);
-            Assert.False(tcs.Task.IsCompleted, "Token must not fire when dir is re-created");
-
-            // Create the file – now the token must fire exactly once
-            File.WriteAllText(targetFile, string.Empty);
 
             Assert.True(await tcs.Task);
         }
@@ -348,7 +335,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
             using var physicalFilesWatcher = new PhysicalFilesWatcher(
-                root.Path + Path.DirectorySeparatorChar,
+                root.Path,
                 fileSystemWatcher,
                 pollForChanges: false);
 
