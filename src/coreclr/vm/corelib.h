@@ -1095,7 +1095,7 @@ DEFINE_METHOD(FIXEDWSTRMARSHALER,  CONVERT_TO_MANAGED,     ConvertToManaged,    
 DEFINE_CLASS(BSTRMARSHALER,         StubHelpers,            BSTRMarshaler)
 DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_NATIVE,      ConvertToNative,            SM_Str_IntPtr_RetIntPtr)
 DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_RetStr)
-DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_NATIVE_UCO,  ConvertToNative,            SM_PtrStr_IntPtr_PtrException_RetIntPtr)
+DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_NATIVE_UCO,  ConvertToNative,            SM_PtrStr_PtrException_RetIntPtr)
 DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_MANAGED_UCO, ConvertToManaged,           SM_IntPtr_PtrStr_PtrException_RetVoid)
 DEFINE_METHOD(BSTRMARSHALER,        CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
 

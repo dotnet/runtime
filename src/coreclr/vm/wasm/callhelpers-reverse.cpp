@@ -245,19 +245,19 @@ static void Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_Convert
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid);
 }
 
-static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_I32_RetI32 = nullptr;
-static void * Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_I32_RetI32(void * arg0, void * arg1, void * arg2)
+static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32 = nullptr;
+static void * Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32(void * arg0, void * arg1)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
 
     // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_I32_RetI32)
+    if (!MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32)
     {
-        LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.BSTRMarshaler, System.Private.CoreLib", "ConvertToNative", &MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_I32_RetI32);
+        LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.BSTRMarshaler, System.Private.CoreLib", "ConvertToNative", &MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32);
     }
 
     void * result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_I32_RetI32);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32);
     return result;
 }
 
@@ -1062,7 +1062,7 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 823296796, "ConvertContentsToManaged#4:System.Private.CoreLib:System.StubHelpers:MngdRefCustomMarshaler", { &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid } },
     { 3788988216, "ConvertContentsToNative#4:System.Private.CoreLib:System.StubHelpers:MngdRefCustomMarshaler", { &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid } },
     { 4090197812, "ConvertToManaged#3:System.Private.CoreLib:System.StubHelpers:BSTRMarshaler", { &MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid } },
-    { 3447080912, "ConvertToNative#3:System.Private.CoreLib:System.StubHelpers:BSTRMarshaler", { &MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_I32_RetI32 } },
+    { 1901425681, "ConvertToNative#2:System.Private.CoreLib:System.StubHelpers:BSTRMarshaler", { &MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32 } },
     { 1243134822, "Create#2:System.Private.CoreLib:System.Reflection:LoaderAllocator", { &MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid } },
     { 1570902419, "CreateAssemblyName#3:System.Private.CoreLib:System.Reflection:AssemblyName", { &MD_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid } },
     { 3054399043, "CreateRuntimeWrappedException#3:System.Private.CoreLib:System:Exception", { &MD_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid } },

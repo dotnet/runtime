@@ -458,6 +458,7 @@ DEFINE_METASIG_T(SM(PtrIDynamicInterfaceCastable_PtrClass_PtrClass_PtrException_
 DEFINE_METASIG_T(SM(PtrChar_PtrAssembly_CLR_BOOL_CLR_BOOL_IntPtr_PtrClass_PtrException_RetVoid, P(u) P(C(ASSEMBLY)) F F I P(C(CLASS)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(IntPtr_PtrStr_PtrException_RetVoid, I P(s) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrStr_IntPtr_PtrException_RetIntPtr, P(s) I P(C(EXCEPTION)), I))
+DEFINE_METASIG_T(SM(PtrStr_PtrException_RetIntPtr, P(s) P(C(EXCEPTION)), I))
 DEFINE_METASIG_T(SM(IntPtr_PtrObj_PtrException_RetVoid, I P(j) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrObj_PtrIntPtr_PtrException_RetVoid, P(j) P(I) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(IntPtr_Int_PtrObj_PtrException_RetVoid, I i P(j) P(C(EXCEPTION)), v))

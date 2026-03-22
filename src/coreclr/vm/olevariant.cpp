@@ -4215,17 +4215,13 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
     }
     CONTRACT_END;
 
-    // Initiatilize the return BSTR value to null.
-    BSTR bstr = NULL;
-
     if (*pStringObj == NULL)
     {
         RETURN NULL;
     }
 
     UnmanagedCallersOnlyCaller convertToNative(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE_UCO);
-    bstr = (BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj, (INT_PTR)nullptr);
-    RETURN bstr;
+    RETURN (BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj);
 }
 
 extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle)

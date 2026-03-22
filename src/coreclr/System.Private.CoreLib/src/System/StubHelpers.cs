@@ -321,11 +321,11 @@ namespace System.StubHelpers
 
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static unsafe IntPtr ConvertToNative(string* pStr, IntPtr pNativeBuffer, Exception* pException)
+        private static unsafe IntPtr ConvertToNative(string* pStr, Exception* pException)
         {
             try
             {
-                return ConvertToNative(*pStr, pNativeBuffer);
+                return ConvertToNative(*pStr, IntPtr.Zero);
             }
             catch (Exception ex)
             {
