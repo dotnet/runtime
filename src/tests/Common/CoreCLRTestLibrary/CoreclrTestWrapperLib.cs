@@ -300,20 +300,22 @@ namespace TestLibrary
         {
             if (process.TryGetProcessId(out int pid))
             {
-                using Process sudoKill = new Process();
-                sudoKill.StartInfo.FileName = "sudo";
-                // Use -n (non-interactive) so sudo fails fast instead of prompting if passwordless
-                // sudo is not configured, rather than hanging.
-                sudoKill.StartInfo.Arguments = $"-n kill -9 {pid}";
-                sudoKill.StartInfo.UseShellExecute = false;
-                sudoKill.StartInfo.RedirectStandardOutput = true;
-                sudoKill.StartInfo.RedirectStandardError = true;
+                using Process sudoKill = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "sudo",
+                        Arguments = $"-n kill -9 {pid}",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                    }
+                };
                 try
                 {
                     sudoKill.Start();
-                    // Read stdout/stderr asynchronously to avoid deadlock if the process fills the pipe buffer.
-                    System.Threading.Tasks.Task<string> stdOutTask = sudoKill.StandardOutput.ReadToEndAsync();
-                    System.Threading.Tasks.Task<string> stdErrTask = sudoKill.StandardError.ReadToEndAsync();
+                    var stdOutTask = sudoKill.StandardOutput.ReadToEndAsync();
+                    var stdErrTask = sudoKill.StandardError.ReadToEndAsync();
                     // A kill -9 should complete almost immediately; use a short timeout.
                     bool exited = sudoKill.WaitForExit(5_000);
                     if (!exited)
@@ -334,8 +336,8 @@ namespace TestLibrary
                         string stdErr = string.Empty;
                         try
                         {
-                            stdOut = stdOutTask.Result;
-                            stdErr = stdErrTask.Result;
+                            stdOut = stdOutTask.GetAwaiter().GetResult();
+                            stdErr = stdErrTask.GetAwaiter().GetResult();
                         }
                         catch (Exception ioEx)
                         {
