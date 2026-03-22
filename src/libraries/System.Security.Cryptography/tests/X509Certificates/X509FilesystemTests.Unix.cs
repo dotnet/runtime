@@ -173,7 +173,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     }
                 }
 
-                throw new Exception($"Failed to retrieve certificate from https://get.dot.net/ after {MaxAttempts} attempts.", lastException);
+                Assert.Fail($"Failed to retrieve certificate from https://get.dot.net/ after {MaxAttempts} attempts. Last error: {lastException}");
             }
         }
 
