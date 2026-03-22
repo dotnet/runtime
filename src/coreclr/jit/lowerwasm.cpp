@@ -275,17 +275,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
-            SetMultiplyUsed(dstAddr);
-            if (src->OperIs(GT_IND))
-            {
-                SetMultiplyUsed(src->gtGetOp1());
-            }
         }
         else
         {
             assert(blkNode->OperIs(GT_STORE_BLK));
             // memory.copy
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        }
+
+        SetMultiplyUsed(dstAddr);
+        if (src->OperIs(GT_IND))
+        {
+            SetMultiplyUsed(src->gtGetOp1());
         }
     }
 }
