@@ -11,7 +11,7 @@ namespace System.Diagnostics.CodeAnalysis
     /// This allows tools to understand which methods are unsafe to call when targeting
     /// environments that do not support unsafe code.
     /// </remarks>
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
     [Conditional("DEBUG")]
     internal sealed class RequiresUnsafeAttribute : Attribute
     {

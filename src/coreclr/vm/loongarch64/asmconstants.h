@@ -171,10 +171,12 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__FixupPrecode == sizeof(FixupPrecode));
 ASMCONSTANTS_C_ASSERT(MethodDesc_ALIGNMENT_SHIFT == MethodDesc::ALIGNMENT_SHIFT);
 ASMCONSTANTS_C_ASSERT((1<<FixupPrecode_ALIGNMENT_SHIFT_1) == sizeof(FixupPrecode));
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 #define ResolveCacheElem__target      0x10
 #define ResolveCacheElem__pNext       0x18
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext == offsetof(ResolveCacheElem, pNext));
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable

@@ -76,7 +76,7 @@ namespace System.Xml
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return SwitchesHelpers.GetCachedSwitchValue("System.Xml.XmlResolver.IsNetworkingEnabledByDefault", ref s_isNetworkingEnabledByDefault);
+                return SwitchesHelpers.GetCachedSwitchValue("System.Xml.XmlResolver.IsNetworkingEnabledByDefault", ref s_isNetworkingEnabledByDefault, defaultValue: true);
             }
         }
 

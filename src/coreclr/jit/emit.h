@@ -1310,6 +1310,11 @@ protected:
         {
             return _idInsFmt == IF_LOCAL_DECL;
         }
+
+        bool idIsValTypeImm() const
+        {
+            return _idInsFmt == IF_TRY_TABLE;
+        }
 #endif
 
 #ifdef TARGET_ARM64
@@ -2366,6 +2371,24 @@ protected:
         void idLclCnt(unsigned int cnt)
         {
             lclCnt = cnt;
+        }
+    };
+
+    struct instrDescValTypeImm : instrDesc
+    {
+        instrDescValTypeImm() = delete;
+
+        unsigned int  imm;
+        WasmValueType valType;
+
+        void idValType(WasmValueType type)
+        {
+            valType = type;
+        }
+
+        void idImm(unsigned int i)
+        {
+            imm = i;
         }
     };
 #endif // TARGET_WASM
