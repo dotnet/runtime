@@ -118,7 +118,11 @@ namespace System.Xml
 
             if (hasHalfByteCached && !allowOddChars)
             {
-                throw new XmlException(SR.Xml_InvalidBinHexValueOddCount, new string(chars));
+                const int MaxErrorValueLength = 40;
+                string errorValue = chars.Length <= MaxErrorValueLength
+                    ? new string(chars)
+                    : string.Concat(chars[..MaxErrorValueLength], "...");
+                throw new XmlException(SR.Xml_InvalidBinHexValueOddCount, errorValue);
             }
 
             if (bytesDecoded < bytes.Length)
@@ -162,7 +166,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    throw new XmlException(SR.Xml_InvalidBinHexValue, chars.ToString());
+                    throw new XmlException(SR.Xml_InvalidBinHexValue, ch.ToString());
                 }
 
                 if (hasHalfByteCached)
