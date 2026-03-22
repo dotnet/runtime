@@ -1941,7 +1941,7 @@ DELEGATEREF COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* pMT, b
             assert(frozen->GetTarget() == NULL || frozen->GetTarget() == frozen);
             assert(frozen->GetInvocationList() == NULL);
 
-            s_frozenDelegateMap.Add(key, OBJECTREFToObject(frozen));
+            s_frozenDelegateMap.Add(key, (DelegateObject *)OBJECTREFToObject(frozen));
             return frozen;
         }
     }
