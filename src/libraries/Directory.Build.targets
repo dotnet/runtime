@@ -199,9 +199,14 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\EncodingPolyfills.cs" Link="System\Text\EncodingPolyfills.cs" />
   </ItemGroup>
 
-  <!-- Adds RequiresUnsafeAttribute polyfill for non-CoreLib projects that share Common source files
-       annotated with [RequiresUnsafe]. -->
-  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+  <!-- Adds RequiresUnsafeAttribute polyfill for non-CoreLib library source projects that share Common
+       source files annotated with [RequiresUnsafe]. Excluded from shim/facade/ref/PNSE assemblies that
+       must only contain type-forwards. -->
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj' and
+                        '$(IsPartialFacadeAssembly)' != 'true' and
+                        '$(IsReferenceAssemblyProject)' != 'true' and
+                        '$(GeneratePlatformNotSupportedAssemblyMessage)' == '' and
+                        !$(MSBuildProjectDirectory.Contains('shims'))">
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs"
              Link="System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs" />
   </ItemGroup>
