@@ -62,19 +62,12 @@ namespace System.Security.Cryptography.Cose.Tests
 
             // The Apple Security framework intermittently fails with OSStatus error -50 when creating
             // EC keys. Retry a few times to make the test robust against this transient failure.
-            const int MaxAttempts = 3;
-            for (int i = 0; i < MaxAttempts - 1; i++)
-            {
-                try
-                {
-                    return ECDsa.Create(parametersLocalCopy);
-                }
-                catch (CryptographicException)
-                {
-                }
-            }
-
-            return ECDsa.Create(parametersLocalCopy);
+            ECDsa? result = null;
+            RetryHelper.Execute(
+                () => result = ECDsa.Create(parametersLocalCopy),
+                maxAttempts: 3,
+                retryWhen: e => e is CryptographicException);
+            return result!;
         }
 
         private static RSA CreateRSA(bool includePrivateKey)
