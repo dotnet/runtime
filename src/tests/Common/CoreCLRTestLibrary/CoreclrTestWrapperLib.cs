@@ -306,7 +306,6 @@ namespace TestLibrary
                     {
                         FileName = "sudo",
                         Arguments = $"-n kill -9 {pid}",
-                        UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                     }
@@ -367,7 +366,6 @@ namespace TestLibrary
             createdump.StartInfo.FileName = "sudo";
             createdump.StartInfo.Arguments = $"{createdumpPath} {arguments}";
 
-            createdump.StartInfo.UseShellExecute = false;
             createdump.StartInfo.RedirectStandardOutput = true;
             createdump.StartInfo.RedirectStandardError = true;
 
@@ -394,7 +392,6 @@ namespace TestLibrary
                 chown.StartInfo.FileName = "sudo";
                 chown.StartInfo.Arguments = $"chown \"{Environment.UserName}\" \"{crashDumpPath}\"";
 
-                chown.StartInfo.UseShellExecute = false;
                 chown.StartInfo.RedirectStandardOutput = true;
                 chown.StartInfo.RedirectStandardError = true;
 
@@ -513,7 +510,6 @@ namespace TestLibrary
                     process.StartInfo.Arguments = executable;
                 }
 
-                process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
                 process.StartInfo.EnvironmentVariables.Add("__Category", category);
@@ -611,7 +607,6 @@ namespace TestLibrary
             process.StartInfo.FileName = "cmd.exe";
             process.StartInfo.Arguments = $"/c {command}";
             process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.UseShellExecute = false;
             process.StartInfo.CreateNoWindow = true;
 
             // Start the process and read the output
