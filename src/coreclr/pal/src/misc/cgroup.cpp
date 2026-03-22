@@ -87,7 +87,7 @@ private:
         // modes because both of those involve cgroup v1 controllers managing
         // resources.
 
-#if !HAVE_NON_LEGACY_STATFS || TARGET_WASM
+#if !HAVE_NON_LEGACY_STATFS || TARGET_OPENBSD || TARGET_WASM
         return 0;
 #else
         struct statfs stats;
