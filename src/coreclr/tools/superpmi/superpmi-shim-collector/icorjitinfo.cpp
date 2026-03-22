@@ -1730,6 +1730,15 @@ InfoAccessType interceptor_ICJI::constructStringLiteral(CORINFO_MODULE_HANDLE mo
     return temp;
 }
 
+// Allocate a delegate literal on the Non-GC heap and return a handle to it
+CORINFO_OBJECT_HANDLE interceptor_ICJI::constructDelegateLiteral(CORINFO_METHOD_HANDLE method, CORINFO_CLASS_HANDLE delegateType)
+{
+    mc->cr->AddCall("constructDelegateLiteral");
+    CORINFO_OBJECT_HANDLE temp = original_ICorJitInfo->constructDelegateLiteral(method, delegateType);
+    mc->recConstructDelegateLiteral(method, delegateType, temp);
+    return temp;
+}
+
 bool interceptor_ICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
 {
     mc->cr->AddCall("convertPInvokeCalliToCall");

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.CompilerServices
 {
@@ -162,6 +163,15 @@ namespace System.Runtime.CompilerServices
             => new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
 #endif
 
+        [Intrinsic]
+        [RequiresUnsafe]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresDynamicCode("AOT must recognize usages of the method to preserve reflection info and generate stubs")]
+        public static TDelegate GetDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
+        {
+            return storage ?? CreateSharedDelegate(method, ref storage);
+        }
 
         // The following intrinsics return true if input is a compile-time constant
         // Feel free to add more overloads on demand

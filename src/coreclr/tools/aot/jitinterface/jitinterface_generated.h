@@ -163,6 +163,7 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
     CORINFO_VARARGS_HANDLE (* getVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection);
     InfoAccessType (* constructStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned int metaTok, void** ppValue);
+    CORINFO_OBJECT_HANDLE (* constructDelegateLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_CLASS_HANDLE delegateType);
     InfoAccessType (* emptyStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppValue);
     uint32_t (* getFieldThreadLocalStoreID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, void** ppIndirection);
     CORINFO_METHOD_HANDLE (* GetDelegateCtor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE methHnd, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE targetMethodHnd, DelegateCtorArgs* pCtorData);
@@ -1683,6 +1684,16 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     InfoAccessType temp = _callbacks->constructStringLiteral(_thisHandle, &pException, module, metaTok, ppValue);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CORINFO_OBJECT_HANDLE constructDelegateLiteral(
+          CORINFO_METHOD_HANDLE method,
+          CORINFO_CLASS_HANDLE delegateType)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CORINFO_OBJECT_HANDLE temp = _callbacks->constructDelegateLiteral(_thisHandle, &pException, method, delegateType);
     if (pException != nullptr) throw pException;
     return temp;
 }

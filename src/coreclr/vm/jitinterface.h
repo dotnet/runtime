@@ -583,6 +583,7 @@ public:
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
+    CORINFO_OBJECT_HANDLE constructDelegateLiteral(CORINFO_METHOD_HANDLE method, CORINFO_CLASS_HANDLE delegateType) override;
     InfoAccessType emptyStringLiteral(void ** ppValue) override;
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
 

@@ -1028,7 +1028,6 @@ public:
         {
             THROWS;
             GC_NOTRIGGER;
-            PRECONDITION(key != (KEY)0);
         }
         CONTRACTL_END;
 

@@ -1,14 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Reflection;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.MethodInfos;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
 
 using Internal.Reflection.Augments;
-using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 
@@ -275,6 +278,96 @@ namespace System.Runtime.CompilerServices
 
         public static void PrepareDelegate(Delegate d)
         {
+        }
+
+        private static class FrozenDelegateCache
+        {
+            public static readonly Lock CacheLock = new();
+            public static readonly Dictionary<(nint, Type), Delegate> Cache = new();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe TDelegate CreateSharedDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
+        {
+            ArgumentNullException.ThrowIfNull(method);
+
+            Debug.Assert(typeof(TDelegate).IsAssignableTo(typeof(Delegate)));
+
+            MethodBase? methodBase = ReflectionAugments.GetMethodBaseFromStartAddressIfAvailable(method);
+
+            if (methodBase == null)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            RuntimeMethodInfo invokeMethod = ((RuntimeType)typeof(TDelegate)).GetRuntimeTypeInfo().GetInvokeMethod();
+            ReadOnlySpan<ParameterInfo> parameters = methodBase.GetParametersAsSpan();
+
+            int invokeCount = invokeMethod.GetParametersAsSpan().Length;
+            int paramCount = parameters.Length;
+            bool isStatic = methodBase.IsStatic;
+            if (!isStatic)
+            {
+                paramCount++; // count 'this'
+            }
+
+            bool isOpen = invokeCount == paramCount;
+
+            // reject cases needing valid instances
+            if (!isOpen)
+            {
+                // we block delegates closed over null valuetypes since we'd just always NRE in the unboxing stub
+                if (isStatic)
+                {
+                    if (parameters.Length == 0 || parameters[0].ParameterType.IsValueType)
+                    {
+                        throw new NotSupportedException();
+                    }
+                }
+                else
+                {
+                    Type? declaringType = methodBase.DeclaringType;
+                    // reject instance methods on static types, those require proper targets
+                    if (declaringType is null || declaringType.IsValueType || declaringType.IsGenericType)
+                    {
+                        throw new NotSupportedException();
+                    }
+                }
+            }
+
+            TDelegate? newDelegate = null;
+            lock (FrozenDelegateCache.CacheLock)
+            {
+                ref Delegate? reference = ref CollectionsMarshal.GetValueRefOrAddDefault(FrozenDelegateCache.Cache, (method, typeof(TDelegate)), out bool exists);
+                if (exists)
+                {
+                    Debug.Assert(reference is TDelegate);
+                    newDelegate = Unsafe.As<TDelegate>(reference);
+                }
+                else
+                {
+                    TDelegate? frozen = FrozenObjectHeapManager.Instance.TryAllocateObject<TDelegate>();
+                    if (frozen is not null)
+                    {
+                        Delegate.FillDelegate(frozen, method, null, isStatic, isOpen);
+                        reference = frozen;
+
+                        newDelegate = frozen;
+                    }
+                }
+            }
+
+            if (newDelegate is null)
+            {
+                object nonPinned = RuntimeImports.RhNewObject(MethodTable.Of<TDelegate>());
+                Debug.Assert(nonPinned is TDelegate);
+
+                newDelegate = Unsafe.As<TDelegate>(nonPinned);
+                Delegate.FillDelegate(newDelegate, method, null, isStatic, isOpen);
+            }
+
+            Debug.Assert(newDelegate is not null);
+            return Interlocked.CompareExchange(ref storage, null, newDelegate) ?? newDelegate;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",

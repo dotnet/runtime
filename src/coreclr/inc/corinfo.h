@@ -3431,6 +3431,12 @@ public:
             void                  **ppValue
             ) = 0;
 
+    // Allocate a delagate literal on the Non-GC heap and return a handle to it
+    virtual CORINFO_OBJECT_HANDLE constructDelegateLiteral(
+            CORINFO_METHOD_HANDLE   method,
+            CORINFO_CLASS_HANDLE    delegateType
+            ) = 0;
+
     virtual InfoAccessType emptyStringLiteral(
             void                  **ppValue
             ) = 0;

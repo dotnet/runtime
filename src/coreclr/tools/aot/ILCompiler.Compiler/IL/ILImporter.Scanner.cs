@@ -582,6 +582,20 @@ namespace Internal.IL
                     return;
                 }
 
+                if (IsRuntimeHelpersGetDelegate(method))
+                {
+                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ObjectAllocator, runtimeDeterminedMethod.Instantiation[0]), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, method.Instantiation[0]), reason);
+                    }
+
+                    return;
+                }
+
                 if (opcode != ILOpcode.ldftn)
                 {
                     if (IsRuntimeHelpersIsReferenceOrContainsReferences(method))
@@ -1664,6 +1678,20 @@ namespace Internal.IL
                 if (owningType != null)
                 {
                     return owningType.Name.SequenceEqual("MethodTable"u8) && owningType.Namespace.SequenceEqual("Internal.Runtime"u8);
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsRuntimeHelpersGetDelegate(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name.SequenceEqual("GetDelegate"u8) && method.Instantiation.Length == 1)
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name.SequenceEqual("RuntimeHelpers"u8) && owningType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8);
                 }
             }
 

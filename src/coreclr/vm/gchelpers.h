@@ -27,7 +27,7 @@ OBJECTREF AllocateSzArray(TypeHandle  arrayType, INT32 length, GC_ALLOC_FLAGS fl
 // Returns nullptr if it's not possible.
 OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
 // Same for non-array objects
-OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT);
+OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT, bool allowReferences = false);
 
 // The main Array allocation routine, can do multi-dimensional
 OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
