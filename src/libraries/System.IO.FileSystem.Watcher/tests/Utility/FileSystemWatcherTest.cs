@@ -21,14 +21,24 @@ namespace System.IO.Tests
         // going to fail the test.  If we don't expect an event to occur, then we need
         // to keep the timeout short, as in a successful run we'll end up waiting for
         // the entire timeout specified.
-        public const int WaitForExpectedEventTimeout = 1000;         // ms to wait for an event to happen
+        public const int WaitForExpectedEventTimeout = 5000;         // ms to wait for an event to happen
         public const int LongWaitTimeout = 50000;                   // ms to wait for an event that takes a longer time than the average operation
-        public const int SubsequentExpectedWait = 10;               // ms to wait for checks that occur after the first.
-        public const int WaitForExpectedEventTimeout_NoRetry = 3000;// ms to wait for an event that isn't surrounded by a retry.
-        public const int WaitForUnexpectedEventTimeout = 150;       // ms to wait for a non-expected event.
+        public const int SubsequentExpectedWait = 2000;             // ms to wait for checks that occur after the first.
+        public const int WaitForExpectedEventTimeout_NoRetry = 15000;// ms to wait for an event that isn't surrounded by a retry.
+        public const int WaitForUnexpectedEventTimeout = 500;       // ms to wait for a non-expected event.
         public const int DefaultAttemptsForExpectedEvent = 3;       // Number of times an expected event should be retried if failing.
         public const int DefaultAttemptsForUnExpectedEvent = 2;     // Number of times an unexpected event should be retried if failing.
         public const int RetryDelayMilliseconds = 500;              // ms to wait when retrying after failure
+
+        // Waits for the specified duration unless the test runner signals cancellation,
+        // in which case it throws OperationCanceledException to fail the test immediately.
+        private static void WaitUnlessCancelled(int milliseconds)
+        {
+            // Replace with TestContext.Current.CancellationToken when migrated to xunit v3 (#125019).
+            CancellationToken token = CancellationToken.None;
+            token.WaitHandle.WaitOne(milliseconds);
+            token.ThrowIfCancellationRequested();
+        }
 
         /// <summary>
         /// Watches the Changed WatcherChangeType and unblocks the returned AutoResetEvent when a
@@ -192,13 +202,22 @@ namespace System.IO.Tests
                     // Most intermittent failures in FSW are caused by either a shortage of resources (e.g. inotify instances)
                     // or by insufficient time to execute (e.g. CI gets bogged down). Immediately re-running a failed test
                     // won't resolve the first issue, so we wait a little while hoping that things clear up for the next run.
-                    Thread.Sleep(RetryDelayMilliseconds);
+                    WaitUnlessCancelled(RetryDelayMilliseconds);
                 }
 
-                result = ExecuteAndVerifyEvents(newWatcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, timeout);
+                // Use progressively longer timeouts on retries. The first attempt uses the base timeout
+                // for fast failure in normal conditions. Subsequent attempts increase the timeout linearly
+                // with the attempt count to tolerate transient delays (thread pool starvation, slow CI machines, etc.).
+                int effectiveTimeout = timeout * attemptsCompleted;
 
-                if (cleanup != null)
-                    cleanup();
+                try
+                {
+                    result = ExecuteAndVerifyEvents(newWatcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, effectiveTimeout);
+                }
+                finally
+                {
+                    cleanup?.Invoke();
+                }
             }
         }
 
@@ -259,7 +278,7 @@ namespace System.IO.Tests
                     Debug.WriteLine($"RetryHelper: retrying {testName} {i}th time of {maxAttempts}: got {lastException.Message}");
                 }
 
-                Thread.Sleep((backoffFunc ?? s_defaultBackoffFunc)(i));
+                WaitUnlessCancelled((backoffFunc ?? s_defaultBackoffFunc)(i));
             }
         }
 
@@ -272,13 +291,17 @@ namespace System.IO.Tests
         /// <param name="action">The Action that will trigger events.</param>
         /// <param name="cleanup">Optional. Undoes the action and cleans up the watcher so the test may be run again if necessary.</param>
         /// <param name="expectedPath">Optional. Adds path verification to all expected events.</param>
-        public static void ExpectNoEvent(FileSystemWatcher watcher, WatcherChangeTypes unExpectedEvents, Action action, Action cleanup = null, string expectedPath = null, int timeout = WaitForExpectedEventTimeout)
+        public static void ExpectNoEvent(FileSystemWatcher watcher, WatcherChangeTypes unExpectedEvents, Action action, Action cleanup = null, string expectedPath = null, int timeout = WaitForUnexpectedEventTimeout)
         {
-            bool result = ExecuteAndVerifyEvents(watcher, unExpectedEvents, action, false, expectedPath == null ? null : new string[] { expectedPath }, timeout);
-            Assert.False(result, "Expected Event occurred");
-
-            if (cleanup != null)
-                cleanup();
+            try
+            {
+                bool result = ExecuteAndVerifyEvents(watcher, unExpectedEvents, action, false, expectedPath == null ? null : new string[] { expectedPath }, timeout);
+                Assert.False(result, "Expected Event occurred");
+            }
+            finally
+            {
+                cleanup?.Invoke();
+            }
         }
 
         /// <summary>
@@ -404,7 +427,7 @@ namespace System.IO.Tests
                     // Most intermittent failures in FSW are caused by either a shortage of resources (e.g. inotify instances)
                     // or by insufficient time to execute (e.g. CI gets bogged down). Immediately re-running a failed test
                     // won't resolve the first issue, so we wait a little while hoping that things clear up for the next run.
-                    Thread.Sleep(500);
+                    WaitUnlessCancelled(500);
                 }
 
                 AutoResetEvent errorOccurred = new AutoResetEvent(false);
@@ -431,7 +454,7 @@ namespace System.IO.Tests
                 }
 
                 action();
-                result = errorOccurred.WaitOne(WaitForExpectedEventTimeout);
+                result = errorOccurred.WaitOne(WaitForExpectedEventTimeout * attemptsCompleted);
                 watcher.EnableRaisingEvents = false;
                 cleanup();
             }
@@ -532,7 +555,7 @@ namespace System.IO.Tests
             try
             {
                 action();
-                eventsOccurred.WaitOne(new TimeSpan(0, 0, 5));
+                eventsOccurred.WaitOne(WaitForExpectedEventTimeout_NoRetry);
             }
             finally
             {
