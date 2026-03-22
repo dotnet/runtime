@@ -2145,7 +2145,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     }
 
     // Special case: "vec ==/!= zero_vector"
-    if (!varTypeIsFloating(simdBaseType) && (op != nullptr) && (simdSize != 12))
+    if (!varTypeIsFloating(simdBaseType) && (op != nullptr))
     {
         GenTree* cmp = op;
         if (simdSize != 8) // we don't need compression for Vector64
