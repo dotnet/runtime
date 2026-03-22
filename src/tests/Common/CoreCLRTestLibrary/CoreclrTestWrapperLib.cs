@@ -325,7 +325,9 @@ namespace TestLibrary
                     Task.WaitAll(stdOutTask, stdErrTask);
                     if (sudoKill.ExitCode != 0)
                     {
-                        Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} exited with code {sudoKill.ExitCode}.{Environment.NewLine}stdout: {stdOutTask.Result}{Environment.NewLine}stderr: {stdErrTask.Result}");
+                        Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} exited with code {sudoKill.ExitCode}.");
+                        Console.WriteLine($"stdout: {stdOutTask.Result}");
+                        Console.WriteLine($"stderr: {stdErrTask.Result}");
                     }
                 }
             }
