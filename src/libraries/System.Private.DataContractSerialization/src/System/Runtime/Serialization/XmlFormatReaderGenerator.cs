@@ -309,7 +309,7 @@ namespace System.Runtime.Serialization
                 InvokeDeserializationEventMethod(classContract.OnDeserialized);
             }
 
-            private static void InvokeDeserializationEventMethod(MethodInfo? method)
+            private void InvokeDeserializationEventMethod(MethodInfo? method)
             {
                 if (method != null)
                 {

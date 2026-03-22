@@ -220,7 +220,7 @@ namespace System.Runtime.Serialization
                 InvokeSerializationEventMethod(classContract.OnSerialized);
             }
 
-            private static void InvokeSerializationEventMethod(MethodInfo? method)
+            private void InvokeSerializationEventMethod(MethodInfo? method)
             {
                 if (method != null)
                 {

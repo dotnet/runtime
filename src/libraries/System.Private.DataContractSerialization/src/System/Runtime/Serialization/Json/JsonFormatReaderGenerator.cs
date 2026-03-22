@@ -245,7 +245,7 @@ namespace System.Runtime.Serialization.Json
                 InvokeDeserializationEventMethod(classContract.OnDeserialized);
             }
 
-            private static void InvokeDeserializationEventMethod(MethodInfo? method)
+            private void InvokeDeserializationEventMethod(MethodInfo? method)
             {
                 if (method != null)
                 {
