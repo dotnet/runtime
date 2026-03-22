@@ -311,6 +311,9 @@ namespace TestLibrary
                 try
                 {
                     sudoKill.Start();
+                    // Read stdout/stderr asynchronously to avoid deadlock if the process fills the pipe buffer.
+                    System.Threading.Tasks.Task<string> stdOutTask = sudoKill.StandardOutput.ReadToEndAsync();
+                    System.Threading.Tasks.Task<string> stdErrTask = sudoKill.StandardError.ReadToEndAsync();
                     // A kill -9 should complete almost immediately; use a short timeout.
                     bool exited = sudoKill.WaitForExit(5_000);
                     if (!exited)
@@ -331,8 +334,8 @@ namespace TestLibrary
                         string stdErr = string.Empty;
                         try
                         {
-                            stdOut = sudoKill.StandardOutput.ReadToEnd();
-                            stdErr = sudoKill.StandardError.ReadToEnd();
+                            stdOut = stdOutTask.Result;
+                            stdErr = stdErrTask.Result;
                         }
                         catch (Exception ioEx)
                         {
