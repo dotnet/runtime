@@ -76,8 +76,8 @@ namespace Microsoft.Extensions.Logging.Console
                 return true;
             }
 
-            // Per https://no-color.org/, NO_COLOR disables ANSI color output when set.
-            if (Environment.GetEnvironmentVariable("NO_COLOR") is not null)
+            // Per https://no-color.org/, NO_COLOR disables ANSI color output when set to a non-empty value.
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NO_COLOR")))
             {
                 return false;
             }

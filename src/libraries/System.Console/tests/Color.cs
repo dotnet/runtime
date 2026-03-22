@@ -96,6 +96,7 @@ public class Color
     [InlineData(null, null, "NO_COLOR", "1", false)]
     [InlineData(null, null, "NO_COLOR", "true", false)]
     [InlineData(null, null, "NO_COLOR", "any-value", false)]
+    [InlineData(null, null, "NO_COLOR", "", false)]
     [InlineData("FORCE_COLOR", "1", "NO_COLOR", "1", true)]
     [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "1", "NO_COLOR", "1", true)]
     public static void RedirectedOutput_ColorEnvVars_RespectColorPreference(

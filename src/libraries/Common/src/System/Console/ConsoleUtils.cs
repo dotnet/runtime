@@ -39,8 +39,8 @@ namespace System
 
                 if (enabled)
                 {
-                    // Per https://no-color.org/, NO_COLOR disables ANSI color output when set.
-                    enabled = Environment.GetEnvironmentVariable("NO_COLOR") is null;
+                    // Per https://no-color.org/, NO_COLOR disables ANSI color output when set to a non-empty value.
+                    enabled = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NO_COLOR"));
                 }
 
                 // Store and return the computed answer.

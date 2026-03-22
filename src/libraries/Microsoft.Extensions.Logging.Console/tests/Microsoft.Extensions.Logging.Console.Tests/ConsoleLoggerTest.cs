@@ -449,6 +449,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [InlineData("FORCE_COLOR", "1", null, null, "AnsiLogConsole")]
         [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "1", null, null, "AnsiLogConsole")]
         [InlineData(null, null, "NO_COLOR", "1", "AnsiParsingLogConsole")]
+        [InlineData(null, null, "NO_COLOR", "", "AnsiLogConsole")]
         [InlineData("FORCE_COLOR", "1", "NO_COLOR", "1", "AnsiLogConsole")]
         public void DoesConsoleSupportAnsi_RespectsColorEnvVars(
             string? envVarName1, string? envVarValue1,
