@@ -1021,9 +1021,15 @@ namespace System.IO.Tests
                 watcher.Filters.Add(Path.GetFileName(directoryOne.FullName));
                 watcher.Filters.Add(Path.GetFileName(directoryTwo.FullName));
 
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryOne.Delete(), cleanup: () => directoryOne.Create(), expectedPath: directoryOne.FullName);
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryTwo.Delete(), cleanup: () => directoryTwo.Create(), expectedPath: directoryTwo.FullName);
-                ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryThree.Delete(), cleanup: () => directoryThree.Create(), expectedPath: directoryThree.FullName);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryOne.Delete(),
+                    cleanup: () => { SpinWait.SpinUntil(() => !Directory.Exists(directoryOne.FullName), 2000); directoryOne.Create(); },
+                    expectedPath: directoryOne.FullName);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryTwo.Delete(),
+                    cleanup: () => { SpinWait.SpinUntil(() => !Directory.Exists(directoryTwo.FullName), 2000); directoryTwo.Create(); },
+                    expectedPath: directoryTwo.FullName);
+                ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryThree.Delete(),
+                    cleanup: () => { SpinWait.SpinUntil(() => !Directory.Exists(directoryThree.FullName), 2000); directoryThree.Create(); },
+                    expectedPath: directoryThree.FullName);
             }
         }
 

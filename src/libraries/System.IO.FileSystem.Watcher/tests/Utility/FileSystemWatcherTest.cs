@@ -187,8 +187,12 @@ namespace System.IO.Tests
             {
                 if (attemptsCompleted > 1)
                 {
+                    FileSystemWatcher previousWatcher = newWatcher;
                     // Re-create the watcher to get a clean iteration.
-                    newWatcher = RecreateWatcher(newWatcher);
+                    newWatcher = RecreateWatcher(previousWatcher);
+                    // Dispose the previous watcher if it's not the original, to release any handles it holds.
+                    if (previousWatcher != watcher)
+                        previousWatcher.Dispose();
                     // Most intermittent failures in FSW are caused by either a shortage of resources (e.g. inotify instances)
                     // or by insufficient time to execute (e.g. CI gets bogged down). Immediately re-running a failed test
                     // won't resolve the first issue, so we wait a little while hoping that things clear up for the next run.
@@ -200,6 +204,9 @@ namespace System.IO.Tests
                 if (cleanup != null)
                     cleanup();
             }
+
+            if (newWatcher != watcher)
+                newWatcher.Dispose();
         }
 
         // Pasted from RetryHelper.cs in order to force FSW tests to log retries to the Helix console.
