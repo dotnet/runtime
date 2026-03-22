@@ -1045,7 +1045,7 @@ public partial interface ISOSDacInterface9
 public unsafe partial interface ISOSDacInterface10
 {
     [PreserveSig]
-    int GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded);
+    int GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[]? mowList, uint* pNeeded);
     [PreserveSig]
     int IsComWrappersCCW(ClrDataAddress ccw, Interop.BOOL* isComWrappersCCW);
     [PreserveSig]
