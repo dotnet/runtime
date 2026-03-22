@@ -1300,7 +1300,7 @@
     <value>Method '{0}' has pointer types in its signature but is not annotated with 'RequiresUnsafeAttribute'.</value>
   </data>
   <data name="ExternMethodMissingRequiresUnsafeTitle" xml:space="preserve">
-    <value>extern methods should be annotated with 'RequiresUnsafeAttribute'.</value>
+    <value>Extern methods should be annotated with 'RequiresUnsafeAttribute'.</value>
   </data>
   <data name="ExternMethodMissingRequiresUnsafeMessage" xml:space="preserve">
     <value>Method '{0}' is extern but is not annotated with 'RequiresUnsafeAttribute'.</value>

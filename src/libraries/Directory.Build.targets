@@ -201,11 +201,13 @@
 
   <!-- Adds RequiresUnsafeAttribute polyfill for non-CoreLib library source projects that share Common
        source files annotated with [RequiresUnsafe]. Excluded from shim/facade/ref/PNSE assemblies that
-       must only contain type-forwards. -->
-  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj' and
+       must only contain type-forwards, and projects that opt out of polyfills. -->
+  <ItemGroup Condition="'$(SkipIncludePolyfills)' != 'true' and
+                        '$(MSBuildProjectExtension)' == '.csproj' and
                         '$(IsPartialFacadeAssembly)' != 'true' and
                         '$(IsReferenceAssemblyProject)' != 'true' and
                         '$(GeneratePlatformNotSupportedAssemblyMessage)' == '' and
+                        '$(GeneratePlatformNotSupportedAssembly)' != 'true' and
                         !$(MSBuildProjectDirectory.Contains('shims'))">
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs"
              Link="System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs" />

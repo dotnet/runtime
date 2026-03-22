@@ -49,12 +49,8 @@ namespace ILLink.RoslynAnalyzer
                 && property.HasAttribute (RequiresUnsafeAnalyzer.RequiresUnsafeAttributeName))
                 return;
 
-            if (HasPointerInSignature (method)) {
-                foreach (var location in method.Locations) {
-                    context.ReportDiagnostic (Diagnostic.Create (s_pointerRule, location, method.GetDisplayName ()));
-                }
-            }
-
+            // Prefer the more specific extern/LibraryImport diagnostics over the generic pointer-signature
+            // diagnostic to avoid duplicate/redundant diagnostics on the same method.
             if (IsExtern (method)) {
                 foreach (var location in method.Locations) {
                     context.ReportDiagnostic (Diagnostic.Create (s_externRule, location, method.GetDisplayName ()));
@@ -62,6 +58,10 @@ namespace ILLink.RoslynAnalyzer
             } else if (IsLibraryImport (method)) {
                 foreach (var location in method.Locations) {
                     context.ReportDiagnostic (Diagnostic.Create (s_libraryImportRule, location, method.GetDisplayName ()));
+                }
+            } else if (HasPointerInSignature (method)) {
+                foreach (var location in method.Locations) {
+                    context.ReportDiagnostic (Diagnostic.Create (s_pointerRule, location, method.GetDisplayName ()));
                 }
             }
         }
