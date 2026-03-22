@@ -53,10 +53,9 @@ namespace ILLink.RoslynAnalyzer
                 foreach (var location in method.Locations) {
                     context.ReportDiagnostic (Diagnostic.Create (s_pointerRule, location, method.GetDisplayName ()));
                 }
-                return;
             }
 
-            var externOrLibraryImportRule = GetExternOrLibraryImportRule (method);
+            DiagnosticDescriptor? externOrLibraryImportRule = GetExternOrLibraryImportRule (method);
             if (externOrLibraryImportRule is not null) {
                 foreach (var location in method.Locations) {
                     context.ReportDiagnostic (Diagnostic.Create (externOrLibraryImportRule, location, method.GetDisplayName ()));
@@ -70,7 +69,7 @@ namespace ILLink.RoslynAnalyzer
                 return true;
 
             foreach (var param in method.Parameters) {
-                if (IsPointerType(param.Type))
+                if (IsPointerType (param.Type))
                     return true;
             }
 
@@ -88,13 +87,13 @@ namespace ILLink.RoslynAnalyzer
                     if (attr.AttributeClass?.HasName ("System.Runtime.CompilerServices.MethodImplAttribute") == true) {
                         foreach (TypedConstant arg in attr.ConstructorArguments) {
                             // MethodImplAttribute has two ctors: one taking MethodImplOptions (int enum) and
-                            // one taking short (legacy). Normalize both to int before testing the bitmask.
-                            int? value = arg.Value switch {
-                                int i => i,
-                                short s => (int)s,
-                                _ => null
+                            // one taking short (legacy).
+                            MethodImplOptions mio = arg.Value switch {
+                                int intVal => (MethodImplOptions)intVal,
+                                short shortVal => (MethodImplOptions)shortVal,
+                                _ => default
                             };
-                            if (value.HasValue && (value.Value & (int)MethodImplOptions.InternalCall) != 0)
+                            if ((mio & (int)MethodImplOptions.InternalCall) != 0)
                                 return null;
                         }
                     }
