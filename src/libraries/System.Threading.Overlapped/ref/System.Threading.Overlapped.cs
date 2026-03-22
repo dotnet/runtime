@@ -33,20 +33,16 @@ namespace System.Threading
         public unsafe static void Free(System.Threading.NativeOverlapped* nativeOverlappedPtr) { }
         [System.CLSCompliantAttribute(false)]
         [System.ObsoleteAttribute("This overload is not safe and has been deprecated. Use Pack(IOCompletionCallback?, object?) instead.")]
-        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe System.Threading.NativeOverlapped* Pack(System.Threading.IOCompletionCallback? iocb) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe System.Threading.NativeOverlapped* Pack(System.Threading.IOCompletionCallback? iocb, object? userData) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe static System.Threading.Overlapped Unpack(System.Threading.NativeOverlapped* nativeOverlappedPtr) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.ObsoleteAttribute("This overload is not safe and has been deprecated. Use UnsafePack(IOCompletionCallback?, object?) instead.")]
-        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe System.Threading.NativeOverlapped* UnsafePack(System.Threading.IOCompletionCallback? iocb) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe System.Threading.NativeOverlapped* UnsafePack(System.Threading.IOCompletionCallback? iocb, object? userData) { throw null; }
     }
     public sealed partial class PreAllocatedOverlapped : System.IDisposable

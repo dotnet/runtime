@@ -1300,8 +1300,10 @@ namespace System.Runtime.InteropServices
         [System.CLSCompliantAttribute(false)]
         public static void* AlignedAlloc(nuint byteCount, nuint alignment) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void AlignedFree(void* ptr) { }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void* AlignedRealloc(void* ptr, nuint byteCount, nuint alignment) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void* Alloc(nuint byteCount) { throw null; }
@@ -1312,8 +1314,10 @@ namespace System.Runtime.InteropServices
         [System.CLSCompliantAttribute(false)]
         public static void* AllocZeroed(nuint elementCount, nuint elementSize) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void Free(void* ptr) { }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void* Realloc(void* ptr, nuint byteCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
