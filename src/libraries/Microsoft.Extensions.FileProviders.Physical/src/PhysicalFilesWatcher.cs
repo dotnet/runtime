@@ -144,13 +144,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 return NullChangeToken.Singleton;
             }
 
-            IChangeToken changeToken = GetOrAddChangeToken(filter);
-// We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
-#pragma warning disable CA1416 // Validate platform compatibility
-            TryEnableFileSystemWatcher();
-#pragma warning restore CA1416 // Validate platform compatibility
-
-            return changeToken;
+            return GetOrAddChangeToken(filter);
         }
 
         private IChangeToken GetOrAddChangeToken(string pattern)
@@ -214,6 +208,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         pollingChangeToken,
                     });
             }
+
+            TryEnableFileSystemWatcher();
 
             return changeToken;
         }
@@ -329,12 +325,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         }
 #endif
 
-                        Task.Factory.StartNew(
-                            static watcher => ((PendingCreationWatcher)watcher!).Dispose(),
-                            w,
-                            CancellationToken.None,
-                            TaskCreationOptions.DenyChildAttach,
-                            TaskScheduler.Default);
+                        w.Dispose();
                     }, Tuple.Create(_pendingCreationWatchers, filePath, newWatcher));
 
                     return new CancellationChangeToken(newWatcher.Cts.Token);
@@ -378,6 +369,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         pollingChangeToken,
                     });
             }
+
+            TryEnableFileSystemWatcher();
 
             return changeToken;
         }
@@ -529,7 +522,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 matched = true;
             }
 
-            foreach (System.Collections.Generic.KeyValuePair<string, ChangeTokenInfo> wildCardEntry in _wildcardTokenLookup)
+            foreach (KeyValuePair<string, ChangeTokenInfo> wildCardEntry in _wildcardTokenLookup)
             {
                 PatternMatchingResult matchResult = wildCardEntry.Value.Matcher!.Match(path);
                 if (matchResult.HasMatches &&
@@ -568,23 +561,26 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("wasi")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         private void TryEnableFileSystemWatcher()
         {
             if (_fileWatcher != null)
             {
                 lock (_fileWatcherLock)
                 {
+// We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
+#pragma warning disable CA1416 // Validate platform compatibility
                     if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) &&
                         !_fileWatcher.EnableRaisingEvents)
                     {
+                        if (string.IsNullOrEmpty(_fileWatcher.Path))
+                        {
+                            _fileWatcher.Path = _root;
+                        }
+
                         // Perf: Turn off the file monitoring if no files to monitor.
                         _fileWatcher.EnableRaisingEvents = true;
                     }
+#pragma warning restore CA1416
                 }
             }
         }
@@ -794,6 +790,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
                             _watcher = null;
                             Cts.Cancel();
                         }
+                        // else
+                        // {
+                        //     TryEnableFileSystemWatcher();
+                        // }
+
                         return;
                     }
 

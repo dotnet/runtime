@@ -143,10 +143,10 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
 
                 Assert.NotNull(source.FileProvider);
                 var physicalProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
-                Assert.Equal(rootDir + Path.DirectorySeparatorChar, physicalProvider.Root);
+                Assert.Equal(missingSubDir + Path.DirectorySeparatorChar, physicalProvider.Root);
 
-                // The path was relativized to include the missing segment.
-                Assert.Contains("subdir", source.Path, StringComparison.OrdinalIgnoreCase);
+                // The path was relativized to remove the missing segment.
+                Assert.DoesNotContain("subdir", source.Path, StringComparison.OrdinalIgnoreCase);
 
                 // Watch() must return a valid (non-null) change token even though the parent dir is missing.
                 var token = source.FileProvider.Watch(source.Path!);

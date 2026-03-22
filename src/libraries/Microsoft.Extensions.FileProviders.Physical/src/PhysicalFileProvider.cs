@@ -61,10 +61,6 @@ namespace Microsoft.Extensions.FileProviders
             string fullRoot = Path.GetFullPath(root);
             // When we do matches in GetFullPath, we want to only match full directory names.
             Root = PathUtils.EnsureTrailingSlash(fullRoot);
-            if (!Directory.Exists(Root))
-            {
-                throw new DirectoryNotFoundException(Root);
-            }
 
             _filters = filters;
             _fileWatcherFactory = CreateFileWatcher;
@@ -174,7 +170,7 @@ namespace Microsoft.Extensions.FileProviders
 #endif
             {
                 // When UsePollingFileWatcher & UseActivePolling are set, we won't use a FileSystemWatcher.
-                watcher = UsePollingFileWatcher && UseActivePolling ? null : new FileSystemWatcher(root);
+                watcher = UsePollingFileWatcher && UseActivePolling ? null : new FileSystemWatcher();
             }
 
             return new PhysicalFilesWatcher(root, watcher, UsePollingFileWatcher, _filters)
