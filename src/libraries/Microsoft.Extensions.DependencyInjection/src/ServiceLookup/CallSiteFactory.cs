@@ -865,6 +865,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static bool GenericConstraintsSatisfiedBy(Type genericType, Type[] typeArguments)
         {
             Type[] genericArguments = genericType.GetGenericArguments();
+            Debug.Assert(genericArguments.Length == typeArguments.Length);
+
             for (int i = 0; i < genericArguments.Length; i++)
             {
                 Type parameter = genericArguments[i];
