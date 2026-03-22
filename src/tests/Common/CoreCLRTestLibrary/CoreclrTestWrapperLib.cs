@@ -294,6 +294,42 @@ namespace TestLibrary
             return collectedDump;
         }
 
+        // Kills a process tree rooted at the given process using 'sudo kill -9',
+        // which is required when the processes run as root (e.g. launched via 'sudo').
+        static void KillProcessTreeWithSudo(Process process)
+        {
+            // Kill children first (depth-first), then the process itself.
+            try
+            {
+                foreach (Process child in process.GetChildren())
+                {
+                    KillProcessTreeWithSudo(child);
+                    child.Dispose();
+                }
+            }
+            catch
+            {
+                // Process may have already exited.
+            }
+
+            if (process.TryGetProcessId(out int pid))
+            {
+                using Process sudoKill = new Process();
+                sudoKill.StartInfo.FileName = "sudo";
+                sudoKill.StartInfo.Arguments = $"kill -9 {pid}";
+                sudoKill.StartInfo.UseShellExecute = false;
+                try
+                {
+                    sudoKill.Start();
+                    sudoKill.WaitForExit(30_000);
+                }
+                catch
+                {
+                    // Best effort — process may have already exited.
+                }
+            }
+        }
+
         static bool CollectCrashDumpWithCreateDump(Process process, string crashDumpPath, StreamWriter outputWriter)
         {
             string? coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
@@ -354,7 +390,10 @@ namespace TestLibrary
             }
             else
             {
-                createdump.Kill(entireProcessTree: true);
+                // createdump was launched via 'sudo', so the process and its children run as root.
+                // We cannot send SIGKILL to root-owned processes from a non-root process (EPERM).
+                // Use 'sudo kill' to terminate the timed-out process tree.
+                KillProcessTreeWithSudo(createdump);
             }
 
             return fSuccess && createdump.ExitCode == 0;
