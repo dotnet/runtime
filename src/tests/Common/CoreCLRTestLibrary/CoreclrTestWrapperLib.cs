@@ -318,7 +318,7 @@ namespace TestLibrary
                 if (!exited)
                 {
                     Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} did not exit within timeout; terminating sudo process.");
-                    sudoKill.Kill(entireProcessTree: true);
+                    sudoKill.Kill();
                 }
                 else
                 {
