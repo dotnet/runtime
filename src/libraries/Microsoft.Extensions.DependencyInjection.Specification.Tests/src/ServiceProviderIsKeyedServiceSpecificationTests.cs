@@ -125,5 +125,28 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.NotNull(serviceProviderIsService);
             Assert.True(serviceProviderIsService.IsKeyedService(typeof(IFakeService), null));
         }
+
+        [Fact]
+        public void ConstrainedOpenGenericWithIsKeyedServiceReturnsFalseWhenConstraintNotSatisfied()
+        {
+            if (!SupportsIServiceProviderIsKeyedService)
+            {
+                return;
+            }
+
+            // Arrange
+            var key = new object();
+            var collection = new TestServiceCollection();
+            collection.AddKeyedTransient(typeof(IFakeOpenGenericService<>), key, typeof(ConstrainedFakeOpenGenericService<>));
+            var provider = CreateServiceProvider(collection);
+
+            // Act
+            var serviceProviderIsService = provider.GetService<IServiceProviderIsKeyedService>();
+
+            // Assert
+            Assert.NotNull(serviceProviderIsService);
+            Assert.True(serviceProviderIsService.IsKeyedService(typeof(IFakeOpenGenericService<PocoClass>), key));
+            Assert.False(serviceProviderIsService.IsKeyedService(typeof(IFakeOpenGenericService<IFakeService>), key));
+        }
     }
 }

@@ -809,7 +809,25 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 // We special case IEnumerable since it isn't explicitly registered in the container
                 // yet we can manifest instances of it when requested.
-                return genericDefinition == typeof(IEnumerable<>) || _descriptorLookup.ContainsKey(serviceIdentifier.GetGenericTypeDefinition());
+                if (genericDefinition == typeof(IEnumerable<>))
+                {
+                    return true;
+                }
+
+                if (_descriptorLookup.TryGetValue(serviceIdentifier.GetGenericTypeDefinition(), out ServiceDescriptorCacheItem descriptors) &&
+                    HasMatchingOpenGenericDescriptor(serviceType, descriptors))
+                {
+                    return true;
+                }
+
+                if (serviceIdentifier.ServiceKey != null &&
+                    _descriptorLookup.TryGetValue(new ServiceIdentifier(KeyedService.AnyKey, genericDefinition), out descriptors) &&
+                    HasMatchingOpenGenericDescriptor(serviceType, descriptors))
+                {
+                    return true;
+                }
+
+                return false;
             }
 
             // These are the built in service types that aren't part of the list of service descriptors
@@ -818,6 +836,162 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                    serviceType == typeof(IServiceScopeFactory) ||
                    serviceType == typeof(IServiceProviderIsService) ||
                    serviceType == typeof(IServiceProviderIsKeyedService);
+        }
+
+        private static bool HasMatchingOpenGenericDescriptor(Type serviceType, ServiceDescriptorCacheItem descriptors)
+        {
+            Type[] genericTypeArguments = serviceType.GenericTypeArguments;
+            for (int i = 0; i < descriptors.Count; i++)
+            {
+                Type? implementationType = descriptors[i].GetImplementationType();
+                if (implementationType is not null &&
+                    implementationType.IsGenericTypeDefinition &&
+                    GenericConstraintsSatisfiedBy(implementationType, genericTypeArguments))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Checks whether the given <paramref name="typeArguments"/> satisfy the generic constraints
+        /// on <paramref name="genericType"/> without calling <see cref="Type.MakeGenericType(Type[])"/>.
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+            Justification = "GetConstructor is used to check if a type argument has a parameterless constructor to satisfy a new() constraint. " +
+            "The type arguments are provided by the caller of IsService and are concrete types whose constructors are preserved.")]
+        private static bool GenericConstraintsSatisfiedBy(Type genericType, Type[] typeArguments)
+        {
+            Type[] genericArguments = genericType.GetGenericArguments();
+            Debug.Assert(genericArguments.Length == typeArguments.Length);
+
+            for (int i = 0; i < genericArguments.Length; i++)
+            {
+                Type parameter = genericArguments[i];
+                Type argument = typeArguments[i];
+
+                GenericParameterAttributes constraints = parameter.GenericParameterAttributes;
+
+                // Check struct constraint (NotNullableValueTypeConstraint)
+                if ((constraints & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0 &&
+                    (!argument.IsValueType || Nullable.GetUnderlyingType(argument) is not null))
+                {
+                    return false;
+                }
+
+                // Check class constraint (ReferenceTypeConstraint)
+                if ((constraints & GenericParameterAttributes.ReferenceTypeConstraint) != 0 && argument.IsValueType)
+                {
+                    return false;
+                }
+
+                // Check new() constraint (DefaultConstructorConstraint) for reference types.
+                // Value types always have a default constructor, so no check needed for them.
+                if ((constraints & GenericParameterAttributes.DefaultConstructorConstraint) != 0 &&
+                    !argument.IsValueType &&
+                    (argument.IsAbstract || argument.GetConstructor(Type.EmptyTypes) is null))
+                {
+                    return false;
+                }
+
+                // Check type constraints (base class and interface constraints)
+                Type[] parameterConstraints = parameter.GetGenericParameterConstraints();
+                for (int j = 0; j < parameterConstraints.Length; j++)
+                {
+                    Type constraintType = parameterConstraints[j];
+                    if (!constraintType.ContainsGenericParameters)
+                    {
+                        if (!constraintType.IsAssignableFrom(argument))
+                        {
+                            return false;
+                        }
+                    }
+                    else if (constraintType.IsGenericParameter)
+                    {
+                        // Cross-parameter constraint: where T : U
+                        if (!typeArguments[constraintType.GenericParameterPosition].IsAssignableFrom(argument))
+                        {
+                            return false;
+                        }
+                    }
+                    else if (!SatisfiesParameterizedConstraint(argument, constraintType, typeArguments))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Checks whether <paramref name="argument"/> satisfies a parameterized constraint such as
+        /// <c>IComparable&lt;T&gt;</c> by searching the argument's interface implementations and base type hierarchy.
+        /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "GetInterfaces is used to check if a type argument implements a generic interface constraint. " +
+            "The type arguments are provided by the caller of IsService and are concrete types whose interfaces are preserved.")]
+        private static bool SatisfiesParameterizedConstraint(Type argument, Type constraint, Type[] typeArguments)
+        {
+            if (!constraint.IsGenericType)
+            {
+                // Unrecognized constraint shape — conservatively assume satisfied
+                return true;
+            }
+
+            Type constraintDefinition = constraint.GetGenericTypeDefinition();
+            Type[] expectedArguments = constraint.GetGenericArguments();
+
+            // Check implemented interfaces
+            foreach (Type iface in argument.GetInterfaces())
+            {
+                if (iface.IsGenericType &&
+                    iface.GetGenericTypeDefinition() == constraintDefinition &&
+                    TypeArgumentsMatch(iface.GetGenericArguments(), expectedArguments, typeArguments))
+                {
+                    return true;
+                }
+            }
+
+            // Check base type hierarchy
+            for (Type? baseType = argument; baseType is not null; baseType = baseType.BaseType)
+            {
+                if (baseType.IsGenericType &&
+                    baseType.GetGenericTypeDefinition() == constraintDefinition &&
+                    TypeArgumentsMatch(baseType.GetGenericArguments(), expectedArguments, typeArguments))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TypeArgumentsMatch(Type[] actual, Type[] expected, Type[] typeArguments)
+        {
+            for (int i = 0; i < actual.Length; i++)
+            {
+                Type expectedArg = expected[i];
+                if (expectedArg.IsGenericParameter)
+                {
+                    expectedArg = typeArguments[expectedArg.GenericParameterPosition];
+                }
+                else if (expectedArg.ContainsGenericParameters)
+                {
+                    // Deeply nested generic parameter — cannot fully resolve without MakeGenericType.
+                    // Conservatively assume this argument position matches.
+                    continue;
+                }
+
+                if (actual[i] != expectedArg)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private struct ServiceDescriptorCacheItem
