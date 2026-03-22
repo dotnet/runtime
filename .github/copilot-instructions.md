@@ -16,7 +16,7 @@ Before making changes to a directory, search for `README.md` files in that direc
 
 If the changes are intended to improve performance, or if they could negatively impact performance, use the `performance-benchmark` skill to validate the impact before completing.
 
-Additional shared skills for the .NET product are maintained in [dotnet/arcade-skills](https://github.com/dotnet/arcade-skills). This currently includes skills for analyzing Azure DevOps CI/CD results and Helix test infrastructure, with more planned. When a task may benefit from a shared skill defined there, read that repo's README and the relevant SKILL.md files to find and follow applicable instructions.
+Additional shared skills for the .NET product are maintained in [dotnet/arcade-skills](https://github.com/dotnet/arcade-skills). This currently includes skills for analyzing Azure DevOps CI/CD results and Helix test infrastructure, and for analyzing test work item crashes encountered by pull requests. When a task may benefit from a shared skill defined there, read that repo's README and the relevant SKILL.md files to find and follow applicable instructions.
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
 
