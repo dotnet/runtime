@@ -610,6 +610,9 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
     // we could store a throwable handle at the catch site, or store it
     // on the thread object.
 
+#ifdef TARGET_WINDOWS
+    // WASM has no hardware exception (signal) support, so SEHExceptions
+    // are never produced on that platform.
     if (pException->IsType(SEHException::GetType()))
     {
         SEHException *pSEHException = (SEHException*)pException;
@@ -663,6 +666,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
         return throwable;
     }
     else
+#endif // TARGET_WINDOWS
     {
         // We can enter here for HRException, COMException, DelegatingException
         // just to name a few.

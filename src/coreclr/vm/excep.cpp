@@ -2353,7 +2353,11 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
 #endif // ALIGN_ACCESS
 
         default:
+#ifdef FEATURE_COMINTEROP
             return kSEHException;
+#else
+            return kException;
+#endif // FEATURE_COMINTEROP
     }
 }
 
