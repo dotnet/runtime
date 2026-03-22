@@ -313,22 +313,13 @@ namespace TestLibrary
                 sudoKill.Start();
                 Task<string> stdOutTask = sudoKill.StandardOutput.ReadToEndAsync();
                 Task<string> stdErrTask = sudoKill.StandardError.ReadToEndAsync();
-                // A kill -9 should complete almost immediately; use a short timeout.
-                bool exited = sudoKill.WaitForExit(5_000);
-                if (!exited)
+                sudoKill.WaitForExit();
+                Task.WaitAll(stdOutTask, stdErrTask);
+                if (sudoKill.ExitCode != 0)
                 {
-                    Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} did not exit within timeout; terminating sudo process.");
-                    sudoKill.Kill();
-                }
-                else
-                {
-                    Task.WaitAll(stdOutTask, stdErrTask);
-                    if (sudoKill.ExitCode != 0)
-                    {
-                        Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} exited with code {sudoKill.ExitCode}.");
-                        Console.WriteLine($"stdout: {stdOutTask.Result}");
-                        Console.WriteLine($"stderr: {stdErrTask.Result}");
-                    }
+                    Console.WriteLine($"KillWithSudo: sudo kill -9 {pid} exited with code {sudoKill.ExitCode}.");
+                    Console.WriteLine($"stdout: {stdOutTask.Result}");
+                    Console.WriteLine($"stderr: {stdErrTask.Result}");
                 }
             }
         }
