@@ -14,6 +14,88 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests
     {
+        private static bool IsNotNanoServerNotServerCoreAndRemoteExecutorSupported =>
+            PlatformDetection.IsNotWindowsNanoServer &&
+            PlatformDetection.IsNotWindowsServerCore &&
+            RemoteExecutor.IsSupported;
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int MessageBoxW(IntPtr hWnd, string lpText, string lpCaption, uint uType);
+
+        // Creates a visible top-level window with a title; blocks until the parent test kills this process.
+        // Used by MainWindowHandle_GetWithGui_ShouldRefresh_Windows and MainWindowTitle_GetWithGui_ShouldRefresh_Windows.
+        private static int CreateMainWindowWithTitle()
+        {
+            MessageBoxW(IntPtr.Zero, string.Empty, "Test Main Window", 0 /* MB_OK */);
+            return RemoteExecutor.SuccessExitCode;
+        }
+
+        [ConditionalFact(typeof(ProcessTests), nameof(IsNotNanoServerNotServerCoreAndRemoteExecutorSupported))]
+        [OuterLoop("Pops UI")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
+        {
+            Process process;
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(CreateMainWindowWithTitle, new RemoteInvokeOptions { Start = false }))
+            {
+                process = handle.Process;
+                handle.Process = null;
+            }
+
+            process.Start();
+            try
+            {
+                for (int attempt = 0; attempt < 50; ++attempt)
+                {
+                    process.Refresh();
+                    if (process.MainWindowHandle != IntPtr.Zero)
+                        break;
+
+                    Thread.Sleep(100);
+                }
+
+                Assert.NotEqual(IntPtr.Zero, process.MainWindowHandle);
+            }
+            finally
+            {
+                process.Kill();
+                Assert.True(process.WaitForExit(WaitInMS));
+            }
+        }
+
+        [ConditionalFact(typeof(ProcessTests), nameof(IsNotNanoServerNotServerCoreAndRemoteExecutorSupported))]
+        [OuterLoop("Pops UI")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
+        {
+            Process process;
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(CreateMainWindowWithTitle, new RemoteInvokeOptions { Start = false }))
+            {
+                process = handle.Process;
+                handle.Process = null;
+            }
+
+            process.Start();
+            try
+            {
+                for (int attempt = 0; attempt < 50; ++attempt)
+                {
+                    process.Refresh();
+                    if (process.MainWindowTitle != string.Empty)
+                        break;
+
+                    Thread.Sleep(100);
+                }
+
+                Assert.NotEqual(string.Empty, process.MainWindowTitle);
+            }
+            finally
+            {
+                process.Kill();
+                Assert.True(process.WaitForExit(WaitInMS));
+            }
+        }
+
         private string WriteScriptFile(string directory, string name, int returnValue)
         {
             string filename = Path.Combine(directory, name);
