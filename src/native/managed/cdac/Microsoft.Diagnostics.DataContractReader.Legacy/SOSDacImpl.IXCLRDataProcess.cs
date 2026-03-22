@@ -499,11 +499,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             if (notifyType == NotificationType.Unknown)
                 return HResults.E_INVALIDARG;
 
-            IXCLRDataExceptionNotification2? notify2 = notify as IXCLRDataExceptionNotification2;
-            IXCLRDataExceptionNotification3? notify3 = notify as IXCLRDataExceptionNotification3;
-            IXCLRDataExceptionNotification4? notify4 = notify as IXCLRDataExceptionNotification4;
-            IXCLRDataExceptionNotification5? notify5 = notify as IXCLRDataExceptionNotification5;
-
             switch (notifyType)
             {
                 case NotificationType.ModuleLoad:
@@ -550,26 +545,29 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
                     ClrDataMethodInstance methodInst = new(_target, methodDesc, appDomain, null);
                     notify.OnCodeGenerated(methodInst);
-                    notify5?.OnCodeGenerated2(methodInst, nativeCodeAddress.ToClrDataAddress(_target));
+                    if (notify is IXCLRDataExceptionNotification5 notify5)
+                        notify5.OnCodeGenerated2(methodInst, nativeCodeAddress.ToClrDataAddress(_target));
                     break;
                 }
 
                 case NotificationType.Exception:
                 {
-                    if (notify2 is null)
+                    if (notify is IXCLRDataExceptionNotification2 notify2)
+                    {
+                        notifications.ParseExceptionNotification(exInfo, out TargetPointer threadAddress);
+                        IThread thread = _target.Contracts.Thread;
+                        Contracts.ThreadData threadData = thread.GetThreadData(threadAddress);
+                        TargetPointer thrownObjectHandle = thread.GetCurrentExceptionHandle(threadAddress);
+                        notify2.OnException(new ClrDataExceptionState(
+                            _target,
+                            threadAddress,
+                            (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+                            thrownObjectHandle,
+                            threadData.FirstNestedException,
+                            null));
+                    }
+                    else
                         return HResults.E_INVALIDARG;
-
-                    notifications.ParseExceptionNotification(exInfo, out TargetPointer threadAddress);
-
-                    Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(threadAddress);
-                    TargetPointer thrownObjectHandle = _target.Contracts.Thread.GetCurrentExceptionHandle(threadAddress);
-                    notify2.OnException(new ClrDataExceptionState(
-                        _target,
-                        threadAddress,
-                        (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
-                        thrownObjectHandle,
-                        threadData.FirstNestedException,
-                        null));
                     break;
                 }
 
@@ -577,15 +575,18 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 {
                     if (notifications.ParseGCNotification(exInfo, out GcEventData gcEventData))
                     {
-                        notify3?.OnGcEvent(new GcEvtArgs
+                        if (notify is IXCLRDataExceptionNotification3 notify3)
                         {
-                            type = gcEventData.EventType switch
+                            notify3.OnGcEvent(new GcEvtArgs
                             {
-                                GcEventType.MarkEnd => GcEvtArgs.GcEvt_t.GC_MARK_END,
-                                _ => GcEvtArgs.GcEvt_t.GC_EVENT_TYPE_MAX,
-                            },
-                            condemnedGeneration = gcEventData.CondemnedGeneration,
-                        });
+                                type = gcEventData.EventType switch
+                                {
+                                    GcEventType.MarkEnd => GcEvtArgs.GcEvt_t.GC_MARK_END,
+                                    _ => GcEvtArgs.GcEvt_t.GC_EVENT_TYPE_MAX,
+                                },
+                                condemnedGeneration = gcEventData.CondemnedGeneration,
+                            });
+                        }
                         hr = HResults.S_OK;
                     }
                     else
@@ -597,11 +598,10 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 {
                     notifications.ParseExceptionCatcherEnterNotification(exInfo, out TargetPointer methodDescAddress, out uint nativeOffset);
 
-                    if (notify4 is not null)
+                    if (notify is IXCLRDataExceptionNotification4 notify4)
                     {
                         TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
                         TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
-
                         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                         MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescAddress);
 
