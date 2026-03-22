@@ -2969,10 +2969,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         }
     }
 
-    // TODO-XARCH-AVX512: We should handle TYP_SIMD12 here under the EVEX path, but doing
-    // so will require us to account for the unused 4th element.
-
-    if ((simdType != TYP_SIMD12) && m_compiler->canUseEvexEncoding())
+    if (m_compiler->canUseEvexEncoding())
     {
         // The EVEX encoded versions of the comparison instructions all return a kmask
         //
