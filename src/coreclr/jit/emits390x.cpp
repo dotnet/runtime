@@ -5664,8 +5664,13 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isValidArrangement(size, opt));
             fmt = IF_DV_3C;
             break;
+#endif
 
-        case INS_and:
+        case INS_nrk:
+        case INS_ork:
+        case INS_xrk:
+        case INS_ncrk:
+#if 0
         case INS_bic:
         case INS_eor:
         case INS_orr:
@@ -5697,8 +5702,10 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_ands:
         case INS_bics:
         case INS_eon:
+#endif
             emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0, INS_OPTS_NONE);
             return;
+#if 0
 
         case INS_bsl:
         case INS_bit:
@@ -10560,11 +10567,31 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 	    S390_RIL_a(dst, op, id->idReg1(), imm);
 	    break;
 
-        case INS_ark: 
-            op = emitInsCode(ins, fmt);
-       	    S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
-            break;
+    case INS_ark:
+        op = emitInsCode(ins, fmt);
+        S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+        break;
+
+    case INS_nrk:
+        op = emitInsCode(ins, fmt);
+        S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+        break;
+
+    case INS_ork:
+        op = emitInsCode(ins, fmt);
+        S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+        break;
 	   
+    case INS_xrk:
+        op = emitInsCode(ins, fmt);
+        S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+        break;
+
+    case INS_ncrk:
+        op = emitInsCode(ins, fmt);
+        S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+        break;
+
 	default:
 	    _ASSERTE(!"NYI");
             break;
