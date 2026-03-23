@@ -69,6 +69,13 @@ public:
 #endif
 };
 
+enum class MarshalOperation
+{
+    ConvertToUnmanaged,
+    ConvertToManaged,
+    Free
+};
+
 //=======================================================================
 // Collects code and data pertaining to the PInvoke interface.
 //=======================================================================
@@ -126,8 +133,7 @@ public:
                     FieldDesc*         pFD);
 #endif // FEATURE_COMINTEROP
 
-    static MethodDesc* CreateStructMarshalILStub(MethodTable* pMT);
-    static PCODE GetEntryPointForStructMarshalStub(MethodTable* pMT);
+    static MethodDesc* CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOperation operation);
 
     static MethodDesc* CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
                              DWORD dwStubFlags,
@@ -169,6 +175,7 @@ enum PInvokeStubFlags
     PINVOKESTUB_FL_TARGET_HAS_THIS          = 0x00020000,
     PINVOKESTUB_FL_CHECK_PENDING_EXCEPTION  = 0x00040000,
     PINVOKESTUB_FL_SHARED_STUB              = 0x00080000,
+
     // unused                               = 0x00100000,
     // unused                               = 0x00200000,
     // unused                               = 0x00400000,
@@ -573,8 +580,6 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 #endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
-void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
-void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
 bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader);
 #endif // DACCESS_COMPILE
 

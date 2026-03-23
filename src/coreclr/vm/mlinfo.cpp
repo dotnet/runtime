@@ -26,7 +26,6 @@
 #include "dispparammarshaler.h"
 #endif // FEATURE_COMINTEROP
 
-#define INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS 32
 #define INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS 32
 #define INITIAL_NUM_CMINFO_HASHTABLE_BUCKETS 32
 #define DEBUG_CONTEXT_STR_LEN 2000
@@ -423,7 +422,6 @@ EEMarshalingData::EEMarshalingData(LoaderAllocator* pAllocator, CrstBase *pCrst)
     CONTRACTL_END;
 
     LockOwner lock = {pCrst, IsOwnerOfCrst};
-    m_structILStubCache.Init(INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS, &lock);
     m_CMInfoHashTable.Init(INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS, &lock);
 }
 
@@ -467,24 +465,6 @@ void EEMarshalingData::operator delete(void *pMem)
     // Instances of this class are always allocated on the loader heap so
     // the delete operator has nothing to do.
 }
-
-
-void EEMarshalingData::CacheStructILStub(MethodTable* pMT, MethodDesc* pStubMD)
-{
-    STANDARD_VM_CONTRACT;
-
-    CrstHolder lock(m_lock);
-
-    // Verify that the stub has not already been added by another thread.
-    HashDatum res = 0;
-    if (m_structILStubCache.GetValue(pMT, &res))
-    {
-        return;
-    }
-
-    m_structILStubCache.InsertValue(pMT, pStubMD);
-}
-
 
 CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes)
 {
@@ -2491,7 +2471,8 @@ void MarshalInfo::GenerateReturnIL(PInvokeStubLinker* psl,
 void MarshalInfo::GenerateFieldIL(PInvokeStubLinker* psl,
     UINT32 managedOffset,
     UINT32 nativeOffset,
-    FieldDesc* pFieldDesc)
+    FieldDesc* pFieldDesc,
+    DWORD dwMarshalFlags)
 {
     CONTRACTL
     {
@@ -2519,13 +2500,31 @@ void MarshalInfo::GenerateFieldIL(PInvokeStubLinker* psl,
     ILCodeStream* pcsMarshal = psl->GetMarshalCodeStream();
     ILCodeStream* pcsUnmarshal = psl->GetUnmarshalCodeStream();
 
-    pcsMarshal->EmitNOP("// field { ");
-    pcsUnmarshal->EmitNOP("// field { ");
+    // We can't just emit NOPs always because our struct marshalling methods
+    // do only one operation (marshal/unmarshal/cleanup) based on flags,
+    // and an IL body can't end with NOPs without RET instructions afterwards.
+    if (dwMarshalFlags & MARSHAL_FLAG_IN)
+    {
+        pcsMarshal->EmitNOP("// field { ");
+    }
 
-    pMarshaler->EmitMarshalField(pcsMarshal, pcsUnmarshal, m_paramidx, managedOffset, nativeOffset, &m_args);
+    if (dwMarshalFlags & MARSHAL_FLAG_OUT)
+    {
+        pcsUnmarshal->EmitNOP("// field { ");
+    }
 
-    pcsMarshal->EmitNOP("// } field");
-    pcsUnmarshal->EmitNOP("// } field");
+    pMarshaler->EmitMarshalField(pcsMarshal, pcsUnmarshal, m_paramidx, managedOffset, nativeOffset, MARSHAL_FLAG_FIELD | dwMarshalFlags, &m_args);
+
+
+    if (dwMarshalFlags & MARSHAL_FLAG_IN)
+    {
+        pcsMarshal->EmitNOP("// } field");
+    }
+
+    if (dwMarshalFlags & MARSHAL_FLAG_OUT)
+    {
+        pcsUnmarshal->EmitNOP("// } field");
+    }
 
     return;
 }
