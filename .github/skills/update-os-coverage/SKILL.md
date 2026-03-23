@@ -68,6 +68,8 @@ main (proactive, often ad hoc)
 
 ### 1. Determine context
 
+**Work on one branch at a time.** If multiple branches need updates, complete one branch fully before moving to the next. State which branch you are updating (e.g., "Updating `main` for .NET 11.") and proceed — do not wait for user confirmation. The user will correct you if the branch is wrong.
+
 Identify the branch and its .NET version:
 
 | Branch | .NET Version | Posture |
