@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -211,8 +211,6 @@ namespace System.Collections.Frozen
 
             if (minPrimeIndexInclusive >= primes.Length)
             {
-                // Maintain ~0.5 load factor when exceeding the precomputed primes table,
-                // avoiding the sharp performance cliff from ~1.0 load factor.
                 int targetBuckets = (int)Math.Min(minNumBuckets, int.MaxValue);
                 return HashHelpers.GetPrime(targetBuckets);
             }
