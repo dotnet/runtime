@@ -11,6 +11,14 @@ function is_cygwin_or_mingw()
   esac
 }
 
+# switch to different Xcode version
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  if [[ -d "/Applications/Xcode_26.2.app" ]]; then
+    echo "Switching to Xcode 26.2 for build"
+    sudo xcode-select -s "/Applications/Xcode_26.2.app"
+  fi
+fi
+
 # resolve $SOURCE until the file is no longer a symlink
 while [[ -h $source ]]; do
   scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
