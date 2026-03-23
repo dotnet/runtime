@@ -4,10 +4,10 @@ applyTo: "src/libraries/System.IO.Compression*/**"
 
 # System.IO.Compression — Folder-Specific Guidance
 
-## Format Specification Correctness (D12, 1,776 votes)
+## Format Specification Correctness (D12)
 
 - ZIP64 extensions must be used for files over 4GB — extra field sizes, offsets, and header values must use 64-bit fields when the 32-bit range is exceeded
-- Compression level enum values must map to the underlying native library's values (e.g., zlib BestCompression=9, Z_DEFAULT_COMPRESSION=-1)
+- Compression levels must align with native library semantics — verify enum-to-native mapping is correct
 - New compression format support (e.g., zstd in ZIP) must include a feature switch for trimming/AOT and an explicit opt-in mechanism
 - Decompression must handle concatenated payloads and partial reads — the decompressor must not assume a single contiguous compressed stream
 - Breaking changes to format handling must be documented and include migration guidance
@@ -16,7 +16,6 @@ applyTo: "src/libraries/System.IO.Compression*/**"
 
 - Maximum decompressed size limits must be configurable to prevent zip-bomb attacks, following the existing deflate size limit pattern
 - Archive extraction must validate entry paths to prevent path traversal attacks (entries with `../` segments)
-- Encrypted archive support must handle key material securely and not log sensitive data
 
 ## Performance & Allocation (D5)
 

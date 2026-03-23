@@ -4,7 +4,7 @@ applyTo: "src/libraries/Microsoft.Extensions.Logging*/**"
 
 # Microsoft.Extensions.Logging — Folder-Specific Guidance
 
-## LoggerMessage Source Generator (D16, D13, 2,723 votes)
+## LoggerMessage Source Generator (D16, D13)
 
 - `[LoggerMessage]`-attributed methods must be `static partial` — non-static methods cause confusing source generator errors
 - Structured log messages must use template placeholders (`{Name}`) — never embed string interpolation, which bypasses structured logging
@@ -14,16 +14,12 @@ applyTo: "src/libraries/Microsoft.Extensions.Logging*/**"
 
 ## Log Levels & Security
 
-- Choose log levels appropriately: Debug for developer diagnostics, Information for operational events, Warning for recoverable issues, Error for failures requiring attention
 - Never log sensitive data (credentials, tokens, PII, request/response bodies) at any level, including Debug/Trace
 - `IsEnabled` checks should guard expensive log message construction when not using source-generated methods
 
 ## Error Handling & Diagnostics (D9)
 
-- Exceptions thrown must be the most specific applicable type — never throw bare `Exception`
-- Error messages must include actionable context — parameter names via `nameof`, expected vs actual values
 - Exceptions from inner operations must be properly wrapped or propagated — do not swallow silently without logging
-- Async operations must propagate exceptions through the returned Task/ValueTask
 
 ## Logging Provider Configuration
 

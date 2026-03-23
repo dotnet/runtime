@@ -6,16 +6,16 @@ applyTo: "src/libraries/Microsoft.Extensions.Http*/**,src/libraries/Microsoft.Ex
 
 Covers `Microsoft.Extensions.Http`, `Microsoft.Extensions.FileProviders`, and `Microsoft.Extensions.Primitives`.
 
-## Extensions.Http (208 votes | D17, D7)
+## Extensions.Http (D17, D7)
 
 - `HttpClientFactory` registration helpers must use `TryAdd` patterns to avoid overriding user-configured handlers
 - `DelegatingHandler` chains must correctly propagate disposal — document ownership of inner handlers
 - Connection pooling and lifetime settings (`PooledConnectionLifetime`) must be documented when composing `HttpClient` configurations
 - Ensure thread-safe access for `HttpClient` instances shared via factory — use `CompareExchange` for lazy initialization
 - Avoid per-operation allocations in handler pipelines — cache delegates and reuse handler instances where possible
-- All HttpClientFactory types must be trim-safe; interceptor-based approaches preferred over reflection for AOT scenarios
+- All HttpClientFactory types must be trim-safe and NativeAOT-compatible
 
-## Extensions.FileProviders (390 votes | D10, D4)
+## Extensions.FileProviders (D10, D4)
 
 - `PhysicalFileProvider` must handle concurrent file operations — use `FileShare.Delete` when reading files that may be rotated
 - File provider ownership is not transferred to `IConfigurationRoot` or `IConfigurationProvider` — document the ownership boundary
@@ -24,7 +24,7 @@ Covers `Microsoft.Extensions.Http`, `Microsoft.Extensions.FileProviders`, and `M
 - Avoid unnecessary `ToArray()`/`ToList()` calls — prefer lazy enumeration with yield return when callers do not need materialized collections
 - Directory enumeration order changes are breaking changes — test ordering expectations
 
-## Extensions.Primitives (414 votes | D1, D5)
+## Extensions.Primitives (D1, D5)
 
 - `StringSegment` must provide string-equivalent operations — missing methods should maintain API parity with `string`
 - `ChangeToken.OnChange` registrations must be disposed when the owning component is disposed to prevent leaks

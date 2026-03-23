@@ -4,7 +4,7 @@ applyTo: "src/libraries/Microsoft.Extensions.Hosting*/**"
 
 # Microsoft.Extensions.Hosting — Folder-Specific Guidance
 
-## Host & Service Lifecycle (D15, 1,629 votes)
+## Host & Service Lifecycle (D15)
 
 - `Host.StopAsync` must not throw when the cancellation token is canceled — it must allow hosted services and host lifetime to complete their shutdown logic
 - Shutdown signal handlers (`UseConsoleLifetime`, SIGTERM) must correctly dispose registrations and propagate to all hosted services on all platforms
@@ -32,7 +32,6 @@ applyTo: "src/libraries/Microsoft.Extensions.Hosting*/**"
 ## Error Handling (D9)
 
 - Exceptions from hosted services must be properly observed — unhandled exceptions in `ExecuteAsync` must not silently terminate the host
-- Error messages must include actionable context — service name, state at failure time
 
 ## Test Reliability (D11)
 

@@ -4,7 +4,7 @@ applyTo: "src/libraries/Microsoft.Extensions.Configuration*/**"
 
 # Microsoft.Extensions.Configuration — Folder-Specific Guidance
 
-## Configuration Binding (D8, 3,285 votes — top area)
+## Configuration Binding (D8)
 
 - Configuration key lookups are case-insensitive — all switch statements and dictionary lookups over config keys must use `StringComparison.OrdinalIgnoreCase`
 - The default binder suppresses binding errors and silently skips unrecognized properties — document this when code depends on strict binding
@@ -35,9 +35,7 @@ applyTo: "src/libraries/Microsoft.Extensions.Configuration*/**"
 
 ## Null Safety (D3)
 
-- Public API entry points must validate non-null parameters with `ArgumentNullException.ThrowIfNull`
 - Input from configuration values and deserialized data must be validated for both null and semantic correctness
-- Async methods must never return null Task/ValueTask
 
 ## Trim & AOT (D14)
 

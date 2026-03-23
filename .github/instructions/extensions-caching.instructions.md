@@ -4,7 +4,7 @@ applyTo: "src/libraries/Microsoft.Extensions.Caching*/**"
 
 # Microsoft.Extensions.Caching — Folder-Specific Guidance
 
-## Cache Key Correctness (D20, 1,603 votes)
+## Cache Key Correctness (D20)
 
 - Cache keys must incorporate all inputs that affect the cached result — including format versions, serialization options, and any parameters that change the output
 - Key generation must be deterministic and stable across process restarts for distributed caches
@@ -20,7 +20,7 @@ applyTo: "src/libraries/Microsoft.Extensions.Caching*/**"
 ## Stampede Prevention (D20)
 
 - When a cache entry expires, only one caller should recompute the value while others wait (thundering herd mitigation)
-- HybridCache and similar patterns should use a single-flight mechanism for concurrent requests to the same key
+- HybridCache (available in .NET 9+) and similar patterns should use a single-flight mechanism for concurrent requests to the same key
 
 ## Performance & Allocation (D5)
 
@@ -31,9 +31,8 @@ applyTo: "src/libraries/Microsoft.Extensions.Caching*/**"
 
 ## Thread Safety (D6)
 
-- `MemoryCache` and `HybridCache` are expected to be used concurrently — all access patterns must be thread-safe
+- `MemoryCache` and `HybridCache` (available in .NET 9+) are expected to be used concurrently — all access patterns must be thread-safe
 - Entry creation and eviction callbacks may execute on different threads — do not assume single-threaded access
-- Mutable shared state must be protected with appropriate synchronization
 
 ## Distributed vs In-Memory
 

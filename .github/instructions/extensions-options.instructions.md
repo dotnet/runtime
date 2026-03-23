@@ -4,7 +4,7 @@ applyTo: "src/libraries/Microsoft.Extensions.Options*/**"
 
 # Microsoft.Extensions.Options — Folder-Specific Guidance
 
-## Options Pattern Usage (D8, 1,274 votes)
+## Options Pattern Usage (D8)
 
 - `IOptions<T>` provides a singleton snapshot — use `IOptionsMonitor<T>` when configuration may change at runtime
 - `IOptionsSnapshot<T>` is scoped — do not inject it into singleton services (captive dependency)

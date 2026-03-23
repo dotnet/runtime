@@ -4,7 +4,7 @@ applyTo: "src/libraries/Microsoft.Extensions.DependencyInjection*/**"
 
 # Microsoft.Extensions.DependencyInjection — Folder-Specific Guidance
 
-## Service Lifetime Correctness (D7, 1,772 votes)
+## Service Lifetime Correctness (D7)
 
 - Use `TryAdd{Lifetime}` instead of `Add{Lifetime}` for default registrations to avoid overriding user-configured services
 - Scoped services must never be injected into singleton services (captive dependency) — the scoped service would live for the application lifetime
@@ -29,8 +29,6 @@ applyTo: "src/libraries/Microsoft.Extensions.DependencyInjection*/**"
 ## Thread Safety (D6)
 
 - Singleton services are accessed concurrently by default — all singleton implementations must be thread-safe
-- Mutable shared state must be protected with appropriate synchronization (lock, SemaphoreSlim, Interlocked)
-- Async synchronization must use SemaphoreSlim — do not use Monitor/lock with async code
 
 ## Trim & AOT (D14)
 
