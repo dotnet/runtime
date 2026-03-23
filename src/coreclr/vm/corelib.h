@@ -451,6 +451,7 @@ DEFINE_FIELD_U(_buckets, GCHandleSetObject, _buckets)
 
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(OBJCMARSHAL,    ObjectiveC, ObjectiveCMarshal)
+DEFINE_METHOD(OBJCMARSHAL,   THROW_PENDING_EXCEPTION_OBJECT,         ThrowPendingExceptionObject,            SM_RetVoid)
 DEFINE_METHOD(OBJCMARSHAL,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,    InvokeUnhandledExceptionPropagation,    SM_PtrException_IntPtr_PtrIntPtr_PtrException_RetVoidPtr)
 #endif // FEATURE_OBJCMARSHAL
 
