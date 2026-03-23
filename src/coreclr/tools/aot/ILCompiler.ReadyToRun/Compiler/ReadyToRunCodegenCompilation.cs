@@ -109,12 +109,6 @@ namespace ILCompiler
                 }
             }
 
-            // TODO: Enable async inlining. https://github.com/dotnet/runtime/issues/124665
-            if (callee.IsAsyncThunk() || callee.IsAsyncCall())
-            {
-                return false;
-            }
-
             _nodeFactory.DetectGenericCycles(caller, callee);
 
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
