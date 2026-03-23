@@ -6,7 +6,8 @@ description: >
   OS versions, checks for newer versions to add, and aligns release branch
   coverage with supported-os.json in dotnet/core.
   USE FOR: replacing EOL OS references, adding new OS version coverage,
-  periodic OS version audits, aligning release branches with supported-os.json.
+  periodic OS version audits, aligning release branches with supported-os.json,
+  updating helix and build queues to match supported OSes.
   DO NOT USE FOR: supported-os.json changes (use update-supported-os skill
   in dotnet/core), VM/hardware requests (file dnceng issues),
   container image creation (file issues at dotnet-buildtools-prereqs-docker).
