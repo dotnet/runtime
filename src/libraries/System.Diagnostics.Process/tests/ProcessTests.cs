@@ -248,28 +248,20 @@ namespace System.Diagnostics.Tests
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerStartedMessage, WaitInMS);
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerDisposedMessage, WaitInMS);
 
-                SendSignal(signal, remoteHandle.Process.Id);
-
-                bool expectEmptyStdout = true;
-
                 // https://github.com/dotnet/runtime/issues/125733
                 // Mono prints running threads stack trace listings and does not quit on receiving SIGQUIT
                 if (PlatformDetection.IsMonoRuntime && signal == PosixSignal.SIGQUIT && !PlatformDetection.IsWindows)
                 {
-                    // Quit it in alternative way
+                    // Terminate process using SIGTERM instead.
                     SendSignal(PosixSignal.SIGTERM, remoteHandle.Process.Id);
-
-                    // Do not check for empty stdout afterwards. Depending on how quick process was,
-                    // it may contains multiline thread stack traces listing from original SIGQUIT SendSignal.
-                    expectEmptyStdout = false;
+                }
+                else
+                {
+                    SendSignal(signal, remoteHandle.Process.Id);
                 }
 
                 Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
-
-                if (expectEmptyStdout)
-                {
-                    Assert.True(remoteHandle.Process.StandardOutput.EndOfStream);
-                }
+                Assert.True(remoteHandle.Process.StandardOutput.EndOfStream);
 
                 if (OperatingSystem.IsWindows())
                 {
