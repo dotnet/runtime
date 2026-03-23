@@ -123,7 +123,41 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         => _legacyModule is not null ? _legacyModule.EndEnumDataByName(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.GetName(uint bufLen, uint* nameLen, char* name)
-        => _legacyModule is not null ? _legacyModule.GetName(bufLen, nameLen, name) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(_address);
+            string result = loader.GetSimpleName(handle);
+
+            if (string.IsNullOrEmpty(result))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, result);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            char[] nameLocal = new char[bufLen];
+            uint nameLenLocal;
+            int hrLocal;
+            fixed (char* ptr = nameLocal)
+            {
+                hrLocal = _legacyModule.GetName(bufLen, &nameLenLocal, ptr);
+            }
+            Debug.ValidateHResult(hr, hrLocal);
+            Debug.Assert(nameLen == null || *nameLen == nameLenLocal);
+            Debug.Assert(name == null || new ReadOnlySpan<char>(nameLocal, 0, (int)nameLenLocal - 1).SequenceEqual(new string(name)));
+        }
+#endif
+        return hr;
+    }
     int IXCLRDataModule.GetFileName(uint bufLen, uint* nameLen, char* name)
     {
         try
