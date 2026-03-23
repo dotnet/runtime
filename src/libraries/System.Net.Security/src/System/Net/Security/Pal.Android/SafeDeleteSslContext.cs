@@ -210,34 +210,111 @@ namespace System.Net
 
         private static SafeSslHandle CreateSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
         {
-            if (authOptions.CertificateContext == null)
+            // targetHost is passed to the platform's DotnetProxyTrustManager for hostname-aware
+            // certificate validation. IP literals are excluded because SNIHostName doesn't accept them.
+            string? targetHost = !authOptions.IsServer
+                && !string.IsNullOrEmpty(authOptions.TargetHost)
+                && !IPAddress.IsValid(authOptions.TargetHost)
+                    ? authOptions.TargetHost
+                    : null;
+
+            // Custom trust roots are passed to the platform's TrustManagerFactory KeyStore.
+            // The platform's trust verdict is combined with managed validation to be more strict
+            // (see VerifyRemoteCertificate in SslStream.Android.cs).
+            IntPtr[]? trustCerts = GetTrustCertHandles(authOptions);
+            IntPtr keyManagers = authOptions.CertificateContext is not null
+                ? CreateKeyManagers(authOptions.CertificateContext)
+                : IntPtr.Zero;
+
+            try
             {
-                return Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy);
+                return Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy, targetHost, trustCerts, keyManagers);
+            }
+            finally
+            {
+                // keyManagers is a JNI global ref that was created to survive across
+                // P/Invoke boundaries. Release it now that SSLStreamCreate has consumed it.
+                if (keyManagers != IntPtr.Zero)
+                {
+                    Interop.JObjectLifetime.DeleteGlobalReference(keyManagers);
+                }
             }
 
-            SslStreamCertificateContext context = authOptions.CertificateContext;
-            X509Certificate2 cert = context.TargetCertificate;
-            Debug.Assert(context.TargetCertificate.HasPrivateKey);
-
-            if (Interop.AndroidCrypto.IsKeyStorePrivateKeyEntry(cert.Handle))
+            static IntPtr CreateKeyManagers(SslStreamCertificateContext context)
             {
-                return Interop.AndroidCrypto.SSLStreamCreateWithKeyStorePrivateKeyEntry(sslStreamProxy, cert.Handle);
+                X509Certificate2 cert = context.TargetCertificate;
+                Debug.Assert(cert.HasPrivateKey);
+
+                IntPtr keyManagers;
+                if (Interop.AndroidCrypto.IsKeyStorePrivateKeyEntry(cert.Handle))
+                {
+                    keyManagers = Interop.AndroidCrypto.SSLStreamCreateKeyManagersFromKeyStoreEntry(cert.Handle);
+                }
+                else
+                {
+                    PAL_KeyAlgorithm algorithm;
+                    byte[] keyBytes;
+                    using (AsymmetricAlgorithm key = GetPrivateKeyAlgorithm(cert, out algorithm))
+                    {
+                        keyBytes = key.ExportPkcs8PrivateKey();
+                    }
+                    IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Count + 1];
+                    ptrs[0] = cert.Handle;
+                    for (int i = 0; i < context.IntermediateCertificates.Count; i++)
+                    {
+                        ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
+                    }
+
+                    keyManagers = Interop.AndroidCrypto.SSLStreamCreateKeyManagers(keyBytes, algorithm, ptrs);
+                }
+
+                if (keyManagers == IntPtr.Zero)
+                {
+                    throw new Interop.AndroidCrypto.SslException();
+                }
+
+                return keyManagers;
             }
 
-            PAL_KeyAlgorithm algorithm;
-            byte[] keyBytes;
-            using (AsymmetricAlgorithm key = GetPrivateKeyAlgorithm(cert, out algorithm))
+            static IntPtr[]? GetTrustCertHandles(SslAuthenticationOptions authOptions)
             {
-                keyBytes = key.ExportPkcs8PrivateKey();
-            }
-            IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Count + 1];
-            ptrs[0] = cert.Handle;
-            for (int i = 0; i < context.IntermediateCertificates.Count; i++)
-            {
-                ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
-            }
+                // Collect custom trust root certificates to pass to the platform's
+                // TrustManagerFactory. There are two mutually exclusive sources — when
+                // CertificateChainPolicy is set it takes precedence (see SslStream.Protocol.cs):
+                //
+                // 1. CertificateChainPolicy.CustomTrustStore (when TrustMode is CustomRootTrust)
+                // 2. SslCertificateTrust (via CertificateContext.Trust) — older API
+                //
+                // Note: CertificateChainPolicy.ExtraStore intermediates are NOT passed to the
+                // platform because Java's KeyStore.setCertificateEntry would elevate them to
+                // trust anchors. When ExtraStore is populated, the managed chain builder is
+                // authoritative (see VerifyRemoteCertificate in SslStream.Android.cs).
+                X509Certificate2Collection? certs;
+                if (authOptions.CertificateChainPolicy is not null)
+                {
+                    certs = authOptions.CertificateChainPolicy.TrustMode == X509ChainTrustMode.CustomRootTrust
+                        ? authOptions.CertificateChainPolicy.CustomTrustStore
+                        : null;
+                }
+                else
+                {
+                    var trust = authOptions.CertificateContext?.Trust;
+                    certs = trust?._store?.Certificates ?? trust?._trustList;
+                }
 
-            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(sslStreamProxy, keyBytes, algorithm, ptrs);
+                if (certs is null || certs.Count == 0)
+                {
+                    return null;
+                }
+
+                IntPtr[] handles = new IntPtr[certs.Count];
+                for (int i = 0; i < certs.Count; i++)
+                {
+                    handles[i] = certs[i].Handle;
+                }
+
+                return handles;
+            }
         }
 
         private static AsymmetricAlgorithm GetPrivateKeyAlgorithm(X509Certificate2 cert, out PAL_KeyAlgorithm algorithm)
