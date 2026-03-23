@@ -364,23 +364,23 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
 
             // DocDB (Cosmos DB)
             Assert.Equal("AccountEndpoint=https://docdb1.documents.azure.com;AccountKey=key1;", envConfigSrc.Get("ConnectionStrings:docdb1"));
-            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:docdb1_ProviderName"));
+            Assert.Equal("Microsoft.Azure.Cosmos", envConfigSrc.Get("ConnectionStrings:docdb1_ProviderName"));
 
             // Event Hub
             Assert.Equal("Endpoint=sb://eventhub1.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=key1;", envConfigSrc.Get("ConnectionStrings:eventhub1"));
-            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:eventhub1_ProviderName"));
+            Assert.Equal("Azure.Messaging.EventHubs", envConfigSrc.Get("ConnectionStrings:eventhub1_ProviderName"));
 
             // Notification Hub
             Assert.Equal("Endpoint=sb://notification1.servicebus.windows.net/;SharedAccessKeyName=DefaultFullSharedAccessSignature;SharedAccessKey=key1;", envConfigSrc.Get("ConnectionStrings:notification1"));
-            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:notification1_ProviderName"));
+            Assert.Equal("Microsoft.Azure.NotificationHubs", envConfigSrc.Get("ConnectionStrings:notification1_ProviderName"));
 
             // Redis Cache
             Assert.Equal("redis1.redis.cache.windows.net:6380,password=key1,ssl=True,abortConnect=False", envConfigSrc.Get("ConnectionStrings:redis1"));
-            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:redis1_ProviderName"));
+            Assert.Equal("StackExchange.Redis", envConfigSrc.Get("ConnectionStrings:redis1_ProviderName"));
 
             // Service Bus
             Assert.Equal("Endpoint=sb://servicebus1.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=key1;", envConfigSrc.Get("ConnectionStrings:servicebus1"));
-            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:servicebus1_ProviderName"));
+            Assert.Equal("Azure.Messaging.ServiceBus", envConfigSrc.Get("ConnectionStrings:servicebus1_ProviderName"));
         }
     }
 }
