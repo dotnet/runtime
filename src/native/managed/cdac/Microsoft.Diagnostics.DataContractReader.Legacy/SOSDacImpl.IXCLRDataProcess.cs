@@ -481,15 +481,12 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.GetExceptionStateByExceptionRecord(EXCEPTION_RECORD64* record, DacComNullableByRef<IXCLRDataExceptionState> exState)
         => _legacyProcess is not null ? _legacyProcess.GetExceptionStateByExceptionRecord(record, exState) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.TranslateExceptionRecordToNotification(EXCEPTION_RECORD64* record, void* notify)
+    int IXCLRDataProcess.TranslateExceptionRecordToNotification(EXCEPTION_RECORD64* record, [MarshalUsing(typeof(UniqueComInterfaceMarshaller<IXCLRDataExceptionNotification>))] IXCLRDataExceptionNotification notify)
     {
         // Note: there is intentionally no DEBUG block calling the legacy implementation here.
         // TranslateExceptionRecordToNotification fires callbacks on the provided notify object;
         // calling both the cDAC and legacy implementations would double-fire every callback.
-        StrategyBasedComWrappers cw = new();
-        object notifyObject = cw.GetOrCreateObjectForComInstance(notify, CreateObjectFlags.UniqueInstance);
-        ComObject comObj = (ComObject)notifyObject;
-        IXCLRDataExceptionNotification notifyTyped = (IXCLRDataExceptionNotification)(object)comObj;
+        ComObject comObj = (ComObject)(object)notify;
 
         int hr = HResults.S_OK;
         try
@@ -518,7 +515,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                         legacyModule = legacyModuleOut.Interface;
                     }
 
-                    notifyTyped.OnModuleLoaded(new ClrDataModule(moduleAddress, _target, legacyModule));
+                    notify.OnModuleLoaded(new ClrDataModule(moduleAddress, _target, legacyModule));
                     break;
                 }
 
@@ -534,7 +531,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                         legacyModule = legacyModuleOut.Interface;
                     }
 
-                    notifyTyped.OnModuleUnloaded(new ClrDataModule(moduleAddress, _target, legacyModule));
+                    notify.OnModuleUnloaded(new ClrDataModule(moduleAddress, _target, legacyModule));
                     break;
                 }
 
@@ -549,8 +546,8 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                     MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescAddress);
 
                     ClrDataMethodInstance methodInst = new(_target, methodDesc, appDomain, null);
-                    notifyTyped.OnCodeGenerated(methodInst);
-                    if (notifyTyped is IXCLRDataExceptionNotification5 notify5)
+                    notify.OnCodeGenerated(methodInst);
+                    if (notify is IXCLRDataExceptionNotification5 notify5)
                     {
                         notify5.OnCodeGenerated2(methodInst, nativeCodeAddress.ToClrDataAddress(_target));
                     }
@@ -559,7 +556,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
                 case NotificationType.Exception:
                 {
-                    if (notifyTyped is IXCLRDataExceptionNotification2 notify2)
+                    if (notify is IXCLRDataExceptionNotification2 notify2)
                     {
                         notifications.ParseExceptionNotification(exInfo, out TargetPointer threadAddress);
                         IThread thread = _target.Contracts.Thread;
@@ -582,7 +579,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 {
                     if (notifications.ParseGCNotification(exInfo, out GcEventData gcEventData))
                     {
-                        if (notifyTyped is IXCLRDataExceptionNotification3 notify3)
+                        if (notify is IXCLRDataExceptionNotification3 notify3)
                         {
                             notify3.OnGcEvent(new GcEvtArgs
                             {
@@ -605,7 +602,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 {
                     notifications.ParseExceptionCatcherEnterNotification(exInfo, out TargetPointer methodDescAddress, out uint nativeOffset);
 
-                    if (notifyTyped is IXCLRDataExceptionNotification4 notify4)
+                    if (notify is IXCLRDataExceptionNotification4 notify4)
                     {
                         TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
                         TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
