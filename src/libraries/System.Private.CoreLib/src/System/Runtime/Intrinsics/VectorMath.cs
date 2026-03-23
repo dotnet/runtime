@@ -3049,5 +3049,1107 @@ namespace System.Runtime.Intrinsics
 
             return result;
         }
+
+        public static TVectorDouble AsinDouble<TVectorDouble, TVectorUInt64>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // This code is based on `asin` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // For abs(x) < 0.5 use arcsin(x) = x + x^3*R(x^2)
+            // where R(x^2) is a rational minimax approximation to (arcsin(x) - x)/x^3.
+            // For abs(x) >= 0.5 exploit the identity:
+            // arcsin(x) = pi/2 - 2*arcsin(sqrt(1-x)/2)
+            // together with the above rational approximation.
+
+            // Rational polynomial coefficients for numerator (from Sollya via AMD)
+            const double C1 = 0.227485835556935010735943483075;
+            const double C2 = -0.445017216867635649900123110649;
+            const double C3 = 0.275558175256937652532686256258;
+            const double C4 = -0.0549989809235685841612020091328;
+            const double C5 = 0.00109242697235074662306043804220;
+            const double C6 = 0.0000482901920344786991880522822991;
+
+            // Rational polynomial coefficients for denominator (from Sollya via AMD)
+            const double D1 = 1.36491501334161032038194214209;
+            const double D2 = -3.28431505720958658909889444194;
+            const double D3 = 2.76568859157270989520376345954;
+            const double D4 = -0.943639137032492685763471240072;
+            const double D5 = 0.105869422087204370341222318533;
+
+            // Constants for high-precision reconstruction
+            const double PIBY2_TAIL = 6.1232339957367660e-17;   // 0x3c91a62633145c07
+            const double HPIBY2_HEAD = 7.8539816339744831e-01;  // 0x3fe921fb54442d18
+            const double PIBY2 = 1.5707963267948965e+00;        // 0x3ff921fb54442d18
+
+            // Get sign and absolute value
+            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
+            TVectorDouble ax = TVectorDouble.Abs(x);
+
+            // Check for transform region (|x| >= 0.5)
+            TVectorDouble transformMask = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(0.5));
+
+            // For |x| >= 0.5: r = 0.5 * (1.0 - ax), s = sqrt(r)
+            // For |x| < 0.5:  r = ax * ax
+            TVectorDouble r = TVectorDouble.ConditionalSelect(transformMask, TVectorDouble.Create(0.5) * (TVectorDouble.One - ax), ax * ax);
+            TVectorDouble s = TVectorDouble.Sqrt(r);
+
+            // Evaluate numerator polynomial: C1 + r*(C2 + r*(C3 + r*(C4 + r*(C5 + r*C6))))
+            TVectorDouble poly_num = TVectorDouble.Create(C6);
+            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C5));
+            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C4));
+            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C3));
+            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C2));
+            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C1));
+
+            // Evaluate denominator polynomial: D1 + r*(D2 + r*(D3 + r*(D4 + r*D5)))
+            TVectorDouble poly_deno = TVectorDouble.Create(D5);
+            poly_deno = TVectorDouble.MultiplyAddEstimate(poly_deno, r, TVectorDouble.Create(D4));
+            poly_deno = TVectorDouble.MultiplyAddEstimate(poly_deno, r, TVectorDouble.Create(D3));
+            poly_deno = TVectorDouble.MultiplyAddEstimate(poly_deno, r, TVectorDouble.Create(D2));
+            poly_deno = TVectorDouble.MultiplyAddEstimate(poly_deno, r, TVectorDouble.Create(D1));
+
+            // u = r * poly_num / poly_deno
+            TVectorDouble u = r * poly_num / poly_deno;
+
+            // For transform region: reconstruct using high-low precision arithmetic
+            // s1 = high part of s (clear low 32 bits)
+            // c = (r - s1*s1) / (s + s1)
+            // p = 2*s*u - (PIBY2_TAIL - 2*c)
+            // q = HPIBY2_HEAD - 2*s1
+            // v_transform = HPIBY2_HEAD - (p - q)
+            TVectorDouble s1 = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(s) & TVectorUInt64.Create(0xFFFFFFFF00000000));
+            TVectorDouble c = (r - s1 * s1) / (s + s1);
+            TVectorDouble p = TVectorDouble.Create(2.0) * s * u - (TVectorDouble.Create(PIBY2_TAIL) - TVectorDouble.Create(2.0) * c);
+            TVectorDouble q = TVectorDouble.Create(HPIBY2_HEAD) - TVectorDouble.Create(2.0) * s1;
+            TVectorDouble v_transform = TVectorDouble.Create(HPIBY2_HEAD) - (p - q);
+
+            // For normal region: v = ax + ax*u
+            TVectorDouble v_normal = ax + ax * u;
+
+            // Select result based on transform
+            TVectorDouble v = TVectorDouble.ConditionalSelect(transformMask, v_transform, v_normal);
+
+            // Toggle sign (XOR preserves sign inversion from original AMD AOCL)
+            v ^= sign;
+
+            // Handle x = ±1 exactly: asin(±1) = ±π/2
+            TVectorDouble absXEqualsOne = TVectorDouble.Equals(TVectorDouble.Abs(x), TVectorDouble.One);
+            v = TVectorDouble.ConditionalSelect(absXEqualsOne, TVectorDouble.Create(PIBY2) ^ sign, v);
+
+            // Handle |x| > 1: returns NaN
+            TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(TVectorDouble.Abs(x), TVectorDouble.One);
+            v = TVectorDouble.ConditionalSelect(absXGreaterThanOne, TVectorDouble.Create(double.NaN), v);
+
+            return v;
+        }
+
+        public static TVectorSingle AsinSingle<TVectorSingle, TVectorInt32, TVectorDouble, TVectorInt64>(TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+        {
+            // This code is based on `asinf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            TVectorSingle sign = x & TVectorSingle.Create(-0.0f);
+            TVectorSingle ax = TVectorSingle.Abs(x);
+            TVectorSingle outOfRange = TVectorSingle.GreaterThan(ax, TVectorSingle.One);
+
+            TVectorSingle result;
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dax = Widen<TVectorSingle, TVectorDouble>(ax);
+                result = Narrow<TVectorDouble, TVectorSingle>(AsinSingleCoreDouble<TVectorDouble>(dax));
+            }
+            else
+            {
+                TVectorDouble daxLo = WidenLower<TVectorSingle, TVectorDouble>(ax);
+                TVectorDouble daxHi = WidenUpper<TVectorSingle, TVectorDouble>(ax);
+                result = Narrow<TVectorDouble, TVectorSingle>(
+                    AsinSingleCoreDouble<TVectorDouble>(daxLo),
+                    AsinSingleCoreDouble<TVectorDouble>(daxHi));
+            }
+
+            result ^= sign;
+            result = TVectorSingle.ConditionalSelect(outOfRange, TVectorSingle.Create(float.NaN), result);
+
+            return result;
+        }
+
+        private static TVectorDouble AsinSingleCoreDouble<TVectorDouble>(TVectorDouble ax)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // Polynomial coefficients from Sollya (AMD aocl-libm-ose asinf.c)
+            const double C1 = 0.1666666666666477;       // 0x1.55555555552aap-3
+            const double C2 = 0.0750000000041797;       // 0x1.333333337cbaep-4
+            const double C3 = 0.04464285678140856;      // 0x1.6db6db3c0984p-5
+            const double C4 = 0.03038196065035564;      // 0x1.f1c72dd86cbafp-6
+            const double C5 = 0.022371727970318958;     // 0x1.6e89d3ff33aa4p-6
+            const double C6 = 0.01736009463784135;      // 0x1.1c6d83ae664b6p-6
+            const double C7 = 0.013881842859634605;     // 0x1.c6e1568b90518p-7
+            const double C8 = 0.012189191110336799;     // 0x1.8f6a58977fe49p-7
+            const double C9 = 0.006449405266899452;     // 0x1.a6ab10b3321bp-8
+
+            const double PIBY2 = 1.5707963267948966;    // 0x1.921fb54442d18p0
+
+            TVectorDouble gtHalf = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(0.5));
+
+            TVectorDouble g = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(0.5) * (TVectorDouble.One - ax), ax * ax);
+            ax = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(g), ax);
+
+            TVectorDouble poly = TVectorDouble.Create(C9);
+            poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C8));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C7));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C6));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C5));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C4));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C3));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C2));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C1));
+
+            return ax + ax * g * poly + (TVectorDouble.Create(PIBY2) & gtHalf);
+        }
+
+        public static TVectorDouble AsinhDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // The AMD AOCL-LibM scalar asinh implementation (asinh.c) uses range-based
+            // polynomial lookup tables which cannot be trivially vectorized due to the cost
+            // of gather instructions. Instead, this uses the mathematical identity:
+            //   asinh(x) = sign(x) * log(|x| + sqrt(x^2 + 1))
+            // with special handling for tiny and large values for improved accuracy.
+
+            const double LN2 = 0.693147180559945309417;
+            const double TINY_THRESHOLD = 2.98023223876953125e-08; // 2^-25
+            const double LARGE_THRESHOLD = 268435456.0; // 2^28
+
+            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
+            TVectorDouble ax = TVectorDouble.Abs(x);
+
+            // For very small values, return x
+            TVectorDouble tinyMask = TVectorDouble.LessThanOrEqual(ax, TVectorDouble.Create(TINY_THRESHOLD));
+
+            // For large values (|x| > 2^28), use log(2) + log(|x|)
+            TVectorDouble largeMask = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(LARGE_THRESHOLD));
+
+            // Normal case: log(|x| + sqrt(x^2 + 1))
+            TVectorDouble x2 = ax * ax;
+            TVectorDouble sqrtArg = x2 + TVectorDouble.One;
+            TVectorDouble normal = LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(ax + TVectorDouble.Sqrt(sqrtArg));
+
+            // Large value case: log(2) + log(|x|)
+            TVectorDouble large = TVectorDouble.Create(LN2) + LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(ax);
+
+            // Select appropriate result based on magnitude
+            TVectorDouble result = TVectorDouble.ConditionalSelect(largeMask, large, normal);
+            result = TVectorDouble.ConditionalSelect(tinyMask, ax, result);
+
+            // Restore sign
+            result ^= sign;
+
+            return result;
+        }
+
+        public static TVectorSingle AsinhSingle<TVectorSingle, TVectorInt32, TVectorUInt32, TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
+            where TVectorUInt32 : unmanaged, ISimdVector<TVectorUInt32, uint>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // This code is based on `asinhf` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            TVectorSingle sign = x & TVectorSingle.Create(-0.0f);
+            TVectorSingle ax = TVectorSingle.Abs(x);
+            TVectorSingle tinyMask = TVectorSingle.LessThan(ax, TVectorSingle.Create(0.000244140625f)); // RTEPS = 2^-12
+
+            TVectorSingle result;
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dax = Widen<TVectorSingle, TVectorDouble>(ax);
+                result = Narrow<TVectorDouble, TVectorSingle>(
+                    AsinhSingleCoreDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dax));
+            }
+            else
+            {
+                TVectorDouble daxLo = WidenLower<TVectorSingle, TVectorDouble>(ax);
+                TVectorDouble daxHi = WidenUpper<TVectorSingle, TVectorDouble>(ax);
+                result = Narrow<TVectorDouble, TVectorSingle>(
+                    AsinhSingleCoreDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(daxLo),
+                    AsinhSingleCoreDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(daxHi));
+            }
+
+            result ^= sign;
+            result = TVectorSingle.ConditionalSelect(tinyMask, x, result);
+
+            return result;
+        }
+
+        private static TVectorDouble AsinhSingleCoreDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(
+            TVectorDouble absx)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // Polynomial A coefficients (for |x| <= 2.0) from Sollya (AMD asinhf.c)
+            const double A0 = -0.01152965835871758;     // -0x1.79cdc8cad8ecfp-7
+            const double A1 = -0.014802041864737584;    // -0x1.e50886dc8d955p-7
+            const double A2 = -0.005063201055468483;    // -0x1.4bd26af2415c3p-8
+            const double A3 = -0.00041627277105834253;  // -0x1.b47e5f01aed5dp-12
+            const double A4 = -1.1771989159549427e-06;  // -0x1.3c007e573c526p-20
+            const double A5 = 0.06917795026025977;      //  0x1.1b5a569f8dd8ap-4
+            const double A6 = 0.11994231760039391;      //  0x1.eb48a2b8008fbp-4
+            const double A7 = 0.06582362487198468;      //  0x1.0d9d12c211cd8p-4
+            const double A8 = 0.012600249786802279;     //  0x1.9ce28e60bc4f5p-7
+            const double A9 = 0.0006284381367285534;    //  0x1.497b89f55e0fap-11
+
+            // Polynomial B coefficients (for 2.0 < |x| <= 4.0) from Sollya (AMD asinhf.c)
+            const double B0 = -0.0018546229069557859;   // -0x1.e62da2ed59b74p-10
+            const double B1 = -0.0011367253350273402;   // -0x1.29fc588dcceedp-10
+            const double B2 = -0.0001422083873005704;   // -0x1.2a3b8becef9dbp-13
+            const double B3 = -3.3954601499308e-06;     // -0x1.c7bb1f54fd677p-19
+            const double B4 = -1.51054665394481e-09;    // -0x1.9f3745642df74p-30
+            const double B5 = 0.011148615858002477;     //  0x1.6d515e40bda61p-7
+            const double B6 = 0.011778243798043956;     //  0x1.81f311f55d6cfp-7
+            const double B7 = 0.0032590377353267485;    //  0x1.ab2b28fab47dcp-9
+            const double B8 = 0.00025590204992406544;   //  0x1.0c552ef7695ep-12
+            const double B9 = 4.341507869488909e-06;    //  0x1.235a8989d067ap-18
+
+            const double LN2 = 6.93147180559945286227e-01;
+            const double RECRTEPS = 4096.0;         // 1/sqrt(epsilon) ≈ 2^12
+
+            TVectorDouble t = absx * absx;
+
+            TVectorDouble x2 = absx * absx;
+            TVectorDouble x4 = x2 * x2;
+            TVectorDouble x6 = x4 * x2;
+            TVectorDouble x8 = x4 * x4;
+
+            // Polynomial A numerator: A0 + A1*x^2 + A2*x^4 + A3*x^6 + A4*x^8
+            TVectorDouble numA = TVectorDouble.Create(A0);
+            numA = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(A1), x2, numA);
+            numA = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(A2), x4, numA);
+            numA = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(A3), x6, numA);
+            numA = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(A4), x8, numA);
+
+            // Polynomial A denominator: A5 + A6*x^2 + A7*x^4 + A8*x^6 + A9*x^8
+            TVectorDouble denA = TVectorDouble.Create(A5);
+            denA = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(A6), x2, denA);
+            denA = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(A7), x4, denA);
+            denA = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(A8), x6, denA);
+            denA = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(A9), x8, denA);
+
+            TVectorDouble polyA = numA / denA;
+            TVectorDouble resultA = absx + absx * t * polyA;
+
+            // Polynomial B numerator
+            TVectorDouble numB = TVectorDouble.Create(B0);
+            numB = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(B1), x2, numB);
+            numB = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(B2), x4, numB);
+            numB = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(B3), x6, numB);
+            numB = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(B4), x8, numB);
+
+            // Polynomial B denominator
+            TVectorDouble denB = TVectorDouble.Create(B5);
+            denB = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(B6), x2, denB);
+            denB = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(B7), x4, denB);
+            denB = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(B8), x6, denB);
+            denB = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(B9), x8, denB);
+
+            TVectorDouble polyB = numB / denB;
+            TVectorDouble resultB = absx + absx * t * polyB;
+
+            // For |x| > 4.0: log(|x| + sqrt(x^2+1))
+            TVectorDouble sqrtArg = absx * absx + TVectorDouble.One;
+            TVectorDouble resultLog = LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(absx + TVectorDouble.Sqrt(sqrtArg));
+
+            // For |x| > 1/sqrt(eps): log(2) + log(|x|)
+            TVectorDouble resultLargeLog = TVectorDouble.Create(LN2) + LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(absx);
+
+            // Select based on ranges
+            TVectorDouble leTwo = TVectorDouble.LessThanOrEqual(absx, TVectorDouble.Create(2.0));
+            TVectorDouble leFour = TVectorDouble.LessThanOrEqual(absx, TVectorDouble.Create(4.0));
+            TVectorDouble leRecrteps = TVectorDouble.LessThanOrEqual(absx, TVectorDouble.Create(RECRTEPS));
+
+            TVectorDouble result = resultLargeLog;
+            result = TVectorDouble.ConditionalSelect(leRecrteps, resultLog, result);
+            result = TVectorDouble.ConditionalSelect(leFour, resultB, result);
+            result = TVectorDouble.ConditionalSelect(leTwo, resultA, result);
+
+            return result;
+        }
+
+        public static TVectorDouble AcoshDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // The AMD AOCL-LibM scalar acosh implementation (acosh.c) uses range-based
+            // polynomial lookup tables which cannot be trivially vectorized due to the cost
+            // of gather instructions. Instead, this uses the mathematical identity:
+            //   acosh(x) = log(x + sqrt(x^2 - 1))
+            // with special handling for x near 1 and large x for improved accuracy.
+
+            const double LN2 = 0.693147180559945309417;
+            const double NEAR_ONE_THRESHOLD = 1.0 + 2.98023223876953125e-08; // 1 + 2^-25
+            const double LARGE_THRESHOLD = 268435456.0; // 2^28
+
+            // Return NaN for x < 1
+            TVectorDouble nanMask = TVectorDouble.LessThan(x, TVectorDouble.One);
+
+            // For x close to 1 (1 < x <= 1 + 2^-25), use sqrt(2 * (x - 1))
+            TVectorDouble nearOneMask = TVectorDouble.LessThanOrEqual(x, TVectorDouble.Create(NEAR_ONE_THRESHOLD));
+
+            // For large values (x > 2^28), use log(2) + log(x)
+            TVectorDouble largeMask = TVectorDouble.GreaterThan(x, TVectorDouble.Create(LARGE_THRESHOLD));
+
+            // Normal case: log(x + sqrt(x^2 - 1))
+            TVectorDouble x2 = x * x;
+            TVectorDouble sqrtArg = x2 - TVectorDouble.One;
+            TVectorDouble normal = LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(x + TVectorDouble.Sqrt(sqrtArg));
+
+            // Large value case: log(2) + log(x)
+            TVectorDouble large = TVectorDouble.Create(LN2) + LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(x);
+
+            // Near one case: sqrt(2 * (x - 1))
+            TVectorDouble nearOne = TVectorDouble.Sqrt(TVectorDouble.Create(2.0) * (x - TVectorDouble.One));
+
+            // Select appropriate result based on magnitude
+            TVectorDouble result = TVectorDouble.ConditionalSelect(largeMask, large, normal);
+            result = TVectorDouble.ConditionalSelect(nearOneMask, nearOne, result);
+            result = TVectorDouble.ConditionalSelect(nanMask, TVectorDouble.Create(double.NaN), result);
+
+            return result;
+        }
+
+        public static TVectorSingle AcoshSingle<TVectorSingle, TVectorInt32, TVectorUInt32, TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
+            where TVectorUInt32 : unmanaged, ISimdVector<TVectorUInt32, uint>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // This code is based on `acoshf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // AMD acoshf.c uses mathematical identities (no polynomial approximation):
+            // For x > 1/sqrt(eps): acosh(x) = log(2) + log(x)
+            // For 2 < x <= 1/sqrt(eps): acosh(x) = log(x + sqrt(x^2 - 1))
+            // For sqrt(eps) <= x <= 2: t=x-1, acosh(x) = log1p(t + sqrt(2t + t^2))
+            // Widens to double for improved accuracy, matching AMD acoshf.c behavior.
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dx = Widen<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(AcoshDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dx));
+            }
+            else
+            {
+                TVectorDouble dxLo = WidenLower<TVectorSingle, TVectorDouble>(x);
+                TVectorDouble dxHi = WidenUpper<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(
+                    AcoshDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dxLo),
+                    AcoshDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dxHi)
+                );
+            }
+        }
+
+        public static TVectorDouble AtanhDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // This code is based on `atanh` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes (from atanh.c)
+            // ------------------------------------
+            // For |x| < 3.72e-9: atanh(x) = x (tiny approximation)
+            // For |x| < 0.5: atanh(x) = x + x^3 * P(x^2)/Q(x^2) using [5,5] minimax rational polynomial
+            // For |x| >= 0.5: atanh(x) = sign(x) * 0.5 * log1p(2|x|/(1-|x|))
+            // Special cases: atanh(±1) = ±∞, atanh(x) = NaN for |x| > 1
+
+            // [5,5] minimax rational polynomial coefficients from Sollya (atanh.c)
+            // Numerator: evaluated as A0 + A1*r + A2*r^2 + A3*r^3 + A4*r^4 + A5*r^5 where r = x^2
+            const double A0 = 4.74825735897473566460e-01;  // 0x1.e638b7bbea45ep-2
+            const double A1 = -1.10283567978463414860e+00; // -0x1.1a53706989746p0
+            const double A2 = 8.84681425365016482765e-01;  // 0x1.c4f4f6baa48ffp-1
+            const double A3 = -2.81802109617808160813e-01; // -0x1.2090bb7302592p-2
+            const double A4 = 2.87286386005485144812e-02;  // 0x1.d6b0a4cfde8fcp-6
+            const double A5 = -1.04681588927531371807e-04; // -0x1.b711000f5a53bp-14
+
+            // Denominator
+            const double B0 = 1.42447720769242058836e+00;  // 0x1.6caa89ccefb46p0
+            const double B1 = -4.16319336396935479883e+00; // -0x1.0a71c2944b0bfp2
+            const double B2 = 4.54147006260845120806e+00;  // 0x1.22a7720caaa5dp2
+            const double B3 = -2.26088837489884886267e+00; // -0x1.2164ca4f0c6f3p1
+            const double B4 = 4.95611965555031008801e-01;  // 0x1.fb81b3fe42b33p-2
+            const double B5 = -3.58615543701695377310e-02; // -0x1.25c7216683ecap-5
+
+            const double HALF = 0.5;
+            const double TINY_THRESHOLD = 3.72529029846191406250e-09; // 0x3e30000000000000 as double
+
+            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
+            TVectorDouble ax = TVectorDouble.Abs(x);
+
+            // Special cases
+            TVectorDouble nanMask = TVectorDouble.GreaterThan(ax, TVectorDouble.One);
+            TVectorDouble infMask = TVectorDouble.Equals(ax, TVectorDouble.One);
+            TVectorDouble tinyMask = TVectorDouble.LessThan(ax, TVectorDouble.Create(TINY_THRESHOLD));
+            TVectorDouble smallMask = TVectorDouble.LessThan(ax, TVectorDouble.Create(HALF));
+
+            // For |x| < 0.5: use [5,5] minimax rational polynomial
+            // atanh(x) = x + x^3 * P(x^2)/Q(x^2)
+            TVectorDouble r = x * x; // r = x^2
+
+            // Evaluate numerator: A0 + A1*r + A2*r^2 + A3*r^3 + A4*r^4 + A5*r^5
+            TVectorDouble num = TVectorDouble.Create(A5);
+            num = TVectorDouble.MultiplyAddEstimate(num, r, TVectorDouble.Create(A4));
+            num = TVectorDouble.MultiplyAddEstimate(num, r, TVectorDouble.Create(A3));
+            num = TVectorDouble.MultiplyAddEstimate(num, r, TVectorDouble.Create(A2));
+            num = TVectorDouble.MultiplyAddEstimate(num, r, TVectorDouble.Create(A1));
+            num = TVectorDouble.MultiplyAddEstimate(num, r, TVectorDouble.Create(A0));
+
+            // Evaluate denominator: B0 + B1*r + B2*r^2 + B3*r^3 + B4*r^4 + B5*r^5
+            TVectorDouble den = TVectorDouble.Create(B5);
+            den = TVectorDouble.MultiplyAddEstimate(den, r, TVectorDouble.Create(B4));
+            den = TVectorDouble.MultiplyAddEstimate(den, r, TVectorDouble.Create(B3));
+            den = TVectorDouble.MultiplyAddEstimate(den, r, TVectorDouble.Create(B2));
+            den = TVectorDouble.MultiplyAddEstimate(den, r, TVectorDouble.Create(B1));
+            den = TVectorDouble.MultiplyAddEstimate(den, r, TVectorDouble.Create(B0));
+
+            TVectorDouble poly = num / den;
+            TVectorDouble smallResult = x + (x * r) * poly;
+
+            // For |x| >= 0.5: atanh(x) = sign(x) * 0.5 * log((1 + |x|) / (1 - |x|))
+            TVectorDouble onePlusAx = TVectorDouble.One + ax;
+            TVectorDouble oneMinusAx = TVectorDouble.One - ax;
+            TVectorDouble largeResult = TVectorDouble.Create(HALF) * LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(onePlusAx / oneMinusAx);
+            largeResult |= sign; // restore sign
+
+            // Select based on magnitude
+            TVectorDouble result = TVectorDouble.ConditionalSelect(smallMask, smallResult, largeResult);
+            result = TVectorDouble.ConditionalSelect(tinyMask, x, result);
+            result = TVectorDouble.ConditionalSelect(infMask, TVectorDouble.Create(double.PositiveInfinity) ^ sign, result);
+            result = TVectorDouble.ConditionalSelect(nanMask, TVectorDouble.Create(double.NaN), result);
+
+            return result;
+        }
+
+        public static TVectorSingle AtanhSingle<TVectorSingle, TVectorInt32, TVectorUInt32, TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
+            where TVectorUInt32 : unmanaged, ISimdVector<TVectorUInt32, uint>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // This code is based on `atanhf` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            TVectorSingle sign = x & TVectorSingle.Create(-0.0f);
+            TVectorSingle ax = TVectorSingle.Abs(x);
+            TVectorSingle nanMask = TVectorSingle.GreaterThan(ax, TVectorSingle.One);
+            TVectorSingle infMask = TVectorSingle.Equals(ax, TVectorSingle.One);
+            TVectorSingle tinyMask = TVectorSingle.LessThan(ax, TVectorSingle.Create(1.220703125e-4f)); // 0x39000000
+
+            TVectorSingle result;
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dax = Widen<TVectorSingle, TVectorDouble>(ax);
+                result = Narrow<TVectorDouble, TVectorSingle>(
+                    AtanhSingleCoreDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(dax));
+            }
+            else
+            {
+                TVectorDouble daxLo = WidenLower<TVectorSingle, TVectorDouble>(ax);
+                TVectorDouble daxHi = WidenUpper<TVectorSingle, TVectorDouble>(ax);
+                result = Narrow<TVectorDouble, TVectorSingle>(
+                    AtanhSingleCoreDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(daxLo),
+                    AtanhSingleCoreDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(daxHi));
+            }
+
+            result ^= sign;
+            result = TVectorSingle.ConditionalSelect(tinyMask, x, result);
+            result = TVectorSingle.ConditionalSelect(infMask, TVectorSingle.Create(float.PositiveInfinity) ^ sign, result);
+            result = TVectorSingle.ConditionalSelect(nanMask, TVectorSingle.Create(float.NaN), result);
+
+            return result;
+        }
+
+        private static TVectorDouble AtanhSingleCoreDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(
+            TVectorDouble ax)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // [2,2] minimax rational polynomial coefficients from Sollya (AMD atanhf.c)
+            const double A0 = 0.3945362865924835;       // 0x1.940152p-2
+            const double A1 = -0.2812034785747528;      // -0x1.1ff3cep-2
+            const double A2 = 0.00928342156112194;      // 0x1.3032fcp-7
+            const double A3 = 1.183608889579773;        // 0x1.2f00fep0
+            const double A4 = -1.5537744760513306;      // -0x1.8dc42ap0
+            const double A5 = 0.452818900346756;        // 0x1.cfafc2p-2
+
+            TVectorDouble smallMask = TVectorDouble.LessThan(ax, TVectorDouble.Create(0.5));
+
+            // For |x| < 0.5: POLY_EVAL_EVEN_4(x, A0, A1, A2) / POLY_EVAL_EVEN_4(x, A3, A4, A5)
+            TVectorDouble x2 = ax * ax;
+            TVectorDouble x4 = x2 * x2;
+
+            TVectorDouble num = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(A2), x4,
+                TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(A1), x2, TVectorDouble.Create(A0)));
+            TVectorDouble den = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(A5), x4,
+                TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(A4), x2, TVectorDouble.Create(A3)));
+
+            TVectorDouble poly = num / den;
+            TVectorDouble t = ax * x2;
+            TVectorDouble smallResult = ax + t * poly;
+
+            // For |x| >= 0.5: atanh(x) = 0.5 * log1p(2|x|/(1-|x|))
+            TVectorDouble r_pos = (TVectorDouble.Create(2.0) * ax) / (TVectorDouble.One - ax);
+            TVectorDouble largeResult = TVectorDouble.Create(0.5) * LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble.One + r_pos);
+
+            return TVectorDouble.ConditionalSelect(smallMask, smallResult, largeResult);
+        }
+
+        public static TVectorDouble AcosDouble<TVectorDouble>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // This code is based on `acos` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // Based on the value of x, acos(x) is calculated as:
+            // 1. If x > 0.5:  acos(x) = 2 * asin(sqrt((1 - x) / 2))
+            // 2. If x < -0.5: acos(x) = pi - 2*asin(sqrt((1 + x) / 2))
+            // 3. If |x| <= 0.5: acos(x) = pi/2 - asin(x)
+
+            // Polynomial coefficients from Sollya (AMD aocl-libm-ose acos.c)
+            const double C1 = 0.166666666666654;      // 0x1.55555555552aap-3
+            const double C2 = 0.0750000000006397;     // 0x1.333333337cbaep-4
+            const double C3 = 0.0446428571088065;     // 0x1.6db6db3c0984p-5
+            const double C4 = 0.0303819469180048;     // 0x1.f1c72dd86cbafp-6
+            const double C5 = 0.0223717830326408;     // 0x1.6e89d3ff33aa4p-6
+            const double C6 = 0.0173549783672646;     // 0x1.1c6d83ae664b6p-6
+            const double C7 = 0.0138887093438824;     // 0x1.c6e1568b90518p-7
+            const double C8 = 0.0121483872130308;     // 0x1.8f6a58977fe49p-7
+            const double C9 = 0.00640855516049134;    // 0x1.a6ab10b3321bp-8
+            const double C10 = 0.0197639134991274;    // 0x1.43305ebb2428fp-6
+            const double C11 = -0.0164975096950116;   // -0x1.0e874ec5e3157p-6
+            const double C12 = 0.0319093993379205;    // 0x1.06eec35b3b142p-5
+
+            const double PI = 3.1415926535897933e+00;
+            const double HALF = 0.5;
+
+            // Constants for reconstruction (a[0], a[1], b[0], b[1])
+            const double A0 = 0.0;
+            const double A1 = 0.7853981633974483;     // pi/4
+            const double B0 = 1.5707963267948966;     // pi/2
+            const double B1 = 0.7853981633974483;     // pi/4
+
+            // Get sign and absolute value of x
+            TVectorDouble xneg = TVectorDouble.LessThan(x, TVectorDouble.Zero);
+            TVectorDouble ax = TVectorDouble.Abs(x);
+
+            // Check which region we're in
+            TVectorDouble gtHalf = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(HALF));
+
+            // For |x| >= 0.5: z = 0.5*(1-ax), ax = -2*sqrt(z)
+            // For |x| < 0.5:  z = ax*ax, ax unchanged
+            TVectorDouble z = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(HALF) * (TVectorDouble.One - ax), ax * ax);
+            ax = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z), ax);
+
+            // Polynomial: C1 + z*(C2 + z*(C3 + ... + z*C12))
+            TVectorDouble poly = TVectorDouble.Create(C12);
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C11));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C10));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C9));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C8));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C7));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C6));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C5));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C4));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C3));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C2));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C1));
+
+            // poly = ax + ax * z * poly
+            poly = ax + ax * z * poly;
+
+            // Reconstruct result based on sign and region
+            // if (xneg): result = (B[n] + poly) + B[n]
+            // else:      result = (A[n] - poly) + A[n]
+            // where n=0 if ax > 0.5, n=1 if ax <= 0.5
+
+            // For n=0 (|x| > 0.5): A[0]=0, B[0]=pi/2
+            // For n=1 (|x| <= 0.5): A[1]=pi/4, B[1]=pi/4
+
+            TVectorDouble a = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(A0), TVectorDouble.Create(A1));
+            TVectorDouble b = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(B0), TVectorDouble.Create(B1));
+
+            TVectorDouble result_neg = (b + poly) + b;
+            TVectorDouble result_pos = (a - poly) + a;
+
+            TVectorDouble result = TVectorDouble.ConditionalSelect(xneg, result_neg, result_pos);
+
+            // Handle special cases: |x| > 1 returns NaN, x = ±1 returns 0 or π
+            TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(TVectorDouble.Abs(x), TVectorDouble.One);
+            result = TVectorDouble.ConditionalSelect(absXGreaterThanOne, TVectorDouble.Create(double.NaN), result);
+
+            TVectorDouble xEqualsOne = TVectorDouble.Equals(x, TVectorDouble.One);
+            result = TVectorDouble.ConditionalSelect(xEqualsOne, TVectorDouble.Zero, result);
+
+            TVectorDouble xEqualsNegOne = TVectorDouble.Equals(x, TVectorDouble.Create(-1.0));
+            result = TVectorDouble.ConditionalSelect(xEqualsNegOne, TVectorDouble.Create(PI), result);
+
+            return result;
+        }
+
+        public static TVectorSingle AcosSingle<TVectorSingle, TVectorInt32, TVectorDouble, TVectorInt64>(TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+        {
+            // This code is based on `acosf` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2023 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            TVectorSingle outOfRange = TVectorSingle.GreaterThan(TVectorSingle.Abs(x), TVectorSingle.One);
+            TVectorSingle xEqualsOne = TVectorSingle.Equals(x, TVectorSingle.One);
+            TVectorSingle xEqualsNegOne = TVectorSingle.Equals(x, TVectorSingle.Create(-1.0f));
+
+            TVectorSingle result;
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dx = Widen<TVectorSingle, TVectorDouble>(x);
+                result = Narrow<TVectorDouble, TVectorSingle>(AcosSingleCoreDouble<TVectorDouble>(dx));
+            }
+            else
+            {
+                TVectorDouble dxLo = WidenLower<TVectorSingle, TVectorDouble>(x);
+                TVectorDouble dxHi = WidenUpper<TVectorSingle, TVectorDouble>(x);
+                result = Narrow<TVectorDouble, TVectorSingle>(
+                    AcosSingleCoreDouble<TVectorDouble>(dxLo),
+                    AcosSingleCoreDouble<TVectorDouble>(dxHi));
+            }
+
+            result = TVectorSingle.ConditionalSelect(outOfRange, TVectorSingle.Create(float.NaN), result);
+            result = TVectorSingle.ConditionalSelect(xEqualsOne, TVectorSingle.Zero, result);
+            result = TVectorSingle.ConditionalSelect(xEqualsNegOne, TVectorSingle.Create(3.1415927f), result);
+
+            return result;
+        }
+
+        private static TVectorDouble AcosSingleCoreDouble<TVectorDouble>(TVectorDouble dx)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // Polynomial coefficients from acosf.c
+            const double C1 = 0.1666679084300995;       // 0x1.5555fcp-3
+            const double C2 = 0.07494434714317322;      // 0x1.32f8d8p-4
+            const double C3 = 0.045550186187028885;     // 0x1.7525aap-5
+            const double C4 = 0.023858169093728065;     // 0x1.86e46ap-6
+            const double C5 = 0.04263564199209213;      // 0x1.5d456cp-5
+
+            // Reconstruction constants
+            const double A0 = 0.0;
+            const double A1 = 0.7853981852531433;       // 0x1.921fb6p-1 (pi/4 in float precision)
+            const double B0 = 1.5707963705062866;       // 0x1.921fb6p0  (pi/2 in float precision)
+            const double B1 = 0.7853981852531433;       // 0x1.921fb6p-1 (pi/4 in float precision)
+
+            TVectorDouble xneg = TVectorDouble.LessThan(dx, TVectorDouble.Zero);
+            TVectorDouble ax = TVectorDouble.Abs(dx);
+
+            TVectorDouble gtHalf = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(0.5));
+
+            TVectorDouble z = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(0.5) * (TVectorDouble.One - ax), ax * ax);
+            ax = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z), ax);
+
+            TVectorDouble poly = TVectorDouble.Create(C5);
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C4));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C3));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C2));
+            poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C1));
+
+            poly = ax + ax * z * poly;
+
+            TVectorDouble a = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(A0), TVectorDouble.Create(A1));
+            TVectorDouble b = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(B0), TVectorDouble.Create(B1));
+
+            TVectorDouble result_neg = (b + poly) + b;
+            TVectorDouble result_pos = (a - poly) + a;
+
+            return TVectorDouble.ConditionalSelect(xneg, result_neg, result_pos);
+        }
+
+        public static TVectorDouble AtanDouble<TVectorDouble>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // This code is based on `atan` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2023 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // Argument reduction to range [-7/16,7/16]
+            // Use the following identities:
+            // atan(x) = pi/2 - atan(1/x)                when x > 39/16
+            //         = pi/3 + atan((x-1.5)/(1+1.5*x))  when 19/16 < x <= 39/16
+            //         = pi/4 + atan((x-1)/(1+x))        when 11/16 < x <= 19/16
+            //         = pi/6 + atan((2x-1)/(2+x))       when 7/16 < x <= 11/16
+            //         = atan(x)                         when x <= 7/16
+            //
+            // Core approximation: Remez(4,4) on [-7/16,7/16]
+
+            // Range boundaries
+            const double R7_16 = 0.4375;    // 7/16
+            const double R11_16 = 0.6875;   // 11/16
+            const double R19_16 = 1.1875;   // 19/16
+            const double R39_16 = 2.4375;   // 39/16
+
+            // (chi, clo) pairs for high-precision addition
+            const double CHI_0 = 0.0;
+            const double CLO_0 = 0.0;
+            const double CHI_HALF = 4.63647609000806093515e-01;  // arctan(0.5)
+            const double CLO_HALF = 2.26987774529616809294e-17;
+            const double CHI_1 = 7.85398163397448278999e-01;     // arctan(1.0) = pi/4
+            const double CLO_1 = 3.06161699786838240164e-17;
+            const double CHI_1_5 = 9.82793723247329054082e-01;   // arctan(1.5)
+            const double CLO_1_5 = 1.39033110312309953701e-17;
+            const double CHI_INF = 1.57079632679489655800e+00;   // arctan(inf) = pi/2
+            const double CLO_INF = 6.12323399573676480327e-17;
+
+            // Remez(4,4) polynomial coefficients for numerator
+            const double P0 = 0.268297920532545909e0;
+            const double P1 = 0.447677206805497472e0;
+            const double P2 = 0.220638780716667420e0;
+            const double P3 = 0.304455919504853031e-1;
+            const double P4 = 0.142316903342317766e-3;
+
+            // Remez(4,4) polynomial coefficients for denominator
+            const double Q0 = 0.804893761597637733e0;
+            const double Q1 = 0.182596787737507063e1;
+            const double Q2 = 0.141254259931958921e1;
+            const double Q3 = 0.424602594203847109e0;
+            const double Q4 = 0.389525873944742195e-1;
+
+            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
+            TVectorDouble v = TVectorDouble.Abs(x);
+
+            // Determine which region each element falls into
+            TVectorDouble gtR39_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R39_16));
+            TVectorDouble gtR19_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R19_16));
+            TVectorDouble gtR11_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R11_16));
+            TVectorDouble gtR7_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R7_16));
+
+            // Compute reduced argument for each region
+
+            // Region 5: x > 39/16: reduced = -1/v
+            TVectorDouble reduced5 = -TVectorDouble.One / v;
+
+            // Region 4: 19/16 < x <= 39/16: reduced = (v-1.5)/(1+1.5*v)
+            TVectorDouble reduced4 = (v - TVectorDouble.Create(1.5)) / (TVectorDouble.One + TVectorDouble.Create(1.5) * v);
+
+            // Region 3: 11/16 < x <= 19/16: reduced = (v-1)/(1+v)
+            TVectorDouble reduced3 = (v - TVectorDouble.One) / (TVectorDouble.One + v);
+
+            // Region 2: 7/16 < x <= 11/16: reduced = (2*v-1)/(2+v)
+            TVectorDouble reduced2 = (TVectorDouble.Create(2.0) * v - TVectorDouble.One) / (TVectorDouble.Create(2.0) + v);
+
+            // Region 1: x <= 7/16: reduced = v
+            TVectorDouble reduced1 = v;
+
+            // Select reduced argument
+            TVectorDouble reduced = TVectorDouble.ConditionalSelect(gtR39_16, reduced5,
+                                    TVectorDouble.ConditionalSelect(gtR19_16, reduced4,
+                                    TVectorDouble.ConditionalSelect(gtR11_16, reduced3,
+                                    TVectorDouble.ConditionalSelect(gtR7_16, reduced2, reduced1))));
+
+            // Select chi (high part of constant)
+            TVectorDouble chi = TVectorDouble.ConditionalSelect(gtR39_16, TVectorDouble.Create(CHI_INF),
+                               TVectorDouble.ConditionalSelect(gtR19_16, TVectorDouble.Create(CHI_1_5),
+                               TVectorDouble.ConditionalSelect(gtR11_16, TVectorDouble.Create(CHI_1),
+                               TVectorDouble.ConditionalSelect(gtR7_16, TVectorDouble.Create(CHI_HALF), TVectorDouble.Create(CHI_0)))));
+
+            // Select clo (low part of constant)
+            TVectorDouble clo = TVectorDouble.ConditionalSelect(gtR39_16, TVectorDouble.Create(CLO_INF),
+                               TVectorDouble.ConditionalSelect(gtR19_16, TVectorDouble.Create(CLO_1_5),
+                               TVectorDouble.ConditionalSelect(gtR11_16, TVectorDouble.Create(CLO_1),
+                               TVectorDouble.ConditionalSelect(gtR7_16, TVectorDouble.Create(CLO_HALF), TVectorDouble.Create(CLO_0)))));
+
+            // Compute s = reduced^2
+            TVectorDouble s = reduced * reduced;
+
+            // Evaluate numerator polynomial: P0 + s*(P1 + s*(P2 + s*(P3 + s*P4)))
+            TVectorDouble num = TVectorDouble.Create(P4);
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(P3));
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(P2));
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(P1));
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(P0));
+
+            // Evaluate denominator polynomial: Q0 + s*(Q1 + s*(Q2 + s*(Q3 + s*Q4)))
+            TVectorDouble denom = TVectorDouble.Create(Q4);
+            denom = TVectorDouble.MultiplyAddEstimate(denom, s, TVectorDouble.Create(Q3));
+            denom = TVectorDouble.MultiplyAddEstimate(denom, s, TVectorDouble.Create(Q2));
+            denom = TVectorDouble.MultiplyAddEstimate(denom, s, TVectorDouble.Create(Q1));
+            denom = TVectorDouble.MultiplyAddEstimate(denom, s, TVectorDouble.Create(Q0));
+
+            // q = reduced * s * num / denom
+            TVectorDouble q = reduced * s * num / denom;
+
+            // result = chi - ((q - clo) - reduced)
+            TVectorDouble result = chi - ((q - clo) - reduced);
+
+            // Restore sign
+            result ^= sign;
+
+            return result;
+        }
+
+        public static TVectorSingle AtanSingle<TVectorSingle, TVectorInt32, TVectorDouble, TVectorInt64>(TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
+        {
+            // This code is based on `atanf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            TVectorSingle nanMask = ~TVectorSingle.Equals(x, x);
+            TVectorSingle sign = x & TVectorSingle.Create(-0.0f);
+            TVectorSingle ax = TVectorSingle.Abs(x);
+            TVectorSingle tinyMask = TVectorSingle.LessThan(ax, TVectorSingle.Create(1.9073486328125e-06f));  // 2^-19
+            TVectorSingle overflowMask = TVectorSingle.GreaterThanOrEqual(ax, TVectorSingle.Create(67108864.0f)); // 2^26
+
+            TVectorSingle result;
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dax = Widen<TVectorSingle, TVectorDouble>(ax);
+                result = Narrow<TVectorDouble, TVectorSingle>(AtanSingleCoreDouble<TVectorDouble>(dax));
+            }
+            else
+            {
+                TVectorDouble daxLo = WidenLower<TVectorSingle, TVectorDouble>(ax);
+                TVectorDouble daxHi = WidenUpper<TVectorSingle, TVectorDouble>(ax);
+                result = Narrow<TVectorDouble, TVectorSingle>(
+                    AtanSingleCoreDouble<TVectorDouble>(daxLo),
+                    AtanSingleCoreDouble<TVectorDouble>(daxHi));
+            }
+
+            result ^= sign;
+            result = TVectorSingle.ConditionalSelect(tinyMask, x, result);
+            result = TVectorSingle.ConditionalSelect(overflowMask & ~nanMask, TVectorSingle.Create(1.5707964f) ^ sign, result);
+            result = TVectorSingle.ConditionalSelect(nanMask, TVectorSingle.Create(float.NaN), result);
+
+            return result;
+        }
+
+        private static TVectorDouble AtanSingleCoreDouble<TVectorDouble>(TVectorDouble ax)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // Rational polynomial coefficients for Remez(2,2) (AMD atanf.c)
+            const double C0 = 0.296528598819239217902158651186e0;
+            const double C1 = 0.192324546402108583211697690500e0;
+            const double C2 = 0.470677934286149214138357545549e-2;
+            const double C3 = 0.889585796862432286486651434570e0;
+            const double C4 = 0.111072499995399550138837673349e1;
+            const double C5 = 0.299309699959659728404442796915e0;
+
+            // Argument reduction boundary constants
+            const double R7_16 = 0.4375;               // 7/16
+            const double R11_16 = 0.6875;               // 11/16
+            const double R19_16 = 1.1875;               // 19/16
+            const double R39_16 = 2.4375;               // 39/16
+
+            // Precomputed arctan values for reduction points
+            const double VALUE0 = 0.0;                                     // atan(0)
+            const double VALUE1 = 4.63647609000806093515e-01;              // atan(0.5)
+            const double VALUE2 = 7.85398163397448278999e-01;              // atan(1)
+            const double VALUE3 = 9.82793723247329054082e-01;              // atan(1.5)
+
+            TVectorDouble r1 = TVectorDouble.LessThan(ax, TVectorDouble.Create(R7_16));
+            TVectorDouble r2 = TVectorDouble.LessThan(ax, TVectorDouble.Create(R11_16));
+            TVectorDouble r3 = TVectorDouble.LessThan(ax, TVectorDouble.Create(R19_16));
+            TVectorDouble r4 = TVectorDouble.LessThan(ax, TVectorDouble.Create(R39_16));
+
+            // Start with region 5 (largest range) and work backwards
+            TVectorDouble reduced = -TVectorDouble.One / ax;
+            TVectorDouble c = TVectorDouble.Create(1.57079632679489655800e+00); // pi/2
+
+            TVectorDouble x4 = (ax - TVectorDouble.Create(1.5)) / (TVectorDouble.One + TVectorDouble.Create(1.5) * ax);
+            reduced = TVectorDouble.ConditionalSelect(r4, x4, reduced);
+            c = TVectorDouble.ConditionalSelect(r4, TVectorDouble.Create(VALUE3), c);
+
+            TVectorDouble x3 = (ax - TVectorDouble.One) / (TVectorDouble.One + ax);
+            reduced = TVectorDouble.ConditionalSelect(r3, x3, reduced);
+            c = TVectorDouble.ConditionalSelect(r3, TVectorDouble.Create(VALUE2), c);
+
+            TVectorDouble x2 = (TVectorDouble.Create(2.0) * ax - TVectorDouble.One) / (TVectorDouble.Create(2.0) + ax);
+            reduced = TVectorDouble.ConditionalSelect(r2, x2, reduced);
+            c = TVectorDouble.ConditionalSelect(r2, TVectorDouble.Create(VALUE1), c);
+
+            reduced = TVectorDouble.ConditionalSelect(r1, ax, reduced);
+            c = TVectorDouble.ConditionalSelect(r1, TVectorDouble.Create(VALUE0), c);
+
+            TVectorDouble s = reduced * reduced;
+
+            TVectorDouble num = TVectorDouble.Create(C2);
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(C1));
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(C0));
+
+            TVectorDouble den = TVectorDouble.Create(C5);
+            den = TVectorDouble.MultiplyAddEstimate(den, s, TVectorDouble.Create(C4));
+            den = TVectorDouble.MultiplyAddEstimate(den, s, TVectorDouble.Create(C3));
+
+            TVectorDouble p = reduced * s * num / den;
+
+            return c - (p - reduced);
+        }
+
+        public static TVectorDouble Atan2Double<TVectorDouble>(TVectorDouble y, TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // The AMD AOCL-LibM scalar atan2 implementation (atan2.c) uses a lookup table
+            // (ATAN_TABLE with 241 entries) which cannot be trivially vectorized due to the
+            // cost of gather instructions. Instead, this computes atan2(y,x) using the
+            // already-vectorized AtanDouble implementation with quadrant adjustments.
+            // - atan2(±∞, +∞) = ±pi/4
+            // - atan2(±∞, -∞) = ±3pi/4
+            // - atan2(±y, +∞) = ±0
+            // - atan2(±y, -∞) = ±pi
+
+            const double PI = 3.141592653589793;           // 0x1.921fb54442d18p1
+
+            // Check for x being negative using standard comparison
+            TVectorDouble xLessThanZero = TVectorDouble.LessThan(x, TVectorDouble.Zero);
+
+            // For signed zero handling: check if x is -0 specifically
+            // We detect -0 by checking: x == 0 AND 1/x < 0 (since 1/-0 = -∞)
+            TVectorDouble xIsZero = TVectorDouble.Equals(x, TVectorDouble.Zero);
+            TVectorDouble recipX = TVectorDouble.One / x;
+            TVectorDouble recipXNegative = TVectorDouble.LessThan(recipX, TVectorDouble.Zero);
+            TVectorDouble xIsNegativeOrNegZero = xLessThanZero | (xIsZero & recipXNegative);
+
+            // Check for y sign using same technique
+            TVectorDouble yLessThanZero = TVectorDouble.LessThan(y, TVectorDouble.Zero);
+            TVectorDouble yIsZero = TVectorDouble.Equals(y, TVectorDouble.Zero);
+            TVectorDouble recipY = TVectorDouble.One / y;
+            TVectorDouble recipYNegative = TVectorDouble.LessThan(recipY, TVectorDouble.Zero);
+            TVectorDouble yIsNegativeOrNegZero = yLessThanZero | (yIsZero & recipYNegative);
+
+            // Compute atan(y/x) for the general case
+            TVectorDouble ratio = y / x;
+            TVectorDouble atanResult = AtanDouble<TVectorDouble>(ratio);
+
+            // For x < 0 (or x = -0), we need to adjust by ±π
+            TVectorDouble piAdjust = TVectorDouble.ConditionalSelect(
+                yIsNegativeOrNegZero,
+                TVectorDouble.Create(-PI),
+                TVectorDouble.Create(PI)
+            );
+
+            // Apply pi adjustment when x is negative (or -0)
+            TVectorDouble result = TVectorDouble.ConditionalSelect(
+                xIsNegativeOrNegZero,
+                atanResult + piAdjust,
+                atanResult
+            );
+
+            // Special case: when both y = ±0 and x = ±0
+            // atan2(±0, +0) = ±0
+            // atan2(±0, -0) = ±π
+            TVectorDouble zeroResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, TVectorDouble.Create(-0.0), TVectorDouble.Zero);
+            TVectorDouble piResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, TVectorDouble.Create(-PI), TVectorDouble.Create(PI));
+
+            TVectorDouble bothZero = xIsZero & yIsZero;
+            TVectorDouble zeroXResult = TVectorDouble.ConditionalSelect(xIsNegativeOrNegZero, piResult, zeroResult);
+            result = TVectorDouble.ConditionalSelect(bothZero, zeroXResult, result);
+
+            // Special case: when both x and y are infinite
+            // atan2(±∞, +∞) = ±π/4
+            // atan2(±∞, -∞) = ±3π/4
+            const double PI_OVER_4 = 0.78539816339744830961;   // 0x1.921fb54442d18p-1
+            const double THREE_PI_OVER_4 = 2.3561944901923449; // 0x1.2d97c7f3321d2p+1
+            TVectorDouble xIsInf = TVectorDouble.Equals(TVectorDouble.Abs(x), TVectorDouble.Create(double.PositiveInfinity));
+            TVectorDouble yIsInf = TVectorDouble.Equals(TVectorDouble.Abs(y), TVectorDouble.Create(double.PositiveInfinity));
+            TVectorDouble bothInf = xIsInf & yIsInf;
+            TVectorDouble infBaseAngle = TVectorDouble.ConditionalSelect(xIsNegativeOrNegZero, TVectorDouble.Create(THREE_PI_OVER_4), TVectorDouble.Create(PI_OVER_4));
+            TVectorDouble infResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, -infBaseAngle, infBaseAngle);
+            result = TVectorDouble.ConditionalSelect(bothInf, infResult, result);
+
+            return result;
+        }
+
+        public static TVectorSingle Atan2Single<TVectorSingle, TVectorDouble>(TVectorSingle y, TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // Widens to double and calls Atan2Double for improved accuracy.
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dy = Widen<TVectorSingle, TVectorDouble>(y);
+                TVectorDouble dx = Widen<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(Atan2Double<TVectorDouble>(dy, dx));
+            }
+            else
+            {
+                TVectorDouble dyLo = WidenLower<TVectorSingle, TVectorDouble>(y);
+                TVectorDouble dyHi = WidenUpper<TVectorSingle, TVectorDouble>(y);
+                TVectorDouble dxLo = WidenLower<TVectorSingle, TVectorDouble>(x);
+                TVectorDouble dxHi = WidenUpper<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(
+                    Atan2Double<TVectorDouble>(dyLo, dxLo),
+                    Atan2Double<TVectorDouble>(dyHi, dxHi)
+                );
+            }
+        }
     }
 }
