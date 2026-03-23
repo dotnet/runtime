@@ -544,14 +544,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     {
         delta_PSP -= TARGET_POINTER_SIZE;
     }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta_PSP -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta_PSP -= TARGET_POINTER_SIZE;
-    }
 
     funcletFrameSize = funcletFrameSize - delta_PSP;
     funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
@@ -2258,7 +2250,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
-    GetEmitter()->emitIns_R_C(INS_addi, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+    GetEmitter()->emitIns_R_C(INS_addi, EA_PTRSIZE, treeNode->GetRegNum(), REG_NA,
                               m_compiler->eeFindJitDataOffs(jmpTabBase));
     genProduceReg(treeNode);
 }
@@ -2271,7 +2263,13 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 //
 void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 {
-    GetEmitter()->emitIns_R_C(INS_addi, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+    emitAttr attr = EA_PTRSIZE;
+    if (m_compiler->eeDataWithCodePointersNeedsRelocs())
+    {
+        attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
+    }
+
+    GetEmitter()->emitIns_R_C(INS_addi, attr, treeNode->GetRegNum(), REG_NA,
                               genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1));
     genProduceReg(treeNode);
 }
@@ -3362,14 +3360,6 @@ int CodeGenInterface::genSPtoFPdelta() const
 
     int delta = m_compiler->compLclFrameSize;
     if ((m_compiler->lvaMonAcquired != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        delta -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
     {
         delta -= TARGET_POINTER_SIZE;
     }
@@ -5948,6 +5938,9 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 #ifdef FEATURE_REMAP_FUNCTION
     if (m_compiler->opts.compDbgEnC)
     {
+        // TODO: lvaMonAcquired, lvaAsyncExecutionContextVar and lvaAsyncSynchronizationContextVar locals are special
+        // that is necessary to allocate in the top of the stack frame and included as part of the EnC frame header
+        // for EnC to work.
         NYI_RISCV64("compDbgEnc in genCreateAndStoreGCInfo-----unimplemented/unused on RISCV64 yet----");
     }
 #endif // FEATURE_REMAP_FUNCTION
@@ -6431,14 +6424,6 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
 
 #ifdef DEBUG
     if (m_compiler->opts.disAsm)
@@ -6506,14 +6491,6 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     int totalFrameSize = genTotalFrameSize();
     int localFrameSize = m_compiler->compLclFrameSize;
     if ((m_compiler->lvaMonAcquired != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
-    {
-        localFrameSize -= TARGET_POINTER_SIZE;
-    }
-    if ((m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !m_compiler->opts.IsOSR())
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }

@@ -270,12 +270,7 @@ Present the complete draft to the user for review. Iterate based on feedback bef
 
 ### Phase 5: Publish
 
-> **Agent disclaimer:** When publishing to GitHub on behalf of a user account, prepend the following disclaimer to the proposal body:
->
-> ```markdown
-> > [!NOTE]
-> > This proposal was drafted with the help of an AI agent. Please review for accuracy and remove this notice once you're satisfied with the content.
-> ```
+> **AI-generated content disclosure:** When posting any content to GitHub (issue body, PR body, comments) under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app — prepend a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. This applies to the initial proposal, iteration updates, and any follow-up comments posted on the user's behalf. Skip this if the user explicitly asks you to omit it.
 
 #### Step 1: Push and capture commit URL
 
