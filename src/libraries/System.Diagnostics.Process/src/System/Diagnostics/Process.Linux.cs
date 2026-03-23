@@ -370,14 +370,10 @@ namespace System.Diagnostics
         /// </summary>
         private static string GetExeBasenameOrComm(Interop.procfs.ProcPid procPid, string comm)
         {
-            string? exePath = GetExePath(procPid);
-            if (exePath is not null)
+            if (GetExePath(procPid) is string exePath &&
+                Path.GetFileName(exePath) is { Length: > 0 } exeBasename)
             {
-                string exeBasename = Path.GetFileName(exePath);
-                if (exeBasename.Length > 0)
-                {
-                    return exeBasename;
-                }
+                return exeBasename;
             }
 
             return comm;
