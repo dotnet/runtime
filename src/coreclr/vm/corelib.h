@@ -867,7 +867,7 @@ DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSup
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwift)
 
-#if defined(TARGET_APPLE)
+#ifdef TARGET_APPLE
 DEFINE_CLASS(SWIFT_SELF,                     Swift,                  SwiftSelf)
 DEFINE_CLASS(SWIFT_SELF_T,                   Swift,                  SwiftSelf`1)
 DEFINE_CLASS(SWIFT_ERROR,                    Swift,                  SwiftError)
