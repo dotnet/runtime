@@ -4876,8 +4876,46 @@ void CodeGen::genPushCalleeSavedRegisters()
     m_compiler->compFrameInfo.calleeSaveSpOffset = calleeSaveSpOffset;
     m_compiler->compFrameInfo.calleeSaveSpDelta  = calleeSaveSpDelta;
     m_compiler->compFrameInfo.offsetSpToSavedFp  = offsetSpToSavedFp;
+
+    if (m_compiler->compUsesUnknownSizeFrame)
+    {
+        genUnknownSizeFrame();
+    }
 #endif // TARGET_ARM64
 }
+
+#if defined(TARGET_ARM64)
+// See Compiler::UnknownSizeFrame for implementation details.
+void CodeGen::genUnknownSizeFrame()
+{
+    assert(m_compiler->compLocallocUsed && m_compiler->compUsesUnknownSizeFrame);
+    assert(m_compiler->unkSizeFrame.isFinalized);
+    unsigned totalVectorCount = m_compiler->unkSizeFrame.FrameSizeInVectors();
+
+    // We reserve REG_UNKBASE for addressing SVE locals. This will always point at the top of
+    // of the UnknownSizeFrame and we index into it.
+    // TODO-SVE: We may want this to point into the middle of the frame to reduce address
+    // computations (we have a signed 9-bit indexing immediate).
+    inst_Mov(TYP_I_IMPL, REG_UNKBASE, REG_SP, false);
+
+    if (0 < totalVectorCount && totalVectorCount <= 32)
+    {
+        GetEmitter()->emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, REG_SP, REG_SP, -(ssize_t)totalVectorCount);
+    }
+    else
+    {
+        // Generate `sp = sp - totalVectorCount * VL`
+        assert(totalVectorCount != 0);
+        regNumber rsvd = rsGetRsvdReg();
+        // mov   rsvd, #totalVectorCount
+        // rdvl  scratch, #1
+        // msub  sp, rsvd, scratch, sp
+        instGen_Set_Reg_To_Imm(EA_8BYTE, rsvd, totalVectorCount);
+        GetEmitter()->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, REG_SCRATCH, 1);
+        GetEmitter()->emitIns_R_R_R_R(INS_msub, EA_8BYTE, REG_SP, rsvd, REG_SCRATCH, REG_SP);
+    }
+}
+#endif
 
 /*****************************************************************************
  *
