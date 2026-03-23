@@ -125,6 +125,44 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        public void OnChangeProcessesConsecutiveChangedTokensWithoutRecursion()
+        {
+            int changedTokensRemaining = 32;
+            var stableToken = new TrackableChangeToken();
+            int callbackCount = 0;
+
+            using IDisposable _ = ChangeToken.OnChange(
+                () =>
+                {
+                    if (changedTokensRemaining-- > 0)
+                    {
+                        var changedToken = new TrackableChangeToken();
+                        changedToken.Execute();
+                        return changedToken;
+                    }
+
+                    return stableToken;
+                },
+                () => callbackCount++);
+
+            Assert.Equal(32, callbackCount);
+        }
+
+        [Fact]
+        public void OnChangeThrowsWhenProducerReturnsTooManyAlreadyChangedTokens()
+        {
+            var changedToken = new TrackableChangeToken();
+            changedToken.Execute();
+
+            int callbackCount = 0;
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                () => ChangeToken.OnChange(() => changedToken, () => callbackCount++));
+
+            Assert.Contains("already changed token", exception.Message, StringComparison.Ordinal);
+            Assert.True(callbackCount > 0);
+        }
+
+        [Fact]
         public void DisposingChangeTokenRegistrationDoesNotRaiseConsumerCallback()
         {
             var provider = new ResettableChangeTokenProvider();
