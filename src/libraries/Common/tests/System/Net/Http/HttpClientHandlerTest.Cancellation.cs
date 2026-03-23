@@ -36,10 +36,10 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            /*if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
-            }
+            }*/
 
             if (PlatformDetection.IsBrowser && LoopbackServerFactory.Version < HttpVersion20.Value)
             {
@@ -100,10 +100,10 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            /*if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
-            }
+            }*/
 
             using (HttpClient client = CreateHttpClient())
             {
@@ -211,10 +211,10 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            /*if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
-            }
+            }*/
 
             using (HttpClient client = CreateHttpClient())
             {
@@ -274,10 +274,10 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't have blocking synchronous Stream.ReadByte and so it waits for whole body")]
         public async Task GetAsync_CancelPendingRequests_DoesntCancelReadAsyncOnResponseStream(CancellationMode mode, bool copyToAsync)
         {
-            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            /*if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
-            }
+            }*/
 
             using (HttpClient client = CreateHttpClient())
             {

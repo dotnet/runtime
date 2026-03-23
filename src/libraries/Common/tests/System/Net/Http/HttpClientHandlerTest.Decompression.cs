@@ -331,7 +331,7 @@ namespace System.Net.Http.Functional.Tests
                             break;
                         }
                     }
-                    
+
                     Assert.True(acceptEncodingValid, "Accept-Encoding missing or invalid");
 
                     using (HttpResponseMessage response = await clientTask)

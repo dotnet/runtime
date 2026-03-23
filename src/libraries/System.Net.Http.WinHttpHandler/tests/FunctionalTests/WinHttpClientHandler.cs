@@ -181,10 +181,12 @@ namespace System.Net.Http
                 }
             }
 
-            if(_requestVersion >= HttpVersion20.Value)
+#if NET
+            if (_requestVersion == request.Version && request.Version >= HttpVersion.Version30)
             {
-                request.Version = _requestVersion;
+                request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
             }
+#endif
 
             return base.SendAsync(request, cancellationToken);
         }

@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -21,18 +22,50 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
-    public class WinHttpHandlerTest
+    public class WinHttpHandlerTest : HttpClientHandlerTestBase
     {
         private const string SlowServer = "http://httpbin.org/drip?numbytes=1&duration=1&delay=40&code=200";
-
-        private readonly ITestOutputHelper _output;
 
         public static IEnumerable<object[]> HttpVersions = [[HttpVersion.Version11, Configuration.Http.SecureRemoteEchoServer], [HttpVersion20.Value, Configuration.Http.Http2RemoteEchoServer]];
 
         public WinHttpHandlerTest(ITestOutputHelper output)
+            : base(output)
+        { }
+
+#if NET
+        [Theory]
+        [InlineData(1, 1)]
+        [InlineData(2, 0)]
+        [InlineData(3, 0)]
+        public async Task GetAsync_Succeeds(int major, int minor)
         {
-            _output = output;
+            using var _ = new TestEventListener(_output, TestEventListener.NetworkingEvents);
+            Version version = new Version(major, minor);
+            LoopbackServerFactory factory = major switch
+            {
+                1 => Http11LoopbackServerFactory.Singleton,
+                2 => Http2LoopbackServerFactory.Singleton,
+                3 => Http3LoopbackServerFactory.Singleton,
+                _ => throw new InvalidOperationException($"Unexpected HTTP version: {version}")
+            };
+            await factory.CreateServerAsync(async (server, url) =>
+            {
+                WinHttpClientHandler handler = CreateHttpClientHandler(version);
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    client.DefaultRequestVersion = version;
+                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+                    Task<HttpResponseMessage> clientTask = client.GetAsync(url);
+
+                    Task<HttpRequestData> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
+
+                    await TestHelper.WhenAllCompletedOrAnyFailed(clientTask, serverTask);
+                    using HttpResponseMessage response = await clientTask;
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            });
         }
+#endif
 
         [OuterLoop]
         [Fact]
