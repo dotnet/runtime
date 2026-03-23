@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.IO
 {
@@ -138,41 +139,14 @@ namespace System.IO
         {
             MoveNextOrFail();
 
-            int startIndex = _startIndex;
-            int endIndex = _endIndex;
-            ReadOnlySpan<char> span = _buffer.AsSpan(startIndex, endIndex - startIndex);
-
-            if (span.IsEmpty)
+            try
             {
-                ThrowForInvalidData();
+                return int.Parse(_buffer.AsSpan(_startIndex, _endIndex - _startIndex), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
             }
-
-            bool negative = false;
-            int result = 0;
-            int i = 0;
-
-            if (span[0] == '-')
+            catch (FormatException)
             {
-                negative = true;
-                i = 1;
-                if (i == span.Length)
-                {
-                    ThrowForInvalidData();
-                }
+                throw new InvalidDataException();
             }
-
-            for (; i < span.Length; i++)
-            {
-                int d = span[i] - '0';
-                if (d < 0 || d > 9)
-                {
-                    ThrowForInvalidData();
-                }
-                result = negative ? checked((result * 10) - d) : checked((result * 10) + d);
-            }
-
-            Debug.Assert(result == int.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
-            return result;
         }
 
         /// <summary>Moves to the next component and parses it as an Int64.</summary>
@@ -180,41 +154,14 @@ namespace System.IO
         {
             MoveNextOrFail();
 
-            int startIndex = _startIndex;
-            int endIndex = _endIndex;
-            ReadOnlySpan<char> span = _buffer.AsSpan(startIndex, endIndex - startIndex);
-
-            if (span.IsEmpty)
+            try
             {
-                ThrowForInvalidData();
+                return long.Parse(_buffer.AsSpan(_startIndex, _endIndex - _startIndex), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
             }
-
-            bool negative = false;
-            long result = 0;
-            int i = 0;
-
-            if (span[0] == '-')
+            catch (FormatException)
             {
-                negative = true;
-                i = 1;
-                if (i == span.Length)
-                {
-                    ThrowForInvalidData();
-                }
+                throw new InvalidDataException();
             }
-
-            for (; i < span.Length; i++)
-            {
-                int d = span[i] - '0';
-                if (d < 0 || d > 9)
-                {
-                    ThrowForInvalidData();
-                }
-                result = negative ? checked((result * 10) - d) : checked((result * 10) + d);
-            }
-
-            Debug.Assert(result == long.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
-            return result;
         }
 
         /// <summary>Moves to the next component and parses it as a UInt32.</summary>
@@ -222,26 +169,14 @@ namespace System.IO
         {
             MoveNextOrFail();
 
-            ReadOnlySpan<char> span = _buffer.AsSpan(_startIndex, _endIndex - _startIndex);
-
-            if (span.IsEmpty)
+            try
             {
-                ThrowForInvalidData();
+                return uint.Parse(_buffer.AsSpan(_startIndex, _endIndex - _startIndex), NumberStyles.None, CultureInfo.InvariantCulture);
             }
-
-            uint result = 0;
-            for (int i = 0; i < span.Length; i++)
+            catch (FormatException)
             {
-                int d = span[i] - '0';
-                if (d < 0 || d > 9)
-                {
-                    ThrowForInvalidData();
-                }
-                result = (uint)checked((result * 10) + d);
+                throw new InvalidDataException();
             }
-
-            Debug.Assert(result == uint.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
-            return result;
         }
 
         /// <summary>Moves to the next component and parses it as a UInt64.</summary>
@@ -249,26 +184,14 @@ namespace System.IO
         {
             MoveNextOrFail();
 
-            ReadOnlySpan<char> span = _buffer.AsSpan(_startIndex, _endIndex - _startIndex);
-
-            if (span.IsEmpty)
+            try
             {
-                ThrowForInvalidData();
+                return ulong.Parse(_buffer.AsSpan(_startIndex, _endIndex - _startIndex), NumberStyles.None, CultureInfo.InvariantCulture);
             }
-
-            ulong result = 0;
-            for (int i = 0; i < span.Length; i++)
+            catch (FormatException)
             {
-                int d = span[i] - '0';
-                if (d < 0 || d > 9)
-                {
-                    ThrowForInvalidData();
-                }
-                result = checked((result * 10ul) + (ulong)d);
+                throw new InvalidDataException();
             }
-
-            Debug.Assert(result == ulong.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
-            return result;
         }
 
         /// <summary>Moves to the next component and parses it as a Char.</summary>
