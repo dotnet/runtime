@@ -231,6 +231,13 @@ internal sealed class PInvokeCollector {
                         value = true;
                         break;
                     }
+                    if (cattr.AttributeType.FullName == "System.Runtime.Versioning.SupportedOSPlatformAttribute" &&
+                        cattr.ConstructorArguments.Count > 0 &&
+                        cattr.ConstructorArguments[0].Value?.ToString() != "browser")
+                    {
+                        value = true;
+                        break;
+                    }
                 }
                 catch
                 {
