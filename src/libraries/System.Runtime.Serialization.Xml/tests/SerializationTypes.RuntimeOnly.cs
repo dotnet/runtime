@@ -978,6 +978,34 @@ namespace SerializationTypes
         }
     }
 
+    [DataContract]
+    public class MyType_InvalidEventMethods_OnSerializing
+    {
+        [OnSerializing()]
+        private void OnSerializingMethod(int a, double b) { }
+    }
+
+    [DataContract]
+    public class MyType_InvalidEventMethods_OnSerialized
+    {
+        [OnSerialized()]
+        private void OnSerializedMethod(int a, double b) { }
+    }
+
+    [DataContract]
+    public class MyType_InvalidEventMethods_OnDeserializing
+    {
+        [OnDeserializing()]
+        private void OnDeserializingMethod(int a, double b) { }
+    }
+
+    [DataContract]
+    public class MyType_InvalidEventMethods_OnDeserialized
+    {
+        [OnDeserialized()]
+        private void OnDeserializedMethod(int a, double b) { }
+    }
+
     public struct EnumerableStruct : IEnumerable<string>
     {
         private List<string> _values;

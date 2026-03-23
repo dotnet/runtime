@@ -1352,6 +1352,44 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_InvalidEventMethods()
+    {
+        var obj1 = new MyType_InvalidEventMethods_OnSerializing();
+        var dcs1 = new DataContractSerializer(obj1.GetType());
+        var obj2 = new MyType_InvalidEventMethods_OnSerialized();
+        var dcs2 = new DataContractSerializer(obj2.GetType());
+        var obj3 = new MyType_InvalidEventMethods_OnDeserializing();
+        var dcs3 = new DataContractSerializer(obj3.GetType());
+        var obj4 = new MyType_InvalidEventMethods_OnDeserialized();
+        var dcs4 = new DataContractSerializer(obj4.GetType());
+
+        using var ms = new MemoryStream();
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            dcs1.WriteObject(ms, obj1);
+        });
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            dcs2.WriteObject(ms, obj2);
+        });
+
+        // I understand the deserialization API is "ReadObject", but an error is thrown at "WriteObject" also.
+        // So, it is unable to create sample XML data automatically, or we don't need to prepare it manually.
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            dcs3.WriteObject(ms, obj3);
+        });
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            dcs4.WriteObject(ms, obj4);
+        });
+    }
+
+    [Fact]
     public static void DCS_WriteObject_Use_DataContractResolver()
     {
         var settings = new DataContractSerializerSettings() { DataContractResolver = null, KnownTypes = new Type[] { typeof(MyOtherType) } };
