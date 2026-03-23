@@ -185,7 +185,7 @@ bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, boo
     MethodContext* mc = new MethodContext();
     mc->index         = mcIndex;
     *ppmc             = mc;
-    return mc->Initialize(mcIndex, buff, size);
+    return mc->Initialize(mcIndex, buff, size, readCompileResults);
 }
 
 // static
