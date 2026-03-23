@@ -376,5 +376,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
                       Private="true"
                       SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+    <!-- Used for MetadataLoadContext tests in NullableTests. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.MetadataLoadContext\src\System.Reflection.MetadataLoadContext.csproj" />
   </ItemGroup>
 </Project>
