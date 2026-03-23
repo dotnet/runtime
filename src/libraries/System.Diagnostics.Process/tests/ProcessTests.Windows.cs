@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -14,6 +15,72 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests
     {
+        private static bool IsNotNanoServerNotServerCoreAndRemoteExecutorSupported =>
+            PlatformDetection.IsNotWindowsNanoServer &&
+            PlatformDetection.IsNotWindowsServerCore &&
+            RemoteExecutor.IsSupported;
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int MessageBoxW(IntPtr hWnd, string lpText, string lpCaption, uint uType);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr FindWindowW(string? lpClassName, string? lpWindowName);
+
+        // Creates a visible top-level window with a known title.
+        // Shows a MessageBox on a background thread, waits until the window is visible via FindWindowW,
+        // then signals the parent via stdout and blocks until killed by the parent.
+        private static int CreateMainWindowWithTitle()
+        {
+            Thread t = new Thread(() => MessageBoxW(IntPtr.Zero, string.Empty, "Test Main Window", 0 /* MB_OK */));
+            t.IsBackground = true;
+            t.Start();
+
+            // Spin until the MessageBox window is actually visible before signaling the parent.
+            SpinWait.SpinUntil(() => FindWindowW(null, "Test Main Window") != IntPtr.Zero);
+
+            // Signal the parent that the window is ready.
+            Console.WriteLine("ready");
+
+            // Block until the parent kills this process.
+            Thread.Sleep(Timeout.Infinite);
+            return RemoteExecutor.SuccessExitCode;
+        }
+
+        [ConditionalFact(typeof(ProcessTests), nameof(IsNotNanoServerNotServerCoreAndRemoteExecutorSupported))]
+        [OuterLoop("Pops UI")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void MainWindowHandle_And_Title_GetWithGui_ShouldRefresh_Windows()
+        {
+            var options = new RemoteInvokeOptions { Start = false };
+            options.StartInfo.RedirectStandardOutput = true;
+
+            Process process;
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(CreateMainWindowWithTitle, options))
+            {
+                process = handle.Process;
+                handle.Process = null;
+            }
+            AddProcessForDispose(process);
+            process.Start();
+
+            try
+            {
+                // Wait for child to signal that its window is ready.
+                Task<string?> readTask = process.StandardOutput.ReadLineAsync();
+                Assert.True(readTask.Wait(WaitInMS), "Timed out waiting for child process to signal window ready");
+                Assert.Equal("ready", readTask.Result);
+
+                process.Refresh();
+                Assert.NotEqual(IntPtr.Zero, process.MainWindowHandle);
+                Assert.Equal("Test Main Window", process.MainWindowTitle);
+            }
+            finally
+            {
+                process.Kill();
+                Assert.True(process.WaitForExit(WaitInMS));
+            }
+        }
+
         private string WriteScriptFile(string directory, string name, int returnValue)
         {
             string filename = Path.Combine(directory, name);
