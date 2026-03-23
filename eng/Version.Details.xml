@@ -1,9 +1,9 @@
 <Dependencies>
   <Source Uri="https://github.com/dotnet/dotnet" Mapping="runtime" Sha="840ea139a6e8aebe487f7041190f3865a74378d9" BarId="307198" />
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="11.0.0-alpha.1.26167.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="11.0.0-alpha.1.26168.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>fb85cf33d3d15ba244ee107f4b4b81faa24ee6ff</Sha>
+      <Sha>f510e59f6829c081b33b86cb51197db2e387d1a0</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="19.1.0-alpha.1.26159.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
@@ -319,9 +319,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>bc6c6a6b3ae72cfa214ec44b992a60aca978f176</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="11.0.0-alpha.0.26159.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="11.0.0-alpha.0.26166.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>19b194a2f50470397820fc6809952332715c20fb</Sha>
+      <Sha>be6b1e104ffb5436e451481c3ec5f40fa29ba4de</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="11.0.0-beta.26166.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
