@@ -17,17 +17,38 @@ namespace System.Numerics
 
         [UnscopedRef]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ref Impl AsImpl() => ref Unsafe.As<Matrix3x2, Impl>(ref this);
+        internal ref Impl AsImpl()
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return ref Unsafe.As<Matrix3x2, Impl>(ref this);
+            }
+        }
 
         [UnscopedRef]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal readonly ref readonly Impl AsROImpl() => ref Unsafe.As<Matrix3x2, Impl>(ref Unsafe.AsRef(in this));
+        internal readonly ref readonly Impl AsROImpl()
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return ref Unsafe.As<Matrix3x2, Impl>(ref Unsafe.AsRef(in this));
+            }
+        }
 
         internal struct Impl : IEquatable<Impl>
         {
             [UnscopedRef]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public ref Matrix3x2 AsM3x2() => ref Unsafe.As<Impl, Matrix3x2>(ref this);
+            public ref Matrix3x2 AsM3x2()
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return ref Unsafe.As<Impl, Matrix3x2>(ref this);
+                }
+            }
 
             private const float RotationEpsilon = 0.001f * float.Pi / 180f;     // 0.1% of a degree
 

@@ -1341,7 +1341,13 @@ namespace System
                         return (result >= 0) ? (index + result) : ~(index + ~result);
 
                         static int GenericBinarySearch<T>(Array array, int adjustedIndex, int length, object value) where T : struct, IComparable<T>
-                            => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).BinarySearch(Unsafe.As<byte, T>(ref value.GetRawData()));
+                        {
+                            // TODO(unsafe): Baselining unsafe usage
+                            unsafe
+                            {
+                                return UnsafeArrayAsSpan<T>(array, adjustedIndex, length).BinarySearch(Unsafe.As<byte, T>(ref value.GetRawData()));
+                            }
+                        }
                     }
                 }
             }
@@ -1849,7 +1855,13 @@ namespace System
                     return (result >= 0 ? startIndex : lb) + result;
 
                     static int GenericIndexOf<T>(Array array, object value, int adjustedIndex, int length) where T : struct, IEquatable<T>
-                        => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).IndexOf(Unsafe.As<byte, T>(ref value.GetRawData()));
+                    {
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            return UnsafeArrayAsSpan<T>(array, adjustedIndex, length).IndexOf(Unsafe.As<byte, T>(ref value.GetRawData()));
+                        }
+                    }
                 }
             }
 
@@ -2076,7 +2088,13 @@ namespace System
                     return (result >= 0 ? endIndex : lb) + result;
 
                     static int GenericLastIndexOf<T>(Array array, object value, int adjustedIndex, int length) where T : struct, IEquatable<T>
-                        => UnsafeArrayAsSpan<T>(array, adjustedIndex, length).LastIndexOf(Unsafe.As<byte, T>(ref value.GetRawData()));
+                    {
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            return UnsafeArrayAsSpan<T>(array, adjustedIndex, length).LastIndexOf(Unsafe.As<byte, T>(ref value.GetRawData()));
+                        }
+                    }
                 }
             }
 
@@ -3069,8 +3087,14 @@ namespace System
             }
         }
 
-        private static Span<T> UnsafeArrayAsSpan<T>(Array array, int adjustedIndex, int length) =>
-            new Span<T>(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(array)), array.Length).Slice(adjustedIndex, length);
+        private static Span<T> UnsafeArrayAsSpan<T>(Array array, int adjustedIndex, int length)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return new Span<T>(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(array)), array.Length).Slice(adjustedIndex, length);
+            }
+        }
 
         public IEnumerator GetEnumerator()
         {

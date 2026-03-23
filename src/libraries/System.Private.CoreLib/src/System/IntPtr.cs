@@ -243,26 +243,42 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
+            }
         }
 
         /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, provider, out Unsafe.As<nint, nint_t>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return nint_t.TryParse(s, provider, out Unsafe.As<nint, nint_t>(ref result));
+            }
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result));
+            }
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
+            }
         }
 
         /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its signed integer equivalent.</summary>
@@ -272,7 +288,11 @@ namespace System
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(utf8Text, out Unsafe.As<nint, nint_t>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return nint_t.TryParse(utf8Text, out Unsafe.As<nint, nint_t>(ref result));
+            }
         }
 
         /// <summary>Tries to parse a string into a value.</summary>
@@ -283,13 +303,21 @@ namespace System
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, provider, out Unsafe.As<nint, nint_t>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return nint_t.TryParse(s, provider, out Unsafe.As<nint, nint_t>(ref result));
+            }
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result));
+            }
         }
 
         //
@@ -1434,7 +1462,11 @@ namespace System
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(utf8Text, style, provider, out Unsafe.As<nint, nint_t>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return nint_t.TryParse(utf8Text, style, provider, out Unsafe.As<nint, nint_t>(ref result));
+            }
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
@@ -1444,7 +1476,11 @@ namespace System
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(utf8Text, provider, out Unsafe.As<nint, nint_t>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return nint_t.TryParse(utf8Text, provider, out Unsafe.As<nint, nint_t>(ref result));
+            }
         }
     }
 }

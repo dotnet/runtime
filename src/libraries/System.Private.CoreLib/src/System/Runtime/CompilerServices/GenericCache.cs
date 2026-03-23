@@ -108,8 +108,12 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref Entry TableData(Entry[] table)
         {
+            // TODO(unsafe): Baselining unsafe usage
             // points to element 0, which is used for embedded aux data
-            return ref Unsafe.As<byte, Entry>(ref Unsafe.As<RawArrayData>(table).Data);
+            unsafe
+            {
+                return ref Unsafe.As<byte, Entry>(ref Unsafe.As<RawArrayData>(table).Data);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -134,8 +138,12 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref Entry Element(Entry[] table, int index)
         {
+            // TODO(unsafe): Baselining unsafe usage
             // element 0 is used for embedded aux data, skip it
-            return ref Unsafe.Add(ref Unsafe.As<byte, Entry>(ref Unsafe.As<RawArrayData>(table).Data), index + 1);
+            unsafe
+            {
+                return ref Unsafe.Add(ref Unsafe.As<byte, Entry>(ref Unsafe.As<RawArrayData>(table).Data), index + 1);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

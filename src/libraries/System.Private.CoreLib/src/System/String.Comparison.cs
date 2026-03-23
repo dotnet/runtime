@@ -684,9 +684,13 @@ namespace System
         public override int GetHashCode()
         {
             ulong seed = Marvin.DefaultSeed;
+            // TODO(unsafe): Baselining unsafe usage
 
             // Multiplication below will not overflow since going from positive Int32 to UInt32.
-            return Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref _firstChar), (uint)_stringLength * 2 /* in bytes, not chars */, (uint)seed, (uint)(seed >> 32));
+            unsafe
+            {
+                return Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref _firstChar), (uint)_stringLength * 2 /* in bytes, not chars */, (uint)seed, (uint)(seed >> 32));
+            }
         }
 
         // Gets a hash code for this string and this comparison. If strings A and B and comparison C are such
@@ -705,9 +709,13 @@ namespace System
         public static int GetHashCode(ReadOnlySpan<char> value)
         {
             ulong seed = Marvin.DefaultSeed;
+            // TODO(unsafe): Baselining unsafe usage
 
             // Multiplication below will not overflow since going from positive Int32 to UInt32.
-            return Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(value)), (uint)value.Length * 2 /* in bytes, not chars */, (uint)seed, (uint)(seed >> 32));
+            unsafe
+            {
+                return Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(value)), (uint)value.Length * 2 /* in bytes, not chars */, (uint)seed, (uint)(seed >> 32));
+            }
         }
 
         // A span-based equivalent of String.GetHashCode(StringComparison). Uses the specified comparison type.

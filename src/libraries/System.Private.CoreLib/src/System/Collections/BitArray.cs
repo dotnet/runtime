@@ -170,8 +170,11 @@ namespace System.Collections
             // Instead, We compare with zeroes (== false) then negate the result to ensure compatibility.
 
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(_array);
-            ref byte value = ref Unsafe.As<bool, byte>(ref MemoryMarshal.GetArrayDataReference<bool>(values));
-            if (Vector512.IsHardwareAccelerated)
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref byte value = ref Unsafe.As<bool, byte>(ref MemoryMarshal.GetArrayDataReference<bool>(values));
+                if (Vector512.IsHardwareAccelerated)
             {
                 for (; i <= (uint)values.Length - Vector512<byte>.Count; i += (uint)Vector512<byte>.Count)
                 {
@@ -208,6 +211,7 @@ namespace System.Collections
                     Unsafe.WriteUnaligned(
                         ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32u)),
                         ~((upperResult << 16) | lowerResult));
+                }
                 }
             }
 

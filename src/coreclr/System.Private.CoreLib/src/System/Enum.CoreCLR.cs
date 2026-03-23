@@ -126,7 +126,13 @@ namespace System
 
             // This type is the only type that will be stored in the _enumInfo field, so we can use Unsafe.As here.
             public static ref EnumInfo<TStorage>? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry)
-                => ref Unsafe.As<RuntimeType.IGenericCacheEntry?, EnumInfo<TStorage>?>(ref compositeEntry._enumInfo);
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return ref Unsafe.As<RuntimeType.IGenericCacheEntry?, EnumInfo<TStorage>?>(ref compositeEntry._enumInfo);
+                }
+            }
         }
     }
 }

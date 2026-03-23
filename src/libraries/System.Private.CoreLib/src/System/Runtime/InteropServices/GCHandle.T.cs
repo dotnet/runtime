@@ -48,8 +48,12 @@ namespace System.Runtime.InteropServices
             {
                 IntPtr handle = _handle;
                 GCHandle.CheckUninitialized(handle);
+                // TODO(unsafe): Baselining unsafe usage
                 // Skip the type check to provide lowest overhead.
-                return Unsafe.As<T>(GCHandle.InternalGet(handle)!);
+                unsafe
+                {
+                    return Unsafe.As<T>(GCHandle.InternalGet(handle)!);
+                }
             }
             set
             {

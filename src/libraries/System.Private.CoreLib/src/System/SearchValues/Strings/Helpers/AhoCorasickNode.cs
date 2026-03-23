@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -53,7 +53,11 @@ namespace System.Buffers
             }
             else
             {
-                return Unsafe.As<Dictionary<char, int>>(children).TryGetValue(c, out index);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return Unsafe.As<Dictionary<char, int>>(children).TryGetValue(c, out index);
+                }
             }
 
             index = 0;

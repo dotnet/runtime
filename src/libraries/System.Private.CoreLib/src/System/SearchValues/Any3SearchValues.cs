@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -32,19 +32,43 @@ namespace System.Buffers
             *(TImpl*)&value == _e0 || *(TImpl*)&value == _e1 || *(TImpl*)&value == _e2;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int IndexOfAny(ReadOnlySpan<T> span) =>
-            SpanHelpers.NonPackedIndexOfAnyValueType<TImpl, SpanHelpers.DontNegate<TImpl>>(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, span.Length);
+        internal override int IndexOfAny(ReadOnlySpan<T> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return SpanHelpers.NonPackedIndexOfAnyValueType<TImpl, SpanHelpers.DontNegate<TImpl>>(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, span.Length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int IndexOfAnyExcept(ReadOnlySpan<T> span) =>
-            SpanHelpers.NonPackedIndexOfAnyValueType<TImpl, SpanHelpers.Negate<TImpl>>(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, span.Length);
+        internal override int IndexOfAnyExcept(ReadOnlySpan<T> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return SpanHelpers.NonPackedIndexOfAnyValueType<TImpl, SpanHelpers.Negate<TImpl>>(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, span.Length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int LastIndexOfAny(ReadOnlySpan<T> span) =>
-            SpanHelpers.LastIndexOfAnyValueType(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, span.Length);
+        internal override int LastIndexOfAny(ReadOnlySpan<T> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return SpanHelpers.LastIndexOfAnyValueType(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, span.Length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int LastIndexOfAnyExcept(ReadOnlySpan<T> span) =>
-            SpanHelpers.LastIndexOfAnyExceptValueType(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, span.Length);
+        internal override int LastIndexOfAnyExcept(ReadOnlySpan<T> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return SpanHelpers.LastIndexOfAnyExceptValueType(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, span.Length);
+            }
+        }
     }
 }

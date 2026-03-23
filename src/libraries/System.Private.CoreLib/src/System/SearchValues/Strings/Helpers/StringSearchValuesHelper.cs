@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -72,10 +72,14 @@ namespace System.Buffers
         {
             if (typeof(TCaseSensitivity) == typeof(CaseSensitive))
             {
-                return SpanHelpers.SequenceEqual(
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return SpanHelpers.SequenceEqual(
                     ref Unsafe.As<char, byte>(ref matchStart),
                     ref candidate.GetRawStringDataAsUInt8(),
                     (uint)candidate.Length * sizeof(char));
+                }
             }
 
             if (typeof(TCaseSensitivity) == typeof(CaseInsensitiveAscii) ||
@@ -263,18 +267,24 @@ namespace System.Buffers
                 }
                 else if (typeof(TValueLength) == typeof(ValueLength4To8))
                 {
-                    ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
-                    ulong differentBits = Unsafe.ReadUnaligned<ulong>(ref matchByteStart) - state.Value64_0;
-                    differentBits |= Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) - state.Value64_1;
-                    return differentBits == 0;
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
+                        ulong differentBits = Unsafe.ReadUnaligned<ulong>(ref matchByteStart) - state.Value64_0;
+                        differentBits |= Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) - state.Value64_1;
+                        return differentBits == 0;
+                    }
                 }
                 else
                 {
                     Debug.Assert(state.Value.Length is 2 or 3);
+                    // TODO(unsafe): Baselining unsafe usage
 
-                    ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
-
-                    if (AdvSimd.IsSupported)
+                    unsafe
+                    {
+                        ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
+                        if (AdvSimd.IsSupported)
                     {
                         // See comments on SingleStringSearchValuesPackedThreeChars.CanSkipAnchorMatchVerification.
                         // When running on Arm64, this helper is also used to confirm vectorized anchor matches.
@@ -295,6 +305,7 @@ namespace System.Buffers
                         Debug.Assert(matchStart == state.Value[0], "This should only be called after the first character has been checked");
 
                         return Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) == state.Value32_1;
+                        }
                     }
                 }
             }
@@ -331,19 +342,25 @@ namespace System.Buffers
                 else if (typeof(TValueLength) == typeof(ValueLength4To8))
                 {
                     const ulong CaseMask = ~0x20002000200020u;
-                    ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
-                    ulong differentBits = (Unsafe.ReadUnaligned<ulong>(ref matchByteStart) & CaseMask) - state.Value64_0;
-                    differentBits |= (Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) & CaseMask) - state.Value64_1;
-                    return differentBits == 0;
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
+                        ulong differentBits = (Unsafe.ReadUnaligned<ulong>(ref matchByteStart) & CaseMask) - state.Value64_0;
+                        differentBits |= (Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) & CaseMask) - state.Value64_1;
+                        return differentBits == 0;
+                    }
                 }
                 else
                 {
                     Debug.Assert(state.Value.Length is 2 or 3);
 
                     const uint CaseMask = ~0x200020u;
-                    ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
-
-                    if (AdvSimd.IsSupported)
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
+                        if (AdvSimd.IsSupported)
                     {
                         // See comments on SingleStringSearchValuesPackedThreeChars.CanSkipAnchorMatchVerification.
                         // When running on Arm64, this helper is also used to confirm vectorized anchor matches.
@@ -364,6 +381,7 @@ namespace System.Buffers
                         Debug.Assert(TransformInput(matchStart) == state.Value[0], "This should only be called after the first character has been checked");
 
                         return (Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) & CaseMask) == state.Value32_1;
+                        }
                     }
                 }
             }
@@ -423,19 +441,27 @@ namespace System.Buffers
                 }
                 else if (typeof(TValueLength) == typeof(ValueLength4To8))
                 {
-                    ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
-                    ulong differentBits = (Unsafe.ReadUnaligned<ulong>(ref matchByteStart) & state.ToUpperMask64_0) - state.Value64_0;
-                    differentBits |= (Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) & state.ToUpperMask64_1) - state.Value64_1;
-                    return differentBits == 0;
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
+                        ulong differentBits = (Unsafe.ReadUnaligned<ulong>(ref matchByteStart) & state.ToUpperMask64_0) - state.Value64_0;
+                        differentBits |= (Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) & state.ToUpperMask64_1) - state.Value64_1;
+                        return differentBits == 0;
+                    }
                 }
                 else
                 {
                     Debug.Assert(state.Value.Length is 2 or 3);
+                    // TODO(unsafe): Baselining unsafe usage
 
-                    ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
-                    uint differentBits = (Unsafe.ReadUnaligned<uint>(ref matchByteStart) & state.ToUpperMask32_0) - state.Value32_0;
-                    differentBits |= (Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) & state.ToUpperMask32_1) - state.Value32_1;
-                    return differentBits == 0;
+                    unsafe
+                    {
+                        ref byte matchByteStart = ref Unsafe.As<char, byte>(ref matchStart);
+                        uint differentBits = (Unsafe.ReadUnaligned<uint>(ref matchByteStart) & state.ToUpperMask32_0) - state.Value32_0;
+                        differentBits |= (Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref matchByteStart, state.SecondReadByteOffset)) & state.ToUpperMask32_1) - state.Value32_1;
+                        return differentBits == 0;
+                    }
                 }
             }
         }

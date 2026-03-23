@@ -14,6 +14,13 @@ namespace System
         public readonly ref byte Value;
         public ByReference(ref byte value) => Value = ref value;
 
-        public static ByReference Create<T>(ref T p) => new ByReference(ref Unsafe.As<T, byte>(ref p));
+        public static ByReference Create<T>(ref T p)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return new ByReference(ref Unsafe.As<T, byte>(ref p));
+            }
+        }
     }
 }

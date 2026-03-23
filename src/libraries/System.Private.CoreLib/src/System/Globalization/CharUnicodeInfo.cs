@@ -280,14 +280,18 @@ namespace System.Globalization
         internal static char ToUpper(char codePoint)
         {
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks((uint)codePoint);
+            // TODO(unsafe): Baselining unsafe usage
 
             // The offset is specified in shorts:
             // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
 
-            ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(UppercaseValues));
-            ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
-            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
-            return (char)(delta + codePoint);
+            unsafe
+            {
+                ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(UppercaseValues));
+                ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
+                int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+                return (char)(delta + codePoint);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -299,30 +303,36 @@ namespace System.Globalization
             }
 
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks(codePoint);
+            // TODO(unsafe): Baselining unsafe usage
 
             // The mapped casing for the codePoint usually exists in the same plane as codePoint.
             // This is why we use 16-bit offsets to calculate the delta value from the codePoint.
 
-            ref ushort rsStart = ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(UppercaseValues));
-            ref ushort rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
-            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
-
-            // We use the mask 0xFFFF0000u as we are sure the casing is in the same plane as codePoint.
-            return (codePoint & 0xFFFF0000u) | (ushort)((uint)delta + codePoint);
+            unsafe
+            {
+                ref ushort rsStart = ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(UppercaseValues));
+                ref ushort rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
+                int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+                return (codePoint & 0xFFFF0000u) | (ushort)((uint)delta + codePoint);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ToLower(char codePoint)
         {
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks((uint)codePoint);
+            // TODO(unsafe): Baselining unsafe usage
 
             // The offset is specified in shorts:
             // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
 
-            ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(LowercaseValues));
-            ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
-            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
-            return (char)(delta + codePoint);
+            unsafe
+            {
+                ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(LowercaseValues));
+                ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
+                int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+                return (char)(delta + codePoint);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -334,16 +344,18 @@ namespace System.Globalization
             }
 
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks(codePoint);
+            // TODO(unsafe): Baselining unsafe usage
 
             // The mapped casing for the codePoint usually exists in the same plane as codePoint.
             // This is why we use 16-bit offsets to calculate the delta value from the codePoint.
 
-            ref ushort rsStart = ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(LowercaseValues));
-            ref ushort rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
-            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
-
-            // We use the mask 0xFFFF0000u as we are sure the casing is in the same plane as codePoint.
-            return (codePoint & 0xFFFF0000u) | (ushort)((uint)delta + codePoint);
+            unsafe
+            {
+                ref ushort rsStart = ref Unsafe.As<byte, ushort>(ref MemoryMarshal.GetReference(LowercaseValues));
+                ref ushort rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
+                int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+                return (codePoint & 0xFFFF0000u) | (ushort)((uint)delta + codePoint);
+            }
         }
 
         /*
