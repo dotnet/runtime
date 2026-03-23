@@ -46,6 +46,7 @@ ASM_CONST(     6,     6, ARM64_ATOMICS_FEATURE_FLAG_BIT)
 ASM_OFFSET(    0,     0, MethodTable, m_usComponentSize)
 ASM_OFFSET(    0,     0, MethodTable, m_uFlags)
 ASM_OFFSET(    4,     4, MethodTable, m_uBaseSize)
+ASM_OFFSET(    C,    10, MethodTable, m_usNumVtableSlots)
 ASM_OFFSET(   14,    18, MethodTable, m_VTable)
 
 ASM_OFFSET(    0,     0, Thread, m_eeAllocContext)
