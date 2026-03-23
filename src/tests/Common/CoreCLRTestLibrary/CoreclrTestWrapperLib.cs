@@ -294,10 +294,19 @@ namespace TestLibrary
             return collectedDump;
         }
 
-        // Kills the given process using 'sudo kill -9', which is required when the process runs
+        // Kills the given process tree using 'sudo kill -9', which is required when the process runs
         // as root (e.g. launched via 'sudo') and cannot be killed by a non-root process.
+        // sudo forks and execs the target command, so we must kill children before the sudo parent
+        // to avoid leaving root-owned child processes running as orphans.
         static void KillWithSudo(Process process)
         {
+            foreach (Process child in process.GetChildren())
+            {
+                if (child.TryGetProcessId(out int childPid))
+                {
+                    Process.Start("sudo", $"-n kill -9 {childPid}").WaitForExit();
+                }
+            }
             if (process.TryGetProcessId(out int pid))
             {
                 Process.Start("sudo", $"-n kill -9 {pid}").WaitForExit();
