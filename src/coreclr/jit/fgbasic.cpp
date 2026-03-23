@@ -1600,6 +1600,22 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     }
                 }
 
+                if (resolveTokens && !isIntrinsic && methodHnd != nullptr)
+                {
+                    uint32_t calleeILSize             = 0;
+                    bool     calleeIsAggressiveInline = false;
+                    if (eeTryGetMethodILSize(methodHnd, &calleeILSize, &calleeIsAggressiveInline))
+                    {
+                        // Generally, we cannot predict whether a method will be inlined or not.
+                        // However, if the callee is marked with MethodImplOptions.AggressiveInlining or
+                        // if its IL size is smaller than ALWAYS_INLINE_SIZE, we can be more confident.
+                        if (calleeIsAggressiveInline || (calleeILSize <= InlineStrategy::ALWAYS_INLINE_SIZE))
+                        {
+                            compInlineResult->NoteInt(InlineObservation::CALLEE_FORCE_INLINE_CALL, (int)calleeILSize);
+                        }
+                    }
+                }
+
                 if ((codeAddr < codeEndp - sz) && (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET)
                 {
                     // If the method has a call followed by a ret, assume that

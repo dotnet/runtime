@@ -8832,6 +8832,7 @@ public:
     bool eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsSharedInst(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
+    bool eeTryGetMethodILSize(CORINFO_METHOD_HANDLE ftn, uint32_t* pILSize, bool* pIsAggressiveInline);
     bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
 
     var_types eeGetFieldType(CORINFO_FIELD_HANDLE  fldHnd,

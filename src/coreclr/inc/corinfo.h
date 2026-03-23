@@ -2120,6 +2120,10 @@ public:
     // Quick check whether the method is a jit intrinsic. Returns the same value as getMethodAttribs(ftn) & CORINFO_FLG_INTRINSIC, except faster.
     virtual bool isIntrinsic(CORINFO_METHOD_HANDLE ftn) = 0;
 
+    // Try to get the IL code size and AggressiveInlining flag for a method.
+    // Returns true if the IL size was successfully retrieved.
+    virtual bool tryGetMethodILSize(CORINFO_METHOD_HANDLE ftn, uint32_t* pILSize, bool* pIsAggressiveInline) = 0;
+
     // Notify EE about intent to rely on given MethodInfo in the current method
     // EE returns false if we're not allowed to do so and the methodinfo may change.
     // Example of a scenario addressed by notifyMethodInfoUsage:

@@ -769,6 +769,34 @@ bool MethodContext::repIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return value != 0;
 }
 
+void MethodContext::recTryGetMethodILSize(CORINFO_METHOD_HANDLE ftn, uint32_t ilSize, bool isAggressiveInline, bool result)
+{
+    if (TryGetMethodILSize == nullptr)
+        TryGetMethodILSize = new LightWeightMap<DWORDLONG, DD>();
+
+    DWORDLONG key = CastHandle(ftn);
+    DD value;
+    value.A = ilSize;
+    value.B = (result ? 2 : 0) | (isAggressiveInline ? 1 : 0);
+    TryGetMethodILSize->Add(key, value);
+    DEBUG_REC(dmpTryGetMethodILSize(key, value));
+}
+void MethodContext::dmpTryGetMethodILSize(DWORDLONG key, DD value)
+{
+    printf("TryGetMethodILSize key ftn-%016" PRIX64 ", ilSize-%u, flags-%u", key, value.A, value.B);
+}
+bool MethodContext::repTryGetMethodILSize(CORINFO_METHOD_HANDLE ftn, uint32_t* pILSize, bool* pIsAggressiveInline)
+{
+    DWORDLONG key = CastHandle(ftn);
+    DD value = LookupByKeyOrMiss(TryGetMethodILSize, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpTryGetMethodILSize(key, value));
+    if (pILSize != nullptr)
+        *pILSize = value.A;
+    if (pIsAggressiveInline != nullptr)
+        *pIsAggressiveInline = (value.B & 1) != 0;
+    return (value.B & 2) != 0;
+}
+
 void MethodContext::recNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn, bool result)
 {
     if (NotifyMethodInfoUsage == nullptr)
