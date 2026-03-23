@@ -198,6 +198,7 @@ namespace System.Runtime.CompilerServices
         internal static partial void CompileMethod(RuntimeMethodHandleInternal method);
 
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
+        [RequiresUnsafe]
         private static unsafe partial void PrepareMethod(RuntimeMethodHandleInternal method, IntPtr* pInstantiation, int cInstantiation);
 
         public static void PrepareMethod(RuntimeMethodHandle method) => PrepareMethod(method, null);
@@ -447,6 +448,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="data">A reference to the data to box.</param>
         /// <returns>A boxed instance of the value at <paramref name="data"/>.</returns>
         /// <remarks>This method includes proper handling for nullable value types as well.</remarks>
+        [RequiresUnsafe]
         internal static unsafe object? Box(MethodTable* methodTable, ref byte data) =>
             methodTable->IsNullable ? CastHelpers.Box_Nullable(methodTable, ref data) : CastHelpers.Box(methodTable, ref data);
 
@@ -462,9 +464,11 @@ namespace System.Runtime.CompilerServices
         // GC.KeepAlive(o);
         //
         [Intrinsic]
+        [RequiresUnsafe]
         internal static unsafe MethodTable* GetMethodTable(object obj) => GetMethodTable(obj);
 
         [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
+        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb);
 
@@ -519,9 +523,11 @@ namespace System.Runtime.CompilerServices
         private static partial IntPtr AllocateTypeAssociatedMemoryAligned(QCallTypeHandle type, uint size, uint alignment);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe TailCallArgBuffer* GetTailCallArgBuffer();
 
         [LibraryImport(QCall, EntryPoint = "TailCallHelp_AllocTailCallArgBufferInternal")]
+        [RequiresUnsafe]
         private static unsafe partial TailCallArgBuffer* AllocTailCallArgBufferInternal(int size);
 
         private const int TAILCALLARGBUFFER_ACTIVE = 0;
@@ -529,6 +535,7 @@ namespace System.Runtime.CompilerServices
         private const int TAILCALLARGBUFFER_INACTIVE = 2;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // To allow unrolling of Span.Clear
+        [RequiresUnsafe]
         private static unsafe TailCallArgBuffer* AllocTailCallArgBuffer(int size, IntPtr gcDesc)
         {
             TailCallArgBuffer* buffer = GetTailCallArgBuffer();
@@ -558,9 +565,11 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
 
         [StackTraceHidden]
+        [RequiresUnsafe]
         private static unsafe void DispatchTailCalls(
             IntPtr callersRetAddrSlot,
             delegate*<TailCallArgBuffer*, ref byte, PortableTailCallFrame*, void> callTarget,
@@ -643,11 +652,31 @@ namespace System.Runtime.CompilerServices
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void CallToString(object* pObj, string* pResult, Exception* pException)
         {
             try
             {
                 *pResult = pObj->ToString();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        // Dummy method providing a MethodDesc with the correct signature (IntPtr -> object)
+        // for newobj allocator JIT helpers on portable entry point platforms. The interpreter
+        // uses the MethodDesc to derive the call cookie; the method itself is never executed.
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern object NewobjHelperDummy(IntPtr methodTable);
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CallDefaultConstructor(object* pObj, delegate*<object, void> pCtor, Exception* pException)
+        {
+            try
+            {
+                pCtor(*pObj);
             }
             catch (Exception ex)
             {
@@ -695,8 +724,10 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DebuggerHidden]
         [DebuggerStepThrough]
+        [RequiresUnsafe]
         private MethodDescChunk* GetMethodDescChunk() => (MethodDescChunk*)(((byte*)Unsafe.AsPointer<MethodDesc>(ref this)) - (sizeof(MethodDescChunk) + ChunkIndex * sizeof(IntPtr)));
 
+        [RequiresUnsafe]
         public MethodTable* MethodTable => GetMethodDescChunk()->MethodTable;
     }
 
@@ -888,6 +919,7 @@ namespace System.Runtime.CompilerServices
 
         public bool IsCollectible => (Flags & enum_flag_Collectible) != 0;
 
+        [RequiresUnsafe]
         internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2) => mt1 == mt2;
 
         public bool HasDefaultConstructor => (Flags & (enum_flag_HasComponentSize | enum_flag_HasDefaultCtor)) == enum_flag_HasDefaultCtor;
@@ -991,9 +1023,11 @@ namespace System.Runtime.CompilerServices
         /// Get the MethodTable in the type hierarchy of this MethodTable that has the same TypeDef/Module as parent.
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         public extern MethodTable* InstantiationArg0();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1176,6 +1210,7 @@ namespace System.Runtime.CompilerServices
         private readonly void* m_asTAddr;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public TypeHandle(void* tAddr)
         {
             m_asTAddr = tAddr;
@@ -1201,6 +1236,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="false"/>.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public MethodTable* AsMethodTable()
         {
             Debug.Assert(!IsTypeDesc);
@@ -1213,6 +1249,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="true"/>.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public TypeDesc* AsTypeDesc()
         {
             Debug.Assert(IsTypeDesc);
@@ -1285,10 +1322,12 @@ namespace System.Runtime.CompilerServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
+        [RequiresUnsafe]
         private static partial Interop.BOOL CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
 
         [SuppressGCTransition]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_GetCorElementType")]
+        [RequiresUnsafe]
         private static partial int GetCorElementType(void* typeHnd);
     }
 

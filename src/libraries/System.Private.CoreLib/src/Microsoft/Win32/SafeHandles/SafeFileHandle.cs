@@ -8,7 +8,7 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private string? _path;
-        private volatile int _cachedFileType = -1;
+        private int _cachedFileType = -1;
 
         /// <summary>
         /// Creates an anonymous pipe.
@@ -54,7 +54,7 @@ namespace Microsoft.Win32.SafeHandles
                 int cachedType = _cachedFileType;
                 if (cachedType == -1)
                 {
-                    cachedType = _cachedFileType = (int)GetFileTypeCore();
+                    _cachedFileType = cachedType = (int)GetFileTypeCore();
                 }
 
                 return (System.IO.FileHandleType)cachedType;

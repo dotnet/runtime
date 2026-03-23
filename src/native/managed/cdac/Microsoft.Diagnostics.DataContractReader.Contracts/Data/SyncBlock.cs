@@ -22,6 +22,7 @@ internal sealed class SyncBlock : IData<SyncBlock>
 
         ThinLock = target.Read<uint>(address + (ulong)type.Fields[nameof(ThinLock)].Offset);
         LinkNext = target.ReadPointer(address + (ulong)type.Fields[nameof(LinkNext)].Offset);
+        HashCode = target.Read<uint>(address + (ulong)type.Fields[nameof(HashCode)].Offset);
     }
 
     public TargetPointer Address { get; init; }
@@ -29,4 +30,5 @@ internal sealed class SyncBlock : IData<SyncBlock>
     public ObjectHandle? Lock { get; init; }
     public uint ThinLock { get; init; }
     public TargetPointer LinkNext { get; init; }
+    public uint HashCode { get; init; }
 }

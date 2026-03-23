@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -8,7 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
-    internal sealed record ComClassInfo
+    internal sealed class ComClassInfo : IEquatable<ComClassInfo>
     {
         public string ClassName { get; init; }
         public ContainingSyntaxContext ContainingSyntaxContext { get; init; }
@@ -52,6 +53,11 @@ namespace Microsoft.Interop
                 && ClassName == other.ClassName
                 && ContainingSyntaxContext.Equals(other.ContainingSyntaxContext)
                 && ImplementedInterfacesNames.SequenceEqual(other.ImplementedInterfacesNames);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as ComClassInfo);
         }
 
         public override int GetHashCode()
