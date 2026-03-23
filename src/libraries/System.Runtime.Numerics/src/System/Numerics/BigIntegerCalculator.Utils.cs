@@ -19,8 +19,8 @@ namespace System.Numerics
 
         public static int Compare(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right)
         {
-            Debug.Assert(left.Length <= right.Length || left.Slice(right.Length).ContainsAnyExcept((nuint)0));
-            Debug.Assert(left.Length >= right.Length || right.Slice(left.Length).ContainsAnyExcept((nuint)0));
+            Debug.Assert(left.Length <= right.Length || left.Slice(right.Length).ContainsAnyExcept(0u));
+            Debug.Assert(left.Length >= right.Length || right.Slice(left.Length).ContainsAnyExcept(0u));
 
             if (left.Length != right.Length)
             {
@@ -207,26 +207,6 @@ namespace System.Numerics
                 ulong digit = value / divisor;
                 remainder = (uint)(value - digit * divisor);
                 return (uint)digit;
-            }
-        }
-
-        /// <summary>
-        /// Widening multiply of two limbs, returning just the product as (hi, lo).
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static nuint BigMul(nuint a, nuint b, out nuint low)
-        {
-            if (nint.Size == 8)
-            {
-                ulong hi = Math.BigMul(a, b, out ulong lo);
-                low = (nuint)lo;
-                return (nuint)hi;
-            }
-            else
-            {
-                ulong product = (ulong)a * b;
-                low = (uint)product;
-                return (uint)(product >> 32);
             }
         }
 

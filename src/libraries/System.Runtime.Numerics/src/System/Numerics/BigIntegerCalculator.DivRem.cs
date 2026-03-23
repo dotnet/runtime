@@ -193,15 +193,13 @@ namespace System.Numerics
             nuint divLo = right.Length > 1 ? right[^2] : 0;
 
             // We measure the leading zeros of the divisor
-            int shift = nint.Size == 8
-                ? BitOperations.LeadingZeroCount((ulong)divHi)
-                : BitOperations.LeadingZeroCount((uint)divHi);
+            int shift = (int)nuint.LeadingZeroCount(divHi);
             int backShift = BitsPerLimb - shift;
 
             // And, we make sure the most significant bit is set
             if (shift > 0)
             {
-                nuint divNx = right.Length > 2 ? right[right.Length - 3] : 0;
+                nuint divNx = right.Length > 2 ? right[^3] : 0;
 
                 divHi = (divHi << shift) | (divLo >> backShift);
                 divLo = (divLo << shift) | (divNx >> backShift);
@@ -299,8 +297,8 @@ namespace System.Numerics
             // than the three most significant limbs of the current dividend
             // we return true, which means the current guess is still too big.
 
-            nuint chkHiHi = BigMul(divHi, q, out nuint chkHiLo);
-            nuint chkLoHi = BigMul(divLo, q, out nuint chkLoLo);
+            nuint chkHiHi = nuint.BigMul(divHi, q, out nuint chkHiLo);
+            nuint chkLoHi = nuint.BigMul(divLo, q, out nuint chkLoLo);
 
             chkHiLo += chkLoHi;
             if (chkHiLo < chkLoHi)
@@ -333,9 +331,7 @@ namespace System.Numerics
             }
 
             int sigmaDigit = n - right.Length;
-            int sigmaSmall = nint.Size == 8
-                ? BitOperations.LeadingZeroCount((ulong)right[^1])
-                : BitOperations.LeadingZeroCount((uint)right[^1]);
+            int sigmaSmall = (int)nuint.LeadingZeroCount(right[^1]);
 
             Span<nuint> b = BigInteger.RentedBuffer.Create(n, out BigInteger.RentedBuffer bBuffer);
 
@@ -344,9 +340,7 @@ namespace System.Numerics
             // if: LeadingZeroCount(left[^1]) < sigmaSmall, requires one more digit obviously.
             // if: LeadingZeroCount(left[^1]) == sigmaSmall, requires one more digit, because the leftmost bit of a must be 0.
 
-            int leftLzc = nint.Size == 8
-                ? BitOperations.LeadingZeroCount((ulong)left[^1])
-                : BitOperations.LeadingZeroCount((uint)left[^1]);
+            int leftLzc = (int)nuint.LeadingZeroCount(left[^1]);
             if (leftLzc <= sigmaSmall)
             {
                 ++aLength;
@@ -401,7 +395,7 @@ namespace System.Numerics
 
                 BurnikelZieglerD2n1n(z, b, q, r);
 
-                Debug.Assert(!q.Slice(quotientUpper.Length).ContainsAnyExcept((nuint)0));
+                Debug.Assert(!q.Slice(quotientUpper.Length).ContainsAnyExcept(0u));
                 q.Slice(0, quotientUpper.Length).CopyTo(quotientUpper);
 
                 qBuffer.Dispose();
@@ -426,7 +420,7 @@ namespace System.Numerics
             aBuffer.Dispose();
 
             Debug.Assert(r[^1] == 0);
-            Debug.Assert(!r.Slice(0, sigmaDigit).ContainsAnyExcept((nuint)0));
+            Debug.Assert(!r.Slice(0, sigmaDigit).ContainsAnyExcept(0u));
             if (remainder.Length != 0)
             {
                 Span<nuint> rt = r.Slice(sigmaDigit);
@@ -519,7 +513,7 @@ namespace System.Numerics
                 }
                 else
                 {
-                    Debug.Assert(!r1.Slice(remainder.Length).ContainsAnyExcept((nuint)0));
+                    Debug.Assert(!r1.Slice(remainder.Length).ContainsAnyExcept(0u));
                     r1.Slice(0, remainder.Length).CopyTo(remainder);
                 }
 

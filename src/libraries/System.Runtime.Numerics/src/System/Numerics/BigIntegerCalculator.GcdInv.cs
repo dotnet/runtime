@@ -13,23 +13,40 @@ namespace System.Numerics
             // Executes the classic Euclidean algorithm.
             // https://en.wikipedia.org/wiki/Euclidean_algorithm
 
-            if (nint.Size == 8 && left <= uint.MaxValue && right <= uint.MaxValue)
+            if (nint.Size == 8)
             {
-                // Use 32-bit modulo when values fit — div r32 is faster than div r64.
-                uint l = (uint)left, r = (uint)right;
-                while (r != 0)
+                // Use 64-bit division until right fits in 32-bit, then
+                // switch to cheaper 32-bit division for the remainder.
+                while (right > uint.MaxValue)
                 {
-                    uint temp = l % r;
-                    l = r;
-                    r = temp;
+                    nuint temp = left % right;
+                    left = right;
+                    right = temp;
                 }
 
-                return l;
+                if (right != 0)
+                {
+                    return Gcd((uint)right, (uint)(left % right));
+                }
+
+                return left;
             }
 
             while (right != 0)
             {
                 nuint temp = left % right;
+                left = right;
+                right = temp;
+            }
+
+            return left;
+        }
+
+        private static uint Gcd(uint left, uint right)
+        {
+            while (right != 0)
+            {
+                uint temp = left % right;
                 left = right;
                 right = temp;
             }

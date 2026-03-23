@@ -127,7 +127,7 @@ namespace System.Numerics
             {
                 nuint val = left[i];
                 left[i] = val - borrow;
-                borrow = (val < borrow) ? 1 : (nuint)0;
+                borrow = val == 0 ? 1 : (nuint)0;
             }
 
             Debug.Assert(borrow == 0);

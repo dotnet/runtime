@@ -465,7 +465,7 @@ namespace System.Numerics
                     NumericsHelpers.DangerousMakeTwosComplement(val); // Mutates val
 
                     // Pack _bits to remove any wasted space after the twos complement
-                    int len = val.AsSpan().LastIndexOfAnyExcept((nuint)0) + 1;
+                    int len = val.AsSpan().LastIndexOfAnyExcept(0u) + 1;
 
                     if (len == 1)
                     {
@@ -537,7 +537,7 @@ namespace System.Numerics
             // Try to conserve space as much as possible by checking for wasted leading span entries
             // sometimes the span has leading zeros from bit manipulation operations & and ^
 
-            int length = value.LastIndexOfAnyExcept((nuint)0) + 1;
+            int length = value.LastIndexOfAnyExcept(0u) + 1;
             value = value[..length];
 
             if (value.Length > MaxLength)
@@ -593,7 +593,7 @@ namespace System.Numerics
             else
             {
                 isNegative = false;
-                length = value.LastIndexOfAnyExcept((nuint)0) + 1;
+                length = value.LastIndexOfAnyExcept(0u) + 1;
             }
 
             value = value[..length];
@@ -638,7 +638,7 @@ namespace System.Numerics
                         {
                             // On 64-bit, check if multi-uint magnitude fits in one nuint
                             _sign = -1;
-                            int trimLen = value.LastIndexOfAnyExcept((nuint)0) + 1;
+                            int trimLen = value.LastIndexOfAnyExcept(0u) + 1;
                             _bits = trimLen == 1 ? [magnitude] : value[..trimLen].ToArray();
                         }
                         else
@@ -667,7 +667,7 @@ namespace System.Numerics
                     NumericsHelpers.DangerousMakeTwosComplement(value);
 
                     // Retrim any leading zeros carried from the sign
-                    length = value.LastIndexOfAnyExcept((nuint)0) + 1;
+                    length = value.LastIndexOfAnyExcept(0u) + 1;
                     value = value[..length];
 
                     _sign = -1;
@@ -704,7 +704,7 @@ namespace System.Numerics
                 }
 
                 int iu = _bits.Length - 1;
-                return BitOperations.IsPow2(_bits[iu]) && !_bits.AsSpan(0, iu).ContainsAnyExcept((nuint)0);
+                return BitOperations.IsPow2(_bits[iu]) && !_bits.AsSpan(0, iu).ContainsAnyExcept(0u);
             }
         }
 
@@ -1492,7 +1492,7 @@ namespace System.Numerics
                 // would be encoded as _bits = null and _sign = 0.
                 Debug.Assert(bits.Length > 0);
                 Debug.Assert(bits[^1] != 0);
-                nonZeroLimbIndex = ((ReadOnlySpan<nuint>)bits).IndexOfAnyExcept((nuint)0);
+                nonZeroLimbIndex = ((ReadOnlySpan<nuint>)bits).IndexOfAnyExcept(0u);
 
                 highLimb = ~bits[^1];
                 if (bits.Length - 1 == nonZeroLimbIndex)
@@ -2630,7 +2630,7 @@ namespace System.Numerics
             BigIntegerCalculator.RightShiftSelf(zd, smallShift, out nuint carry);
 
             bool neg = value._sign < 0;
-            if (neg && (carry != 0 || bits.Slice(0, digitShift).ContainsAnyExcept((nuint)0)))
+            if (neg && (carry != 0 || bits.Slice(0, digitShift).ContainsAnyExcept(0u)))
             {
                 // Since right shift rounds towards zero, rounding up is performed
                 // if the number is negative and the shifted-out bits are not all zeros.
@@ -3025,7 +3025,7 @@ namespace System.Numerics
             }
 
             // Check the rest of the bits (if present)
-            return bits.AsSpan(0, bitsArrayLength - 1).ContainsAnyExcept((nuint)0) ? bitLength : bitLength - 1;
+            return bits.AsSpan(0, bitsArrayLength - 1).ContainsAnyExcept(0u) ? bitLength : bitLength - 1;
         }
 
         [Conditional("DEBUG")]
@@ -3185,7 +3185,7 @@ namespace System.Numerics
             Debug.Assert(Math.Abs(rotateLeftAmount) <= 0x80000000);
 
             int zLength = bits.Length;
-            int leadingZeroCount = negative ? bits.IndexOfAnyExcept((nuint)0) : 0;
+            int leadingZeroCount = negative ? bits.IndexOfAnyExcept(0u) : 0;
 
             if (negative && (nint)bits[^1] < 0
                 && (leadingZeroCount != bits.Length - 1 || bits[^1] != ((nuint)1 << (BigIntegerCalculator.BitsPerLimb - 1))))
@@ -3298,7 +3298,7 @@ namespace System.Numerics
                 // bytes are not zero. This ensures we get the correct two's complement
                 // part for the computation.
 
-                if (bits.AsSpan(0, bits.Length - 1).ContainsAnyExcept((nuint)0))
+                if (bits.AsSpan(0, bits.Length - 1).ContainsAnyExcept(0u))
                 {
                     part -= 1;
                 }
@@ -3354,7 +3354,7 @@ namespace System.Numerics
                     }
 
                     // Find first non-zero limb to determine carry boundary
-                    int firstNonZero = ((ReadOnlySpan<nuint>)bits).IndexOfAnyExcept((nuint)0);
+                    int firstNonZero = ((ReadOnlySpan<nuint>)bits).IndexOfAnyExcept(0u);
                     Debug.Assert(firstNonZero >= 0);
 
                     // Write from highest limb to lowest (forward in big-endian dest)
@@ -3424,7 +3424,7 @@ namespace System.Numerics
                     Span<byte> dest = destination;
 
                     // Find first non-zero limb to determine carry boundary
-                    int firstNonZero = ((ReadOnlySpan<nuint>)bits).IndexOfAnyExcept((nuint)0);
+                    int firstNonZero = ((ReadOnlySpan<nuint>)bits).IndexOfAnyExcept(0u);
                     Debug.Assert(firstNonZero >= 0);
 
                     for (int i = 0; i < bits.Length; i++)
@@ -3485,7 +3485,7 @@ namespace System.Numerics
                 // bytes are not zero. This ensures we get the correct two's complement
                 // part for the computation.
 
-                if (bits.AsSpan(0, bits.Length - 1).ContainsAnyExcept((nuint)0))
+                if (bits.AsSpan(0, bits.Length - 1).ContainsAnyExcept(0u))
                 {
                     part -= 1;
                 }
@@ -4928,7 +4928,7 @@ namespace System.Numerics
             }
 
             bool neg = value._sign < 0;
-            int negLeadingZeroCount = neg ? bits.IndexOfAnyExcept((nuint)0) : 0;
+            int negLeadingZeroCount = neg ? bits.IndexOfAnyExcept(0u) : 0;
             Debug.Assert(negLeadingZeroCount >= 0);
 
             if (neg && (nint)bits[^1] < 0)

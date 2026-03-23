@@ -114,7 +114,7 @@ namespace System.Numerics
             // where A = ~X and B = -Y
 
             // Trim trailing 0s (at the first in little endian array)
-            int i = d.IndexOfAnyExcept((nuint)0);
+            int i = d.IndexOfAnyExcept(0u);
 
             if ((uint)i >= (uint)d.Length)
             {

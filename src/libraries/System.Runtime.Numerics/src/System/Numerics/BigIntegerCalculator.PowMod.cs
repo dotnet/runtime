@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -460,14 +461,7 @@ namespace System.Numerics
             nuint topLimb = value[length - 1];
             int bits = (length - 1) * BitsPerLimb;
 
-            if (nint.Size == 8)
-            {
-                bits += 64 - BitOperations.LeadingZeroCount((ulong)topLimb);
-            }
-            else
-            {
-                bits += 32 - BitOperations.LeadingZeroCount((uint)topLimb);
-            }
+            bits += BitsPerLimb - (int)nuint.LeadingZeroCount(topLimb);
 
             return bits;
         }
@@ -475,11 +469,10 @@ namespace System.Numerics
         /// <summary>
         /// Gets the bit at position <paramref name="bitIndex"/> of the multi-limb exponent.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetBit(ReadOnlySpan<nuint> value, int bitIndex)
         {
-            int limbIndex = bitIndex / BitsPerLimb;
-            int bitOffset = bitIndex % BitsPerLimb;
-            return (int)((value[limbIndex] >> bitOffset) & 1);
+            return (int)((value[(int)((uint)bitIndex / (uint)BitsPerLimb)] >> (bitIndex & (BitsPerLimb - 1))) & 1);
         }
 
         private static void PowCoreMontgomery(Span<nuint> value, int valueLength,
@@ -623,11 +616,9 @@ namespace System.Numerics
                     }
 
                     // Trim trailing zeros to ensure the window value is odd
-                    while ((wValue & 1) == 0)
-                    {
-                        wValue >>= 1;
-                        wLen--;
-                    }
+                    int trailingZeros = BitOperations.TrailingZeroCount(wValue);
+                    wValue >>= trailingZeros;
+                    wLen -= trailingZeros;
 
                     // Square for each bit in the window
                     for (int i = 0; i < wLen; i++)

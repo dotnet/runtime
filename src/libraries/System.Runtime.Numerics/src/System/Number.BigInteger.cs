@@ -269,7 +269,7 @@ namespace System
             if (signBits != 0)
             {
                 // For negative values, negate the whole array
-                if (bits.AsSpan().ContainsAnyExcept((nuint)0))
+                if (bits.AsSpan().ContainsAnyExcept(0u))
                 {
                     NumericsHelpers.DangerousMakeTwosComplement(bits);
                 }

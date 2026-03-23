@@ -27,7 +27,7 @@ namespace System.Numerics
         public static void Square(ReadOnlySpan<nuint> value, Span<nuint> bits)
         {
             Debug.Assert(bits.Length == value.Length + value.Length);
-            Debug.Assert(!bits.ContainsAnyExcept((nuint)0));
+            Debug.Assert(!bits.ContainsAnyExcept(0u));
 
             // Executes different algorithms for computing z = a * a
             // based on the actual length of a. If a is "small" enough
@@ -554,7 +554,7 @@ namespace System.Numerics
 
             public static Toom3Data Build(ReadOnlySpan<nuint> value, int n, Span<nuint> buffer)
             {
-                Debug.Assert(!buffer.ContainsAnyExcept((nuint)0));
+                Debug.Assert(!buffer.ContainsAnyExcept(0u));
                 Debug.Assert(buffer.Length == 3 * (n + 1));
                 Debug.Assert(value.Length > n);
                 Debug.Assert(value[^1] != 0);
@@ -596,7 +596,7 @@ namespace System.Numerics
                 int pm2Sign = pm1Sign;
                 Span<nuint> pm2 = buffer.Slice(pLength + pLength, pLength);
                 {
-                    Debug.Assert(!pm2.ContainsAnyExcept((nuint)0));
+                    Debug.Assert(!pm2.ContainsAnyExcept(0u));
                     Debug.Assert(pm1.IsEmpty || pm1[^1] != 0);
                     Debug.Assert(v0.IsEmpty || v0[^1] != 0);
                     Debug.Assert(v2.IsEmpty || v2[^1] != 0);
@@ -633,7 +633,7 @@ namespace System.Numerics
 
             public void MultiplyOther(in Toom3Data right, int n, Span<nuint> bits, Span<nuint> buffer)
             {
-                Debug.Assert(!buffer.ContainsAnyExcept((nuint)0));
+                Debug.Assert(!buffer.ContainsAnyExcept(0u));
                 Debug.Assert(cInf.Length >= right.cInf.Length);
 
                 int rLength = n + n + 3;
@@ -687,7 +687,7 @@ namespace System.Numerics
 
             public void Square(int n, Span<nuint> bits, Span<nuint> buffer)
             {
-                Debug.Assert(!buffer.ContainsAnyExcept((nuint)0));
+                Debug.Assert(!buffer.ContainsAnyExcept(0u));
                 Debug.Assert(!cInf.IsEmpty);
 
                 int rLength = n + n + 3;
@@ -959,7 +959,7 @@ namespace System.Numerics
 
             if (leftSign == 0)
             {
-                Debug.Assert(!left.ContainsAnyExcept((nuint)0));
+                Debug.Assert(!left.ContainsAnyExcept(0u));
 
                 if (!right.IsEmpty)
                 {
