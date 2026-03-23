@@ -46,8 +46,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
     public delegate int WriteToTargetDelegate(ulong address, Span<byte> bufferToWrite);
     public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
-    private readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-    private readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
+    private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
     /// <summary>
     /// Create a new target instance from a contract descriptor embedded in the target memory.

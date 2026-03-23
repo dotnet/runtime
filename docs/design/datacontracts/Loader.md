@@ -581,9 +581,10 @@ bool TryGetSimpleName(ModuleHandle handle, out string simpleName)
 {
     TargetPointer simpleNameStart = target.ReadPointer(handle.Address + /* Module::SimpleName offset */);
     if (simpleNameStart == TargetPointer.Null)
-        return false
-    byte[] simpleName = // Read<byte> from target starting at simpleNameStart until null terminator
+        return false;
+    byte[] simpleNameBytes = // Read<byte> from target starting at simpleNameStart until null terminator
     simpleName = // convert to string, throw on invalid UTF-8
+    return true;
 }
 
 string GetPath(ModuleHandle handle)

@@ -135,9 +135,12 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             if (!loader.TryGetSimpleName(handle, out string result))
                 throw new ArgumentException("Module does not have a simple name");
 
-            OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, result);
+            uint nameLenLocal = 0;
+            OutputBufferHelpers.CopyStringToBuffer(name, bufLen, &nameLenLocal, result);
+            if (nameLen != null)
+                *nameLen = nameLenLocal;
             // throw on insufficient buffer
-            if (*nameLen > bufLen)
+            if (nameLenLocal > bufLen)
                 throw Marshal.GetExceptionForHR(E_INSUFFICIENT_BUFFER)!;
         }
         catch (System.Exception ex)
@@ -156,8 +159,11 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 hrLocal = _legacyModule.GetName(bufLen, &nameLenLocal, ptr);
             }
             Debug.ValidateHResult(hr, hrLocal);
-            Debug.Assert(nameLen == null || *nameLen == nameLenLocal);
-            Debug.Assert(name == null || new ReadOnlySpan<char>(nameLocal, 0, (int)nameLenLocal - 1).SequenceEqual(new string(name)));
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(nameLen == null || *nameLen == nameLenLocal);
+                Debug.Assert(name == null || new ReadOnlySpan<char>(nameLocal, 0, (int)nameLenLocal - 1).SequenceEqual(new string(name)));
+            }
         }
 #endif
         return hr;
