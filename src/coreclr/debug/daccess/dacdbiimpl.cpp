@@ -1200,7 +1200,7 @@ HRESULT DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPE
                                                                 wszFilePath,
                                                                 cchFilePath);
 
-        pStrFilename->AssignCopy(wszFilePath);
+        IfFailThrow(pStrFilename->AssignCopy(wszFilePath));
         *pResult = ret;
         }
     }
