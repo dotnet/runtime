@@ -291,7 +291,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
+  <!-- Resolve and classify build asset candidates.
+       This target always runs to ensure candidate items are populated for downstream consumers. -->
+  <Target Name="_ComputeWasmBuildCandidates" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
     <PropertyGroup>
       <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');@(WasmAssembliesFinal->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
       <_WasmIntermediateAssemblyFileNames Condition="@(WasmAssembliesFinal->Count()) != 0">;@(IntermediateAssembly->'%(FileName)%(Extension)');</_WasmIntermediateAssemblyFileNames>
@@ -355,10 +357,76 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBuildTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
-      <Output TaskParameter="WebcilCandidates" ItemName="_WebcilAssetsCandidates" />
+    <!-- Identify DLL candidates that need webcil conversion, separate culture from non-culture
+         DLLs, and compute their expected output paths for use as Outputs in the incremental
+         _ConvertBuildDllsToWebcil target. Culture and non-culture DLLs are separated into
+         distinct item groups to avoid MSBuild batching errors on metadata (like RelatedAsset)
+         that only culture items define. -->
+    <ItemGroup Condition="'$(_WasmEnableWebcil)' == 'true'">
+      <_WasmDllBuildCandidates Include="@(_BuildAssetsCandidates)" Condition="'%(Extension)' == '.dll'" />
+      <_WasmDllBuildCandidatesNonCulture Include="@(_WasmDllBuildCandidates)" Condition="'%(AssetTraitName)' != 'Culture'" />
+      <_WasmDllBuildCandidatesCulture Include="@(_WasmDllBuildCandidates)" Condition="'%(AssetTraitName)' == 'Culture'" />
+      <_WasmExpectedWebcilOutputs Include="@(_WasmDllBuildCandidatesNonCulture->'$(_WasmBuildWebcilPath)%(FileName).wasm')" />
+      <_WasmExpectedWebcilOutputs Include="@(_WasmDllBuildCandidatesCulture->'$(_WasmBuildWebcilPath)%(AssetTraitValue)/%(FileName).wasm')" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Convert DLL assemblies to webcil format.
+       This target is incremental: when all input DLLs are older than their corresponding
+       webcil outputs, the entire target is skipped, saving the conversion task overhead.
+       The task also has internal per-file timestamp checks as a secondary optimization. -->
+  <Target Name="_ConvertBuildDllsToWebcil"
+    DependsOnTargets="_ComputeWasmBuildCandidates"
+    Condition="'$(_WasmEnableWebcil)' == 'true'"
+    Inputs="@(_WasmDllBuildCandidates);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
+    Outputs="@(_WasmExpectedWebcilOutputs)">
+
+    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+      <Output TaskParameter="FileWrites" ItemName="_WasmConvertedWebcilOutputs" />
     </ConvertDllsToWebcil>
+
+    <!-- The ConvertDllsToWebcil task uses content comparison and preserves old timestamps when
+         the output content is unchanged. Touch the files that were actually written so
+         MSBuild's Inputs/Outputs check sees current timestamps and can correctly skip this
+         target on subsequent builds. -->
+    <Touch Files="@(_WasmConvertedWebcilOutputs)" Condition="'@(_WasmConvertedWebcilOutputs)' != ''" />
+  </Target>
+
+  <!-- Resolve webcil candidate items and define static web assets for the build.
+       This target always runs because it populates item groups consumed by downstream targets.
+       It reconstructs the webcil candidate items from _BuildAssetsCandidates using the same
+       path logic as the ConvertDllsToWebcil task, so items are correct whether the conversion
+       target ran or was skipped due to incrementalism. -->
+  <Target Name="_ResolveWasmOutputs" DependsOnTargets="_ComputeWasmBuildCandidates;_ConvertBuildDllsToWebcil">
+
+    <!-- When webcil is enabled, transform DLL candidates to their webcil output paths and fix
+         metadata. Non-culture and culture DLLs use separate intermediate items to avoid MSBuild
+         batching errors on metadata (like RelatedAsset) that only culture items define. -->
+    <ItemGroup Condition="'$(_WasmEnableWebcil)' == 'true'">
+      <_WasmWebcilConvertedNonCulture Include="@(_WasmDllBuildCandidatesNonCulture->'$(_WasmBuildWebcilPath)%(FileName).wasm')">
+        <RelativePath>$([System.IO.Path]::ChangeExtension(%(RelativePath), '.wasm'))</RelativePath>
+        <OriginalItemSpec>$(_WasmBuildWebcilPath)%(FileName).wasm</OriginalItemSpec>
+      </_WasmWebcilConvertedNonCulture>
+      <_WasmWebcilConvertedCulture Include="@(_WasmDllBuildCandidatesCulture->'$(_WasmBuildWebcilPath)%(AssetTraitValue)/%(FileName).wasm')">
+        <RelativePath>$([System.IO.Path]::ChangeExtension(%(RelativePath), '.wasm'))</RelativePath>
+        <OriginalItemSpec>$(_WasmBuildWebcilPath)%(AssetTraitValue)/%(FileName).wasm</OriginalItemSpec>
+        <RelatedAsset>$([System.IO.Path]::ChangeExtension(%(RelatedAsset), '.wasm'))</RelatedAsset>
+      </_WasmWebcilConvertedCulture>
+
+      <!-- Combine non-DLL pass-through candidates with webcil-converted candidates -->
+      <_WebcilAssetsCandidates Include="@(_BuildAssetsCandidates)" Condition="'%(Extension)' != '.dll'" />
+      <_WebcilAssetsCandidates Include="@(_WasmWebcilConvertedNonCulture)" />
+      <_WebcilAssetsCandidates Include="@(_WasmWebcilConvertedCulture)" />
+
+      <!-- Track webcil files for clean operations even when the conversion target was skipped -->
+      <FileWrites Include="@(_WasmExpectedWebcilOutputs)" />
+    </ItemGroup>
+
+    <!-- When webcil is disabled, candidates pass through unchanged -->
+    <ItemGroup Condition="'$(_WasmEnableWebcil)' != 'true'">
+      <_WebcilAssetsCandidates Include="@(_BuildAssetsCandidates)" />
+    </ItemGroup>
 
     <ItemGroup>
       <!-- Set per-item ContentRoot so each asset's Identity matches its actual file on disk -->
@@ -429,7 +497,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
+  <!-- Resolve endpoints and inputs needed for boot JSON generation.
+       This target always runs to ensure endpoint items are populated for downstream consumers. -->
+  <Target Name="_ResolveBuildWasmBootJsonEndpoints" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
     <PropertyGroup>
       <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(_WasmBootConfigFileName)</_WasmBuildBootJsonPath>
       <_WasmBuildApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmBuildApplicationEnvironmentName>
@@ -483,6 +553,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="ResolvedEndpoints" ItemName="_WasmResolvedEndpoints" />
     </ResolveFingerprintedStaticWebAssetEndpointsForAssets>
+  </Target>
+
+  <!-- Write the boot JSON file. Supports MSBuild incrementalism: skipped when all inputs
+       are older than the output, avoiding the expensive GenerateWasmBootJson computation
+       on no-op rebuilds. -->
+  <Target Name="_WriteBuildWasmBootJsonFile"
+    DependsOnTargets="_ResolveBuildWasmBootJsonEndpoints"
+    Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
+    Outputs="$(_WasmBuildBootJsonPath)">
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
@@ -524,7 +603,19 @@ Copyright (c) .NET Foundation. All rights reserved.
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
     </ItemGroup>
 
+    <!-- The GenerateWasmBootJson task uses content comparison and preserves old timestamps when
+         the output content is unchanged. Touch the output so MSBuild's Inputs/Outputs check
+         sees a current timestamp and can correctly skip this target on subsequent builds. -->
+    <Touch Files="$(_WasmBuildBootJsonPath)" />
+  </Target>
+
+  <!-- Define the boot config file as a static web asset and create endpoints.
+       This target always runs to ensure items are populated for _AddWasmStaticWebAssets. -->
+  <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="_WriteBuildWasmBootJsonFile">
+
     <ItemGroup>
+      <!-- Track boot JSON for clean operations even when _WriteBuildWasmBootJsonFile was skipped -->
+      <FileWrites Include="$(_WasmBuildBootJsonPath)" />
       <_WasmBuildBootConfigCandidate
         Include="$(_WasmBuildBootJsonPath)"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
@@ -836,6 +927,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_AddPublishWasmBootJsonToStaticWebAssets" DependsOnTargets="GeneratePublishWasmBootJson">
 
     <ItemGroup>
+      <!-- Track boot JSON for clean operations even when GeneratePublishWasmBootJson was skipped -->
+      <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
       <_WasmPublishBootConfigCandidate
         Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
@@ -873,7 +966,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   </Target>
 
-  <Target Name="GeneratePublishWasmBootJson" DependsOnTargets="$(GeneratePublishWasmBootJsonDependsOn)">
+  <!-- Resolve inputs needed for publish boot JSON generation. -->
+  <Target Name="_ResolvePublishWasmBootJsonInputs" DependsOnTargets="$(GeneratePublishWasmBootJsonDependsOn)">
     <PropertyGroup>
       <_WasmPublishApplicationEnvironmentName>$(WasmApplicationEnvironmentName)</_WasmPublishApplicationEnvironmentName>
     </PropertyGroup>
@@ -906,6 +1000,14 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="ResolvedEndpoints" ItemName="_WasmResolvedEndpointsForPublish" />
     </ResolveFingerprintedStaticWebAssetEndpointsForAssets>
+  </Target>
+
+  <!-- Write the publish boot JSON file. Supports MSBuild incrementalism: skipped when all
+       inputs are older than the output. -->
+  <Target Name="GeneratePublishWasmBootJson"
+    DependsOnTargets="_ResolvePublishWasmBootJsonInputs"
+    Inputs="@(IntermediateAssembly);@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish);@(_WasmPublishConfigFile);@(_WasmDotnetJsForPublish);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
+    Outputs="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)">
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
@@ -946,6 +1048,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
     </ItemGroup>
+
+    <!-- The GenerateWasmBootJson task uses content comparison and preserves old timestamps when
+         the output content is unchanged. Touch the output so MSBuild's Inputs/Outputs check
+         sees a current timestamp and can correctly skip this target on subsequent builds. -->
+    <Touch Files="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
 
   </Target>
 
