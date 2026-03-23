@@ -117,6 +117,18 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetBio")]
         internal static partial void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetFd")]
+        internal static partial int SslSetFd(SafeSslHandle ssl, int fd);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetKtls")]
+        internal static partial int SslSetKtls(SafeSslHandle ssl);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetKtlsSend")]
+        internal static partial int SslGetKtlsSend(SafeSslHandle ssl);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetKtlsRecv")]
+        internal static partial int SslGetKtlsRecv(SafeSslHandle ssl);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
         internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
 
@@ -393,6 +405,7 @@ namespace Microsoft.Win32.SafeHandles
         private SafeBioHandle? _writeBio;
         private bool _isServer;
         private bool _handshakeCompleted;
+        private bool _useKtls;
 
         public GCHandle AlpnHandle;
         // Reference to the parent SSL_CTX handle in the SSL_CTX is being cached. Only used for
@@ -402,6 +415,11 @@ namespace Microsoft.Win32.SafeHandles
         public bool IsServer
         {
             get { return _isServer; }
+        }
+
+        public bool UseKtls
+        {
+            get { return _useKtls; }
         }
 
         public SafeBioHandle? InputBio
@@ -454,6 +472,39 @@ namespace Microsoft.Win32.SafeHandles
                 // manipulating the safe handles, in which case we may leak the bio handles.
                 Debug.Fail("Unexpected exception while transferring SafeBioHandle ownership to SafeSslHandle", exc.ToString());
                 throw;
+            }
+
+            if (isServer)
+            {
+                Interop.Ssl.SslSetAcceptState(handle);
+            }
+            else
+            {
+                Interop.Ssl.SslSetConnectState(handle);
+            }
+            return handle;
+        }
+
+        public static SafeSslHandle CreateForKtls(SafeSslContextHandle context, bool isServer, int socketFd, bool enableKtls = true)
+        {
+            SafeSslHandle handle = Interop.Ssl.SslCreate(context);
+            if (handle.IsInvalid)
+            {
+                return handle;
+            }
+            handle._isServer = isServer;
+            handle._useKtls = true;
+
+            // Use socket BIO instead of memory BIOs for kTLS
+            if (Interop.Ssl.SslSetFd(handle, socketFd) != 1)
+            {
+                handle.Dispose();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+
+            if (enableKtls)
+            {
+                Interop.Ssl.SslSetKtls(handle);
             }
 
             if (isServer)

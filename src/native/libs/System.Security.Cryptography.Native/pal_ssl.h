@@ -557,3 +557,25 @@ PALEXPORT int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol);
 Staples an encoded OCSP response onto the TLS session
 */
 PALEXPORT void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len);
+
+/*
+Sets the file descriptor for kTLS socket BIO mode.
+Returns 1 on success, 0 on failure.
+*/
+PALEXPORT int32_t CryptoNative_SslSetFd(SSL* ssl, int32_t fd);
+
+/*
+Enables the SSL_OP_ENABLE_KTLS option.
+Returns 1 if the option was set, 0 if kTLS is not supported by the OpenSSL build.
+*/
+PALEXPORT int32_t CryptoNative_SslSetKtls(SSL* ssl);
+
+/*
+Checks if kTLS TX (send) offload is active.
+*/
+PALEXPORT int32_t CryptoNative_SslGetKtlsSend(SSL* ssl);
+
+/*
+Checks if kTLS RX (recv) offload is active.
+*/
+PALEXPORT int32_t CryptoNative_SslGetKtlsRecv(SSL* ssl);
