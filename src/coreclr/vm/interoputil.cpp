@@ -2748,7 +2748,6 @@ static HRESULT InvokeExHelper(
     {
         _ASSERTE(!"CallOutFilter returned EXECUTE_HANDLER.");
     }
-#endif // TARGET_WINDOWS
     PAL_ENDTRY;
 
     return param.hr;
