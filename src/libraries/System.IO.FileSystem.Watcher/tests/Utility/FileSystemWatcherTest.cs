@@ -182,20 +182,23 @@ namespace System.IO.Tests
         {
             int attemptsCompleted = 0;
             bool result = false;
-            FileSystemWatcher newWatcher = watcher;
             while (!result && attemptsCompleted++ < attempts)
             {
                 if (attemptsCompleted > 1)
                 {
-                    // Re-create the watcher to get a clean iteration.
-                    newWatcher = RecreateWatcher(newWatcher);
                     // Most intermittent failures in FSW are caused by either a shortage of resources (e.g. inotify instances)
                     // or by insufficient time to execute (e.g. CI gets bogged down). Immediately re-running a failed test
                     // won't resolve the first issue, so we wait a little while hoping that things clear up for the next run.
                     Thread.Sleep(RetryDelayMilliseconds);
-                }
 
-                result = ExecuteAndVerifyEvents(newWatcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, timeout);
+                    // Re-create the watcher to get a clean iteration, always based on the original watcher's state.
+                    using FileSystemWatcher newWatcher = RecreateWatcher(watcher);
+                    result = ExecuteAndVerifyEvents(newWatcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, timeout);
+                }
+                else
+                {
+                    result = ExecuteAndVerifyEvents(watcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, timeout);
+                }
 
                 if (cleanup != null)
                     cleanup();
