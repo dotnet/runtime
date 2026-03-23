@@ -605,12 +605,20 @@ extern "C" void Store_R2_R3();
 extern "C" void Store_R3();
 
 extern "C" void Load_R0_R1_4B();
+extern "C" void Load_R0_R1_R2_4B();
 extern "C" void Load_R0_R1_R2_R3_4B();
+extern "C" void Load_R1_R2_4B();
+extern "C" void Load_R1_R2_R3_4B();
 extern "C" void Load_R2_R3_4B();
+extern "C" void Load_R3_4B();
 extern "C" void Load_Stack_4B();
 extern "C" void Store_R0_R1_4B();
+extern "C" void Store_R0_R1_R2_4B();
 extern "C" void Store_R0_R1_R2_R3_4B();
+extern "C" void Store_R1_R2_4B();
+extern "C" void Store_R1_R2_R3_4B();
 extern "C" void Store_R2_R3_4B();
+extern "C" void Store_R3_4B();
 extern "C" void Store_Stack_4B();
 
 #endif // TARGET_ARM
@@ -787,7 +795,7 @@ extern "C" void Store_FA7();
 
 PCODE CallStubGenerator::GetStackRoutine()
 {
-    LOG2((LF2_INTERPRETER, LL_INFO10000, "Load_Stack\n"));
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetStackRoutine\n"));
     return m_interpreterToNative ? (PCODE)Load_Stack : (PCODE)Store_Stack;
 }
 
@@ -1119,20 +1127,22 @@ PCODE CallStubGenerator::GetRegRoutine_4B(int r1, int r2)
     LOG2((LF2_INTERPRETER, LL_INFO10000, "GetRegRoutine_4B\n"));
 #endif
     static const PCODE GPRegLoadRoutines_4B[] = {
-        (PCODE)0, (PCODE)Load_R0_R1_4B, (PCODE)0, (PCODE)Load_R0_R1_R2_R3_4B,
-        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0,
+        (PCODE)0, (PCODE)Load_R0_R1_4B, (PCODE)Load_R0_R1_R2_4B, (PCODE)Load_R0_R1_R2_R3_4B,
+        (PCODE)0, (PCODE)0, (PCODE)Load_R1_R2_4B, (PCODE)Load_R1_R2_R3_4B,
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_R2_R3_4B,
-        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_R3_4B
     };
     static const PCODE GPRegStoreRoutines_4B[] = {
-        (PCODE)0, (PCODE)Store_R0_R1_4B, (PCODE)0, (PCODE)Store_R0_R1_R2_R3_4B,
-        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0,
+        (PCODE)0, (PCODE)Store_R0_R1_4B, (PCODE)Store_R0_R1_R2_4B, (PCODE)Store_R0_R1_R2_R3_4B,
+        (PCODE)0, (PCODE)0, (PCODE)Store_R1_R2_4B, (PCODE)Store_R1_R2_R3_4B,
         (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_R2_R3_4B,
-        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_R3_4B
     };
 
     int index = r1 * NUM_ARGUMENT_REGISTERS + r2;
-    return m_interpreterToNative ? GPRegLoadRoutines_4B[index] : GPRegStoreRoutines_4B[index];
+    PCODE routine = m_interpreterToNative ? GPRegLoadRoutines_4B[index] : GPRegStoreRoutines_4B[index];
+    _ASSERTE(routine != 0);
+    return routine;
 }
 
 PCODE CallStubGenerator::GetStackRoutine_4B()
@@ -1616,7 +1626,12 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
 #endif
 
     int targetSlotIndex = m_interpreterToNative ? m_targetSlotIndex : (m_routineIndex - 1);
+#ifdef TARGET_ARM
+    // AAPCS compliant stack alignment for function calls
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, CALL_STACK_ALIGN_SIZE), sig.IsAsyncCall(), hasSwiftError, hasSwiftReturnLowering, m_pInvokeFunction);
+#else
     CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), hasSwiftError, hasSwiftReturnLowering, m_pInvokeFunction);
+#endif // TARGET_ARM
 
     return pHeader;
 }
@@ -1713,12 +1728,19 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, MethodDe
 
     ComputeCallStub(sig, pRoutines, pContextMD);
 
+    int totalStackSize = m_totalStackSize;
+#ifdef TARGET_ARM
+    // AAPCS compliant stack alignment for function calls
+    totalStackSize = ALIGN_UP(totalStackSize, CALL_STACK_ALIGN_SIZE);
+#endif // TARGET_ARM
+
     xxHash hashState;
     for (int i = 0; i < m_routineIndex; i++)
     {
         hashState.AddPointer((void*)pRoutines[i]);
     }
-    hashState.Add(m_totalStackSize);
+
+    hashState.Add(totalStackSize);
     hashState.AddPointer((void*)m_pInvokeFunction);
     hashState.Add(sig.IsAsyncCall() ? 1 : 0);
     hashState.Add(m_targetSlotIndex);
@@ -1731,7 +1753,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, MethodDe
         m_routineIndex,
         m_targetSlotIndex,
         pRoutines,
-        ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
+        ALIGN_UP(totalStackSize, STACK_ALIGN_SIZE),
         sig.IsAsyncCall(),
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         m_hasSwiftError,
@@ -1757,9 +1779,9 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, MethodDe
         void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
         // hasSwiftReturnLowering is always false here because m_interpreterToNative = true (see line 1601's logic)
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, false /* hasSwiftReturnLowering */, m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, false /* hasSwiftReturnLowering */, m_pInvokeFunction);
 #else
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), false, false, m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), false, false, m_pInvokeFunction);
 #endif
         s_callStubCache->Add(pHeader);
         amTracker.SuppressRelease();
@@ -2288,20 +2310,6 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
             }
         }
         else
-#elif defined(TARGET_ARM) && defined(ARM_SOFTFP)
-        if (argLocDesc.m_cGenReg != 0 && argLocDesc.m_byteStackSize != 0)
-        {
-            ArgLocDesc argLocDescReg = {};
-            argLocDescReg.m_idxGenReg = argLocDesc.m_idxGenReg;
-            argLocDescReg.m_cGenReg = argLocDesc.m_cGenReg;
-            ProcessArgument(&argIt, argLocDescReg, pRoutines);
-
-            ArgLocDesc argLocDescStack = {};
-            argLocDescStack.m_byteStackIndex = argLocDesc.m_byteStackIndex;
-            argLocDescStack.m_byteStackSize = argLocDesc.m_byteStackSize;
-            ProcessArgument(&argIt, argLocDescStack, pRoutines);
-        }
-        else
 #endif // UNIX_AMD64_ABI
         {
             ProcessArgument(&argIt, argLocDesc, pRoutines);
@@ -2377,9 +2385,10 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 
     RoutineType argType = RoutineType::None;
 #ifdef TARGET_ARM
-    if (argLocDesc.m_cGenReg == 2 || argLocDesc.m_byteStackSize >= 8)
+    bool useRoutine4B = false;
+    if ((argLocDesc.m_cGenReg * 4 + argLocDesc.m_byteStackSize) >= 8)
     {
-        /* do nothing */
+        useRoutine4B = true;
     }
     else
 #endif // TARGET_ARM
@@ -2415,7 +2424,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     {
         LOG2((LF2_INTERPRETER, LL_INFO10000, "m_cGenReg=%d\n", (int)argLocDesc.m_cGenReg));
 #ifdef TARGET_ARM
-        if (argLocDesc.m_cGenReg == 2)
+        if (useRoutine4B)
         {
             pRoutines[m_routineIndex++] = GetRegRoutine_4B(argLocDesc.m_idxGenReg, argLocDesc.m_idxGenReg + argLocDesc.m_cGenReg - 1);
         }
@@ -2499,7 +2508,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     {
         LOG2((LF2_INTERPRETER, LL_INFO10000, "m_byteStackSize=%d\n", (int)argLocDesc.m_byteStackSize));
 #ifdef TARGET_ARM
-        if (argLocDesc.m_byteStackSize >= 8)
+        if (useRoutine4B)
         {
             pRoutines[m_routineIndex++] = GetStackRoutine_4B();
             pRoutines[m_routineIndex++] = argLocDesc.m_byteStackIndex;
@@ -2602,6 +2611,15 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     }
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 #endif // UNIX_AMD64_ABI
+#ifdef TARGET_ARM
+    if (useRoutine4B)
+    {
+        if ((argLocDesc.m_cGenReg * 4 + argLocDesc.m_byteStackSize) % INTERP_STACK_SLOT_SIZE != 0)
+        {
+            pRoutines[m_routineIndex++] = (PCODE)InjectInterpStackAlign;
+        }
+    }
+#endif // TARGET_ARM
 
     m_currentRoutineType = argType;
 }
