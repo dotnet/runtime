@@ -64,6 +64,8 @@ public struct ExceptionClauseInfo
         Filter = 0x3,
         Typed = 0x4
     }
+    // NOTE: This clause type is set based on the JIT lowering of the code. This may not match the original IL flag.
+    // For example, it is possible for the JIT to transform a finally into a fault clause.
     public ExceptionClauseFlags ClauseType;
     public bool? IsCatchAllHandler;
     public uint TryStartPC;
