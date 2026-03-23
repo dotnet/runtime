@@ -134,44 +134,41 @@ namespace System.IO
         }
 
         /// <summary>Moves to the next component and parses it as an Int32.</summary>
-        public unsafe int ParseNextInt32()
+        public int ParseNextInt32()
         {
             MoveNextOrFail();
 
+            int startIndex = _startIndex;
+            int endIndex = _endIndex;
+            ReadOnlySpan<char> span = _buffer.AsSpan(startIndex, endIndex - startIndex);
+
+            if (span.IsEmpty)
+            {
+                ThrowForInvalidData();
+            }
+
             bool negative = false;
             int result = 0;
+            int i = 0;
 
-            fixed (char* bufferPtr = _buffer)
+            if (span[0] == '-')
             {
-                char* p = bufferPtr + _startIndex;
-                char* end = bufferPtr + _endIndex;
-
-                if (p == end)
+                negative = true;
+                i = 1;
+                if (i == span.Length)
                 {
                     ThrowForInvalidData();
                 }
+            }
 
-                if (*p == '-')
+            for (; i < span.Length; i++)
+            {
+                int d = span[i] - '0';
+                if (d < 0 || d > 9)
                 {
-                    negative = true;
-                    p++;
-                    if (p == end)
-                    {
-                        ThrowForInvalidData();
-                    }
+                    ThrowForInvalidData();
                 }
-
-                while (p != end)
-                {
-                    int d = *p - '0';
-                    if (d < 0 || d > 9)
-                    {
-                        ThrowForInvalidData();
-                    }
-                    result = negative ? checked((result * 10) - d) : checked((result * 10) + d);
-
-                    p++;
-                }
+                result = negative ? checked((result * 10) - d) : checked((result * 10) + d);
             }
 
             Debug.Assert(result == int.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
@@ -179,44 +176,41 @@ namespace System.IO
         }
 
         /// <summary>Moves to the next component and parses it as an Int64.</summary>
-        public unsafe long ParseNextInt64()
+        public long ParseNextInt64()
         {
             MoveNextOrFail();
 
+            int startIndex = _startIndex;
+            int endIndex = _endIndex;
+            ReadOnlySpan<char> span = _buffer.AsSpan(startIndex, endIndex - startIndex);
+
+            if (span.IsEmpty)
+            {
+                ThrowForInvalidData();
+            }
+
             bool negative = false;
             long result = 0;
+            int i = 0;
 
-            fixed (char* bufferPtr = _buffer)
+            if (span[0] == '-')
             {
-                char* p = bufferPtr + _startIndex;
-                char* end = bufferPtr + _endIndex;
-
-                if (p == end)
+                negative = true;
+                i = 1;
+                if (i == span.Length)
                 {
                     ThrowForInvalidData();
                 }
+            }
 
-                if (*p == '-')
+            for (; i < span.Length; i++)
+            {
+                int d = span[i] - '0';
+                if (d < 0 || d > 9)
                 {
-                    negative = true;
-                    p++;
-                    if (p == end)
-                    {
-                        ThrowForInvalidData();
-                    }
+                    ThrowForInvalidData();
                 }
-
-                while (p != end)
-                {
-                    int d = *p - '0';
-                    if (d < 0 || d > 9)
-                    {
-                        ThrowForInvalidData();
-                    }
-                    result = negative ? checked((result * 10) - d) : checked((result * 10) + d);
-
-                    p++;
-                }
+                result = negative ? checked((result * 10) - d) : checked((result * 10) + d);
             }
 
             Debug.Assert(result == long.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
@@ -224,30 +218,26 @@ namespace System.IO
         }
 
         /// <summary>Moves to the next component and parses it as a UInt32.</summary>
-        public unsafe uint ParseNextUInt32()
+        public uint ParseNextUInt32()
         {
             MoveNextOrFail();
-            if (_startIndex == _endIndex)
+
+            ReadOnlySpan<char> span = _buffer.AsSpan(_startIndex, _endIndex - _startIndex);
+
+            if (span.IsEmpty)
             {
                 ThrowForInvalidData();
             }
 
             uint result = 0;
-            fixed (char* bufferPtr = _buffer)
+            for (int i = 0; i < span.Length; i++)
             {
-                char* p = bufferPtr + _startIndex;
-                char* end = bufferPtr + _endIndex;
-                while (p != end)
+                int d = span[i] - '0';
+                if (d < 0 || d > 9)
                 {
-                    int d = *p - '0';
-                    if (d < 0 || d > 9)
-                    {
-                        ThrowForInvalidData();
-                    }
-                    result = (uint)checked((result * 10) + d);
-
-                    p++;
+                    ThrowForInvalidData();
                 }
+                result = (uint)checked((result * 10) + d);
             }
 
             Debug.Assert(result == uint.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
@@ -255,26 +245,26 @@ namespace System.IO
         }
 
         /// <summary>Moves to the next component and parses it as a UInt64.</summary>
-        public unsafe ulong ParseNextUInt64()
+        public ulong ParseNextUInt64()
         {
             MoveNextOrFail();
 
-            ulong result = 0;
-            fixed (char* bufferPtr = _buffer)
-            {
-                char* p = bufferPtr + _startIndex;
-                char* end = bufferPtr + _endIndex;
-                while (p != end)
-                {
-                    int d = *p - '0';
-                    if (d < 0 || d > 9)
-                    {
-                        ThrowForInvalidData();
-                    }
-                    result = checked((result * 10ul) + (ulong)d);
+            ReadOnlySpan<char> span = _buffer.AsSpan(_startIndex, _endIndex - _startIndex);
 
-                    p++;
+            if (span.IsEmpty)
+            {
+                ThrowForInvalidData();
+            }
+
+            ulong result = 0;
+            for (int i = 0; i < span.Length; i++)
+            {
+                int d = span[i] - '0';
+                if (d < 0 || d > 9)
+                {
+                    ThrowForInvalidData();
                 }
+                result = checked((result * 10ul) + (ulong)d);
             }
 
             Debug.Assert(result == ulong.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
