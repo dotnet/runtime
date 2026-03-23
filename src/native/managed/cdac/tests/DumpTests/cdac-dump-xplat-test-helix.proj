@@ -7,7 +7,8 @@
     The payload directory should contain:
       tests/                              — Test DLLs + xunit.console.dll
       dumps/{source_platform}/            — Extracted dumps from each source platform
-        local/{dumpType}/{name}/{name}.dmp
+        local/{dumpType}/{r2rMode}/{name}/{name}.dmp
+      debuggee-metadata.props             — Auto-generated metadata (CdacR2RModes property)
 
     A single Helix work item runs xunit once per source platform, each time
     with CDAC_DUMP_ROOT pointing to that platform's dump subdirectory.
@@ -15,7 +16,7 @@
     Properties (set by pipeline):
       HelixTargetQueues  — Helix queue(s) to run on
       TestHostPayload    — Path to testhost shared framework directory
-      DumpTestsPayload   — Path to payload directory (tests/ + dumps/)
+      DumpTestsPayload   — Path to payload directory (tests/ + dumps/ + debuggee-metadata.props)
       TargetOS           — Target OS (windows, linux, osx)
       SourcePlatforms    — Semicolon-separated source platform names
                            (e.g. "windows_x64;linux_x64;osx_arm64")
@@ -32,6 +33,16 @@
     <HelixBuild>$(BUILD_BUILDNUMBER)</HelixBuild>
     <HelixSource Condition="'$(HelixSource)' == ''">pr/dotnet/runtime/cdac-xplat-dump-tests</HelixSource>
     <WorkItemTimeout>01:00:00</WorkItemTimeout>
+  </PropertyGroup>
+
+  <!--
+    Import debuggee metadata extracted from the dump tarballs.
+    Provides CdacR2RModes property (e.g. "r2r" or "r2r,jit").
+    Falls back to r2r if the file is missing.
+  -->
+  <Import Project="$(DumpTestsPayload)/debuggee-metadata.props" Condition="Exists('$(DumpTestsPayload)/debuggee-metadata.props')" />
+  <PropertyGroup>
+    <CdacR2RModes Condition="'$(CdacR2RModes)' == ''">r2r</CdacR2RModes>
   </PropertyGroup>
 
   <!--
@@ -68,8 +79,12 @@
   </PropertyGroup>
 
   <!-- Pre-commands -->
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <HelixPreCommand Include="set CDAC_R2R_MODES=$(CdacR2RModes)" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">
     <HelixPreCommand Include="chmod +x $HELIX_CORRELATION_PAYLOAD/dotnet" />
+    <HelixPreCommand Include="export CDAC_R2R_MODES=$(CdacR2RModes)" />
   </ItemGroup>
 
   <PropertyGroup>

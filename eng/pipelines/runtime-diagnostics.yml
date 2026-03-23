@@ -310,7 +310,8 @@ extends:
               # Extract dump tars into the Helix payload
               - pwsh: |
                   $platforms = "${{ join(';', parameters.cdacDumpPlatforms) }}".Split(';')
-                  $payloadDumpsDir = "$(Build.SourcesDirectory)/artifacts/helixPayload/cdac/dumps"
+                  $payloadDir = "$(Build.SourcesDirectory)/artifacts/helixPayload/cdac"
+                  $payloadDumpsDir = Join-Path $payloadDir "dumps"
                   foreach ($platform in $platforms) {
                       $downloadDir = "$(Build.SourcesDirectory)/artifacts/xplatDumps/$platform"
                       $tarFile = Get-ChildItem -Recurse -Filter "dumps.tar.gz" -Path $downloadDir | Select-Object -First 1 -ExpandProperty FullName
@@ -322,6 +323,16 @@ extends:
                       New-Item -ItemType Directory -Force -Path $destDir | Out-Null
                       Write-Host "Extracting $tarFile to $destDir"
                       tar -xzf "$tarFile" -C "$destDir"
+                  }
+                  # Copy debuggee-metadata.props from the first platform to the payload root
+                  # so cdac-dump-xplat-test-helix.proj can import it for CdacR2RModes.
+                  $firstPlatform = $platforms[0]
+                  $metaFile = Join-Path $payloadDumpsDir $firstPlatform "debuggee-metadata.props"
+                  if (Test-Path $metaFile) {
+                      Copy-Item $metaFile (Join-Path $payloadDir "debuggee-metadata.props")
+                      Write-Host "Copied debuggee-metadata.props from $firstPlatform to payload root"
+                  } else {
+                      Write-Warning "debuggee-metadata.props not found in $firstPlatform dumps"
                   }
                   Write-Host "Dump payload contents:"
                   Get-ChildItem -Recurse $payloadDumpsDir -Filter "*.dmp" | Select-Object -ExpandProperty FullName | ForEach-Object { Write-Host "  $_" }
