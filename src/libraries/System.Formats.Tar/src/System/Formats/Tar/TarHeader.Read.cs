@@ -158,6 +158,10 @@ namespace System.Formats.Tar
                 // _size retains the archive data section length needed for correct stream positioning.
                 if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaGnuSparseRealSize, out long gnuSparseRealSize))
                 {
+                    if (gnuSparseRealSize < 0)
+                    {
+                        throw new InvalidDataException(SR.TarSizeFieldNegative);
+                    }
                     _gnuSparseRealSize = gnuSparseRealSize;
                 }
 

@@ -518,6 +518,16 @@ namespace System.Formats.Tar
             base.Dispose(disposing);
         }
 
+        public override async ValueTask DisposeAsync()
+        {
+            if (!_isDisposed)
+            {
+                await _rawStream.DisposeAsync().ConfigureAwait(false);
+            }
+            _isDisposed = true;
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
+
         public override void Flush() { }
 
         public override Task FlushAsync(CancellationToken cancellationToken) =>

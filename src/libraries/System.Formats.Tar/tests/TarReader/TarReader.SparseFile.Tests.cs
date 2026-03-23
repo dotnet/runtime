@@ -321,6 +321,39 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task NegativeSparseRealSize_InvalidDataException(bool useAsync)
+        {
+            var gnuSparseAttributes = new Dictionary<string, string>
+            {
+                ["GNU.sparse.major"] = "1",
+                ["GNU.sparse.minor"] = "0",
+                ["GNU.sparse.name"] = "file.bin",
+                ["GNU.sparse.realsize"] = "-1",
+            };
+
+            var archive = new MemoryStream();
+            using (var writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                var entry = new PaxTarEntry(TarEntryType.RegularFile, "GNUSparseFile.0/file.bin", gnuSparseAttributes);
+                entry.DataStream = new MemoryStream(new byte[512]);
+                writer.WriteEntry(entry);
+            }
+            archive.Position = 0;
+
+            using var reader = new TarReader(archive);
+            if (useAsync)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(async () => await reader.GetNextEntryAsync());
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+            }
+        }
+
+        [Theory]
         [InlineData(false, false)]  // missing minor
         [InlineData(true, false)]
         [InlineData(false, true)]   // wrong major
