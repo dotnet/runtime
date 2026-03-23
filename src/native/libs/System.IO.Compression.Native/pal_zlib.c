@@ -208,3 +208,10 @@ uint32_t CompressionNative_Crc32(uint32_t crc, uint8_t* buffer, int32_t len)
     assert(result <= UINT32_MAX);
     return (uint32_t)result;
 }
+
+uint32_t CompressionNative_CompressBound(uint32_t sourceLen)
+{
+    unsigned long result = compressBound(sourceLen);
+    assert(result <= UINT32_MAX);
+    return (uint32_t)result;
+}

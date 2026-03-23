@@ -41,7 +41,14 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="compressionOptions"/> is <see langword="null" />.</exception>
         public GZipStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen = false)
         {
-            _deflateStream = new DeflateStream(stream, compressionOptions, leaveOpen, ZLibNative.GZip_DefaultWindowBits);
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(compressionOptions);
+
+            // Compute windowBits for gzip format: windowLog + 16
+            // zlib silently upgrades windowBits 8 to 9; zlib-ng rejects 8 outright. Clamp to match classic zlib behavior.
+            int windowBits = compressionOptions.WindowLog == -1 ? ZLibNative.GZip_DefaultWindowBits : Math.Max(compressionOptions.WindowLog, 9) + 16;
+
+            _deflateStream = new DeflateStream(stream, compressionOptions, leaveOpen, windowBits);
         }
 
         public override bool CanRead => _deflateStream?.CanRead ?? false;
