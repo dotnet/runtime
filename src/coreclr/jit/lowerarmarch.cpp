@@ -2900,7 +2900,6 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 
     if (node->OperIsCommutative() && CheckImmedAndMakeContained(node, op1))
     {
-        MakeSrcContained(node, op1);
         std::swap(node->gtOp1, node->gtOp2);
         return;
     }
