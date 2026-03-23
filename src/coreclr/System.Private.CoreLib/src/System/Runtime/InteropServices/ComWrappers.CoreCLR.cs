@@ -68,6 +68,21 @@ namespace System.Runtime.InteropServices
             return -1; // See TryInvokeICustomQueryInterfaceResult
         }
 
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe int CallICustomQueryInterface(ManagedObjectWrapperHolder* pHolder, Guid* pIid, IntPtr* ppObject, Exception* pException)
+        {
+            try
+            {
+                return CallICustomQueryInterface(*pHolder, ref *pIid, out *ppObject);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return default;
+            }
+        }
+
         internal static IntPtr GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance(object obj)
         {
             if (s_globalInstanceForMarshalling == null)
@@ -87,6 +102,20 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance(object* pObj, IntPtr* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance(*pObj);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         internal static object? GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance(IntPtr comObject, CreateObjectFlags flags)
         {
             if (s_globalInstanceForMarshalling == null)
@@ -103,6 +132,20 @@ namespace System.Runtime.InteropServices
                 // We've failed to create a managed object for the COM instance.
                 // Fallback to built-in COM.
                 return null;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance(IntPtr comObject, int flags, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance(comObject, (CreateObjectFlags)flags);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
 

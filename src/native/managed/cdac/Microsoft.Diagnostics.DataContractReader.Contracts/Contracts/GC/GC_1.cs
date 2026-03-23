@@ -37,14 +37,16 @@ internal readonly struct GC_1 : IGC
     private readonly byte _blockInvalid;
     private readonly TargetPointer _debugDestroyedHandleValue;
     private readonly uint _handleMaxInternalTypes;
+    private readonly uint _handleSegmentSize;
 
-    internal GC_1(Target target, uint handlesPerBlock, byte blockInvalid, TargetPointer debugDestroyedHandleValue, uint handleMaxInternalTypes)
+    internal GC_1(Target target, uint handlesPerBlock, byte blockInvalid, TargetPointer debugDestroyedHandleValue, uint handleMaxInternalTypes, uint handleSegmentSize)
     {
         _target = target;
         _handlesPerBlock = handlesPerBlock;
         _blockInvalid = blockInvalid;
         _debugDestroyedHandleValue = debugDestroyedHandleValue;
         _handleMaxInternalTypes = handleMaxInternalTypes;
+        _handleSegmentSize = handleSegmentSize;
     }
 
     string[] IGC.GetGCIdentifiers()
@@ -487,11 +489,41 @@ internal readonly struct GC_1 : IGC
             if (ccw != TargetPointer.Null)
             {
                 IBuiltInCOM builtInCOM = _target.Contracts.BuiltInCOM;
-                handleData.RefCount = (uint)builtInCOM.GetRefCount(ccw);
-                handleData.StrongReference = handleData.StrongReference || (handleData.RefCount > 0 && !builtInCOM.IsHandleWeak(ccw));
+                SimpleComCallWrapperData sccwData = builtInCOM.GetSimpleComCallWrapperData(ccw);
+                handleData.RefCount = (uint)sccwData.RefCount;
+                handleData.StrongReference = handleData.StrongReference || (handleData.RefCount > 0 && !sccwData.IsHandleWeak);
             }
         }
 
         return handleData;
+    }
+
+    TargetNUInt IGC.GetHandleExtraInfo(TargetPointer handle)
+    {
+        // Compute the segment base address by aligning the handle address down to the segment size.
+        // Segments are always allocated aligned to HandleSegmentSize.
+        ulong segmentMask = ~((ulong)_handleSegmentSize - 1);
+        TargetPointer segmentBase = handle & segmentMask;
+
+        Data.TableSegment tableSegment = _target.ProcessedData.GetOrAdd<Data.TableSegment>(segmentBase);
+
+        // The RgValue offset within the segment equals the header size.
+        Target.TypeInfo typeInfo = _target.GetTypeInfo(DataType.TableSegment);
+        uint rgValueOffset = (uint)typeInfo.Fields[nameof(Data.TableSegment.RgValue)].Offset;
+
+        // Compute the handle index within the segment's value area.
+        uint handleIndex = (uint)((ulong)(handle - segmentBase) - rgValueOffset) / (uint)_target.PointerSize;
+
+        uint block = handleIndex / _handlesPerBlock;
+        uint intraBlockIndex = handleIndex % _handlesPerBlock;
+
+        byte userDataBlock = tableSegment.RgUserData[block];
+        if (userDataBlock == _blockInvalid)
+            return new TargetNUInt(0);
+
+        uint offset = userDataBlock * _handlesPerBlock + intraBlockIndex;
+        TargetPointer extraInfoAddress = tableSegment.RgValue + offset * (uint)_target.PointerSize;
+
+        return _target.ReadNUInt(extraInfoAddress);
     }
 }

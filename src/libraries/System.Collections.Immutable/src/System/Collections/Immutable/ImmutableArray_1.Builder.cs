@@ -540,6 +540,8 @@ namespace System.Collections.Immutable
             /// </param>
             public void RemoveAll(Predicate<T> match)
             {
+                Requires.NotNull(match, nameof(match));
+
                 List<int>? removeIndices = null;
                 for (int i = 0; i < _count; i++)
                 {
