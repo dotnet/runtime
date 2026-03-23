@@ -234,7 +234,7 @@ namespace System.Text.RegularExpressions.Tests
             // (which requires matching laziness) and cause exponential derivative blowup.
             // CountSingletons accounts for this by multiplying by 2 per nesting level, so
             // at depth 15+ the estimate exceeds the default 10,000 threshold.
-            // Build: (?:(?:(?:a)*?)*)*? ... with alternating greedy/lazy at each level
+            // Build: (?:(?:(?:a)*)*?)* ... with alternating greedy/lazy quantifiers at each level
             {
                 const int depth = 20;
                 var sb = new StringBuilder();
