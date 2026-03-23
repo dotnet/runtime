@@ -140,9 +140,8 @@ CAllowedObjectTypes aotProcess(otiProcess);
 IPalObject* CorUnix::g_pobjProcess;
 
 //
-// The command line and app name for the process
+// The app name for the process
 //
-LPWSTR g_lpwstrCmdLine = NULL;
 LPWSTR g_lpwstrAppDir = NULL;
 
 // Thread ID of thread that has started the ExitProcess process
@@ -2072,30 +2071,6 @@ PAL_GetTransportPipeName(
 
 /*++
 Function:
-  GetCommandLineW
-
-See MSDN doc.
---*/
-LPWSTR
-PALAPI
-GetCommandLineW(
-    VOID)
-{
-    PERF_ENTRY(GetCommandLineW);
-    ENTRY("GetCommandLineW()\n");
-
-    LPWSTR lpwstr = g_lpwstrCmdLine ? g_lpwstrCmdLine : (LPWSTR)W("");
-
-    LOGEXIT("GetCommandLineW returns LPWSTR %p (%S)\n",
-          g_lpwstrCmdLine,
-          lpwstr);
-    PERF_EXIT(GetCommandLineW);
-
-    return lpwstr;
-}
-
-/*++
-Function:
   OpenProcess
 
 See MSDN doc.
@@ -3002,7 +2977,6 @@ Notes
 
 PAL_ERROR
 CorUnix::InitializeProcessCommandLine(
-    LPWSTR lpwstrCmdLine,
     LPWSTR lpwstrFullPath
 )
 {
@@ -3047,9 +3021,6 @@ CorUnix::InitializeProcessCommandLine(
         free(g_lpwstrAppDir);
         g_lpwstrAppDir = initial_dir;
     }
-
-    free(g_lpwstrCmdLine);
-    g_lpwstrCmdLine = lpwstrCmdLine;
 
 exit:
     return palError;
@@ -3192,9 +3163,6 @@ PROCCleanupInitialProcess(VOID)
 {
     /* Free the application directory */
     free(g_lpwstrAppDir);
-
-    /* Free the stored command line */
-    free(g_lpwstrCmdLine);
 
     //
     // Object manager shutdown will handle freeing the underlying
