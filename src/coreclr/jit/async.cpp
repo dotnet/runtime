@@ -895,7 +895,8 @@ static void MarkMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutat
     {
         MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(node->AsLclVarCommon()), mutated);
     }
-    else if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD) && compiler->lvaIsImplicitByRefLocal(node->AsLclVarCommon()->GetLclNum()))
+    else if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+             compiler->lvaIsImplicitByRefLocal(node->AsLclVarCommon()->GetLclNum()))
     {
         MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(node->AsLclVarCommon()), mutated);
     }
