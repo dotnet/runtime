@@ -13,6 +13,16 @@ public struct COMInterfacePointerData
     public TargetPointer MethodTable;
 }
 
+public struct SimpleComCallWrapperData
+{
+    public ulong RefCount;
+    public bool IsNeutered;
+    public bool IsAggregated;
+    public bool IsExtendsCOMObject;
+    public bool IsHandleWeak;
+    public TargetPointer OuterIUnknown;
+}
+
 public record struct RCWCleanupInfo(
     TargetPointer RCW,
     TargetPointer Context,
@@ -32,15 +42,20 @@ public record struct RCWData(
     bool IsFreeThreaded,
     bool IsDisconnected);
 
-public ulong GetRefCount(TargetPointer ccw);
-// Check whether the COM wrappers handle is weak.
-public bool IsHandleWeak(TargetPointer ccw);
 // Resolves a COM interface pointer to the ComCallWrapper.
 // Returns TargetPointer.Null if interfacePointer is not a recognised COM interface pointer.
+// Use GetStartWrapper on the result to navigate to the start of the chain.
 public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer);
-// Enumerate the COM interfaces exposed by the ComCallWrapper chain.
+// Enumerates COM interfaces exposed by the ComCallWrapper chain.
 // ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
 public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw);
+// Returns the GC object handle from the given ComCallWrapper.
+public TargetPointer GetObjectHandle(TargetPointer ccw);
+// Returns the data stored in the SimpleComCallWrapper associated with the given ComCallWrapper.
+public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer ccw);
+// Navigates to the start ComCallWrapper in a linked chain.
+// If ccw is already the start wrapper (or the only wrapper), returns ccw unchanged.
+public TargetPointer GetStartWrapper(TargetPointer ccw);
 // Enumerate entries in the RCW cleanup list.
 // If cleanupListPtr is Null, the global g_pRCWCleanupList is used.
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr);
@@ -57,13 +72,15 @@ public RCWData GetRCWData(TargetPointer rcw);
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
+| `ComCallWrapper` | `Handle` | GC object handle (`m_ppThis`); dereference to get the managed object pointer |
 | `ComCallWrapper` | `SimpleWrapper` | Address of the associated `SimpleComCallWrapper` |
 | `ComCallWrapper` | `IPtr` | Base address of the COM interface pointer array |
 | `ComCallWrapper` | `Next` | Next wrapper in the linked chain (all-bits-set sentinel = end of list) |
 | `ComMethodTable` | `Flags` | Flags word; bit `0x10` (`LayoutComplete`) must be set for valid vtable |
 | `ComMethodTable` | `MethodTable` | Pointer to the managed `MethodTable` for this COM interface |
-| `SimpleComCallWrapper` | `RefCount` | The wrapper refcount value |
-| `SimpleComCallWrapper` | `Flags` | Bit flags for wrapper properties |
+| `SimpleComCallWrapper` | `OuterIUnknown` | Outer `IUnknown` pointer for aggregated CCWs (`m_pOuter`) |
+| `SimpleComCallWrapper` | `RefCount` | The wrapper refcount value (includes `CLEANUP_SENTINEL` bit) |
+| `SimpleComCallWrapper` | `Flags` | Bit flags for wrapper properties (aggregated, extends-COM, handle-weak, etc.) |
 | `SimpleComCallWrapper` | `MainWrapper` | Pointer back to the first (start) `ComCallWrapper` in the chain |
 | `SimpleComCallWrapper` | `VTablePtr` | Base address of the standard interface vtable pointer array (used for SCCW IP resolution) |
 | `RCWCleanupList` | `FirstBucket` | Head of the bucket linked list |
@@ -87,7 +104,6 @@ Data descriptors used:
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| `ComRefcountMask` | `long` | Mask applied to `SimpleComCallWrapper.RefCount` to produce the visible refcount |
 | `CCWNumInterfaces` | `uint` | Number of vtable pointer slots in each `ComCallWrapper` (`NumVtablePtrs = 5`) |
 | `CCWThisMask` | `nuint` | Alignment mask applied to a standard CCW IP to recover the `ComCallWrapper` pointer |
 | `TearOffAddRef` | pointer | Address of `Unknown_AddRef`; identifies standard CCW interface pointers |
@@ -108,14 +124,24 @@ Contracts used:
 
 ``` csharp
 
-private enum CCWFlags
+// Mirrors enum SimpleComCallWrapperFlags in src/coreclr/vm/comcallablewrapper.h
+private enum SimpleComCallWrapperFlags : uint
 {
-    IsHandleWeak = 0x4,
+    IsAggregated  = 0x1,
+    IsExtendsCom  = 0x2,
+    IsHandleWeak  = 0x4,
 }
-
+// Mirrors enum Masks in src/coreclr/vm/comcallablewrapper.h
 private enum ComMethodTableFlags : ulong
 {
     LayoutComplete = 0x10,
+}
+
+[Flags]
+private enum ComRefCount : long
+{
+    ComRefCountMask           = 0x000000007FFFFFFFL,
+    CleanupSentinel          = 0x80000000L,
 }
 
 [Flags]
@@ -125,21 +151,6 @@ private enum RCWFlags : uint
     URTContained           = 0x020u,
     MarshalingTypeMask     = 0x180u,
     MarshalingTypeFreeThreaded = 0x100u,
-}
-
-public ulong GetRefCount(TargetPointer address)
-{
-    var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
-    ulong refCount = _target.Read<ulong>(ccw + /* SimpleComCallWrapper::RefCount offset */);
-    long refCountMask = _target.ReadGlobal<long>("ComRefcountMask");
-    return refCount & (ulong)refCountMask;
-}
-
-public bool IsHandleWeak(TargetPointer address)
-{
-    var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
-    uint flags = _target.Read<uint>(ccw + /* SimpleComCallWrapper::Flags offset */);
-    return (flags & (uint)CCWFlags.IsHandleWeak) != 0;
 }
 
 // See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
@@ -156,6 +167,41 @@ public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
     //   - skip slots where ComMethodTable.Flags does not have LayoutComplete set
     //   - yield COMInterfacePointerData { InterfacePointerAddress = address of slot, MethodTable }
     //   - slot 0 of the first wrapper (IUnknown/IDispatch) yields null MethodTable
+}
+
+// Returns the GC object handle from the given ComCallWrapper.
+public TargetPointer GetObjectHandle(TargetPointer ccw)
+    => _target.ReadPointer(ccw + /* ComCallWrapper::Handle offset */);
+
+// Returns data from the SimpleComCallWrapper associated with the given ComCallWrapper.
+// Applies ComRefCountMask to produce the visible RefCount and checks CLEANUP_SENTINEL for IsNeutered.
+public SimpleComCallWrapperData GetSimpleComCallWrapperData(TargetPointer ccw)
+{
+    TargetPointer sccw = _target.ReadPointer(ccw + /* ComCallWrapper::SimpleWrapper offset */);
+    ulong rawRefCount = _target.Read<ulong>(sccw + /* SimpleComCallWrapper::RefCount offset */);
+    uint flags = _target.Read<uint>(sccw + /* SimpleComCallWrapper::Flags offset */);
+    return new SimpleComCallWrapperData
+    {
+        RefCount         = rawRefCount & ComRefCount.ComRefCountMask,
+        IsNeutered       = (rawRefCount & ComRefCount.CleanupSentinel) != 0,
+        IsAggregated     = (flags & (uint)SimpleComCallWrapperFlags.IsAggregated) != 0,
+        IsExtendsCOMObject = (flags & (uint)SimpleComCallWrapperFlags.IsExtendsCom) != 0,
+        IsHandleWeak     = (flags & (uint)SimpleComCallWrapperFlags.IsHandleWeak) != 0,
+        OuterIUnknown    = _target.ReadPointer(sccw + /* SimpleComCallWrapper::OuterIUnknown offset */),
+    };
+}
+
+// Navigates to the start ComCallWrapper in a linked chain.
+// If ccw is already the start wrapper (or the only wrapper), returns ccw unchanged.
+public TargetPointer GetStartWrapper(TargetPointer ccw)
+{
+    TargetPointer next = _target.ReadPointer(ccw + /* ComCallWrapper::Next offset */);
+    if (next != Null)
+    {
+        TargetPointer sccw = _target.ReadPointer(ccw + /* ComCallWrapper::SimpleWrapper offset */);
+        ccw = _target.ReadPointer(sccw + /* SimpleComCallWrapper::MainWrapper offset */);
+    }
+    return ccw;
 }
 
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr)

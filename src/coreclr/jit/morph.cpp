@@ -1780,9 +1780,14 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // Push the stub address onto the list of arguments.
         NewCallArg indirCellAddrArg =
             NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell);
+#ifdef TARGET_WASM
+        // On wasm we need to ensure we put the indirection cell address last in LIR, after the SP and formal args.
+        PushBack(comp, indirCellAddrArg);
+#else
         InsertAfterThisOrFirst(comp, indirCellAddrArg);
+#endif // TARGET_WASM
     }
-#endif
+#endif // defined(FEATURE_READYTORUN)
 
 #if defined(TARGET_WASM)
     // On WASM, we need to add an initial argument for the stack pointer for managed calls.
@@ -2423,11 +2428,8 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
         {
             if (seg.IsPassedInRegister())
             {
-                var_types regType = seg.GetRegisterType();
-                // If passed in a float reg then keep that type; otherwise let
-                // createSlotAccess get the type from the layout.
-                var_types slotType = varTypeUsesFloatReg(regType) ? regType : TYP_UNDEF;
-                GenTree*  access   = createSlotAccess(seg.Offset, slotType);
+                var_types regType = seg.GetRegisterType(layout);
+                GenTree*  access  = createSlotAccess(seg.Offset, regType);
 
                 newArg->AsFieldList()->AddField(this, access, seg.Offset, access->TypeGet());
             }

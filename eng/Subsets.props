@@ -664,6 +664,7 @@
 
   <!-- Host.tests subset (consumes live built libraries assets so needs to come after libraries) -->
   <ItemGroup Condition="$(_subset.Contains('+host.tests+'))">
+    <ProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" AdditionalProperties="$(TargetCxxLibraryProperties);BuildNativeHostTests=true;BuildNativeHostProduct=false" Category="host" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\HostActivation.Tests\HostActivation.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.Tests.csproj" />
