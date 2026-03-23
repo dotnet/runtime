@@ -3,6 +3,7 @@
 
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Serialization;
@@ -39,6 +40,7 @@ namespace System.ServiceModel.Syndication
             _initialized = true;
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
         public void Add(object extension)
         {
             if (extension is SyndicationElementExtension)
@@ -51,16 +53,19 @@ namespace System.ServiceModel.Syndication
             }
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
         public void Add(string outerName, string outerNamespace, object dataContractExtension)
         {
             Add(outerName, outerNamespace, dataContractExtension, null);
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
         public void Add(object dataContractExtension, DataContractSerializer serializer)
         {
             Add(null, null, dataContractExtension, serializer);
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
         public void Add(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
             ArgumentNullException.ThrowIfNull(dataContractExtension);
@@ -69,6 +74,8 @@ namespace System.ServiceModel.Syndication
             base.Add(new SyndicationElementExtension(outerName, outerNamespace, dataContractExtension, dataContractSerializer));
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public void Add(object xmlSerializerExtension, XmlSerializer serializer)
         {
             ArgumentNullException.ThrowIfNull(xmlSerializerExtension);
@@ -92,11 +99,15 @@ namespace System.ServiceModel.Syndication
             return reader;
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace)
         {
             return ReadElementExtensions<TExtension>(extensionName, extensionNamespace, new DataContractSerializer(typeof(TExtension)));
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer serializer)
         {
             ArgumentNullException.ThrowIfNull(serializer);
@@ -104,6 +115,8 @@ namespace System.ServiceModel.Syndication
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, serializer, null);
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlSerializer serializer)
         {
             ArgumentNullException.ThrowIfNull(serializer);
@@ -214,6 +227,8 @@ namespace System.ServiceModel.Syndication
             }
         }
 
+        [RequiresUnreferencedCode(SyndicationFeedFormatter.RequiresUnreferencedCodeWarning)]
+        [RequiresDynamicCode(SyndicationFeedFormatter.RequiresDynamicCodeWarning)]
         private Collection<TExtension> ReadExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer dcSerializer, XmlSerializer xmlSerializer)
         {
             if (string.IsNullOrEmpty(extensionName))
