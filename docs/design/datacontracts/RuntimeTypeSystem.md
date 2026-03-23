@@ -207,6 +207,11 @@ uint GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
 ```
 
+### Other APIs
+```csharp
+void GetCoreLibFieldDescAndDef(string @namespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef);
+```
+
 ## Version 1
 
 ### TypeHandle
@@ -1756,5 +1761,23 @@ uint GetFieldDescOffset(TargetPointer fieldDescPointer)
         return (uint)fieldDef.GetRelativeVirtualAddress();
     }
     return DWord2 & (uint)FieldDescFlags2.OffsetMask;
+}
+```
+
+### Other APIs
+
+```csharp
+void GetCoreLibFieldDescAndDef(string @namespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef)
+{
+    ILoader loader = _target.Contracts.Loader;
+    TargetPointer systemAssembly = loader.GetSystemAssembly();
+    ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
+    IRuntimeTypeSystem rts = (IRuntimeTypeSystem)this;
+    TypeHandle th = rts.GetTypeByNameAndModule(typeName, @namespace, moduleHandle);
+    fieldDescAddr = rts.GetFieldDescByName(th, fieldName);
+    uint token = rts.GetFieldDescMemberDef(fieldDescAddr);
+    FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
+    MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+    fieldDef = mdReader.GetFieldDefinition(fieldHandle);
 }
 ```

@@ -60,15 +60,15 @@ namespace System.Speech.Internal.SrgsCompiler
                     break;
 
                 case VarEnum.VT_I4:
-                    _varInt = (int)property._comValue;
+                    _varInt = (int)property._comValue!;
                     break;
 
                 case VarEnum.VT_BOOL:
-                    _varInt = (bool)property._comValue ? unchecked(0xffff) : 0;
+                    _varInt = (bool)property._comValue! ? unchecked(0xffff) : 0;
                     break;
 
                 case VarEnum.VT_R8:
-                    _varDouble = (double)property._comValue;
+                    _varDouble = (double)property._comValue!;
                     break;
 
                 default:
