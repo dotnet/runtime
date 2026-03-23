@@ -59,7 +59,6 @@ namespace Microsoft.Interop
                     Utf16 = 2,
                 }
             }
-            #nullable restore
             """;
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
