@@ -684,7 +684,7 @@ namespace Microsoft.Extensions.Options.Generators
                 // This is done by initializing the DisplayName in the context which is the part trigger reflection if it is not initialized. For
                 // projects targeting .NET 10 and above, we can avoid the suppression since we use the new trim-safe constructor.
                 OutLn("#if !NET");
-                OutLn($"[System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(\"Trimming\", \"IL2026:RequiresUnreferencedCode\",");
+                OutLn($"[global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(\"Trimming\", \"IL2026:RequiresUnreferencedCode\",");
                 OutLn($"     Justification = \"The created ValidationContext object is used in a way that never call reflection\")]");
                 OutLn("#endif");
             }
