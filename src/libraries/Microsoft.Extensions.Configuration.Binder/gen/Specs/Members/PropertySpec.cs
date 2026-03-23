@@ -18,6 +18,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             SetOnInit = setterIsPublic && (property.IsRequired || isInitOnly);
             CanSet = setterIsPublic && !isInitOnly;
             CanGet = property.GetMethod?.DeclaredAccessibility is Accessibility.Public;
+            HasAnyGetter = property.GetMethod is not null;
         }
 
         public ParameterSpec? MatchingCtorParam { get; set; }
@@ -29,5 +30,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public override bool CanGet { get; }
 
         public override bool CanSet { get; }
+
+        public override bool HasAnyGetter { get; }
     }
 }

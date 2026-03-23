@@ -887,8 +887,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     case ParsableFromStringSpec stringParsableType:
                         {
-                            // Reflection binder does not support binding to set-only properties
-                            if (canSet && canGet)
+                            // Bind when the property has a public setter AND either has a public getter
+                            // or is truly set-only (no getter at all). Properties with non-public
+                            // getters are skipped to match the reflection binder behavior.
+                            if (canSet && (canGet || !member.HasAnyGetter))
                             {
                                 EmitBlankLineIfRequired();
                                 string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
@@ -923,7 +925,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                                 EmitEndBlock(); // End if-check for input type.
 
-                                if (initializationKind == InitializationKind.Declaration)
+                                // The defaultValueIfNotFound block reads the current value via the getter,
+                                // so it can only be emitted when there is a getter.
+                                if (canGet && initializationKind == InitializationKind.Declaration)
                                 {
                                     EmitStartBlock($"else if (defaultValueIfNotFound)");
                                     if (!stringParsableType.TypeRef.CanBeNull)
@@ -979,12 +983,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             // In this case, we will assign an empty array to the member. Otherwise, we will skip the binding logic.
                             if ((complexType is ArraySpec || complexType.IsExactIEnumerableOfT) && canSet)
                             {
-                                // Either we have an array or we have an IEnumerable<T> both these types can be assigned an empty array when having empty string configuration value.
+                                // Either we have an array or we have an IEnumerable<T>; both these types can be assigned an empty array when having empty string configuration value.
                                 Debug.Assert(complexType is ArraySpec || complexType is EnumerableSpec);
                                 string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
-                                EmitStartBlock($@"if ({memberAccessExpr} is null && {Identifier.TryGetConfigurationValue}({configSection}, {Identifier.key}: null, out string? {valueIdentifier}) && {valueIdentifier} == string.Empty)");
-                                _writer.WriteLine($"{memberAccessExpr} = global::System.{Identifier.Array}.Empty<{((CollectionSpec)complexType).ElementTypeRef.FullyQualifiedName}>();");
-                                EmitEndBlock();
+
+                                if (canGet)
+                                {
+                                    // For properties with getters, only assign the empty array when the current value is null.
+                                    EmitStartBlock($@"if ({memberAccessExpr} is null && {Identifier.TryGetConfigurationValue}({configSection}, {Identifier.key}: null, out string? {valueIdentifier}) && {valueIdentifier} == string.Empty)");
+                                    _writer.WriteLine($"{memberAccessExpr} = global::System.{Identifier.Array}.Empty<{((CollectionSpec)complexType).ElementTypeRef.FullyQualifiedName}>();");
+                                    EmitEndBlock();
+                                }
+                                else
+                                {
+                                    // For true set-only properties (no getter), we cannot read the current value; assign the empty array when the configuration value is empty string.
+                                    EmitStartBlock($@"if ({Identifier.TryGetConfigurationValue}({configSection}, {Identifier.key}: null, out string? {valueIdentifier}) && {valueIdentifier} == string.Empty)");
+                                    _writer.WriteLine($"{memberAccessExpr} = global::System.{Identifier.Array}.Empty<{((CollectionSpec)complexType).ElementTypeRef.FullyQualifiedName}>();");
+                                    EmitEndBlock();
+                                }
                             }
 
                             return _typeIndex.CanInstantiate(complexType);
@@ -1019,7 +1035,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     string effectiveMemberTypeFQN = effectiveMemberType.TypeRef.FullyQualifiedName;
                     initKind = InitializationKind.None;
 
-                    if (memberType is NullableSpec)
+                    if (!member.CanGet)
+                    {
+                        if (member.HasAnyGetter)
+                        {
+                            // Property has a non-public getter that cannot be used here; skip binding to
+                            // match the behavior of the reflection-based binder.
+                            return;
+                        }
+
+                        // Truly set-only property (no getter at all): declare a temp for the value so that
+                        // the binding logic can initialize it appropriately (for value types, using a
+                        // constructor call to match Activator.CreateInstance behavior, which honors
+                        // user-defined parameterless constructors).
+                        initKind = InitializationKind.Declaration;
+                    }
+                    else if (memberType is NullableSpec)
                     {
                         string nullableTempIdentifier = GetIncrementalIdentifier(Identifier.temp);
 
@@ -1040,10 +1071,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     targetObjAccessExpr = memberAccessExpr;
                     initKind = InitializationKind.AssignmentWithNullCheck;
                 }
+                else if (!member.HasAnyGetter)
+                {
+                    // When there is no getter at all, the property can't be passed by ref (CS0206).
+                    // Use a temp variable and assign back after binding.
+                    if (!_typeIndex.CanInstantiate(effectiveMemberType))
+                    {
+                        return;
+                    }
+
+                    targetObjAccessExpr = tempIdentifier;
+                    initKind = InitializationKind.Declaration;
+                }
                 else
                 {
-                    targetObjAccessExpr = memberAccessExpr;
-                    initKind = InitializationKind.SimpleAssignment;
+                    // Property has a non-public getter that cannot be used here; skip binding to
+                    // match the behavior of the reflection-based binder.
+                    return;
                 }
 
                 Action<string, string?>? writeOnSuccess = !canSet

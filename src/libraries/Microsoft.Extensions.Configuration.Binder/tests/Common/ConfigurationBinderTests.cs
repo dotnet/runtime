@@ -1376,7 +1376,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
-        public void DoesNotCallSetOnly()
+        public void BindsSetOnlyProperties()
         {
             var dic = new Dictionary<string, string>
             {
@@ -1389,7 +1389,108 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var config = configurationBuilder.Build();
 
             var options = config.Get<SetOnlyPoco>();
-            Assert.False(options.AnyCalled);
+            Assert.True(options.SetOnlyCalled);
+            Assert.False(options.PrivateGetterCalled);
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // Source generator treats init-only properties separately (SetOnInit);
+            // they are not bound through the normal property binding path.
+            Assert.False(options.InitOnlyCalled);
+#else
+            // Reflection binder binds init-only set-only properties via PropertyInfo.SetValue.
+            Assert.True(options.InitOnlyCalled);
+#endif
+        }
+
+        [Fact]
+        public void BindsSetOnlyPropertiesWithTypeConversion()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"TimeoutSeconds", "30.5"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<SetOnlyWithTypeConversionPoco>();
+            Assert.Equal(TimeSpan.FromSeconds(30.5), options.Timeout);
+        }
+
+        [Fact]
+        public void BindsSetOnlyComplexProperties()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Complex:A", "Test"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexSetOnlyPoco>();
+            Assert.NotNull(options.GetComplex());
+            Assert.Equal("Test", options.GetComplex().A);
+        }
+
+        [Fact]
+        public void BindsSetOnlyComplexStructProperties()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Complex:A", "Test"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<StructSetOnlyPoco>();
+            Assert.Equal("Test", options.GetComplex().A);
+        }
+
+        [Fact]
+        public void BindsSetOnlyArrayProperty_WithElements()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Items:0", "a"},
+                {"Items:1", "b"},
+            };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(dic).Build();
+
+            var options = config.Get<SetOnlyArrayPoco>();
+            Assert.Equal(new[] { "a", "b" }, options.GetItems());
+        }
+
+        [Fact]
+        public void BindsSetOnlyArrayProperty_WithEmptyString()
+        {
+            var dic = new Dictionary<string, string> { { "Items", "" } };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(dic).Build();
+
+            var options = config.Get<SetOnlyArrayPoco>();
+            Assert.NotNull(options.GetItems());
+            Assert.Empty(options.GetItems());
+        }
+
+        [Fact]
+        public void BindsSetOnlyNonNullableValueType_WithValidConfig()
+        {
+            var dic = new Dictionary<string, string> { { "Count", "42" } };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(dic).Build();
+
+            var options = config.Get<SetOnlyValueTypePoco>();
+            Assert.Equal(42, options.GetCount());
+        }
+
+        [Fact]
+        public void BindsSetOnlyProperties_ViaBind()
+        {
+            var dic = new Dictionary<string, string> { { "SetOnly", "hello" } };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(dic).Build();
+
+            var target = new SetOnlyPoco();
+            config.Bind(target);
+            Assert.True(target.SetOnlyCalled);
         }
 
         [Fact]
@@ -1939,7 +2040,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("3", test.TestGetOverridden);
             Assert.Equal("4", test.TestSetOverridden);
             Assert.Equal("5", test.TestNoOverridden);
-            Assert.Null(test.ExposeTestVirtualSet());
+            Assert.Equal("6", test.ExposeTestVirtualSet());
         }
 
         [Fact]

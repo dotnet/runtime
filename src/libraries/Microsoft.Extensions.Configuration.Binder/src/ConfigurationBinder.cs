@@ -270,7 +270,8 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void ResetPropertyValue(PropertyInfo property, object instance, BinderOptions options)
         {
-            // We don't support set only, non public, or indexer properties
+            // We don't support indexer properties, or properties without both a getter and a setter.
+            // Access to non-public accessors is controlled by BindNonPublicProperties.
             if (property.GetMethod is null ||
                 property.SetMethod is null ||
                 (!options.BindNonPublicProperties && (!property.GetMethod.IsPublic || !property.SetMethod.IsPublic)) ||
@@ -286,17 +287,36 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void BindProperty(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
         {
-            // We don't support set only, non public, or indexer properties
-            if (property.GetMethod == null ||
-                (!options.BindNonPublicProperties && !property.GetMethod.IsPublic) ||
-                property.GetMethod.GetParameters().Length > 0)
+            // Indexer properties are not supported. Access to non-public accessors is controlled by BindNonPublicProperties.
+            if (property.GetMethod is { } getMethod)
             {
-                return;
+                if ((!options.BindNonPublicProperties && !getMethod.IsPublic) ||
+                    getMethod.GetParameters().Length > 0)
+                {
+                    return;
+                }
+            }
+            else
+            {
+                // Set-only property: need an accessible setter to be useful.
+                // Also filter out set-only indexer properties (setter has more than just the value parameter).
+                if (property.SetMethod is null ||
+                    (!options.BindNonPublicProperties && !property.SetMethod.IsPublic) ||
+                    property.SetMethod.GetParameters().Length > 1)
+                {
+                    return;
+                }
             }
 
-            var propertyBindingPoint = new BindingPoint(
-                initialValueProvider: () => property.GetValue(instance),
-                isReadOnly: property.SetMethod is null || (!property.SetMethod.IsPublic && !options.BindNonPublicProperties));
+            bool hasGetter = property.GetMethod is not null;
+
+            var propertyBindingPoint = hasGetter
+                ? new BindingPoint(
+                    initialValueProvider: () => property.GetValue(instance),
+                    isReadOnly: property.SetMethod is null || (!property.SetMethod.IsPublic && !options.BindNonPublicProperties))
+                : new BindingPoint(
+                    initialValue: null,
+                    isReadOnly: false);
 
             BindInstance(
                 property.PropertyType,

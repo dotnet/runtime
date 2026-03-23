@@ -630,11 +630,64 @@ namespace Microsoft.Extensions
 
         public class SetOnlyPoco
         {
-            private bool _AnyCalled;
-            public bool AnyCalled => _AnyCalled;
-            public string SetOnly { set => _AnyCalled |= true; }
-            public string PrivateGetter { private get => "foo"; set => _AnyCalled |= true; }
-            public string InitOnly { init => _AnyCalled |= true; }
+            private bool _setOnlyCalled;
+            private bool _privateGetterCalled;
+            private bool _initOnlyCalled;
+            public bool SetOnlyCalled => _setOnlyCalled;
+            public bool PrivateGetterCalled => _privateGetterCalled;
+            public bool InitOnlyCalled => _initOnlyCalled;
+            public string SetOnly { set => _setOnlyCalled = true; }
+            public string PrivateGetter { private get => "foo"; set => _privateGetterCalled = true; }
+            public string InitOnly { init => _initOnlyCalled = true; }
+        }
+
+        public class ComplexSetOnlyPoco
+        {
+            private SimplePoco _complex;
+            public SimplePoco GetComplex() => _complex;
+            public SimplePoco Complex { set => _complex = value; }
+        }
+
+        public struct SetOnlyComplexStruct
+        {
+            public string A { get; set; }
+        }
+
+        public class StructSetOnlyPoco
+        {
+            private SetOnlyComplexStruct _complex;
+
+            public SetOnlyComplexStruct Complex
+            {
+                set => _complex = value;
+            }
+
+            public SetOnlyComplexStruct GetComplex()
+            {
+                return _complex;
+            }
+        }
+
+        public class SetOnlyWithTypeConversionPoco
+        {
+            public double TimeoutSeconds { set => Timeout = TimeSpan.FromSeconds(value); }
+            public TimeSpan Timeout { get; private set; }
+        }
+
+        public class SetOnlyValueTypePoco
+        {
+            private bool _countSet;
+            private int _count;
+            public int Count { set { _countSet = true; _count = value; } }
+            public bool CountSet => _countSet;
+            public int GetCount() => _count;
+        }
+
+        public class SetOnlyArrayPoco
+        {
+            private string[] _items;
+            public string[] GetItems() => _items;
+            public string[] Items { set => _items = value; }
         }
 
         public interface ISomeInterface

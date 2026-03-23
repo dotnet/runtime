@@ -25,5 +25,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public abstract bool CanGet { get; }
         public abstract bool CanSet { get; }
+
+        /// <summary>
+        /// Whether the member has a getter of any accessibility.
+        /// Used to distinguish true set-only properties (no getter at all) from
+        /// properties with non-public getters.
+        /// </summary>
+        public virtual bool HasAnyGetter => CanGet;
     }
 }
