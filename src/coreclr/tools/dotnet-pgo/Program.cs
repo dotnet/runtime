@@ -311,8 +311,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         jsonWriter.WriteStartArray("CallWeights");
                         foreach (var callWeight in data.CallWeights)
                         {
+                            jsonWriter.WriteStartObject();
                             jsonWriter.WriteString("Method", callWeight.Key.ToString());
                             jsonWriter.WriteNumber("Weight", callWeight.Value);
+                            jsonWriter.WriteEndObject();
                         }
                         jsonWriter.WriteEndArray();
                     }
