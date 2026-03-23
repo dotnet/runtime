@@ -825,6 +825,36 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 #endif
 
 #ifdef UNIX_AMD64_ABI
+    // Opaque SIMD types (Vector64/128/256/512) should be returned in a single
+    // vector register (XMM/YMM/ZMM), matching the argument passing convention.
+    // We must handle this before the SysV struct classifier because the classifier
+    // produces [SSE, SSE] for 16-byte types (no SSEUP support), which splits the
+    // return into xmm0:xmm1 and adds unnecessary shuffling overhead.
+    // Use isHWSIMDClass (namespace check) instead of isOpaqueSIMDType (handle cache)
+    // because the SIMD handle cache may not be initialized this early in compilation.
+    if (isHWSIMDClass(clsHnd))
+    {
+        var_types simdType = getSIMDTypeForSize(structSize);
+        if (simdType != TYP_UNDEF && simdType != TYP_SIMD12)
+        {
+            bool canReturnAsSingleSimd = (structSize <= 16) || (structSize == 32 && canUseVexEncoding()) ||
+                                         (structSize == 64 && canUseEvexEncoding());
+
+            if (canReturnAsSingleSimd)
+            {
+                howToReturnStruct = SPK_PrimitiveType;
+                useType           = simdType;
+
+                if (wbReturnStruct != nullptr)
+                {
+                    *wbReturnStruct = howToReturnStruct;
+                }
+
+                return useType;
+            }
+        }
+    }
+
     // An 8-byte struct may need to be returned in a floating point register
     // So we always consult the struct "Classifier" routine
     //

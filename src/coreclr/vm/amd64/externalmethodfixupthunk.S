@@ -9,16 +9,23 @@
 
 NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
 
-        PROLOG_WITH_TRANSITION_BLOCK 0, 0x10, rdx, rcx, 0
+        PROLOG_WITH_TRANSITION_BLOCK 384, 0x10, rdx, rcx, 0
+
+        SAVE_UPPER_VECTOR_REGISTERS 0x00
 
         lea     rdi, [rsp + __PWTB_TransitionBlock] // pTransitionBlock
         mov     rsi, rax                            // pIndirection
 
         call            C_FUNC(ExternalMethodFixupWorker)
+        mov             r10, rax
 
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+        RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
+        RESTORE_UPPER_VECTOR_REGISTERS 0x00
 
-        TAILJMP_RAX
+        free_stack      __PWTB_StackAlloc
+        POP_ARGUMENT_REGISTERS
+        POP_CALLEE_SAVED_REGISTERS
+        jmp             r10
 
 NESTED_END DelayLoad_MethodCall, _TEXT
 
