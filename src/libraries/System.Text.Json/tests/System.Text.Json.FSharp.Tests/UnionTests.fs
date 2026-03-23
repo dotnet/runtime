@@ -1,6 +1,7 @@
 ﻿module System.Text.Json.Tests.FSharp.UnionTests
 
 open System
+open System.Reflection
 open System.Text.Json
 open System.Text.Json.Serialization
 open System.Text.Json.Serialization.Metadata
@@ -42,6 +43,9 @@ type UnionWithMultipleFields = | Multi of x:int * y:string * z:float
 
 [<JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)>]
 type UnionWithDisallowUnmapped = Foo | Bar of x:int
+
+[<JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")>]
+type UnionWithFieldConflictingDiscriminator = Conflict of Kind:int
 
 // -- Serialization Tests --
 
@@ -457,3 +461,45 @@ let ``Disallow unmapped does not affect known fields`` () =
     let json = """{"$type":"Rectangle","height":10,"length":20}"""
     let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options)
     Assert.Equal(Rectangle(10.0, 20.0), result)
+
+// -- Field/Discriminator Conflict Tests --
+
+[<Fact>]
+let ``Field name matching discriminator case-insensitively throws when case-insensitive`` () =
+    let options = JsonSerializerOptions(PropertyNameCaseInsensitive = true)
+    let ex = Assert.ThrowsAny<Exception>(fun () -> JsonSerializer.Deserialize<UnionWithFieldConflictingDiscriminator>("""{"kind":"Conflict","Kind":1}""", options) |> ignore)
+    let innerEx =
+        match ex with
+        | :? System.Reflection.TargetInvocationException as tie -> tie.InnerException
+        | _ -> ex
+    Assert.IsType<InvalidOperationException>(innerEx) |> ignore
+    Assert.Contains("Kind", innerEx.Message)
+    Assert.Contains("kind", innerEx.Message)
+
+// -- JsonTypeInfo Verification Tests --
+
+[<Theory>]
+[<MemberData(nameof(getUnionTypes))>]
+let ``Union type info has no PolymorphismOptions`` (unionType: Type) =
+    let options = JsonSerializerOptions.Default
+    let typeInfo = options.GetTypeInfo(unionType)
+    Assert.Null(typeInfo.PolymorphismOptions)
+
+[<Theory>]
+[<MemberData(nameof(getUnionTypes))>]
+let ``Union type info has Kind None`` (unionType: Type) =
+    let options = JsonSerializerOptions.Default
+    let typeInfo = options.GetTypeInfo(unionType)
+    Assert.Equal(JsonTypeInfoKind.None, typeInfo.Kind)
+
+[<Fact>]
+let ``Union with JsonPolymorphic attribute has no PolymorphismOptions`` () =
+    let options = JsonSerializerOptions.Default
+    let typeInfo = options.GetTypeInfo(typeof<UnionWithCustomDiscriminator>)
+    Assert.Null(typeInfo.PolymorphismOptions)
+
+[<Fact>]
+let ``Union with default JsonPolymorphic attribute has no PolymorphismOptions`` () =
+    let options = JsonSerializerOptions.Default
+    let typeInfo = options.GetTypeInfo(typeof<UnionWithDefaultPolymorphic>)
+    Assert.Null(typeInfo.PolymorphismOptions)

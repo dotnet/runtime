@@ -91,9 +91,13 @@ namespace System.Text.Json.Serialization.Converters
                     }
 
                     // Validate that no field name conflicts with the discriminator property name.
+                    StringComparison conflictComparison = options.PropertyNameCaseInsensitive
+                        ? StringComparison.OrdinalIgnoreCase
+                        : StringComparison.Ordinal;
+
                     for (int i = 0; i < fields.Length; i++)
                     {
-                        if (fields[i].FieldName.Equals(typeDiscriminatorPropertyName, StringComparison.Ordinal))
+                        if (fields[i].FieldName.Equals(typeDiscriminatorPropertyName, conflictComparison))
                         {
                             throw new InvalidOperationException(SR.Format(SR.FSharpUnionFieldConflictsWithDiscriminator, typeof(T), fields[i].FieldName, typeDiscriminatorPropertyName));
                         }
