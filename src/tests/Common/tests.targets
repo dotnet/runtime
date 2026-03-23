@@ -50,10 +50,22 @@
     <Exec Command="$(TestWrapperScript) &gt; $(RedirectOutputToFile) 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" ContinueOnError="ErrorAndContinue">
       <Output TaskParameter="ExitCode" PropertyName="MergedTestExitCode" />
     </Exec>
-    <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" Condition="'$(MergedTestExitCode)' == '0'" />
+    <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" Condition="Exists('$(TestResultsXmlFile)')" />
+    <WriteLinesToFile File="$(TestResultsCopyTo).crashed" Lines="ExitCode=$(MergedTestExitCode);Script=$(TestWrapperScript)" Overwrite="true" Condition="'$(MergedTestExitCode)' != '0'" />
   </Target>
 
   <Target Name="RunMergedTests" DependsOnTargets="PrepareTestsToRun">
+    <ItemGroup>
+      <_StaleCrashedMarkers Include="$(__LogsDir)\*.crashed" />
+    </ItemGroup>
+    <Delete Files="@(_StaleCrashedMarkers)" />
+
+    <ItemGroup Condition="'$(RunnerFilter)' != ''">
+      <MergedTestWrapperScripts Remove="@(MergedTestWrapperScripts)" Condition="!$([System.String]::new('%(MergedTestWrapperScripts.RelativeResultsPath)').Replace('/','.').Replace('\','.').Contains('$(RunnerFilter)'))" />
+    </ItemGroup>
+
+    <Message Text="Runner filter '$(RunnerFilter)' matched @(MergedTestWrapperScripts->Count()) runner(s)" Importance="high" Condition="'$(RunnerFilter)' != ''" />
+
     <ItemGroup>
       <_ProjectsToBuild Include="$(MSBuildThisFileFullPath)">
         <AdditionalProperties>TestWrapperScript=%(MergedTestWrapperScripts.Identity);RedirectOutputToFile=%(MergedTestWrapperScripts.RedirectOutputToFile);TestResultsXmlFile=%(MergedTestWrapperScripts.TestResultsXmlFile);TestResultsCopyTo=%(MergedTestWrapperScripts.TestResultsCopyTo)</AdditionalProperties>

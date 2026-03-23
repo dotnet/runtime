@@ -107,6 +107,8 @@ parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_tru
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 parser.add_argument("--interpreter", dest="interpreter", action="store_true", default=False)
 parser.add_argument("--node", dest="node", action="store_true", default=False)
+parser.add_argument("--runner_filter", dest="runner_filter", default=None)
+parser.add_argument("--active_issue_details", dest="active_issue_details", action="store_true", default=False)
 
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
@@ -575,6 +577,9 @@ def call_msbuild(args):
     if args.limited_core_dumps:
         command += ["/p:LimitedCoreDumps=true"]
 
+    if args.runner_filter:
+        command += ["/p:RunnerFilter=%s" % args.runner_filter]
+
     print(" ".join(command))
 
     sys.stdout.flush() # flush output before creating sub-process
@@ -1029,6 +1034,16 @@ def setup_args(args):
                               lambda arg: True,
                               "Error setting node")
 
+    coreclr_setup_args.verify(args,
+                              "runner_filter",
+                              lambda arg: True,
+                              "Error setting runner_filter")
+
+    coreclr_setup_args.verify(args,
+                              "active_issue_details",
+                              lambda arg: True,
+                              "Error setting active_issue_details")
+
     if coreclr_setup_args.sequential and coreclr_setup_args.parallel:
         print("Error: don't specify both --sequential and -parallel")
         sys.exit(1)
@@ -1202,6 +1217,38 @@ def find_test_from_name(host_os, test_location, test_name):
 
     return location
 
+def parse_crashed_runner_file(args, item):
+    """ Parse a crashed runner marker file
+
+    Args:
+        args                 : arguments
+        item                 : crash marker filename in the logs directory
+
+    Returns:
+        dict with 'name', 'exit_code', and 'script' keys, or None
+    """
+    crash_file = os.path.join(args.logs_dir, item)
+    # Derive display name: "Foo.Bar.testRun.xml.crashed" -> "Foo.Bar"
+    name = item
+    if name.lower().endswith(".testrun.xml.crashed"):
+        name = name[:-len(".testrun.xml.crashed")]
+
+    exit_code = None
+    script = None
+    try:
+        with open(crash_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("ExitCode="):
+                    parts = line.split(";", 1)
+                    exit_code = parts[0][len("ExitCode="):]
+                    if len(parts) > 1 and parts[1].startswith("Script="):
+                        script = parts[1][len("Script="):]
+    except Exception:
+        pass
+
+    return {"name": name, "exit_code": exit_code, "script": script}
+
 def parse_test_results(args, tests, assemblies):
     """ Parse the test results for test execution information
 
@@ -1209,10 +1256,14 @@ def parse_test_results(args, tests, assemblies):
         args                 : arguments
         tests                : list of individual test results (filled in by this function)
         assemblies           : dictionary of per-assembly aggregations (filled in by this function)
+
+    Returns:
+        list of crashed runner info dicts with 'name', 'exit_code', and 'script' keys
     """
     print("Parsing test results from (%s)" % args.logs_dir)
 
     found = False
+    crashed_runners = []
 
     for item in os.listdir(args.logs_dir):
         item_lower = item.lower()
@@ -1225,10 +1276,17 @@ def parse_test_results(args, tests, assemblies):
         elif item_lower == "standalonerunnertestresults.testrun.log":
             found = True
             parse_standalone_runner_results_file(args, item, tests, assemblies)
+        elif item_lower.endswith(".testrun.xml.crashed"):
+            found = True
+            crash_info = parse_crashed_runner_file(args, item)
+            if crash_info is not None:
+                crashed_runners.append(crash_info)
 
     if not found:
         print("Unable to find testRun.xml or StandaloneRunnerTestResults.testrun.log. This normally means the tests did not run.")
         print("It could also mean there was a problem logging. Please run the tests again.")
+
+    return crashed_runners
 
 def parse_standalone_runner_results_file(args, item, tests, assemblies):
     """ Parse test results from a standalone runner results log file
@@ -1254,6 +1312,7 @@ def parse_standalone_runner_results_file(args, item, tests, assemblies):
             "passed": 0,
             "failed": 0,
             "skipped": 0,
+            "active_issue": 0,
         })
 
     with open(log_result_file, 'r', encoding='utf-8') as f:
@@ -1333,6 +1392,7 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                 "passed": 0,
                 "failed": 0,
                 "skipped": 0,
+                "active_issue": 0,
             })
         assembly_info["time"] += float(assembly.attrib["time"])
 
@@ -1365,12 +1425,14 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                     result = test.attrib["result"]
                     time = float(collection.attrib["time"])
                     test_output = test.findtext("output")
+                    skip_reason = test.findtext("reason") if result == "Skip" else None
                     tests.append(defaultdict(lambda: None, {
                         "name": test_name,
                         "test_path": None,
                         "result" : result,
                         "time": time,
                         "test_output": test_output,
+                        "skip_reason": skip_reason,
                         "assembly_display_name": display_name,
                         "is_merged": True
                     }))
@@ -1380,14 +1442,18 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                         assembly_info["failed"] += 1
                     else:
                         assembly_info["skipped"] += 1
+                        reason = test.findtext("reason")
+                        if reason is not None and reason.startswith("ActiveIssue:"):
+                            assembly_info["active_issue"] += 1
         assemblies[assembly_name] = assembly_info
 
-def print_summary(tests, assemblies):
+def print_summary(tests, assemblies, crashed_runners=None):
     """ Print a summary of the test results
 
     Args:
         tests (defaultdict[String]: { }): The tests that were reported by
                                         : xunit
+        crashed_runners (list): list of dicts with 'name', 'exit_code', 'script' for crashed runners
     """
 
     assert tests is not None
@@ -1422,14 +1488,15 @@ def print_summary(tests, assemblies):
                 print("# Test output recorded in log file.")
             print("")
 
-    print("Time [secs] | Total | Passed | Failed | Skipped | Assembly Execution Summary")
-    print("============================================================================")
+    print("Time [secs] | Total | Passed | Failed | Skipped | ActiveIssue | Assembly Execution Summary")
+    print("===========================================================================================")
 
     total_time = 0.0
     total_total = 0
     total_passed = 0
     total_failed = 0
     total_skipped = 0
+    total_active_issue = 0
 
     for assembly in assemblies:
         assembly = assemblies[assembly]
@@ -1438,16 +1505,137 @@ def print_summary(tests, assemblies):
         passed = assembly["passed"]
         failed = assembly["failed"]
         skipped = assembly["skipped"]
+        active_issue = assembly["active_issue"] if assembly["active_issue"] is not None else 0
         total = passed + failed + skipped
-        print("%11.3f | %5d | %6d | %6d | %7d | %s" % (time, total, passed, failed, skipped, name))
+        print("%11.3f | %5d | %6d | %6d | %7d | %11d | %s" % (time, total, passed, failed, skipped, active_issue, name))
         total_time += time
         total_total += total
         total_passed += passed
         total_failed += failed
         total_skipped += skipped
+        total_active_issue += active_issue
 
-    print("----------------------------------------------------------------------------")
-    print("%11.3f | %5d | %6d | %6d | %7d | (total)" % (total_time, total_total, total_passed, total_failed, total_skipped))
+    print("-------------------------------------------------------------------------------------------")
+    print("%11.3f | %5d | %6d | %6d | %7d | %11d | (total)" % (total_time, total_total, total_passed, total_failed, total_skipped, total_active_issue))
+    print("")
+
+    if crashed_runners:
+        print("Crashed Runners (%d):" % len(crashed_runners))
+        print("  Exit Code | Runner")
+        print("  ----------|-------")
+        for runner in crashed_runners:
+            exit_code = runner["exit_code"] if runner["exit_code"] is not None else "?"
+            print("  %9s | %s" % (exit_code, runner["name"]))
+        print("")
+
+def _parse_issue_reference(issue_ref):
+    """ Parse an issue reference (URL or bare number) into (repo, number, display) tuple.
+
+    Args:
+        issue_ref: issue URL string or bare number
+
+    Returns:
+        (repo, number, display) where repo may be None for non-GitHub URLs
+    """
+    m = re.match(r'https://github\.com/([^/]+/[^/]+)/issues/(\d+)', issue_ref)
+    if m:
+        return m.group(1), m.group(2), "#%s" % m.group(2)
+    if issue_ref.isdigit():
+        return "dotnet/runtime", issue_ref, "#%s" % issue_ref
+    return None, None, issue_ref
+
+def _fetch_issue_titles(issues):
+    """ Fetch issue titles from GitHub via the gh CLI.
+
+    Args:
+        issues: dict mapping issue reference to list of (test_name, runner_name) tuples
+
+    Returns:
+        dict mapping issue reference to title string
+    """
+    issue_titles = {}
+    try:
+        print("Fetching issue titles from GitHub (%d issues)..." % len(issues))
+        for ref in issues:
+            repo, number, _ = _parse_issue_reference(ref)
+            if repo is None or number is None:
+                continue
+            try:
+                result = subprocess.run(
+                    ["gh", "issue", "view", number, "--repo", repo, "--json", "title", "--jq", ".title"],
+                    capture_output=True, text=True, timeout=10)
+                if result.returncode == 0 and result.stdout.strip():
+                    issue_titles[ref] = result.stdout.strip()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    return issue_titles
+
+def print_active_issue_summary(tests):
+    """ Print a brief summary of ActiveIssue-skipped tests (always shown).
+
+    Args:
+        tests: list of test result dicts
+
+    Returns:
+        dict mapping issue reference to list of (test_name, runner_name) tuples
+    """
+    issues = defaultdict(list)
+    for test in tests:
+        reason = test.get("skip_reason") or test.get("test_output")
+        if reason is None:
+            continue
+        if not reason.startswith("ActiveIssue:"):
+            continue
+        url = reason[len("ActiveIssue:"):].strip()
+        runner = test.get("assembly_display_name") or "unknown"
+        issues[url].append((test["name"], runner))
+
+    if not issues:
+        return issues
+
+    total_tests = sum(len(v) for v in issues.values())
+    print("ActiveIssue Summary (%d issues, %d tests):" % (len(issues), total_tests))
+    print("  %5s | %s" % ("Tests", "Issue"))
+    print("  ------|%s" % ("-" * 60))
+    for ref in sorted(issues.keys(), key=lambda u: len(issues[u]), reverse=True):
+        _, _, display_issue = _parse_issue_reference(ref)
+        print("  %5d | %s" % (len(issues[ref]), display_issue))
+    print("")
+
+    return issues
+
+def print_active_issue_details(issues):
+    """ Print per-issue breakdown of ActiveIssue-skipped tests with runner info.
+    Fetches issue titles from GitHub via the gh CLI.
+
+    Args:
+        issues: dict mapping issue reference to list of (test_name, runner_name) tuples
+    """
+    if not issues:
+        return
+
+    issue_titles = _fetch_issue_titles(issues)
+
+    total_tests = sum(len(v) for v in issues.values())
+    print("ActiveIssue Details (%d issues, %d tests):" % (len(issues), total_tests))
+    print("")
+    for ref in sorted(issues.keys(), key=lambda u: len(issues[u]), reverse=True):
+        title = issue_titles.get(ref, "")
+        title_suffix = " - %s" % title if title else ""
+        _, _, display_issue = _parse_issue_reference(ref)
+        print("  %s%s (%d tests)" % (display_issue, title_suffix, len(issues[ref])))
+        # Group tests by runner
+        by_runner = defaultdict(list)
+        for test_name, runner_name in issues[ref]:
+            by_runner[runner_name].append(test_name)
+        for runner in sorted(by_runner.keys()):
+            tests_in_runner = by_runner[runner]
+            print("    [%s]" % runner)
+            for test_name in sorted(tests_in_runner):
+                print("      %s" % test_name)
     print("")
 
 def create_repro(args, env, tests):
@@ -1515,8 +1703,11 @@ def main(args):
 
     assemblies = defaultdict(lambda: None)
     tests = []
-    parse_test_results(args, tests, assemblies)
-    print_summary(tests, assemblies)
+    crashed_runners = parse_test_results(args, tests, assemblies)
+    print_summary(tests, assemblies, crashed_runners)
+    active_issues = print_active_issue_summary(tests)
+    if args.active_issue_details:
+        print_active_issue_details(active_issues)
     repro_count = create_repro(args, env, tests)
 
     print("")
