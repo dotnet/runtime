@@ -416,6 +416,32 @@ namespace System.Text.RegularExpressions.Symbolic
                 Debug.Assert(body._left is not null);
                 return CreateLoop(builder, body._left, 0, 1, isLazy || body.IsLazy);
             }
+            // Simplify (R*)*  → R*, (R+)* → R*, (R*)+ → R*
+            // More generally: (R{a,∞}){b,∞} → R{0,∞} when the combined loop can match any
+            // number of R's including zero. This holds when either:
+            //  - a == 0 (inner loop already matches ε, so each outer iteration can be empty), or
+            //  - a == 1 && b == 0 (outer can take 0 iterations for ε, or n iterations of R+ for any n ≥ 1).
+            // Counterexample: (R{2,∞})* cannot match a single R, so it's NOT equivalent to R*.
+            // This is critical for performance: without it, deeply nested patterns like ((a)*)*
+            // cause exponential blowup in derivative computation.
+            // The blowup is in the per-character cost (pattern-dependent constant), not in input-length
+            // scaling — the engine remains O(input_length) for any given pattern — but the constant
+            // grows exponentially with nesting depth, making matching impractically slow.
+            // Additional requirements:
+            //  - No effects (captures), since collapsing loops would change capture group bindings.
+            //  - Same laziness for both loops, since mixing greedy/lazy changes match priorities
+            //    (e.g. (?:0*)+? is not equivalent to 0*? — the former prefers fewer outer iterations
+            //    each greedily consuming, while the latter prefers less overall).
+            // This is a while loop (not if + recursive CreateLoop call) so that arbitrary nesting
+            // depth is handled without consuming stack proportional to the depth.
+            while (upper == int.MaxValue && body._kind == SymbolicRegexNodeKind.Loop && body._upper == int.MaxValue
+                && (body._lower == 0 || (body._lower == 1 && lower == 0))
+                && !body._info.ContainsEffect && isLazy == body.IsLazy)
+            {
+                Debug.Assert(body._left is not null);
+                lower = 0;
+                body = body._left;
+            }
             return Create(builder, SymbolicRegexNodeKind.Loop, body, null, lower, upper, default, SymbolicRegexInfo.Loop(body._info, lower, isLazy));
         }
 
@@ -1372,40 +1398,62 @@ namespace System.Text.RegularExpressions.Symbolic
             if (!_info.ContainsEffect)
                 return this;
 
+            // Check the cache to avoid redundant work. The derivative of deeply nested loop patterns
+            // like ((a)*)* produces a DAG with shared sub-trees that differ only in their Effect
+            // wrappers. Without caching, each shared sub-tree is traversed once per reference rather
+            // than once per unique node, leading to exponential time complexity in the nesting depth.
+            if (builder._stripEffectsCache.TryGetValue(this, out SymbolicRegexNode<TSet>? cached))
+                return cached;
+
+            SymbolicRegexNode<TSet> result;
+
             // Recurse over the structure of the node to strip effects
             switch (_kind)
             {
                 case SymbolicRegexNodeKind.Effect:
                     Debug.Assert(_left is not null && _right is not null);
                     // This is the place where the effect (the right child) is getting ignored
-                    return _left.StripEffects(builder);
+                    result = _left.StripEffects(builder);
+                    break;
 
                 case SymbolicRegexNodeKind.Concat:
                     Debug.Assert(_left is not null && _right is not null);
                     Debug.Assert(_left._info.ContainsEffect && !_right._info.ContainsEffect);
-                    return builder.CreateConcat(_left.StripEffects(builder), _right);
+                    result = builder.CreateConcat(_left.StripEffects(builder), _right);
+                    break;
 
                 case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
-                    // This iterative handling of nested alternations is important to avoid quadratic work in deduplicating
-                    // the elements. We don't want to omit deduplication here, since he stripping may make nodes equal.
-                    List<SymbolicRegexNode<TSet>> elems = ToList(listKind: SymbolicRegexNodeKind.Alternate);
-                    for (int i = 0; i < elems.Count; i++)
-                        elems[i] = elems[i].StripEffects(builder);
-                    return builder.Alternate(elems);
+                    // Strip effects from each child first, leveraging the cache for shared sub-trees,
+                    // then flatten and deduplicate the results. Stripping before flattening is important:
+                    // the pre-stripped tree may have exponentially many paths that collapse after effects
+                    // are removed, but the cache ensures each unique sub-tree is only processed once.
+                    {
+                        SymbolicRegexNode<TSet> strippedLeft = _left.StripEffects(builder);
+                        SymbolicRegexNode<TSet> strippedRight = _right.StripEffects(builder);
+                        List<SymbolicRegexNode<TSet>> elems = strippedLeft.ToList(listKind: SymbolicRegexNodeKind.Alternate);
+                        strippedRight.ToList(elems, listKind: SymbolicRegexNodeKind.Alternate);
+                        result = builder.Alternate(elems);
+                    }
+                    break;
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
                     Debug.Assert(_left is not null);
-                    return builder.CreateDisableBacktrackingSimulation(_left.StripEffects(builder));
+                    result = builder.CreateDisableBacktrackingSimulation(_left.StripEffects(builder));
+                    break;
 
                 case SymbolicRegexNodeKind.Loop:
                     Debug.Assert(_left is not null);
-                    return builder.CreateLoop(_left.StripEffects(builder), IsLazy, _lower, _upper);
+                    result = builder.CreateLoop(_left.StripEffects(builder), IsLazy, _lower, _upper);
+                    break;
 
                 default:
                     Debug.Fail($"{nameof(StripEffects)}:{_kind}");
                     return null;
             }
+
+            builder._stripEffectsCache[this] = result;
+            return result;
         }
 
         /// <summary>
@@ -2295,8 +2343,23 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         if (_lower is 0 or int.MaxValue)
                         {
-                            // infinite loop has the same size as a *-loop
-                            return _left.CountSingletons();
+                            int bodyCount = _left.CountSingletons();
+
+                            // When an unbounded loop's body is itself an unbounded loop, the derivative
+                            // computation creates a 2-way Alternate at each nesting level (because the
+                            // Concat derivative branches when its left side is nullable). This means
+                            // the per-character derivative cost doubles with each such nesting level.
+                            // Account for this so that the NFA size estimate catches deeply nested
+                            // patterns that would cause exponential blowup.
+                            // The loop flattening in CreateLoop already collapses same-laziness nesting
+                            // without captures, so this multiplier primarily affects patterns that survive
+                            // flattening (e.g., alternating lazy/greedy nesting at every level).
+                            if (_left._kind == SymbolicRegexNodeKind.Loop && _left._upper == int.MaxValue)
+                            {
+                                return Times(2, bodyCount);
+                            }
+
+                            return bodyCount;
                         }
 
                         // the upper bound is not being used, so the lower must be non-zero
