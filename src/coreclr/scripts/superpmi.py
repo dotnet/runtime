@@ -20,6 +20,7 @@ import argparse
 import asyncio
 import csv
 import datetime
+import html
 import json
 import locale
 import logging
@@ -2997,7 +2998,7 @@ def write_example_diffs_to_markdown_summary(write_fh, asm_diffs):
                 for (func_name, diff, diff_text) in examples_to_put_in_summary:
                     base_size = int(diff["Base ActualCodeBytes"])
                     diff_size = int(diff["Diff ActualCodeBytes"])
-                    with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), func_name)):
+                    with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), html.escape(func_name))):
                         write_fh.write(diff_text)
 
 ################################################################################
@@ -3563,7 +3564,7 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
     metrics_with_diffs = set()
     for metric in all_metrics:
         significant_diffs = [(mch, base, diff) for (mch, _, base, diff) in metric_diffs
-                             if metric in base and base[metric] != diff[metric]]
+                             if metric in base and abs(compute_pct(base[metric], diff[metric])) >= 0.001]
         if not significant_diffs:
             continue
 

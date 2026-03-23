@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -18,6 +19,7 @@ namespace System.Runtime
         private nuint _osStackLocation;
 #endif
 
+        [RequiresUnsafe]
         public GCFrameRegistration(void** allocation, uint elemCount, bool areByRefs = true)
         {
             _reserved1 = 0;
@@ -32,9 +34,11 @@ namespace System.Runtime
 
 #if CORECLR
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         internal static extern void RegisterForGCReporting(GCFrameRegistration* pRegistration);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         internal static extern void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
 #endif
     }

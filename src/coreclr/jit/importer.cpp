@@ -3893,6 +3893,32 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 }
 
 //------------------------------------------------------------------------
+// impCanReorderWithNullCheck:
+//   Check if the specified tree can be reordered with a null check.
+//
+// Arguments:
+//    tree - The tree
+//
+// Return Value:
+//    True if it would not be observable whether a null check threw before or
+//    after the specified node.
+//
+bool Compiler::impCanReorderWithNullCheck(GenTree* tree)
+{
+    if ((tree->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0)
+    {
+        return false;
+    }
+
+    if (((tree->gtFlags & GTF_EXCEPT) != 0) && (gtCollectExceptions(tree) != ExceptionSetFlags::NullReferenceException))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // impImportStaticReadOnlyField: Tries to import 'static readonly' field
 //    as a constant if the host type is statically initialized.
 //
@@ -5950,8 +5976,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-    bool enablePatchpoints =
+    bool enableOSR =
         !opts.compDbgCode && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0);
+    bool enablePartialCompilation =
+        opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation() > 0);
 
 #ifdef DEBUG
 
@@ -5961,11 +5989,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     JitEnablePatchpointRange.EnsureInit(JitConfig.JitEnablePatchpointRange());
     const unsigned hash    = impInlineRoot()->info.compMethodHash();
     const bool     inRange = JitEnablePatchpointRange.Contains(hash);
-    enablePatchpoints &= inRange;
-
+    enableOSR &= inRange;
+    enablePartialCompilation &= inRange;
 #endif // DEBUG
 
-    if (enablePatchpoints)
+    if (enableOSR)
     {
         // We don't inline at Tier0, if we do, we may need rethink our approach.
         // Could probably support inlines that don't introduce flow.
@@ -6186,9 +6214,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     //
     // Note unlike OSR, it's ok to forgo these.
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation() > 0) &&
-        compCanHavePatchpoints() && !compTailPrefixSeen && (stackState.esStackDepth == 0) &&
-        !block->HasFlag(BBF_PATCHPOINT) && !block->hasHndIndex())
+    // For runtime async we cannot allow partial compilation as that removes IR from the blocks
+    // that we need to do proper liveness analysis.
+    //
+    if (enablePartialCompilation && compCanHavePatchpoints() && !compTailPrefixSeen && !compIsAsync() &&
+        (stackState.esStackDepth == 0) && !block->HasFlag(BBF_PATCHPOINT) && !block->hasHndIndex())
     {
         // Is this block a good place for partial compilation?
         //
@@ -7018,6 +7048,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_JMP:
 
                 assert(!compIsForInlining());
+
+                if (IsReadyToRun())
+                {
+                    // jmp is not supported on ReadyToRun
+                    // The call to the delayload method would not be properly set up to put the indirection cell address
+                    // in the correct register. See https://github.com/dotnet/runtime/issues/125252
+                    implReadyToRunUnsupported();
+                }
 
                 if ((info.compFlags & CORINFO_FLG_SYNCH) || block->hasTryIndex() || block->hasHndIndex())
                 {
@@ -9516,12 +9554,28 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Handle the cases that might trigger type initialization
                 // (and possibly need to spill the tree for the stored value)
+                bool expandAddrInline =
+                    (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE) && !fgIsBigOffset(fieldInfo.offset);
                 switch (fieldInfo.fieldAccessor)
                 {
                     case CORINFO_FIELD_INSTANCE:
 #ifdef FEATURE_READYTORUN
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
+                        // We will create STOREIND/STOREBLK(FIELD_ADDR(obj, fld), data).
+                        // The required IL evaluation order is obj -> data -> nullcheck(obj) -> store.
+                        // Take care not to reorder the data with the null check.
+                        //
+                        // When the field offset is small enough, we can expand the address
+                        // inline and rely on the store itself to perform the null check,
+                        // so no spill is needed.
+                        if (!expandAddrInline && !impCanReorderWithNullCheck(impStackTop().val) &&
+                            fgAddrCouldBeNull(impStackTop(1).val))
+                        {
+                            impSpillStackEntry(stackState.esStackDepth - 1,
+                                               BAD_VAR_NUM DEBUGARG(false) DEBUGARG("non-reorderable data to stfld"));
+                        }
+                        break;
                     case CORINFO_FIELD_STATIC_TLS:
                     case CORINFO_FIELD_STATIC_ADDR_HELPER:
                     case CORINFO_FIELD_INSTANCE_HELPER:
@@ -9598,17 +9652,62 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
-                        op1 = gtNewFieldAddrNode(resolvedToken.hField, obj, fieldInfo.offset);
+                        bool mayOverlap =
+                            StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass));
+
+                        if (expandAddrInline)
+                        {
+                            if (obj->IsLclVarAddr())
+                            {
+                                lvaGetDesc(obj->AsLclFld())->lvFieldAccessed = true;
+                            }
+                            // When the offset is small enough, expand the address inline
+                            // as ADD(obj, offset). The null check will happen as part of
+                            // the store itself.
+                            FieldSeq* fieldSeq = nullptr;
+                            if (obj->TypeIs(TYP_REF) && !mayOverlap)
+                            {
+                                fieldSeq = GetFieldSeqStore()->Create(resolvedToken.hField, fieldInfo.offset,
+                                                                      FieldSeq::FieldKind::Instance);
+                            }
+
+                            if (fieldInfo.offset != 0)
+                            {
+                                if (obj->OperIs(GT_LCL_ADDR) &&
+                                    IsValidLclAddr(obj->AsLclFld()->GetLclNum(),
+                                                   obj->AsLclFld()->GetLclOffs() + fieldInfo.offset))
+                                {
+                                    obj->AsLclFld()->SetLclOffs(obj->AsLclFld()->GetLclOffs() + fieldInfo.offset);
+                                    op1 = obj;
+                                }
+                                else
+                                {
+                                    var_types addrType = obj->TypeIs(TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
+                                    op1 =
+                                        gtNewOperNode(GT_ADD, addrType, obj, gtNewIconNode(fieldInfo.offset, fieldSeq));
+
+                                    if (obj->OperIsConst())
+                                    {
+                                        op1 = gtFoldExprConst(op1);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                op1 = obj;
+                            }
+                        }
+                        else
+                        {
+                            op1 = gtNewFieldAddrNode(resolvedToken.hField, obj, fieldInfo.offset);
 
 #ifdef FEATURE_READYTORUN
-                        if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
-                        {
-                            op1->AsFieldAddr()->gtFieldLookup = fieldInfo.fieldLookup;
-                        }
+                            if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
+                            {
+                                op1->AsFieldAddr()->gtFieldLookup = fieldInfo.fieldLookup;
+                            }
 #endif
-                        if (StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass)))
-                        {
-                            op1->AsFieldAddr()->gtFldMayOverlap = true;
+                            op1->AsFieldAddr()->gtFldMayOverlap = mayOverlap;
                         }
 
                         if (compIsForInlining() &&
@@ -9698,9 +9797,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // Field's type is a byref-like struct -> address is not on the heap.
                     indirFlags |= GTF_IND_TGT_NOT_HEAP;
                 }
-                else
+                else if ((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC) == 0)
                 {
-                    // Field's owner is a byref-like struct -> address is not on the heap.
+                    // Field's owner is a byref-like struct and the field is not static -> address is not on the heap.
                     CORINFO_CLASS_HANDLE fldOwner = info.compCompHnd->getFieldClass(resolvedToken.hField);
                     if ((fldOwner != NO_CLASS_HANDLE) && eeIsByrefLike(fldOwner))
                     {
@@ -9978,8 +10077,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
-                        // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
-                        op1->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
+                        // We do not model stack overflow from localloc as an exception side effect.
+                        // Obviously, we don't want locallocs to be CSE'd.
+                        op1->gtFlags |= GTF_DONT_CSE;
 
                         // Request stack security for this method.
                         setNeedsGSSecurityCookie();

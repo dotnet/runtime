@@ -725,8 +725,7 @@ namespace Internal.IL
                 else
                 {
                     // We have the canonical version of the method - find the runtime determined version.
-                    // This is simplified because we know the method is on a valuetype.
-                    Debug.Assert(targetMethod.OwningType.IsValueType);
+                    Debug.Assert(targetMethod.OwningType.IsValueType || targetMethod.Signature.IsStatic);
 
                     MethodDesc targetOfLookup;
                     if (_constrained.IsRuntimeDeterminedType)

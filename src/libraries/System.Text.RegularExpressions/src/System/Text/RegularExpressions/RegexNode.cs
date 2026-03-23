@@ -390,7 +390,21 @@ namespace System.Text.RegularExpressions
                 // to implementations that don't support backtracking.
                 rootNode.EliminateEndingBacktracking();
 
+                // Re-run reduction passes to clean up structures created by the optimizations above.
+                // FinalOptimize can create patterns like Atomic(Alternate(X, Empty)) that ReduceAtomic
+                // would simplify to Loop?(X), or Concatenate(X, Empty) that ReduceConcatenation would
+                // simplify to X. A single re-reduce pass catches all known cases.
+                // This is only done for Compiled/source generator, where the one-time construction cost
+                // is amortized over many matches and simpler trees produce better generated code.
+                // The source generator explicitly sets Compiled when parsing (RegexGenerator.cs).
+                if ((rootNode.Options & RegexOptions.Compiled) != 0)
+                {
+                    rootNode.FinalReduce();
+                }
+
                 // Optimization: unnecessary re-processing of starting loops.
+                // This runs after FinalReduce so it operates on the final tree structure, since
+                // FinalReduce may restructure alternations into concatenations with a leading loop.
                 // If an expression is guaranteed to begin with a single-character unbounded loop that isn't part of an alternation (in which case it
                 // wouldn't be guaranteed to be at the beginning) or a capture (in which case a back reference could be influenced by its length), then we
                 // can update the tree with a temporary node to indicate that the implementation should use that node's ending position in the input text
@@ -440,6 +454,39 @@ namespace System.Text.RegularExpressions
             rootNode.ValidateFinalTreeInvariants();
 #endif
             return rootNode;
+        }
+
+        /// <summary>
+        /// Walks the tree bottom-up and re-calls <see cref="Reduce"/> on each child node,
+        /// replacing any child that reduces to a simpler form. This cleans up structures
+        /// created by the <see cref="FinalOptimize"/> passes, e.g. Concatenate(X, Empty)
+        /// or Atomic wrappers that became redundant.
+        /// </summary>
+        private void FinalReduce()
+        {
+            int childCount = ChildCount();
+            if (childCount == 0)
+            {
+                return;
+            }
+
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return;
+            }
+
+            for (int i = 0; i < childCount; i++)
+            {
+                RegexNode child = Child(i);
+                child.FinalReduce();
+
+                RegexNode reduced = child.Reduce();
+                if (!ReferenceEquals(reduced, child))
+                {
+                    reduced.Parent = this;
+                    UnsafeReplaceChild(i, reduced);
+                }
+            }
         }
 
         /// <summary>Converts nodes at the end of the node tree to be atomic.</summary>
@@ -2329,6 +2376,60 @@ namespace System.Text.RegularExpressions
             return this;
         }
 
+        /// <summary>
+        /// Determines whether a greedy single-character loop's backtracking can be reduced to checking
+        /// only the last consumed position. This is possible when <paramref name="subsequent"/> starts with
+        /// a literal whose first character is subsumed by the loop's class, and whatever follows is disjoint
+        /// from the loop's class — meaning no earlier backtrack position can succeed, since every interior
+        /// position has a loop-set character after it that the disjoint subsequent wouldn't accept.
+        /// For One/Set literals, the character(s) must be subsumed and the next node in sequence must be
+        /// disjoint (e.g. <c>\w+a\s</c> for One, <c>\d+[0-9]\s</c> for Set). For Multi literals, the
+        /// first character must be subsumed and the second character must be disjoint (e.g. <c>\d+0x</c>).
+        /// </summary>
+        internal static bool CanReduceLoopBacktrackingToSinglePosition(RegexNode loopNode, RegexNode subsequent)
+        {
+            Debug.Assert(loopNode.Kind is RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop);
+
+            // Find the starting literal in the subsequent, descending through wrappers
+            // like Concatenate, Capture, and Atomic.
+            if (subsequent.FindStartingLiteralNode() is RegexNode literal)
+            {
+                // Handle One, Set, and Multi literals. Notone matches almost everything so it's
+                // rarely subsumed. Every character the literal could match at the first position
+                // must also be matched by the loop's character class.
+                switch (literal.Kind)
+                {
+                    case RegexNodeKind.One when CharInLoopSet(loopNode, literal.Ch):   // e.g. \w+a\s : 'a' is in \w, check \s is disjoint
+                    case RegexNodeKind.Set when loopNode.Kind is RegexNodeKind.Setloop && RegexCharClass.IsSubsetOf(literal.Str!, loopNode.Str!):   // e.g. \d+[0-9]\s
+                        // Find the node that follows the literal in the tree and check whether
+                        // the loop would be atomic with respect to it. If nothing follows (end of
+                        // pattern), we can't reduce — earlier positions could still succeed.
+                        return
+                            FindNextNodeInSequence(literal, out _) is RegexNode afterLiteral &&
+                            CanBeMadeAtomic(loopNode, afterLiteral, iterateNullableSubsequent: true, allowLazy: false);
+
+                    case RegexNodeKind.Multi when CharInLoopSet(loopNode, literal.Str![0]) && !CharInLoopSet(loopNode, literal.Str[1]):
+                        // For a multi-character literal (e.g. \d+0x), treat it as two single characters:
+                        // the first must be subsumed by the loop (so the loop would have consumed it),
+                        // and the second must be disjoint from the loop (so positions within the loop's
+                        // consumed range can't satisfy it). This avoids needing FindNextNodeInSequence/
+                        // CanBeMadeAtomic since the second character is directly available in the
+                        // multi's string.
+                        return true;
+                }
+
+                static bool CharInLoopSet(RegexNode loopNode, char ch) => loopNode.Kind switch
+                {
+                    RegexNodeKind.Oneloop => loopNode.Ch == ch,
+                    RegexNodeKind.Notoneloop => loopNode.Ch != ch,
+                    RegexNodeKind.Setloop => RegexCharClass.CharInClass(ch, loopNode.Str!),
+                    _ => false,
+                };
+            }
+
+            return false;
+        }
+
         /// <summary>Determines whether a node can be switched to an atomic loop.</summary>
         /// <param name="node">The node being examined to determine whether it could be made atomic.</param>
         /// <param name="subsequent">The node following <paramref name="node"/>, used to determine whether it overlaps.</param>
@@ -2475,7 +2576,7 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
                             case RegexNodeKind.End:
                             case RegexNodeKind.EndZ or RegexNodeKind.Eol when !RegexCharClass.CharInClass('\n', node.Str!):
-                            case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsKnownWordClassSubset(node.Str!):
+                            case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsSubsetOf(node.Str!, RegexCharClass.WordClass):
                             case RegexNodeKind.NonBoundary when node.M > 0 && node.Str is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass:
                             case RegexNodeKind.ECMABoundary when node.M > 0 && node.Str is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass:
                             case RegexNodeKind.NonECMABoundary when node.M > 0 && node.Str is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass:
@@ -2522,7 +2623,7 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Multi when !CharInStartingOrEndingSet(subsequent.Str![0]):
                             case RegexNodeKind.End:
                             case RegexNodeKind.EndZ or RegexNodeKind.Eol when !CharInStartingOrEndingSet('\n'):
-                            case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsKnownWordClassSubset(loopStartingSet) && RegexCharClass.IsKnownWordClassSubset(loopEndingSet):
+                            case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsSubsetOf(loopStartingSet, RegexCharClass.WordClass) && RegexCharClass.IsSubsetOf(loopEndingSet, RegexCharClass.WordClass):
                             case RegexNodeKind.NonBoundary when node.M > 0 && (loopStartingSet is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass) && (loopEndingSet is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass):
                             case RegexNodeKind.ECMABoundary when node.M > 0 && (loopStartingSet is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass) && (loopEndingSet is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass):
                             case RegexNodeKind.NonECMABoundary when node.M > 0 && (loopStartingSet is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass) && (loopEndingSet is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass):
@@ -2549,46 +2650,67 @@ namespace System.Text.RegularExpressions
                     return false;
                 }
 
-                // To be conservative, we only walk up through a very limited set of constructs (even though we may have walked
-                // down through more, like loops), looking for the next concatenation that we're not at the end of, at
-                // which point subsequent becomes whatever node is next in that concatenation.
-                while (true)
+                // Walk up through the tree to find the next node in sequence.
+                RegexNode? nextSubsequent = FindNextNodeInSequence(subsequent, out bool reachedEnd);
+                if (nextSubsequent is null)
                 {
-                    RegexNode? parent = subsequent.Parent;
-                    switch (parent?.Kind)
-                    {
-                        case RegexNodeKind.Atomic:
-                        case RegexNodeKind.Alternate:
-                        case RegexNodeKind.Capture:
-                            subsequent = parent;
-                            continue;
+                    // If we hit the root, we're at the end of the expression, at which point nothing
+                    // could backtrack in and we can declare success. Otherwise, we hit an unrecognized
+                    // construct and must assume it could conflict with the loop.
+                    return reachedEnd;
+                }
 
-                        case RegexNodeKind.Concatenate:
-                            var peers = (List<RegexNode>)parent.Children!;
-                            int currentIndex = peers.IndexOf(subsequent);
-                            Debug.Assert(currentIndex >= 0, "Node should have been in its parent's child list");
-                            if (currentIndex + 1 == peers.Count)
-                            {
-                                subsequent = parent;
-                                continue;
-                            }
-                            else
-                            {
-                                subsequent = peers[currentIndex + 1];
-                                break;
-                            }
+                subsequent = nextSubsequent;
+            }
+        }
 
-                        case null:
-                            // If we hit the root, we're at the end of the expression, at which point nothing could backtrack
-                            // in and we can declare success.
-                            return true;
+        /// <summary>
+        /// Starting from <paramref name="node"/>, walks up through the tree to find the next node in
+        /// sequence — the next sibling in a parent Concatenate, walking through transparent wrappers
+        /// (Atomic, Alternate, Capture). Returns the next node if found, or null if the end of the
+        /// pattern was reached or an unrecognized construct was encountered.
+        /// </summary>
+        /// <param name="node">The node to start walking up from.</param>
+        /// <param name="reachedEnd">True if null was returned because the root of the tree was reached
+        /// (no more nodes in the pattern); false if an unrecognized construct was encountered.</param>
+        private static RegexNode? FindNextNodeInSequence(RegexNode node, out bool reachedEnd)
+        {
+            // To be conservative, we only walk up through a very limited set of constructs
+            // (even though FindStartingLiteralNode may have walked down through more, like loops),
+            // looking for the next concatenation that we're not at the end of, at which point the
+            // next node in that concatenation is the result.
+            reachedEnd = false;
+            while (true)
+            {
+                RegexNode? parent = node.Parent;
+                switch (parent?.Kind)
+                {
+                    case RegexNodeKind.Atomic:
+                    case RegexNodeKind.Alternate:
+                    case RegexNodeKind.Capture:
+                        node = parent;
+                        continue;
 
-                        default:
-                            // Anything else, we don't know what to do, so we have to assume it could conflict with the loop.
-                            return false;
-                    }
+                    case RegexNodeKind.Concatenate:
+                        var peers = (List<RegexNode>)parent.Children!;
+                        int currentIndex = peers.IndexOf(node);
+                        Debug.Assert(currentIndex >= 0, "Node should have been in its parent's child list");
+                        if (currentIndex + 1 < peers.Count)
+                        {
+                            return peers[currentIndex + 1];
+                        }
 
-                    break;
+                        node = parent;
+                        continue;
+
+                    case null:
+                        // Reached the root of the tree — no more nodes in the pattern.
+                        reachedEnd = true;
+                        return null;
+
+                    default:
+                        // Unrecognized construct — can't determine what comes next.
+                        return null;
                 }
             }
         }
@@ -2676,7 +2798,7 @@ namespace System.Text.RegularExpressions
                             // before or after this node, depending on whether we're looking for a preceding or succeeding word character.
                             return
                                 RegexPrefixAnalyzer.FindFirstOrLastCharClass(peers[index], findFirst: succeeded) is string set &&
-                                RegexCharClass.IsKnownWordClassSubset(set);
+                                RegexCharClass.IsSubsetOf(set, RegexCharClass.WordClass);
                         }
 
                         node = parent;
@@ -2954,8 +3076,16 @@ namespace System.Text.RegularExpressions
         /// consumed. true is only valid when used as part of a search to determine where to try a full match, not as part of
         /// actual matching logic.
         /// </param>
+        /// <param name="forPrefixAnalysis">
+        /// Defaults to false. When true, Capture and Atomic nodes are transparently unwrapped so the string inside
+        /// these groups can be extracted. This must only be set to true for prefix analysis, not for the compiler/source
+        /// generator, as the compiler must not skip Capture nodes (they have side effects that need to be emitted).
+        /// Atomic groups are safe to unwrap here because prefix analysis only examines what characters must appear at a
+        /// given position; atomicity affects whether the engine can backtrack into the group, but does not change which
+        /// characters the group's content matches at that position.
+        /// </param>
         /// <returns>true if a sequence was found; otherwise, false.</returns>
-        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false)
+        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false, bool forPrefixAnalysis = false)
         {
             Debug.Assert(Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {Kind}");
 
@@ -2969,6 +3099,21 @@ namespace System.Text.RegularExpressions
             for (; i < exclusiveChildBound; i++)
             {
                 RegexNode child = Child(i);
+
+                // When used for prefix analysis, unwrap capture groups and atomic groups so
+                // their contents can be examined. Capture unwrapping must not be done when used
+                // by the compiler/source generator, as it would cause capture side effects to be
+                // skipped. Atomic groups may change overall match results by preventing
+                // backtracking (e.g. (?>a|ab)c won't match "abc"), but they don't change what
+                // characters the group matches at its position, so they are safe to unwrap for
+                // prefix analysis.
+                if (forPrefixAnalysis)
+                {
+                    while (child.Kind is RegexNodeKind.Capture or RegexNodeKind.Atomic)
+                    {
+                        child = child.Child(0);
+                    }
+                }
 
                 if (child.Kind is RegexNodeKind.One)
                 {
@@ -3006,6 +3151,26 @@ namespace System.Text.RegularExpressions
                     }
 
                     vsb.Append((char)(twoChars[0] | 0x20), child.Kind is RegexNodeKind.Set ? 1 : child.M);
+                }
+                else if (child.Kind is RegexNodeKind.Concatenate)
+                {
+                    // This can occur after unwrapping a Capture whose child is a Concatenate.
+                    // Recurse to extract any case-insensitive string from the inner concatenation.
+                    if (!StackHelper.TryEnsureSufficientExecutionStack() ||
+                        !child.TryGetOrdinalCaseInsensitiveString(0, child.ChildCount(), out int innerNodesConsumed, out string? innerStr, consumeZeroWidthNodes, forPrefixAnalysis))
+                    {
+                        break;
+                    }
+
+                    vsb.Append(innerStr);
+
+                    // If the inner concatenation wasn't fully consumed, we can't continue past it
+                    // as subsequent siblings aren't guaranteed to immediately follow the extracted prefix.
+                    if (innerNodesConsumed < child.ChildCount())
+                    {
+                        i++;
+                        break;
+                    }
                 }
                 else if (child.Kind is RegexNodeKind.Empty)
                 {
@@ -3181,6 +3346,14 @@ namespace System.Text.RegularExpressions
             newChild.Parent = this; // so that the child can see its parent while being reduced
             newChild = newChild.Reduce();
             newChild.Parent = this; // in case Reduce returns a different node that needs to be reparented
+
+            UnsafeReplaceChild(index, newChild);
+        }
+
+        /// <summary>Replaces the child at the specified index without reducing or reparenting.</summary>
+        private void UnsafeReplaceChild(int index, RegexNode newChild)
+        {
+            Debug.Assert(Children != null);
 
             if (Children is RegexNode)
             {

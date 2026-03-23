@@ -2752,6 +2752,7 @@ AGAIN:
             case GT_ASYNC_RESUME_INFO:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
+            case GT_WASM_THROW_REF:
                 return true;
 
             default:
@@ -6843,6 +6844,8 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
+        case GT_WASM_THROW_REF:
+        case GT_WASM_JEXCEPT:
             return false;
 
         // Standard unary operators
@@ -7358,8 +7361,8 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         case GT_CKFINITE:
             return ExceptionSetFlags::ArithmeticException;
 
-        case GT_LCLHEAP:
-            return ExceptionSetFlags::StackOverflowException;
+        case GT_WASM_THROW_REF:
+            return ExceptionSetFlags::UnknownException;
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -9720,6 +9723,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_LABEL:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
+            case GT_WASM_THROW_REF:
                 copy = new (this, oper) GenTree(oper, tree->gtType);
                 goto DONE;
 
@@ -10498,6 +10502,8 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
+        case GT_WASM_THROW_REF:
+        case GT_WASM_JEXCEPT:
             m_state = -1;
             return;
 
@@ -12539,6 +12545,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_JMPTABLE:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
+        case GT_WASM_THROW_REF:
+        case GT_WASM_JEXCEPT:
             break;
 
         case GT_RET_EXPR:
@@ -28370,8 +28378,8 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt32ZeroExtend:
             case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
-            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
             case NI_Sve_GatherVectorWithByteOffsets:
+            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
             case NI_Sve_LoadVector:
             case NI_Sve_LoadVectorNonTemporal:
             case NI_Sve_LoadVector128AndReplicateToVector:
@@ -28434,6 +28442,18 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
             case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
             case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
+            case NI_Sve2_GatherVectorByteZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
+            case NI_Sve2_GatherVectorInt16WithByteOffsetsSignExtendNonTemporal:
+            case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
+            case NI_Sve2_GatherVectorInt32WithByteOffsetsSignExtendNonTemporal:
+            case NI_Sve2_GatherVectorNonTemporal:
+            case NI_Sve2_GatherVectorSByteSignExtendNonTemporal:
+            case NI_Sve2_GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorWithByteOffsetsNonTemporal:
                 addr = Op(2);
                 break;
 
@@ -28526,9 +28546,24 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                           NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend,
                           NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting,
                           NI_Sve_GatherVectorUInt32ZeroExtend, NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting));
-        assert(varTypeIsI(addr) ||
-               (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherVector) &&
-                                        (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting))));
+
+        static_assert(AreContiguous(NI_Sve2_GatherVectorByteZeroExtendNonTemporal,
+                                    NI_Sve2_GatherVectorInt16SignExtendNonTemporal,
+                                    NI_Sve2_GatherVectorInt16WithByteOffsetsSignExtendNonTemporal,
+                                    NI_Sve2_GatherVectorInt32SignExtendNonTemporal,
+                                    NI_Sve2_GatherVectorInt32WithByteOffsetsSignExtendNonTemporal,
+                                    NI_Sve2_GatherVectorNonTemporal, NI_Sve2_GatherVectorSByteSignExtendNonTemporal,
+                                    NI_Sve2_GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal,
+                                    NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal,
+                                    NI_Sve2_GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal,
+                                    NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal,
+                                    NI_Sve2_GatherVectorWithByteOffsetsNonTemporal));
+
+        bool isSveGatherLoad =
+            (intrinsicId >= NI_Sve_GatherVector) && (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting);
+        bool isSve2GatherLoad = (intrinsicId >= NI_Sve2_GatherVectorByteZeroExtendNonTemporal) &&
+                                (intrinsicId <= NI_Sve2_GatherVectorWithByteOffsetsNonTemporal);
+        assert(varTypeIsI(addr) || (varTypeIsSIMD(addr) && (isSveGatherLoad || isSve2GatherLoad)));
 #else
         assert(varTypeIsI(addr));
 #endif
