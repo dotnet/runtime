@@ -86,7 +86,7 @@ public unsafe class LoaderTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetSimpleName(MockTarget.Architecture arch)
+    public void TryGetSimpleName(MockTarget.Architecture arch)
     {
         // Set up the target
         TargetTestHelpers helpers = new(arch);
@@ -108,12 +108,14 @@ public unsafe class LoaderTests
         Assert.NotNull(contract);
         {
             Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-            string actual = contract.GetSimpleName(handle);
+            bool result = contract.TryGetSimpleName(handle, out string actual);
+            Assert.True(result);
             Assert.Equal(expected, actual);
         }
         {
             Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddrEmptyName);
-            string actual = contract.GetSimpleName(handle);
+            bool result = contract.TryGetSimpleName(handle, out string actual);
+            Assert.False(result);
             Assert.Equal(string.Empty, actual);
         }
     }

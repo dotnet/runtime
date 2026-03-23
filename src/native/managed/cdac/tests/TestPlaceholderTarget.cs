@@ -159,7 +159,7 @@ internal class TestPlaceholderTarget : Target
     }
     public override void WriteBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
 
-    public override string ReadUtf8String(ulong address)
+    public override string ReadUtf8String(ulong address, bool strict = false)
     {
         // Read bytes until we find the null terminator
         ulong end = address;

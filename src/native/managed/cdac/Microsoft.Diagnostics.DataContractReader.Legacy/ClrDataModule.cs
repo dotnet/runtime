@@ -125,16 +125,20 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     int IXCLRDataModule.GetName(uint bufLen, uint* nameLen, char* name)
     {
         int hr = HResults.S_OK;
+        int E_INSUFFICIENT_BUFFER = unchecked((int)0x8007007A);
         try
         {
+            if (nameLen != null)
+                *nameLen = 0;
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(_address);
-            string result = loader.GetSimpleName(handle);
-
-            if (string.IsNullOrEmpty(result))
-                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            if (!loader.TryGetSimpleName(handle, out string result))
+                throw new ArgumentException("Module does not have a simple name");
 
             OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, result);
+            // throw on insufficient buffer
+            if (*nameLen > bufLen)
+                throw Marshal.GetExceptionForHR(E_INSUFFICIENT_BUFFER)!;
         }
         catch (System.Exception ex)
         {

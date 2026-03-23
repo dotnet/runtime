@@ -69,7 +69,7 @@ IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
-string GetSimpleName(ModuleHandle handle);
+bool TryGetSimpleName(ModuleHandle handle, out string simpleName);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
@@ -577,11 +577,13 @@ ModuleFlags GetFlags(ModuleHandle handle)
     return GetFlags(target.Read<uint>(handle.Address + /* Module::Flags offset */));
 }
 
-string GetSimpleName(ModuleHandle handle)
+bool TryGetSimpleName(ModuleHandle handle, out string simpleName)
 {
     TargetPointer simpleNameStart = target.ReadPointer(handle.Address + /* Module::SimpleName offset */);
+    if (simpleNameStart == TargetPointer.Null)
+        return false
     byte[] simpleName = // Read<byte> from target starting at simpleNameStart until null terminator
-    return new string(simpleName);
+    simpleName = // convert to string, throw on invalid UTF-8
 }
 
 string GetPath(ModuleHandle handle)
