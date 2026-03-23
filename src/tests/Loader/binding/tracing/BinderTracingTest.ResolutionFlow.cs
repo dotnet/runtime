@@ -629,6 +629,10 @@ namespace BinderTracingTests
                 errorMessage = e.Message;
             }
 
+            Assert.NotNull(errorMessage);
+            Assert.Contains($"'{DependentAssemblyName}'", errorMessage);
+            Assert.Contains($"'{DependentAssemblyName}, Version=1.0.0.0", errorMessage);
+
             var assemblyName = new AssemblyName($"{DependentAssemblyName}, Version=2.0.0.0");
             return new BindOperation()
             {
