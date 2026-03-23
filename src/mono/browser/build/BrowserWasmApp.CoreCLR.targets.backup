@@ -1,0 +1,477 @@
+<Project>
+  <!--
+    CoreCLR WASM native build targets.
+
+    Unlike Mono, CoreCLR has no C source files in the runtime pack to compile per-app.
+    The native build is link-only: emcc links pre-built .a static libraries + JS library
+    files to produce dotnet.native.wasm + dotnet.native.js.
+
+    This file is self-contained and does NOT import WasmApp.Common.targets or BrowserWasmApp.targets.
+    It reuses MSBuild tasks (EmccCompile, WasmCalculateInitialHeapSize) via UsingTask declarations.
+  -->
+
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmCalculateInitialHeapSize" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
+
+  <PropertyGroup>
+    <!-- Post Wasm MVP features -->
+    <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
+    <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
+
+    <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == '' and '$(DisableAutoWasmBuildApp)' != 'true'">Build</WasmBuildAppAfterThisTarget>
+    <WasmTriggerPublishAppAfterThisTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true' and '$(WasmBuildingForNestedPublish)' != 'true'">Publish</WasmTriggerPublishAppAfterThisTarget>
+    <_WasmNestedPublishAppPreTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true'">Publish</_WasmNestedPublishAppPreTarget>
+
+    <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm'">true</IsBrowserWasmProject>
+    <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
+    <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and ('$(DeployOnBuild)' == 'true' or '$(_IsPublishing)' == 'true')">true</WasmBuildOnlyAfterPublish>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm'">false</WasmGenerateAppBundle>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
+    <UseAppHost>false</UseAppHost>
+
+    <_WasmOutputFileName Condition="'$(_WasmOutputFileName)' == ''">dotnet.native.wasm</_WasmOutputFileName>
+
+    <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
+    <_PathSeparator Condition="'$(OS)' == 'Windows_NT'">%3B</_PathSeparator>
+    <_PathSeparator Condition="'$(OS)' != 'Windows_NT'">:</_PathSeparator>
+
+    <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectCapability Include="DotNetCoreWeb"/>
+  </ItemGroup>
+
+  <!-- ========================== Emscripten Setup ========================== -->
+
+  <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
+
+  <Target Name="_CoreCLRSetupEmscripten" BeforeTargets="_CoreCLRSetupToolchain">
+    <PropertyGroup>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenSdkToolsPath)' == '' or !Exists('$(EmscriptenSdkToolsPath)'))">%24(EmscriptenSdkToolsPath)=$(EmscriptenSdkToolsPath) </_EMSDKMissingPaths>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenNodeToolsPath)' == '' or !Exists('$(EmscriptenNodeToolsPath)'))">%24(EmscriptenNodeToolsPath)=$(EmscriptenNodeToolsPath) </_EMSDKMissingPaths>
+      <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenUpstreamBinPath)' == '' or !Exists('$(EmscriptenUpstreamBinPath)'))">%24(EmscriptenUpstreamBinPath)=$(EmscriptenUpstreamBinPath) </_EMSDKMissingPaths>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_ToolchainMissingErrorMessage Condition="'$(EMSDK_PATH)' == '' and '$(EmscriptenSdkToolsPath)' == ''">Could not find emscripten sdk. Either set %24(EMSDK_PATH), or use workloads to get the sdk.</_ToolchainMissingErrorMessage>
+      <_ToolchainMissingErrorMessage Condition="'$(_ToolchainMissingErrorMessage)' == '' and '$(_UsingEMSDK_PATH)' != 'true' and '$(_EMSDKMissingPaths)' != ''">Emscripten from the workload is missing some paths: $(_EMSDKMissingPaths).</_ToolchainMissingErrorMessage>
+      <_ToolchainMissingErrorMessage Condition="'$(_ToolchainMissingErrorMessage)' == '' and '$(_UsingEMSDK_PATH)' == 'true' and !Exists($(EMSDK_PATH))">Could not find Emscripten sdk at %24(EMSDK_PATH)=$(EMSDK_PATH) .</_ToolchainMissingErrorMessage>
+      <_ToolchainMissingErrorMessage Condition="'$(_ToolchainMissingErrorMessage)' == '' and '$(_UsingEMSDK_PATH)' == 'true' and '$(_EMSDKMissingPaths)' != ''">Specified Emscripten sdk at %24(EMSDK_PATH)=$(EMSDK_PATH) is missing some paths: $(_EMSDKMissingPaths).</_ToolchainMissingErrorMessage>
+      <_IsToolchainMissing Condition="'$(_ToolchainMissingErrorMessage)' != ''">true</_IsToolchainMissing>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <EmscriptenSdkToolsPath    Condition="'$(EmscriptenSdkToolsPath)' != ''"   >$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath)))</EmscriptenSdkToolsPath>
+      <EmscriptenNodeToolsPath   Condition="'$(EmscriptenNodeToolsPath)' != ''"  >$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
+      <EmscriptenUpstreamBinPath Condition="'$(EmscriptenUpstreamBinPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenUpstreamBinPath)))</EmscriptenUpstreamBinPath>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(EmscriptenSdkToolsPath)' != ''">
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
+      <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_EmscriptenPrependPATHTrimmed Include="$([MSBuild]::ValueOrDefault('%(EmscriptenPrependPATH.Identity)\', '').TrimEnd('\/'))" />
+      <EmscriptenPrependPATH Remove="@(EmscriptenPrependPATH)" />
+      <EmscriptenPrependPATH Include="@(_EmscriptenPrependPATHTrimmed)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_EmscriptenPrependPATHProperty>@(EmscriptenPrependPATH -> '%(Identity)', '$(_PathSeparator)')</_EmscriptenPrependPATHProperty>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <EmscriptenEnvVars Include="PATH=$(_EmscriptenPrependPATHProperty)$(_PathSeparator)$([MSBuild]::Escape($(PATH)))" />
+      <EmscriptenEnvVars Include="PYTHONUTF8=1" />
+      <EmscriptenEnvVars Include="EM_WORKAROUND_PYTHON_BUG_34780=1" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_CoreCLRSetupToolchain" />
+
+  <!-- ========================== WasmBuildApp ========================== -->
+
+  <Target Name="WasmBuildApp"
+          AfterTargets="$(WasmBuildAppAfterThisTarget)"
+          DependsOnTargets="_CoreCLRWasmBuildAppCore"
+          Condition="'$(IsBrowserWasmProject)' == 'true' and '$(WasmBuildingForNestedPublish)' == '' and '$(WasmBuildOnlyAfterPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'" />
+
+  <Target Name="_CoreCLRWasmBuildAppCore"
+          DependsOnTargets="
+            _CoreCLRInitializeProperties;
+            _CoreCLRSetupToolchain;
+            _CoreCLRGetDefaultAssembliesToBundle;
+            _CoreCLRSetWasmBuildNativeDefaults;
+            _CoreCLRCalculateInitialHeapSize;
+            _CoreCLRPrepareForNativeBuild;
+            _CoreCLRWriteLinkRsp;
+            _CoreCLRBrowserWasmLinkDotNet;
+            _CoreCLRCompleteWasmBuildNative;
+            _CoreCLREmitWasmAssembliesFinal" />
+
+  <!-- ========================== Initialize Properties ========================== -->
+
+  <Target Name="_CoreCLRInitializeProperties">
+    <Error Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == '' and ('%(ResolvedRuntimePack.PackageDirectory)' == '' or !Exists(%(ResolvedRuntimePack.PackageDirectory)))"
+           Text="%24(MicrosoftNetCoreAppRuntimePackDir)='', and cannot find %25(ResolvedRuntimePack.PackageDirectory)=%(ResolvedRuntimePack.PackageDirectory). One of these need to be set to a valid path" />
+    <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
+
+    <PropertyGroup>
+      <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</MicrosoftNetCoreAppRuntimePackDir>
+      <MicrosoftNetCoreAppRuntimePackRidDir Condition="'$(MicrosoftNetCoreAppRuntimePackRidDir)' == ''">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', $(RuntimeIdentifier)))</MicrosoftNetCoreAppRuntimePackRidDir>
+      <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir)))</MicrosoftNetCoreAppRuntimePackRidDir>
+      <MicrosoftNetCoreAppRuntimePackRidNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidDir), 'native'))</MicrosoftNetCoreAppRuntimePackRidNativeDir>
+
+      <_WasmIntermediateOutputPath Condition="'$(WasmBuildingForNestedPublish)' == ''">$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm', 'for-build'))</_WasmIntermediateOutputPath>
+      <_WasmIntermediateOutputPath Condition="'$(WasmBuildingForNestedPublish)' != ''">$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm', 'for-publish'))</_WasmIntermediateOutputPath>
+
+      <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">$(TargetFileName)</WasmMainAssemblyFileName>
+      <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' != ''">$([System.IO.Path]::GetFileName($(WasmMainAssemblyFileName)))</WasmMainAssemblyFileName>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
+      <_SystemRuntimePathItem Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net*\System.Runtime.dll" />
+    </ItemGroup>
+
+    <Error Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == '' and @(_SystemRuntimePathItem->Count()) == 0" Text="Could not find System.Runtime.dll in $(MicrosoftNetCoreAppRuntimePackRidDir). This is likely a setup issue." />
+
+    <PropertyGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
+      <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([System.IO.Path]::GetDirectoryName(%(_SystemRuntimePathItem.Identity)))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
+  </Target>
+
+  <!-- ========================== Get Assemblies to Bundle ========================== -->
+
+  <Target Name="_CoreCLRGetDefaultAssembliesToBundle" Condition="'$(EnableDefaultWasmAssembliesToBundle)' == 'true'">
+    <ItemGroup Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+      <WasmAssembliesToBundle Include="@(ReferenceCopyLocalPaths);@(MainAssembly)" Condition="'%(ReferenceCopyLocalPaths.Extension)' == '.dll'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(WasmBuildingForNestedPublish)' == 'true' and '$(DisableAutoWasmPublishApp)' != 'true'">
+      <WasmAssembliesToBundle Remove="@(WasmAssembliesToBundle)" />
+      <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
+      <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
+
+      <_WasmSatelliteAssemblies Remove="@(_WasmSatelliteAssemblies)" />
+      <_WasmSatelliteAssemblies Include="@(_WasmAssembliesInternal)" />
+      <_WasmSatelliteAssemblies Remove="@(_WasmSatelliteAssemblies)" Condition="!$([System.String]::Copy('%(Identity)').EndsWith('.resources.dll'))" />
+      <_WasmSatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
+      <_WasmAssembliesInternal Remove="@(_WasmSatelliteAssemblies)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- ========================== Build Native Defaults ========================== -->
+
+  <Target Name="_CoreCLRSetWasmBuildNativeDefaults">
+    <!-- When Building -->
+    <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0">true</WasmBuildNative>
+    </PropertyGroup>
+
+    <!-- When Publishing -->
+    <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
+    </PropertyGroup>
+
+    <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsToolchainMissing)' == 'true'"
+           Text="$(_ToolchainMissingErrorMessage) Emscripten SDK is required for building native files." />
+
+    <PropertyGroup Condition="'$(WasmBuildNative)' == 'true'">
+      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
+      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(Configuration)' == 'Debug'">false</WasmNativeStrip>
+      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+
+      <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == '' and '$(WasmNativeStrip)' == 'true'">true</WasmRunWasmOpt>
+      <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
+
+      <_WasmDevel Condition="'$(_WasmDevel)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">true</_WasmDevel>
+
+      <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0</_EmccOptimizationFlagDefault>
+      <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">-O1</_EmccOptimizationFlagDefault>
+      <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-Oz</_EmccOptimizationFlagDefault>
+
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</EmccLinkOptimizationFlag>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccLinkOptimizationFlag>
+
+      <EmccStackSize Condition="'$(EmccStackSize)' == ''">5MB</EmccStackSize>
+      <EmccMaximumHeapSize Condition="'$(EmccMaximumHeapSize)' == ''">2147483648</EmccMaximumHeapSize>
+      <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
+
+      <_WasmLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_WasmLinkRsp>
+
+      <WasmClang>$(EmscriptenUpstreamEmscriptenPath)emcc</WasmClang>
+    </PropertyGroup>
+  </Target>
+
+  <!-- ========================== Calculate Initial Heap Size ========================== -->
+
+  <Target Name="_CoreCLRCalculateInitialHeapSize" Condition="'$(WasmBuildNative)' == 'true' and '$(WasmInitialHeapSize)' == ''">
+    <WasmCalculateInitialHeapSize Assemblies="@(_WasmAssembliesInternal)">
+      <Output TaskParameter="InitialHeapSize" PropertyName="_WasmCalculatedInitialHeapSize" />
+    </WasmCalculateInitialHeapSize>
+    <PropertyGroup>
+      <!-- CoreCLR default is 128MB (matching corehost.proj CMakeLists.txt), higher than Mono's 32MB -->
+      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == '' and '$(_WasmCalculatedInitialHeapSize)' != '' and $(_WasmCalculatedInitialHeapSize) > 134217728">$(_WasmCalculatedInitialHeapSize)</WasmInitialHeapSize>
+      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">134217728</WasmInitialHeapSize>
+    </PropertyGroup>
+  </Target>
+
+  <!-- ========================== Prepare for Native Build ========================== -->
+
+  <Target Name="_CoreCLRPrepareForNativeBuild" Condition="'$(WasmBuildNative)' == 'true'">
+    <Error Condition="'$(_IsToolchainMissing)' == 'true'"
+           Text="$(_ToolchainMissingErrorMessage) Emscripten SDK is required for building native files." />
+
+    <PropertyGroup>
+      <_EmccExportedRuntimeMethods>"['BROWSER_HOST','FS','out','err','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','lengthBytesUTF8','stringToUTF8Array','safeSetTimeout','runtimeKeepalivePush','runtimeKeepalivePop','abort']"</_EmccExportedRuntimeMethods>
+      <_EmccExportedFunctions>_free,_htons,_malloc,_sbrk,_memalign,_posix_memalign,_memset,_ntohs,stackAlloc,stackRestore,stackSave</_EmccExportedFunctions>
+      <_EmccExportedFunctions Condition="'$(WasmEnableExceptionHandling)' == 'true'">$(_EmccExportedFunctions),___cpp_exception</_EmccExportedFunctions>
+    </PropertyGroup>
+
+    <!-- Collect static libraries from the runtime pack -->
+    <ItemGroup>
+      <_CoreCLRNativeLibsForLinking Remove="@(_CoreCLRNativeLibsForLinking)" />
+
+      <!-- CoreCLR runtime libraries -->
+      <_CoreCLRNativeLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclr_static.a" />
+      <_CoreCLRNativeLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libnativeresourcestring.a" />
+      <_CoreCLRNativeLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libgcinfo_unix_wasm.a" />
+      <_CoreCLRNativeLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclrminipal.a" />
+      <_CoreCLRNativeLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libcoreclrpal.a" />
+      <_CoreCLRNativeLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libminipal.a" />
+
+      <!-- Host library -->
+      <_CoreCLRNativeLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libBrowserHost.a" />
+
+      <!-- Interop libraries -->
+      <_CoreCLRNativeLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Runtime.InteropServices.JavaScript.Native.a" />
+
+      <!-- Platform libraries -->
+      <_CoreCLRNativeLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.Browser.a" />
+      <_CoreCLRNativeLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.a" />
+      <_CoreCLRNativeLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.IO.Compression.Native.a" />
+      <_CoreCLRNativeLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libz.a" />
+
+      <!-- Globalization (conditional) -->
+      <_CoreCLRNativeLibsForLinking Condition="'$(InvariantGlobalization)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" />
+      <_CoreCLRNativeLibsForLinking Condition="'$(InvariantGlobalization)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a" />
+      <_CoreCLRNativeLibsForLinking Condition="'$(InvariantGlobalization)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a" />
+      <_CoreCLRNativeLibsForLinking Condition="'$(InvariantGlobalization)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a" />
+
+      <!-- Timezone data (conditional) -->
+      <_CoreCLRNativeLibsForLinking Condition="'$(InvariantTimezone)' != 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.TimeZoneData.a" />
+      <_CoreCLRNativeLibsForLinking Condition="'$(InvariantTimezone)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.TimeZoneData.Invariant.a" />
+
+      <!-- User-provided native references -->
+      <_CoreCLRNativeLibsForLinking Include="@(NativeFileReference)" />
+    </ItemGroup>
+
+    <!-- Collect JavaScript library files from the runtime pack -->
+    <ItemGroup>
+      <_CoreCLRJSLibsForLinking Remove="@(_CoreCLRJSLibsForLinking)" />
+      <_CoreCLRJSLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.Browser.js" Kind="js-library" />
+      <_CoreCLRJSLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.Browser.Utils.js" Kind="js-library" />
+      <_CoreCLRJSLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Runtime.InteropServices.JavaScript.Native.js" Kind="js-library" />
+      <_CoreCLRJSLibsForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libBrowserHost.js" Kind="js-library" />
+
+      <!-- extern-post-js for System.Native.Browser -->
+      <_CoreCLRJSLibsForLinking Condition="Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.Browser.extpost.js')"
+                                Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.Browser.extpost.js" Kind="extern-post-js" />
+    </ItemGroup>
+
+    <!-- Emscripten environment variables -->
+    <ItemGroup>
+      <EmscriptenEnvVars Include="EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe" Condition="'$(OS)' == 'Windows_NT'" />
+      <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
+      <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
+      <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
+    </ItemGroup>
+
+    <Error Text="Could not find NativeFileReference %(NativeFileReference.Identity)" Condition="'%(NativeFileReference.Identity)' != '' and !Exists(%(NativeFileReference.Identity))" />
+  </Target>
+
+  <!-- ========================== Write Link RSP ========================== -->
+
+  <Target Name="_CoreCLRWriteLinkRsp" Condition="'$(WasmBuildNative)' == 'true'">
+    <ItemGroup>
+      <_CoreCLRLinkStepArgs Remove="@(_CoreCLRLinkStepArgs)" />
+
+      <!-- Optimization flag -->
+      <_CoreCLRLinkStepArgs Include="$(EmccLinkOptimizationFlag)" />
+
+      <!-- Common flags -->
+      <_CoreCLRLinkStepArgs Include="$(EmccFlags)" />
+      <_CoreCLRLinkStepArgs Include="-v"  Condition="'$(EmccVerbose)' == 'true'" />
+      <_CoreCLRLinkStepArgs Include="-g"  Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
+      <_CoreCLRLinkStepArgs Include="-fwasm-exceptions"               Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
+      <_CoreCLRLinkStepArgs Include="-s DISABLE_EXCEPTION_CATCHING=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
+      <_CoreCLRLinkStepArgs Include="-msimd128"                       Condition="'$(WasmEnableSIMD)' == 'true'" />
+
+      <!-- Memory settings -->
+      <_CoreCLRLinkStepArgs Include="-s INITIAL_MEMORY=$(WasmInitialHeapSize)" />
+      <_CoreCLRLinkStepArgs Include="-s MAXIMUM_MEMORY=$(EmccMaximumHeapSize)" />
+      <_CoreCLRLinkStepArgs Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <_CoreCLRLinkStepArgs Include="-s STACK_SIZE=$(EmccStackSize)" />
+
+      <!-- Module settings -->
+      <_CoreCLRLinkStepArgs Include="-s WASM_BIGINT=1" />
+      <_CoreCLRLinkStepArgs Include="-s MODULARIZE=1" />
+      <_CoreCLRLinkStepArgs Include="-s EXPORT_ES6=1" />
+      <_CoreCLRLinkStepArgs Include="-s EXIT_RUNTIME=1" />
+      <_CoreCLRLinkStepArgs Include="-s ALLOW_TABLE_GROWTH=1" />
+      <_CoreCLRLinkStepArgs Include="-s EXPORT_NAME=createDotnetRuntime" />
+      <_CoreCLRLinkStepArgs Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
+
+      <!-- Assertions (debug only) -->
+      <_CoreCLRLinkStepArgs Condition="'$(EmccEnableAssertions)' == 'true'" Include="-s ASSERTIONS=1" />
+
+      <!-- Undefined symbols handling -->
+      <_CoreCLRLinkStepArgs Condition="'$(WasmAllowUndefinedSymbols)' == 'true'" Include="-Wl,--allow-undefined" />
+      <_CoreCLRLinkStepArgs Condition="'$(WasmAllowUndefinedSymbols)' == 'true'" Include="-s ERROR_ON_UNDEFINED_SYMBOLS=0" />
+      <_CoreCLRLinkStepArgs Condition="'$(WasmAllowUndefinedSymbols)' != 'true'" Include="-s LLD_REPORT_UNDEFINED" />
+      <_CoreCLRLinkStepArgs Condition="'$(WasmAllowUndefinedSymbols)' != 'true'" Include="-s ERROR_ON_UNDEFINED_SYMBOLS=1" />
+      <_CoreCLRLinkStepArgs Condition="'$(WasmAllowUndefinedSymbols)' != 'true'" Include="-Wl,-error-limit=0" />
+
+      <!-- Exported functions and runtime methods -->
+      <_CoreCLRLinkStepArgs Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
+      <_CoreCLRLinkStepArgs Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
+
+      <!-- Symbol map -->
+      <_CoreCLRLinkStepArgs Include="--emit-symbol-map" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
+
+      <!-- JS library files -->
+      <_CoreCLRLinkStepArgs Include="--%(_CoreCLRJSLibsForLinking.Kind) &quot;%(_CoreCLRJSLibsForLinking.Identity)&quot;" />
+
+      <!-- Native library files -->
+      <_CoreCLRLinkStepArgs Include="&quot;%(_CoreCLRNativeLibsForLinking.Identity)&quot;" />
+
+      <!-- Output -->
+      <_CoreCLRLinkStepArgs Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.native.js&quot;" />
+
+      <!-- Extra LD flags from user -->
+      <_CoreCLRLinkStepArgs Include="$(EmccExtraLDFlags)" />
+    </ItemGroup>
+
+    <WriteLinesToFile Lines="@(_CoreCLRLinkStepArgs)" File="$(_WasmLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmLinkRsp)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- ========================== Link with emcc ========================== -->
+
+  <Target Name="_CoreCLRBrowserWasmLinkDotNet"
+          Condition="'$(WasmBuildNative)' == 'true'"
+          Inputs="@(_CoreCLRNativeLibsForLinking);@(_CoreCLRJSLibsForLinking);$(_WasmLinkRsp)"
+          Outputs="$(_WasmIntermediateOutputPath)dotnet.native.js;$(_WasmIntermediateOutputPath)dotnet.native.wasm"
+          Returns="@(FileWrites)">
+
+    <Message Text="Linking CoreCLR for initial memory %24(WasmInitialHeapSize)=$(WasmInitialHeapSize) bytes. Set this msbuild property to change the value." Importance="High" />
+    <Message Text="Linking with emcc with $(EmccLinkOptimizationFlag). This may take a while ..." Importance="High" />
+    <Message Text="Running emcc with @(_CoreCLRLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
+
+    <Exec Command='emcc "@$(_WasmLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMSBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_EmccLinkStepConsoleOutput" />
+      <Output TaskParameter="ExitCode" PropertyName="_EmccLinkStepExitCode" />
+    </Exec>
+
+    <ItemGroup>
+      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
+      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
+      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
+    </ItemGroup>
+
+    <CallTarget Targets="_CoreCLRRunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'" />
+  </Target>
+
+  <!-- ========================== wasm-opt Post-Link ========================== -->
+
+  <Target Name="_CoreCLRRunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'">
+    <PropertyGroup>
+      <_WasmOptPostLinkFileName>$(_WasmIntermediateOutputPath)dotnet.native.wasm</_WasmOptPostLinkFileName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_WasmOptConfigFlags Remove="@(_WasmOptConfigFlags)" />
+      <_WasmOptConfigFlags Include="--enable-simd" Condition="'$(WasmEnableSIMD)' == 'true'" />
+      <_WasmOptConfigFlags Include="--enable-exception-handling" Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
+      <_WasmOptConfigFlags Include="--enable-bulk-memory" />
+      <_WasmOptConfigFlags Include="--strip-dwarf" Condition="'$(WasmNativeStrip)' == 'true'" />
+    </ItemGroup>
+
+    <Message Text="Running wasm-opt with @(_WasmOptConfigFlags, ' ')" Importance="High" />
+    <Exec Command="wasm-opt$(_ExeExt) @(_WasmOptConfigFlags, ' ') &quot;$(_WasmOptPostLinkFileName)&quot; -o &quot;$(_WasmOptPostLinkFileName)&quot;"
+          IgnoreStandardErrorWarningFormat="true"
+          EnvironmentVariables="@(EmscriptenEnvVars)" />
+  </Target>
+
+  <!-- ========================== Complete Native Build ========================== -->
+
+  <Target Name="_CoreCLRCompleteWasmBuildNative" Condition="'$(WasmBuildNative)' == 'true'">
+    <ItemGroup>
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.native.js.symbols')" />
+    </ItemGroup>
+  </Target>
+
+  <!-- ========================== Emit Assemblies ========================== -->
+
+  <Target Name="_CoreCLREmitWasmAssembliesFinal" Returns="@(WasmAssembliesFinal)">
+    <ItemGroup>
+      <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" LlvmBitCodeFile="" />
+      <WasmAssembliesFinal Include="@(_WasmSatelliteAssemblies)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- ========================== Publish Path ========================== -->
+
+  <Target Name="WasmTriggerPublishApp"
+          AfterTargets="$(WasmTriggerPublishAppAfterThisTarget)"
+          Condition="'$(IsBrowserWasmProject)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
+
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="WasmNestedPublishApp"
+             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=;_WasmIsPublishing=$(_IsPublishing);ResolveAssemblyReferencesFindRelatedSatellites=true">
+      <Output TaskParameter="TargetOutputs" ItemName="WasmNestedPublishAppResultItems" />
+    </MSBuild>
+
+    <ItemGroup>
+      <WasmAssembliesFinal Remove="@(WasmAssembliesFinal)" />
+      <WasmAssembliesFinal Include="@(WasmNestedPublishAppResultItems)" Condition="'%(WasmNestedPublishAppResultItems.OriginalItemName)' == 'WasmAssembliesFinal'" />
+
+      <WasmNativeAsset Remove="@(WasmNativeAsset)" />
+      <WasmNativeAsset Include="@(WasmNestedPublishAppResultItems)" Condition="'%(WasmNestedPublishAppResultItems.OriginalItemName)' == 'WasmNativeAsset'" />
+
+      <FileWrites Include="@(WasmNestedPublishAppResultItems)" Condition="'%(WasmNestedPublishAppResultItems.OriginalItemName)' == 'FileWrites'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="WasmNestedPublishApp"
+          DependsOnTargets="ResolveRuntimePackAssets;$(_WasmNestedPublishAppPreTarget);_CoreCLRWasmBuildAppCore"
+          Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
+          Returns="@(WasmNativeAsset);@(WasmAssembliesFinal);@(FileWrites)">
+
+    <ItemGroup>
+      <WasmNativeAsset OriginalItemName="WasmNativeAsset" />
+      <WasmAssembliesFinal OriginalItemName="WasmAssembliesFinal" />
+      <FileWrites OriginalItemName="FileWrites" />
+    </ItemGroup>
+  </Target>
+
+</Project>
