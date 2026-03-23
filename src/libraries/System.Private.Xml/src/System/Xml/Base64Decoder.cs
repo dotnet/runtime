@@ -175,10 +175,10 @@ namespace System.Xml
                 // ignore whitespace after the padding chars
                 while ((uint)iChar < (uint)chars.Length)
                 {
-                    char afterPad = chars[iChar++];
-                    if (!XmlCharType.IsWhiteSpace(afterPad))
+                    char ch = chars[iChar++];
+                    if (!XmlCharType.IsWhiteSpace(ch))
                     {
-                        throw new XmlException(SR.Xml_InvalidBase64Value, afterPad.ToString());
+                        throw new XmlException(SR.Xml_InvalidBase64Value, ch.ToString());
                     }
                 }
             }

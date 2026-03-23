@@ -118,11 +118,7 @@ namespace System.Xml
 
             if (hasHalfByteCached && !allowOddChars)
             {
-                const int MaxErrorValueLength = 40;
-                string errorValue = chars.Length <= MaxErrorValueLength
-                    ? new string(chars)
-                    : string.Concat(chars[..MaxErrorValueLength], "...");
-                throw new XmlException(SR.Xml_InvalidBinHexValueOddCount, errorValue);
+                throw new XmlException(SR.Xml_InvalidBinHexValueOddCount, (string?)null);
             }
 
             if (bytesDecoded < bytes.Length)

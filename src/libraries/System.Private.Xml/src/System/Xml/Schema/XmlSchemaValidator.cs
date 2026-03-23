@@ -1473,6 +1473,8 @@ namespace System.Xml.Schema
                 if (exception != null)
                 {
                     string stringValue = parsedValue as string ?? XmlSchemaDatatype.ConcatenatedToString(parsedValue);
+                    if (stringValue.Length > 40)
+                        stringValue = string.Concat(stringValue.AsSpan(0, 40), "...");
 
                     SendValidationEvent(SR.Sch_ElementValueDataTypeDetailed, new string[] { QNameString(_context.LocalName!, _context.Namespace!), stringValue, GetTypeName(decl), exception.Message }, exception);
                     return null;
@@ -1958,6 +1960,8 @@ namespace System.Xml.Schema
         Error:
             _attrValid = false;
             stringValue ??= XmlSchemaDatatype.ConcatenatedToString(value);
+            if (stringValue.Length > 40)
+                stringValue = string.Concat(stringValue.AsSpan(0, 40), "...");
             SendValidationEvent(SR.Sch_AttributeValueDataTypeDetailed, new string[] { attdef.Name.ToString(), stringValue, GetTypeName(decl), exception.Message }, exception);
             return null;
         }
@@ -1973,7 +1977,10 @@ namespace System.Xml.Schema
             Exception? exception = dtype.TryParseValue(stringValue, _nameTable, _nsResolver, out typedValue);
             if (exception != null)
             {
-                SendValidationEvent(SR.Sch_ElementValueDataTypeDetailed, new string[] { QNameString(_context.LocalName!, _context.Namespace!), stringValue, GetTypeName(decl), exception.Message }, exception);
+                string truncated = stringValue.Length > 40
+                    ? string.Concat(stringValue.AsSpan(0, 40), "...")
+                    : stringValue;
+                SendValidationEvent(SR.Sch_ElementValueDataTypeDetailed, new string[] { QNameString(_context.LocalName!, _context.Namespace!), truncated, GetTypeName(decl), exception.Message }, exception);
                 return null;
             }
 
