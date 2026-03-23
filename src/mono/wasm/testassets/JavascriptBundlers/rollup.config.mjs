@@ -13,7 +13,7 @@ export default {
    plugins: [
       files({
         output: 'public',
-        extensions: /\.(wasm|dat)$/,
+        extensions: /\.(wasm|dat|pdb)$/,
         hash: true,
       }),
       files({

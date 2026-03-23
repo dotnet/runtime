@@ -62,6 +62,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Compression -->
     <CompressionIncludePatterns>$(CompressionIncludePatterns);_framework\**</CompressionIncludePatterns>
+    <CompressionIncludePatterns Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'"></CompressionIncludePatterns>
     <DisableBuildCompression Condition="'$(WasmBuildingForNestedPublish)' == 'true'">true</DisableBuildCompression>
   </PropertyGroup>
 
@@ -85,6 +86,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
     <WasmNestedPublishAppDependsOn>_GatherWasmFilesToPublish;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
     <_WasmNestedPublishAppPreTarget>ComputeFilesToPublish</_WasmNestedPublishAppPreTarget>
+
+    <_WasmEnableHotReload Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmEnableHotReload>
   </PropertyGroup>
 
   <ItemGroup>
@@ -210,10 +213,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == ''">false</_WasmInlineBootConfig>
       <!-- true = wasm assets will have hard fingerprint; false = wasm assets won't have even soft fingerprint -->
       <_WasmFingerprintAssets>$(WasmFingerprintAssets)</_WasmFingerprintAssets>
+      <_WasmFingerprintAssets Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmFingerprintAssets>
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == '' and '$(_TargetingNET90OrLater)' == 'true'">true</_WasmFingerprintAssets>
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == ''">false</_WasmFingerprintAssets>
       <!-- true = dotnet.js will have hard fingerprint; false = dotnet.js will have soft fingerprint -->
       <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
+      <_WasmFingerprintDotnetJs Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">false</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">$(OverrideHtmlAssetPlaceholders)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
       <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
@@ -661,6 +666,43 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
   </Target>
 
+  <Target Name="EnsureProjectAssetsInOutputDirectoryForBundlerFriendlyBuild"
+          BeforeTargets="ResolveBuildStaticWebAssets"
+          Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true' and '$(IsPublishing)' != 'true'">
+    <!-- Fix non-publishing scenarios by copying project assets the way they are copied during publish,
+         so bundler-friendly builds are complete for the js bundler -->
+    <ItemGroup>
+      <StaticWebAsset Update="@(StaticWebAsset)" Condition="'%(StaticWebAsset.CopyToPublishDirectory)' != 'Never' and '%(StaticWebAsset.CopyToPublishDirectory)' != ''">
+        <CopyToOutputDirectory>%(StaticWebAsset.CopyToPublishDirectory)</CopyToOutputDirectory>
+      </StaticWebAsset>
+    </ItemGroup>
+  </Target>
+  
+  <Target Name="EnsurePublishAssetsInOutputDirectoryForBundlerFriendlyBuild"
+          AfterTargets="_SplitStaticWebAssetsByCopyOptions"
+          BeforeTargets="_BuildCopyStaticWebAssetsPreserveNewest;_BuildCopyStaticWebAssetsAlways;_BuildCopyStaticWebAssetsIfDifferent"
+          Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true' and '$(IsPublishing)' != 'true'">
+    <!-- Fix non-publishing scenarios by manually adding the publish static web assets to the build static web assets 
+         so bundler-friendly builds are complete for the js bundler -->
+    <ComputeStaticWebAssetsForCurrentProject
+      Assets="@(StaticWebAsset)"
+      ProjectMode="$(StaticWebAssetProjectMode)"
+      AssetKind="Publish"
+      Source="$(PackageId)">
+      <Output TaskParameter="StaticWebAssets" ItemName="_StaticWebAssetsToCopy" />
+    </ComputeStaticWebAssetsForCurrentProject>
+    
+    <ComputeStaticWebAssetsTargetPaths Assets="@(_StaticWebAssetsToCopy)" PathPrefix="$(OutputPath)\wwwroot\">
+      <Output TaskParameter="AssetsWithTargetPath" ItemName="_StaticWebAssetsToCopyTargetPath" />
+    </ComputeStaticWebAssetsTargetPaths>
+
+    <ItemGroup>
+      <_BuildStaticWebAssetsCopyAlways Include="@(_StaticWebAssetsToCopyTargetPath)" Condition="'%(CopyToOutputDirectory)' == 'Always'" />
+      <_BuildStaticWebAssetsPreserveNewest Include="@(_StaticWebAssetsToCopyTargetPath)" Condition="'%(CopyToOutputDirectory)' == 'PreserveNewest'" />
+      <_BuildStaticWebAssetsIfDifferent Include="@(_StaticWebAssetsToCopyTargetPath)" Condition="'%(CopyToOutputDirectory)' == 'IfDifferent'" />
+    </ItemGroup>
+  </Target>
+  
   <!-- Publish starts here -->
 
   <!-- Make sure that ResolveAssemblyReferences runs early enough to ensure satellite assemblies are populated in the ResolvedFilesToPublish -->
