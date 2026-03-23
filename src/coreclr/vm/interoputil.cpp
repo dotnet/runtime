@@ -2697,6 +2697,7 @@ DISPID ExtractStandardDispId(_In_z_ LPWSTR strStdDispIdMemberName)
 
 // Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
 // in the native code.
+struct CallOutFilterParam { BOOL OneShot; };
 LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 {
     CallOutFilterParam *pParam = static_cast<CallOutFilterParam *>(pv);
