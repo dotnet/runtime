@@ -491,7 +491,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         int hr = HResults.S_OK;
         try
         {
-            TargetPointer[] exInfo = new TargetPointer[EXCEPTION_RECORD64.ExceptionMaximumParameters];
+            Span<TargetPointer> exInfo = stackalloc TargetPointer[EXCEPTION_RECORD64.ExceptionMaximumParameters];
             for (int i = 0; i < EXCEPTION_RECORD64.ExceptionMaximumParameters; i++)
                 exInfo[i] = new TargetPointer(record->ExceptionInformation[i]);
 
