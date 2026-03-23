@@ -2460,6 +2460,64 @@ MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG
     return MethodReturnKind::NormalMethod;
 }
 
+void BuildAsyncVariantSignature(
+    MethodReturnKind returnKind,
+    const BYTE* pOrigSig,
+    ULONG       origSigLen,
+    ULONG       offsetOfAsyncDetails,
+    BYTE*       pDestSig,
+    ULONG*      pAsyncSigLen)
+{
+    _ASSERTE(returnKind == MethodReturnKind::NonGenericTaskReturningMethod ||
+             returnKind == MethodReturnKind::GenericTaskReturningMethod);
+    _ASSERTE(pAsyncSigLen != nullptr);
+
+    ULONG taskTokenOffsetFromAsyncDetailsOffset;
+    ULONG taskTypePrefixSize;
+    ULONG taskTypePrefixReplacementSize;
+
+    ULONG tokenLen = CorSigUncompressedDataSize(
+        &pOrigSig[offsetOfAsyncDetails +
+                   (returnKind == MethodReturnKind::NonGenericTaskReturningMethod ? 1 : 2)]);
+
+    if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+    {
+        // "... Task ... Method(args);" → "... void ... Method(args);"
+        taskTokenOffsetFromAsyncDetailsOffset = 1;
+        taskTypePrefixSize = 1 + tokenLen;     // E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
+        taskTypePrefixReplacementSize = 1;     // ELEMENT_TYPE_VOID
+    }
+    else
+    {
+        // "... Task<T> ... Method(args);" → "... T ... Method(args);"
+        taskTokenOffsetFromAsyncDetailsOffset = 2;
+        taskTypePrefixSize = 2 + tokenLen + 1; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1
+        taskTypePrefixReplacementSize = 0;
+    }
+
+    *pAsyncSigLen = origSigLen - taskTypePrefixSize + taskTypePrefixReplacementSize;
+
+    if (pDestSig != nullptr)
+    {
+        ULONG originalRemainingSigOffset = offsetOfAsyncDetails + taskTypePrefixSize;
+        ULONG newRemainingSigOffset = offsetOfAsyncDetails + taskTypePrefixReplacementSize;
+
+        // Copy bytes before the async prefix
+        memcpy(pDestSig, pOrigSig, offsetOfAsyncDetails);
+
+        // Copy bytes after the async prefix
+        _ASSERTE((origSigLen - originalRemainingSigOffset) == (*pAsyncSigLen - newRemainingSigOffset));
+        memcpy(pDestSig + newRemainingSigOffset,
+               pOrigSig + originalRemainingSigOffset,
+               origSigLen - originalRemainingSigOffset);
+
+        if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+        {
+            pDestSig[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
+        }
+    }
+}
+
 //*******************************************************************************
 BOOL MethodDesc::ShouldCallPrestub()
 {
