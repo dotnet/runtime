@@ -1087,7 +1087,7 @@ namespace System.Xml.Tests
             catch (XmlException ex)
             {
                 // The exception message should not contain the entire input.
-                if (ex.Message.Length > 1000)
+                if (ex.Message.Length > 100)
                 {
                     CError.WriteLine("Exception message is unexpectedly large: " + ex.Message.Length + " chars");
                     return TEST_FAIL;
