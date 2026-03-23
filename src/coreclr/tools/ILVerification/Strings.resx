@@ -297,6 +297,9 @@
   <data name="MethodFallthrough" xml:space="preserve">
     <value>Fall through end of the method without returning.</value>
   </data>
+  <data name="EHClauseOutOfRange" xml:space="preserve">
+    <value>Exception handling clause bounds outside code size.</value>
+  </data>
   <data name="NewobjAbstractClass" xml:space="preserve">
     <value>Cannot construct an instance of abstract class.</value>
   </data>
