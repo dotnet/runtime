@@ -29,6 +29,8 @@ set __LongGCTests=
 set __GCSimulatorTests=
 set __IlasmRoundTrip=
 set __PrintLastResultsOnly=
+set __Verbose=
+set __LimitedCoreDumps=
 set LogsDirArg=
 set RunInUnloadableContext=
 set TieringTest=
@@ -65,8 +67,8 @@ if /i "%1" == "jitforcerelocs"                          (set DOTNET_ForceRelocs=
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "logsdir"                                 (set LogsDirArg=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=1&shift&goto Arg_Loop)
-REM This test feature is currently intentionally undocumented
 if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=1&set CrossgenLargeVersionBubble=1&shift&goto Arg_Loop)
+if /i "%1" == "composite"                               (set __CompositeBuildMode=1&shift&goto Arg_Loop)
 if /i "%1" == "synthesizepgo"                           (set CrossGen2SynthesizePgo=1&shift&goto Arg_Loop)
 if /i "%1" == "gcname"                                  (set DOTNET_GCName=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcstresslevel"                           (set DOTNET_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
@@ -79,6 +81,8 @@ if /i "%1" == "tieringtest"                             (set TieringTest=1&shift
 if /i "%1" == "runnativeaottests"                       (set RunNativeAot=1&shift&goto Arg_Loop)
 if /i "%1" == "interpreter"                             (set RunInterpreter=1&shift&goto Arg_Loop)
 if /i "%1" == "node"                                    (set RunWithNodeJS=1&shift&goto Arg_Loop)
+if /i "%1" == "verbose"                                 (set __Verbose=1&shift&goto Arg_Loop)
+if /i "%1" == "limiteddumpgeneration"                   (set __LimitedCoreDumps=1&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -167,6 +171,10 @@ if defined CrossgenLargeVersionBubble (
     set __RuntestPyArgs=%__RuntestPyArgs% --large_version_bubble
 )
 
+if defined __CompositeBuildMode (
+    set __RuntestPyArgs=%__RuntestPyArgs% --composite
+)
+
 if defined CrossGen2SynthesizePgo (
     set __RuntestPyArgs=%__RuntestPyArgs% --synthesize_pgo
 )
@@ -193,6 +201,14 @@ if defined RunInterpreter (
 
 if defined RunWithNodeJS (
     set __RuntestPyArgs=%__RuntestPyArgs% --node
+)
+
+if defined __Verbose (
+    set __RuntestPyArgs=%__RuntestPyArgs% --verbose
+)
+
+if defined __LimitedCoreDumps (
+    set __RuntestPyArgs=%__RuntestPyArgs% --limited_core_dumps
 )
 
 REM Find python and set it to the variable PYTHON
@@ -235,6 +251,8 @@ echo TestEnv ^<test_env_script^> - Run a custom script before every test to set 
 echo sequential                - Run tests sequentially ^(no parallelism^).
 echo parallel ^<type^>           - Run tests with given level of parallelism: none, collections, assemblies, all. Default: collections.
 echo RunCrossgen2Tests         - Runs ReadytoRun tests compiled with Crossgen2
+echo runlargeversionbubblecrossgen2tests - ^(Experimental^) Runs Crossgen2 tests with large version bubble enabled.
+echo composite                 - ^(Experimental^) Use Crossgen2 composite mode for tests.
 echo synthesizepgo             - Enabled synthesizing PGO data in CrossGen2
 echo jitstress ^<n^>             - Runs the tests with DOTNET_JitStress=n
 echo jitstressregs ^<n^>         - Runs the tests with DOTNET_JitStressRegs=n
@@ -259,8 +277,12 @@ echo                             Note: some options override this ^(gcstressleve
 echo logsdir ^<dir^>             - Specify the logs directory ^(default: artifacts/log^)
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
+echo tieringtest               - Run each test to encourage tier1 rejitting.
+echo runnativeaottests         - Run NativeAOT compiled tests.
 echo interpreter               - Runs the tests with the interpreter enabled.
-echo node                       - Runs the tests with NodeJS ^(wasm only^).
+echo node                      - Runs the tests with NodeJS ^(wasm only^).
+echo verbose                   - Enable verbose output ^(show output from each test^).
+echo limitedDumpGeneration     - Limits the number of core dumps generated for this test run.
 echo.
 echo Note that arguments are not case-sensitive.
 echo.
