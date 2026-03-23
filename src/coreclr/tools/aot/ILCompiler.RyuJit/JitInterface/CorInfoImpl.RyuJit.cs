@@ -102,7 +102,8 @@ namespace Internal.JitInterface
             CFI_ADJUST_CFA_OFFSET,    // Offset is adjusted relative to the current one.
             CFI_DEF_CFA_REGISTER,     // New register is used to compute CFA
             CFI_REL_OFFSET,           // Register is saved at offset from the current CFA
-            CFI_DEF_CFA               // Take address from register and add offset to it.
+            CFI_DEF_CFA,              // Take address from register and add offset to it.
+            CFI_NEGATE_RA_STATE,      // Sign the return address in lr with paciaz
         }
 
         // Get the CFI data in the same shape as clang/LLVM generated one. This improves the compatibility with libunwind and other unwind solutions
@@ -133,6 +134,7 @@ namespace Internal.JitInterface
             }
 
             int offset = 0;
+            bool shouldAddPACOpCode = false;
             while (offset < blobData.Length)
             {
                 codeOffset = Math.Max(codeOffset, blobData[offset++]);
@@ -186,6 +188,10 @@ namespace Internal.JitInterface
                             }
                         }
                         break;
+
+                    case CFI_OPCODE.CFI_NEGATE_RA_STATE:
+                        shouldAddPACOpCode = true;
+                        break;
                 }
             }
 
@@ -195,6 +201,14 @@ namespace Internal.JitInterface
 
                 using (BinaryWriter cfiWriter = new BinaryWriter(cfiStream))
                 {
+                    if (shouldAddPACOpCode)
+                    {
+                        cfiWriter.Write((byte)codeOffset);
+                        cfiWriter.Write((byte)CFI_OPCODE.CFI_NEGATE_RA_STATE);
+                        cfiWriter.Write((short)-1);
+                        cfiWriter.Write(cfaOffset);
+                    }
+
                     if (cfaRegister != -1)
                     {
                         cfiWriter.Write((byte)codeOffset);
