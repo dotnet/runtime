@@ -18,11 +18,6 @@ ComCallPreStub_STACK_FRAME_SIZE = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES
 ComCallPreStub_XMM_SAVE_OFFSET = ComCallPreStub_STACK_FRAME_SIZE
 ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + SIZEOF_MAX_FP_ARG_SPILL
 
-; Error return
-ComCallPreStub_ERROR_RETURN_SIZE = 8
-ComCallPreStub_ERROR_RETURN_OFFSET = ComCallPreStub_STACK_FRAME_SIZE
-ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + ComCallPreStub_ERROR_RETURN_SIZE
-
 ; Ensure that the new rsp will be 16-byte aligned.  Note that the caller has
 ; already pushed the return address.
 if ((ComCallPreStub_STACK_FRAME_SIZE + 8) MOD 16) ne 0
@@ -47,7 +42,6 @@ endif
         ; Do prestub-specific stuff
         ;
         mov             rcx, METHODDESC_REGISTER
-        lea             rdx, [rsp + ComCallPreStub_ERROR_RETURN_OFFSET]
         call            ComPreStubWorker
 
         ;
@@ -68,19 +62,8 @@ endif
         ;
         ; epilogue
         ;
-
-        ; If we don't have a stub, we need to load the error and return instead of tailcall.
-        test            rax, rax
-        jz ExitError
-
         add             rsp, ComCallPreStub_STACK_FRAME_SIZE
         TAILJMP_RAX
-
-ExitError:
-        mov             rax, [rsp + ComCallPreStub_ERROR_RETURN_OFFSET]
-        add             rsp, ComCallPreStub_STACK_FRAME_SIZE
-
-        ret
 
 NESTED_END ComCallPreStub, _TEXT
 

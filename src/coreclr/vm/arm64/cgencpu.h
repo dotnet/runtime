@@ -41,10 +41,6 @@
     CALLEE_SAVED_REGISTER(V[14].Low) \
     CALLEE_SAVED_REGISTER(V[15].Low)
 
-EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
-EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
-
-
 class ComCallMethodDesc;
 
 extern PCODE GetPreStubEntryPoint();

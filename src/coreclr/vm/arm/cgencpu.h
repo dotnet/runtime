@@ -67,9 +67,6 @@ EXTERN_C void checkStack(void);
 
 #define HAS_PINVOKE_IMPORT_PRECODE              1
 
-EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
-EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
-
 #define HAS_FIXUP_PRECODE                       1
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer

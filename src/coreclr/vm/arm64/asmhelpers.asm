@@ -248,122 +248,33 @@ NoFloatingPointRetVal
 ; COM to CLR stub called the first time a particular method is invoked.
 ;
 ; On entry:
-;   x12         : ComCallMethodDesc* provided by prepad thunk
+;   x12 = UMEntryThunkData*
 ;   plus user arguments in registers and on the stack
 ;
 ; On exit:
 ;   tail calls to real method
 ;
-    NESTED_ENTRY ComCallPreStub
 
-    GBLA ComCallPreStub_FrameSize
-    GBLA ComCallPreStub_StackAlloc
-    GBLA ComCallPreStub_FrameOffset
-    GBLA ComCallPreStub_ErrorReturnOffset
-    GBLA ComCallPreStub_FirstStackAdjust
-
-ComCallPreStub_FrameSize         SETA (SIZEOF__ComMethodFrame)
-ComCallPreStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8) ; x8, reg args , fp & lr already pushed
-ComCallPreStub_StackAlloc        SETA ComCallPreStub_FrameSize - ComCallPreStub_FirstStackAdjust
-ComCallPreStub_StackAlloc        SETA ComCallPreStub_StackAlloc + SIZEOF__FloatArgumentRegisters + 8; 8 for ErrorReturn
-    IF ComCallPreStub_StackAlloc:MOD:16 != 0
-ComCallPreStub_StackAlloc     SETA ComCallPreStub_StackAlloc + 8
-    ENDIF
-
-ComCallPreStub_FrameOffset       SETA (ComCallPreStub_StackAlloc - (SIZEOF__ComMethodFrame - ComCallPreStub_FirstStackAdjust))
-ComCallPreStub_ErrorReturnOffset SETA SIZEOF__FloatArgumentRegisters
-
-    IF (ComCallPreStub_FirstStackAdjust):MOD:16 != 0
-ComCallPreStub_FirstStackAdjust     SETA ComCallPreStub_FirstStackAdjust + 8
-    ENDIF
+    NESTED_ENTRY ComCallPreStub,,UMEntryPrestubUnwindFrameChainHandler
 
     ; Save arguments and return address
-    PROLOG_SAVE_REG_PAIR           fp, lr, #-ComCallPreStub_FirstStackAdjust!
-    PROLOG_STACK_ALLOC  ComCallPreStub_StackAlloc
+    PROLOG_SAVE_REG_PAIR           fp, lr, #-224!
+    SAVE_ARGUMENT_REGISTERS        sp, 16
+    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96
 
-    SAVE_ARGUMENT_REGISTERS        sp, (16+ComCallPreStub_StackAlloc)
+    mov x0, x12
+    bl  ComPreStubWorker
 
-    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
-
-    str x12, [sp, #(ComCallPreStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
-    add x0, sp, #(ComCallPreStub_FrameOffset)
-    add x1, sp, #(ComCallPreStub_ErrorReturnOffset)
-    bl ComPreStubWorker
-
-    cbz x0, ComCallPreStub_ErrorExit
-
+    ; save real target address in x12.
     mov x12, x0
 
     ; pop the stack and restore original register state
-    RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, 0
-    RESTORE_ARGUMENT_REGISTERS        sp, (16+ComCallPreStub_StackAlloc)
-
-    EPILOG_STACK_FREE ComCallPreStub_StackAlloc
-    EPILOG_RESTORE_REG_PAIR           fp, lr, #ComCallPreStub_FirstStackAdjust!
+    RESTORE_ARGUMENT_REGISTERS        sp, 16
+    RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, 96
+    EPILOG_RESTORE_REG_PAIR           fp, lr, #224!
 
     ; and tailcall to the actual method
     EPILOG_BRANCH_REG x12
-
-ComCallPreStub_ErrorExit
-    ldr x0, [sp, #(ComCallPreStub_ErrorReturnOffset)] ; ErrorReturn
-
-    ; pop the stack
-    EPILOG_STACK_FREE ComCallPreStub_StackAlloc
-    EPILOG_RESTORE_REG_PAIR           fp, lr, #ComCallPreStub_FirstStackAdjust!
-
-    EPILOG_RETURN
-
-    NESTED_END
-
-; ------------------------------------------------------------------
-; COM to CLR stub which sets up a ComMethodFrame and calls COMToCLRWorker.
-;
-; On entry:
-;   x12         : ComCallMethodDesc*  provided by prepad thunk
-;   plus user arguments in registers and on the stack
-;
-; On exit:
-;   Result in x0/d0 as per the real method being called
-;
-    NESTED_ENTRY GenericComCallStub
-
-    GBLA GenericComCallStub_FrameSize
-    GBLA GenericComCallStub_StackAlloc
-    GBLA GenericComCallStub_FrameOffset
-    GBLA GenericComCallStub_FirstStackAdjust
-
-GenericComCallStub_FrameSize         SETA (SIZEOF__ComMethodFrame)
-GenericComCallStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8)
-GenericComCallStub_StackAlloc        SETA GenericComCallStub_FrameSize - GenericComCallStub_FirstStackAdjust
-GenericComCallStub_StackAlloc        SETA GenericComCallStub_StackAlloc + SIZEOF__FloatArgumentRegisters
-
-    IF (GenericComCallStub_StackAlloc):MOD:16 != 0
-GenericComCallStub_StackAlloc     SETA GenericComCallStub_StackAlloc + 8
-    ENDIF
-
-GenericComCallStub_FrameOffset       SETA (GenericComCallStub_StackAlloc - (SIZEOF__ComMethodFrame - GenericComCallStub_FirstStackAdjust))
-
-    IF (GenericComCallStub_FirstStackAdjust):MOD:16 != 0
-GenericComCallStub_FirstStackAdjust     SETA GenericComCallStub_FirstStackAdjust + 8
-    ENDIF
-
-
-    ; Save arguments and return address
-    PROLOG_SAVE_REG_PAIR           fp, lr, #-GenericComCallStub_FirstStackAdjust!
-    PROLOG_STACK_ALLOC  GenericComCallStub_StackAlloc
-
-    SAVE_ARGUMENT_REGISTERS        sp, (16+GenericComCallStub_StackAlloc)
-    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
-
-    str x12, [sp, #(GenericComCallStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
-    add x0, sp, #GenericComCallStub_FrameOffset
-    bl COMToCLRWorker
-
-    ; pop the stack
-    EPILOG_STACK_FREE GenericComCallStub_StackAlloc
-    EPILOG_RESTORE_REG_PAIR           fp, lr, #GenericComCallStub_FirstStackAdjust!
-
-    EPILOG_RETURN
 
     NESTED_END
 #endif ; FEATURE_COMINTEROP
@@ -774,39 +685,6 @@ Fail
     DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
     DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
 #endif // FEATURE_READYTORUN
-
-#ifdef FEATURE_COMINTEROP
-; ------------------------------------------------------------------
-; Function used by COM interop to get floating point return value (since it's not in the same
-; register(s) as non-floating point values).
-;
-; On entry;
-;   x0          : size of the FP result (4 or 8 bytes)
-;   x1          : pointer to 64-bit buffer to receive result
-;
-; On exit:
-;   buffer pointed to by x1 on entry contains the float or double argument as appropriate
-;
-    LEAF_ENTRY getFPReturn
-    str d0, [x1]
-    LEAF_END
-
-; ------------------------------------------------------------------
-; Function used by COM interop to set floating point return value (since it's not in the same
-; register(s) as non-floating point values).
-;
-; On entry:
-;   x0          : size of the FP result (4 or 8 bytes)
-;   x1          : 32-bit or 64-bit FP result
-;
-; On exit:
-;   s0          : float result if x0 == 4
-;   d0          : double result if x0 == 8
-;
-    LEAF_ENTRY setFPReturn
-    fmov d0, x1
-    LEAF_END
-#endif
 
 ;
 ; JIT Static access helpers when coreclr host specifies single appdomain flag

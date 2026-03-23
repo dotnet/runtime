@@ -341,11 +341,6 @@ inline PCODE decodeBackToBackJump(PCODE pCode)
     return rel32Decode(pCode+1);
 }
 
-
-EXTERN_C void __stdcall setFPReturn(int fpSize, INT64 retVal);
-EXTERN_C void __stdcall getFPReturn(int fpSize, INT64 *pretval);
-
-
 // SEH info forward declarations
 
 struct HijackArgs

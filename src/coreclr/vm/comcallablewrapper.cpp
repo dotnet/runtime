@@ -316,11 +316,73 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
 extern PLATFORM_THREAD_LOCAL UMEntryThunkData * t_MostRecentUMEntryThunkData;
 #endif
 
+PLATFORM_THREAD_LOCAL HRESULT t_ComPreStubLastHResult;
+
+#ifdef TARGET_X86
+PLATFORM_THREAD_LOCAL UINT t_ComPreStubLastStackBytes;
+
+extern "C" HRESULT __stdcall ComPreStubGetLastHResult()
+{
+    LIMITED_METHOD_CONTRACT;
+    return t_ComPreStubLastHResult;
+}
+
+extern "C" UINT __stdcall ComPreStubGetLastStackBytes()
+{
+    LIMITED_METHOD_CONTRACT;
+    return t_ComPreStubLastStackBytes;
+}
+
+extern "C" int ComStubReturnHResult();
+
+extern "C" BOOL ComStubReturnBool();
+
+extern "C" float ComStubReturnR4NaN();
+
+extern "C" double ComStubReturnR8NaN();
+
+extern "C" void ComStubReturnVoid();
+#else
+namespace
+{
+    int ComStubReturnHResult()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return t_ComPreStubLastHResult;
+    }
+
+    BOOL ComStubReturnBool()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return FALSE;
+    }
+
+    float ComStubReturnR4NaN()
+    {
+        int tmp = CLR_NAN_32;
+        return *(float*)&tmp;
+    }
+
+    double ComStubReturnR8NaN()
+    {
+        INT64 tmp = CLR_NAN_64;
+        return *(double*)&tmp;
+    }
+
+    void ComStubReturnVoid()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return;
+    }
+}
+#endif
+
+
 //--------------------------------------------------------------------------
 // This routine is called anytime a com method is invoked for the first time.
 // It is responsible for generating the real stub.
 //--------------------------------------------------------------------------
-extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk, UINT64 *pErrorReturn)
+extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -406,24 +468,32 @@ extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk, UINT64 *pErrorR
     //
     // IMPORTANT: No floating point operations can occur after this point!
     //
-    *pErrorReturn = 0;
-    if (pCMD->IsNativeHResultRetVal())
-        *pErrorReturn = hr;
-    else if (pCMD->IsNativeBoolRetVal())
-        *pErrorReturn = 0;
-    else if (pCMD->IsNativeR4RetVal())
-        setFPReturn(4, CLR_NAN_32);
-    else if (pCMD->IsNativeR8RetVal())
-        setFPReturn(8, CLR_NAN_64);
-    else
-        _ASSERTE(pCMD->IsNativeVoidRetVal());
-
 #ifdef TARGET_X86
     // Number of bytes to pop is upper half of the return value on x86
-    *(((INT32 *)pErrorReturn) + 1) = pCMD->GetNumStackBytes();
+    t_ComPreStubLastStackBytes = pCMD->GetNumStackBytes();
 #endif
 
-    return NULL;
+    if (pCMD->IsNativeHResultRetVal())
+    {
+        t_ComPreStubLastHResult = hr;
+        return (PCODE)&ComStubReturnHResult;
+    }
+    else if (pCMD->IsNativeBoolRetVal())
+    {
+        return (PCODE)&ComStubReturnBool;
+    }
+    else if (pCMD->IsNativeR4RetVal())
+    {
+        return (PCODE)&ComStubReturnR4NaN;
+    }
+    else if (pCMD->IsNativeR8RetVal())
+    {
+        return (PCODE)&ComStubReturnR8NaN;
+    }
+    else
+    {
+        return (PCODE)&ComStubReturnVoid;
+    }
 }
 
 FORCEINLINE void CPListRelease(CQuickArray<ConnectionPoint*>* value)

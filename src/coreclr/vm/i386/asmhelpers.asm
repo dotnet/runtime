@@ -48,13 +48,14 @@ EXTERN _TheUMEntryPrestubWorker@4:PROC
 
 ifdef FEATURE_COMINTEROP
 EXTERN _CLRToCOMWorker@8:PROC
-EXTERN _COMToCLRWorker@4:PROC
+EXTERN _ComPreStubGetLastHResult@0:PROC
+EXTERN _ComPreStubGetLastStackBytes@0:PROC
 endif
 
 EXTERN _ExternalMethodFixupWorker@16:PROC
 
 ifdef FEATURE_COMINTEROP
-EXTERN _ComPreStubWorker@8:PROC
+EXTERN _ComPreStubWorker@4:PROC
 endif
 
 ifdef FEATURE_READYTORUN
@@ -481,25 +482,6 @@ setFPReturn4:
     fld     dword ptr [esp+8]
     retn    12
 _setFPReturn@12 endp
-
-; void __stdcall getFPReturn(int fpSize, INT64 *pretVal)
-_getFPReturn@8 proc public
-   mov     ecx, [esp+4]
-   mov     eax, [esp+8]
-   cmp     ecx, 4
-   jz      getFPReturn4
-
-   cmp     ecx, 8
-   jnz     getFPReturnNot8
-   fstp    qword ptr [eax]
-getFPReturnNot8:
-   retn    8
-
-getFPReturn4:
-   fstp    dword ptr [eax]
-   retn    8
-_getFPReturn@8 endp
-
 
 ; void __stdcall JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
 _JIT_ProfilerEnterLeaveTailcallStub@4 proc public
@@ -933,136 +915,97 @@ _GenericCLRToCOMCallStub@0 proc public
 
 _GenericCLRToCOMCallStub@0 endp
 
-_GenericComCallStub@0 proc public
+_ComCallPreStub@0 proc public
+    ; push argument registers
+    push        ecx
+    push        edx
 
-    ; Pop ComCallMethodDesc* pushed by prestub
-    pop         eax
+    PUSH_CLR_EXCEPTION_HANDLER _UMEntryPrestubUnwindFrameChainHandler
 
-    ; Create UnmanagedToManagedFrame on stack
-
-    ; push ebp-frame
-    push        ebp
-    mov         ebp,esp
-
-    ; save CalleeSavedRegisters
-    push        ebx
-    push        esi
-    push        edi
-
-    push        eax         ; UnmanagedToManagedFrame::m_pvDatum = ComCallMethodDesc*
-    sub         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
-
-    mov         esi, esp
-
-    PUSH_CLR_EXCEPTION_HANDLER _ReverseComUnwindFrameChainHandler
-
-    push        esi
-    call        _COMToCLRWorker@4
+    push    eax     ; UMEntryThunkData*
+    call    _ComPreStubWorker@4
 
     POP_CLR_EXCEPTION_HANDLER
 
-    add         esp, OFFSETOF__UnmanagedToManagedFrame__m_pvDatum
-
-    ; pop the ComCallMethodDesc*
+    ; pop argument registers
+    pop         edx
     pop         ecx
 
-    ; pop CalleeSavedRegisters
-    pop         edi
-    pop         esi
-    pop         ebx
+    ; eax = PCODE
+    jmp     eax     ; Tail Jmp
+_ComCallPreStub@0 endp
 
-    pop         ebp
+_ComStubReturnHResult@0 proc public
+    ; HRESULT result in eax
+    call    _ComPreStubGetLastHResult@0
+    push    eax
 
-    sub         ecx, COMMETHOD_PREPAD_ASM
-    jmp         ecx
+    ; Pop stack args based on most recent COM prestub call
+    call    _ComPreStubGetLastStackBytes@0
+    mov     edx, eax
 
-    ; This will never be executed. It is just to help out stack-walking logic
-    ; which disassembles the epilog to unwind the stack.
+    pop     eax
+    pop     ecx                 ; return address
+    add     esp, edx            ; pop bytes of the stack
+    push    ecx                 ; return address
+
     ret
+_ComStubReturnHResult@0 endp
 
-_GenericComCallStub@0 endp
-
-endif ; FEATURE_COMINTEROP
-
-
-ifdef FEATURE_COMINTEROP
-;--------------------------------------------------------------------------
-; This is the code that all com call method stubs run initially.
-; Most of the real work occurs in ComStubWorker(), a C++ routine.
-; The template only does the part that absolutely has to be in assembly
-; language.
-;--------------------------------------------------------------------------
-_ComCallPreStub@0 proc public
-    pop     eax                 ;ComCallMethodDesc*
-
-    ; push ebp-frame
-    push        ebp
-    mov         ebp,esp
-
-    ; save CalleeSavedRegisters
-    push        ebx
-    push        esi
-    push        edi
-
-    push        eax         ; ComCallMethodDesc*
-    sub         esp, 4*4    ; next, vtable, 64-bit error return
-
-    lea     edi, [esp]      ; Point at the 64-bit error return
-    lea     esi, [esp+2*4]  ; Leave space for the 64-bit error return
-
-    push    edi                 ; pErrorReturn
-    push    esi                 ; pFrame
-    call    _ComPreStubWorker@8
-
-    ; eax now contains replacement stub. ComStubWorker will  return NULL if stub creation fails
-    cmp eax, 0
-    je nostub                   ; oops we could not create a stub
-
-    add     esp, 5*4            ; Pop off 64-bit error return, vtable, next and ComCallMethodDesc*
-
-    ; pop CalleeSavedRegisters
-    pop edi
-    pop esi
-    pop ebx
-    pop ebp
-
-    jmp     eax                 ; Reexecute with replacement stub.
-    ; We will never get here. This "ret" is just so that code-disassembling
-    ; profilers know to stop disassembling any further
-    ret
-
-nostub:
-
-    ; Even though the ComPreStubWorker sets a 64 bit value as the error return code.
-    ; Only the lower 32 bits contain usefula data. The reason for this is that the
-    ; possible error return types are: failure HRESULT, 0 and floating point 0.
-    ; In each case, the data fits in 32 bits. Instead, we use the upper half of
-    ; the return value to store number of bytes to pop
-    mov     eax, [edi]
-    mov     edx, [edi+4]
-
-    add     esp, 5*4            ; Pop off 64-bit error return, vtable, next and ComCallMethodDesc*
-
-    ; pop CalleeSavedRegisters
-    pop edi
-    pop esi
-    pop ebx
-    pop ebp
+_ComStubReturnBool@0 proc public
+    call    _ComPreStubGetLastStackBytes@0
+    mov     edx, eax
 
     pop     ecx                 ; return address
     add     esp, edx            ; pop bytes of the stack
     push    ecx                 ; return address
 
-    ; We need to deal with the case where the method is PreserveSig=true and has an 8
-    ; byte return type. There are 2 types of 8 byte return types: integer and floating point.
-    ; For integer 8 byte return types, we always return 0 in case of failure. For floating
-    ; point return types, we return the value in the floating point register. In both cases
-    ; edx should be 0.
-    xor     edx, edx            ; edx <-- 0
+    xor     eax, eax            ; FALSE
+    ret
+_ComStubReturnBool@0 endp
+
+_ComStubReturnR4NaN@0 proc public
+    call    _ComPreStubGetLastStackBytes@0
+    mov     edx, eax
+
+    pop     ecx                 ; return address
+    add     esp, edx            ; pop bytes of the stack
+    push    ecx                 ; return address
+
+    push    0FFC00000h          ; CLR_NAN_32
+    fld     dword ptr [esp]
+    add     esp, 4
 
     ret
+_ComStubReturnR4NaN@0 endp
 
-_ComCallPreStub@0 endp
+_ComStubReturnR8NaN@0 proc public
+    call    _ComPreStubGetLastStackBytes@0
+    mov     edx, eax
+
+    pop     ecx                 ; return address
+    add     esp, edx            ; pop bytes of the stack
+    push    ecx                 ; return address
+
+    push    0FFF80000h          ; high dword of CLR_NAN_64
+    push    000000000h          ; low dword of CLR_NAN_64
+    fld     qword ptr [esp]
+    add     esp, 8
+
+    ret
+_ComStubReturnR8NaN@0 endp
+
+_ComStubReturnVoid@0 proc public
+    call    _ComPreStubGetLastStackBytes@0
+    mov     edx, eax
+
+    pop     ecx                 ; return address
+    add     esp, edx            ; pop bytes of the stack
+    push    ecx                 ; return address
+
+    ret
+_ComStubReturnVoid@0 endp
+
 endif ; FEATURE_COMINTEROP
 
 ifdef FEATURE_READYTORUN

@@ -511,9 +511,6 @@ void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 bool isBackToBackJump(PCODE pCode);
 PCODE decodeBackToBackJump(PCODE pCode);
 
-extern "C" void setFPReturn(int fpSize, INT64 retVal);
-extern "C" void getFPReturn(int fpSize, INT64 *retval);
-
 struct HijackArgs
 {
 #ifdef UNIX_AMD64_ABI
