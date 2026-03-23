@@ -7,7 +7,7 @@ description: >
   bug", "create a regression test for issue #NNNNN", converting issue repro to
   xunit test. DO NOT USE FOR: non-JIT tests (use standard test patterns),
   debugging JIT issues without a known repro, performance benchmarks (use
-  performance-benchmark skill).
+  performance-investigation skill).
 ---
 
 # JIT Regression Test Extraction

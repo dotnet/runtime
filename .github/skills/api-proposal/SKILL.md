@@ -160,7 +160,7 @@ This:
 
 2. **All errors and warnings must be fixed** before proceeding to the draft phase.
 
-3. If the API change could affect performance (hot paths, allocations, new collection types), suggest running the **performance-benchmark** skill.
+3. If the API change could affect performance (hot paths, allocations, new collection types), suggest running the **performance-investigation** skill.
 
 4. Re-run tests after any review-driven changes to confirm nothing regressed.
 
