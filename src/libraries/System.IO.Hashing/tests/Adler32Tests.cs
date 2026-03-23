@@ -152,34 +152,55 @@ namespace System.IO.Hashing.Tests
         }
 
         [Theory]
-        [InlineData(5553, 0xAA40476Bu)]
-        [InlineData(11104, 0xA2778E87u)]
-        public void LargeInput_ExceedsNMax(int length, uint expected)
+        [InlineData(5553)]
+        [InlineData(11104)]
+        [InlineData(65536)]
+        public void LargeInput_ExceedsNMax(int length)
         {
-            byte[] data = new byte[length];
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = (byte)('a' + (i % 26));
-            }
-
-            Assert.Equal(expected, Adler32.HashToUInt32(data));
+            // This test ensures that Adler32 optimizations involving delayed modulo
+            // do not overflow a 32-bit intermediate at any point.
 
             var alg = new Adler32();
+
+            // The maximum possible value of an Adler32 checksum is 0xFFF0FFF0,
+            // which has both components just below the modulo value (0xFFF0 == 65520).
+            // A sequence of 65519 ones will generate this value.
+
+            byte[] primer = new byte[65519];
+            primer.AsSpan().Fill(1);
+            alg.Append(primer);
+
+            Assert.Equal(0xFFF0FFF0, alg.GetCurrentHashAsUInt32());
+
+            // Starting from an already-maxed checksum, a stream of 5553 max value
+            // bytes will overflow if not reduced by mod 65521 before the last byte.
+            // Of course, once overflowed, the result will be incorrect for any larger
+            // input as well.
+
+            byte[] data = new byte[length];
+            data.AsSpan().Fill(byte.MaxValue);
             alg.Append(data);
+
+            uint expected = ReferenceAdler32(data, 0xFFF0FFF0);
             Assert.Equal(expected, alg.GetCurrentHashAsUInt32());
         }
 
         /// <summary>
-        /// Tests a wide variety of lengths to exercise scalar, Vector128, Vector256, and Vector512
+        /// Tests a wide variety of lengths to exercise scalar, Vector128, and Vector256
         /// code paths as well as their transitions and tail handling.
         /// </summary>
         [Theory]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
         [InlineData(15)]
         [InlineData(16)]
         [InlineData(17)]
+        [InlineData(23)]
+        [InlineData(24)]
+        [InlineData(25)]
         [InlineData(31)]
         [InlineData(32)]
         [InlineData(33)]
@@ -221,25 +242,6 @@ namespace System.IO.Hashing.Tests
             var alg = new Adler32();
             alg.Append(data);
             Assert.Equal(expected, alg.GetCurrentHashAsUInt32());
-        }
-
-        /// <summary>
-        /// Tests with all-0xFF bytes, which maximizes accumulator values and stresses
-        /// overflow-safe behavior in the vectorized paths.
-        /// </summary>
-        [Theory]
-        [InlineData(32)]
-        [InlineData(64)]
-        [InlineData(128)]
-        [InlineData(256)]
-        [InlineData(5552)]
-        [InlineData(5553)]
-        public void AllMaxBytes_MatchesReference(int length)
-        {
-            byte[] data = new byte[length];
-            data.AsSpan().Fill(0xFF);
-
-            Assert.Equal(ReferenceAdler32(data), Adler32.HashToUInt32(data));
         }
 
         /// <summary>
