@@ -2953,9 +2953,9 @@ def write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options
                     num_minopts,
                     num_fullopts,
                     num_missed_base,
-                    num_missed_base / total_num_contexts * 100,
+                    num_missed_base / total_num_contexts * 100 if total_num_contexts != 0 else 100,
                     num_missed_diff,
-                    num_missed_diff / total_num_contexts * 100))
+                    num_missed_diff / total_num_contexts * 100 if total_num_contexts != 0 else 100))
 
             for t in rows:
                 write_row(*t)
@@ -4121,6 +4121,9 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
                 urls += get_files_from_path(mch_file, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mct", ".zip"]))
         elif item.lower().startswith("http:") or item.lower().startswith("https:"):  # probably could use urllib.parse to be more precise
             urls.append(item)
+        elif os.path.isdir(item):
+            # If it's a directory, we'll search recursively for .mch and .mc files in it
+            local_mch_files.extend(get_files_from_path(item, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mc"])))
         else:
             # Doesn't appear to be a UNC path (on Windows) or a URL, so just use it as-is.
             local_mch_files.append(item)
@@ -4149,7 +4152,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
         local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False, is_azure_storage=True, display_progress=not skip_progress)
 
     # Even though we might have downloaded MCT files, only return the set of MCH files.
-    local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch"])]
+    local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch", ".mc"])]
 
     return local_mch_files
 
@@ -4695,7 +4698,7 @@ def get_mch_files_for_replay(local_mch_paths, filters):
         # If there are specified filters, only run those matching files.
         mch_files += get_files_from_path(item,
                                          match_func=lambda path:
-                                             any(path.endswith(extension) for extension in [".mch"])
+                                             any(path.endswith(extension) for extension in [".mch", ".mc"])
                                              and ((filters is None) or any(filter_item.lower() in path for filter_item in filters)))
 
     if len(mch_files) == 0:
