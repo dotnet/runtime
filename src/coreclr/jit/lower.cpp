@@ -3663,79 +3663,6 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 
     GenTree* callTarget = call->gtCallType == CT_INDIRECT ? call->gtCallAddr : call->gtControlExpr;
 
-    if (call->IsVirtualStub())
-    {
-        // VSDs go through a resolver instead which skips double validation and
-        // indirection.
-        CallArg* vsdCellArg = call->gtArgs.FindWellKnownArg(WellKnownArg::VirtualStubCell);
-        CallArg* thisArg    = call->gtArgs.GetThisArg();
-
-        assert((vsdCellArg != nullptr) && (thisArg != nullptr));
-        assert(thisArg->GetNode()->OperIs(GT_PUTARG_REG));
-        LIR::Use thisArgUse(BlockRange(), &thisArg->GetNode()->AsOp()->gtOp1, thisArg->GetNode());
-        GenTree* thisArgClone = cloneUse(thisArgUse, true);
-
-        // The VSD cell is not needed for the original call when going through the resolver.
-        // It can be removed without further fixups because it has fixed ABI assignment.
-        call->gtArgs.RemoveUnsafe(vsdCellArg);
-        assert(vsdCellArg->GetNode()->OperIs(GT_PUTARG_REG));
-        // Also PUTARG_REG can be removed.
-        BlockRange().Remove(vsdCellArg->GetNode());
-        // The actual cell we need for the resolver.
-        GenTree* vsdCellArgNode = vsdCellArg->GetNode()->gtGetOp1();
-
-        GenTreeCall* resolve = m_compiler->gtNewHelperCallNode(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, TYP_I_IMPL);
-
-        // Use a placeholder for the cell since the cell is already inserted in
-        // LIR.
-        GenTree* vsdCellPlaceholder = m_compiler->gtNewZeroConNode(TYP_I_IMPL);
-        resolve->gtArgs.PushFront(m_compiler,
-                                  NewCallArg::Primitive(vsdCellPlaceholder).WellKnown(WellKnownArg::VirtualStubCell));
-
-        // 'this' arg clone is not inserted, so no need to use a placeholder for that.
-        resolve->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(thisArgClone));
-
-        m_compiler->fgMorphTree(resolve);
-
-        LIR::Range resolveRange = LIR::SeqTree(m_compiler, resolve);
-        GenTree*   resolveFirst = resolveRange.FirstNode();
-        GenTree*   resolveLast  = resolveRange.LastNode();
-        // Resolution comes with a null check, so it must happen after all
-        // arguments are evaluated, hence we insert it right before the call.
-        BlockRange().InsertBefore(call, std::move(resolveRange));
-
-        // Swap out the VSD cell argument.
-        LIR::Use vsdCellUse;
-        bool     gotUse = BlockRange().TryGetUse(vsdCellPlaceholder, &vsdCellUse);
-        assert(gotUse);
-        vsdCellUse.ReplaceWith(vsdCellArgNode);
-        vsdCellPlaceholder->SetUnusedValue();
-
-        // Now we can lower the resolver.
-        LowerRange(resolveFirst, resolveLast);
-
-        // That inserted new PUTARG nodes right before the call, so we need to
-        // legalize the existing call's PUTARG_REG nodes.
-        MovePutArgNodesUpToCall(call);
-
-        // Finally update the call target
-        call->gtCallType = CT_INDIRECT;
-        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-        call->gtCallAddr   = resolve;
-        call->gtCallCookie = nullptr;
-#ifdef FEATURE_READYTORUN
-        call->gtEntryPoint.addr       = nullptr;
-        call->gtEntryPoint.accessType = IAT_VALUE;
-#endif
-
-        if (callTarget != nullptr)
-        {
-            callTarget->SetUnusedValue();
-        }
-
-        callTarget = resolve;
-    }
-
     if (callTarget == nullptr)
     {
         assert((call->gtCallType != CT_INDIRECT) && (!call->IsVirtual() || call->IsVirtualStubRelativeIndir()));
@@ -7514,6 +7441,32 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
 GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 {
     assert(call->IsVirtualStub());
+
+    if (m_compiler->opts.ShouldUseDispatchHelpers() || m_compiler->opts.IsCFGEnabled())
+    {
+        // Convert from VSD indirect call (call [r11]) to a direct call to a
+        // dispatch helper (call RhpInterfaceDispatch).
+        // The dispatch cell is still passed via the VirtualStubCell arg in r11.
+
+        // For CT_INDIRECT calls (shared generic code with dictionary lookup),
+        // gtCallAddr is a tree node in the LIR that computes the dispatch cell address.
+        // We're converting to a direct call, so remove it from the LIR.
+        // The VirtualStubCell arg (a deep clone of this tree) still passes
+        // the dispatch cell address in the VSD param register.
+        if (call->gtCallType == CT_INDIRECT)
+        {
+            BlockRange().Remove(call->gtCallAddr, /* markOperandsUnused */ true);
+        }
+
+        CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT);
+        call->gtCallType                  = CT_USER_FUNC;
+        call->gtCallMethHnd               = nullptr;
+        call->gtDirectCallAddress         = helperLookup.addr;
+        call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+        call->gtCallMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
+
+        return nullptr;
+    }
 
     // An x86 JIT which uses full stub dispatch must generate only
     // the following stub dispatch calls:

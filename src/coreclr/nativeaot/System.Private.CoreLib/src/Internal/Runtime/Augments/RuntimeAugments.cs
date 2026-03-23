@@ -474,14 +474,6 @@ namespace Internal.Runtime.Augments
             return new RuntimeTypeHandle(typeHandle.ToMethodTable()->InterfaceMap[index]);
         }
 
-        public static IntPtr NewInterfaceDispatchCell(RuntimeTypeHandle interfaceTypeHandle, int slotNumber)
-        {
-            IntPtr cell = RuntimeImports.RhNewInterfaceDispatchCell(interfaceTypeHandle.ToMethodTable(), slotNumber);
-            if (cell == IntPtr.Zero)
-                throw new OutOfMemoryException();
-            return cell;
-        }
-
         [Intrinsic]
         public static RuntimeTypeHandle GetCanonType()
         {

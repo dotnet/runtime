@@ -258,6 +258,8 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlagNumeric(RELATIVE_CODE_RELOCS, 29);
     AddFlagNumeric(SOFTFP_ABI, 30);
 
+    AddFlag(USE_DISPATCH_HELPERS);
+
     // "Extra jit flag" support
     //
     AddFlagNumeric(HAS_PGO, EXTRA_JIT_FLAGS::HAS_PGO);

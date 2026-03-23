@@ -2405,7 +2405,7 @@ HCIMPLEND_RAW
 EXTERN_C void JIT_ValidateIndirectCall();
 EXTERN_C void JIT_DispatchIndirectCall();
 
-EXTERN_C void JIT_InterfaceLookupForSlot();
+EXTERN_C void JIT_InterfaceDispatchForSlot();
 
 //========================================================================
 //

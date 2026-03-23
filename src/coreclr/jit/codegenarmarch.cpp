@@ -3169,21 +3169,14 @@ void CodeGen::genCall(GenTreeCall* call)
             }
             else
 #endif // TARGET_ARM
-#ifdef TARGET_ARM64
-                if (call->IsHelperCall(m_compiler, CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
-            {
-                returnReg = genFirstRegNumFromMask(RBM_INTERFACELOOKUP_FOR_SLOT_RETURN);
-            }
-            else
-#endif
                 if (varTypeUsesFloatArgReg(returnType))
-            {
-                returnReg = REG_FLOATRET;
-            }
-            else
-            {
-                returnReg = REG_INTRET;
-            }
+                {
+                    returnReg = REG_FLOATRET;
+                }
+                else
+                {
+                    returnReg = REG_INTRET;
+                }
 
             if (call->GetRegNum() != returnReg)
             {
@@ -3445,6 +3438,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 regNumber tmpReg = internalRegisters.GetSingle(call);
                 instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tmpReg, (ssize_t)params.addr);
                 params.callType = EC_INDIR_R;
+                params.addr     = nullptr;
                 params.ireg     = tmpReg;
                 genEmitCallWithCurrentGC(params);
             }
