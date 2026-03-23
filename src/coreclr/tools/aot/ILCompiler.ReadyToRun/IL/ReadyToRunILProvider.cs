@@ -196,9 +196,13 @@ namespace Internal.IL
         {
             bool regularCrossModuleInlineable = (!_compilationModuleGroup.VersionsWithMethodBody(method)
                     && _compilationModuleGroup.CrossModuleInlineable(method));
-            bool requiredCrossModuleInliningForAsync = (NeedsTaskReturningThunk(method) || NeedsAsyncThunk(method) || method is AsyncResumptionStub)
+            bool requiredCrossModuleInliningForAsync = (NeedsTaskReturningThunk(method) || NeedsAsyncThunk(method))
                      && !_compilationModuleGroup.VersionsWithModule(method.Context.SystemModule);
-            if ((regularCrossModuleInlineable || requiredCrossModuleInliningForAsync)
+            // AsyncResumptionStub always uses synthetic faux IL with tokens that reference
+            // ParameterizedType/InstantiatedType. These tokens must be wrapped in manifest
+            // module tokens regardless of whether CoreLib is in the version bubble.
+            bool resumptionStubNeedsTokens = method is AsyncResumptionStub;
+            if ((regularCrossModuleInlineable || requiredCrossModuleInliningForAsync || resumptionStubNeedsTokens)
                 && !_manifestModuleWrappedMethods.ContainsKey(method))
             {
                 return true;
