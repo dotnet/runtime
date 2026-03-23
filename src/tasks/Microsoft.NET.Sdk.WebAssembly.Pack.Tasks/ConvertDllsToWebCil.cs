@@ -30,9 +30,10 @@ public class ConvertDllsToWebcil : Task
     /// <summary>
     /// Non-DLL files from shared locations (runtime pack, NuGet cache) that were not
     /// converted to webcil. These are candidates for Framework SourceType materialization.
-    /// When IsEnabled is false, all candidates (DLL and non-DLL) appear here.
-    /// Items with WasmNativeBuildOutput metadata (per-project native build outputs)
-    /// are excluded — they're already unique per project.
+    /// When <see cref="IsEnabled"/> is true, items with WasmNativeBuildOutput metadata
+    /// (per-project native build outputs) are excluded — they're already unique per project.
+    /// When <see cref="IsEnabled"/> is false, all candidates (DLL and non-DLL), including
+    /// those with WasmNativeBuildOutput metadata, appear here with no additional filtering.
     /// </summary>
     [Output]
     public ITaskItem[] PassThroughCandidates { get; set; }
