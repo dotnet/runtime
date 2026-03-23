@@ -2947,15 +2947,15 @@ def write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options
                         for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs]
 
             def write_row(name, diffed_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff, total_num_contexts):
-                write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({:1.2f}%)|{:,d} ({:1.2f}%)|\n".format(
+                write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({}%)|{:,d} ({}%)|\n".format(
                     name,
                     diffed_contexts,
                     num_minopts,
                     num_fullopts,
                     num_missed_base,
-                    num_missed_base / total_num_contexts * 100 if total_num_contexts != 0 else 100,
+                    "{:1.2f}".format(num_missed_base / total_num_contexts * 100) if total_num_contexts != 0 else "N/A",
                     num_missed_diff,
-                    num_missed_diff / total_num_contexts * 100 if total_num_contexts != 0 else 100))
+                    "{:1.2f}".format(num_missed_diff / total_num_contexts * 100) if total_num_contexts != 0 else "N/A"))
 
             for t in rows:
                 write_row(*t)
@@ -4698,7 +4698,7 @@ def get_mch_files_for_replay(local_mch_paths, filters):
         # If there are specified filters, only run those matching files.
         mch_files += get_files_from_path(item,
                                          match_func=lambda path:
-                                             any(path.endswith(extension) for extension in [".mch", ".mc"])
+                                             any(path.lower().endswith(extension) for extension in [".mch", ".mc"])
                                              and ((filters is None) or any(filter_item.lower() in path for filter_item in filters)))
 
     if len(mch_files) == 0:
