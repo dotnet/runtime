@@ -23,7 +23,7 @@ namespace Mono.Linker.Tests
         public void TestSignatureParsing(TypeSystemEntity member, MemberAssertionsCollector.CustomAttribute customAttribute)
         {
             var attributeString = (string)customAttribute.Value.FixedArguments[0].Value!;
-            switch (customAttribute.AttributeType.Name)
+            switch (customAttribute.AttributeType.GetName())
             {
                 case nameof(ExpectExactlyResolvedDocumentationSignatureAttribute):
                     CheckUniqueParsedString(member, attributeString);
@@ -105,7 +105,7 @@ namespace Mono.Linker.Tests
             return entity switch
             {
                 MethodDesc method => (method.OwningType as MetadataType)?.Module,
-                FieldDesc field => (field.OwningType as MetadataType)?.Module,
+                FieldDesc field => field.OwningType?.Module,
                 MetadataType type => type.Module,
                 PropertyPseudoDesc property => property.OwningType.Module,
                 EventPseudoDesc @event => @event.OwningType.Module,

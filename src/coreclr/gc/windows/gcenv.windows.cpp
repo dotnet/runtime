@@ -19,6 +19,9 @@ GCSystemInfo g_SystemInfo;
 
 static bool g_SeLockMemoryPrivilegeAcquired = false;
 
+// The cached total number of CPUs that can be used in the OS.
+uint32_t g_totalCpuCount = 0;
+
 static AffinitySet g_processAffinitySet;
 
 namespace {
@@ -1091,7 +1094,21 @@ int64_t GCToOSInterface::QueryPerformanceFrequency()
 //  Time stamp in milliseconds
 uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 {
-    return ::GetTickCount64();
+    // GetTickCount64 uses fixed resolution of 10-16ms for backward compatibility. Use
+    // QueryUnbiasedInterruptTime instead which becomes more accurate if the underlying system
+    // resolution is improved. This helps responsiveness in the case an app is trying to opt
+    // into things like multimedia scenarios and additionally does not include "bias" from time
+    // the system is spent asleep or in hibernation.
+
+    const ULONGLONG TicksPerMillisecond = 10000;
+
+    ULONGLONG unbiasedTime;
+    if (!::QueryUnbiasedInterruptTime(&unbiasedTime))
+    {
+        assert(false && "Failed to query unbiased interrupt time");
+    }
+
+    return (uint64_t)(unbiasedTime / TicksPerMillisecond);
 }
 
 // Gets the total number of processors on the machine, not taking
@@ -1100,14 +1117,17 @@ uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 //  Number of processors on the machine
 uint32_t GCToOSInterface::GetTotalProcessorCount()
 {
+    if (g_totalCpuCount != 0)
+        return g_totalCpuCount;
     if (CanEnableGCCPUGroups())
     {
-        return g_nProcessors;
+        g_totalCpuCount = g_nProcessors;
     }
     else
     {
-        return g_SystemInfo.dwNumberOfProcessors;
+        g_totalCpuCount = g_SystemInfo.dwNumberOfProcessors;
     }
+    return g_totalCpuCount;
 }
 
 bool GCToOSInterface::CanEnableGCNumaAware()

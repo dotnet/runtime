@@ -73,7 +73,6 @@ export function coerceNull<T extends ManagedPointer | NativePointer> (ptr: T | n
 
 // when adding new fields, please consider if it should be impacting the config hash. If not, please drop it in the getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
-    linkerEnabled?: boolean,
     assets?: AssetEntryInternal[],
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
@@ -83,7 +82,7 @@ export type MonoConfigInternal = MonoConfig & {
     interopCleanupOnExit?: boolean
     dumpThreadsOnNonZeroExit?: boolean
     logExitCode?: boolean
-    forwardConsoleLogsToWS?: boolean,
+    forwardConsole?: boolean,
     asyncFlushOnExit?: boolean
     exitOnUnhandledError?: boolean
     loadAllSatelliteResources?: boolean
@@ -109,7 +108,7 @@ export type RunArguments = {
 export interface AssetEntryInternal extends AssetEntry {
     // this could have multiple values in time, because of re-try download logic
     pendingDownloadInternal?: LoadingResource
-    noCache?: boolean
+    cache?: RequestCache
     useCredentials?: boolean
     isCore?: boolean
 }
@@ -128,9 +127,9 @@ export type LoaderHelpers = {
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
     loadedAssemblies: string[],
-    scriptDirectory: string
-    scriptUrl: string
-    modulesUniqueQuery?: string
+    scriptDirectory: string,
+    scriptUrl: string,
+    modulesUniqueQuery?: string,
     preferredIcuAsset?: string | null,
     workerNextNumber: number,
 
@@ -219,8 +218,6 @@ export type RuntimeHelpers = {
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     afterInstantiateWasm: PromiseAndController<void>,
-    beforePreInit: PromiseAndController<void>,
-    afterPreInit: PromiseAndController<void>,
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
     afterMonoStarted: PromiseAndController<void>,
@@ -244,7 +241,7 @@ export type RuntimeHelpers = {
     utf8ToString: (ptr: CharPtr) => string,
     mono_background_exec: () => void,
     mono_wasm_ds_exec: () => void,
-    mono_wasm_process_current_pid: () => number,
+    SystemJS_GetCurrentProcessId: () => number,
 }
 
 export type DiagnosticHelpers = {
@@ -308,7 +305,6 @@ export type GlobalObjects = {
 };
 export type EmscriptenReplacements = {
     fetch: any,
-    require: any,
     modulePThread: PThreadLibrary | undefined | null
     scriptDirectory: string;
     ENVIRONMENT_IS_WORKER: boolean;
@@ -441,7 +437,6 @@ export declare interface EmscriptenModuleInternal {
     ENVIRONMENT_IS_PTHREAD?: boolean;
     FS: any;
     wasmModule: WebAssembly.Instance | null;
-    ready: Promise<unknown>;
     wasmExports: any;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;

@@ -10,7 +10,7 @@ steps:
   displayName: Enable python venv
 
 # Ensure the Python azure-storage-blob package is installed before doing the upload.
-- script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+- script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.27.0 --force-reinstall && $(PipScript) install azure.identity==1.25.1 --force-reinstall
   displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
 
 - task: AzureCLI@2

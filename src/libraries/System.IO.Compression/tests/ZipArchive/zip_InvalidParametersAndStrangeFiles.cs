@@ -222,23 +222,12 @@ namespace System.IO.Compression.Tests
 
             ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
 
+            Stream source = await OpenEntryStream(async, e);
             using (MemoryStream ms = new MemoryStream())
             {
-                Stream source = await OpenEntryStream(async, e);
-
-                await source.CopyToAsync(ms);
-                Assert.Equal(e.Length, ms.Length);     // Only allow to decompress up to uncompressed size
-                byte[] buffer = new byte[s_bufferSize];
-                Assert.Equal(0, await source.ReadAsync(buffer, 0, buffer.Length)); // shouldn't be able read more
-                ms.Seek(0, SeekOrigin.Begin);
-                int read;
-                while ((read = await ms.ReadAsync(buffer, 0, buffer.Length)) != 0)
-                { // No need to do anything, just making sure all bytes readable
-                }
-                Assert.Equal(ms.Position, ms.Length); // all bytes must be read
-
-                await DisposeStream(async, source);
+                await Assert.ThrowsAsync<InvalidDataException>(() => source.CopyToAsync(ms));
             }
+            await DisposeStream(async, source);
 
             await DisposeZipArchive(async, archive);
         }
@@ -255,27 +244,18 @@ namespace System.IO.Compression.Tests
             ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Read);
 
             ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
-            using (MemoryStream ms = new MemoryStream())
-            {
-                Stream source = await OpenEntryStream(async, e);
+            Stream source = await OpenEntryStream(async, e);
 
-                byte[] buffer = new byte[s_bufferSize];
+            byte[] buffer = new byte[s_bufferSize];
+            await Assert.ThrowsAsync<InvalidDataException>(async () =>
+            {
                 int read;
                 while ((read = await source.ReadAsync(buffer, 0, buffer.Length)) != 0)
                 {
-                    await ms.WriteAsync(buffer, 0, read);
                 }
-                Assert.Equal(e.Length, ms.Length);     // Only allow to decompress up to uncompressed size
-                Assert.Equal(0, await source.ReadAsync(buffer, 0, s_bufferSize)); // shouldn't be able read more
-                ms.Seek(0, SeekOrigin.Begin);
-                while ((read = await ms.ReadAsync(buffer, 0, buffer.Length)) != 0)
-                { // No need to do anything, just making sure all bytes readable from output stream
-                }
-                Assert.Equal(ms.Position, ms.Length); // all bytes must be read
+            });
 
-                await DisposeStream(async, source);
-            }
-
+            await DisposeStream(async, source);
             await DisposeZipArchive(async, archive);
         }
 
@@ -293,24 +273,28 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
             Stream source = await OpenEntryStream(async, e);
 
-            byte[] buffer = new byte[e.Length + 20];
+            // Allocate a read window plus a sentinel tail. Each iteration reads into only
+            // the window portion [0, s_bufferSize), so the tail [s_bufferSize, end) must
+            // never be touched regardless of how many iterations the loop takes.
+            const int sentinelSize = 64;
+            byte[] buffer = new byte[s_bufferSize + sentinelSize];
             Array.Fill<byte>(buffer, 0xDE);
-            int read;
-            int offset = 0;
-            int length = buffer.Length;
 
-            while ((read = await source.ReadAsync(buffer, offset, length)) != 0)
+            await Assert.ThrowsAsync<InvalidDataException>(async () =>
             {
-                offset += read;
-                length -= read;
-            }
-            for (int i = offset; i < buffer.Length; i++)
+                int read;
+                while ((read = await source.ReadAsync(buffer, 0, s_bufferSize)) != 0)
+                {
+                }
+            });
+
+            // The sentinel tail must be entirely untouched.
+            for (int i = s_bufferSize; i < buffer.Length; i++)
             {
                 Assert.Equal(0xDE, buffer[i]);
             }
 
             await DisposeStream(async, source);
-
             await DisposeZipArchive(async, archive);
         }
 
@@ -326,22 +310,12 @@ namespace System.IO.Compression.Tests
             ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Read);
 
             ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+            Stream source = await OpenEntryStream(async, e);
             using (var ms = new MemoryStream())
             {
-                Stream source = await OpenEntryStream(async, e);
-
-                await source.CopyToAsync(ms);
-                Assert.Equal(e.Length, ms.Length);     // Only allow to decompress up to uncompressed size
-                ms.Seek(0, SeekOrigin.Begin);
-                int read;
-                byte[] buffer = new byte[s_bufferSize];
-                while ((read = await ms.ReadAsync(buffer, 0, buffer.Length)) != 0)
-                { // No need to do anything, just making sure all bytes readable
-                }
-                Assert.Equal(ms.Position, ms.Length); // all bytes must be read
-
-                await DisposeStream(async, source);
+                await Assert.ThrowsAsync<InvalidDataException>(() => source.CopyToAsync(ms));
             }
+            await DisposeStream(async, source);
 
             await DisposeZipArchive(async, archive);
         }
@@ -384,22 +358,18 @@ namespace System.IO.Compression.Tests
             ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Read);
 
             ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
-            using (var ms = new MemoryStream())
-            {
-                Stream source = await OpenEntryStream(async, e);
+            Stream source = await OpenEntryStream(async, e);
 
-                byte[] buffer = new byte[s_bufferSize];
+            byte[] buffer = new byte[s_bufferSize];
+            await Assert.ThrowsAsync<InvalidDataException>(async () =>
+            {
                 int read;
                 while ((read = await source.ReadAsync(buffer, 0, buffer.Length)) != 0)
                 {
-                    await ms.WriteAsync(buffer, 0, read);
                 }
-                Assert.Equal(e.Length, ms.Length);     // Only allow to decompress up to uncompressed size
-                Assert.Equal(0, await source.ReadAsync(buffer, 0, buffer.Length)); // Shouldn't be readable more
+            });
 
-                await DisposeStream(async, source);
-            }
-
+            await DisposeStream(async, source);
             await DisposeZipArchive(async, archive);
         }
 
@@ -433,9 +403,6 @@ namespace System.IO.Compression.Tests
         public static async Task UpdateZipArchive_AppendTo_CorruptedFileEntry(bool async)
         {
             MemoryStream stream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
-            int updatedUncompressedLength = 1310976;
-            string append = "\r\n\r\nThe answer my friend, is blowin' in the wind.";
-            byte[] data = Encoding.ASCII.GetBytes(append);
 
             int nameOffset = PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
             PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too
@@ -443,34 +410,8 @@ namespace System.IO.Compression.Tests
             ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Update, true);
 
             ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
-            long oldCompressedSize = e.CompressedLength;
-            Stream source = await OpenEntryStream(async, e);
 
-            Assert.Equal(updatedUncompressedLength, source.Length);
-            source.Seek(0, SeekOrigin.End);
-            source.Write(data, 0, data.Length);
-            Assert.Equal(updatedUncompressedLength + data.Length, source.Length);
-
-            await DisposeStream(async, source);
-
-            await DisposeZipArchive(async, archive);
-
-            ZipArchive modifiedArchive = await CreateZipArchive(async, stream, ZipArchiveMode.Read);
-
-            e = modifiedArchive.GetEntry(s_tamperedFileName);
-
-            source = await OpenEntryStream(async, e);
-            using (var ms = new MemoryStream())
-            {
-                await source.CopyToAsync(ms, s_bufferSize);
-                Assert.Equal(updatedUncompressedLength + data.Length, ms.Length);
-                ms.Seek(updatedUncompressedLength, SeekOrigin.Begin);
-                byte[] read = new byte[data.Length];
-                await ms.ReadAsync(read, 0, data.Length);
-                Assert.Equal(append, Encoding.ASCII.GetString(read));
-            }
-            await DisposeStream(async, source);
-            Assert.True(oldCompressedSize > e.CompressedLength); // old compressed size must be reduced by Uncomressed size limit
+            await Assert.ThrowsAsync<InvalidDataException>(() => OpenEntryStream(async, e));
 
             await DisposeZipArchive(async, archive);
         }
@@ -480,9 +421,6 @@ namespace System.IO.Compression.Tests
         public static async Task UpdateZipArchive_OverwriteCorruptedEntry(bool async)
         {
             MemoryStream stream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
-            int updatedUncompressedLength = 1310976;
-            string overwrite = "\r\n\r\nThe answer my friend, is blowin' in the wind.";
-            byte[] data = Encoding.ASCII.GetBytes(overwrite);
 
             int nameOffset = PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
             PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too
@@ -490,34 +428,8 @@ namespace System.IO.Compression.Tests
             ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Update, true);
 
             ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
-            string fileName = zmodified(Path.Combine("overwrite", "first.txt"));
-            var file = FileData.GetFile(fileName);
 
-            using (var ms = new MemoryStream(data))
-            {
-                Stream es = await OpenEntryStream(async, e);
-
-                Assert.Equal(updatedUncompressedLength, es.Length);
-                es.SetLength(0);
-                await ms.CopyToAsync(es, s_bufferSize);
-                Assert.Equal(data.Length, es.Length);
-
-                await DisposeStream(async, es);
-            }
-
-            await DisposeZipArchive(async, archive);
-
-            ZipArchive modifiedArchive = await CreateZipArchive(async, stream, ZipArchiveMode.Read);
-
-            e = modifiedArchive.GetEntry(s_tamperedFileName);
-            Stream s = await OpenEntryStream(async, e);
-            using (var ms = new MemoryStream())
-            {
-                await s.CopyToAsync(ms, s_bufferSize);
-                Assert.Equal(data.Length, ms.Length);
-                Assert.Equal(overwrite, Encoding.ASCII.GetString(ms.GetBuffer(), 0, data.Length));
-            }
-            await DisposeStream(async, s);
+            await Assert.ThrowsAsync<InvalidDataException>(() => OpenEntryStream(async, e));
 
             await DisposeZipArchive(async, archive);
         }
@@ -545,12 +457,12 @@ namespace System.IO.Compression.Tests
 
             ZipArchive modifiedArchive = await CreateZipArchive(async, stream, ZipArchiveMode.Read);
 
+            // CRC validation should detect corruption in the tampered entry
             e = modifiedArchive.GetEntry(s_tamperedFileName);
             Stream s = await OpenEntryStream(async, e);
             using (var ms = new MemoryStream())
             {
-                await s.CopyToAsync(ms, s_bufferSize);
-                Assert.Equal(e.Length, ms.Length);  // tampered file should read up to uncompressed size
+                await Assert.ThrowsAsync<InvalidDataException>(() => s.CopyToAsync(ms, s_bufferSize));
             }
             await DisposeStream(async, s);
 
@@ -559,7 +471,6 @@ namespace System.IO.Compression.Tests
             Assert.Equal(addedEntry.Length, file.Length);
 
             s = await OpenEntryStream(async, addedEntry);
-            // Make sure file content added correctly
             byte[] buffer1 = new byte[1024];
             byte[] buffer2 = new byte[1024];
             file.Seek(0, SeekOrigin.Begin);
@@ -572,7 +483,7 @@ namespace System.IO.Compression.Tests
 
             await DisposeStream(async, s);
 
-            await DisposeZipArchive(async, archive);
+            await DisposeZipArchive(async, modifiedArchive);
         }
 
         private static int PatchDataRelativeToFileName(byte[] fileNameInBytes, MemoryStream packageStream, int distance, int start = 0)
@@ -644,9 +555,20 @@ namespace System.IO.Compression.Tests
         public static async Task ZipArchive_InvalidEntryTable(string zipname, bool async)
         {
             string filename = bad(zipname);
-            await using (ZipArchive archive = await CreateZipArchive(async, await StreamHelpers.CreateTempCopyStream(filename), ZipArchiveMode.Read))
+            using (var stream = await StreamHelpers.CreateTempCopyStream(filename))
             {
-                Assert.Throws<InvalidDataException>(() => archive.Entries[0]);
+                if (async)
+                {
+                    // as CreateAsync reads the entry table immediately, it throws immediately instead of on accessing .Entries
+                    await Assert.ThrowsAsync<InvalidDataException>(() => CreateZipArchive(async, stream, ZipArchiveMode.Read));
+                }
+                else
+                {
+                    await using (ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Read))
+                    {
+                        Assert.Throws<InvalidDataException>(() => archive.Entries[0]);
+                    }
+                }
             }
         }
 
@@ -813,14 +735,13 @@ namespace System.IO.Compression.Tests
         /// 2. EmptyFileCompressedWrongSize has
         /// Deflate 0x08, _uncompressedSize 0, _compressedSize 4, compressed data: 0xBAAD0300 (just bad data)
         /// ZipArchive is not expected to make any changes to the compression method of an archive entry unless
-        /// it's been changed. If it has been changed, ZipArchive is expected to change compression method to
-        /// Stored (0x00) and ignore "bad" compressed size
+        /// it's been modified. Opening an entry stream without writing does not trigger a rewrite.
         /// </summary>
         [Theory]
         [MemberData(nameof(EmptyFiles))]
         public async Task ReadArchive_WithEmptyDeflatedFile(byte[] fileBytes, bool async)
         {
-            using (var testStream = new MemoryStream(fileBytes))
+            using (var testStream = new MemoryStream(fileBytes.ToArray()))
             {
                 const string ExpectedFileName = "xl/customProperty2.bin";
 
@@ -834,37 +755,50 @@ namespace System.IO.Compression.Tests
                 byte[] fileContent = testStream.ToArray();
 
                 // compression method should not have changed
-                Assert.Equal(firstEntryCompressionMethod, fileBytes[8]);
+                Assert.Equal(firstEntryCompressionMethod, fileContent[8]);
 
                 testStream.Seek(0, SeekOrigin.Begin);
                 // second attempt: open archive with zero-length file that is compressed (Deflate = 0x8)
                 zip = await CreateZipArchive(async, testStream, ZipArchiveMode.Update, leaveOpen: true);
 
                 var zipEntryStream = await OpenEntryStream(async, zip.Entries[0]);
-                // dispose after opening an entry will rewrite the archive
+                // Opening and disposing an entry stream without writing does not mark the archive as modified,
+                // so no rewrite will occur
                 await DisposeStream(async, zipEntryStream);
 
                 await DisposeZipArchive(async, zip);
 
                 fileContent = testStream.ToArray();
 
-                // compression method should change to "uncompressed" (Stored = 0x0)
-                Assert.Equal(0, fileContent[8]);
+                // compression method should remain unchanged since we didn't write anything
+                Assert.Equal(firstEntryCompressionMethod, fileContent[8]);
 
-                // extract and check the file. should stay empty.
+                testStream.Seek(0, SeekOrigin.Begin);
+                // extract and check the file
                 zip = await CreateZipArchive(async, testStream, ZipArchiveMode.Update);
 
                 ZipArchiveEntry entry = zip.GetEntry(ExpectedFileName);
+                // The entry retains its original properties since it was never modified
                 Assert.Equal(0, entry.Length);
-                Assert.Equal(0, entry.CompressedLength);
-                Stream entryStream = await OpenEntryStream(async, entry);
-                Assert.Equal(0, entryStream.Length);
-                await DisposeStream(async, entryStream);
 
+                var extractedEntryStream = await OpenEntryStream(async, entry);
+                byte[] buffer = new byte[1];
+                int bytesRead;
+                if (async)
+                {
+                    bytesRead = await extractedEntryStream.ReadAsync(buffer, 0, buffer.Length);
+                }
+                else
+                {
+                    bytesRead = extractedEntryStream.Read(buffer, 0, buffer.Length);
+                }
+
+                Assert.Equal(0, bytesRead);
+
+                await DisposeStream(async, extractedEntryStream);
                 await DisposeZipArchive(async, zip);
             }
         }
-
         /// <summary>
         /// Opens an empty file that has a 64KB EOCD comment.
         /// Adds two 64KB text entries. Verifies they can be read correctly.
@@ -1484,24 +1418,24 @@ namespace System.IO.Compression.Tests
             // Create mode
             using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: Encoding.UTF8))
             {
-                using MemoryStream normalZipStream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
-                normalZipStream.Position = 0;
+                using MemoryStream asyncZipStream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+                asyncZipStream.Position = 0;
 
                 // Note this is not using NoAsyncCallsStream, so it can be opened in async mode
-                await using (ZipArchive normalZipArchive = await ZipArchive.CreateAsync(normalZipStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
+                await using (ZipArchive asyncZipArchive = await ZipArchive.CreateAsync(asyncZipStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
                 {
-                    var normalZipEntries = normalZipArchive.Entries;
+                    var asyncZipEntries = asyncZipArchive.Entries;
 
-                    foreach (ZipArchiveEntry normalEntry in normalZipEntries)
+                    foreach (ZipArchiveEntry asyncEntry in asyncZipEntries)
                     {
-                        ZipArchiveEntry newEntry = archive.CreateEntry(normalEntry.FullName);
+                        ZipArchiveEntry newEntry = archive.CreateEntry(asyncEntry.FullName);
                         using (Stream newEntryStream = newEntry.Open())
                         {
                             // Note the parent archive is not using NoAsyncCallsStream, so it can be opened in async mode
-                            await using (Stream normalEntryStream = await normalEntry.OpenAsync())
+                            await using (Stream asyncEntryStream = await asyncEntry.OpenAsync())
                             {
-                                // Note the parent archive is not using NoAsyncCallsStream, so it can be copied in async mode
-                                await normalEntryStream.CopyToAsync(newEntryStream);
+                                // The entry needs to be copied in sync mode as the destination archive does not support async writes
+                                asyncEntryStream.CopyTo(newEntryStream);
                             }
                         }
                     }
@@ -1515,11 +1449,7 @@ namespace System.IO.Compression.Tests
             {
                 _ = archive.Comment;
 
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 var entries = archive.Entries;
-                s.IsRestrictionEnabled = true;
-
                 foreach (var entry in entries)
                 {
                     _ = archive.GetEntry(entry.Name);
@@ -1550,11 +1480,7 @@ namespace System.IO.Compression.Tests
             // Update mode
             using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Update, leaveOpen: false, entryNameEncoding: Encoding.UTF8))
             {
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 ZipArchiveEntry entryToDelete = archive.Entries[0];
-                s.IsRestrictionEnabled = true;
-
                 entryToDelete.Delete();
 
                 ZipArchiveEntry entry = archive.CreateEntry("mynewentry.txt");
@@ -1593,8 +1519,8 @@ namespace System.IO.Compression.Tests
                             // Note the parent archive is not using NoSyncCallsStream, so it can be opened in sync mode
                             using (Stream normalEntryStream = normalEntry.Open())
                             {
-                                // Note the parent archive is not using NoSyncCallsStream, so it can be copied in sync mode
-                                normalEntryStream.CopyTo(newEntryStream);
+                                // The entry needs to be copied in async mode as the destination archive does not support sync writes
+                                await normalEntryStream.CopyToAsync(newEntryStream);
                             }
                         }
                     }
@@ -1608,11 +1534,7 @@ namespace System.IO.Compression.Tests
             {
                 _ = archive.Comment;
 
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 var entries = archive.Entries;
-                s.IsRestrictionEnabled = true;
-
                 foreach (var entry in entries)
                 {
                     _ = archive.GetEntry(entry.Name);
@@ -1642,11 +1564,7 @@ namespace System.IO.Compression.Tests
 
             await using (ZipArchive archive = await ZipArchive.CreateAsync(s, ZipArchiveMode.Update, leaveOpen: false, entryNameEncoding: Encoding.UTF8))
             {
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 ZipArchiveEntry entryToDelete = archive.Entries[0];
-                s.IsRestrictionEnabled = true;
-
                 entryToDelete.Delete(); // Delete is async only
 
                 ZipArchiveEntry entry = archive.CreateEntry("mynewentry.txt");
@@ -2194,5 +2112,292 @@ namespace System.IO.Compression.Tests
             // comment length
             0x00, 0x00
         };
+
+        public static IEnumerable<object[]> OpenWithFileAccess_StreamCapabilities_Data()
+        {
+            foreach (bool async in new[] { true, false })
+            {
+                // (async, mode, access, createNewEntry, expectedCanRead, expectedCanWrite, expectedCanSeek, expectedLength)
+                // Read mode - only Read access allowed
+                yield return new object[] { async, ZipArchiveMode.Read, FileAccess.Read, false, true, false, null, null };
+                // Create mode - Write and ReadWrite allowed (both result in write-only stream)
+                yield return new object[] { async, ZipArchiveMode.Create, FileAccess.Write, true, false, true, null, null };
+                yield return new object[] { async, ZipArchiveMode.Create, FileAccess.ReadWrite, true, false, true, null, null };
+                // Update mode - all access modes allowed
+                yield return new object[] { async, ZipArchiveMode.Update, FileAccess.Read, false, true, false, null, null };
+                yield return new object[] { async, ZipArchiveMode.Update, FileAccess.Write, true, true, true, true, 0L };
+                yield return new object[] { async, ZipArchiveMode.Update, FileAccess.ReadWrite, false, true, true, true, null };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(OpenWithFileAccess_StreamCapabilities_Data))]
+        public static async Task OpenWithFileAccess_StreamCapabilities(
+            bool async, ZipArchiveMode mode, FileAccess access, bool createNewEntry,
+            bool expectedCanRead, bool expectedCanWrite, bool? expectedCanSeek, long? expectedLength)
+        {
+            MemoryStream ms = mode == ZipArchiveMode.Create
+                ? new MemoryStream()
+                : await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+
+            ZipArchive archive = await CreateZipArchive(async, ms, mode, leaveOpen: true);
+
+            ZipArchiveEntry entry = createNewEntry
+                ? archive.CreateEntry("new_entry.txt")
+                : archive.GetEntry("first.txt");
+            Assert.NotNull(entry);
+
+            using Stream stream = async ? await entry.OpenAsync(access) : entry.Open(access);
+            Assert.Equal(expectedCanRead, stream.CanRead);
+            Assert.Equal(expectedCanWrite, stream.CanWrite);
+            if (expectedCanSeek.HasValue)
+                Assert.Equal(expectedCanSeek.Value, stream.CanSeek);
+            if (expectedLength.HasValue)
+                Assert.Equal(expectedLength.Value, stream.Length);
+
+            await DisposeZipArchive(async, archive);
+            ms.Dispose();
+        }
+
+        public static IEnumerable<object[]> OpenWithFileAccess_IncompatibleAccess_Throws_Data()
+        {
+            foreach (bool async in new[] { true, false })
+            {
+                // Read mode: Write and ReadWrite are not allowed
+                yield return new object[] { async, ZipArchiveMode.Read, FileAccess.Write };
+                yield return new object[] { async, ZipArchiveMode.Read, FileAccess.ReadWrite };
+                // Create mode: Read is not allowed
+                yield return new object[] { async, ZipArchiveMode.Create, FileAccess.Read };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(OpenWithFileAccess_IncompatibleAccess_Throws_Data))]
+        public static async Task OpenWithFileAccess_IncompatibleAccess_Throws(bool async, ZipArchiveMode mode, FileAccess access)
+        {
+            MemoryStream ms = mode == ZipArchiveMode.Create
+                ? new MemoryStream()
+                : await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+
+            ZipArchive archive = await CreateZipArchive(async, ms, mode, leaveOpen: true);
+
+            ZipArchiveEntry entry = mode == ZipArchiveMode.Create
+                ? archive.CreateEntry("test.txt")
+                : archive.GetEntry("first.txt");
+            Assert.NotNull(entry);
+
+            Assert.Throws<InvalidOperationException>(() => entry.Open(access));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(access));
+
+            await DisposeZipArchive(async, archive);
+            ms.Dispose();
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_UpdateMode_WriteAccess_CanWriteAndReadBack(bool async)
+        {
+            const string entryName = "new_entry.txt";
+            const string testContent = "Hello, World!";
+            byte[] testData = System.Text.Encoding.UTF8.GetBytes(testContent);
+
+            using MemoryStream ms = new MemoryStream();
+
+            // Create archive with an entry using FileAccess.Write
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry(entryName);
+
+            using (Stream stream = async ? await entry.OpenAsync(FileAccess.Write) : entry.Open(FileAccess.Write))
+            {
+                stream.Write(testData, 0, testData.Length);
+            }
+
+            await DisposeZipArchive(async, archive);
+
+            // Re-open archive and verify the entry can be read back
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+
+            ZipArchiveEntry readEntry = readArchive.GetEntry(entryName);
+            Assert.NotNull(readEntry);
+
+            using (Stream readStream = async ? await readEntry.OpenAsync(FileAccess.Read) : readEntry.Open(FileAccess.Read))
+            using (StreamReader reader = new StreamReader(readStream))
+            {
+                string content = reader.ReadToEnd();
+                Assert.Equal(testContent, content);
+            }
+
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_UpdateMode_WriteAccess_ExistingEntry_DiscardsOldData(bool async)
+        {
+            const string entryName = "first.txt";
+            const string newContent = "New content replaces old";
+            byte[] newData = System.Text.Encoding.UTF8.GetBytes(newContent);
+
+            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+
+            // Open in Update mode and overwrite existing entry with FileAccess.Write
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entry = archive.GetEntry(entryName);
+            Assert.NotNull(entry);
+
+            using (Stream stream = async ? await entry.OpenAsync(FileAccess.Write) : entry.Open(FileAccess.Write))
+            {
+                // Stream should be empty - existing data is discarded
+                Assert.Equal(0, stream.Length);
+                stream.Write(newData, 0, newData.Length);
+            }
+
+            await DisposeZipArchive(async, archive);
+
+            // Re-open and verify the entry contains only the new content
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+
+            ZipArchiveEntry readEntry = readArchive.GetEntry(entryName);
+            Assert.NotNull(readEntry);
+
+            using (Stream readStream = async ? await readEntry.OpenAsync(FileAccess.Read) : readEntry.Open(FileAccess.Read))
+            using (StreamReader reader = new StreamReader(readStream))
+            {
+                string content = reader.ReadToEnd();
+                Assert.Equal(newContent, content);
+            }
+
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        public static IEnumerable<object[]> OpenWithFileAccess_InvalidAccess_Throws_Data()
+        {
+            foreach (bool async in new[] { true, false })
+            {
+                yield return new object[] { async, ZipArchiveMode.Read };
+                yield return new object[] { async, ZipArchiveMode.Create };
+                yield return new object[] { async, ZipArchiveMode.Update };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(OpenWithFileAccess_InvalidAccess_Throws_Data))]
+        public static async Task OpenWithFileAccess_InvalidAccess_Throws(bool async, ZipArchiveMode mode)
+        {
+            MemoryStream ms = mode == ZipArchiveMode.Create
+                ? new MemoryStream()
+                : await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+
+            ZipArchive archive = await CreateZipArchive(async, ms, mode, leaveOpen: true);
+
+            ZipArchiveEntry entry = mode == ZipArchiveMode.Create
+                ? archive.CreateEntry("test.txt")
+                : archive.GetEntry("first.txt");
+            Assert.NotNull(entry);
+
+            Assert.Throws<ArgumentOutOfRangeException>("access", () => entry.Open((FileAccess)0));
+            Assert.Throws<ArgumentOutOfRangeException>("access", () => entry.Open((FileAccess)4));
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>("access", () => entry.OpenAsync((FileAccess)0));
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>("access", () => entry.OpenAsync((FileAccess)4));
+
+            await DisposeZipArchive(async, archive);
+            ms.Dispose();
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_MatchesParameterlessOpen_ReadMode(bool async)
+        {
+            using MemoryStream ms1 = await StreamHelpers.CreateTempCopyStream(zfile("small.zip"));
+            using MemoryStream ms2 = await StreamHelpers.CreateTempCopyStream(zfile("small.zip"));
+
+            ZipArchive archive1 = await CreateZipArchive(async, ms1, ZipArchiveMode.Read);
+            ZipArchive archive2 = await CreateZipArchive(async, ms2, ZipArchiveMode.Read);
+
+            ZipArchiveEntry entry1 = archive1.Entries[0];
+            ZipArchiveEntry entry2 = archive2.Entries[0];
+
+            byte[] contents1, contents2;
+
+            using (Stream stream1 = async ? await entry1.OpenAsync() : entry1.Open())
+            {
+                using var reader = new MemoryStream();
+                stream1.CopyTo(reader);
+                contents1 = reader.ToArray();
+            }
+
+            using (Stream stream2 = async ? await entry2.OpenAsync(FileAccess.Read) : entry2.Open(FileAccess.Read))
+            {
+                using var reader = new MemoryStream();
+                stream2.CopyTo(reader);
+                contents2 = reader.ToArray();
+            }
+
+            Assert.Equal(contents1, contents2);
+
+            await DisposeZipArchive(async, archive1);
+            await DisposeZipArchive(async, archive2);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_MatchesParameterlessOpen_UpdateMode(bool async)
+        {
+            using MemoryStream ms1 = await StreamHelpers.CreateTempCopyStream(zfile("small.zip"));
+            using MemoryStream ms2 = await StreamHelpers.CreateTempCopyStream(zfile("small.zip"));
+
+            ZipArchive archive1 = await CreateZipArchive(async, ms1, ZipArchiveMode.Update);
+            ZipArchive archive2 = await CreateZipArchive(async, ms2, ZipArchiveMode.Update);
+
+            ZipArchiveEntry entry1 = archive1.Entries[0];
+            ZipArchiveEntry entry2 = archive2.Entries[0];
+
+            byte[] contents1, contents2;
+
+            using (Stream stream1 = async ? await entry1.OpenAsync() : entry1.Open())
+            {
+                Assert.True(stream1.CanRead);
+                Assert.True(stream1.CanWrite);
+                Assert.True(stream1.CanSeek);
+
+                using var reader = new MemoryStream();
+                stream1.CopyTo(reader);
+                contents1 = reader.ToArray();
+            }
+
+            using (Stream stream2 = async ? await entry2.OpenAsync(FileAccess.ReadWrite) : entry2.Open(FileAccess.ReadWrite))
+            {
+                Assert.True(stream2.CanRead);
+                Assert.True(stream2.CanWrite);
+                Assert.True(stream2.CanSeek);
+
+                using var reader = new MemoryStream();
+                stream2.CopyTo(reader);
+                contents2 = reader.ToArray();
+            }
+
+            Assert.Equal(contents1, contents2);
+
+            await DisposeZipArchive(async, archive1);
+            await DisposeZipArchive(async, archive2);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_DisposedArchive_Throws(bool async)
+        {
+            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+
+            ZipArchiveEntry entry = archive.GetEntry("first.txt");
+            Assert.NotNull(entry);
+
+            await DisposeZipArchive(async, archive);
+
+            Assert.Throws<ObjectDisposedException>(() => entry.Open(FileAccess.Read));
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => entry.OpenAsync(FileAccess.Read));
+        }
     }
 }

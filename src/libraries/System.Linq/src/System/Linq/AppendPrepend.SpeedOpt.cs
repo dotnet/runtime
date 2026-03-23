@@ -124,10 +124,10 @@ namespace System.Linq
                 if (_source is Iterator<TSource> iterator)
                 {
                     int count = iterator.GetCount(onlyIfCheap);
-                    return count == -1 ? -1 : count + 1;
+                    return count == -1 ? -1 : checked(count + 1);
                 }
 
-                return !onlyIfCheap || _source is ICollection<TSource> ? _source.Count() + 1 : -1;
+                return !onlyIfCheap || _source is ICollection<TSource> ? checked(_source.Count() + 1) : -1;
             }
 
             public override TSource? TryGetFirst(out bool found)
@@ -277,10 +277,10 @@ namespace System.Linq
                 if (_source is Iterator<TSource> iterator)
                 {
                     int count = iterator.GetCount(onlyIfCheap);
-                    return count == -1 ? -1 : count + _appendCount + _prependCount;
+                    return count == -1 ? -1 : checked(count + _appendCount + _prependCount);
                 }
 
-                return !onlyIfCheap || _source is ICollection<TSource> ? _source.Count() + _appendCount + _prependCount : -1;
+                return !onlyIfCheap || _source is ICollection<TSource> ? checked(_source.Count() + _appendCount + _prependCount) : -1;
             }
 
             public override bool Contains(TSource value)

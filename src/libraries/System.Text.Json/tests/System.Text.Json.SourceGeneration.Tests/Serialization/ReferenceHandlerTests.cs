@@ -100,6 +100,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TestClassWithObjectIReadOnlyCollectionT))]
         [JsonSerializable(typeof(TestClassWithObjectIReadOnlyListT))]
         [JsonSerializable(typeof(TestClassWithObjectISetT))]
+
+#if NET
+        [JsonSerializable(typeof(TestClassWithObjectIReadOnlySetT))]
+#endif
+
         [JsonSerializable(typeof(TestClassWithStringArray))]
         [JsonSerializable(typeof(TestClassWithGenericList))]
         [JsonSerializable(typeof(TestClassWithGenericIEnumerable))]
@@ -111,6 +116,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlyCollectionT))]
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlyListT))]
         [JsonSerializable(typeof(TestClassWithGenericISetT))]
+
+#if NET
+        [JsonSerializable(typeof(TestClassWithGenericIReadOnlySetT))]
+#endif
+
         [JsonSerializable(typeof(TestClassWithStringToPrimitiveDictionary))]
         [JsonSerializable(typeof(TestClassWithObjectIEnumerableConstructibleTypes))]
         [JsonSerializable(typeof(TestClassWithObjectImmutableTypes))]
@@ -247,6 +257,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TestClassWithObjectIReadOnlyCollectionT))]
         [JsonSerializable(typeof(TestClassWithObjectIReadOnlyListT))]
         [JsonSerializable(typeof(TestClassWithObjectISetT))]
+
+#if NET
+        [JsonSerializable(typeof(TestClassWithObjectIReadOnlySetT))]
+#endif
+
         [JsonSerializable(typeof(TestClassWithStringArray))]
         [JsonSerializable(typeof(TestClassWithGenericList))]
         [JsonSerializable(typeof(TestClassWithGenericIEnumerable))]
@@ -258,6 +273,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlyCollectionT))]
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlyListT))]
         [JsonSerializable(typeof(TestClassWithGenericISetT))]
+
+#if NET
+        [JsonSerializable(typeof(TestClassWithGenericIReadOnlySetT))]
+#endif
+
         [JsonSerializable(typeof(TestClassWithStringToPrimitiveDictionary))]
         [JsonSerializable(typeof(TestClassWithObjectIEnumerableConstructibleTypes))]
         [JsonSerializable(typeof(TestClassWithObjectImmutableTypes))]

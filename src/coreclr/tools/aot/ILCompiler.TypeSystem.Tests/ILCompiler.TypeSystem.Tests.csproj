@@ -70,7 +70,6 @@
     <Compile Include="GenericTypeAndMethodTests.cs" />
     <Compile Include="CastingTests.cs" />
     <Compile Include="DefType.FieldLayoutTests.cs" />
-    <Compile Include="HashcodeTests.cs" />
     <Compile Include="ILDisassemblerTests.cs" />
     <Compile Include="InterfacesTests.cs" />
     <Compile Include="RuntimeDeterminedTypesTests.cs" />

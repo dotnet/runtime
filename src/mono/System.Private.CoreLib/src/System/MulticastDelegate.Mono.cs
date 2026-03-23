@@ -222,7 +222,7 @@ namespace System
             else if (other.delegates == null)
             {
                 int idx = Array.LastIndexOf(delegates, other);
-                if (idx == -1)
+                if (idx < 0)
                     return this;
 
                 if (delegates.Length <= 1)

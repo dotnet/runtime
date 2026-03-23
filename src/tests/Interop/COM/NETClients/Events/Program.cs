@@ -20,7 +20,7 @@ namespace NetClient
         {
             Console.WriteLine($"{nameof(Validate_BasicCOMEvent)}...");
 
-            var eventTesting = (EventTesting)new EventTestingClass();
+            var eventTesting = new EventTesting();
 
             // Verify event handler subscription
 
@@ -57,7 +57,7 @@ namespace NetClient
         {
             Console.WriteLine($"{nameof(Validate_COMEventViaComAwareEventInfo)}...");
 
-            var eventTesting = (EventTesting)new EventTestingClass();
+            var eventTesting = new EventTesting();
 
             // Verify event handler subscription
 

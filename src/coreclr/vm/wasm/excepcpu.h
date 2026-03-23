@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // copied from arm and left empty. wasm cannot do most of it
 
@@ -13,10 +14,6 @@
 class Thread;
 class FaultingExceptionFrame;
 
-#define INSTALL_EXCEPTION_HANDLING_RECORD(record)
-#define UNINSTALL_EXCEPTION_HANDLING_RECORD(record)
-#define DECLARE_CPFH_EH_RECORD(pCurThread)
-
 //
 // Retrieves the redirected CONTEXT* from the stack frame of one of the
 // RedirectedHandledJITCaseForXXX_Stub's.
@@ -29,8 +26,9 @@ PCODE GetAdjustedCallAddress(PCODE returnAddress)
     return returnAddress;
 }
 
-inline BOOL AdjustContextForVirtualStub(EXCEPTION_RECORD *pExceptionRecord, T_CONTEXT *pContext) {
-    _ASSERTE("AdjustContextForVirtualStub is not implemented on wasm");
+inline BOOL AdjustContextForVirtualStub(EXCEPTION_RECORD *pExceptionRecord, T_CONTEXT *pContext)
+{
+    LIMITED_METHOD_CONTRACT;
     return FALSE;
 }
 

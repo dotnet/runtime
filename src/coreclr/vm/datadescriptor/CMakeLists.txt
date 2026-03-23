@@ -14,7 +14,6 @@ target_include_directories(runtime_descriptor_interface INTERFACE
 add_dependencies(runtime_descriptor_interface cee_wks_core)
 generate_data_descriptors(
    LIBRARY_NAME cdac_contract_descriptor
-   CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc"
    CONTRACT_NAME "DotNetRuntimeContractDescriptor"
    INTERFACE_TARGET runtime_descriptor_interface
    EXPORT_VISIBLE)
@@ -28,7 +27,6 @@ add_dependencies(gc_wks_descriptor_interface cee_wks_core)
 generate_data_descriptors(
     LIBRARY_NAME gc_wks_descriptor
     CONTRACT_NAME "GCContractDescriptorWKS"
-    CONTRACT_FILE "${GC_DESCRIPTOR_DIR}/contracts.jsonc"
     INTERFACE_TARGET gc_wks_descriptor_interface)
 
 if (FEATURE_SVR_GC)
@@ -41,6 +39,5 @@ if (FEATURE_SVR_GC)
   generate_data_descriptors(
       LIBRARY_NAME gc_svr_descriptor
       CONTRACT_NAME "GCContractDescriptorSVR"
-      CONTRACT_FILE "${GC_DESCRIPTOR_DIR}/contracts.jsonc"
       INTERFACE_TARGET gc_svr_descriptor_interface)
 endif()

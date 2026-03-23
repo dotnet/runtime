@@ -49,11 +49,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             AnnotationOnByRefParameter.Test();
             WriteCapturedParameter.Test();
             OperatorParameters.Test();
+            NamedArgumentsWithAnnotations.Test();
         }
 
         // Validate the error message when annotated parameter is passed to another annotated parameter
-    [ExpectedWarning("IL2067", "'sourceType'", "PublicParameterlessConstructorParameter(Type)", "'type'", nameof(DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)")]
-    [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresNonPublicConstructors))]
+        [ExpectedWarning("IL2067", "'sourceType'", "PublicParameterlessConstructorParameter(Type)", "'type'", nameof(DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)")]
+        [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresNonPublicConstructors))]
         private static void PublicParameterlessConstructorParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             Type sourceType)
@@ -73,8 +74,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             type.RequiresNonPublicConstructors();
         }
 
-    [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicParameterlessConstructor))]
-    [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicConstructors))]
+        [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicParameterlessConstructor))]
+        [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicConstructors))]
         private static void NonPublicConstructorsParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type type)
@@ -84,7 +85,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             type.RequiresNonPublicConstructors();
         }
 
-    [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicConstructors))]
+        [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicConstructors))]
         private void InstanceMethod(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             Type type)
@@ -161,7 +162,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // Validate the error message for the case of unannotated method return value passed to an annotated parameter.
-    [ExpectedWarning("IL2067", "'type'", "NoAnnotation(Type)", "'type'", nameof(DataFlowTypeExtensions.RequiresPublicParameterlessConstructor) + "(Type)")]
+        [ExpectedWarning("IL2067", "'type'", "NoAnnotation(Type)", "'type'", nameof(DataFlowTypeExtensions.RequiresPublicParameterlessConstructor) + "(Type)")]
         private void NoAnnotation(Type type)
         {
             type.RequiresPublicParameterlessConstructor();
@@ -511,6 +512,53 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         private static Type GetUnknownType()
         {
             return null;
+        }
+
+        // https://github.com/dotnet/runtime/issues/121629
+        class NamedArgumentsWithAnnotations
+        {
+            record BaseRecord(
+                string? OptionalParameter = null,
+                [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+                Type? AnnotatedParameter = null,
+                object? UnannotatedParameter = null
+            );
+
+            // This should not warn about 'UnannotatedParameter'
+            record DerivedRecord(
+                [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicConstructors)]
+                Type? AnnotatedParameter = default,
+                object? UnannotatedParameter = default
+            ) : BaseRecord(
+                AnnotatedParameter: AnnotatedParameter,
+                UnannotatedParameter: UnannotatedParameter
+            );
+
+            static void RequiresPublicConstructors(
+                string? optionalParameter = null,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+                Type? annotatedParameter = null,
+                object? unannotatedParameter = null)
+            {
+            }
+
+            // This should not warn about 'unannotatedParameter'
+            static void CallWithNamedArguments(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicConstructors)]
+                Type? annotatedParameter,
+                object? unannotatedParameter)
+            {
+                RequiresPublicConstructors(
+                    annotatedParameter: annotatedParameter,
+                    unannotatedParameter: unannotatedParameter);
+            }
+
+            public static void Test()
+            {
+                var x = new DerivedRecord(typeof(string), "data");
+                CallWithNamedArguments(typeof(string), "data");
+            }
         }
     }
 }

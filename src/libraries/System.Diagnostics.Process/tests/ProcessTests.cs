@@ -81,6 +81,31 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        private static void AssertRemoteProcessStandardOutputLine(RemoteInvokeHandle remoteHandle, string expectedMessage, int timeout)
+        {
+            using CancellationTokenSource cts = new(timeout);
+
+            Task<string?> readTask = remoteHandle.Process.StandardOutput.ReadLineAsync(cts.Token).AsTask();
+            string? line;
+            try
+            {
+                line = readTask.ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException)
+            {
+                throw new XunitException($"Expected message '{expectedMessage}' was not observed on remote process within specified time.");
+            }
+
+            if (line != null)
+            {
+                Assert.Equal(expectedMessage, line);
+            }
+            else
+            {
+                throw new XunitException($"StandardOutput was closed before observing expected message '{expectedMessage}'");
+            }
+        }
+
         public static IEnumerable<object[]> SignalTestData()
         {
             if (OperatingSystem.IsWindows())
@@ -93,6 +118,10 @@ namespace System.Diagnostics.Tests
             {
                 foreach (PosixSignal signal in Enum.GetValues<PosixSignal>())
                 {
+                    if (signal == PosixSignal.SIGKILL)
+                    {
+                        continue; // SIGKILL cannot be caught or ignored
+                    }
                     yield return new object[] { signal };
                 }
                 // Test a few raw signals.
@@ -137,10 +166,7 @@ namespace System.Diagnostics.Tests
                 arg: $"{signal}",
                 remoteInvokeOptions);
 
-            while (!remoteHandle.Process.StandardOutput.ReadLine().EndsWith(PosixSignalRegistrationCreatedMessage))
-            {
-                Thread.Sleep(20);
-            }
+            AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalRegistrationCreatedMessage, WaitInMS);
 
             try
             {
@@ -152,6 +178,100 @@ namespace System.Diagnostics.Tests
             finally
             {
                 // If sending the signal fails, we want to kill the process ASAP
+                // to prevent RemoteExecutor's timeout from hiding it.
+                remoteHandle.Process.Kill();
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        // Limited only to signals which terminates process by default, and are supported on all platforms by SendSignal
+        [InlineData(PosixSignal.SIGINT)]
+        [InlineData(PosixSignal.SIGQUIT)]
+        public void SignalHandler_CanDisposeInHandler(PosixSignal signal)
+        {
+            const string PosixSignalRegistrationCreatedMessage = "PosixSignalRegistration created.";
+            const string PosixSignalHandlerStartedMessage = "PosixSignalRegistration handler started.";
+            const string PosixSignalHandlerDisposedMessage = "PosixSignalRegistration disposed.";
+            const int UnterminatedExitCode = -1;
+
+            var remoteInvokeOptions = new RemoteInvokeOptions { CheckExitCode = false };
+            remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
+            if (OperatingSystem.IsWindows())
+            {
+                remoteInvokeOptions.StartInfo.CreateNewProcessGroup = true;
+            }
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                (signalStr) =>
+                {
+                    PosixSignal expectedSignal = Enum.Parse<PosixSignal>(signalStr);
+                    using ManualResetEvent receivedSignalEvent = new ManualResetEvent(false);
+                    ReEnableCtrlCHandlerIfNeeded(expectedSignal);
+
+                    PosixSignalRegistration? p = null;
+                    p = PosixSignalRegistration.Create(expectedSignal, (ctx) =>
+                    {
+                        Console.WriteLine(PosixSignalHandlerStartedMessage);
+                        Assert.Equal(expectedSignal, ctx.Signal);
+
+                        Assert.NotNull(p);
+                        p?.Dispose();
+
+                        // Used for checking that Dispose returned and did not get stuck
+                        Console.WriteLine(PosixSignalHandlerDisposedMessage);
+
+                        receivedSignalEvent.Set();
+                        ctx.Cancel = true;
+                    });
+
+                    Console.WriteLine(PosixSignalRegistrationCreatedMessage);
+
+                    // Wait for signal which unregisters itself
+                    Assert.True(receivedSignalEvent.WaitOne(WaitInMS));
+
+                    // Wait for second signal which should terminate process by default system handler
+                    Thread.Sleep(WaitInMS);
+
+                    // If we did not terminated yet, return failure exit code
+                    return UnterminatedExitCode;
+                },
+                arg: $"{signal}",
+                remoteInvokeOptions);
+
+
+            try
+            {
+                AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalRegistrationCreatedMessage, WaitInMS);
+
+                SendSignal(signal, remoteHandle.Process.Id);
+
+                AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerStartedMessage, WaitInMS);
+                AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerDisposedMessage, WaitInMS);
+
+                SendSignal(signal, remoteHandle.Process.Id);
+
+                // https://github.com/dotnet/runtime/issues/125733
+                if (PlatformDetection.IsMonoRuntime && signal == PosixSignal.SIGQUIT && !PlatformDetection.IsWindows)
+                {
+                    SendSignal(PosixSignal.SIGTERM, remoteHandle.Process.Id);
+                }
+
+                Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
+                Assert.True(remoteHandle.Process.StandardOutput.EndOfStream);
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.Equal(unchecked((int)0xC000013A), remoteHandle.Process.ExitCode); // STATUS_CONTROL_C_EXIT
+                }
+                else
+                {
+                    // Signal numbers are platform dependent, so we can't check exact exit code
+                    Assert.NotEqual(0, remoteHandle.Process.ExitCode);
+                    Assert.NotEqual(UnterminatedExitCode, remoteHandle.Process.ExitCode);
+                }
+            }
+            finally
+            {
+                // If sending the signal fails or process did not exit on its own, we want to kill the process ASAP
                 // to prevent RemoteExecutor's timeout from hiding it.
                 remoteHandle.Process.Kill();
             }
@@ -405,7 +525,7 @@ namespace System.Diagnostics.Tests
 
         private static bool IsNotAppSandbox => PlatformDetection.IsNotAppSandbox;
 
-        [ConditionalFact(nameof(UseShellExecuteExecuteOrderIsRunnablePlatform), nameof(IsNotAppSandbox))]
+        [ConditionalFact(typeof(ProcessTests), nameof(UseShellExecuteExecuteOrderIsRunnablePlatform), nameof(IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ProcessStart_UseShellExecute_ExecuteOrder()
         {
@@ -652,7 +772,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -700,7 +820,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -996,7 +1116,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
-        public void PriviledgedProcessorTime_GetNotStarted_ThrowsInvalidOperationException()
+        public void PrivilegedProcessorTime_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.PrivilegedProcessorTime);

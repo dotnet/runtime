@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using SourceGenerators;
@@ -612,7 +613,17 @@ namespace System.Text.Json.SourceGeneration
                     PropertyGenerationSpec property = properties[i];
                     string propertyName = property.NameSpecifiedInSourceCode;
                     string declaringTypeFQN = property.DeclaringType.FullyQualifiedName;
-                    string propertyTypeFQN = property.PropertyType.FullyQualifiedName;
+
+                    // If the property is ignored and its type is not used anywhere else in the type graph,
+                    // emit a JsonPropertyInfo of type 'object' to avoid unnecessarily referencing the type.
+                    // STJ requires that all ignored properties be included so that it can perform
+                    // necessary run-time validations using configuration not known at compile time
+                    // such as the property naming policy and case sensitivity.
+                    bool isIgnoredPropertyOfUnusedType =
+                        property.DefaultIgnoreCondition is JsonIgnoreCondition.Always &&
+                        !_typeIndex.ContainsKey(property.PropertyType);
+
+                    string propertyTypeFQN = isIgnoredPropertyOfUnusedType ? "object" : property.PropertyType.FullyQualifiedName;
 
                     string getterValue = property switch
                     {
@@ -653,9 +664,12 @@ namespace System.Text.Json.SourceGeneration
                             : $"({JsonConverterTypeRef}<{propertyTypeFQN}>){ExpandConverterMethodName}(typeof({propertyTypeFQN}), new {converterFQN}(), {OptionsLocalVariableName})";
                     }
 
-                    string attributeProviderFactoryExpr = property.IsProperty
-                        ? $"typeof({property.DeclaringType.FullyQualifiedName}).GetProperty({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName}, null, typeof({property.PropertyType.FullyQualifiedName}), {EmptyTypeArray}, null)"
-                        : $"typeof({property.DeclaringType.FullyQualifiedName}).GetField({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName})";
+                    string attributeProviderFactoryExpr = property switch
+                    {
+                        _ when isIgnoredPropertyOfUnusedType => "null",
+                        { IsProperty: true } => $"typeof({property.DeclaringType.FullyQualifiedName}).GetProperty({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName}, null, typeof({propertyTypeFQN}), {EmptyTypeArray}, null)",
+                        _ => $"typeof({property.DeclaringType.FullyQualifiedName}).GetField({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName})",
+                    };
 
                     writer.WriteLine($$"""
                         var {{InfoVarName}}{{i}} = new {{JsonPropertyInfoValuesTypeRef}}<{{propertyTypeFQN}}>
@@ -716,8 +730,11 @@ namespace System.Text.Json.SourceGeneration
             {
                 ImmutableEquatableArray<ParameterGenerationSpec> parameters = typeGenerationSpec.CtorParamGenSpecs;
                 ImmutableEquatableArray<PropertyInitializerGenerationSpec> propertyInitializers = typeGenerationSpec.PropertyInitializerSpecs;
-                int paramCount = parameters.Count + propertyInitializers.Count(propInit => !propInit.MatchesConstructorParameter);
-                Debug.Assert(paramCount > 0);
+
+                // out parameters don't appear in metadata - they don't receive values from JSON.
+                int nonOutParamCount = parameters.Count(p => p.RefKind != RefKind.Out);
+                int paramCount = nonOutParamCount + propertyInitializers.Count(propInit => !propInit.MatchesConstructorParameter);
+                Debug.Assert(paramCount > 0 || parameters.Any(p => p.RefKind == RefKind.Out));
 
                 writer.WriteLine($"private static {JsonParameterInfoValuesTypeRef}[] {ctorParamMetadataInitMethodName}() => new {JsonParameterInfoValuesTypeRef}[]");
                 writer.WriteLine('{');
@@ -726,12 +743,19 @@ namespace System.Text.Json.SourceGeneration
                 int i = 0;
                 foreach (ParameterGenerationSpec spec in parameters)
                 {
+                    // Skip out parameters - they don't receive values from JSON deserialization.
+                    if (spec.RefKind == RefKind.Out)
+                    {
+                        continue;
+                    }
+
+                    Debug.Assert(spec.ArgsIndex >= 0);
                     writer.WriteLine($$"""
                         new()
                         {
                             Name = {{FormatStringLiteral(spec.Name)}},
                             ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
-                            Position = {{spec.ParameterIndex}},
+                            Position = {{spec.ArgsIndex}},
                             HasDefaultValue = {{FormatBoolLiteral(spec.HasDefaultValue)}},
                             DefaultValue = {{(spec.HasDefaultValue ? CSharpSyntaxUtilities.FormatLiteral(spec.DefaultValue, spec.ParameterType) : "null")}},
                             IsNullable = {{FormatBoolLiteral(spec.IsNullable)}},
@@ -915,6 +939,9 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine('}');
             }
 
+            // RefKind.RefReadOnlyParameter was added in Roslyn 4.4
+            private const RefKind RefKindRefReadOnlyParameter = (RefKind)4;
+
             private static string GetParameterizedCtorInvocationFunc(TypeGenerationSpec typeGenerationSpec)
             {
                 ImmutableEquatableArray<ParameterGenerationSpec> parameters = typeGenerationSpec.CtorParamGenSpecs;
@@ -922,14 +949,37 @@ namespace System.Text.Json.SourceGeneration
 
                 const string ArgsVarName = "args";
 
-                StringBuilder sb = new($"static {ArgsVarName} => new {typeGenerationSpec.TypeRef.FullyQualifiedName}(");
+                bool hasRefOrRefReadonlyParams = parameters.Any(p => p.RefKind == RefKind.Ref || p.RefKind == RefKindRefReadOnlyParameter);
+
+                StringBuilder sb;
+
+                if (hasRefOrRefReadonlyParams)
+                {
+                    // For ref/ref readonly parameters, we need a block lambda with temp variables
+                    sb = new($"static {ArgsVarName} => {{ ");
+
+                    // Declare temp variables for ref and ref readonly parameters
+                    foreach (ParameterGenerationSpec param in parameters)
+                    {
+                        if (param.RefKind == RefKind.Ref || param.RefKind == RefKindRefReadOnlyParameter)
+                        {
+                            // Use ArgsIndex to access the args array (out params don't have entries in args)
+                            sb.Append($"var __temp{param.ParameterIndex} = ({param.ParameterType.FullyQualifiedName}){ArgsVarName}[{param.ArgsIndex}]; ");
+                        }
+                    }
+
+                    sb.Append($"return new {typeGenerationSpec.TypeRef.FullyQualifiedName}(");
+                }
+                else
+                {
+                    sb = new($"static {ArgsVarName} => new {typeGenerationSpec.TypeRef.FullyQualifiedName}(");
+                }
 
                 if (parameters.Count > 0)
                 {
                     foreach (ParameterGenerationSpec param in parameters)
                     {
-                        int index = param.ParameterIndex;
-                        sb.Append($"{GetParamUnboxing(param.ParameterType, index)}, ");
+                        sb.Append($"{GetParamExpression(param, ArgsVarName)}, ");
                     }
 
                     sb.Length -= 2; // delete the last ", " token
@@ -942,17 +992,31 @@ namespace System.Text.Json.SourceGeneration
                     sb.Append("{ ");
                     foreach (PropertyInitializerGenerationSpec property in propertyInitializers)
                     {
-                        sb.Append($"{property.Name} = {GetParamUnboxing(property.ParameterType, property.ParameterIndex)}, ");
+                        sb.Append($"{property.Name} = ({property.ParameterType.FullyQualifiedName}){ArgsVarName}[{property.ParameterIndex}], ");
                     }
 
                     sb.Length -= 2; // delete the last ", " token
                     sb.Append(" }");
                 }
 
+                if (hasRefOrRefReadonlyParams)
+                {
+                    sb.Append("; }");
+                }
+
                 return sb.ToString();
 
-                static string GetParamUnboxing(TypeRef type, int index)
-                    => $"({type.FullyQualifiedName}){ArgsVarName}[{index}]";
+                static string GetParamExpression(ParameterGenerationSpec param, string argsVarName)
+                {
+                    return param.RefKind switch
+                    {
+                        RefKind.Ref => $"ref __temp{param.ParameterIndex}",
+                        RefKind.Out => $"out var __discard{param.ParameterIndex}",
+                        RefKindRefReadOnlyParameter => $"in __temp{param.ParameterIndex}",
+                        // Use ArgsIndex to access the args array (out params don't have entries in args)
+                        _ => $"({param.ParameterType.FullyQualifiedName}){argsVarName}[{param.ArgsIndex}]", // None or In (in doesn't require keyword at call site)
+                    };
+                }
             }
 
             private static string? GetPrimitiveWriterMethod(TypeGenerationSpec type)
@@ -1503,7 +1567,7 @@ namespace System.Text.Json.SourceGeneration
                     CollectionType.MemoryOfT => "CreateMemoryInfo",
                     CollectionType.ReadOnlyMemoryOfT => "CreateReadOnlyMemoryInfo",
                     CollectionType.ISet => "CreateISetInfo",
-
+                    CollectionType.IReadOnlySetOfT => "CreateIReadOnlySetInfo",
                     CollectionType.Dictionary => "CreateDictionaryInfo",
                     CollectionType.IDictionaryOfTKeyTValue or CollectionType.IDictionary => "CreateIDictionaryInfo",
                     CollectionType.IReadOnlyDictionary => "CreateIReadOnlyDictionaryInfo",

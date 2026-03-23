@@ -13,7 +13,6 @@ add_dependencies(gc_dll_wks_descriptor_interface eventing_headers)
 generate_data_descriptors(
     LIBRARY_NAME gc_dll_wks_descriptor
     CONTRACT_NAME "GCContractDescriptorWKS"
-    CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc"
     INTERFACE_TARGET gc_dll_wks_descriptor_interface)
 
 if (FEATURE_SVR_GC)
@@ -25,7 +24,6 @@ if (FEATURE_SVR_GC)
   generate_data_descriptors(
       LIBRARY_NAME gc_dll_svr_descriptor
       CONTRACT_NAME "GCContractDescriptorSVR"
-      CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc"
       INTERFACE_TARGET gc_dll_svr_descriptor_interface)
 endif()
 
@@ -38,7 +36,6 @@ if(BUILD_EXP_GC)
   generate_data_descriptors(
       LIBRARY_NAME gcexp_dll_wks_descriptor
       CONTRACT_NAME "GCContractDescriptorWKS"
-      CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc"
       INTERFACE_TARGET gcexp_dll_wks_descriptor_interface)
 
   if (FEATURE_SVR_GC)
@@ -51,7 +48,6 @@ if(BUILD_EXP_GC)
     generate_data_descriptors(
         LIBRARY_NAME gcexp_dll_svr_descriptor
         CONTRACT_NAME "GCContractDescriptorSVR"
-        CONTRACT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/contracts.jsonc"
         INTERFACE_TARGET gcexp_dll_svr_descriptor_interface)
   endif()
 endif()

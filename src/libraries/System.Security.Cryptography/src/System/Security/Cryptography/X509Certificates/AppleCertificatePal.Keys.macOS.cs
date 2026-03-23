@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public ICertificatePal CopyWithPrivateKey(ECDsa privateKey)
         {
-            var typedKey = privateKey as ECDsaImplementation.ECDsaSecurityTransforms;
+            var typedKey = privateKey as ECDsaImplementation.ECDsaAppleCrypto;
             byte[] ecPrivateKey;
 
             if (typedKey != null)
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey)
         {
-            var typedKey = privateKey as ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms;
+            var typedKey = privateKey as ECDiffieHellmanImplementation.ECDiffieHellmanAppleCrypto;
             byte[] ecPrivateKey;
 
             if (typedKey != null)
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)
         {
-            var typedKey = privateKey as RSAImplementation.RSASecurityTransforms;
+            var typedKey = privateKey as RSAImplementation.RSAAppleCrypto;
 
             if (typedKey != null)
             {

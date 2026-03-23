@@ -202,7 +202,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void MutualExclusionTest()
         {
             var threadLocked = new AutoResetEvent(false);
@@ -232,13 +232,6 @@ namespace System.Threading.Tests
         {
             Assert.Throws<IOException>(() => new Mutex("Foo/Bar", options: default));
             Assert.Throws<IOException>(() => new Mutex("Global\\Foo/Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
-            if (PlatformDetection.IsCoreCLR)
-            {
-                AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(new string('a', 1000), options: default));
-                AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: default));
-                AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
-                Assert.Throws<IOException>(() => new Mutex("Global\\Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
-            }
         }
 
         [Theory]
@@ -323,7 +316,7 @@ namespace System.Threading.Tests
                 Assert.Throws<UnauthorizedAccessException>(() => new Mutex(Guid.NewGuid().ToString("N"), options)));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(GetValidNames))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void OpenExisting(string name)
@@ -602,7 +595,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(AbandonExisting_MemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void AbandonExisting(
@@ -778,7 +771,7 @@ namespace System.Threading.Tests
         private static bool IsRemoteExecutorAndCrossProcessNamedMutexSupported =>
             RemoteExecutor.IsSupported && PlatformDetection.IsNotMobile;
 
-        [ConditionalTheory(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
+        [ConditionalTheory(typeof(MutexTests), nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
         [MemberData(nameof(NameOptionCombinations_MemberData))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(bool currentUserOnly, bool currentSessionOnly)
         {
@@ -858,7 +851,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/96191", TestPlatforms.Browser)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NamedMutex_ThreadExitDisposeRaceTest()
@@ -921,7 +914,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NamedMutex_DisposeWhenLockedRaceTest()
         {

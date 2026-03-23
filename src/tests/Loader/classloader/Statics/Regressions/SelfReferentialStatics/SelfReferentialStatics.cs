@@ -1,3 +1,4 @@
+using TestLibrary;
 ﻿using System;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
@@ -44,6 +45,7 @@ public class SelfReferentialStatics
         public Bar(string message) => System.Console.WriteLine(message);
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     [SkipOnMono("https://github.com/dotnet/runtime/issues/118472")]
     public static void TestEntryPoint()

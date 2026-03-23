@@ -91,7 +91,7 @@ namespace Internal.TypeSystem
 
             public static string Method(MethodDesc method)
             {
-                return Method(method.OwningType, method.Name, method.Signature);
+                return Method(method.OwningType, method.GetName(), method.Signature);
             }
 
             public static string Method(TypeDesc owningType, string methodName, MethodSignature signature)

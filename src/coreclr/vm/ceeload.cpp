@@ -171,6 +171,7 @@ void Module::DoInit(AllocMemTracker *pamTracker, LPCWSTR szName)
 
 #endif
 }
+#endif //!DACCESS_COMPILE
 
 // Set the given bit on m_dwTransientFlags. Return true if we won the race to set the bit.
 BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
@@ -186,6 +187,22 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
             return TRUE;
     }
 }
+
+void Module::SetTransientFlagInterlockedWithMask(DWORD dwFlag, DWORD dwMask)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE((dwFlag & dwMask) == dwFlag);
+    for (;;)
+    {
+        DWORD dwTransientFlags = m_dwTransientFlags;
+        DWORD dwNewTransientFlags = (dwTransientFlags & ~dwMask) | dwFlag;
+        if ((DWORD)InterlockedCompareExchange((LONG*)&m_dwTransientFlags, dwNewTransientFlags, dwTransientFlags) == dwTransientFlags)
+            return;
+    }
+}
+
+#ifndef DACCESS_COMPILE
 
 #if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
 void Module::UpdateNewlyAddedTypes()
@@ -424,7 +441,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     _ASSERTE(m_path != NULL);
     m_baseAddress = m_pPEAssembly->HasLoadedPEImage() ? m_pPEAssembly->GetLoadedLayout()->GetBase() : NULL;
     if (m_pPEAssembly->IsReflectionEmit())
-        m_dwTransientFlags |= IS_REFLECTION_EMIT;
+        m_dwTransientFlags = m_dwTransientFlags | IS_REFLECTION_EMIT;
 
     m_Crst.Init(CrstModule);
     m_LookupTableCrst.Init(CrstModuleLookupTable, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
@@ -432,12 +449,18 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_ISymUnmanagedReaderCrst.Init(CrstISymUnmanagedReader, CRST_DEBUGGER_THREAD);
 
     AllocateMaps();
-    m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
+    m_dwTransientFlags = m_dwTransientFlags & ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
+
+    if (IsSystem())
+        m_dwPersistedFlags = m_dwPersistedFlags | SKIP_TYPE_VALIDATION; // Skip type validation on System
 
 #ifdef FEATURE_READYTORUN
     m_pNativeImage = NULL;
     if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
     {
+        if (m_pReadyToRunInfo->SkipTypeValidation())
+            m_dwPersistedFlags = m_dwPersistedFlags | SKIP_TYPE_VALIDATION; // Skip type validation on System
+
         m_pNativeImage = m_pReadyToRunInfo->GetNativeImage();
         if (m_pNativeImage != NULL)
         {
@@ -483,11 +506,11 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     // set profiler related JIT flags
     if (CORProfilerDisableInlining())
     {
-        m_dwTransientFlags |= PROF_DISABLE_INLINING;
+        m_dwTransientFlags = m_dwTransientFlags | PROF_DISABLE_INLINING;
     }
     if (CORProfilerDisableOptimizations())
     {
-        m_dwTransientFlags |= PROF_DISABLE_OPTIMIZATIONS;
+        m_dwTransientFlags = m_dwTransientFlags | PROF_DISABLE_OPTIMIZATIONS;
     }
 
     m_pJitInlinerTrackingMap = NULL;
@@ -511,13 +534,14 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
     _ASSERTE(((newBits << DEBUGGER_INFO_SHIFT_PRIV) &
               ~DEBUGGER_INFO_MASK_PRIV) == 0);
 
-    m_dwTransientFlags &= ~DEBUGGER_INFO_MASK_PRIV;
-    m_dwTransientFlags |= (newBits << DEBUGGER_INFO_SHIFT_PRIV);
+    SetTransientFlagInterlockedWithMask(newBits << DEBUGGER_INFO_SHIFT_PRIV, DEBUGGER_INFO_MASK_PRIV);
 
 #ifdef DEBUGGING_SUPPORTED
     if (IsEditAndContinueCapable())
     {
-        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && AreJITOptimizationsDisabled());
+        BOOL setEnC = (g_pConfig->ModifiableAssemblies() != MODIFIABLE_ASSM_NONE) &&
+                      ((newBits & DACF_ENC_ENABLED) != 0 ||
+                       (g_pConfig->ModifiableAssemblies() == MODIFIABLE_ASSM_DEBUG && AreJITOptimizationsDisabled()));
         if (setEnC)
         {
             EnableEditAndContinue();
@@ -1319,10 +1343,12 @@ void Module::AllocateMaps()
         m_TypeRefToMethodTableMap.dwCount = TYPEREF_MAP_INITIAL_SIZE;
         m_MemberRefMap.dwCount = MEMBERREF_MAP_INITIAL_SIZE;
         m_MethodDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
-        m_ILCodeVersioningStateMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
         m_FieldDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
         m_GenericParamToDescMap.dwCount = GENERICPARAM_MAP_INITIAL_SIZE;
         m_ManifestModuleReferencesMap.dwCount = ASSEMBLYREFERENCES_MAP_INITIAL_SIZE;
+#ifdef FEATURE_CODE_VERSIONING
+        m_ILCodeVersioningStateMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
+#endif // FEATURE_CODE_VERSIONING
     }
     else
     {
@@ -1340,9 +1366,6 @@ void Module::AllocateMaps()
         // Get # MethodDefs
         m_MethodDefToDescMap.dwCount = pImport->GetCountWithTokenKind(mdtMethodDef)+1;
 
-        // IL code versions are relatively rare so keep small.
-        m_ILCodeVersioningStateMap.dwCount = 1;
-
         // Get # FieldDefs
         m_FieldDefToDescMap.dwCount = pImport->GetCountWithTokenKind(mdtFieldDef)+1;
 
@@ -1351,6 +1374,11 @@ void Module::AllocateMaps()
 
         // Get the number of AssemblyReferences in the map
         m_ManifestModuleReferencesMap.dwCount = pImport->GetCountWithTokenKind(mdtAssemblyRef)+1;
+
+#ifdef FEATURE_CODE_VERSIONING
+        // IL code versions are relatively rare so keep small.
+        m_ILCodeVersioningStateMap.dwCount = 1;
+#endif // FEATURE_CODE_VERSIONING
     }
 
     S_SIZE_T nTotal;
@@ -1359,10 +1387,12 @@ void Module::AllocateMaps()
     nTotal += m_TypeRefToMethodTableMap.dwCount;
     nTotal += m_MemberRefMap.dwCount;
     nTotal += m_MethodDefToDescMap.dwCount;
-    nTotal += m_ILCodeVersioningStateMap.dwCount;
     nTotal += m_FieldDefToDescMap.dwCount;
     nTotal += m_GenericParamToDescMap.dwCount;
     nTotal += m_ManifestModuleReferencesMap.dwCount;
+#ifdef FEATURE_CODE_VERSIONING
+    nTotal += m_ILCodeVersioningStateMap.dwCount;
+#endif // FEATURE_CODE_VERSIONING
 
     _ASSERTE (m_pAssembly && m_pAssembly->GetLowFrequencyHeap());
     pTable = (PTR_TADDR)(void*)m_pAssembly->GetLowFrequencyHeap()->AllocMem(nTotal * S_SIZE_T(sizeof(TADDR)));
@@ -1376,7 +1406,7 @@ void Module::AllocateMaps()
 
     m_TypeRefToMethodTableMap.pNext  = NULL;
     m_TypeRefToMethodTableMap.supportedFlags = TYPE_REF_MAP_ALL_FLAGS;
-    m_TypeRefToMethodTableMap.pTable = &pTable[m_TypeDefToMethodTableMap.dwCount];
+    m_TypeRefToMethodTableMap.pTable = &m_TypeDefToMethodTableMap.pTable[m_TypeDefToMethodTableMap.dwCount];
 
     m_MemberRefMap.pNext = NULL;
     m_MemberRefMap.supportedFlags = MEMBER_REF_MAP_ALL_FLAGS;
@@ -1386,13 +1416,9 @@ void Module::AllocateMaps()
     m_MethodDefToDescMap.supportedFlags = METHOD_DEF_MAP_ALL_FLAGS;
     m_MethodDefToDescMap.pTable = &m_MemberRefMap.pTable[m_MemberRefMap.dwCount];
 
-    m_ILCodeVersioningStateMap.pNext  = NULL;
-    m_ILCodeVersioningStateMap.supportedFlags = METHOD_DEF_MAP_ALL_FLAGS;
-    m_ILCodeVersioningStateMap.pTable = &m_MethodDefToDescMap.pTable[m_MethodDefToDescMap.dwCount];
-
     m_FieldDefToDescMap.pNext  = NULL;
     m_FieldDefToDescMap.supportedFlags = FIELD_DEF_MAP_ALL_FLAGS;
-    m_FieldDefToDescMap.pTable = &m_ILCodeVersioningStateMap.pTable[m_ILCodeVersioningStateMap.dwCount];
+    m_FieldDefToDescMap.pTable = &m_MethodDefToDescMap.pTable[m_MethodDefToDescMap.dwCount];
 
     m_GenericParamToDescMap.pNext  = NULL;
     m_GenericParamToDescMap.supportedFlags = GENERIC_PARAM_MAP_ALL_FLAGS;
@@ -1401,6 +1427,12 @@ void Module::AllocateMaps()
     m_ManifestModuleReferencesMap.pNext  = NULL;
     m_ManifestModuleReferencesMap.supportedFlags = MANIFEST_MODULE_MAP_ALL_FLAGS;
     m_ManifestModuleReferencesMap.pTable = &m_GenericParamToDescMap.pTable[m_GenericParamToDescMap.dwCount];
+
+#ifdef FEATURE_CODE_VERSIONING
+    m_ILCodeVersioningStateMap.pNext  = NULL;
+    m_ILCodeVersioningStateMap.supportedFlags = METHOD_DEF_MAP_ALL_FLAGS;
+    m_ILCodeVersioningStateMap.pTable = &m_ManifestModuleReferencesMap.pTable[m_ManifestModuleReferencesMap.dwCount];
+#endif // FEATURE_CODE_VERSIONING
 }
 
 
@@ -2046,7 +2078,7 @@ BOOL Module::IsVisibleToDebugger()
     return TRUE;
 }
 
-PEImageLayout * Module::GetReadyToRunImage()
+ReadyToRunLoadedImage * Module::GetReadyToRunImage()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -3033,7 +3065,7 @@ using GetTokenForVTableEntry_t = mdToken(STDMETHODCALLTYPE*)(HMODULE module, BYT
 static HMODULE GetIJWHostForModule(Module* module)
 {
 #if !defined(TARGET_UNIX)
-    PEDecoder* pe = module->GetPEAssembly()->GetLoadedLayout();
+    PEImageLayout* pe = module->GetPEAssembly()->GetLoadedLayout();
 
     BYTE* baseAddress = (BYTE*)module->GetPEAssembly()->GetIJWBase();
 
@@ -3137,16 +3169,18 @@ BYTE * GetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
     return *ppVTEntry;
 }
 
+#ifdef FEATURE_IJW
 //======================================================================================
 // Fixup vtables stored in the header to contain pointers to method desc
 // prestubs rather than metadata method tokens.
 void Module::FixupVTables()
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-    } CONTRACTL_END;
-
+    }
+    CONTRACTL_END;
 
     // If we've already fixed up, or this is not an IJW module, just return.
     // NOTE: This relies on ILOnly files not having fixups. If this changes,
@@ -3406,6 +3440,7 @@ void Module::FixupVTables()
         SetIsIJWFixedUp();      // On the module
     } // End of Stage 3
 }
+#endif // FEATURE_IJW
 
 ModuleBase *Module::GetModuleFromIndex(DWORD ix)
 {
@@ -3566,7 +3601,7 @@ void Module::RunEagerFixupsUnlocked()
 {
     COUNT_T nSections;
     PTR_READYTORUN_IMPORT_SECTION pSections = GetImportSections(&nSections);
-    PEImageLayout *pNativeImage = GetReadyToRunImage();
+    ReadyToRunLoadedImage *pNativeImage = GetReadyToRunImage();
 
     for (COUNT_T iSection = 0; iSection < nSections; iSection++)
     {

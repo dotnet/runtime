@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Linq;
+using System.Security.Cryptography.Asn1;
 using Xunit;
 
 using CompositeMLDsaTestVector = System.Security.Cryptography.Tests.CompositeMLDsaTestData.CompositeMLDsaTestVector;
@@ -32,6 +34,20 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentNullException>("data", () => dsa.VerifyData(null, null));
 
             AssertExtensions.Throws<ArgumentNullException>("signature", () => dsa.VerifyData(Array.Empty<byte>(), null));
+
+            AssertExtensions.Throws<ArgumentNullException>("password", () => dsa.ExportEncryptedPkcs8PrivateKey((string)null, null));
+            AssertExtensions.Throws<ArgumentNullException>("password", () => dsa.ExportEncryptedPkcs8PrivateKeyPem((string)null, null));
+            AssertExtensions.Throws<ArgumentNullException>("password", () => dsa.TryExportEncryptedPkcs8PrivateKey((string)null, null, Span<byte>.Empty, out _));
+
+            AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => dsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, null));
+            AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => dsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, null));
+            AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => dsa.ExportEncryptedPkcs8PrivateKey(string.Empty, null));
+            AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => dsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<byte>.Empty, null));
+            AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => dsa.ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<char>.Empty, null));
+            AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => dsa.ExportEncryptedPkcs8PrivateKeyPem(string.Empty, null));
+            AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => dsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, null, Span<byte>.Empty, out _));
+            AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => dsa.TryExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, null, Span<byte>.Empty, out _));
+            AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => dsa.TryExportEncryptedPkcs8PrivateKey(string.Empty, null, Span<byte>.Empty, out _));
         }
 
         [Fact]
@@ -60,6 +76,37 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => dsa.SignData(Array.Empty<byte>(), new byte[256]));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => dsa.VerifyData(ReadOnlySpan<byte>.Empty, new byte[maxSignatureSize], new byte[256]));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("context", () => dsa.VerifyData(Array.Empty<byte>(), new byte[maxSignatureSize], new byte[256]));
+        }
+
+        [Theory]
+        [MemberData(nameof(ArgumentValidationData))]
+        public static void ArgumentValidation_PbeParameters(CompositeMLDsaAlgorithm algorithm, bool shouldDispose)
+        {
+            using CompositeMLDsa dsa = CompositeMLDsaMockImplementation.Create(algorithm);
+
+            if (shouldDispose)
+            {
+                // Test that argument validation exceptions take precedence over ObjectDisposedException
+                dsa.Dispose();
+            }
+
+            CompositeMLDsaTestHelpers.AssertEncryptedExportPkcs8PrivateKey(export =>
+            {
+                // Unknown algorithm
+                AssertExtensions.Throws<CryptographicException>(() =>
+                    export(dsa, "PLACEHOLDER", new PbeParameters(PbeEncryptionAlgorithm.Unknown, HashAlgorithmName.SHA1, 42)));
+
+                // TripleDes3KeyPkcs12 only works with SHA1
+                AssertExtensions.Throws<CryptographicException>(() =>
+                    export(dsa, "PLACEHOLDER", new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA512, 42)));
+            });
+
+            CompositeMLDsaTestHelpers.AssertEncryptedExportPkcs8PrivateKey(export =>
+            {
+                // Bytes not allowed in TripleDes3KeyPkcs12
+                AssertExtensions.Throws<CryptographicException>(() =>
+                    export(dsa, "PLACEHOLDER", new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 42)));
+            }, CompositeMLDsaTestHelpers.EncryptionPasswordType.Byte);
         }
 
         [Theory]
@@ -478,7 +525,7 @@ namespace System.Security.Cryptography.Tests
         public static void SignData_LowerBound(CompositeMLDsaAlgorithm algorithm)
         {
             using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
-            int lowerBound = 32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].SignatureSizeInBytes +
+            int lowerBound = CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].SignatureSizeInBytes +
                 CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                     algorithm,
                     rsa => rsa.KeySizeInBits / 8,
@@ -545,7 +592,7 @@ namespace System.Security.Cryptography.Tests
                 CompositeMLDsaTestHelpers.ExecuteComponentFunc(
                     algorithm,
                     rsa => algorithm.MaxSignatureSizeInBytes,
-                    ecdsa => 32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].SignatureSizeInBytes + 8,
+                    ecdsa => CompositeMLDsaTestHelpers.MLDsaAlgorithms[algorithm].SignatureSizeInBytes + 8,
                     eddsa => algorithm.MaxSignatureSizeInBytes);
 
             AssertExtensions.FalseExpression(dsa.VerifyData(ReadOnlySpan<byte>.Empty, new byte[threshold - 1]));
@@ -924,6 +971,223 @@ namespace System.Security.Cryptography.Tests
             dsa.Dispose(); // no throw
 
             CompositeMLDsaTestHelpers.VerifyDisposed(dsa);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void ExportSubjectPublicKeyInfo_CallsExportPublicKey(CompositeMLDsaAlgorithm algorithm)
+        {
+            CompositeMLDsaTestHelpers.AssertExportSubjectPublicKeyInfo(export =>
+            {
+                using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
+
+                dsa.ExportCompositeMLDsaPublicKeyCoreHook = dest => dest.Length;
+                dsa.AddLengthAssertion();
+                dsa.AddFillDestination(1);
+
+                byte[] exported = export(dsa);
+                AssertExtensions.GreaterThan(dsa.ExportCompositeMLDsaPublicKeyCoreCallCount, 0);
+
+                SubjectPublicKeyInfoAsn exportedSpki = SubjectPublicKeyInfoAsn.Decode(exported, AsnEncodingRules.DER);
+                AssertExtensions.FilledWith<byte>(1, exportedSpki.SubjectPublicKey.Span);
+                Assert.Equal(CompositeMLDsaTestHelpers.AlgorithmToOid(algorithm), exportedSpki.Algorithm.Algorithm);
+                AssertExtensions.FalseExpression(exportedSpki.Algorithm.Parameters.HasValue);
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void TryExportPkcs8PrivateKey_DestinationTooSmall(CompositeMLDsaAlgorithm algorithm)
+        {
+            using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
+
+            // Early heuristic based bailout so no core methods are called
+            AssertExtensions.FalseExpression(
+                dsa.TryExportPkcs8PrivateKey(new byte[CompositeMLDsaTestHelpers.ExpectedPrivateKeySizeLowerBound(algorithm) - 1], out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void ExportPkcs8PrivateKey_DestinationInitialSize(CompositeMLDsaAlgorithm algorithm)
+        {
+            using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
+
+            dsa.TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
+            {
+                // The first call should at least be the size of the private key
+                destination.Fill(42);
+                AssertExtensions.GreaterThanOrEqualTo(destination.Length, CompositeMLDsaTestHelpers.ExpectedPrivateKeySizeLowerBound(algorithm));
+                bytesWritten = destination.Length;
+
+                // Before we return, update the next callback so subsequent calls fail the test
+                dsa.TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    Assert.Fail();
+                    bytesWritten = 0;
+                    return true;
+                };
+
+                return true;
+            };
+
+            byte[] exported = dsa.ExportPkcs8PrivateKey();
+
+            Assert.Equal(1, dsa.TryExportPkcs8PrivateKeyCoreCallCount);
+            AssertExtensions.FilledWith<byte>(42, exported);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void ExportPkcs8PrivateKey_Resizes(CompositeMLDsaAlgorithm algorithm)
+        {
+            using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
+
+            int originalSize = -1;
+            dsa.TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
+            {
+                // Return false to force a resize
+                bool ret = false;
+                originalSize = destination.Length;
+                bytesWritten = 0;
+
+                // Before we return false, update the callback so the next call will succeed
+                dsa.TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    // New buffer must be larger than the original
+                    bool ret = true;
+                    AssertExtensions.GreaterThan(destination.Length, originalSize);
+                    destination.Fill(42);
+                    bytesWritten = destination.Length;
+
+                    // Before we return, update the next callback so subsequent calls fail the test
+                    dsa.TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
+                    {
+                        Assert.Fail();
+                        bytesWritten = 0;
+                        return true;
+                    };
+
+                    return ret;
+                };
+
+                return ret;
+            };
+
+            byte[] exported = dsa.ExportPkcs8PrivateKey();
+
+            Assert.Equal(2, dsa.TryExportPkcs8PrivateKeyCoreCallCount);
+            AssertExtensions.FilledWith<byte>(42, exported);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void ExportPkcs8PrivateKey_IgnoreReturnValue(CompositeMLDsaAlgorithm algorithm)
+        {
+            using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
+
+            int[] valuesToWrite = [-1, 0, int.MaxValue];
+            int index = 0;
+
+            int finalDestinationSize = -1;
+            dsa.TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
+            {
+                // Go through all the values we want to test, and once we reach the last one,
+                // return true with a valid value
+                if (index >= valuesToWrite.Length)
+                {
+                    finalDestinationSize = bytesWritten = 1;
+                    return true;
+                }
+
+                // This returned value should should be ignored. There's no way to check
+                // what happens with it, but at the very least we should expect no exceptions
+                // and the correct number of calls.
+                bytesWritten = valuesToWrite[index];
+                index++;
+                return false;
+            };
+
+            int actualSize = dsa.ExportPkcs8PrivateKey().Length;
+            Assert.Equal(finalDestinationSize, actualSize);
+            Assert.Equal(valuesToWrite.Length + 1, dsa.TryExportPkcs8PrivateKeyCoreCallCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void ExportPkcs8PrivateKey_HandleBadReturnValue(CompositeMLDsaAlgorithm algorithm)
+        {
+            using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
+
+            Func<int, int> getBadReturnValue = (int destinationLength) => destinationLength + 1;
+            CompositeMLDsaMockImplementation.TryExportFunc hook = (Span<byte> destination, out int bytesWritten) =>
+            {
+                bool ret = true;
+
+                bytesWritten = getBadReturnValue(destination.Length);
+
+                // Before we return, update the next callback so subsequent calls fail the test
+                dsa.TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    Assert.Fail();
+                    bytesWritten = 0;
+                    return true;
+                };
+
+                return ret;
+            };
+
+            dsa.TryExportPkcs8PrivateKeyCoreHook = hook;
+            Assert.Throws<CryptographicException>(dsa.ExportPkcs8PrivateKey);
+            Assert.Equal(1, dsa.TryExportPkcs8PrivateKeyCoreCallCount);
+
+            dsa.TryExportPkcs8PrivateKeyCoreHook = hook;
+            getBadReturnValue = (int destinationLength) => int.MaxValue;
+            Assert.Throws<CryptographicException>(dsa.ExportPkcs8PrivateKey);
+            Assert.Equal(2, dsa.TryExportPkcs8PrivateKeyCoreCallCount);
+
+            dsa.TryExportPkcs8PrivateKeyCoreHook = hook;
+            getBadReturnValue = (int destinationLength) => -1;
+            Assert.Throws<CryptographicException>(dsa.ExportPkcs8PrivateKey);
+            Assert.Equal(3, dsa.TryExportPkcs8PrivateKeyCoreCallCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        public static void ExportPkcs8PrivateKey_HandleBadReturnBuffer(CompositeMLDsaAlgorithm algorithm)
+        {
+            CompositeMLDsaTestHelpers.AssertEncryptedExportPkcs8PrivateKey(exportEncrypted =>
+            {
+                using CompositeMLDsaMockImplementation dsa = CompositeMLDsaMockImplementation.Create(algorithm);
+
+                // Create a bad encoding
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                writer.WriteBitString("some string"u8);
+                byte[] validEncoding = writer.Encode();
+                Memory<byte> badEncoding = validEncoding.AsMemory(0, validEncoding.Length - 1); // Chop off the last byte
+
+                CompositeMLDsaMockImplementation.TryExportFunc hook = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    bool ret = badEncoding.Span.TryCopyTo(destination);
+                    bytesWritten = ret ? badEncoding.Length : 0;
+                    return ret;
+                };
+
+                dsa.TryExportPkcs8PrivateKeyCoreHook = hook;
+
+                // Exporting the key should work without any issues because there's no validation
+                AssertExtensions.SequenceEqual(badEncoding.Span, dsa.ExportPkcs8PrivateKey().AsSpan());
+
+                int numberOfCalls = dsa.TryExportPkcs8PrivateKeyCoreCallCount;
+                dsa.TryExportPkcs8PrivateKeyCoreCallCount = 0;
+
+                // However, exporting the encrypted key should fail because it validates the PKCS#8 private key encoding first
+                AssertExtensions.Throws<CryptographicException>(() =>
+                        exportEncrypted(dsa, "PLACEHOLDER", new PbeParameters(PbeEncryptionAlgorithm.Aes128Cbc, HashAlgorithmName.SHA1, 1)));
+
+                // Sanity check that the code to export the private key was called
+                Assert.Equal(numberOfCalls, dsa.TryExportPkcs8PrivateKeyCoreCallCount);
+            });
         }
 
         private static void AssertExpectedFill(ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> content, int offset, byte paddingElement)

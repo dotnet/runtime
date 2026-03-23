@@ -83,7 +83,7 @@ namespace System.Net
         private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
 
         private static readonly object s_syncRoot = new object();
-        private static volatile HttpClient? s_cachedHttpClient;
+        private static HttpClient? s_cachedHttpClient;
         private static HttpClientParameters? s_cachedHttpClientParameters;
         private bool _disposeRequired;
         private HttpClient? _httpClient;
@@ -1098,7 +1098,7 @@ namespace System.Net
             // If we aren't buffering we need to open the connection right away.
             // Because we need to send the data as soon as possible when it's available from the RequestStream.
             // Making this allows us to keep the sync send request path for buffering cases.
-            if (AllowWriteStreamBuffering is false)
+            if (!AllowWriteStreamBuffering)
             {
                 // We're calling SendRequest with async, because we need to open the connection and send the request
                 // Otherwise, sync path will block the current thread until the request is sent.

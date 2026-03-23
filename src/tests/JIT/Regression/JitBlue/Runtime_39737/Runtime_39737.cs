@@ -4,6 +4,9 @@
 // The test was deleting the hardware intrinsic leaving unconsumed GT_OBJ on top of the stack
 // that was leading to an assert failure.
 
+
+namespace Runtime_39737;
+
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System;
@@ -11,17 +14,14 @@ using Xunit;
 
 public class Runtime_39403
 {
-    [Fact]
+    [ConditionalFact(typeof(Sse41), nameof(Sse41.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Sse41.IsSupported)
-        {
-            Vector128<int> left = Vector128<int>.One;
-            Vector128<int> right = Vector128.Create(2);
-            ref var rightRef = ref right;
-            Vector128<int> mask = Vector128.Create(3);
-            Sse41.BlendVariable(left, rightRef, mask);
-        }
+        Vector128<int> left = Vector128<int>.One;
+        Vector128<int> right = Vector128.Create(2);
+        ref var rightRef = ref right;
+        Vector128<int> mask = Vector128.Create(3);
+        Sse41.BlendVariable(left, rightRef, mask);
     }
 }
 

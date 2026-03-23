@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
+    [TestCategory("native")]
     public class WasmNativeDefaultsTests : WasmTemplateTestsBase
     {
         private static Regex s_regex = new("\\*\\* WasmBuildNative:.*");
@@ -225,12 +226,19 @@ namespace Wasm.Build.Tests
         private void InferAndCheckPropertyValues(string? line, bool isPublish, bool wasmBuildNative, Configuration config)
         {
             bool expectedWasmNativeStripValue;
+            bool expectedWasmNativeDebugSymbols;
             if (!isPublish && wasmBuildNative && config == Configuration.Debug)
+            {
                 expectedWasmNativeStripValue = false;
+                expectedWasmNativeDebugSymbols = true;
+            }
             else
+            {
+                expectedWasmNativeDebugSymbols = true;
                 expectedWasmNativeStripValue = true;
+            }
 
-            CheckPropertyValues(line, wasmBuildNative, expectedWasmNativeStripValue, /*wasmNativeDebugSymbols*/true, isPublish);
+            CheckPropertyValues(line, wasmBuildNative, expectedWasmNativeStripValue, expectedWasmNativeDebugSymbols, isPublish);
         }
 
         private void CheckPropertyValues(string? line, bool wasmBuildNative, bool wasmNativeStrip, bool wasmNativeDebugSymbols, bool? wasmBuildingForNestedPublish)
@@ -240,6 +248,11 @@ namespace Wasm.Build.Tests
                             $"WasmNativeStrip: '{wasmNativeStrip.ToString().ToLower()}', " +
                             $"WasmNativeDebugSymbols: '{wasmNativeDebugSymbols.ToString().ToLower()}', " +
                             $"WasmBuildingForNestedPublish: '{(wasmBuildingForNestedPublish.HasValue && wasmBuildingForNestedPublish == true ? "true" : "")}'";
+            if (!line.Contains(expected))
+            {
+                _testOutput.WriteLine($"Actual:   {line}");
+                _testOutput.WriteLine($"Expected: {expected}");
+            }
             Assert.Contains(expected, line);
         }
     }

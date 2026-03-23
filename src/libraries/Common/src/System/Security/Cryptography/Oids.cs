@@ -135,24 +135,24 @@ namespace System.Security.Cryptography
         internal const string Mgf1 = "1.2.840.113549.1.1.8";
         internal const string PSpecified = "1.2.840.113549.1.1.9";
 
-        internal const string MLDsa44WithRSA2048PssPreHashSha256 = "2.16.840.1.114027.80.9.1.0";
-        internal const string MLDsa44WithRSA2048Pkcs15PreHashSha256 = "2.16.840.1.114027.80.9.1.1";
-        internal const string MLDsa44WithEd25519PreHashSha512 = "2.16.840.1.114027.80.9.1.2";
-        internal const string MLDsa44WithECDsaP256PreHashSha256 = "2.16.840.1.114027.80.9.1.3";
-        internal const string MLDsa65WithRSA3072PssPreHashSha512 = "2.16.840.1.114027.80.9.1.4";
-        internal const string MLDsa65WithRSA3072Pkcs15PreHashSha512 = "2.16.840.1.114027.80.9.1.5";
-        internal const string MLDsa65WithRSA4096PssPreHashSha512 = "2.16.840.1.114027.80.9.1.6";
-        internal const string MLDsa65WithRSA4096Pkcs15PreHashSha512 = "2.16.840.1.114027.80.9.1.7";
-        internal const string MLDsa65WithECDsaP256PreHashSha512 = "2.16.840.1.114027.80.9.1.8";
-        internal const string MLDsa65WithECDsaP384PreHashSha512 = "2.16.840.1.114027.80.9.1.9";
-        internal const string MLDsa65WithECDsaBrainpoolP256r1PreHashSha512 = "2.16.840.1.114027.80.9.1.10";
-        internal const string MLDsa65WithEd25519PreHashSha512 = "2.16.840.1.114027.80.9.1.11";
-        internal const string MLDsa87WithECDsaP384PreHashSha512 = "2.16.840.1.114027.80.9.1.12";
-        internal const string MLDsa87WithECDsaBrainpoolP384r1PreHashSha512 = "2.16.840.1.114027.80.9.1.13";
-        internal const string MLDsa87WithEd448PreHashShake256_512 = "2.16.840.1.114027.80.9.1.14";
-        internal const string MLDsa87WithRSA3072PssPreHashSha512 = "2.16.840.1.114027.80.9.1.15";
-        internal const string MLDsa87WithRSA4096PssPreHashSha512 = "2.16.840.1.114027.80.9.1.16";
-        internal const string MLDsa87WithECDsaP521PreHashSha512 = "2.16.840.1.114027.80.9.1.17";
+        internal const string MLDsa44WithRSA2048PssPreHashSha256 = "1.3.6.1.5.5.7.6.37";
+        internal const string MLDsa44WithRSA2048Pkcs15PreHashSha256 = "1.3.6.1.5.5.7.6.38";
+        internal const string MLDsa44WithEd25519PreHashSha512 = "1.3.6.1.5.5.7.6.39";
+        internal const string MLDsa44WithECDsaP256PreHashSha256 = "1.3.6.1.5.5.7.6.40";
+        internal const string MLDsa65WithRSA3072PssPreHashSha512 = "1.3.6.1.5.5.7.6.41";
+        internal const string MLDsa65WithRSA3072Pkcs15PreHashSha512 = "1.3.6.1.5.5.7.6.42";
+        internal const string MLDsa65WithRSA4096PssPreHashSha512 = "1.3.6.1.5.5.7.6.43";
+        internal const string MLDsa65WithRSA4096Pkcs15PreHashSha512 = "1.3.6.1.5.5.7.6.44";
+        internal const string MLDsa65WithECDsaP256PreHashSha512 = "1.3.6.1.5.5.7.6.45";
+        internal const string MLDsa65WithECDsaP384PreHashSha512 = "1.3.6.1.5.5.7.6.46";
+        internal const string MLDsa65WithECDsaBrainpoolP256r1PreHashSha512 = "1.3.6.1.5.5.7.6.47";
+        internal const string MLDsa65WithEd25519PreHashSha512 = "1.3.6.1.5.5.7.6.48";
+        internal const string MLDsa87WithECDsaP384PreHashSha512 = "1.3.6.1.5.5.7.6.49";
+        internal const string MLDsa87WithECDsaBrainpoolP384r1PreHashSha512 = "1.3.6.1.5.5.7.6.50";
+        internal const string MLDsa87WithEd448PreHashShake256_512 = "1.3.6.1.5.5.7.6.51";
+        internal const string MLDsa87WithRSA3072PssPreHashSha512 = "1.3.6.1.5.5.7.6.52";
+        internal const string MLDsa87WithRSA4096PssPreHashSha512 = "1.3.6.1.5.5.7.6.53";
+        internal const string MLDsa87WithECDsaP521PreHashSha512 = "1.3.6.1.5.5.7.6.54";
 
         // PKCS#7
         internal const string NoSignature = "1.3.6.1.5.5.7.6.2";

@@ -143,7 +143,6 @@ struct RuntimeThreadLocals
     void *                  m_pvHijackedReturnAddress;
 #endif // FEATURE_HIJACK
     PTR_ExInfo              m_pExInfoStackHead;
-    Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
 #ifdef TARGET_X86
     uintptr_t               m_uHijackedReturnValueFlags;
     PCODE                   m_LastRedirectIP;
@@ -215,6 +214,9 @@ public:
                                                     // On Unix this is an optimization to not queue up more signals when one is
                                                     // still being processed.
         TSF_Interrupted         = 0x00000200,       // Set to indicate Thread.Interrupt() has been called on this thread
+
+        TSF_SuspensionTrapped   = 0x00000400,       // Set when thread is trapped waiting for suspension to complete
+                                                    // (was in managed code).
     };
 private:
 
@@ -270,7 +272,7 @@ public:
     ee_alloc_context *  GetEEAllocContext();
     gc_alloc_context *  GetAllocContext();
 
-    uint64_t            GetPalThreadIdForLogging();
+    uint64_t            GetOSThreadId();
 
     void                GcScanRoots(ScanFunc* pfnEnumCallback, ScanContext * pvCallbackData);
 
@@ -281,7 +283,7 @@ public:
     void*               GetHijackedReturnAddress();
     static bool         IsHijackTarget(void * address);
 
-    static void HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack);
+    static void HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack, bool doInlineSuspend);
 #else // FEATURE_HIJACK
     void                Unhijack() { }
     bool                IsHijacked() { return false; }
@@ -306,6 +308,8 @@ public:
 
     bool                IsDetached();
     void                SetDetached();
+
+    bool                IsSuspensionTrapped();
 
     PTR_VOID            GetThreadStressLog() const;
 #ifndef DACCESS_COMPILE
@@ -360,9 +364,6 @@ public:
 
     void InlinePInvoke(PInvokeTransitionFrame * pFrame);
     void InlinePInvokeReturn(PInvokeTransitionFrame * pFrame);
-
-    Object* GetThreadAbortException();
-    void SetThreadAbortException(Object *exception);
 
     Object** GetThreadStaticStorage();
 

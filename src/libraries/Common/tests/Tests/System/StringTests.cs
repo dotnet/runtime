@@ -319,7 +319,7 @@ namespace System.Tests
             Validate(string.Concat<string>((IEnumerable<string>)values)); // Call the generic IEnumerable<T>-based overload
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop] // mini-stress test that likely runs for several seconds
         public static void Concat_String_ConcurrencySafe()
         {
@@ -7155,7 +7155,7 @@ namespace System.Tests
                     yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
                     yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
                 }
-                yield return new object[] { "\ud801\udc29",     PlatformDetection.IsWindows7 ? "\ud801\udc29" : "\ud801\udc01", "en-US" };
+                yield return new object[] { "\ud801\udc29",     "\ud801\udc01", "en-US" };
             }
         }
 
@@ -7721,8 +7721,8 @@ namespace System.Tests
             Assert.False(s.IsNormalized(NormalizationForm.FormC), "String should be not normalized when checking with FormC");
             Assert.False(s.IsNormalized(NormalizationForm.FormD), "String should be not normalized when checking with FormD");
 
-            // Browser's, iOS's, MacCatalyst's, and tvOS's ICU do not support FormKC and FormKD
-            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
+            // Some platforms' ICUs do not support FormKC and FormKD
+            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsWasi && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
 
             if (supportsKCKD)
             {

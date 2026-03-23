@@ -169,23 +169,6 @@ namespace System.Threading
             Initialize();
         }
 
-#if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => true;
-#else
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => false;
-#endif
-
-        internal static void ThrowIfNoThreadStart()
-        {
-            if (IsThreadStartSupported)
-                return;
-            throw new PlatformNotSupportedException();
-        }
-
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
         /// <param name="parameter">An object that contains data to be used by the method the thread executes.</param>
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
@@ -212,10 +195,7 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
-            ThrowIfNoThreadStart();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             StartHelper? startHelper = _startHelper;
 
@@ -258,7 +238,7 @@ namespace System.Threading
 
         private void Start(bool captureContext)
         {
-            ThrowIfNoThreadStart();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)
@@ -271,6 +251,18 @@ namespace System.Threading
 
             StartCore();
         }
+
+#if !MONO
+        public bool Join(int millisecondsTimeout)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, Timeout.Infinite);
+            if ((ThreadState & ThreadState.Unstarted) != 0)
+            {
+                throw new ThreadStateException(SR.ThreadState_NotStarted);
+            }
+            return JoinInternal(millisecondsTimeout);
+        }
+#endif
 
         private void RequireCurrentThread()
         {
@@ -437,7 +429,7 @@ namespace System.Threading
         internal void ResetThreadPoolThread()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!RuntimeFeature.IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
 
             if (_mayNeedResetForThreadPool)
             {
@@ -449,7 +441,7 @@ namespace System.Threading
         private void ResetThreadPoolThreadSlow()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!RuntimeFeature.IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
             Debug.Assert(_mayNeedResetForThreadPool);
 
             _mayNeedResetForThreadPool = false;
@@ -752,7 +744,6 @@ namespace System.Threading
         [ThreadStatic]
         public static bool WarnOnBlockingWaitOnJSInteropThread;
 
-#pragma warning disable CS3001
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void WarnAboutBlockingWait(char* stack, int length);
 
@@ -772,8 +763,6 @@ namespace System.Threading
             }
         }
 
-#pragma warning restore CS3001
-
         public static void ForceBlockingWait(Action<object?> action, object? state = null)
         {
             var flag = ThrowOnBlockingWaitOnJSInteropThread;
@@ -790,6 +779,10 @@ namespace System.Threading
                 ThrowOnBlockingWaitOnJSInteropThread = flag;
                 WarnOnBlockingWaitOnJSInteropThread = wflag;
             }
+        }
+#else
+        internal static unsafe void AssureBlockingPossible()
+        {
         }
 #endif
 

@@ -39,6 +39,16 @@ namespace System.Xml
             }
         }
 
+        private static int s_allowXsdTimeToTimeOnlyWithOffsetLoss;
+        public static bool AllowXsdTimeToTimeOnlyWithOffsetLoss
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.AllowXsdTimeToTimeOnlyWithOffsetLoss", ref s_allowXsdTimeToTimeOnlyWithOffsetLoss);
+            }
+        }
+
         private static int s_limitXPathComplexity;
         public static bool LimitXPathComplexity
         {
@@ -66,7 +76,17 @@ namespace System.Xml
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return SwitchesHelpers.GetCachedSwitchValue("System.Xml.XmlResolver.IsNetworkingEnabledByDefault", ref s_isNetworkingEnabledByDefault);
+                return SwitchesHelpers.GetCachedSwitchValue("System.Xml.XmlResolver.IsNetworkingEnabledByDefault", ref s_isNetworkingEnabledByDefault, defaultValue: true);
+            }
+        }
+
+        private static int s_ignoreObsoleteMembers;
+        public static bool IgnoreObsoleteMembers
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.IgnoreObsoleteMembers", ref s_ignoreObsoleteMembers);
             }
         }
     }

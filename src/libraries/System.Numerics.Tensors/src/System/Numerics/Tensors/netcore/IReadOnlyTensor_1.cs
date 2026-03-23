@@ -9,10 +9,7 @@ namespace System.Numerics.Tensors
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="T">The element type.</typeparam>
     public interface IReadOnlyTensor<TSelf, T> : IReadOnlyTensor
-        where TSelf : IReadOnlyTensor<TSelf, T>
-#if NET9_0_OR_GREATER
-        , allows ref struct
-#endif
+        where TSelf : IReadOnlyTensor<TSelf, T>, allows ref struct
     {
         /// <summary>Gets an empty tensor.</summary>
         static abstract TSelf Empty { get; }
@@ -106,7 +103,7 @@ namespace System.Numerics.Tensors
         /// <returns>The current tensor if it is already dense; otherwise, a new tensor that contains the elements of this tensor.</returns>
         /// <remarks>
         ///   <para>A dense tensor is one where the elements are ordered sequentially in memory and where no gaps exist between the elements.</para>
-        ///   <para>For a 2x2 Tensor, this would mean it has <c>FlattendLength: 4; Lengths: [2, 2]; Strides: [4, 1]</c>. The elements would be sequentially accessed via indexes: <c>[0, 0]; [0, 1]; [1, 0]; [1, 1]</c>.</para>
+        ///   <para>For a 2x2 Tensor, this would mean it has <c>FlattenedLength: 4; Lengths: [2, 2]; Strides: [4, 1]</c>. The elements would be sequentially accessed via indexes: <c>[0, 0]; [0, 1]; [1, 0]; [1, 1]</c>.</para>
         /// </remarks>
         TSelf ToDenseTensor();
 

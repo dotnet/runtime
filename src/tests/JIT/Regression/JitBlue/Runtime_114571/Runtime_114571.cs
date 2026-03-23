@@ -7,6 +7,9 @@
 // Reduced from 24.9 KiB to 0.7 KiB in 00:00:20
 // Debug: Throws 'System.NullReferenceException'
 // Release: Runs successfully
+
+namespace Runtime_114571;
+
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;

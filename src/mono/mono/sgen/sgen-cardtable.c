@@ -203,6 +203,7 @@ sgen_card_table_region_begin_scanning (mword start, mword size)
 {
 	mword end = start + size;
 	/*XXX this can be improved to work on words and have a single loop induction var */
+	start = SGEN_ALIGN_DOWN_TO (start, CARD_SIZE_IN_BYTES);
 	while (start < end) {
 		if (sgen_card_table_card_begin_scanning (start))
 			return TRUE;

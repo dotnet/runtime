@@ -133,7 +133,6 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An object that specifies the ML-DSA family of algorithms.
         /// </value>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngAlgorithmGroup MLDsa =>
             field ??= new CngAlgorithmGroup("MLDSA"); // NCRYPT_MLDSA_ALGORITHM_GROUP
 

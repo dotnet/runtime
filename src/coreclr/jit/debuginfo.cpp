@@ -4,32 +4,6 @@
 #include "jitpch.h"
 #include "debuginfo.h"
 
-//------------------------------------------------------------------------
-// EncodeSourceTypes:
-//   Encode the JIT-EE source type for an ILLocation.
-//
-// Returns:
-//   The JIT-EE interface source type.
-//
-// Remarks:
-//   We currently encode only calls and stack empty location.
-//
-ICorDebugInfo::SourceTypes ILLocation::EncodeSourceTypes() const
-{
-    int source = 0;
-    if (IsStackEmpty())
-    {
-        source |= ICorDebugInfo::STACK_EMPTY;
-    }
-
-    if (IsCall())
-    {
-        source |= ICorDebugInfo::CALL_INSTRUCTION;
-    }
-
-    return static_cast<ICorDebugInfo::SourceTypes>(source);
-}
-
 #ifdef DEBUG
 //------------------------------------------------------------------------
 // Dump: Print a textual representation of this ILLocation.
@@ -47,8 +21,9 @@ void ILLocation::Dump() const
     else
     {
         printf("0x%03X[", GetOffset());
-        printf("%c", IsStackEmpty() ? 'E' : '-');
-        printf("%c", IsCall() ? 'C' : '-');
+        printf("%c", ((m_sourceTypes & ICorDebugInfo::STACK_EMPTY) != 0) ? 'E' : '-');
+        printf("%c", ((m_sourceTypes & ICorDebugInfo::CALL_INSTRUCTION) != 0) ? 'C' : '-');
+        printf("%c", ((m_sourceTypes & ICorDebugInfo::ASYNC) != 0) ? 'A' : '-');
         printf("]");
     }
 }

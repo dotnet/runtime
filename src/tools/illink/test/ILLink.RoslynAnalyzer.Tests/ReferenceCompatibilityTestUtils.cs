@@ -42,7 +42,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 var refs = SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences();
                 var referencedCompilation = CSharpCompilation.Create(
                     "ReferencedAssembly",
-                    new[] { SyntaxFactory.ParseSyntaxTree(referencedSource) },
+                    new[] { SyntaxFactory.ParseSyntaxTree(referencedSource, new CSharpParseOptions(languageVersion: LanguageVersion.Preview)) },
                     refs,
                     new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
                 var referencedImage = new MemoryStream();

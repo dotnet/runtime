@@ -4,32 +4,27 @@
 
 .assembly extern mscorlib {}
 .assembly extern xunit.core {}
-.assembly extern TestLibrary {}
-.assembly 'mcc_i10' {}
-
-
-.namespace MCCTest
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
+.namespace mcc_i10
 {
   .class public MyClass
   {
-    .method assembly static pinvokeimpl("native_i1c" as "#1" cdecl) 
+    .method assembly static pinvokeimpl("native_i1c" as "#1" cdecl)
         vararg valuetype MCCTest.VType1 Sum(float64) cil managed preservesig {
     }
 
     .method public static int32 Main()
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-          01 00 00 00
-      )
-      .entrypoint
+            .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [mscorlib]System.Type, string[]) = {
+            type([TestLibrary]TestLibrary.PlatformDetection)
+            string[1] ('IsVarArgSupported')
+        }
       .maxstack  1
-      call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsWindows()
-      brtrue.s   DoTest
-      ldc.i4     100
-      ret
+
 
     DoTest:
-      call       int32 MCCTest.MyClass::Test()
+      call       int32 mcc_i10.MyClass::Test()
       ret
     }
 
@@ -40,7 +35,7 @@
         [0] valuetype MCCTest.VType1 res,
         [1] int32 rc
       )
-      
+
       ldc.r8     1
       ldc.r8     2
       ldc.r8     3
@@ -55,7 +50,7 @@
       ldc.r8     12
       ldc.r8     1
       neg
-      call       vararg valuetype MCCTest.VType1 MCCTest.MyClass::Sum(float64, ...,
+      call       vararg valuetype MCCTest.VType1 mcc_i10.MyClass::Sum(float64, ...,
 																		float64,
 																		float64,
 																		float64,
@@ -76,11 +71,11 @@
       ldc.i4     12
       call       int32 MCCTest.Common::CheckResult(valuetype MCCTest.VType1, int32)
       stloc.s    rc
-      
+
       ldloc.s    rc
       ret
     } // end of method MyClass::Test
 
   } // end of class MyClass
 
-} // end of namespace MCCTest
+} // end of namespace mcc_i10

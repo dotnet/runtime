@@ -29,13 +29,6 @@ namespace System.Diagnostics
         }
 
         [FeatureSwitchDefinition("System.Diagnostics.Debugger.IsSupported")]
-        internal static bool IsSupported { get; } = InitializeIsSupported();
-
-        private static bool InitializeIsSupported()
-        {
-            return AppContext.TryGetSwitch("System.Diagnostics.Debugger.IsSupported", out bool isSupported)
-                   ? isSupported
-                   : true;
-        }
+        internal static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.Debugger.IsSupported", out bool isSupported) ? isSupported : true;
     }
 }

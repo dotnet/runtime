@@ -254,7 +254,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
     if (setCredentials && groupsLength > 0)
     {
-        getGroupsBuffer = malloc(sizeof(uint32_t) * Int32ToSizeT(groupsLength));
+        getGroupsBuffer = (uint32_t*)(malloc(sizeof(uint32_t) * Int32ToSizeT(groupsLength)));
         if (getGroupsBuffer == NULL)
         {
             success = false;
@@ -549,10 +549,17 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
         case PAL_RLIMIT_CORE:
             return RLIMIT_CORE;
         case PAL_RLIMIT_AS:
+#ifdef RLIMIT_AS
             return RLIMIT_AS;
+#elif defined(RLIMIT_VMEM)
+            return RLIMIT_VMEM;
+#endif
 #ifdef RLIMIT_RSS
         case PAL_RLIMIT_RSS:
             return RLIMIT_RSS;
+#elif defined(RLIMIT_VMEM)
+        case PAL_RLIMIT_RSS:
+            return RLIMIT_VMEM;
 #endif
 #ifdef RLIMIT_MEMLOCK
         case PAL_RLIMIT_MEMLOCK:

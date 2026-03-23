@@ -3,7 +3,7 @@ project(PortableRuntime)
 # Portable version of the runtime is designed to be used with WASM.
 # It should be written in pure C/C++, with no assembly code.
 
-add_definitions(-DUSE_PORTABLE_HELPERS)
+add_definitions(-DFEATURE_PORTABLE_HELPERS)
 
 add_library(PortableRuntime STATIC ${COMMON_RUNTIME_SOURCES} ${PORTABLE_RUNTIME_SOURCES})
 target_link_libraries(PortableRuntime PRIVATE aotminipal)

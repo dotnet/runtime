@@ -450,6 +450,7 @@ namespace System
 
         // IndexOfNullByte processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
         // This behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
+        [RequiresUnsafe]
         internal static unsafe int IndexOfNullByte(byte* searchSpace)
         {
             const int Length = int.MaxValue;
@@ -754,7 +755,7 @@ namespace System
             return (int)(offset + 7);
         }
 
-        // Optimized byte-based SequenceEquals. The "length" parameter for this one is declared a nuint rather than int as we also use it for types other than byte
+        // Optimized byte-based SequenceEqual. The "length" parameter for this one is declared a nuint rather than int as we also use it for types other than byte
         // where the length can exceed 2Gb once scaled by sizeof(T).
         [Intrinsic] // Unrolled for constant length
         public static unsafe bool SequenceEqual(ref byte first, ref byte second, nuint length)

@@ -20,3 +20,4 @@ Global variables used
 | MaxClrNotificationArgs | uint32 | Identify the maximum number of CLR notification arguments |
 | ClrNotificationArguments | TargetPointer | Identify where the ClrNotificationArguments exists |
 | DefaultADID | uint | Identify the default AppDomain ID |
+| SizeOfGenericModeBlock | uint | Size of the GenericModeBlock struct |

@@ -136,7 +136,7 @@ namespace System.Threading.Channels.Tests
             await c.Reader.Completion;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AllowSynchronousContinuations_WaitToReadAsync_ContinuationsInvokedAccordingToSetting()
         {
             Channel<int> c = CreateChannel();
@@ -152,7 +152,7 @@ namespace System.Threading.Channels.Tests
             r.GetAwaiter().GetResult();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AllowSynchronousContinuations_CompletionTask_ContinuationsInvokedAccordingToSetting()
         {
             Channel<int> c = CreateChannel();
@@ -166,6 +166,41 @@ namespace System.Threading.Channels.Tests
             Assert.True(c.Writer.TryComplete());
             ((IAsyncResult)r).AsyncWaitHandle.WaitOne(); // avoid inlining the continuation
             r.GetAwaiter().GetResult();
+        }
+
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public async Task Completion_CompletesAfterConcurrentTryReadAndTryComplete()
+        {
+            for (int iter = 0; iter < 100_000; iter++)
+            {
+                Channel<int> channel = CreateChannel();
+
+                channel.Writer.TryWrite(1);
+                channel.Writer.TryWrite(2);
+
+                channel.Reader.TryRead(out _);
+
+                using var barrier = new Barrier(2);
+                Task t1 = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    channel.Reader.TryRead(out _);
+                });
+
+                Task t2 = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    channel.Writer.TryComplete();
+                });
+
+                await Task.WhenAll(t1, t2);
+
+                channel.Reader.TryRead(out _);
+
+                Task completionTask = channel.Reader.Completion;
+                await completionTask.WaitAsync(TimeSpan.FromSeconds(10));
+            }
         }
     }
 
@@ -207,7 +242,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(42, await t2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Stress_TryWrite_TryRead()
         {
             const int NumItems = 3000000;

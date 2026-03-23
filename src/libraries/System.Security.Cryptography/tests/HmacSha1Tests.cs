@@ -91,6 +91,34 @@ namespace System.Security.Cryptography.Tests
             Stream source,
             CancellationToken cancellationToken) => HMACSHA1.HashDataAsync(key, source, cancellationToken);
 
+        protected override bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash) =>
+            HMACSHA1.Verify(key, source, hash);
+
+        protected override bool Verify(byte[] key, byte[] source, byte[] hash) => HMACSHA1.Verify(key, source, hash);
+
+        protected override bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash) =>
+            HMACSHA1.Verify(key, source, hash);
+
+        protected override bool Verify(byte[] key, Stream source, byte[] hash) => HMACSHA1.Verify(key, source, hash);
+
+        protected override ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACSHA1.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
+        protected override ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACSHA1.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
         [Fact]
         public void HmacSha1_Byte_Constructors()
         {

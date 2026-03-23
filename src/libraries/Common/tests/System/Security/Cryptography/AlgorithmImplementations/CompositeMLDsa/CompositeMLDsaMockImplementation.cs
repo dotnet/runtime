@@ -18,18 +18,21 @@ namespace System.Security.Cryptography.Tests
         internal delegate int SignDataFunc(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination);
         internal delegate bool VerifyDataFunc(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
         internal delegate int ExportFunc(Span<byte> destination);
+        internal delegate bool TryExportFunc(Span<byte> destination, out int written);
         internal delegate void DisposeAction(bool disposing);
 
         public int SignDataCoreCallCount = 0;
         public int VerifyDataCoreCallCount = 0;
         public int ExportCompositeMLDsaPublicKeyCoreCallCount = 0;
         public int ExportCompositeMLDsaPrivateKeyCoreCallCount = 0;
+        public int TryExportPkcs8PrivateKeyCoreCallCount = 0;
         public int DisposeCallCount = 0;
 
         public SignDataFunc SignDataCoreHook { get; set; } = (_, _, _) => { Assert.Fail(); return 0; };
         public VerifyDataFunc VerifyDataCoreHook { get; set; } = (_, _, _) => { Assert.Fail(); return false; };
         public ExportFunc ExportCompositeMLDsaPublicKeyCoreHook { get; set; } = _ => { Assert.Fail(); return 0; };
         public ExportFunc ExportCompositeMLDsaPrivateKeyCoreHook { get; set; } = _ => { Assert.Fail(); return 0; };
+        public TryExportFunc TryExportPkcs8PrivateKeyCoreHook { get; set; } = (destination, out bytesWritten) => { Assert.Fail(); bytesWritten = 0; return false; };
         public DisposeAction DisposeHook { get; set; } = _ => { };
 
         protected override int SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination)
@@ -64,7 +67,8 @@ namespace System.Security.Cryptography.Tests
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
-            throw new NotImplementedException();
+            TryExportPkcs8PrivateKeyCoreCallCount++;
+            return TryExportPkcs8PrivateKeyCoreHook(destination, out bytesWritten);
         }
 
         public void AddLengthAssertion()
@@ -74,7 +78,7 @@ namespace System.Security.Cryptography.Tests
             {
                 int ret = oldTrySignDataCoreHook(data, context, destination);
                 AssertExtensions.LessThanOrEqualTo(
-                    32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[Algorithm].SignatureSizeInBytes, // randomizer + mldsaSig
+                    CompositeMLDsaTestHelpers.MLDsaAlgorithms[Algorithm].SignatureSizeInBytes, // mldsaSig
                     destination.Length);
                 return ret;
             };
@@ -84,7 +88,7 @@ namespace System.Security.Cryptography.Tests
             {
                 bool ret = oldVerifyDataCoreHook(data, context, signature);
                 AssertExtensions.LessThanOrEqualTo(
-                    32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[Algorithm].SignatureSizeInBytes, // randomizer + mldsaSig
+                    CompositeMLDsaTestHelpers.MLDsaAlgorithms[Algorithm].SignatureSizeInBytes, // mldsaSig
                     signature.Length);
                 return ret;
             };
@@ -93,9 +97,9 @@ namespace System.Security.Cryptography.Tests
             ExportCompositeMLDsaPublicKeyCoreHook = (Span<byte> destination) =>
             {
                 int ret = oldExportCompositeMLDsaPublicKeyCoreHook(destination);
-                AssertExtensions.LessThanOrEqualTo(
-                    CompositeMLDsaTestHelpers.MLDsaAlgorithms[Algorithm].PublicKeySizeInBytes,
-                    destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(
+                    destination.Length,
+                    CompositeMLDsaTestHelpers.ExpectedPublicKeySizeLowerBound(Algorithm));
                 return ret;
             };
 
@@ -103,9 +107,19 @@ namespace System.Security.Cryptography.Tests
             ExportCompositeMLDsaPrivateKeyCoreHook = (Span<byte> destination) =>
             {
                 int ret = oldExportCompositeMLDsaPrivateKeyCoreHook(destination);
-                AssertExtensions.LessThanOrEqualTo(
-                    CompositeMLDsaTestHelpers.MLDsaAlgorithms[Algorithm].PrivateSeedSizeInBytes,
-                    destination.Length);
+                AssertExtensions.GreaterThanOrEqualTo(
+                    destination.Length,
+                    CompositeMLDsaTestHelpers.ExpectedPrivateKeySizeLowerBound(Algorithm));
+                return ret;
+            };
+
+            TryExportFunc oldTryExportPkcs8PrivateKeyCoreHook = TryExportPkcs8PrivateKeyCoreHook;
+            TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
+            {
+                bool ret = oldTryExportPkcs8PrivateKeyCoreHook(destination, out bytesWritten);
+                AssertExtensions.GreaterThanOrEqualTo(
+                    destination.Length,
+                    CompositeMLDsaTestHelpers.ExpectedPrivateKeySizeLowerBound(Algorithm));
                 return ret;
             };
         }
@@ -211,6 +225,14 @@ namespace System.Security.Cryptography.Tests
                 destination.Fill(b);
                 return destination.Length;
             };
+
+            TryExportFunc oldTryExportPkcs8PrivateKeyCoreHook = TryExportPkcs8PrivateKeyCoreHook;
+            TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
+            {
+                bool ret = oldTryExportPkcs8PrivateKeyCoreHook(destination, out bytesWritten);
+                destination.Fill(b);
+                return ret;
+            };
         }
 
         public void AddFillDestination(byte[] fillContents)
@@ -252,6 +274,21 @@ namespace System.Security.Cryptography.Tests
                 }
 
                 return 0;
+            };
+
+            TryExportFunc oldTryExportPkcs8PrivateKeyCoreHook = TryExportPkcs8PrivateKeyCoreHook;
+            TryExportPkcs8PrivateKeyCoreHook = (Span<byte> destination, out int bytesWritten) =>
+            {
+                bool ret = oldTryExportPkcs8PrivateKeyCoreHook(destination, out int localBytesWritten);
+
+                if (fillContents.AsSpan().TryCopyTo(destination))
+                {
+                    bytesWritten = fillContents.Length;
+                    return true;
+                }
+
+                bytesWritten = 0;
+                return false;
             };
         }
     }

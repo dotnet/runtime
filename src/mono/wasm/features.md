@@ -1,5 +1,7 @@
 # Configuring and hosting .NET WebAssembly applications
 
+For WebAssembly documentation including building, testing, and debugging, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
+
 ## Table of contents
 - [Configuring browser features](#Configuring-browser-features)
 - [Project folder structure](#Project-folder-structure)
@@ -179,7 +181,7 @@ Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../
 - `dotnet.boot.js` - contains list of all other assets and their integrity hash and also various configuration flags.
 - `dotnet.native.wasm` - is the compiled binary of the dotnet (Mono) runtime.
 - `System.Private.CoreLib.*` - is NET assembly with the core implementation of dotnet runtime and class library
-- `*.wasm` - are .NET assemblies stored in `WebCIL` format (for better compatibility with firewalls and virus scanners).
+- `*.wasm` - are .NET assemblies stored in `Webcil` format (for better compatibility with firewalls and virus scanners).
 - `*.dll` - are .NET assemblies stored in Portable Executable format (only used when you use `<WasmEnableWebcil>false</WasmEnableWebcil>`).
 - `dotnet.js.map` - is a source map file, for easier debugging of the runtime code. It's not included in the published applications.
 - `dotnet.native.js.symbols` - are debug symbols which help to put `C` runtime method names back to the `.wasm` stack traces. To enable generating it, use `<WasmEmitSymbolMap>true</WasmEmitSymbolMap>`.
@@ -356,7 +358,7 @@ You can add following elements in your .csproj
 See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
 For more details see also [debugger.md](../browser/debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
 
-### Runtime logging and tracing
+### Mono runtime logging and tracing
 
 You can enable detailed runtime logging.
 
@@ -372,6 +374,17 @@ await dotnet
 ```
 
 See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045e7741fffa17710dc48e9032e519258/src/mono/mono/utils/mono-logger.c#L273-L308)
+
+### CoreCLR runtime logging and tracing
+
+```xml
+<ItemGroup>
+  <WasmEnvironmentVariable Include="COMPlus_LogEnable" Value="1" />
+  <WasmEnvironmentVariable Include="COMPlus_LogToConsole" Value="1" />
+  <WasmEnvironmentVariable Include="COMPlus_LogLevel" Value="10" />
+  <WasmEnvironmentVariable Include="COMPlus_LogFacility" Value="410" />
+</ItemGroup>
+```
 
 ### Diagnostics tools
 

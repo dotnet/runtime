@@ -211,17 +211,11 @@ namespace System.Collections.Concurrent
                 // then start from the next queue after it, and then iterate around back from the head to this queue,
                 // not including it.
                 WorkStealingQueue? localQueue = GetCurrentThreadWorkStealingQueue(forceCreate: false);
-                bool gotItem = localQueue == null ?
+                if (localQueue is null ?
                     TryStealFromTo(_workStealingQueues, null, out result, take) :
-                    (TryStealFromTo(localQueue._nextQueue, null, out result, take) || TryStealFromTo(_workStealingQueues, localQueue, out result, take));
-                if (gotItem)
+                    (TryStealFromTo(localQueue._nextQueue, null, out result, take) || TryStealFromTo(_workStealingQueues, localQueue, out result, take)))
                 {
-#pragma warning disable CS8762
-                    // https://github.com/dotnet/runtime/issues/36132
-                    // Compiler can't automatically deduce that nullability constraints
-                    // for 'result' are satisfied at this exit point.
                     return true;
-#pragma warning restore CS8762
                 }
 
                 if (Interlocked.Read(ref _emptyToNonEmptyListTransitionCount) == initialEmptyToNonEmptyCounts)

@@ -7,7 +7,7 @@ namespace Internal.TypeSystem
     {
         public override string ToString()
         {
-            return $"{OwningType}.{Name}";
+            return $"{OwningType}.{GetName()}";
         }
     }
 }

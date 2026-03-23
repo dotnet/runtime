@@ -14,7 +14,7 @@ namespace System.Globalization.Tests
                                                         // Server core doesn't have icu.dll on SysWOW64
                                                         !(PlatformDetection.IsWindowsServerCore && PlatformDetection.IsX86Process));
 
-        [ConditionalFact(nameof(IsIcuCompatiblePlatform))]
+        [ConditionalFact(typeof(IcuTests), nameof(IsIcuCompatiblePlatform))]
         public static void IcuShouldBeUsedByDefault()
         {
             Type globalizationMode = Type.GetType("System.Globalization.GlobalizationMode");
@@ -39,7 +39,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsIcuCompatiblePlatform))]
+        [ConditionalFact(typeof(IcuTests), nameof(IsIcuCompatiblePlatform))]
         public static void IcuShouldBeLoaded()
         {
             Assert.True(PlatformDetection.IsIcuGlobalization);

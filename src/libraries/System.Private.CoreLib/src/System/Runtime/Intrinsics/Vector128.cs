@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -993,7 +994,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector128{T}" /> from a given array.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="values">The array from which the vector is created.</param>
-        /// <param name="index">The index in <paramref name="values" /> at which to being reading elements.</param>
+        /// <param name="index">The index in <paramref name="values" /> at which to begin reading elements.</param>
         /// <returns>A new <see cref="Vector128{T}" /> with its elements set to the first <see cref="Vector128{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector128{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
@@ -2317,6 +2318,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe Vector128<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
@@ -2327,6 +2329,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe Vector128<T> LoadAligned<T>(T* source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
@@ -2347,6 +2350,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe Vector128<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
 
         /// <summary>Loads a vector from the given source.</summary>
@@ -3894,6 +3898,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe void Store<T>(this Vector128<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
@@ -3904,6 +3909,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe void StoreAligned<T>(this Vector128<T> source, T* destination)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
@@ -3924,6 +3930,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal<T>(this Vector128<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <summary>

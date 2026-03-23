@@ -83,6 +83,10 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
     // restored after the wait operation;
     int32_t lastErrorOnEntry = PalGetLastError();
 
+    // Mark that this thread is trapped for suspension.
+    // Used by the sample profiler to determine this thread was in managed code.
+    SetState(TSF_SuspensionTrapped);
+
     do
     {
         // set preemptive mode
@@ -92,12 +96,17 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         ClearState(TSF_Redirected);
 #endif //FEATURE_SUSPEND_REDIRECTION
 
+        // make sure this is cleared - in case a signal is lost or somehow we did not act on it
+        SetActivationPending(false);
+
         GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 
         // must be in cooperative mode when checking the trap flag
         VolatileStoreWithoutBarrier(&m_pTransitionFrame, (PInvokeTransitionFrame*)nullptr);
     }
     while (ThreadStore::IsTrapThreadsRequested());
+
+    ClearState(TSF_SuspensionTrapped);
 
     // Restore the saved error
     PalSetLastError(lastErrorOnEntry);
@@ -274,9 +283,9 @@ PTR_ExInfo Thread::GetCurExInfo()
 
 void Thread::Construct()
 {
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     static_assert(OFFSETOF__Thread__m_pTransitionFrame == (offsetof(Thread, m_pTransitionFrame)));
-#endif // USE_PORTABLE_HELPERS
+#endif // FEATURE_PORTABLE_HELPERS
 
     // NOTE: We do not explicitly defer to the GC implementation to initialize the alloc_context.  The
     // alloc_context will be initialized to 0 via the static initialization of tls_CurrentThread. If the
@@ -318,8 +327,6 @@ void Thread::Construct()
 
     ASSERT(m_pGCFrameRegistrations == NULL);
 
-    ASSERT(m_threadAbortException == NULL);
-
 #ifdef FEATURE_SUSPEND_REDIRECTION
     ASSERT(m_redirectionContextBuffer == NULL);
 #endif //FEATURE_SUSPEND_REDIRECTION
@@ -347,7 +354,7 @@ bool Thread::IsGCSpecial()
     return IsStateSet(TSF_IsGcSpecialThread);
 }
 
-uint64_t Thread::GetPalThreadIdForLogging()
+uint64_t Thread::GetOSThreadId()
 {
     return m_threadId;
 }
@@ -575,10 +582,6 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
                 pCurGCFrame->m_MaybeInterior ? GCRK_Byref : GCRK_Object, pfnEnumCallback, pvCallbackData);
         }
     }
-
-    // Keep alive the ThreadAbortException that's stored in the target thread during thread abort
-    PTR_OBJECTREF pThreadAbortExceptionObj = dac_cast<PTR_OBJECTREF>(&m_threadAbortException);
-    EnumGcRef(pThreadAbortExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
 }
 
 #ifndef DACCESS_COMPILE
@@ -624,7 +627,7 @@ void Thread::Hijack()
     PalHijack(this);
 }
 
-void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack)
+void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack, bool doInlineSuspend)
 {
     // If we are no longer trying to suspend, no need to do anything.
     // This is just an optimization. It is ok to race with the setting the trap flag here.
@@ -693,9 +696,8 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHij
         ASSERT(codeManager->IsUnwindable(pvAddress) || runtime->IsConservativeStackReportingEnabled());
 #endif
 
-        // if we are not given a thread to hijack
         // perform in-line wait on the current thread
-        if (pThreadToHijack == NULL)
+        if (doInlineSuspend)
         {
             ASSERT(pThread->m_interruptedContext == NULL);
             pThread->InlineSuspend(pThreadContext);
@@ -823,7 +825,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         *ppvRetAddrLocation = (void*)pfnHijackFunction;
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
-            GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
+            GetOSThreadId(), frameIterator->GetRegisterSet()->GetIP());
     }
 }
 #endif // FEATURE_HIJACK
@@ -877,7 +879,7 @@ bool Thread::Redirect()
     redirectionContext->SetIp(origIP);
 
     STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalRedirect: TgtThread = %llx, IP = %p\n",
-        GetPalThreadIdForLogging(), origIP);
+        GetOSThreadId(), origIP);
 
     return true;
 }
@@ -1266,23 +1268,6 @@ void Thread::EnsureRuntimeInitialized()
     PalInterlockedExchangePointer((void *volatile *)&g_RuntimeInitializingThread, NULL);
 }
 
-Object * Thread::GetThreadAbortException()
-{
-    return m_threadAbortException;
-}
-
-void Thread::SetThreadAbortException(Object *exception)
-{
-    m_threadAbortException = exception;
-}
-
-FCIMPL0(Object *, RhpGetThreadAbortException)
-{
-    Thread * pCurThread = ThreadStore::RawGetCurrentThread();
-    return pCurThread->GetThreadAbortException();
-}
-FCIMPLEND
-
 Object** Thread::GetThreadStaticStorage()
 {
     return &m_pThreadLocalStatics;
@@ -1448,7 +1433,7 @@ FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 }
 FCIMPLEND
 
-#ifdef USE_PORTABLE_HELPERS
+#ifdef FEATURE_PORTABLE_HELPERS
 
 FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
 {
@@ -1464,7 +1449,7 @@ FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
 }
 FCIMPLEND
 
-#endif //USE_PORTABLE_HELPERS
+#endif //FEATURE_PORTABLE_HELPERS
 
 #endif // !DACCESS_COMPILE
 

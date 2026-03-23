@@ -140,6 +140,31 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.FromTime(value);
         }
 
+        protected static string FromDateOnly(DateOnly value)
+        {
+            return XmlCustomFormatter.FromDateOnly(value);
+        }
+
+        protected static string FromTimeOnly(TimeOnly value)
+        {
+            return XmlCustomFormatter.FromTimeOnly(value);
+        }
+
+        protected static string FromTimeOnlyIgnoreOffset(TimeOnly value)
+        {
+            return XmlCustomFormatter.FromTimeOnlyIgnoreOffset(value);
+        }
+
+        internal static bool TryFormatDateOnly(DateOnly value, Span<char> destination, out int charsWritten)
+        {
+            return XmlCustomFormatter.TryFormatDateOnly(value, destination, out charsWritten);
+        }
+
+        internal static bool TryFormatTimeOnly(TimeOnly value, Span<char> destination, out int charsWritten)
+        {
+            return XmlCustomFormatter.TryFormatTimeOnly(value, destination, out charsWritten);
+        }
+
         protected static string FromChar(char value)
         {
             return XmlCustomFormatter.FromChar(value);
@@ -240,6 +265,16 @@ namespace System.Xml.Serialization
                     else if (type == typeof(DateTimeOffset))
                     {
                         typeName = "dateTimeOffset";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (type == typeof(DateOnly))
+                    {
+                        typeName = "dateOnly";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (type == typeof(TimeOnly))
+                    {
+                        typeName = "timeOnly";
                         typeNs = UrtTypes.Namespace;
                     }
                     else if (type == typeof(XmlNode[]))
@@ -366,6 +401,18 @@ namespace System.Xml.Serialization
                     {
                         tryFormatResult = XmlConvert.TryFormat((DateTimeOffset)o, _primitivesBuffer, out charsWritten);
                         type = "dateTimeOffset";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (t == typeof(DateOnly))
+                    {
+                        tryFormatResult = TryFormatDateOnly((DateOnly)o, _primitivesBuffer, out charsWritten);
+                        type = "dateOnly";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (t == typeof(TimeOnly))
+                    {
+                        tryFormatResult = TryFormatTimeOnly((TimeOnly)o, _primitivesBuffer, out charsWritten);
+                        type = "timeOnly";
                         typeNs = UrtTypes.Namespace;
                     }
                     else if (typeof(XmlNode[]).IsAssignableFrom(t))
@@ -4363,6 +4410,26 @@ namespace System.Xml.Serialization
                     Writer.Write(type.FullName);
                     Writer.Write("(");
                     Writer.Write(((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture));
+                    Writer.Write(")");
+                }
+                else if (type == typeof(DateOnly))
+                {
+                    Writer.Write(" new ");
+                    Writer.Write(type.FullName);
+                    Writer.Write("(");
+                    Writer.Write(((DateOnly)value).Year.ToString(CultureInfo.InvariantCulture));
+                    Writer.Write(", ");
+                    Writer.Write(((DateOnly)value).Month.ToString(CultureInfo.InvariantCulture));
+                    Writer.Write(", ");
+                    Writer.Write(((DateOnly)value).Day.ToString(CultureInfo.InvariantCulture));
+                    Writer.Write(")");
+                }
+                else if (type == typeof(TimeOnly))
+                {
+                    Writer.Write(" new ");
+                    Writer.Write(type.FullName);
+                    Writer.Write("(");
+                    Writer.Write(((TimeOnly)value).Ticks.ToString(CultureInfo.InvariantCulture));
                     Writer.Write(")");
                 }
                 else

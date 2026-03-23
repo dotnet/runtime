@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -59,6 +60,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
+        IEnumerable<IContractFactory<IContract>> additionalFactories,
         [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
         DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext);
@@ -67,7 +69,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             dataTargetDelegates,
             out Descriptor[] descriptors))
         {
-            target = new ContractDescriptorTarget(descriptors, dataTargetDelegates);
+            target = new ContractDescriptorTarget(descriptors, dataTargetDelegates, additionalFactories);
             return true;
         }
 
@@ -92,7 +94,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
         bool isLittleEndian,
-        int pointerSize)
+        int pointerSize,
+        IEnumerable<IContractFactory<IContract>> additionalFactories)
     {
         return new ContractDescriptorTarget(
             [
@@ -103,12 +106,13 @@ public sealed unsafe class ContractDescriptorTarget : Target
                     PointerData = globalPointerValues
                 }
             ],
-            new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext));
+            new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext),
+            additionalFactories);
     }
 
-    private ContractDescriptorTarget(Descriptor[] descriptors, DataTargetDelegates dataTargetDelegates)
+    private ContractDescriptorTarget(Descriptor[] descriptors, DataTargetDelegates dataTargetDelegates, IEnumerable<IContractFactory<IContract>> additionalFactories)
     {
-        Contracts = new CachingContractRegistry(this, this.TryGetContractVersion);
+        Contracts = new CachingContractRegistry(this, this.TryGetContractVersion, additionalFactories);
         ProcessedData = new DataCache(this);
         _config = descriptors[0].Config;
         _dataTargetDelegates = dataTargetDelegates;
@@ -522,6 +526,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return pointer;
     }
 
+    public override bool TryReadPointer(ulong address, out TargetPointer value)
+        => TryReadPointer(address, _config, _dataTargetDelegates, out value);
+
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
     {
         if (_config.PointerSize == sizeof(uint))
@@ -546,6 +553,29 @@ public sealed unsafe class ContractDescriptorTarget : Target
             return new TargetCodePointer(Read<ulong>(address));
         }
         throw new VirtualReadException($"Failed to read code pointer at 0x{address:x8} because CodePointer size is not 4 or 8");
+    }
+
+    public override bool TryReadCodePointer(ulong address, out TargetCodePointer value)
+    {
+        TypeInfo codePointerTypeInfo = GetTypeInfo(DataType.CodePointer);
+        if (codePointerTypeInfo.Size is sizeof(uint))
+        {
+            if (TryRead<uint>(address, out uint val))
+            {
+                value = new TargetCodePointer(val);
+                return true;
+            }
+        }
+        else if (codePointerTypeInfo.Size is sizeof(ulong))
+        {
+            if (TryRead<ulong>(address, out ulong val))
+            {
+                value = new TargetCodePointer(val);
+                return true;
+            }
+        }
+        value = default;
+        return false;
     }
 
     public void ReadPointers(ulong address, Span<TargetPointer> buffer)
@@ -771,7 +801,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
     }
 
     internal bool TryGetContractVersion(string contractName, out int version)
-        => _contracts.TryGetValue(contractName, out version);
+    {
+        return _contracts.TryGetValue(contractName, out version);
+    }
 
     /// <summary>
     /// Store of addresses that have already been read into corresponding data models.

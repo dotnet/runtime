@@ -350,7 +350,7 @@ namespace System.Diagnostics.Tests
             child2.StartInfo.RedirectStandardOutput = true;
             child2.Start();
             char[] output = new char[6];
-            child2.StandardOutput.Read(output, 0, output.Length);
+            child2.StandardOutput.ReadBlock(output, 0, output.Length);
             Assert.Equal("Signal", new string(output)); // wait for the signal before killing the peer
 
             child1.Kill();
@@ -380,7 +380,7 @@ namespace System.Diagnostics.Tests
             child2.StartInfo.RedirectStandardOutput = true;
             child2.Start();
             char[] output = new char[6];
-            child2.StandardOutput.Read(output, 0, output.Length);
+            child2.StandardOutput.ReadBlock(output, 0, output.Length);
             Assert.Equal("Signal", new string(output)); // wait for the signal before killing the peer
 
             child1.Kill();

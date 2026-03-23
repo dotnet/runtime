@@ -109,7 +109,7 @@ namespace System.Buffers
         // We may have up to 8 buckets.
         // If we have <= 8 strings, the buckets will be the strings themselves, and TBucketized.Value will be false.
         // If we have more than 8, the buckets will be string[], and TBucketized.Value will be true.
-        private readonly EightObjects _buckets;
+        private readonly InlineArray8<object?> _buckets;
 
         private readonly Vector512<byte>
             _n0Low, _n0High,

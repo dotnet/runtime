@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//*****************************************************************************
-// rspriv.
-//
 
+//*****************************************************************************
+// rspriv.h
 //
 // Common include file for right-side of debugger.
 //*****************************************************************************
@@ -16,6 +15,8 @@
 
 #include <utilcode.h>
 #include <minipal/mutex.h>
+
+#include <functional>
 
 #ifdef _DEBUG
 #define LOGGING
@@ -81,7 +82,6 @@ class CordbCode;
 class CordbFrame;
 class CordbJITILFrame;
 class CordbInternalFrame;
-class CordbContext;
 class CordbThread;
 class CordbVariableHome;
 
@@ -109,10 +109,10 @@ class Instantiation;
 class CordbType;
 class CordbNativeCode;
 class CordbILCode;
+#ifdef FEATURE_CODE_VERSIONING
 class CordbReJitILCode;
+#endif // FEATURE_CODE_VERSIONING
 class CordbEval;
-
-class CordbMDA;
 
 class RSLock;
 class NeuterList;
@@ -1063,55 +1063,34 @@ protected:
 #define COM_METHOD  HRESULT STDMETHODCALLTYPE
 
 typedef enum {
-    enumCordbUnknown,       //  0
-    enumCordb,              //  1   1  [1]x1
-    enumCordbProcess,       //  2   1  [1]x1
-    enumCordbAppDomain,     //  3   1  [1]x1
-    enumCordbAssembly,      //  4
-    enumCordbModule,        //  5   15 [27-38,55-57]x1
-    enumCordbClass,         //  6
-    enumCordbFunction,      //  7
-    enumCordbThread,        //  8   2  [4,7]x1
-    enumCordbCode,          //  9
-    enumCordbChain,         //  10
-    enumCordbChainEnum,     //  11
-    enumCordbContext,       //  12
-    enumCordbFrame,         //  13
-    enumCordbFrameEnum,     //  14
-    enumCordbValueEnum,     //  15
-    enumCordbRegisterSet,   //  16
-    enumCordbJITILFrame,    //  17
-    enumCordbBreakpoint,    //  18
-    enumCordbStepper,       //  19
-    enumCordbValue,         //  20
-    enumCordbEnCSnapshot,   //  21
-    enumCordbEval,          //  22
-    enumCordbUnmanagedThread,// 23
-    // unused,              //  24
-    // unused,              //  25
-    // unused,              //  26
-    // unused,              //  27
-    // unused,              //  28
-    enumCordbEnumFilter,    //  29
-    enumCordbEnCErrorInfo,  //  30
-    enumCordbEnCErrorInfoEnum,//31
-    enumCordbUnmanagedEvent,//  32
-    enumCordbWin32EventThread,//33
-    enumCordbRCEventThread, //  34
-    enumCordbNativeFrame,   //  35
-    enumCordbObjectValue,   //  36
-    enumCordbType,          //  37
-    enumCordbNativeCode,    //  38
-    enumCordbILCode,        //  39
-    enumCordbEval2,         //  40
-    enumCordbMDA,           //  41
-    enumCordbHashTableEnum, //  42
-    enumCordbCodeEnum,      //  43
-    enumCordbStackWalk,     //  44
-    enumCordbEnumerator,    //  45
-    enumCordbHeap,          //  48
-    enumCordbHeapSegments,  //  47
-    enumMaxDerived,         //
+    enumCordbUnknown,
+    enumCordb,
+    enumCordbProcess,
+    enumCordbAppDomain,
+    enumCordbAssembly,
+    enumCordbModule,
+    enumCordbClass,
+    enumCordbFunction,
+    enumCordbThread,
+    enumCordbCode,
+    enumCordbFrame,
+    enumCordbValueEnum,
+    enumCordbRegisterSet,
+    enumCordbJITILFrame,
+    enumCordbBreakpoint,
+    enumCordbStepper,
+    enumCordbValue,
+    enumCordbEval,
+    enumCordbUnmanagedThread,
+    enumCordbType,
+    enumCordbHashTableEnum,
+    enumCordbCodeEnum,
+    enumCordbStackWalk,
+    enumCordbEnumerator,
+    enumCordbHeap,
+    enumCordbAsyncStackWalk,
+    enumCordbAsyncFrame,
+    enumMaxDerived,
     enumMaxThis = 1024
 } enumCordbDerived;
 
@@ -1639,11 +1618,6 @@ typedef CordbEnumerator<RSSmartPtr<CordbThread>,
                         ICorDebugThread*,
                         ICorDebugThreadEnum, IID_ICorDebugThreadEnum,
                         QueryInterfaceConvert<RSSmartPtr<CordbThread>, ICorDebugThread, IID_ICorDebugThread> > CordbThreadEnumerator;
-
-typedef CordbEnumerator<CorDebugBlockingObject,
-                        CorDebugBlockingObject,
-                        ICorDebugBlockingObjectEnum, IID_ICorDebugBlockingObjectEnum,
-                        IdentityConvert<CorDebugBlockingObject> > CordbBlockingObjectEnumerator;
 
 // Template classes must be fully defined rather than just declared in the header
 #include "rsenumerator.hpp"
@@ -2920,10 +2894,14 @@ public:
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 class UnmanagedThreadTracker
 {
-    DWORD m_dwThreadId = (DWORD)-1;
-    HANDLE m_hThread = INVALID_HANDLE_VALUE;
-    CORDB_ADDRESS_TYPE *m_pPatchSkipAddress = NULL;
-    DWORD m_dwSuspendCount = 0;
+    DWORD m_dwThreadId = (DWORD)-1; // The OS thread ID of the unmanaged thread we are tracking
+    HANDLE m_hThread = INVALID_HANDLE_VALUE; // Handle to the unmanaged thread, used for suspending and resuming the thread
+    CORDB_ADDRESS_TYPE *m_pPatchSkipAddress = NULL; // If non-NULL, this is the address to which we should set the IP when resuming the thread.
+    DWORD m_dwSuspendCount = 0; // The suspend count of the thread when we last checked it.
+    bool m_pendingSetIP = false; // Set to true if there is a breakpoint or outstanding single-step operation on target thread
+#ifdef _DEBUG
+    bool m_fIsDebuggerPatchSkip = false; // Set to true if the thread is currently in a debugger patch skip
+#endif
 
 public:
     UnmanagedThreadTracker(DWORD wThreadId, HANDLE hThread) : m_dwThreadId(wThreadId), m_hThread(hThread) {}
@@ -2937,6 +2915,14 @@ public:
     void Suspend();
     void Resume();
     void Close();
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    void SetPendingSetIP(bool fPendingSetIP) { m_pendingSetIP = fPendingSetIP; }
+    bool HasPendingSetIP() const { return m_pendingSetIP; }
+#ifdef _DEBUG
+    void SetIsDebuggerPatchSkip(bool fIsDebuggerPatchSkip) { m_fIsDebuggerPatchSkip = fIsDebuggerPatchSkip; }
+    bool IsDebuggerPatchSkip() const { return m_fIsDebuggerPatchSkip; }
+#endif
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 };
 
 class EMPTY_BASES_DECL CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
@@ -2963,6 +2949,7 @@ class CordbProcess :
     public ICorDebugProcess7,
     public ICorDebugProcess8,
     public ICorDebugProcess11,
+    public ICorDebugProcess12,
     public IDacDbiInterface::IAllocator,
     public IDacDbiInterface::IMetaDataLookup,
     public IProcessShimHooks
@@ -3181,6 +3168,11 @@ public:
     COM_METHOD EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum **ppRanges);
 
     //-----------------------------------------------------------
+    // ICorDebugProcess12
+    //-----------------------------------------------------------
+    COM_METHOD GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDebugStackWalk **ppStackWalk);
+
+    //-----------------------------------------------------------
     // Methods not exposed via a COM interface.
     //-----------------------------------------------------------
 
@@ -3316,8 +3308,9 @@ public:
     }
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-    void HandleSetThreadContextNeeded(DWORD dwThreadId);
+    bool HandleSetThreadContextNeeded(DWORD dwThreadId);
     bool HandleInPlaceSingleStep(DWORD dwThreadId, PVOID pExceptionAddress);
+    bool SetPendingSetIP(DWORD dwThreadId);
 #endif
 
     //
@@ -4151,8 +4144,15 @@ private:
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
     DWORD m_dwOutOfProcessStepping;
+    bool m_fOutOfProcessSetThreadContextEventReceived;
+    HRESULT EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, PRD_TYPE opcode);
 public:
     void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
+    bool CanDetach(); // Must only be called on the Win32ET, determines if it is safe to detach. Only used by W32ETA_CAN_DETACH
+    void TryDetach(); // Sets detach state to TryDetach, starting the detach evacuation counter.
+    bool IsOutOfProcessStepping() { return m_dwOutOfProcessStepping != 0; }
+private:
+    HANDLE m_detachSetThreadContextNeededEvent;
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 };
@@ -4468,70 +4468,6 @@ private:
     // The collection is filled lazily by LookupOrCreateNativeCode
     CordbSafeHashTable<CordbNativeCode> m_nativeCodeTable;
 };
-
-
-//-----------------------------------------------------------------------------
-// Cordb MDA notification
-//-----------------------------------------------------------------------------
-class CordbMDA : public CordbBase, public ICorDebugMDA
-{
-public:
-    CordbMDA(CordbProcess * pProc, DebuggerMDANotification * pData);
-    ~CordbMDA();
-
-    virtual void Neuter();
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CordbMDA"; }
-#endif
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRefEnforceExternal());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseReleaseEnforceExternal());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorDebugMDA
-    //-----------------------------------------------------------
-
-    // Get the string for the type of the MDA. Never empty.
-    // This is a convenient performant alternative to getting the XML stream and extracting
-    // the type from that based off the schema.
-    COM_METHOD GetName(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
-
-    // Get a string description of the MDA. This may be empty (0-length).
-    COM_METHOD GetDescription(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
-
-    // Get the full associated XML for the MDA. This may be empty.
-    // This could be a potentially expensive operation if the xml stream is large.
-    // See the MDA documentation for the schema for this XML stream.
-    COM_METHOD GetXML(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
-
-    COM_METHOD GetFlags(CorDebugMDAFlags * pFlags);
-
-    // Thread that the MDA is fired on. We use the os tid instead of an ICDThread in case an MDA is fired on a
-    // native thread (or a managed thread that hasn't yet entered managed code and so we don't have a ICDThread
-    // object for it yet)
-    COM_METHOD GetOSThreadId(DWORD * pOsTid);
-
-private:
-    NewArrayHolder<WCHAR> m_szName;
-    NewArrayHolder<WCHAR> m_szDescription;
-    NewArrayHolder<WCHAR> m_szXml;
-
-    DWORD m_dwOSTID;
-    CorDebugMDAFlags m_flags;
-};
-
 
 
 struct CordbHangingField
@@ -5476,9 +5412,11 @@ public:
     // Get the existing IL code object
     HRESULT GetILCode(CordbILCode ** ppCode);
 
+#ifdef FEATURE_CODE_VERSIONING
     // Finds or creates an ILCode for a given rejit request
     HRESULT LookupOrCreateReJitILCode(VMPTR_ILCodeVersionNode vmILCodeVersionNode,
                                       CordbReJitILCode** ppILCode);
+#endif // FEATURE_CODE_VERSIONING
 
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -5593,9 +5531,11 @@ private:
     // Only valid if m_fCachedMethodValuesValid is set.
     BOOL                     m_fIsStaticCached;
 
+#ifdef FEATURE_CODE_VERSIONING
     // A collection, indexed by VMPTR_SharedReJitInfo, of IL code for rejit requests
     // The collection is filled lazily by LookupOrCreateReJitILCode
     CordbSafeHashTable<CordbReJitILCode> m_reJitILCodes;
+#endif // FEATURE_CODE_VERSIONING
 };
 
 //-----------------------------------------------------------------------------
@@ -5813,6 +5753,7 @@ protected:
 
 }; // class CordbILCode
 
+#ifdef FEATURE_CODE_VERSIONING
 /* ------------------------------------------------------------------------- *
 * CordbReJitILCode class
 * This class represents an IL code blob for a particular EnC version and
@@ -5858,6 +5799,7 @@ private:
     ULONG32 m_cILMap;
     NewArrayHolder<COR_IL_MAP> m_pILMap;
 };
+#endif // FEATURE_CODE_VERSIONING
 
 /* ------------------------------------------------------------------------- *
  * CordbNativeCode class. These correspond to MethodDesc's on the left-side.
@@ -6377,8 +6319,8 @@ private:
     // Lazily initialized.
     EXCEPTION_RECORD *  m_pExceptionRecord;
 
-    static const CorDebugUserState kInvalidUserState = CorDebugUserState(-1);
-    CorDebugUserState     m_userState;  // This is the current state of the
+    static const int kInvalidUserState = -1;
+    int                   m_userState;  // This is the current state of the
                                         // thread, at the time that the
                                         // left side synchronized
 
@@ -6494,41 +6436,6 @@ private:
     HRESULT m_cachedHR;
     bool m_fIsOneFrameAhead;
 };
-
-
-class CordbContext : public CordbBase, public ICorDebugContext
-{
-public:
-
-    CordbContext() : CordbBase(NULL, 0, enumCordbContext) {}
-
-
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { return "CordbContext"; }
-#endif
-
-
-    //-----------------------------------------------------------
-    // IUnknown
-    //-----------------------------------------------------------
-
-    ULONG STDMETHODCALLTYPE AddRef()
-    {
-        return (BaseAddRef());
-    }
-    ULONG STDMETHODCALLTYPE Release()
-    {
-        return (BaseRelease());
-    }
-    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
-
-    //-----------------------------------------------------------
-    // ICorDebugContext
-    //-----------------------------------------------------------
-private:
-
-} ;
 
 
 /* ------------------------------------------------------------------------- *
@@ -6901,30 +6808,27 @@ private:
     DT_CONTEXT m_context;
 };
 
+// Function signature for retrieving a value at a specific index
+typedef std::function<HRESULT(DWORD index, ICorDebugValue** ppValue)> ValueGetter;
 
 class CordbValueEnum : public CordbBase, public ICorDebugValueEnum
 {
 public:
-    enum ValueEnumMode {
-        LOCAL_VARS_ORIGINAL_IL,
-        LOCAL_VARS_REJIT_IL,
-        ARGS,
-    } ;
-
-    CordbValueEnum(CordbNativeFrame *frame, ValueEnumMode mode);
-    HRESULT Init();
-    ~CordbValueEnum();
+    CordbValueEnum(CordbProcess* pProcess, 
+                   UINT maxCount, 
+                   ValueGetter valueGetter,
+                   NeuterList* pNeuterList);
+    
+    virtual ~CordbValueEnum();
     virtual void Neuter();
 
 #ifdef _DEBUG
     virtual const char * DbgGetName() { return "CordbValueEnum"; }
 #endif
 
-
     //-----------------------------------------------------------
     // IUnknown
     //-----------------------------------------------------------
-
     ULONG STDMETHODCALLTYPE AddRef()
     {
         return (BaseAddRef());
@@ -6938,7 +6842,6 @@ public:
     //-----------------------------------------------------------
     // ICorDebugEnum
     //-----------------------------------------------------------
-
     COM_METHOD Skip(ULONG celt);
     COM_METHOD Reset();
     COM_METHOD Clone(ICorDebugEnum **ppEnum);
@@ -6947,14 +6850,13 @@ public:
     //-----------------------------------------------------------
     // ICorDebugValueEnum
     //-----------------------------------------------------------
-
     COM_METHOD Next(ULONG celt, ICorDebugValue *values[], ULONG *pceltFetched);
 
 private:
-    CordbNativeFrame*     m_frame;
-    ValueEnumMode   m_mode;
-    UINT            m_iCurrent;
-    UINT            m_iMax;
+    ValueGetter m_valueGetter;
+    NeuterList* m_pNeuterList;
+    UINT        m_iCurrent;
+    UINT        m_iMax;
 };
 
 
@@ -6970,11 +6872,9 @@ public:
     // new-style constructor
     CordbMiscFrame(DebuggerIPCE_JITFuncData * pJITFuncData);
 
-#ifdef FEATURE_EH_FUNCLETS
     SIZE_T             parentIP;
     FramePointer       fpParentOrSelf;
     bool               fIsFilterFunclet;
-#endif // FEATURE_EH_FUNCLETS
 };
 
 
@@ -7154,10 +7054,8 @@ public:
     bool      IsFunclet();
     bool      IsFilterFunclet();
 
-#ifdef FEATURE_EH_FUNCLETS
     // return the offset of the parent method frame at which an exception occurs
     SIZE_T    GetParentIP();
-#endif // FEATURE_EH_FUNCLETS
 
     TADDR GetAmbientESP() { return m_taAmbientESP; }
     TADDR GetReturnRegisterValue();
@@ -7348,7 +7246,11 @@ public:
                     GENERICS_TYPE_TOKEN   exactGenericArgsToken,
                     DWORD                 dwExactGenericArgsTokenIndex,
                     bool                  fVarArgFnx,
+#ifdef FEATURE_CODE_VERSIONING
                     CordbReJitILCode *    pReJitCode,
+#else
+                    void *                pReJitCode,
+#endif // FEATURE_CODE_VERSIONING
                     bool                  fAdjustedIP);
     HRESULT Init();
     virtual ~CordbJITILFrame();
@@ -7458,8 +7360,6 @@ public:
     // for what we are calling into.
     static HRESULT BuildInstantiationForCallsite(CordbModule *pModule, NewArrayHolder<CordbType*> &types, Instantiation &inst, Instantiation *currentInstantiation, mdToken targetClass, SigParser funcGenerics);
 
-    CordbILCode* GetOriginalILCode();
-    CordbReJitILCode* GetReJitILCode();
     void AdjustIPAfterException();
 
 private:
@@ -7526,8 +7426,10 @@ public:
     // IL Variable index of the Generics Arg Token.
     DWORD               m_dwFrameParamsTokenIndex;
 
+#ifdef FEATURE_CODE_VERSIONING
     // if this frame is instrumented with rejit, this will point to the instrumented IL code
     RSSmartPtr<CordbReJitILCode> m_pReJitCode;
+#endif // FEATURE_CODE_VERSIONING
     BOOL m_adjustedIP;
 };
 
@@ -10160,6 +10062,10 @@ public:
 
     HRESULT SendDetachProcessEvent(CordbProcess *pProcess);
 
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    HRESULT SendCanDetach();
+#endif
+
 #ifdef FEATURE_INTEROP_DEBUGGING
     HRESULT SendUnmanagedContinue(CordbProcess *pProcess,
                                   EUMContinueType eContType);
@@ -10210,6 +10116,10 @@ private:
     void HandleUnmanagedContinue();
 
     void ExitProcess(bool fDetach);
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    void HandleCanDetach();
+#endif
 
 private:
     RSSmartPtr<Cordb>    m_cordb;
@@ -11584,6 +11494,163 @@ struct RSDebuggingInfo
     CordbProcess * m_MRUprocess;
 
     CordbRCEventThread * m_RCET;
+};
+
+class CordbAsyncFrame : public CordbBase, public ICorDebugILFrame, public ICorDebugILFrame2, public ICorDebugILFrame3, public ICorDebugILFrame4
+{
+    RSSmartPtr<CordbNativeCode> m_pCode;
+    RSSmartPtr<CordbAppDomain> m_pAppDomain;
+    VMPTR_Module m_vmModule;
+    mdMethodDef m_methodDef;
+    VMPTR_MethodDesc m_vmMethodDesc;
+    CORDB_ADDRESS m_pCodeStart;
+    CORDB_ADDRESS m_diagnosticIP;
+    CORDB_ADDRESS m_continuationAddress;
+    UINT32 m_state;
+    int m_nNumberOfVars;
+    DacDbiArrayList<AsyncLocalData> m_asyncVars;
+
+    Instantiation     m_genericArgs;        // the generics type arguments
+    BOOL              m_genericArgsLoaded;  // whether we have loaded and cached the generics type arguments
+
+    RSSmartPtr<CordbFunction> m_pFunction;
+
+    RSSmartPtr<CordbILCode> m_pILCode;
+#ifdef FEATURE_CODE_VERSIONING
+    // if this frame is instrumented with rejit, this will point to the instrumented IL code
+    RSSmartPtr<CordbReJitILCode> m_pReJitCode;
+#endif // FEATURE_CODE_VERSIONING
+
+public:
+    CordbAsyncFrame(CordbProcess*       process,
+                    VMPTR_Module        vmModule,
+                    mdMethodDef         methodDef,
+                    VMPTR_MethodDesc    vmMethodDesc,
+                    CORDB_ADDRESS       codeStart,
+                    CORDB_ADDRESS       diagnosticIP,
+                    CORDB_ADDRESS       continuationAddress,
+                    UINT32              state);
+    HRESULT Init();
+    virtual ~CordbAsyncFrame();
+    virtual void Neuter();
+
+
+#ifdef _DEBUG
+    virtual const char * DbgGetName() { return "CordbAsyncFrame"; }
+#endif
+
+    //-----------------------------------------------------------
+    // IUnknown
+    //-----------------------------------------------------------
+
+    ULONG STDMETHODCALLTYPE AddRef()
+    {
+        return (BaseAddRef());
+    }
+    ULONG STDMETHODCALLTYPE Release()
+    {
+        return (BaseRelease());
+    }
+    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
+
+    //-----------------------------------------------------------
+    // ICorDebugFrame
+    //-----------------------------------------------------------
+
+    COM_METHOD GetChain(ICorDebugChain **ppChain);
+    COM_METHOD GetCode(ICorDebugCode **ppCode);
+    COM_METHOD GetFunction(ICorDebugFunction **ppFunction);
+    COM_METHOD GetFunctionToken(mdMethodDef *pToken);
+    COM_METHOD GetStackRange(CORDB_ADDRESS *pStart, CORDB_ADDRESS *pEnd);
+    COM_METHOD CreateStepper(ICorDebugStepper **ppStepper);
+    COM_METHOD GetCaller(ICorDebugFrame **ppFrame);
+    COM_METHOD GetCallee(ICorDebugFrame **ppFrame);
+
+    //-----------------------------------------------------------
+    // ICorDebugILFrame
+    //-----------------------------------------------------------
+
+    COM_METHOD GetIP(ULONG32* pnOffset, CorDebugMappingResult *pMappingResult);
+    COM_METHOD SetIP(ULONG32 nOffset);
+    COM_METHOD EnumerateLocalVariables(ICorDebugValueEnum **ppValueEnum);
+    COM_METHOD GetLocalVariable(DWORD dwIndex, ICorDebugValue **ppValue);
+    COM_METHOD EnumerateArguments(ICorDebugValueEnum **ppValueEnum);
+    COM_METHOD GetArgument(DWORD dwIndex, ICorDebugValue ** ppValue);
+    COM_METHOD GetStackDepth(ULONG32 *pDepth);
+    COM_METHOD GetStackValue(DWORD dwIndex, ICorDebugValue **ppValue);
+    COM_METHOD CanSetIP(ULONG32 nOffset);
+
+    //-----------------------------------------------------------
+    // ICorDebugILFrame2
+    //-----------------------------------------------------------
+
+    // Called at an EnC remap opportunity to remap to the latest version of a function
+    COM_METHOD RemapFunction(ULONG32 nOffset);
+
+    COM_METHOD EnumerateTypeParameters(ICorDebugTypeEnum **ppTyParEnum);
+
+    //-----------------------------------------------------------
+    // ICorDebugILFrame3
+    //-----------------------------------------------------------
+
+    COM_METHOD GetReturnValueForILOffset(ULONG32 ILoffset, ICorDebugValue** ppReturnValue);
+
+    //-----------------------------------------------------------
+    // ICorDebugILFrame4
+    //-----------------------------------------------------------
+
+    COM_METHOD EnumerateLocalVariablesEx(ILCodeKind flags, ICorDebugValueEnum **ppValueEnum);
+    COM_METHOD GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICorDebugValue **ppValue);
+    COM_METHOD GetCodeEx(ILCodeKind flags, ICorDebugCode **ppCode);
+
+    private:
+
+    // load the generics type and method arguments into a cache
+    void LoadGenericArgs();
+
+};
+
+class CordbAsyncStackWalk : public CordbBase, public ICorDebugStackWalk
+{
+    RSSmartPtr<CordbAsyncFrame> m_pCurrentFrame;
+    CORDB_ADDRESS m_continuationAddress;
+
+public:
+    CordbAsyncStackWalk(CordbProcess* pProcess, CORDB_ADDRESS continuationAddress);
+    virtual ~CordbAsyncStackWalk();
+    virtual void Neuter();
+
+#ifdef _DEBUG
+    virtual const char * DbgGetName() { return "CordbAsyncStackWalk"; }
+#endif
+
+    //-----------------------------------------------------------
+    // IUnknown
+    //-----------------------------------------------------------
+
+    ULONG STDMETHODCALLTYPE AddRef()
+    {
+        return (BaseAddRef());
+    }
+    ULONG STDMETHODCALLTYPE Release()
+    {
+        return (BaseRelease());
+    }
+    COM_METHOD QueryInterface(REFIID riid, void **ppInterface);
+
+    HRESULT PopulateFrame();
+
+    //-----------------------------------------------------------
+    // ICorDebugStackWalk
+    //-----------------------------------------------------------
+
+    COM_METHOD GetContext(ULONG32   contextFlags,
+                          ULONG32   contextBufSize,
+                          ULONG32 * pContextSize,
+                          BYTE      pbContextBuf[]);
+    COM_METHOD SetContext(CorDebugSetContextFlag flag, ULONG32 contextSize, BYTE context[]);
+    COM_METHOD Next();
+    COM_METHOD GetFrame(ICorDebugFrame **ppFrame);
 };
 
 #include "rspriv.inl"

@@ -7,4 +7,7 @@
   <ItemGroup>
     <Compile Include="reflectobj.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

@@ -14,6 +14,9 @@
 // Reduced from 151.7 KiB to 0.8 KiB in 00:02:43
 // Problem2() Hits JIT assert in Release:
 // Assertion failed 'hwintrinsicChild->isContained()' in 'Program:Main(Fuzzlyn.ExecutionServer.IRuntime)' during 'Generate code' (IL size 94; hash 0xade6b36b; FullOpts)
+
+namespace Runtime_113832;
+
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -23,44 +26,38 @@ public class Runtime_113832
 {
     public static byte s_4;
 
-    [Fact]
+    [ConditionalFact(typeof(Avx512F.VL), nameof(Avx512F.VL.IsSupported))]
     public static void Problem()
     {
-        if (Avx512F.VL.IsSupported)
-        {
-            var vr9 = Vector128.Create<ulong>(0);
-            var vr10 = (ulong)s_4;
-            var vr11 = Vector128.CreateScalar(vr10);
-            var vr12 = Avx2.BroadcastScalarToVector128(vr11);
-            var vr13 = (byte)0;
-            var vr14 = Vector256.CreateScalar(vr13);
-            var vr15 = (ulong)Avx2.MoveMask(vr14);
-            var vr16 = Vector128.Create<ulong>(vr15);
-            var vr17 = Avx512F.VL.TernaryLogic(vr9, vr12, vr16, 1);
-            Console.WriteLine(vr17);
-        }
+        var vr9 = Vector128.Create<ulong>(0);
+        var vr10 = (ulong)s_4;
+        var vr11 = Vector128.CreateScalar(vr10);
+        var vr12 = Avx2.BroadcastScalarToVector128(vr11);
+        var vr13 = (byte)0;
+        var vr14 = Vector256.CreateScalar(vr13);
+        var vr15 = (ulong)Avx2.MoveMask(vr14);
+        var vr16 = Vector128.Create<ulong>(vr15);
+        var vr17 = Avx512F.VL.TernaryLogic(vr9, vr12, vr16, 1);
+        Console.WriteLine(vr17);
     }
 
     public static ulong s_26;
 
-    [Fact]
+    [ConditionalFact(typeof(Avx512BW.VL), nameof(Avx512BW.VL.IsSupported))]
     public static void Problem2()
     {
-        if (Avx512F.VL.IsSupported)
+        Vector256<short> vr14 = default;
+        var vr15 = s_26++;
+        var vr16 = Vector128.CreateScalar(vr15);
+        var vr17 = Avx2.BroadcastScalarToVector128(vr16);
+        var vr18 = Vector128.Create<ulong>(0);
+        var vr19 = Vector128.Create<ulong>(0);
+        var vr20 = Sse2.ShiftRightLogical128BitLane(vr19, 0);
+        var vr21 = Avx512F.VL.PermuteVar2x64x2(vr17, vr18, vr20);
+        var vr22 = Vector128.Create<ulong>(0);
+        if (Sse41.TestZ(vr21, vr22))
         {
-            Vector256<short> vr14 = default;
-            var vr15 = s_26++;
-            var vr16 = Vector128.CreateScalar(vr15);
-            var vr17 = Avx2.BroadcastScalarToVector128(vr16);
-            var vr18 = Vector128.Create<ulong>(0);
-            var vr19 = Vector128.Create<ulong>(0);
-            var vr20 = Sse2.ShiftRightLogical128BitLane(vr19, 0);
-            var vr21 = Avx512F.VL.PermuteVar2x64x2(vr17, vr18, vr20);
-            var vr22 = Vector128.Create<ulong>(0);
-            if (Sse41.TestZ(vr21, vr22))
-            {
-                Console.WriteLine(vr14);
-            }
+            Console.WriteLine(vr14);
         }
     }
 }

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.InteropServices;
 
@@ -244,6 +245,18 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
+        /// <inheritdoc/>
+        public override void EmitCalli(Type functionPointerType)
+        {
+            ArgumentNullException.ThrowIfNull(functionPointerType);
+
+            if (!functionPointerType.IsFunctionPointer)
+                throw new ArgumentException(SR.Argument_MustBeFunctionPointer, nameof(functionPointerType));
+
+            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(m_scope, functionPointerType);
+            Emit(OpCodes.Calli, sig);
+        }
+
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
             ArgumentNullException.ThrowIfNull(methodInfo);
@@ -299,6 +312,10 @@ namespace System.Reflection.Emit
             {
                 Debug.Assert(opcode.Equals(OpCodes.Calli),
                                 "Unexpected opcode encountered for StackBehaviour VarPop.");
+
+                // If there is a non-void return type, push one.
+                if (signature.ReturnType is Type retType && retType != typeof(void))
+                    stackchange++;
                 // Pop the arguments..
                 stackchange -= signature.ArgumentCount;
                 // Pop native function pointer off the stack.
@@ -740,6 +757,7 @@ namespace System.Reflection.Emit
             return m_exceptionHeader;
         }
 
+        [RequiresUnsafe]
         internal override unsafe void GetEHInfo(int excNumber, void* exc)
         {
             Debug.Assert(m_exceptions != null);
@@ -858,9 +876,9 @@ namespace System.Reflection.Emit
             m_scope = new DynamicScope();
             m_method = method;
             m_methodSignature = m_scope.GetTokenFor(methodSignature);
-            m_exceptions = Array.Empty<byte>();
-            m_code = Array.Empty<byte>();
-            m_localSignature = Array.Empty<byte>();
+            m_exceptions = [];
+            m_code = [];
+            m_localSignature = [];
         }
         #endregion
 
@@ -883,11 +901,12 @@ namespace System.Reflection.Emit
 
         public void SetCode(byte[]? code, int maxStackSize)
         {
-            m_code = (code != null) ? (byte[])code.Clone() : Array.Empty<byte>();
+            m_code = (code != null) ? (byte[])code.Clone() : [];
             m_maxStackSize = maxStackSize;
         }
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(codeSize);
@@ -900,10 +919,11 @@ namespace System.Reflection.Emit
 
         public void SetExceptions(byte[]? exceptions)
         {
-            m_exceptions = (exceptions != null) ? (byte[])exceptions.Clone() : Array.Empty<byte>();
+            m_exceptions = (exceptions != null) ? (byte[])exceptions.Clone() : [];
         }
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe void SetExceptions(byte* exceptions, int exceptionsSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(exceptionsSize);
@@ -916,10 +936,11 @@ namespace System.Reflection.Emit
 
         public void SetLocalSignature(byte[]? localSignature)
         {
-            m_localSignature = (localSignature != null) ? (byte[])localSignature.Clone() : Array.Empty<byte>();
+            m_localSignature = (localSignature != null) ? (byte[])localSignature.Clone() : [];
         }
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe void SetLocalSignature(byte* localSignature, int signatureSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(signatureSize);

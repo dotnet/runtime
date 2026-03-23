@@ -523,7 +523,7 @@ namespace System.Globalization.Tests
         [InlineData("de-DE-u-co-phonebk-t-xx")]
         [InlineData("de-DE-u-co-phonebk-t-xx-u-yy")]
         [InlineData("de-DE")]
-        [ConditionalTheory(nameof(SupportRemoteExecutionWithIcu))]
+        [ConditionalTheory(typeof(CultureInfoConstructor), nameof(SupportRemoteExecutionWithIcu))]
         public void TestWithResourceLookup(string cultureName)
         {
             RemoteExecutor.Invoke(name => {

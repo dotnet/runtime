@@ -12,7 +12,7 @@ namespace System.IO.Ports.Tests
     {
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(DiscardOutBuffer_Generic), nameof(HasOneSerialPort))]
         public void DiscardWithoutOpen()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -23,7 +23,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(DiscardOutBuffer_Generic), nameof(HasOneSerialPort))]
         public void DiscardAfterFailedOpen()
         {
             using (SerialPort com = new SerialPort("BAD_PORT_NAME"))
@@ -38,7 +38,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(DiscardOutBuffer_Generic), nameof(HasOneSerialPort))]
         public void DiscardAfterClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -52,7 +52,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(DiscardOutBuffer_Generic), nameof(HasOneSerialPort))]
         public void DiscardAfterOpen()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

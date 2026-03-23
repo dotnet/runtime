@@ -64,8 +64,13 @@ C_FUNC(\Name):
 .endm
 
 .macro LEAF_END_MARKED Name, Section
-C_FUNC(\Name\()_End):
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name\()_End)
+        .private_extern C_FUNC(\Name\()_End)
+#else
         .global C_FUNC(\Name\()_End)
+#endif
+C_FUNC(\Name\()_End):
         LEAF_END \Name, \Section
         // make sure this symbol gets its own address
         nop
@@ -193,13 +198,35 @@ C_FUNC(\Name\()_End):
 // FloatRegisters::q2
 // FloatRegisters::q1
 // FloatRegisters::q0
-.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, SaveFPArgs = 1, SaveGPArgs = 1
+// Optional: Callee saved floating point registers (if pushCalleeSavedFloatRegs=1)
+//   d15
+//   d14
+//   d13
+//   d12
+//   d11
+//   d10
+//   d9
+//   d8
+//
+// pushCalleeSavedFloatRegs - Optional parameter. If set to 1, the macro will also save
+//                            the callee-saved floating point registers (d8-d15) to the stack.
+//                            These registers are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
+//
+.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, SaveFPArgs = 1, SaveGPArgs = 1, pushCalleeSavedFloatRegs = 0
 
-        __PWTB_FloatArgumentRegisters = \extraLocals
+        __PWTB_FloatCalleeSavedRegisters = \extraLocals
         __PWTB_SaveFPArgs = \SaveFPArgs
+        __PWTB_PushCalleeSavedFloatRegs = \pushCalleeSavedFloatRegs
 
-        .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
-                __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
+        .if ((__PWTB_FloatCalleeSavedRegisters % 16) != 0)
+                __PWTB_FloatCalleeSavedRegisters = __PWTB_FloatCalleeSavedRegisters + 8
+        .endif
+
+        // If pushCalleeSavedFloatRegs is specified, reserve space for d8-d15 (8 registers * 8 bytes = 64 bytes)
+        .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+                __PWTB_FloatArgumentRegisters = __PWTB_FloatCalleeSavedRegisters + 64
+        .else
+                __PWTB_FloatArgumentRegisters = __PWTB_FloatCalleeSavedRegisters
         .endif
 
         __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
@@ -229,7 +256,15 @@ C_FUNC(\Name\()_End):
         .endif
 
         .if (__PWTB_SaveFPArgs == 1)
-                SAVE_FLOAT_ARGUMENT_REGISTERS sp, \extraLocals
+                SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+        .endif
+
+        // Save callee-saved floating point registers if requested
+        .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+                PROLOG_SAVE_REG_PAIR d8, d9, __PWTB_FloatCalleeSavedRegisters
+                PROLOG_SAVE_REG_PAIR d10, d11, __PWTB_FloatCalleeSavedRegisters + 16
+                PROLOG_SAVE_REG_PAIR d12, d13, __PWTB_FloatCalleeSavedRegisters + 32
+                PROLOG_SAVE_REG_PAIR d14, d15, __PWTB_FloatCalleeSavedRegisters + 48
         .endif
 
 .endm
@@ -296,6 +331,21 @@ C_FUNC(\Name\()_End):
 
         EPILOG_RESTORE_REG_PAIR   x19, x20, 16
         EPILOG_RESTORE_REG_PAIR   x21, x22, 32
+        EPILOG_RESTORE_REG_PAIR   x23, x24, 48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, 64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, 80
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
+        ret
+
+.endm
+
+// Same as EPILOG_WITH_TRANSITION_BLOCK_RETURN but skips restoring x21 (SwiftError)
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
+
+        EPILOG_STACK_FREE                 __PWTB_StackAlloc
+
+        EPILOG_RESTORE_REG_PAIR   x19, x20, 16
+        EPILOG_RESTORE_REG   x22, 40
         EPILOG_RESTORE_REG_PAIR   x23, x24, 48
         EPILOG_RESTORE_REG_PAIR   x25, x26, 64
         EPILOG_RESTORE_REG_PAIR   x27, x28, 80
@@ -405,7 +455,7 @@ C_FUNC(\Name\()_End):
         PROLOG_SAVE_REG_PAIR   x27, x28, 80
 
         mov     \target, sp
-.endm 
+.endm
 
 .macro POP_COOP_PINVOKE_FRAME
         EPILOG_RESTORE_REG_PAIR   x19, x20, 16
@@ -414,7 +464,54 @@ C_FUNC(\Name\()_End):
         EPILOG_RESTORE_REG_PAIR   x25, x26, 64
         EPILOG_RESTORE_REG_PAIR   x27, x28, 80
         EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
-.endm 
+.endm
+
+// Pushes a full TransitionBlock on the stack including argument registers and
+// floating point argument registers. Used for exception throw helpers where we
+// need to capture the complete register state including FP callee-saved registers.
+//
+// Stack layout (from low to high address):
+//   sp+0:     FP callee-saved registers (d8-d15, 64 bytes)
+//   sp+64:    FloatArgumentRegisters (q0-q7, 128 bytes)
+//   sp+192:   TransitionBlock start (176 bytes)
+//             - CalleeSavedRegisters (fp, lr, x19-x28 - 96 bytes)
+//             - padding (8 bytes)
+//             - x8 (8 bytes)
+//             - ArgumentRegisters (x0-x7, 64 bytes)
+//
+// On exit, \target contains the TransitionBlock pointer (sp+192).
+.macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -176
+
+        // Spill callee saved registers
+        PROLOG_SAVE_REG_PAIR   x19, x20, 16
+        PROLOG_SAVE_REG_PAIR   x21, x22, 32
+        PROLOG_SAVE_REG_PAIR   x23, x24, 48
+        PROLOG_SAVE_REG_PAIR   x25, x26, 64
+        PROLOG_SAVE_REG_PAIR   x27, x28, 80
+
+        // Allocate space for FloatArgumentRegisters (128) + FP callee-saved (64) = 192 bytes
+        PROLOG_STACK_ALLOC 192
+
+        // Save argument registers (x8, x0-x7) at offset 296 from sp (192 + 104)
+        SAVE_ARGUMENT_REGISTERS sp, 296
+
+        // Save floating point argument registers (q0-q7) at sp+64
+        SAVE_FLOAT_ARGUMENT_REGISTERS sp, 64
+
+        // Save FP callee-saved registers (d8-d15) at sp+0
+        str     d8,  [sp, #0]
+        str     d9,  [sp, #8]
+        str     d10, [sp, #16]
+        str     d11, [sp, #24]
+        str     d12, [sp, #32]
+        str     d13, [sp, #40]
+        str     d14, [sp, #48]
+        str     d15, [sp, #56]
+
+        // Set target to TransitionBlock pointer
+        add     \target, sp, #192
+.endm
 
 // ------------------------------------------------------------------
 // Macro to generate Redirection Stubs

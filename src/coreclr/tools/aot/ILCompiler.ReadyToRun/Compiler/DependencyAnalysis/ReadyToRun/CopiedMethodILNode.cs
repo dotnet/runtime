@@ -19,10 +19,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Debug.Assert(!method.IsAbstract);
 
-            _method = (EcmaMethod)method.GetTypicalMethodDefinition();
+            _method = method.GetTypicalMethodDefinition();
         }
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            return ObjectNodeSection.ReadOnlyDataSection;
+        }
 
         public override bool IsShareable => false;
 

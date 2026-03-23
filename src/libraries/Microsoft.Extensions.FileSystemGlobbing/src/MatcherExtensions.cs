@@ -9,6 +9,9 @@ using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 
 namespace Microsoft.Extensions.FileSystemGlobbing
 {
+    /// <summary>
+    /// Provides extensions for configuring and executing a <see cref="Matcher" />.
+    /// </summary>
     public static class MatcherExtensions
     {
         /// <summary>
@@ -111,7 +114,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         {
             ArgumentNullException.ThrowIfNull(matcher);
 
-            return matcher.Execute(new InMemoryDirectoryInfo(rootDir, files));
+            return matcher.Execute(new InMemoryDirectoryInfo(rootDir, files, matcher.ComparisonType));
         }
     }
 }

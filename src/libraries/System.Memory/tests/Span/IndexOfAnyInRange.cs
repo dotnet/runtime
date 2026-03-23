@@ -7,15 +7,125 @@ using Xunit;
 namespace System.SpanTests
 {
     public class IndexOfAnyInRangeTests_Byte : IndexOfAnyInRangeTests<byte> { protected override byte Create(int value) => (byte)value; }
-    public class IndexOfAnyInRangeTests_SByte : IndexOfAnyInRangeTests<sbyte> { protected override sbyte Create(int value) => (sbyte)value; }
+    public class IndexOfAnyInRangeTests_SByte : IndexOfAnyInRangeTests<sbyte>
+    {
+        protected override sbyte Create(int value) => (sbyte)value;
+
+        [Theory]
+        [InlineData(0, -1)]     // Includes negative value
+        [InlineData(-10, -20)]  // Both negative values
+        public void InvalidRange_WithNegativeValues_ReturnsMinus1(int low, int high)
+        {
+            for (int length = 1; length <= 64; length++)
+            {
+                sbyte[] array = Enumerable.Range(0, length).Select(i => (sbyte)i).ToArray();
+
+                sbyte lowInclusive = (sbyte)low;
+                sbyte highInclusive = (sbyte)high;
+
+                Assert.Equal(-1, IndexOfAnyInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(-1, LastIndexOfAnyInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(0, IndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(length - 1, LastIndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+            }
+        }
+    }
     public class IndexOfAnyInRangeTests_Char : IndexOfAnyInRangeTests<char> { protected override char Create(int value) => (char)value; }
-    public class IndexOfAnyInRangeTests_Int16 : IndexOfAnyInRangeTests<short> { protected override short Create(int value) => (short)value; }
+    public class IndexOfAnyInRangeTests_Int16 : IndexOfAnyInRangeTests<short>
+    {
+        protected override short Create(int value) => (short)value;
+
+        [Theory]
+        [InlineData(0, -1)]     // Includes negative value
+        [InlineData(-10, -20)]  // Both negative values
+        public void InvalidRange_WithNegativeValues_ReturnsMinus1(int low, int high)
+        {
+            for (int length = 1; length <= 64; length++)
+            {
+                short[] array = Enumerable.Range(0, length).Select(i => (short)i).ToArray();
+
+                short lowInclusive = (short)low;
+                short highInclusive = (short)high;
+
+                Assert.Equal(-1, IndexOfAnyInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(-1, LastIndexOfAnyInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(0, IndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(length - 1, LastIndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+            }
+        }
+    }
     public class IndexOfAnyInRangeTests_UInt16 : IndexOfAnyInRangeTests<ushort> { protected override ushort Create(int value) => (ushort)value; }
-    public class IndexOfAnyInRangeTests_Int32 : IndexOfAnyInRangeTests<int> { protected override int Create(int value) => value; }
+    public class IndexOfAnyInRangeTests_Int32 : IndexOfAnyInRangeTests<int>
+    {
+        protected override int Create(int value) => value;
+
+        [Theory]
+        [InlineData(0, -1)]     // Includes negative value
+        [InlineData(-10, -20)]  // Both negative values
+        public void InvalidRange_WithNegativeValues_ReturnsMinus1(int low, int high)
+        {
+            for (int length = 1; length <= 64; length++)
+            {
+                int[] array = Enumerable.Range(0, length).ToArray();
+
+                int lowInclusive = low;
+                int highInclusive = high;
+
+                Assert.Equal(-1, IndexOfAnyInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(-1, LastIndexOfAnyInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(0, IndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(length - 1, LastIndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+            }
+        }
+    }
     public class IndexOfAnyInRangeTests_UInt32 : IndexOfAnyInRangeTests<uint> { protected override uint Create(int value) => (uint)value; }
-    public class IndexOfAnyInRangeTests_Int64 : IndexOfAnyInRangeTests<long> { protected override long Create(int value) => value; }
+    public class IndexOfAnyInRangeTests_Int64 : IndexOfAnyInRangeTests<long>
+    {
+        protected override long Create(int value) => value;
+
+        [Theory]
+        [InlineData(0, -1)]     // Includes negative value
+        [InlineData(-10, -20)]  // Both negative values
+        public void InvalidRange_WithNegativeValues_ReturnsMinus1(int low, int high)
+        {
+            for (int length = 1; length <= 64; length++)
+            {
+                long[] array = Enumerable.Range(0, length).Select(i => (long)i).ToArray();
+
+                long lowInclusive = low;
+                long highInclusive = high;
+
+                Assert.Equal(-1, IndexOfAnyInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(-1, LastIndexOfAnyInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(0, IndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(length - 1, LastIndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+            }
+        }
+    }
     public class IndexOfAnyInRangeTests_UInt64 : IndexOfAnyInRangeTests<ulong> { protected override ulong Create(int value) => (ulong)value; }
-    public class IndexOfAnyInRangeTests_IntPtr : IndexOfAnyInRangeTests<nint> { protected override nint Create(int value) => (nint)value; }
+    public class IndexOfAnyInRangeTests_IntPtr : IndexOfAnyInRangeTests<nint>
+    {
+        protected override nint Create(int value) => (nint)value;
+
+        [Theory]
+        [InlineData(0, -1)]     // Includes negative value
+        [InlineData(-10, -20)]  // Both negative values
+        public void InvalidRange_WithNegativeValues_ReturnsMinus1(int low, int high)
+        {
+            for (int length = 1; length <= 64; length++)
+            {
+                nint[] array = Enumerable.Range(0, length).Select(i => (nint)i).ToArray();
+
+                nint lowInclusive = low;
+                nint highInclusive = high;
+
+                Assert.Equal(-1, IndexOfAnyInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(-1, LastIndexOfAnyInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(0, IndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(length - 1, LastIndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+            }
+        }
+    }
     public class IndexOfAnyInRangeTests_UIntPtr : IndexOfAnyInRangeTests<nuint> { protected override nuint Create(int value) => (nuint)value; }
     public class IndexOfAnyInRangeTests_TimeSpan : IndexOfAnyInRangeTests<TimeSpan> { protected override TimeSpan Create(int value) => TimeSpan.FromTicks(value); }
 
@@ -164,6 +274,62 @@ namespace System.SpanTests
                     Assert.Equal(offset, LastIndexOfAnyExceptInRange(array, Create(target), Create(target + 1)));
                     Assert.Equal(offset, LastIndexOfAnyExceptInRange(array, Create(target - 1), Create(target + 1)));
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(100, 50)]   // Clearly invalid range
+        [InlineData(100, 99)]   // Off-by-one case
+        [InlineData(50, 49)]    // Another off-by-one case
+        [InlineData(10, 5)]     // Small values
+        [InlineData(64, 63)]    // Another off-by-one near test array boundary
+        public void InvalidRange_HighLessThanLow_ReturnsMinus1(int low, int high)
+        {
+            // When highInclusive < lowInclusive, the range is invalid and no values should match
+            for (int length = 1; length <= 64; length++)
+            {
+                T[] array = Enumerable.Range(0, length).Select(Create).ToArray();
+
+                T lowInclusive = Create(low);
+                T highInclusive = Create(high);
+
+                // IndexOfAnyInRange should return -1 (no match)
+                Assert.Equal(-1, IndexOfAnyInRange(array, lowInclusive, highInclusive));
+
+                // LastIndexOfAnyInRange should return -1 (no match)
+                Assert.Equal(-1, LastIndexOfAnyInRange(array, lowInclusive, highInclusive));
+
+                // IndexOfAnyExceptInRange should find the first element (all values are outside the invalid range)
+                Assert.Equal(0, IndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+
+                // LastIndexOfAnyExceptInRange should find the last element (all values are outside the invalid range)
+                Assert.Equal(length - 1, LastIndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+            }
+        }
+
+        [Fact]
+        public void InvalidRange_SpecificValue_DoesNotMatch()
+        {
+            // Test that values don't match when the range is invalid
+            // Using values that are valid for all numeric types to avoid wrapping
+            for (int length = 1; length <= 64; length++)
+            {
+                T[] array = new T[length];
+                for (int i = 0; i < length; i++)
+                {
+                    array[i] = Create(50);
+                }
+
+                T lowInclusive = Create(120);
+                T highInclusive = Create(100);
+
+                // Value 50 is not in the (invalid) range [120, 100]
+                Assert.Equal(-1, IndexOfAnyInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(-1, LastIndexOfAnyInRange(array, lowInclusive, highInclusive));
+
+                // Value 50 is outside the (invalid) range [120, 100]
+                Assert.Equal(0, IndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
+                Assert.Equal(length - 1, LastIndexOfAnyExceptInRange(array, lowInclusive, highInclusive));
             }
         }
 

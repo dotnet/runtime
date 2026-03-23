@@ -189,6 +189,8 @@ internal static partial class ZipHelper
     // number of characters whose bytes do not add up to more than that number.
     internal static byte[] GetEncodedTruncatedBytesFromString(string? text, Encoding? encoding, int maxBytes, out bool isUTF8)
     {
+        Debug.Assert(maxBytes >= 0, "maxBytes must be non-negative");
+
         if (string.IsNullOrEmpty(text))
         {
             isUTF8 = false;
@@ -198,35 +200,26 @@ internal static partial class ZipHelper
         encoding ??= GetEncoding(text);
         isUTF8 = encoding.CodePage == 65001;
 
-        if (maxBytes == 0) // No truncation
+        if (maxBytes == 0)
         {
             return encoding.GetBytes(text);
         }
 
-        byte[] bytes;
-        if (isUTF8 && encoding.GetMaxByteCount(text.Length) > maxBytes)
+        byte[] bytes = encoding.GetBytes(text);
+
+        if (maxBytes < bytes.Length)
         {
-            int totalCodePoints = 0;
-            foreach (Rune rune in text.EnumerateRunes())
+            if (isUTF8)
             {
-                if (totalCodePoints + rune.Utf8SequenceLength > maxBytes)
+                while ((bytes[maxBytes] & 0xC0) == 0x80)
                 {
-                    break;
+                    maxBytes--;
                 }
-                totalCodePoints += rune.Utf8SequenceLength;
             }
 
-            bytes = encoding.GetBytes(text);
-
-            Debug.Assert(totalCodePoints > 0);
-            Debug.Assert(totalCodePoints <= bytes.Length);
-
-            return bytes[0..totalCodePoints];
+            bytes = bytes[0..maxBytes];
         }
 
-        bytes = encoding.GetBytes(text);
-        return maxBytes < bytes.Length ? bytes[0..maxBytes] : bytes;
+        return bytes;
     }
-
-
 }

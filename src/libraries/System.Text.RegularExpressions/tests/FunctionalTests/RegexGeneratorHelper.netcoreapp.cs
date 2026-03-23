@@ -69,7 +69,7 @@ namespace System.Text.RegularExpressions.Tests
             throw new InvalidOperationException();
         }
 
-        private static async Task<(Compilation, GeneratorDriverRunResult)> RunGeneratorCore(
+        internal static async Task<(Compilation, GeneratorDriverRunResult)> RunGeneratorCore(
             string code, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, bool checkOverflow = true, CancellationToken cancellationToken = default)
         {
             var proj = new AdhocWorkspace()

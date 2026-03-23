@@ -897,5 +897,41 @@ namespace System.Text.Json.Nodes.Tests
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<JsonArray>(json));
         }
+
+        [Fact]
+        public static void DeepEquals_WithNestedArrays()
+        {
+            JsonArray array1 = new JsonArray { 1, 2, new JsonArray { 3, 4 } };
+            JsonArray array2 = new JsonArray { 1, 2, new JsonArray { 3, 4 } };
+            JsonArray array3 = new JsonArray { 1, 2, new JsonArray { 3, 5 } };
+            
+            Assert.True(JsonNode.DeepEquals(array1, array2));
+            Assert.False(JsonNode.DeepEquals(array1, array3));
+            Assert.False(JsonNode.DeepEquals(array1, null));
+        }
+
+        [Fact]
+        public static void DeepEquals_DifferentLengths()
+        {
+            JsonArray array1 = new JsonArray { 1, 2, 3 };
+            JsonArray array2 = new JsonArray { 1, 2 };
+            
+            Assert.False(JsonNode.DeepEquals(array1, array2));
+        }
+
+        [Fact]
+        public static void Clear_RemovesAllItemsAndDetachesParent()
+        {
+            JsonArray array = new JsonArray { 1, 2, 3 };
+            JsonNode item = array[0];
+            
+            Assert.Equal(3, array.Count);
+            Assert.Same(array, item.Parent);
+            
+            array.Clear();
+            
+            Assert.Equal(0, array.Count);
+            Assert.Null(item.Parent);
+        }
     }
 }

@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -74,7 +76,7 @@ namespace System
             public T[] ToArray()
             {
                 if (_count == 0)
-                    return Array.Empty<T>();
+                    return [];
                 if (_count == 1)
                     return [_item];
 
@@ -148,6 +150,7 @@ namespace System
                 private readonly MdUtf8String m_name;
                 private readonly MemberListType m_listType;
 
+                [RequiresUnsafe]
                 public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
                     m_name = new MdUtf8String(pUtf8Name, cUtf8Name);
@@ -605,6 +608,13 @@ namespace System
                                 continue;
                             #endregion
 
+                            if (MetadataUpdater.IsSupported &&
+                                RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                                RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                            {
+                                continue;
+                            }
+
                             #region Calculate Binding Flags
                             bool isPublic = (methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
                             bool isStatic = (methodAttributes & MethodAttributes.Static) != 0;
@@ -615,7 +625,7 @@ namespace System
                             RuntimeMethodHandleInternal instantiatedHandle = RuntimeMethodHandle.GetStubIfNeeded(methodHandle, declaringType, null);
 
                             RuntimeMethodInfo runtimeMethodInfo = new RuntimeMethodInfo(
-                            instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
+                                instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
 
                             list.Add(runtimeMethodInfo);
                             #endregion
@@ -685,6 +695,14 @@ namespace System
 
                                 #endregion
 
+                                // Filter out deleted method before setting override state, so that a deleted override in a subclass does not hide override in an ancestor.
+                                if (MetadataUpdater.IsSupported &&
+                                    RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                                    RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                                {
+                                    continue;
+                                }
+
                                 #region Continue if this is a virtual and is already overridden
                                 if (isVirtual)
                                 {
@@ -719,7 +737,7 @@ namespace System
                                 RuntimeMethodHandleInternal instantiatedHandle = RuntimeMethodHandle.GetStubIfNeeded(methodHandle, declaringType, null);
 
                                 RuntimeMethodInfo runtimeMethodInfo = new RuntimeMethodInfo(
-                                instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
+                                    instantiatedHandle, declaringType, m_runtimeTypeCache, methodAttributes, bindingFlags, null);
 
                                 list.Add(runtimeMethodInfo);
                                 #endregion
@@ -737,7 +755,7 @@ namespace System
                 {
                     if (ReflectedType.IsGenericParameter)
                     {
-                        return Array.Empty<RuntimeConstructorInfo>();
+                        return [];
                     }
 
                     ListBuilder<RuntimeConstructorInfo> list = default;
@@ -763,6 +781,13 @@ namespace System
                         Debug.Assert(
                             (methodAttributes & MethodAttributes.Abstract) == 0 &&
                             (methodAttributes & MethodAttributes.Virtual) == 0);
+
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeMethodHandle.GetMethodDef(methodHandle)))
+                        {
+                            continue;
+                        }
 
                         #region Calculate Binding Flags
                         bool isPublic = (methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
@@ -875,6 +900,13 @@ namespace System
                                 continue;
                         }
 
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringType.GetRuntimeModule(), RuntimeFieldHandle.GetToken(handle)))
+                        {
+                            continue;
+                        }
+
                         #region Calculate Binding Flags
                         bool isPublic = fieldAccess == FieldAttributes.Public;
                         bool isStatic = (fieldAttributes & FieldAttributes.Static) != 0;
@@ -885,8 +917,7 @@ namespace System
                         if (needsStaticFieldForGeneric && isStatic)
                             runtimeFieldHandle = RuntimeFieldHandle.GetStaticFieldForGenericType(runtimeFieldHandle, declaringType);
 
-                        RuntimeFieldInfo runtimeFieldInfo =
-                            new RtFieldInfo(runtimeFieldHandle, declaringType, m_runtimeTypeCache, bindingFlags);
+                        var runtimeFieldInfo = new RtFieldInfo(runtimeFieldHandle, declaringType, m_runtimeTypeCache, bindingFlags);
 
                         list.Add(runtimeFieldInfo);
                     }
@@ -903,8 +934,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    RuntimeModule module = declaringType.GetRuntimeModule();
-                    MetadataImport scope = module.MetadataImport;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+                    MetadataImport scope = declaringModule.MetadataImport;
 
                     scope.EnumFields(tkDeclaringType, out MetadataEnumResult tkFields);
 
@@ -936,6 +967,13 @@ namespace System
                                     continue;
                             }
 
+                            if (MetadataUpdater.IsSupported &&
+                                RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                                RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, tkField))
+                            {
+                                continue;
+                            }
+
                             #region Calculate Binding Flags
                             bool isPublic = fieldAccess == FieldAttributes.Public;
                             bool isStatic = (fieldAttributes & FieldAttributes.Static) != 0;
@@ -948,7 +986,7 @@ namespace System
                             list.Add(runtimeFieldInfo);
                         }
                     }
-                    GC.KeepAlive(module);
+                    GC.KeepAlive(declaringModule);
                 }
 
                 private void AddSpecialInterface(
@@ -1066,7 +1104,7 @@ namespace System
 
                     // For example, TypeDescs do not have metadata tokens
                     if (MdToken.IsNullToken(tkEnclosingType))
-                        return Array.Empty<RuntimeType>();
+                        return [];
 
                     ListBuilder<RuntimeType> list = default;
 
@@ -1144,8 +1182,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    RuntimeModule module = declaringType.GetRuntimeModule();
-                    MetadataImport scope = module.MetadataImport;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+                    MetadataImport scope = declaringModule.MetadataImport;
 
                     scope.EnumEvents(tkDeclaringType, out MetadataEnumResult tkEvents);
 
@@ -1164,6 +1202,13 @@ namespace System
                                 continue;
                         }
 
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, tkEvent))
+                        {
+                            continue;
+                        }
+
                         RuntimeEventInfo eventInfo = new RuntimeEventInfo(
                             tkEvent, declaringType, m_runtimeTypeCache, out bool isPrivate);
 
@@ -1177,10 +1222,8 @@ namespace System
                         {
                             string name = eventInfo.Name;
 
-                            if (csEventInfos.ContainsKey(name))
+                            if (!csEventInfos.TryAdd(name, eventInfo))
                                 continue;
-
-                            csEventInfos[name] = eventInfo;
                         }
                         else
                         {
@@ -1191,7 +1234,7 @@ namespace System
 
                         list.Add(eventInfo);
                     }
-                    GC.KeepAlive(module);
+                    GC.KeepAlive(declaringModule);
                 }
 
                 private RuntimePropertyInfo[] PopulateProperties(Filter filter)
@@ -1251,8 +1294,8 @@ namespace System
                     if (MdToken.IsNullToken(tkDeclaringType))
                         return;
 
-                    RuntimeModule module = declaringType.GetRuntimeModule();
-                    MetadataImport scope = module.MetadataImport;
+                    RuntimeModule declaringModule = declaringType.GetRuntimeModule();
+                    MetadataImport scope = declaringModule.MetadataImport;
 
                     scope.EnumProperties(tkDeclaringType, out MetadataEnumResult tkProperties);
 
@@ -1274,6 +1317,14 @@ namespace System
 
                             if (!filter.Match(name))
                                 continue;
+                        }
+
+                        // Filter out deleted property before updating usedSlots, so that a deleted override in a subclass does not hide override in an ancestor.
+                        if (MetadataUpdater.IsSupported &&
+                            RuntimeTypeMetadataUpdateHandler.FilterDeletedMembers &&
+                            RuntimeTypeMetadataUpdateHandler.IsMetadataUpdateDeleted(declaringModule, tkProperty))
+                        {
+                            continue;
                         }
 
                         RuntimePropertyInfo propertyInfo =
@@ -1365,7 +1416,7 @@ namespace System
 
                         list.Add(propertyInfo);
                     }
-                    GC.KeepAlive(module);
+                    GC.KeepAlive(declaringModule);
                 }
                 #endregion
 
@@ -1458,6 +1509,7 @@ namespace System
 
                 return existingCache;
             }
+
             #endregion
 
             #region Internal Members
@@ -3227,12 +3279,15 @@ namespace System
 
         #region Identity
 
-        public sealed override bool IsCollectible
+        public sealed override unsafe bool IsCollectible
         {
             get
             {
-                RuntimeType thisType = this;
-                return RuntimeTypeHandle.IsCollectible(new QCallTypeHandle(ref thisType)) != Interop.BOOL.FALSE;
+                TypeHandle th = GetNativeTypeHandle();
+
+                bool isCollectible = th.IsTypeDesc ? th.AsTypeDesc()->IsCollectible : th.AsMethodTable()->IsCollectible;
+                GC.KeepAlive(this);
+                return isCollectible;
             }
         }
 
@@ -3361,6 +3416,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetGuid")]
+        [RequiresUnsafe]
         private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result);
 
 #if FEATURE_COMINTEROP
@@ -3542,8 +3598,7 @@ namespace System
 
         public override Type[] GetGenericArguments()
         {
-            Type[] types = GetRootElementType().TypeHandle.GetInstantiationPublic();
-            return types ?? EmptyTypes;
+            return GetRootElementType().TypeHandle.GetInstantiationPublic() ?? [];
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
@@ -3636,8 +3691,7 @@ namespace System
             if (!IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
-            Type[] constraints = new RuntimeTypeHandle(this).GetConstraints();
-            return constraints ?? EmptyTypes;
+            return new RuntimeTypeHandle(this).GetConstraints() ?? [];
         }
         #endregion
 
@@ -3675,6 +3729,26 @@ namespace System
                 throw new IndexOutOfRangeException();
 
             return new RuntimeTypeHandle(this).MakeArray(rank);
+        }
+
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            if (this.IsGenericTypeDefinition)
+                throw new InvalidOperationException(SR.Format(SR.FunctionPointer_ReturnTypeInvalid, this));
+
+            parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
+            foreach (Type? paramType in parameterTypes)
+            {
+                ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
+
+                if (paramType is not RuntimeType)
+                    return Type.MakeFunctionPointerSignatureType(this, parameterTypes, isUnmanaged);
+
+                if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
+                    throw new ArgumentException(SR.Format(SR.FunctionPointer_ParameterInvalid, paramType), nameof(parameterTypes));
+            }
+
+            return new RuntimeTypeHandle(this).MakeFunctionPointer(parameterTypes, isUnmanaged);
         }
 
         public override StructLayoutAttribute? StructLayoutAttribute => PseudoCustomAttribute.GetStructLayoutCustomAttribute(this);
@@ -3756,7 +3830,7 @@ namespace System
             }
 
             // Requires a modified type to return the modifiers.
-            return EmptyTypes;
+            return [];
         }
 
         public override Type[] GetFunctionPointerParameterTypes()
@@ -3771,7 +3845,7 @@ namespace System
 
             if (parameters.Length == 1)
             {
-                return EmptyTypes;
+                return [];
             }
 
             return parameters.AsSpan(1).ToArray();
@@ -3823,7 +3897,7 @@ namespace System
 
             object? instance;
 
-            args ??= Array.Empty<object>();
+            args ??= [];
 
             // Without a binder we need to do use the default binder...
             binder ??= DefaultBinder;
@@ -3844,7 +3918,7 @@ namespace System
                 int consCount = 0;
 
                 // We cannot use Type.GetTypeArray here because some of the args might be null
-                Type[] argsType = args.Length != 0 ? new Type[args.Length] : EmptyTypes;
+                Type[] argsType = args.Length != 0 ? new Type[args.Length] : [];
                 for (int i = 0; i < args.Length; i++)
                 {
                     if (args[i] is object arg)
@@ -4147,6 +4221,39 @@ namespace System
             return ret;
         }
 
+        [RequiresUnreferencedCode("The member might be removed")]
+        [UnmanagedCallersOnly]
+        private static unsafe void ForwardCallToInvokeMember(
+            RuntimeType* pRuntimeType,
+            string* pMemberName,
+            int flags,
+            object* pTarget,
+            object[]* pArgs,
+            bool[]* pArgsIsByRef,
+            int[]* pArgsWrapperTypes,
+            Type[]* pArgsTypes,
+            Type* pRetType,
+            object* pResult,
+            Exception* pException)
+        {
+            try
+            {
+                *pResult = pRuntimeType->ForwardCallToInvokeMember(
+                    *pMemberName,
+                    (BindingFlags)flags,
+                    *pTarget,
+                    *pArgs,
+                    *pArgsIsByRef,
+                    *pArgsWrapperTypes,
+                    *pArgsTypes,
+                    *pRetType);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         private static void WrapArgsForInvokeCall(object[] aArgs, int[] aArgsWrapperTypes)
         {
             int cArgs = aArgs.Length;
@@ -4174,11 +4281,9 @@ namespace System
                         case DispatchWrapperType.Error:
                             wrapperType = typeof(ErrorWrapper);
                             break;
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
                         case DispatchWrapperType.Currency:
                             wrapperType = typeof(CurrencyWrapper);
                             break;
-#pragma warning restore 0618
                         case DispatchWrapperType.BStr:
                             wrapperType = typeof(BStrWrapper);
                             isString = true;
@@ -4235,11 +4340,9 @@ namespace System
                         case DispatchWrapperType.Error:
                             aArgs[i] = new ErrorWrapper(aArgs[i]);
                             break;
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
                         case DispatchWrapperType.Currency:
                             aArgs[i] = new CurrencyWrapper(aArgs[i]);
                             break;
-#pragma warning restore 0618
                         case DispatchWrapperType.BStr:
                             aArgs[i] = new BStrWrapper((string)aArgs[i]);
                             break;
@@ -4274,12 +4377,14 @@ namespace System
     internal readonly unsafe partial struct MdUtf8String
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
+        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.
         private readonly int m_StringHeapByteLength;
 
+        [RequiresUnsafe]
         internal MdUtf8String(void* pStringHeap)
         {
             byte* pStringBytes = (byte*)pStringHeap;
@@ -4295,6 +4400,7 @@ namespace System
             m_pStringHeap = pStringBytes;
         }
 
+        [RequiresUnsafe]
         internal MdUtf8String(byte* pUtf8String, int cUtf8String)
         {
             m_pStringHeap = pUtf8String;

@@ -31,7 +31,7 @@ internal class AMD64Unwinder(Target target)
     private readonly Target _target = target;
     private readonly IExecutionManager _eman = target.Contracts.ExecutionManager;
 
-    private readonly bool _unix = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix;
+    private readonly bool _unixAMD64ABI = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() != RuntimeInfoOperatingSystem.Windows;
 
     public bool Unwind(ref AMD64Context context)
     {
@@ -97,7 +97,7 @@ internal class AMD64Unwinder(Target target)
         {
             frameOffset = unwindInfo.FrameOffset;
 
-            if (_unix)
+            if (_unixAMD64ABI)
             {
                 // If UnwindInfo->FrameOffset == 15 (the maximum value), then there might be a UWOP_SET_FPREG_LARGE.
                 // However, it is still legal for a UWOP_SET_FPREG to set UnwindInfo->FrameOffset == 15 (since this
@@ -133,7 +133,7 @@ internal class AMD64Unwinder(Target target)
                 unwindOp = GetUnwindCode(unwindInfo, index);
                 if (unwindOp.UnwindOp == UnwindCode.OpCodes.UWOP_SET_FPREG)
                     break;
-                if (_unix)
+                if (_unixAMD64ABI)
                 {
                     if (unwindOp.UnwindOp == UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE)
                     {
@@ -476,7 +476,7 @@ internal class AMD64Unwinder(Target target)
                         // pop nonvolatile-integer-register[0..7]
                         //
 
-                        byte registerNumber = (byte)(ReadByteAt(nextByte + 2) & 0x7);
+                        byte registerNumber = (byte)(ReadByteAt(nextByte) & 0x7);
                         SetRegister(ref context, registerNumber, _target.Read<ulong>(context.Rsp));
 
                         context.Rsp += 8;
@@ -835,7 +835,7 @@ internal class AMD64Unwinder(Target target)
 
                 UnwindCode unwindOp = GetUnwindCode(unwindInfo, index);
 
-                if (_unix)
+                if (_unixAMD64ABI)
                 {
                     if (unwindOp.UnwindOp > UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE)
                     {
@@ -845,7 +845,8 @@ internal class AMD64Unwinder(Target target)
                 }
                 else
                 {
-                    if (unwindOp.UnwindOp == UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE)
+                    Debug.Assert(_target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows);
+                    if (unwindOp.UnwindOp > UnwindCode.OpCodes.UWOP_PUSH_MACHFRAME)
                     {
                         Debug.Fail("Expected unwind code");
                         return false;
@@ -929,7 +930,7 @@ internal class AMD64Unwinder(Target target)
                         //
                         case UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE:
                             {
-                                UnwinderAssert(_unix);
+                                UnwinderAssert(_unixAMD64ABI);
                                 UnwinderAssert(unwindInfo.FrameOffset == 15);
                                 uint frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset;
                                 frameOffset += (uint)(GetUnwindCode(unwindInfo, index + 2).FrameOffset << 16);
@@ -953,6 +954,21 @@ internal class AMD64Unwinder(Target target)
                                 uint frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset * 8u;
                                 SetRegister(ref context, unwindOp.OpInfo, _target.ReadPointer(frameBase + frameOffset));
                                 index += 1;
+                                break;
+                            }
+
+                        //
+                        // Save nonvolatile integer register on the stack using a
+                        // 32-bit displacement.
+                        //
+                        // The operation information is the register number.
+                        //
+                        case UnwindCode.OpCodes.UWOP_SAVE_NONVOL_FAR:
+                            {
+                                uint frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset;
+                                frameOffset += (uint)(GetUnwindCode(unwindInfo, index + 2).FrameOffset << 16);
+                                SetRegister(ref context, unwindOp.OpInfo, _target.ReadPointer(frameBase + frameOffset));
+                                index += 2;
                                 break;
                             }
 
@@ -1001,7 +1017,7 @@ internal class AMD64Unwinder(Target target)
                         //
                         case UnwindCode.OpCodes.UWOP_PUSH_MACHFRAME:
                             {
-                                machineFrame = false;
+                                machineFrame = true;
                                 TargetPointer returnAddressPtr = context.Rsp;
                                 TargetPointer stackAddressPtr = context.Rsp + (3 * 8);
                                 if (unwindOp.OpInfo != 0)
@@ -1246,50 +1262,13 @@ internal class AMD64Unwinder(Target target)
 
     private static bool IsRexPrefix(byte b) => (b & 0xf0) == 0x40;
 
-    private static TargetPointer GetRegister(AMD64Context context, byte register) => register switch
-    {
-        0 => context.Rax,
-        1 => context.Rcx,
-        2 => context.Rdx,
-        3 => context.Rbx,
-        4 => context.Rsp,
-        5 => context.Rbp,
-        6 => context.Rsi,
-        7 => context.Rdi,
-        8 => context.R8,
-        9 => context.R9,
-        10 => context.R10,
-        11 => context.R11,
-        12 => context.R12,
-        13 => context.R13,
-        14 => context.R14,
-        15 => context.R15,
-        _ => throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.")
-    };
+    private static TargetPointer GetRegister(AMD64Context context, byte register)
+        => context.TryReadRegister(register, out TargetNUInt value) ? value.Value : throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.");
 
     private static void SetRegister(ref AMD64Context context, byte register, TargetPointer value)
     {
-        switch (register)
-        {
-            case 0: context.Rax = value; break;
-            case 1: context.Rcx = value; break;
-            case 2: context.Rdx = value; break;
-            case 3: context.Rbx = value; break;
-            case 4: context.Rsp = value; break;
-            case 5: context.Rbp = value; break;
-            case 6: context.Rsi = value; break;
-            case 7: context.Rdi = value; break;
-            case 8: context.R8 = value; break;
-            case 9: context.R9 = value; break;
-            case 10: context.R10 = value; break;
-            case 11: context.R11 = value; break;
-            case 12: context.R12 = value; break;
-            case 13: context.R13 = value; break;
-            case 14: context.R14 = value; break;
-            case 15: context.R15 = value; break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.");
-        }
+        if (!context.TrySetRegister(register, new TargetNUInt(value)))
+            throw new ArgumentOutOfRangeException(nameof(register), "Invalid register number for AMD64 context.");
     }
 
     private static void UnwinderAssert(bool condition, string? message = null)

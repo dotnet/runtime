@@ -635,10 +635,24 @@ namespace System.Runtime.InteropServices
 #endif
 
         /// <summary>
-        /// Converts the HRESULT to a CLR exception.
+        /// Converts an HRESULT value to a corresponding CLR <see cref="Exception"/>.
         /// </summary>
+        /// <param name="errorCode">The HRESULT value to convert.</param>
+        /// <returns>
+        /// An <see cref="Exception"/> that represents the supplied HRESULT, or
+        /// <see langword="null"/> if <paramref name="errorCode"/> indicates success (non-negative HRESULT).
+        /// </returns>
         public static Exception? GetExceptionForHR(int errorCode) => GetExceptionForHR(errorCode, IntPtr.Zero);
 
+        /// <summary>
+        /// Converts an HRESULT value and optional error information into a CLR <see cref="Exception"/>.
+        /// </summary>
+        /// <param name="errorCode">The HRESULT value to convert.</param>
+        /// <param name="errorInfo">Optional platform-specific error information (for example IErrorInfo on COM platforms), or <see cref="IntPtr.Zero"/> when not provided.</param>
+        /// <returns>
+        /// An <see cref="Exception"/> that represents the supplied HRESULT and error information, or
+        /// <see langword="null"/> if <paramref name="errorCode"/> indicates success (non-negative HRESULT).
+        /// </returns>
         public static Exception? GetExceptionForHR(int errorCode, IntPtr errorInfo)
         {
             if (errorCode >= 0)
@@ -649,6 +663,16 @@ namespace System.Runtime.InteropServices
             return GetExceptionForHRInternal(errorCode, errorInfo);
         }
 
+        /// <summary>
+        /// Converts an HRESULT value that is associated with a COM interface call into a CLR <see cref="Exception"/>, using extended COM error information if the provided COM object supports it.
+        /// </summary>
+        /// <param name="errorCode">The HRESULT value to convert.</param>
+        /// <param name="iid">The interface ID that was involved in the failing call. This ID can be used when probing for additional error information.</param>
+        /// <param name="pUnk">A pointer to the COM object involved in the failing call, or <see cref="IntPtr.Zero"/> if unavailable.</param>
+        /// <returns>
+        /// An <see cref="Exception"/> that represents the supplied HRESULT and COM context, or
+        /// <see langword="null"/> if <paramref name="errorCode"/> indicates success (non-negative HRESULT).
+        /// </returns>
         public static Exception? GetExceptionForHR(int errorCode, in Guid iid, IntPtr pUnk)
         {
             if (errorCode >= 0)
@@ -900,8 +924,10 @@ namespace System.Runtime.InteropServices
 #endif
 
         /// <summary>
-        /// Throws a CLR exception based on the HRESULT.
+        /// Throws a CLR exception that corresponds to the given HRESULT if it represents a failure.
         /// </summary>
+        /// <param name="errorCode">The HRESULT value to evaluate.</param>
+        /// <exception cref="Exception">An exception corresponding to <paramref name="errorCode"/> when it is a failure (negative HRESULT).</exception>
         public static void ThrowExceptionForHR(int errorCode)
         {
             if (errorCode < 0)
@@ -910,6 +936,12 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        /// <summary>
+        /// Throws a CLR exception that corresponds to the given HRESULT and error information if it represents a failure.
+        /// </summary>
+        /// <param name="errorCode">The HRESULT value to evaluate.</param>
+        /// <param name="errorInfo">Optional platform-specific error information to be used when constructing the exception.</param>
+        /// <exception cref="Exception">An exception corresponding to <paramref name="errorCode"/> when it is a failure (negative HRESULT).</exception>
         public static void ThrowExceptionForHR(int errorCode, IntPtr errorInfo)
         {
             if (errorCode < 0)
@@ -918,6 +950,13 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        /// <summary>
+        /// Throws a CLR exception that corresponds to the given HRESULT and COM context if it represents a failure, using extended COM error information if the provided COM object supports it.
+        /// </summary>
+        /// <param name="errorCode">The HRESULT value to evaluate.</param>
+        /// <param name="iid">The interface ID that was involved in the failing call.</param>
+        /// <param name="pUnk">A pointer to the COM object involved in the failing call, or <see cref="IntPtr.Zero"/> if unavailable.</param>
+        /// <exception cref="Exception">An exception corresponding to <paramref name="errorCode"/> when it is a failure (negative HRESULT).</exception>
         public static void ThrowExceptionForHR(int errorCode, in Guid iid, IntPtr pUnk)
         {
             if (errorCode < 0)

@@ -4,6 +4,7 @@
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -412,19 +413,48 @@ namespace System
             number.CheckConsistency();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetFloatingPointMaxDigitsAndPrecision(char fmt, ref int precision, NumberFormatInfo info, out bool isSignificantDigits)
         {
+            // We want to fast path the common case of no format and general format + precision.
+            // These are commonly encountered and the full switch is otherwise large enough to show up in hot path profiles
+
             if (fmt == 0)
             {
                 isSignificantDigits = true;
                 return precision;
             }
 
-            int maxDigits = precision;
+            // Bitwise-or with space (' ') converts any uppercase character to
+            // lowercase and keeps unsupported characters as something unsupported.
+            fmt |= ' ';
 
-            switch (fmt | 0x20)
+            if (fmt == 'g')
             {
-                case 'c':
+                // The general format uses the precision specifier to indicate the number of significant
+                // digits to format. This defaults to the shortest roundtrippable string. Additionally,
+                // given that we can't return zero significant digits, we treat 0 as returning the shortest
+                // roundtrippable string as well.
+
+                isSignificantDigits = true;
+
+                if (precision == 0)
+                {
+                    precision = -1;
+                    return 0;
+                }
+                return precision;
+            }
+
+            return Slow(fmt, ref precision, info, out isSignificantDigits);
+
+            static int Slow(char fmt, ref int precision, NumberFormatInfo info, out bool isSignificantDigits)
+            {
+                int maxDigits = precision;
+
+                switch (fmt)
+                {
+                    case 'c':
                     {
                         // The currency format uses the precision specifier to indicate the number of
                         // decimal digits to format. This defaults to NumberFormatInfo.CurrencyDecimalDigits.
@@ -438,7 +468,7 @@ namespace System
                         break;
                     }
 
-                case 'e':
+                    case 'e':
                     {
                         // The exponential format uses the precision specifier to indicate the number of
                         // decimal digits to format. This defaults to 6. However, the exponential format
@@ -456,8 +486,8 @@ namespace System
                         break;
                     }
 
-                case 'f':
-                case 'n':
+                    case 'f':
+                    case 'n':
                     {
                         // The fixed-point and number formats use the precision specifier to indicate the number
                         // of decimal digits to format. This defaults to NumberFormatInfo.NumberDecimalDigits.
@@ -471,23 +501,7 @@ namespace System
                         break;
                     }
 
-                case 'g':
-                    {
-                        // The general format uses the precision specifier to indicate the number of significant
-                        // digits to format. This defaults to the shortest roundtrippable string. Additionally,
-                        // given that we can't return zero significant digits, we treat 0 as returning the shortest
-                        // roundtrippable string as well.
-
-                        if (precision == 0)
-                        {
-                            precision = -1;
-                        }
-                        isSignificantDigits = true;
-
-                        break;
-                    }
-
-                case 'p':
+                    case 'p':
                     {
                         // The percent format uses the precision specifier to indicate the number of
                         // decimal digits to format. This defaults to NumberFormatInfo.PercentDecimalDigits.
@@ -505,7 +519,7 @@ namespace System
                         break;
                     }
 
-                case 'r':
+                    case 'r':
                     {
                         // The roundtrip format ignores the precision specifier and always returns the shortest
                         // roundtrippable string.
@@ -516,14 +530,15 @@ namespace System
                         break;
                     }
 
-                default:
+                    default:
                     {
                         ThrowHelper.ThrowFormatException_BadFormatSpecifier();
                         goto case 'r'; // unreachable
                     }
-            }
+                }
 
-            return maxDigits;
+                return maxDigits;
+            }
         }
 
         public static string FormatFloat<TNumber>(TNumber value, string? format, NumberFormatInfo info)
@@ -1507,6 +1522,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe TChar* Int32ToHexChars<TChar>(TChar* buffer, uint value, int hexBase, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -1563,6 +1579,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe TChar* UInt32ToBinaryChars<TChar>(TChar* buffer, uint value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -1600,6 +1617,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe void WriteTwoDigits<TChar>(uint value, TChar* ptr) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -1616,6 +1634,7 @@ namespace System
         /// This method performs best when the starting index is a constant literal.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe void WriteFourDigits<TChar>(uint value, TChar* ptr) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -1637,6 +1656,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe void WriteDigits<TChar>(uint value, TChar* ptr, int count) where TChar : unmanaged, IUtfChar<TChar>
         {
             TChar* cur;
@@ -1653,6 +1673,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe TChar* UInt32ToDecChars<TChar>(TChar* bufferEnd, uint value) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -1682,6 +1703,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe TChar* UInt32ToDecChars<TChar>(TChar* bufferEnd, uint value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -1941,6 +1963,7 @@ namespace System
 
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
 #endif
         private static unsafe TChar* Int64ToHexChars<TChar>(TChar* buffer, ulong value, int hexBase, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -2013,6 +2036,7 @@ namespace System
 
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
 #endif
         private static unsafe TChar* UInt64ToBinaryChars<TChar>(TChar* buffer, ulong value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -2074,6 +2098,7 @@ namespace System
 
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
 #endif
         internal static unsafe TChar* UInt64ToDecChars<TChar>(TChar* bufferEnd, ulong value) where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -2113,6 +2138,7 @@ namespace System
 
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
 #endif
         internal static unsafe TChar* UInt64ToDecChars<TChar>(TChar* bufferEnd, ulong value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -2374,6 +2400,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe TChar* Int128ToHexChars<TChar>(TChar* buffer, UInt128 value, int hexBase, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             ulong lower = value.Lower;
@@ -2437,6 +2464,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe TChar* UInt128ToBinaryChars<TChar>(TChar* buffer, UInt128 value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             ulong lower = value.Lower;
@@ -2485,6 +2513,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe TChar* UInt128ToDecChars<TChar>(TChar* bufferEnd, UInt128 value) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -2497,6 +2526,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe TChar* UInt128ToDecChars<TChar>(TChar* bufferEnd, UInt128 value, int digits) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));

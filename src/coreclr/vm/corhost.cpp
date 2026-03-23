@@ -127,7 +127,7 @@ HRESULT CorHost2::Stop()
     {
         NOTHROW;
         ENTRY_POINT;    // We're bringing the EE down, so no point in probing
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
     if (!g_fEEStarted)
@@ -244,13 +244,11 @@ static PTRARRAYREF SetCommandLineArgs(PCWSTR pwzAssemblyPath, int argc, PCWSTR* 
 
     PCWSTR exePath = Bundle::AppIsBundle() ? static_cast<PCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath;
 
-    PTRARRAYREF result;
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENVIRONMENT__INITIALIZE_COMMAND_LINE_ARGS);
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(exePath);
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(argc);
-    args[ARGNUM_2] = PTR_TO_ARGHOLDER(argv);
-    CALL_MANAGED_METHOD_RETREF(result, PTRARRAYREF, args);
+    PTRARRAYREF result = NULL;
+    GCPROTECT_BEGIN(result);
+    UnmanagedCallersOnlyCaller initializeCommandLineArgs(METHOD__ENVIRONMENT__INITIALIZE_COMMAND_LINE_ARGS);
+    initializeCommandLineArgs.InvokeThrowing(exePath, argc, argv, &result);
+    GCPROTECT_END();
 
     return result;
 }
@@ -491,7 +489,7 @@ HRESULT CorHost2::ExecuteInAppDomain(DWORD dwAppDomainId,
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -527,7 +525,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -571,14 +569,8 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     {
         GCX_COOP();
 
-        MethodDescCallSite setup(METHOD__APPCONTEXT__SETUP);
-
-        ARG_SLOT args[3];
-        args[0] = PtrToArgSlot(pPropertyNames);
-        args[1] = PtrToArgSlot(pPropertyValues);
-        args[2] = PtrToArgSlot(nProperties);
-
-        setup.Call(args);
+        UnmanagedCallersOnlyCaller setup(METHOD__APPCONTEXT__SETUP);
+        setup.InvokeThrowing(pPropertyNames, pPropertyValues, nProperties);
     }
 
     LPCWSTR pwzNativeDllSearchDirectories = NULL;
@@ -665,8 +657,8 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     // Initialize default event sources
     {
         GCX_COOP();
-        MethodDescCallSite initEventSources(METHOD__EVENT_SOURCE__INITIALIZE_DEFAULT_EVENT_SOURCES);
-        initEventSources.Call(NULL);
+        UnmanagedCallersOnlyCaller initEventSources(METHOD__EVENT_SOURCE__INITIALIZE_DEFAULT_EVENT_SOURCES);
+        initEventSources.InvokeThrowing();
     }
 #endif // FEATURE_PERFTRACING
 
@@ -682,23 +674,21 @@ HRESULT CorHost2::CreateDelegate(
     LPCWSTR wszMethodName,
     INT_PTR* fnPtr)
 {
-
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
-
-    HRESULT hr=S_OK;
 
     EMPTY_STRING_TO_NULL(wszAssemblyName);
     EMPTY_STRING_TO_NULL(wszClassName);
     EMPTY_STRING_TO_NULL(wszMethodName);
 
-    if (fnPtr == 0)
+    if (fnPtr == NULL)
        return E_POINTER;
+
     *fnPtr = 0;
 
     if(wszAssemblyName == NULL)
@@ -714,7 +704,9 @@ HRESULT CorHost2::CreateDelegate(
     if (appDomainID != DefaultADID)
         return HOST_E_INVALIDOPERATION;
 
+    HRESULT hr = S_OK;
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
+
     GCX_COOP_THREAD_EXISTS(GET_THREAD());
 
     MAKE_UTF8PTR_FROMWIDE(szClassName, wszClassName);
@@ -751,12 +743,17 @@ HRESULT CorHost2::CreateDelegate(
 
         if (pMD->HasUnmanagedCallersOnlyAttribute())
         {
-            *fnPtr = pMD->GetMultiCallableAddrOfCode();
+            pMD->PrepareForUseAsAFunctionPointer();
+            *fnPtr = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
         }
         else
         {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            ThrowHR(COR_E_NOTSUPPORTED);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
             UMEntryThunkData* pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
             *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
         }
     }
 
@@ -770,7 +767,7 @@ HRESULT CorHost2::Authenticate(ULONGLONG authKey)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -784,7 +781,7 @@ HRESULT CorHost2::RegisterMacEHPort()
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;
@@ -797,7 +794,7 @@ HRESULT CorHost2::SetStartupFlags(STARTUP_FLAGS flag)
     CONTRACTL
     {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
         ENTRY_POINT;  // This is called by a host.
     }
     CONTRACTL_END;

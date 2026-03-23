@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public partial class SocketOptionNameTest
     {
         private static bool SocketsReuseUnicastPortSupport => Capability.SocketsReuseUnicastPortSupport().HasValue;
@@ -20,7 +20,7 @@ namespace System.Net.Sockets.Tests
         private static readonly bool CanRunMulticastTests = !(PlatformDetection.IsWindowsNanoServer || PlatformDetection.IsWindowsServerCore ||
                                                               PlatformDetection.IsAzureLinux || PlatformDetection.IsQemuLinux);
 
-        [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
+        [ConditionalFact(typeof(SocketOptionNameTest), nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketGetOption()
         {
             using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -36,7 +36,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
+        [ConditionalFact(typeof(SocketOptionNameTest), nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketSetOption()
         {
             using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -69,12 +69,19 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanRunMulticastTests))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/113827", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+        [ConditionalFact(typeof(SocketOptionNameTest), nameof(CanRunMulticastTests))]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
-            await MulticastInterface_Set_Helper(0);
+            try
+            {
+                await MulticastInterface_Set_Helper(0);
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.HostUnreachable && PlatformDetection.IsApplePlatform)
+            {
+                // https://github.com/dotnet/runtime/issues/114450
+                throw new SkipTestException("HostUnreachable indicates missing local network permission; this test might pass or fail depending on the environment. Please verify manually.");
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
@@ -126,7 +133,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(nameof(CanRunMulticastTests))]
+        [ConditionalFact(typeof(SocketOptionNameTest), nameof(CanRunMulticastTests))]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
@@ -723,7 +730,7 @@ namespace System.Net.Sockets.Tests
 
     [Collection(nameof(DisableParallelization))]
     // Set of tests to not run  together with any other tests.
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class NoParallelTests
     {
         [Fact]

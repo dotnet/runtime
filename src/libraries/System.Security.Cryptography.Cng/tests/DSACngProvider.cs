@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             return new DSACng(keySize);
         }
 
-        public bool SupportsFips186_3 => !PlatformDetection.IsWindows7;
+        public bool SupportsFips186_3 => true;
     }
 
     public partial class DSAFactory

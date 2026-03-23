@@ -124,7 +124,7 @@ namespace Microsoft.NET.HostModel.AppHost
                     if (File.Exists(appHostDestinationFilePath))
                         File.Delete(appHostDestinationFilePath);
 
-                    long appHostSourceLength = new FileInfo(appHostSourceFilePath).Length;
+                    long appHostSourceLength = HostModelUtils.GetFileLength(appHostSourceFilePath);
                     string destinationFileName = Path.GetFileName(appHostDestinationFilePath);
                     // Memory-mapped files cannot be resized, so calculate
                     // the maximum length of the destination file upfront.

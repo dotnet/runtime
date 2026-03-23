@@ -37,13 +37,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = new DependencyList();
 
-            DefType containingType = _type.ContainingType;
+            MetadataType containingType = _type.ContainingType;
             if (containingType != null)
-                dependencies.Add(factory.TypeMetadata((MetadataType)containingType), "Containing type of a reflectable type");
+                dependencies.Add(factory.TypeMetadata(containingType), "Containing type of a reflectable type");
             else
                 dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
-            MetadataType baseType = _type.MetadataBaseType;
+            MetadataType baseType = _type.BaseType;
             if (baseType != null)
                 GetMetadataDependencies(ref dependencies, factory, baseType, "Base type of a reflectable type");
 

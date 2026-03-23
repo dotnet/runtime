@@ -194,10 +194,8 @@ enum ILStubTypes
     ILSTUB_ARRAYOP_SET                   = 0x80000002,
     ILSTUB_ARRAYOP_ADDRESS               = 0x80000003,
     ILSTUB_MULTICASTDELEGATE_INVOKE      = 0x80000004,
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
     ILSTUB_UNBOXINGILSTUB                = 0x80000005,
     ILSTUB_INSTANTIATINGSTUB             = 0x80000006,
-#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
     ILSTUB_WRAPPERDELEGATE_INVOKE        = 0x80000007,
     ILSTUB_TAILCALL_STOREARGS            = 0x80000008,
     ILSTUB_TAILCALL_CALLTARGET           = 0x80000009,
@@ -231,10 +229,8 @@ inline bool SF_IsMulticastDelegateStub  (DWORD dwStubFlags) { LIMITED_METHOD_CON
 inline bool SF_IsDelegateInvokeMethod  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_DELEGATE_INVOKE_METHOD); }
 
 inline bool SF_IsWrapperDelegateStub    (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_WRAPPERDELEGATE_INVOKE); }
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
 inline bool SF_IsUnboxingILStub         (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_UNBOXINGILSTUB); }
 inline bool SF_IsInstantiatingStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_INSTANTIATINGSTUB); }
-#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
 inline bool SF_IsTailCallStoreArgsStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_STOREARGS); }
 inline bool SF_IsTailCallCallTargetStub (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_CALLTARGET); }
 inline bool SF_IsDelegateShuffleThunk (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_DELEGATE_SHUFFLE_THUNK); }

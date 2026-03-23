@@ -299,6 +299,14 @@ inline BOOL MethodTable::IsValueType()
     return GetFlag(enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
 }
 
+inline BOOL MethodTable::IsContinuation()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    PTR_MethodTable contClass = g_pContinuationClassIfSubTypeCreated;
+    return contClass != NULL && m_pParentMethodTable == contClass;
+}
+
 //==========================================================================================
 inline DWORD MethodTable::GetRank()
 {
@@ -308,7 +316,11 @@ inline DWORD MethodTable::GetRank()
     if (GetFlag(enum_flag_Category_IfArrayThenSzArray))
         return 1;  // ELEMENT_TYPE_SZARRAY
     else
-        return dac_cast<PTR_ArrayClass>(GetClass())->GetRank();
+    {
+        // Multidim array: BaseSize = ARRAYBASE_BASESIZE + Rank * sizeof(DWORD) * 2
+        DWORD boundsSize = GetBaseSize() - ARRAYBASE_BASESIZE;
+        return boundsSize / (sizeof(DWORD) * 2);
+    }
 }
 
 //==========================================================================================
@@ -1339,7 +1351,7 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
     while (--numInterfaces);
 
     // Second scan, looking for the curiously recurring generic scenario
-    if (pInterface->HasInstantiation() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pInterface->GetInstantiation().ContainsAllOneType(this))
+    if (pInterface->HasInstantiation() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pInterface->GetInstantiation().ContainsAllOneType(this->GetSpecialInstantiationType()))
     {
         numInterfaces = GetNumInterfaces();
         pInfo = GetInterfaceMap();

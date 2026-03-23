@@ -13,6 +13,7 @@
 {
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
 .namespace Test_sin3double {
 .class private sequential ansi sealed beforefieldinit VV extends [mscorlib]System.ValueType
@@ -201,6 +202,7 @@
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
       01 00 00 00
   )
+  .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {string('https://github.com/dotnet/runtime/issues/34196') int32(2)}
   .entrypoint
   .locals (int32 V_0,
            float64 V_1,

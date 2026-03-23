@@ -633,6 +633,8 @@ private:
 #endif
     }
 
+    BOOL IsPointingToPrestub(PCODE target);
+
 public:
     PrecodeType GetType()
     {
@@ -684,7 +686,7 @@ public:
     // Note: This is immediate target of the precode. It does not follow jump stub if there is one.
     PCODE GetTarget();
 
-    BOOL IsPointingTo(PCODE target, PCODE addr)
+    static BOOL IsPointingTo(PCODE target, PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
@@ -694,8 +696,8 @@ public:
 
 #ifdef TARGET_AMD64
         // Handle jump stubs
-        if (isJumpRel64(target)) {
-            target = decodeJump64(target);
+        if (isBackToBackJump(target)) {
+            target = decodeBackToBackJump(target);
             if (target == addr)
                 return TRUE;
         }
@@ -712,13 +714,7 @@ public:
         return IsPointingTo(GetTarget(), pNativeCode);
     }
 
-    BOOL IsPointingToPrestub(PCODE target);
-
-    BOOL IsPointingToPrestub()
-    {
-        WRAPPER_NO_CONTRACT;
-        return IsPointingToPrestub(GetTarget());
-    }
+    BOOL IsPointingToPrestub();
 
     PCODE GetEntryPoint()
     {
@@ -867,5 +863,7 @@ extern InterleavedLoaderHeapConfig s_fixupStubPrecodeHeapConfig;
 #endif
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+TADDR GetInterpreterCodeFromInterpreterPrecodeIfPresent(TADDR codePointerMaybeInterpreterStub);
 
 #endif // __PRECODE_H__

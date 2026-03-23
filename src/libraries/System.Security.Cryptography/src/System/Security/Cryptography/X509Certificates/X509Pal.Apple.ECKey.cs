@@ -11,12 +11,12 @@ namespace System.Security.Cryptography.X509Certificates
         {
             public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
             {
-                return new ECDsaImplementation.ECDsaSecurityTransforms(DecodeECPublicKey(certificatePal));
+                return new ECDsaImplementation.ECDsaAppleCrypto(DecodeECPublicKey(certificatePal));
             }
 
             public ECDiffieHellman DecodeECDiffieHellmanPublicKey(ICertificatePal? certificatePal)
             {
-                return new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms(DecodeECPublicKey(certificatePal));
+                return new ECDiffieHellmanImplementation.ECDiffieHellmanAppleCrypto(DecodeECPublicKey(certificatePal));
             }
 
             private static SafeSecKeyRefHandle DecodeECPublicKey(ICertificatePal? certificatePal)

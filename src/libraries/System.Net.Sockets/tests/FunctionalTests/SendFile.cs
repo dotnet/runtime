@@ -37,6 +37,18 @@ namespace System.Net.Sockets.Tests
             await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(s, null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
         }
 
+        [Fact]
+        public void SendFile_NonBlockingSocket_ThrowsInvalidOperationException()
+        {
+            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (client)
+            using (server)
+            {
+                client.Blocking = false;
+                Assert.Throws<InvalidOperationException>(() => client.SendFile(null));
+            }
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -363,25 +375,25 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendFile_SyncSpan : SendFile<SocketHelperSpanSync>
     {
         public SendFile_SyncSpan(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendFile_SyncSpanForceNonBlocking : SendFile<SocketHelperSpanSyncForceNonBlocking>
     {
         public SendFile_SyncSpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendFile_ArraySync : SendFile<SocketHelperArraySync>
     {
         public SendFile_ArraySync(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendFile_SyncForceNonBlocking : SendFile<SocketHelperSyncForceNonBlocking>
     {
         public SendFile_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
@@ -453,7 +465,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendFile_Apm : SendFile<SocketHelperApm>
     {
         public SendFile_Apm(ITestOutputHelper output) : base(output) { }
@@ -484,7 +496,6 @@ namespace System.Net.Sockets.Tests
         {
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42534", TestPlatforms.Windows)]
         [OuterLoop("Creates and sends a file several gigabytes long")]
         [Fact]
         public async Task GreaterThan2GBFile_SendsAllBytes()
@@ -524,19 +535,19 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendFile_NonParallel_SyncSpan : SendFile_NonParallel<SocketHelperSpanSync>
     {
         public SendFile_NonParallel_SyncSpan(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendFile_NonParallel_SyncSpanForceNonBlocking : SendFile_NonParallel<SocketHelperSpanSyncForceNonBlocking>
     {
         public SendFile_NonParallel_SyncSpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendFile_NonParallel_ArraySync : SendFile_NonParallel<SocketHelperArraySync>
     {
         public SendFile_NonParallel_ArraySync(ITestOutputHelper output) : base(output) { }
@@ -548,7 +559,7 @@ namespace System.Net.Sockets.Tests
         public SendFile_NonParallel_Task(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendFile_NonParallel_Apm : SendFile_NonParallel<SocketHelperApm>
     {
         public SendFile_NonParallel_Apm(ITestOutputHelper output) : base(output) { }

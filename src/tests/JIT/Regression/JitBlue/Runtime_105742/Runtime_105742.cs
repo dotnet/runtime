@@ -7,6 +7,9 @@
 // Debug: Outputs [9223372036854775808, 9223372036854775808]
 // Release: Outputs [0, 0]
 
+
+namespace Runtime_105742;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -15,14 +18,9 @@ using Xunit;
 
 public class Runtime_105742
 {
-    [Fact]
-    public static void TestEntyPoint()
+    [ConditionalFact(typeof(Avx512BW.VL), nameof(Avx512BW.VL.IsSupported))]
+    public static void TestEntryPoint()
     {
-        if (!Avx512BW.VL.IsSupported)
-        {
-            return;
-        }
-
         if (ShiftLeft().ToString() != "<2, 1, 1, 1, 1, 1, 1, 1>")
         {
             throw new Exception("ShiftLeft");

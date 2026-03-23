@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -52,6 +53,20 @@ namespace System.Reflection
             // m_slotsUsed = 0;
 
             m_scout = new LoaderAllocatorScout();
+        }
+
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void Create(object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = new LoaderAllocator();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
 #pragma warning disable CA1823, 414, 169

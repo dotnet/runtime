@@ -670,7 +670,7 @@ namespace System.Security.Cryptography
             Debug.Assert(read == source.Length);
             return dsa;
 
-            static void SubjectPublicKeyReader(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn identifier, out CompositeMLDsa dsa)
+            static void SubjectPublicKeyReader(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn identifier, out CompositeMLDsa dsa)
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
 
@@ -679,7 +679,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                 }
 
-                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, key.Span);
+                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, key);
             }
         }
 
@@ -861,24 +861,18 @@ namespace System.Security.Cryptography
             return dsa;
 
             static void PrivateKeyReader(
-                ReadOnlyMemory<byte> privateKeyContents,
-                in AlgorithmIdentifierAsn algorithmIdentifier,
+                ReadOnlySpan<byte> privateKeyContents,
+                in ValueAlgorithmIdentifierAsn algorithmIdentifier,
                 out CompositeMLDsa dsa)
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
-                AsnValueReader reader = new AsnValueReader(privateKeyContents.Span, AsnEncodingRules.BER);
 
-                if (!reader.TryReadPrimitiveOctetString(out ReadOnlySpan<byte> key) || reader.HasData)
-                {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                }
-
-                if (!algorithm.IsValidPrivateKeySize(key.Length))
+                if (!algorithm.IsValidPrivateKeySize(privateKeyContents.Length))
                 {
                     throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                 }
 
-                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, key);
+                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, privateKeyContents);
             }
         }
 
@@ -1863,9 +1857,7 @@ namespace System.Security.Cryptography
 
             ReadOnlySpan<byte> publicKey = buffer.AsSpan(0, written);
 
-            // TODO verify overhead
-
-            // TODO: The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is ___ bytes.
+            // The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is around 24 bytes.
             // Round it off to 32. This checked operation should never throw because the inputs are not
             // user provided.
             int capacity = checked(32 + publicKey.Length);
@@ -1918,16 +1910,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static CompositeMLDsaAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
+        private static CompositeMLDsaAlgorithm GetAlgorithmIdentifier(ref readonly ValueAlgorithmIdentifierAsn identifier)
         {
             CompositeMLDsaAlgorithm? algorithm = CompositeMLDsaAlgorithm.GetAlgorithmFromOid(identifier.Algorithm);
             Debug.Assert(algorithm is not null, "Algorithm identifier should have been pre-validated by KeyFormatHelper.");
 
-            if (identifier.Parameters.HasValue)
+            if (identifier.HasParameters)
             {
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                identifier.Encode(writer);
-                throw Helpers.CreateAlgorithmUnknownException(writer);
+                throw Helpers.CreateAlgorithmUnknownException(in identifier);
             }
 
             return algorithm;

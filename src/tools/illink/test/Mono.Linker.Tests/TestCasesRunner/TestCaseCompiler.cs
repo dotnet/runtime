@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -267,6 +266,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             // Default debug info format for the current platform.
             DebugInformationFormat debugType = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? DebugInformationFormat.Pdb : DebugInformationFormat.PortablePdb;
             bool emitPdb = false;
+            Dictionary<string, string> features = [];
             if (options.AdditionalArguments != null)
             {
                 foreach (var option in options.AdditionalArguments)
@@ -303,11 +303,27 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                 compilationOptions = compilationOptions.WithMainTypeName(mainTypeName);
                                 break;
                             }
+                            else if (splitIndex != -1 && option[..splitIndex] == "/features")
+                            {
+                                var feature = option[(splitIndex + 1)..];
+                                var featureSplit = feature.IndexOf('=');
+                                if (featureSplit == -1)
+                                    throw new InvalidOperationException($"Argument is malformed: '{option}'");
+                                features.Add(feature[..featureSplit], feature[(featureSplit + 1)..]);
+                                break;
+                            }
+                            else if (splitIndex != -1 && option[..splitIndex] == "/nowarn")
+                            {
+                                var nowarn = option[(splitIndex + 1)..];
+                                var withNoWarn = compilationOptions.SpecificDiagnosticOptions.SetItem(nowarn, ReportDiagnostic.Suppress);
+                                compilationOptions = compilationOptions.WithSpecificDiagnosticOptions(withNoWarn);
+                                break;
+                            }
                             throw new NotImplementedException(option);
                     }
                 }
             }
-            var parseOptions = new CSharpParseOptions(preprocessorSymbols: options.Defines, languageVersion: languageVersion);
+            var parseOptions = new CSharpParseOptions(preprocessorSymbols: options.Defines, languageVersion: languageVersion).WithFeatures(features);
             var emitOptions = new EmitOptions(debugInformationFormat: debugType);
             var pdbPath = (!emitPdb || debugType == DebugInformationFormat.Embedded) ? null : options.OutputPath.ChangeExtension(".pdb").ToString();
 
@@ -371,72 +387,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         protected virtual NPath CompileCSharpAssemblyWithCsc(CompilerOptions options)
         {
-#if NET
             return CompileCSharpAssemblyWithRoslyn(options);
-#else
-            return CompileCSharpAssemblyWithExternalCompiler(LocateCscExecutable(), options, "/shared ");
-#endif
-        }
-
-        protected virtual NPath CompileCSharpAssemblyWithMcs(CompilerOptions options)
-        {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                CompileCSharpAssemblyWithExternalCompiler(LocateMcsExecutable(), options, string.Empty);
-
-            return CompileCSharpAssemblyWithDefaultCompiler(options);
-        }
-
-        protected static NPath CompileCSharpAssemblyWithExternalCompiler(string executable, CompilerOptions options, string compilerSpecificArguments)
-        {
-            var capturedOutput = new List<string>();
-            var process = new Process();
-            process.StartInfo.FileName = executable;
-            process.StartInfo.Arguments = OptionsToCompilerCommandLineArguments(options, compilerSpecificArguments);
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.OutputDataReceived += (sender, args) => capturedOutput.Add(args.Data);
-            process.Start();
-            process.BeginOutputReadLine();
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
-                Assert.Fail($"Failed to compile assembly with csc: {options.OutputPath}\n{capturedOutput.Aggregate((buff, s) => buff + Environment.NewLine + s)}");
-
-            return options.OutputPath;
-        }
-
-        static string LocateMcsExecutable()
-        {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                Assert.Ignore("We don't have a universal way of locating mcs on Windows");
-
-            return "mcs";
-        }
-
-        protected static string OptionsToCompilerCommandLineArguments(CompilerOptions options, string compilerSpecificArguments)
-        {
-            var builder = new StringBuilder();
-            if (!string.IsNullOrEmpty(compilerSpecificArguments))
-                builder.Append(compilerSpecificArguments);
-            builder.Append($"/out:{options.OutputPath}");
-            var target = options.OutputPath.ExtensionWithDot == ".exe" ? "exe" : "library";
-            builder.Append($" /target:{target}");
-            if (options.Defines != null && options.Defines.Length > 0)
-                builder.Append(options.Defines.Aggregate(string.Empty, (buff, arg) => $"{buff} /define:{arg}"));
-
-            builder.Append(options.References.Aggregate(string.Empty, (buff, arg) => $"{buff} /r:{arg}"));
-
-            if (options.Resources != null && options.Resources.Length > 0)
-                builder.Append(options.Resources.Aggregate(string.Empty, (buff, arg) => $"{buff} /res:{arg}"));
-
-            if (options.AdditionalArguments != null && options.AdditionalArguments.Length > 0)
-                builder.Append(options.AdditionalArguments.Aggregate(string.Empty, (buff, arg) => $"{buff} {arg}"));
-
-            builder.Append(options.SourceFiles.Aggregate(string.Empty, (buff, arg) => $"{buff} {arg}"));
-
-            return builder.ToString();
         }
 
         protected NPath CompileCSharpAssembly(CompilerOptions options)
@@ -446,9 +397,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             if (options.CompilerToUse == "csc")
                 return CompileCSharpAssemblyWithCsc(options);
-
-            if (options.CompilerToUse == "mcs")
-                return CompileCSharpAssemblyWithMcs(options);
 
             throw new ArgumentException($"Invalid compiler value `{options.CompilerToUse}`");
         }

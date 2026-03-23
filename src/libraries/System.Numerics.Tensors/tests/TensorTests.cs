@@ -3,6 +3,8 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -617,6 +619,77 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public static void TensorCreateSingleElementTests()
+        {
+            // Tensor.Create with a single-element array should have stride 0
+            Tensor<double> src = Tensor.Create([1.0]);
+            Assert.Equal(1, src.Rank);
+            Assert.Equal(1, src.Lengths[0]);
+            Assert.Equal(0, src.Strides[0]);
+            Assert.Equal(1, src.FlattenedLength);
+            Assert.Equal(1.0, src[0]);
+
+            // CreateFromShapeUninitialized without strides should work
+            Tensor<double> dst = Tensor.CreateFromShapeUninitialized<double>(src.Lengths);
+            Assert.Equal(1, dst.Rank);
+            Assert.Equal(1, dst.Lengths[0]);
+            Assert.Equal(0, dst.Strides[0]);
+            Assert.Equal(1, dst.FlattenedLength);
+
+            // CopyTo should succeed
+            src.CopyTo(dst);
+            Assert.Equal(1.0, dst[0]);
+
+            // CreateFromShapeUninitialized with explicit strides should work
+            dst = Tensor.CreateFromShapeUninitialized<double>(src.Lengths, src.Strides);
+            Assert.Equal(1, dst.Rank);
+            Assert.Equal(1, dst.Lengths[0]);
+            Assert.Equal(0, dst.Strides[0]);
+            Assert.Equal(1, dst.FlattenedLength);
+
+            src.CopyTo(dst);
+            Assert.Equal(1.0, dst[0]);
+
+            // CreateFromShape without strides should also work
+            dst = Tensor.CreateFromShape<double>(src.Lengths);
+            Assert.Equal(1, dst.Rank);
+            Assert.Equal(1, dst.Lengths[0]);
+            Assert.Equal(0, dst.Strides[0]);
+            Assert.Equal(1, dst.FlattenedLength);
+
+            src.CopyTo(dst);
+            Assert.Equal(1.0, dst[0]);
+
+            // CreateFromShape with explicit strides should also work
+            dst = Tensor.CreateFromShape<double>(src.Lengths, src.Strides);
+            Assert.Equal(1, dst.Rank);
+            Assert.Equal(1, dst.Lengths[0]);
+            Assert.Equal(0, dst.Strides[0]);
+            Assert.Equal(1, dst.FlattenedLength);
+
+            src.CopyTo(dst);
+            Assert.Equal(1.0, dst[0]);
+
+            // TensorSpan from single-element span should also have stride 0
+            Span<double> span = [42.0];
+            TensorSpan<double> tensorSpan = new TensorSpan<double>(span);
+            Assert.Equal(1, tensorSpan.Rank);
+            Assert.Equal(1, tensorSpan.Lengths[0]);
+            Assert.Equal(0, tensorSpan.Strides[0]);
+            Assert.Equal(1, tensorSpan.FlattenedLength);
+            Assert.Equal(42.0, tensorSpan[0]);
+
+            // ReadOnlyTensorSpan from single-element span should also have stride 0
+            ReadOnlySpan<double> roSpan = [42.0];
+            ReadOnlyTensorSpan<double> roTensorSpan = new ReadOnlyTensorSpan<double>(roSpan);
+            Assert.Equal(1, roTensorSpan.Rank);
+            Assert.Equal(1, roTensorSpan.Lengths[0]);
+            Assert.Equal(0, roTensorSpan.Strides[0]);
+            Assert.Equal(1, roTensorSpan.FlattenedLength);
+            Assert.Equal(42.0, roTensorSpan[0]);
+        }
+
+        [Fact]
         public static void TensorCosineSimilarityTests()
         {
             float[] a = [0, 0, 0, 1, 1, 1];
@@ -712,40 +785,429 @@ namespace System.Numerics.Tensors.Tests
         //    Assert.Throws<Exception>(() => Tensor.SequenceEqual(t0, t1));
         //}
 
+        /// <summary>
+        /// Provides test cases of (dataArray, shape, strides) for creating non-dense tensor spans.
+        /// Each case has known logical elements that differ from the raw buffer layout.
+        /// </summary>
+        public static IEnumerable<object[]> NonDenseTensorData()
+        {
+            // 2x2 from 1D array with stride gap: logical elements are [10, 20, 30, 40]
+            yield return new object[] { new int[] { 10, 20, 99, 99, 30, 40, 99, 99 }, new nint[] { 2, 2 }, new nint[] { 4, 1 }, new int[] { 10, 20, 30, 40 } };
+            // 2x3 from 1D array with stride gap: logical elements are [1, 2, 3, 4, 5, 6]
+            yield return new object[] { new int[] { 1, 2, 3, 99, 4, 5, 6, 99 }, new nint[] { 2, 3 }, new nint[] { 4, 1 }, new int[] { 1, 2, 3, 4, 5, 6 } };
+            // 3x2 from 1D array with stride gap: logical elements are [1, 2, 3, 4, 5, 6]
+            yield return new object[] { new int[] { 1, 2, 99, 3, 4, 99, 5, 6, 99 }, new nint[] { 3, 2 }, new nint[] { 3, 1 }, new int[] { 1, 2, 3, 4, 5, 6 } };
+            // 1x2 from 1D array with larger stride gap
+            yield return new object[] { new int[] { 42, 99, 99, 99, 7, 99, 99, 99 }, new nint[] { 2 }, new nint[] { 4 }, new int[] { 42, 7 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorSequenceEqualNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            var ts1 = new ReadOnlyTensorSpan<int>(data, shape, strides);
+            Assert.False(ts1.IsDense);
+
+            // Non-dense vs non-dense with same logical elements but different gap values
+            int[] data2 = (int[])data.Clone();
+            for (int i = 0; i < data2.Length; i++)
+            {
+                if (data2[i] == 99)
+                {
+                    data2[i] = 77;
+                }
+            }
+            var ts2 = new ReadOnlyTensorSpan<int>(data2, shape, strides);
+            Assert.False(ts2.IsDense);
+            Assert.True(ts1.SequenceEqual(ts2));
+
+            // Non-dense vs dense with same logical elements
+            var tsDense = new ReadOnlyTensorSpan<int>(expectedLogical, shape);
+            Assert.True(tsDense.IsDense);
+            Assert.True(ts1.SequenceEqual(tsDense));
+            Assert.True(tsDense.SequenceEqual(ts1));
+
+            // TensorSpan overload also works
+            var tspan1 = new TensorSpan<int>(data, shape, strides);
+            Assert.True(tspan1.SequenceEqual(ts2));
+
+            // Differing logical element should return false
+            int[] data3 = (int[])data.Clone();
+            data3[0] = data3[0] + 1;
+            var ts3 = new ReadOnlyTensorSpan<int>(data3, shape, strides);
+            Assert.False(ts1.SequenceEqual(ts3));
+        }
+
+        /// <summary>
+        /// Computes the set of buffer offsets that correspond to logical elements in a non-dense tensor.
+        /// </summary>
+        private static HashSet<int> ComputeLogicalOffsets(nint[] shape, nint[] strides, nint flattenedLength)
+        {
+            HashSet<int> logicalOffsets = new HashSet<int>();
+            for (nint i = 0; i < flattenedLength; i++)
+            {
+                nint offset = 0;
+                nint remaining = i;
+                for (int d = shape.Length - 1; d >= 0; d--)
+                {
+                    nint dimIndex = remaining % shape[d];
+                    remaining /= shape[d];
+                    offset += dimIndex * strides[d];
+                }
+                logicalOffsets.Add((int)offset);
+            }
+            return logicalOffsets;
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorFillGaussianNormalDistributionNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            _ = expectedLogical;
+            double[] dblData = new double[data.Length];
+            var ts = new TensorSpan<double>(dblData, shape, strides);
+            Assert.False(ts.IsDense);
+
+            Tensor.FillGaussianNormalDistribution(ts, new Random(42));
+
+            // All logical elements should be filled
+            foreach (double val in ts)
+            {
+                Assert.NotEqual(0.0, val);
+            }
+
+            // Gap positions should remain untouched (zero)
+            HashSet<int> logicalOffsets = ComputeLogicalOffsets(shape, strides, ts.FlattenedLength);
+            for (int i = 0; i < dblData.Length; i++)
+            {
+                if (!logicalOffsets.Contains(i))
+                {
+                    Assert.Equal(0.0, dblData[i]);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorFillUniformDistributionNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            _ = expectedLogical;
+            double[] dblData = new double[data.Length];
+            var ts = new TensorSpan<double>(dblData, shape, strides);
+            Assert.False(ts.IsDense);
+
+            Tensor.FillUniformDistribution(ts, new Random(42));
+
+            // All logical elements should be filled with values in [0, 1)
+            foreach (double val in ts)
+            {
+                Assert.InRange(val, 0.0, 1.0);
+                Assert.NotEqual(0.0, val);
+            }
+
+            // Gap positions should remain untouched (zero)
+            HashSet<int> logicalOffsets = ComputeLogicalOffsets(shape, strides, ts.FlattenedLength);
+            for (int i = 0; i < dblData.Length; i++)
+            {
+                if (!logicalOffsets.Contains(i))
+                {
+                    Assert.Equal(0.0, dblData[i]);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorIndexOfMaxNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            _ = expectedLogical;
+            // Set a known max in the data at logical position
+            int[] testData = (int[])data.Clone();
+            // First, set all logical elements to small values
+            nint flatLen = 1;
+            foreach (nint s in shape)
+            {
+                flatLen *= s;
+            }
+
+            // Place the maximum value at the last logical position
+            nint lastOffset = 0;
+            nint rem = flatLen - 1;
+            for (int d = shape.Length - 1; d >= 0; d--)
+            {
+                nint dimIndex = rem % shape[d];
+                rem /= shape[d];
+                lastOffset += dimIndex * strides[d];
+            }
+            testData[(int)lastOffset] = 9999;
+
+            var ts = new ReadOnlyTensorSpan<int>(testData, shape, strides);
+            Assert.False(ts.IsDense);
+
+            nint idx = Tensor.IndexOfMax(ts);
+            Assert.Equal(flatLen - 1, idx);
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorIndexOfMinNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            _ = expectedLogical;
+            // Set all logical elements to positive values, then put the minimum at the last logical position
+            int[] testData = new int[data.Length];
+            Array.Fill(testData, 50);
+
+            nint flatLen = 1;
+            foreach (nint s in shape)
+            {
+                flatLen *= s;
+            }
+
+            // Set all logical positions to values > 0
+            for (nint i = 0; i < flatLen; i++)
+            {
+                nint offset = 0;
+                nint remaining = i;
+                for (int d = shape.Length - 1; d >= 0; d--)
+                {
+                    nint dimIndex = remaining % shape[d];
+                    remaining /= shape[d];
+                    offset += dimIndex * strides[d];
+                }
+                testData[(int)offset] = (int)(i + 10);
+            }
+
+            // Place the minimum at the last logical position
+            nint lastOffset = 0;
+            nint rem = flatLen - 1;
+            for (int d = shape.Length - 1; d >= 0; d--)
+            {
+                nint dimIndex = rem % shape[d];
+                rem /= shape[d];
+                lastOffset += dimIndex * strides[d];
+            }
+            testData[(int)lastOffset] = -1;
+
+            var ts = new ReadOnlyTensorSpan<int>(testData, shape, strides);
+            Assert.False(ts.IsDense);
+
+            nint idx = Tensor.IndexOfMin(ts);
+            Assert.Equal(flatLen - 1, idx);
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorIndexOfMaxMagnitudeNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            _ = expectedLogical;
+            int[] testData = new int[data.Length];
+            Array.Fill(testData, 1);
+
+            nint flatLen = 1;
+            foreach (nint s in shape)
+            {
+                flatLen *= s;
+            }
+
+            // Set all logical positions to small values
+            for (nint i = 0; i < flatLen; i++)
+            {
+                nint offset = 0;
+                nint remaining = i;
+                for (int d = shape.Length - 1; d >= 0; d--)
+                {
+                    nint dimIndex = remaining % shape[d];
+                    remaining /= shape[d];
+                    offset += dimIndex * strides[d];
+                }
+                testData[(int)offset] = (int)(i + 1);
+            }
+
+            // Place the max magnitude at the last logical position
+            nint lastOffset = 0;
+            nint rem = flatLen - 1;
+            for (int d = shape.Length - 1; d >= 0; d--)
+            {
+                nint dimIndex = rem % shape[d];
+                rem /= shape[d];
+                lastOffset += dimIndex * strides[d];
+            }
+            testData[(int)lastOffset] = -9999;
+
+            var ts = new ReadOnlyTensorSpan<int>(testData, shape, strides);
+            Assert.False(ts.IsDense);
+
+            nint idx = Tensor.IndexOfMaxMagnitude(ts);
+            Assert.Equal(flatLen - 1, idx);
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorIndexOfMinMagnitudeNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            _ = expectedLogical;
+            int[] testData = new int[data.Length];
+            Array.Fill(testData, 100);
+
+            nint flatLen = 1;
+            foreach (nint s in shape)
+            {
+                flatLen *= s;
+            }
+
+            // Set all logical positions to large magnitude values
+            for (nint i = 0; i < flatLen; i++)
+            {
+                nint offset = 0;
+                nint remaining = i;
+                for (int d = shape.Length - 1; d >= 0; d--)
+                {
+                    nint dimIndex = remaining % shape[d];
+                    remaining /= shape[d];
+                    offset += dimIndex * strides[d];
+                }
+                testData[(int)offset] = (int)(i + 100);
+            }
+
+            // Place the min magnitude at the first logical position
+            testData[0] = 0;
+
+            var ts = new ReadOnlyTensorSpan<int>(testData, shape, strides);
+            Assert.False(ts.IsDense);
+
+            nint idx = Tensor.IndexOfMinMagnitude(ts);
+            Assert.Equal(0, idx);
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorResizeToNonDenseSourceTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            var src = new ReadOnlyTensorSpan<int>(data, shape, strides);
+            Assert.False(src.IsDense);
+
+            // Resize to a larger dense destination
+            nint srcFlatLen = src.FlattenedLength;
+            int[] dstData = new int[(int)srcFlatLen + 2];
+            var dst = new TensorSpan<int>(dstData, [(nint)dstData.Length], [1]);
+            Assert.True(dst.IsDense);
+
+            Tensor.ResizeTo(src, dst);
+
+            for (int i = 0; i < expectedLogical.Length; i++)
+            {
+                Assert.Equal(expectedLogical[i], dstData[i]);
+            }
+            // Extra positions should be zero-filled
+            for (int i = expectedLogical.Length; i < dstData.Length; i++)
+            {
+                Assert.Equal(0, dstData[i]);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorResizeToNonDenseDestinationTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            // Create a dense source with known values
+            var src = new ReadOnlyTensorSpan<int>(expectedLogical, [(nint)expectedLogical.Length], [1]);
+            Assert.True(src.IsDense);
+
+            // Create a non-dense destination
+            int[] dstData = new int[data.Length];
+            var dst = new TensorSpan<int>(dstData, shape, strides);
+            Assert.False(dst.IsDense);
+
+            nint copyLength = Math.Min(src.FlattenedLength, dst.FlattenedLength);
+            Tensor.ResizeTo(src, dst);
+
+            // Verify logical elements were written correctly
+            int logicalIdx = 0;
+            foreach (int val in dst)
+            {
+                if (logicalIdx < expectedLogical.Length)
+                {
+                    Assert.Equal(expectedLogical[logicalIdx], val);
+                }
+                logicalIdx++;
+            }
+        }
+
+        [Fact]
+        public static void TensorResizeNonDenseTests()
+        {
+            // 2x3 tensor, slice to 2x2 (non-dense), then resize
+            Tensor<int> tensor = Tensor.Create([10, 20, 30, 40, 50, 60], [2, 3]);
+            Tensor<int> sliced = tensor.Slice(0..2, 0..2);
+            Assert.False(sliced.IsDense);
+
+            Tensor<int> resized = Tensor.Resize(sliced, [3]);
+            Assert.Equal(3, resized.FlattenedLength);
+            Assert.Equal(10, resized[0]);
+            Assert.Equal(20, resized[1]);
+            Assert.Equal(40, resized[2]);
+
+            // 3x4 tensor, slice to 2x2 (non-dense), then resize larger
+            Tensor<int> tensor2 = Tensor.Create(Enumerable.Range(1, 12).ToArray(), [3, 4]);
+            Tensor<int> sliced2 = tensor2.Slice(0..2, 0..2);
+            Assert.False(sliced2.IsDense);
+
+            Tensor<int> resized2 = Tensor.Resize(sliced2, [6]);
+            Assert.Equal(6, resized2.FlattenedLength);
+            Assert.Equal(1, resized2[0]);
+            Assert.Equal(2, resized2[1]);
+            Assert.Equal(5, resized2[2]);
+            Assert.Equal(6, resized2[3]);
+            Assert.Equal(0, resized2[4]);
+            Assert.Equal(0, resized2[5]);
+        }
+
         [Fact]
         public static void TensorMultiplyTests()
         {
             Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 3).ToArray());
             Tensor<int> t1 = Tensor.Create(Enumerable.Range(0, 3).ToArray(), lengths: [3, 1]);
 
-            // TODO: This double broadcast will be added back in the future
-            //Tensor<int> t2 = Tensor.Multiply(t0.AsReadOnlyTensorSpan(), t1);
-            //Assert.Equal([3,3], t2.Lengths);
-            //Assert.Equal(0, t2[0, 0]);
-            //Assert.Equal(0, t2[0, 1]);
-            //Assert.Equal(0, t2[0, 2]);
-            //Assert.Equal(0, t2[1, 0]);
-            //Assert.Equal(1, t2[1, 1]);
-            //Assert.Equal(2, t2[1, 2]);
-            //Assert.Equal(0, t2[2, 0]);
-            //Assert.Equal(2, t2[2, 1]);
-            //Assert.Equal(4, t2[2, 2]);
+            Tensor<int> t2 = Tensor.Multiply(t0.AsReadOnlyTensorSpan(), t1);
+            Assert.Equal([3, 3], t2.Lengths);
+            Assert.Equal(0, t2[0, 0]);
+            Assert.Equal(0, t2[0, 1]);
+            Assert.Equal(0, t2[0, 2]);
+            Assert.Equal(0, t2[1, 0]);
+            Assert.Equal(1, t2[1, 1]);
+            Assert.Equal(2, t2[1, 2]);
+            Assert.Equal(0, t2[2, 0]);
+            Assert.Equal(2, t2[2, 1]);
+            Assert.Equal(4, t2[2, 2]);
 
-            //t2 = Tensor.Multiply(t1.AsReadOnlyTensorSpan(), t0);
+            t2 = Tensor.Multiply(t1.AsReadOnlyTensorSpan(), t0);
 
-            //Assert.Equal([3, 3], t2.Lengths);
-            //Assert.Equal(0, t2[0, 0]);
-            //Assert.Equal(0, t2[0, 1]);
-            //Assert.Equal(0, t2[0, 2]);
-            //Assert.Equal(0, t2[1, 0]);
-            //Assert.Equal(1, t2[1, 1]);
-            //Assert.Equal(2, t2[1, 2]);
-            //Assert.Equal(0, t2[2, 0]);
-            //Assert.Equal(2, t2[2, 1]);
-            //Assert.Equal(4, t2[2, 2]);
+            Assert.Equal([3, 3], t2.Lengths);
+            Assert.Equal(0, t2[0, 0]);
+            Assert.Equal(0, t2[0, 1]);
+            Assert.Equal(0, t2[0, 2]);
+            Assert.Equal(0, t2[1, 0]);
+            Assert.Equal(1, t2[1, 1]);
+            Assert.Equal(2, t2[1, 2]);
+            Assert.Equal(0, t2[2, 0]);
+            Assert.Equal(2, t2[2, 1]);
+            Assert.Equal(4, t2[2, 2]);
+
+            // Same rank with broadcasting: [2,3] * [2,1] should broadcast to [2,3]
+            Tensor<int> t3 = Tensor.Create([2, 3, 5, 7, 11, 13], [2, 3]);
+            Tensor<int> t4 = Tensor.Create([-2, -3], [2, 1]);
+            t2 = Tensor.Multiply(t3.AsReadOnlyTensorSpan(), t4);
+
+            Assert.Equal([2, 3], t2.Lengths);
+            Assert.Equal(-4, t2[0, 0]);
+            Assert.Equal(-6, t2[0, 1]);
+            Assert.Equal(-10, t2[0, 2]);
+            Assert.Equal(-21, t2[1, 0]);
+            Assert.Equal(-33, t2[1, 1]);
+            Assert.Equal(-39, t2[1, 2]);
 
             t1 = Tensor.Create(Enumerable.Range(0, 9).ToArray(), lengths: [3, 3]);
-            Tensor<int> t2 = Tensor.Multiply(t0.AsReadOnlyTensorSpan(), t1);
+            t2 = Tensor.Multiply(t0.AsReadOnlyTensorSpan(), t1);
 
             Assert.Equal([3, 3], t2.Lengths);
             Assert.Equal(0, t2[0, 0]);
@@ -934,6 +1396,70 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void TensorReverseTests()
         {
+            // Helper: verify Reverse correctness for any shape
+            static void AssertReverseCorrect(nint[] shape)
+            {
+                nint totalLengthNative = 1;
+                foreach (var s in shape)
+                    totalLengthNative = checked(totalLengthNative * s);
+
+                int totalLength = checked((int)totalLengthNative);
+
+                // Use 1-based values so 0 (default) is never a valid value - makes bugs obvious
+                int[] data = new int[totalLength];
+                for (int i = 0; i < totalLength; i++)
+                    data[i] = i + 1;
+
+                var tensor = Tensor.Create<int>(data, shape);
+                var reversed = Tensor.Reverse<int>(tensor);
+
+                // Shape must be preserved
+                Assert.Equal(tensor.Lengths.ToArray(), reversed.Lengths.ToArray());
+
+                // Flattened elements should be in reverse order
+                var flatOriginal = new int[totalLength];
+                tensor.FlattenTo(flatOriginal);
+                Array.Reverse(flatOriginal);
+
+                var actualFlat = new int[totalLength];
+                reversed.FlattenTo(actualFlat);
+
+                Assert.Equal(flatOriginal, actualFlat);
+            }
+
+            // Test the reproduction case from issue #124105
+            AssertReverseCorrect([1, 3]);
+
+            // Test 1D tensors
+            AssertReverseCorrect([1]);
+            AssertReverseCorrect([3]);
+            AssertReverseCorrect([5]);
+
+            // Test 2D tensors with length-1 dimensions
+            AssertReverseCorrect([3, 1]);
+            AssertReverseCorrect([1, 1]);
+            AssertReverseCorrect([1, 4]);
+            AssertReverseCorrect([4, 1]);
+
+            // Test 2D tensors asymmetric
+            AssertReverseCorrect([2, 3]);
+            AssertReverseCorrect([3, 2]);
+
+            // Test 3D tensors with length-1 dimensions
+            AssertReverseCorrect([1, 2, 3]);
+            AssertReverseCorrect([2, 1, 3]);
+            AssertReverseCorrect([2, 3, 1]);
+            AssertReverseCorrect([1, 1, 3]);
+            AssertReverseCorrect([1, 3, 1]);
+            AssertReverseCorrect([3, 1, 1]);
+            AssertReverseCorrect([1, 1, 1]);
+
+            // Test larger tensors
+            AssertReverseCorrect([2, 3, 4]);
+            AssertReverseCorrect([1, 2, 3, 4]);
+            AssertReverseCorrect([2, 1, 3, 2]);
+
+            // Keep existing explicit test case
             Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 8).ToArray(), lengths: [2, 2, 2]);
             var t1 = Tensor.Reverse<int>(t0);
             Assert.Equal(7, t1[0, 0, 0]);
@@ -1152,14 +1678,89 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(40, resultTensor2[1, 1, 1]);
         }
 
-        [Fact]
-        public static void TensorStdDevTests()
+        public static IEnumerable<object[]> StdDevFloatTestData()
         {
-            Tensor<float> t0 = Tensor.Create(Enumerable.Sequence<float>(0, 4, 1).ToArray(), lengths: [2, 2]);
+            // Test case where Abs doesn't change the result (real numbers, positive values)
+            yield return new object[] 
+            { 
+                new float[] { 0f, 1f, 2f, 3f },
+                StdDev([0f, 1f, 2f, 3f])
+            };
+            
+            // Test case with all same values (should be 0)
+            yield return new object[]
+            {
+                new float[] { 1f, 1f, 1f, 1f },
+                0f
+            };
+            
+            // Test case with negative values where Abs could matter (but doesn't for standard deviation)
+            yield return new object[]
+            {
+                new float[] { -2f, -1f, 1f, 2f },
+                StdDev([-2f, -1f, 1f, 2f])
+            };
+        }
 
-            Assert.Equal(StdDev([0, 1, 2, 3]), Tensor.StdDev<float>(t0), .1);
+        public static IEnumerable<object[]> StdDevComplexTestData()
+        {
+            // Test case where Abs is critical (complex numbers)
+            yield return new object[]
+            {
+                new TestComplex[] { new(new(1, 2)), new(new(3, 4)) }
+            };
+            
+            // Test case with purely imaginary numbers
+            yield return new object[]
+            {
+                new TestComplex[] { new(new(0, 1)), new(new(0, 2)), new(new(0, 3)) }
+            };
+            
+            // Test case with purely real numbers (should behave like floats)
+            yield return new object[]
+            {
+                new TestComplex[] { new(new(1, 0)), new(new(2, 0)), new(new(3, 0)) }
+            };
+        }
 
-            // Test that non-contiguous calculations work
+        [Theory, MemberData(nameof(StdDevFloatTestData))]
+        public static void TensorStdDevFloatTests(float[] data, float expectedStdDev)
+        {
+            var tensor = Tensor.Create(data);
+            
+            var tensorPrimitivesResult = TensorPrimitives.StdDev<float>(data);
+            var tensorResult = Tensor.StdDev(tensor.AsReadOnlyTensorSpan());
+            
+            // Both should produce the same result
+            Assert.Equal(tensorPrimitivesResult, tensorResult, precision: 5);
+            Assert.Equal(expectedStdDev, tensorResult, precision: 5);
+            
+            // Test that non-contiguous calculations work with reshaped tensor
+            if (data.Length >= 4)
+            {
+                var reshapedTensor = Tensor.Create(data, lengths: [2, 2]);
+                var reshapedResult = Tensor.StdDev(reshapedTensor.AsReadOnlyTensorSpan());
+                Assert.Equal(expectedStdDev, reshapedResult, precision: 5);
+            }
+        }
+
+        [Theory, MemberData(nameof(StdDevComplexTestData))]
+        public static void TensorStdDevComplexTests(TestComplex[] data)
+        {
+            var tensor = Tensor.Create(data);
+            
+            var tensorPrimitivesResult = TensorPrimitives.StdDev<TestComplex>(data);
+            var tensorResult = Tensor.StdDev(tensor.AsReadOnlyTensorSpan());
+            
+            // Both should produce the same result - this is the key test for the fix
+            Assert.Equal(tensorPrimitivesResult.Real, tensorResult.Real, precision: 10);
+            Assert.Equal(tensorPrimitivesResult.Imaginary, tensorResult.Imaginary, precision: 10);
+        }
+
+        [Fact]
+        public static void TensorStdDevNonContiguousTests()
+        {
+            // Test that non-contiguous calculations work for float tensors
             Tensor<float> fourByFour = Tensor.CreateFromShape<float>([4, 4]);
             fourByFour[[0, 0]] = 1f;
             fourByFour[[0, 1]] = 1f;
@@ -1400,6 +2001,26 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(result[i], resultTensor[indices]);
                 Helpers.AdjustIndices(resultTensor.Rank - 1, 1, ref indices, resultTensor.Lengths);
             }
+        }
+
+        [Fact]
+        public static void TensorConcatenateNonDenseDestinationTests()
+        {
+            Tensor<int> backing = Tensor.CreateFromShape<int>([2, 3]);
+            TensorSpan<int> destination = backing.AsTensorSpan().Slice([0..2, 1..3]);
+            Assert.False(destination.IsDense);
+
+            Tensor<int> t0 = Tensor.Create([1, 2]);
+            Tensor<int> t1 = Tensor.Create([3, 4]);
+
+            Tensor.ConcatenateOnDimension(-1, [t0, t1], destination);
+
+            Assert.Equal(0, backing[0, 0]);
+            Assert.Equal(1, backing[0, 1]);
+            Assert.Equal(2, backing[0, 2]);
+            Assert.Equal(0, backing[1, 0]);
+            Assert.Equal(3, backing[1, 1]);
+            Assert.Equal(4, backing[1, 2]);
         }
 
         [Fact]
@@ -2142,6 +2763,42 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(8, tensor[2, 1]);
             Assert.Equal(9, tensor[2, 2]);
 
+            dims = [-1];
+            tensor = Tensor.Reshape(tensor, dims);
+            Assert.Equal(1, tensor.Rank);
+            Assert.Equal(9, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Strides.Length);
+            Assert.Equal(1, tensor.Strides[0]);
+            Assert.Equal(1, tensor[0]);
+            Assert.Equal(2, tensor[1]);
+            Assert.Equal(3, tensor[2]);
+            Assert.Equal(4, tensor[3]);
+            Assert.Equal(5, tensor[4]);
+            Assert.Equal(6, tensor[5]);
+            Assert.Equal(7, tensor[6]);
+            Assert.Equal(8, tensor[7]);
+            Assert.Equal(9, tensor[8]);
+
+            dims = [3, -1];
+            tensor = Tensor.Reshape(tensor, dims);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(3, tensor.Lengths[0]);
+            Assert.Equal(3, tensor.Lengths[1]);
+            Assert.Equal(2, tensor.Strides.Length);
+            Assert.Equal(3, tensor.Strides[0]);
+            Assert.Equal(1, tensor.Strides[1]);
+            Assert.Equal(1, tensor[0, 0]);
+            Assert.Equal(2, tensor[0, 1]);
+            Assert.Equal(3, tensor[0, 2]);
+            Assert.Equal(4, tensor[1, 0]);
+            Assert.Equal(5, tensor[1, 1]);
+            Assert.Equal(6, tensor[1, 2]);
+            Assert.Equal(7, tensor[2, 0]);
+            Assert.Equal(8, tensor[2, 1]);
+            Assert.Equal(9, tensor[2, 2]);
+
+            Assert.Throws<ArgumentException>(() => Tensor.Reshape(tensor, [-1, -1]));
+
             Assert.Throws<ArgumentException>(() => Tensor.Reshape(tensor, [1, 2, 3, 4, 5]));
 
             // Make sure reshape works correctly with 0 strides.
@@ -2169,6 +2826,17 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, tensor.Strides[0]);
             Assert.Equal(0, tensor.Strides[1]);
             Assert.Equal(0, tensor.Strides[2]);
+
+            tensor = Tensor.Reshape(tensor, [1, 1, -1, 1]);
+            Assert.Equal(4, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Lengths[1]);
+            Assert.Equal(2, tensor.Lengths[2]);
+            Assert.Equal(1, tensor.Lengths[3]);
+            Assert.Equal(0, tensor.Strides[0]);
+            Assert.Equal(0, tensor.Strides[1]);
+            Assert.Equal(0, tensor.Strides[2]);
+            Assert.Equal(0, tensor.Strides[3]);
         }
 
         [Fact]
@@ -3189,5 +3857,92 @@ namespace System.Numerics.Tensors.Tests
                 """;
             Assert.Equal(expected, tensor.ToString([2, 0, 2]));
         }
+    }
+
+    /// <summary>
+    /// Test complex number type that implements IRootFunctions for testing consistency between
+    /// TensorPrimitives.StdDev and Tensor.StdDev
+    /// </summary>
+    public readonly struct TestComplex(Complex value) : IRootFunctions<TestComplex>, IEquatable<TestComplex>
+    {
+        private readonly Complex _value = value;
+        
+        public double Real => _value.Real;
+        public double Imaginary => _value.Imaginary;
+
+        public static TestComplex One => new(Complex.One);
+        public static int Radix => 2;
+        public static TestComplex Zero => new(Complex.Zero);
+        public static TestComplex E => new(new(Math.E, 0));
+        public static TestComplex Pi => new(new(Math.PI, 0));
+        public static TestComplex Tau => new(new(Math.Tau, 0));
+
+        public static TestComplex operator +(TestComplex left, TestComplex right) => new(left._value + right._value);
+        public static TestComplex operator *(TestComplex left, TestComplex right) => new(left._value * right._value);
+        public static TestComplex operator /(TestComplex left, TestComplex right) => new(left._value / right._value);
+        public static TestComplex operator -(TestComplex left, TestComplex right) => new(left._value - right._value);
+        public static TestComplex Sqrt(TestComplex x) => new(Complex.Sqrt(x._value));
+        public static TestComplex Abs(TestComplex value) => new(new(Complex.Abs(value._value), 0));
+        public static TestComplex AdditiveIdentity => new(Complex.Zero);
+        public static TestComplex CreateChecked<TOther>(TOther value) where TOther : INumberBase<TOther> => new(Complex.CreateChecked(value));
+        
+        // Override Object methods
+        public override bool Equals(object? obj) => obj is TestComplex other && Equals(other);
+        public override int GetHashCode() => _value.GetHashCode();
+        public override string ToString() => _value.ToString();
+        
+        // IEquatable<TestComplex>
+        public bool Equals(TestComplex other) => _value.Equals(other._value);
+        
+        // Operators
+        public static bool operator ==(TestComplex left, TestComplex right) => left.Equals(right);
+        public static bool operator !=(TestComplex left, TestComplex right) => !left.Equals(right);
+        
+        // Required interface implementations not needed for tests - throw NotImplementedException
+        public string ToString(string? format, IFormatProvider? formatProvider) => throw new NotImplementedException();
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => throw new NotImplementedException();
+        public static TestComplex Parse(string s, IFormatProvider? provider) => throw new NotImplementedException();
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out TestComplex result) => throw new NotImplementedException();
+        public static TestComplex Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => throw new NotImplementedException();
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TestComplex result) => throw new NotImplementedException();
+        public static TestComplex operator --(TestComplex value) => throw new NotImplementedException();
+        public static TestComplex operator ++(TestComplex value) => throw new NotImplementedException();
+        public static TestComplex MultiplicativeIdentity => new(Complex.One);
+        public static TestComplex operator -(TestComplex value) => new(-value._value);
+        public static TestComplex operator +(TestComplex value) => new(value._value);
+        public static bool IsCanonical(TestComplex value) => throw new NotImplementedException();
+        public static bool IsComplexNumber(TestComplex value) => throw new NotImplementedException();
+        public static bool IsEvenInteger(TestComplex value) => throw new NotImplementedException();
+        public static bool IsFinite(TestComplex value) => throw new NotImplementedException();
+        public static bool IsImaginaryNumber(TestComplex value) => throw new NotImplementedException();
+        public static bool IsInfinity(TestComplex value) => throw new NotImplementedException();
+        public static bool IsInteger(TestComplex value) => throw new NotImplementedException();
+        public static bool IsNaN(TestComplex value) => throw new NotImplementedException();
+        public static bool IsNegative(TestComplex value) => throw new NotImplementedException();
+        public static bool IsNegativeInfinity(TestComplex value) => throw new NotImplementedException();
+        public static bool IsNormal(TestComplex value) => throw new NotImplementedException();
+        public static bool IsOddInteger(TestComplex value) => throw new NotImplementedException();
+        public static bool IsPositive(TestComplex value) => throw new NotImplementedException();
+        public static bool IsPositiveInfinity(TestComplex value) => throw new NotImplementedException();
+        public static bool IsRealNumber(TestComplex value) => throw new NotImplementedException();
+        public static bool IsSubnormal(TestComplex value) => throw new NotImplementedException();
+        public static bool IsZero(TestComplex value) => throw new NotImplementedException();
+        public static TestComplex MaxMagnitude(TestComplex x, TestComplex y) => throw new NotImplementedException();
+        public static TestComplex MaxMagnitudeNumber(TestComplex x, TestComplex y) => throw new NotImplementedException();
+        public static TestComplex MinMagnitude(TestComplex x, TestComplex y) => throw new NotImplementedException();
+        public static TestComplex MinMagnitudeNumber(TestComplex x, TestComplex y) => throw new NotImplementedException();
+        public static TestComplex Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
+        public static TestComplex Parse(string s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
+        public static bool TryConvertFromSaturating<TOther>(TOther value, out TestComplex result) where TOther : INumberBase<TOther> => throw new NotImplementedException();
+        public static bool TryConvertFromTruncating<TOther>(TOther value, out TestComplex result) where TOther : INumberBase<TOther> => throw new NotImplementedException();
+        public static bool TryConvertFromChecked<TOther>(TOther value, out TestComplex result) where TOther : INumberBase<TOther> => throw new NotImplementedException();
+        public static bool TryConvertToChecked<TOther>(TestComplex value, [MaybeNullWhen(false)] out TOther result) where TOther : INumberBase<TOther> => throw new NotImplementedException();
+        public static bool TryConvertToSaturating<TOther>(TestComplex value, [MaybeNullWhen(false)] out TOther result) where TOther : INumberBase<TOther> => throw new NotImplementedException();
+        public static bool TryConvertToTruncating<TOther>(TestComplex value, [MaybeNullWhen(false)] out TOther result) where TOther : INumberBase<TOther> => throw new NotImplementedException();
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out TestComplex result) => throw new NotImplementedException();
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out TestComplex result) => throw new NotImplementedException();
+        public static TestComplex Cbrt(TestComplex x) => throw new NotImplementedException();
+        public static TestComplex Hypot(TestComplex x, TestComplex y) => throw new NotImplementedException();
+        public static TestComplex RootN(TestComplex x, int n) => throw new NotImplementedException();
     }
 }

@@ -942,7 +942,7 @@ namespace Microsoft.Extensions.Logging.Test
                     {
                         return new KeyValuePair<string, object>(nameof(Value), Value);
                     }
-                    throw new IndexOutOfRangeException(nameof(index));
+                    throw new IndexOutOfRangeException();
                 }
             }
 

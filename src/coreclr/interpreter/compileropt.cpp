@@ -3,14 +3,30 @@
 #include "interpreter.h"
 #include "stackmap.h"
 
+#include <algorithm>
+
 // Allocates the offset for var at the stack position identified by
 // *pPos while bumping the pointer to point to the next stack location
-int32_t InterpCompiler::AllocVarOffset(int var, int32_t *pPos)
+int32_t InterpCompiler::AllocVarOffset(int32_t var, int32_t *pPos)
 {
     int32_t size, offset;
 
     offset = *pPos;
     size = m_pVars[var].size;
+
+    size_t align = INTERP_STACK_SLOT_SIZE;
+
+    if (size > (int32_t)INTERP_STACK_SLOT_SIZE)
+    {
+        assert(m_pVars[var].interpType == InterpTypeVT);
+        align = std::clamp(m_compHnd->getClassAlignmentRequirement(m_pVars[var].clsHnd), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
+    }
+    else
+    {
+        assert(m_pVars[var].interpType != InterpTypeVT || m_compHnd->getClassAlignmentRequirement(m_pVars[var].clsHnd) <= INTERP_STACK_SLOT_SIZE);
+    }
+
+    offset = (int32_t)ALIGN_UP_TO(offset, align);
 
     m_pVars[var].offset = offset;
 
@@ -57,7 +73,7 @@ void InterpCompiler::InitializeGlobalVar(int32_t var, int bbIndex)
     {
         AllocGlobalVarOffset(var);
         m_pVars[var].global = true;
-        INTERP_DUMP("alloc global var %d to offset %d\n", var, m_pVars[var].offset);
+        INTERP_DUMP("alloc global var %d to offset %d of size %d\n", var, m_pVars[var].offset, m_pVars[var].size);
     }
 }
 
@@ -86,7 +102,7 @@ void InterpCompiler::InitializeGlobalVars()
                 {
                     AllocGlobalVarOffset(var);
                     m_pVars[var].global = true;
-                    INTERP_DUMP("alloc global var %d to offset %d\n", var, m_pVars[var].offset);
+                    INTERP_DUMP("alloc global var %d to offset %d of size %d for ldloca\n", var, m_pVars[var].offset, m_pVars[var].size);
                 }
             }
             ForEachInsVar(pIns, (void*)(size_t)pBB->index, &InterpCompiler::InitializeGlobalVarCB);
@@ -137,17 +153,17 @@ void InterpCompiler::InitializeGlobalVars()
 void InterpCompiler::EndActiveCall(InterpInst *call)
 {
     // Remove call from array
-    m_pActiveCalls->Remove(call);
+    m_pActiveCalls->RemoveFirstUnordered(call);
 
     // Push active call that should be resolved onto the stack
     if (m_pActiveCalls->GetSize())
     {
         TSList<InterpInst*> *callDeps = NULL;
         for (int i = 0; i < m_pActiveCalls->GetSize(); i++)
-            callDeps = TSList<InterpInst*>::Push(callDeps, m_pActiveCalls->Get(i));
+            callDeps = TSList<InterpInst*>::Push(callDeps, m_pActiveCalls->Get(i), getAllocator(IMK_CallDependencies));
         call->info.pCallInfo->callDeps = callDeps;
 
-        m_pDeferredCalls = TSList<InterpInst*>::Push(m_pDeferredCalls, call);
+        m_pDeferredCalls = TSList<InterpInst*>::Push(m_pDeferredCalls, call, getAllocator(IMK_CallDependencies));
     }
     else
     {
@@ -211,7 +227,7 @@ void InterpCompiler::CompactActiveVars(int32_t *pCurrentOffset)
         if (m_pVars[var].alive)
             return;
         *pCurrentOffset = m_pVars[var].offset;
-        m_pActiveVars->RemoveAt(i);
+        m_pActiveVars->RemoveAtUnordered(i);
         i--;
     }
 }
@@ -219,8 +235,8 @@ void InterpCompiler::CompactActiveVars(int32_t *pCurrentOffset)
 void InterpCompiler::AllocOffsets()
 {
     InterpBasicBlock *pBB;
-    m_pActiveVars = new TArray<int32_t>();
-    m_pActiveCalls = new TArray<InterpInst*>();
+    m_pActiveVars = new (getAllocator(IMK_AllocOffsets)) TArray<int32_t, MemPoolAllocator>(GetMemPoolAllocator(IMK_AllocOffsets));
+    m_pActiveCalls = new (getAllocator(IMK_AllocOffsets)) TArray<InterpInst*, MemPoolAllocator>(GetMemPoolAllocator(IMK_AllocOffsets));
     m_pDeferredCalls = NULL;
 
     InitializeGlobalVars();
@@ -310,7 +326,7 @@ void InterpCompiler::AllocOffsets()
                 continue;
 
 #ifdef DEBUG
-            if (m_verbose)
+            if (IsInterpDumpActive())
             {
                 printf("\tins_index %d\t", insIndex);
                 PrintIns(pIns);
@@ -376,7 +392,7 @@ void InterpCompiler::AllocOffsets()
             }
 
 #ifdef DEBUG
-            if (m_verbose)
+            if (IsInterpDumpActive())
             {
                 printf("active vars:");
                 for (int i = 0; i < m_pActiveVars->GetSize(); i++)
@@ -435,4 +451,6 @@ void InterpCompiler::AllocOffsets()
 
     m_globalVarsWithRefsStackTop = globalVarsWithRefsStackTop;
     m_totalVarsStackSize = ALIGN_UP_TO(finalVarsStackSize, INTERP_STACK_ALIGNMENT);
+
+    UpdateLocalIntervalMaps();
 }

@@ -4,6 +4,9 @@
 // Note: In below test case, would keep around unreachable blocks which would wrongly keep the
 //       variables alive and we end up generating false refpositions. This leads to not marking
 //       an interval as spilled.
+
+namespace Runtime_66578;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

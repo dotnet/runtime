@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Asn1;
 
 namespace Internal.Cryptography
 {
@@ -213,9 +214,11 @@ namespace Internal.Cryptography
             }
         }
 
-        internal static CryptographicException CreateAlgorithmUnknownException(AsnWriter encodedId)
+        internal static CryptographicException CreateAlgorithmUnknownException(ref readonly ValueAlgorithmIdentifierAsn identifier)
         {
-#if NET10_0_OR_GREATER
+            AsnWriter encodedId = new(AsnEncodingRules.DER);
+            identifier.Encode(encodedId);
+#if NET
             return encodedId.Encode(static encoded => CreateAlgorithmUnknownException(Convert.ToHexString(encoded)));
 #else
             return CreateAlgorithmUnknownException(HexConverter.ToString(encodedId.Encode(), HexConverter.Casing.Upper));
@@ -231,7 +234,7 @@ namespace Internal.Cryptography
 #if !BUILDING_PKCS
         internal static string EncodeAsnWriterToPem(string label, AsnWriter writer, bool clear = true)
         {
-#if NET10_0_OR_GREATER
+#if NET
             return writer.Encode(label, static (label, span) => PemEncoding.WriteString(label, span));
 #else
             int length = writer.GetEncodedLength();

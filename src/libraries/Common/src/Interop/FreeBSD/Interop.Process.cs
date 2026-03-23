@@ -80,12 +80,12 @@ internal static partial class Interop
         {
             ReadOnlySpan<int> sysctlName = [CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, pid];
             byte* pBuffer = null;
-            int bytesLength = 0;
+            uint bytesLength = 0;
 
             try
             {
                 Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
-                return System.Text.Encoding.UTF8.GetString(pBuffer, bytesLength - 1);
+                return System.Text.Encoding.UTF8.GetString(pBuffer, (int)bytesLength - 1);
             }
             finally
             {

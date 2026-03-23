@@ -63,7 +63,7 @@ namespace System.Numerics
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given array.</summary>
         /// <param name="values">The array from which the vector is created.</param>
-        /// <param name="index">The index in <paramref name="values" /> at which to being reading elements.</param>
+        /// <param name="index">The index in <paramref name="values" /> at which to begin reading elements.</param>
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector{T}.Count" />.</exception>
@@ -1073,14 +1073,17 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static Vector<T> ISimdVector<Vector<T>, T>.Load(T* source) => Vector.Load(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAligned(T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static Vector<T> ISimdVector<Vector<T>, T>.LoadAligned(T* source) => Vector.LoadAligned(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static Vector<T> ISimdVector<Vector<T>, T>.LoadAlignedNonTemporal(T* source) => Vector.LoadAlignedNonTemporal(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
@@ -1181,14 +1184,17 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static void ISimdVector<Vector<T>, T>.Store(Vector<T> source, T* destination) => source.Store(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAligned(TSelf, T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static void ISimdVector<Vector<T>, T>.StoreAligned(Vector<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static void ISimdVector<Vector<T>, T>.StoreAlignedNonTemporal(Vector<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />

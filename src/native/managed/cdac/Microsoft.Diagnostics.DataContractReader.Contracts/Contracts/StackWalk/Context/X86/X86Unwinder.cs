@@ -34,7 +34,7 @@ public class X86Unwinder(Target target)
     private readonly Target _target = target;
     private readonly uint _pointerSize = (uint)target.PointerSize;
     private readonly bool _updateAllRegs = true;
-    private readonly bool _unixX86ABI = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix;
+    private readonly bool _unixX86ABI = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() != RuntimeInfoOperatingSystem.Windows;
 
     private static readonly RegMask[] registerOrder =
     [
@@ -312,8 +312,6 @@ public class X86Unwinder(Target target)
         Debug.Assert(!gcInfo.Header.EbpFrame && !gcInfo.Header.DoubleAlign);
         Debug.Assert(!gcInfo.IsInEpilog);
 
-        Console.WriteLine(methodStart);
-
         uint esp = context.Esp;
 
         if (gcInfo.IsInProlog)
@@ -466,9 +464,6 @@ public class X86Unwinder(Target target)
                 context.Esp = (uint)baseSP + _pointerSize;
                 return true;
             }
-
-            /* The cDAC only supports FEATURE_EH_FUNCLETS and therefore does not
-               support unwinding filters without funclets. */
         }
 
         //

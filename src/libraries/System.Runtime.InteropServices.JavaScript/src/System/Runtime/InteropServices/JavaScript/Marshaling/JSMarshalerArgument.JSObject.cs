@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 arg.ToManaged(out val);
                 value[i] = val;
             }
-            Marshal.FreeHGlobal(slot.IntPtrValue);
+            NativeMemory.Free((void*)slot.IntPtrValue);
         }
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.JavaScript
             int bytes = value.Length * sizeof(JSMarshalerArgument);
             slot.Type = MarshalerType.Array;
             slot.ElementType = MarshalerType.JSObject;
-            JSMarshalerArgument* payload = (JSMarshalerArgument*)Marshal.AllocHGlobal(bytes);
+            JSMarshalerArgument* payload = (JSMarshalerArgument*)NativeMemory.Alloc((nuint)bytes);
             Unsafe.InitBlock(payload, 0, (uint)bytes);
             for (int i = 0; i < slot.Length; i++)
             {

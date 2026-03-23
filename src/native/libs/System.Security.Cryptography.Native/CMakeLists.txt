@@ -1,7 +1,11 @@
 # Required for StaticOpenSslLinking
-cmake_minimum_required(VERSION 3.10..3.20)
+cmake_minimum_required(VERSION 3.10..3.26)
 
 project(System.Security.Cryptography.Native C)
+
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+    message(FATAL_ERROR "Not implemented for WASM")
+endif()
 
 # These are happening inside of OpenSSL-defined macros out of our control
 add_compile_options(-Wno-cast-align)
@@ -11,6 +15,31 @@ add_compile_options(-Wno-used-but-marked-unused)
 
 add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
 
+# On OpenBSD, the base system provides LibreSSL in /usr, while packaged OpenSSL
+# is installed under versioned eopenssl* prefixes. In distro-agnostic mode,
+# prefer the newest packaged OpenSSL discovered in the sysroot.
+if (CLR_CMAKE_TARGET_OPENBSD AND FEATURE_DISTRO_AGNOSTIC_SSL)
+    file(GLOB _openbsd_eopenssl_configs "${CMAKE_SYSROOT}/lib/eopenssl*/cmake/OpenSSL/OpenSSLConfig.cmake")
+    if (_openbsd_eopenssl_configs)
+        list(SORT _openbsd_eopenssl_configs)
+        list(REVERSE _openbsd_eopenssl_configs)
+        list(GET _openbsd_eopenssl_configs 0 _openbsd_eopenssl_config)
+
+        get_filename_component(_openbsd_openssl_dir "${_openbsd_eopenssl_config}" DIRECTORY)
+        get_filename_component(_openbsd_openssl_prefix "${_openbsd_openssl_dir}" DIRECTORY)
+        get_filename_component(_openbsd_openssl_prefix "${_openbsd_openssl_prefix}" DIRECTORY)
+        get_filename_component(_openbsd_openssl_name "${_openbsd_openssl_prefix}" NAME)
+
+        unset(OPENSSL_CRYPTO_LIBRARY CACHE)
+        unset(OPENSSL_SSL_LIBRARY CACHE)
+        set(OpenSSL_DIR "${_openbsd_openssl_dir}" CACHE PATH "OpenSSL config directory" FORCE)
+
+        if (EXISTS "${CMAKE_SYSROOT}/include/${_openbsd_openssl_name}")
+            set(OPENSSL_INCLUDE_DIR "${CMAKE_SYSROOT}/include/${_openbsd_openssl_name}" CACHE PATH "OpenSSL include directory" FORCE)
+        endif()
+    endif()
+endif()
+
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
 set(NATIVE_LIBS_EXTRA)
@@ -19,7 +48,6 @@ append_extra_cryptography_libs(NATIVE_LIBS_EXTRA)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 set(NATIVECRYPTO_SOURCES
-    apibridge.c
     apibridge_30.c
     memory_debug.c
     openssl.c

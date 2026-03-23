@@ -49,7 +49,7 @@ namespace System.Diagnostics.Metrics
     ///       o reportDeltas - If true, the histogram will report deltas instead of whole accumulated values. The default value is false.
     /// </summary>
     [EventSource(Name = "System.Diagnostics.Metrics")]
-    internal sealed class MetricsEventSource : EventSource
+    internal sealed partial class MetricsEventSource : EventSource
     {
         public static readonly MetricsEventSource Log = new();
 
@@ -95,8 +95,6 @@ namespace System.Diagnostics.Metrics
                 return _handler;
             }
         }
-
-        private MetricsEventSource() { }
 
         /// <summary>
         /// Used to send ad-hoc diagnostics to humans.

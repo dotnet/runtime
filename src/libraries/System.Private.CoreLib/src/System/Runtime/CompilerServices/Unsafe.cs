@@ -19,6 +19,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
+        /// <typeparam name="T">The type referenced by the byref parameter.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__AS_POINTER
         // AOT:AsPointer
@@ -39,6 +40,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Returns the size of an object of the given type parameter.
         /// </summary>
+        /// <typeparam name="T">The type whose size is returned.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__SIZEOF
         // AOT:SizeOf
@@ -54,6 +56,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Casts the given object to the specified type, performs no dynamic type checking.
         /// </summary>
+        /// <typeparam name="T">The target reference type. The return value will be of this type.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__OBJECT_AS
         // AOT:As
@@ -61,7 +64,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NotNullIfNotNull(nameof(o))]
-        public static T As<T>(object? o) where T : class?
+        public static T? As<T>(object? o) where T : class?
         {
             throw new PlatformNotSupportedException();
 
@@ -72,6 +75,8 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Reinterprets the given reference as a reference to a value of type <typeparamref name="TTo"/>.
         /// </summary>
+        /// <typeparam name="TFrom">The source type of the reference to reinterpret.</typeparam>
+        /// <typeparam name="TTo">The destination type to reinterpret the reference as.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_AS
         // AOT:As
@@ -91,6 +96,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an element offset to the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_ADD
         // AOT:Add
@@ -104,7 +110,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)sizeof(T)));
+            return ref AddByteOffset(ref source, elementOffset * (nint)sizeof(T));
 #endif
             // ldarg .0
             // ldarg .1
@@ -118,20 +124,21 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an element offset to the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_ADD
         // AOT:Add
         // Mono:Add
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T Add<T>(ref T source, IntPtr elementOffset)
+        public static ref T Add<T>(ref T source, nint elementOffset)
             where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)sizeof(T)));
+            return ref AddByteOffset(ref source, elementOffset * (nint)sizeof(T));
 #endif
 
             // ldarg .0
@@ -145,6 +152,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an element offset to the given pointer.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the pointer.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_ADD
         // AOT:Add
@@ -174,6 +182,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an element offset to the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
         [Intrinsic]
         // CoreCLR:
         [NonVersionable]
@@ -186,7 +195,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (nuint)(elementOffset * (nuint)sizeof(T)));
+            return ref AddByteOffset(ref source, elementOffset * (nuint)sizeof(T));
 #endif
 
             // ldarg .0
@@ -200,6 +209,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an byte offset to the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the source.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET_UINTPTR
         // AOT:AddByteOffset
@@ -214,7 +224,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)(void*)byteOffset);
+            return ref AddByteOffset(ref source, (nint)byteOffset);
 #endif
 
             // ldarg .0
@@ -226,6 +236,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Determines whether the specified references point to the same location.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the inputs.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_ARE_SAME
         // AOT:AreSame
@@ -270,6 +281,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static void Copy<T>(void* destination, ref readonly T source)
             where T : allows ref struct
         {
@@ -290,6 +302,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static void Copy<T>(ref T destination, void* source)
             where T : allows ref struct
         {
@@ -310,6 +323,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static void CopyBlock(void* destination, void* source, uint byteCount)
         {
             throw new PlatformNotSupportedException();
@@ -348,6 +362,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static void CopyBlockUnaligned(void* destination, void* source, uint byteCount)
         {
             throw new PlatformNotSupportedException();
@@ -468,6 +483,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static void InitBlock(void* startAddress, byte value, uint byteCount)
         {
             throw new PlatformNotSupportedException();
@@ -507,6 +523,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount)
         {
             throw new PlatformNotSupportedException();
@@ -555,6 +572,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static T ReadUnaligned<T>(void* source)
             where T : allows ref struct
         {
@@ -606,6 +624,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static void WriteUnaligned<T>(void* destination, T value)
             where T : allows ref struct
         {
@@ -652,13 +671,14 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Adds an byte offset to the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the source.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET_INTPTR
         // AOT:AddByteOffset
         // Mono:AddByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T AddByteOffset<T>(ref T source, IntPtr byteOffset)
+        public static ref T AddByteOffset<T>(ref T source, nint byteOffset)
             where T : allows ref struct
         {
             // This method is implemented by the toolchain
@@ -677,6 +697,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static T Read<T>(void* source)
             where T : allows ref struct
         {
@@ -690,6 +711,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static void Write<T>(void* destination, T value)
             where T : allows ref struct
         {
@@ -703,6 +725,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static ref T AsRef<T>(void* source)
             where T : allows ref struct
         {
@@ -737,7 +760,7 @@ namespace System.Runtime.CompilerServices
         // Mono:ByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr ByteOffset<T>([AllowNull] ref readonly T origin, [AllowNull] ref readonly T target)
+        public static nint ByteOffset<T>([AllowNull] ref readonly T origin, [AllowNull] ref readonly T target)
             where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
@@ -809,6 +832,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Subtracts an element offset from the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INT_SUBTRACT
         [NonVersionable]
@@ -820,7 +844,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (IntPtr)(elementOffset * (nint)sizeof(T)));
+            return ref SubtractByteOffset(ref source, elementOffset * (nint)sizeof(T));
 #endif
 
             // ldarg .0
@@ -835,6 +859,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Subtracts an element offset from the given void pointer.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the pointer.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_INT_SUBTRACT
         [NonVersionable]
@@ -862,18 +887,19 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Subtracts an element offset from the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T Subtract<T>(ref T source, IntPtr elementOffset)
+        public static ref T Subtract<T>(ref T source, nint elementOffset)
             where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)sizeof(T)));
+            return ref SubtractByteOffset(ref source, elementOffset * (nint)sizeof(T));
 #endif
 
             // ldarg .0
@@ -887,6 +913,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Subtracts an element offset from the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by <paramref name="source"/>.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT
         [NonVersionable]
@@ -899,7 +926,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (nuint)(elementOffset * (nuint)sizeof(T)));
+            return ref SubtractByteOffset(ref source, elementOffset * (nuint)sizeof(T));
 #endif
 
             // ldarg .0
@@ -913,11 +940,12 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Subtracts a byte offset from the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the source.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T SubtractByteOffset<T>(ref T source, IntPtr byteOffset)
+        public static ref T SubtractByteOffset<T>(ref T source, nint byteOffset)
             where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
@@ -931,6 +959,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Subtracts a byte offset from the given reference.
         /// </summary>
+        /// <typeparam name="T">The element type referenced by the source.</typeparam>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET
         [NonVersionable]
@@ -943,7 +972,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (IntPtr)(void*)byteOffset);
+            return ref SubtractByteOffset(ref source, (nint)byteOffset);
 #endif
 
             // ldarg .0

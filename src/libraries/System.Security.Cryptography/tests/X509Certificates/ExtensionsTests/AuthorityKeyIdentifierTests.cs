@@ -91,14 +91,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             }
 
             Assert.False(akid.Critical, "akid.Critical");
-            Assert.Equal("30168014B5760C3011CEC792424D4CC75C2CC8A90CE80B64", akid.RawData.ByteArrayToHex());
+            Assert.Equal("30168014F67E2FBD80A34AB2705BEBDF9A1FD8EDCA618007", akid.RawData.ByteArrayToHex());
             Assert.False(akid.RawIssuer.HasValue, "akid.RawIssuer.HasValue");
             Assert.Null(akid.NamedIssuer);
             Assert.False(akid.SerialNumber.HasValue, "akid.SerialNumber.HasValue");
             Assert.True(akid.KeyIdentifier.HasValue, "akid.KeyIdentifier.HasValue");
 
             Assert.Equal(
-                "B5760C3011CEC792424D4CC75C2CC8A90CE80B64",
+                "F67E2FBD80A34AB2705BEBDF9A1FD8EDCA618007",
                 akid.KeyIdentifier.GetValueOrDefault().ByteArrayToHex());
         }
 
@@ -128,10 +128,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             Assert.False(akid.KeyIdentifier.HasValue, "akid.KeyIdentifier.HasValue");
 
             const string ExpectedHex =
-                "3072A15EA45C305A310B300906035504061302494531123010060355040A1309" +
-                "42616C74696D6F726531133011060355040B130A437962657254727573743122" +
-                "30200603550403131942616C74696D6F7265204379626572547275737420526F" +
-                "6F7482100F14965F202069994FD5C7AC788941E2";
+                "3079A165A4633061310B300906035504061302555331153013060355040A130C" +
+                "446967694365727420496E6331193017060355040B13107777772E6469676963" +
+                "6572742E636F6D3120301E06035504031317446967694365727420476C6F6261" +
+                "6C20526F6F7420473282100EFB7E547EDF0FF1069AEE57696D7BA0";
 
             Assert.Equal(ExpectedHex, akid.RawData.ByteArrayToHex());
         }
@@ -162,15 +162,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             Assert.True(akid.KeyIdentifier.HasValue, "akid.KeyIdentifier.HasValue");
 
             Assert.Equal(
-                "B5760C3011CEC792424D4CC75C2CC8A90CE80B64",
+                "F67E2FBD80A34AB2705BEBDF9A1FD8EDCA618007",
                 akid.KeyIdentifier.GetValueOrDefault().ByteArrayToHex());
 
             const string ExpectedHex =
-                "3081888014B5760C3011CEC792424D4CC75C2CC8A90CE80B64A15EA45C305A31" +
-                "0B300906035504061302494531123010060355040A130942616C74696D6F7265" +
-                "31133011060355040B130A437962657254727573743122302006035504031319" +
-                "42616C74696D6F7265204379626572547275737420526F6F7482100F14965F20" +
-                "2069994FD5C7AC788941E2";
+                "30818F8014F67E2FBD80A34AB2705BEBDF9A1FD8EDCA618007A165A463306131" +
+                "0B300906035504061302555331153013060355040A130C446967694365727420" +
+                "496E6331193017060355040B13107777772E64696769636572742E636F6D3120" +
+                "301E06035504031317446967694365727420476C6F62616C20526F6F74204732" +
+                "82100EFB7E547EDF0FF1069AEE57696D7BA0";
 
             Assert.Equal(ExpectedHex, akid.RawData.ByteArrayToHex());
         }
@@ -517,10 +517,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             Assert.False(akid.KeyIdentifier.HasValue, "akid.KeyIdentifier.HasValue");
 
             const string ExpectedHex =
-                "3072A15EA45C305A310B300906035504061302494531123010060355040A1309" +
-                "42616C74696D6F726531133011060355040B130A437962657254727573743122" +
-                "30200603550403131942616C74696D6F7265204379626572547275737420526F" +
-                "6F7482100F14965F202069994FD5C7AC788941E2";
+                "3079A165A4633061310B300906035504061302555331153013060355040A130C" +
+                "446967694365727420496E6331193017060355040B13107777772E6469676963" +
+                "6572742E636F6D3120301E06035504031317446967694365727420476C6F6261" +
+                "6C20526F6F7420473282100EFB7E547EDF0FF1069AEE57696D7BA0";
 
             Assert.Equal(ExpectedHex, akid.RawData.ByteArrayToHex());
         }

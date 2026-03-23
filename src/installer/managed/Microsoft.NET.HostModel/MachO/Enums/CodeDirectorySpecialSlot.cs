@@ -10,7 +10,5 @@ internal enum CodeDirectorySpecialSlot
 {
     CodeDirectory = 0,
     Requirements = 2,
-    Entitlements = 5,
-    DerEntitlements = 7,
     CmsWrapper = 0x10000,
 }

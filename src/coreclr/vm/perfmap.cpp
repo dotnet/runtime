@@ -10,6 +10,7 @@
 #include <clrconfignocache.h>
 #include "perfmap.h"
 #include "pal.h"
+#include <dn-stdio.h>
 
 
 // The code addresses are actually native image offsets during crossgen. Print
@@ -27,6 +28,7 @@
 #endif
 
 Volatile<bool> PerfMap::s_enabled = false;
+Volatile<bool> PerfMap::s_dependenciesReady = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 bool PerfMap::s_GroupStubsOfSameType = false;
@@ -120,6 +122,17 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
     if (sendExisting)
     {
+        // When Enable is called very early in startup (e.g., via DiagnosticServer IPC before
+        // SystemDomain::Attach and ExecutionManager::Init), the AppDomain and EEJitManager
+        // may not exist yet. We use s_dependenciesReady (a Volatile<bool>) to guard against
+        // this, rather than null-checking individual pointers which would have race conditions
+        // due to non-Volatile statics like m_pEEJitManager.
+        // Safe to skip: no assemblies are loaded and no code is JIT'd at that point.
+        if (!s_dependenciesReady)
+        {
+            return;
+        }
+
         AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<Assembly *> pAssembly;
@@ -147,8 +160,9 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
         }
 
         {
+#ifdef FEATURE_CODE_VERSIONING
             CodeVersionManager::LockHolder codeVersioningLockHolder;
-
+#endif // FEATURE_CODE_VERSIONING
             CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator();
             while (heapIterator.Next())
             {
@@ -159,15 +173,10 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 }
 
                 PCODE codeStart = PINSTRToPCODE(heapIterator.GetMethodCode());
-                NativeCodeVersion nativeCodeVersion;
 #ifdef FEATURE_CODE_VERSIONING
-                nativeCodeVersion = pMethod->GetCodeVersionManager()->GetNativeCodeVersion(pMethod, codeStart);;
+                NativeCodeVersion nativeCodeVersion;
+                nativeCodeVersion = pMethod->GetCodeVersionManager()->GetNativeCodeVersion(pMethod, codeStart);
                 if (nativeCodeVersion.IsNull() && codeStart != pMethod->GetNativeCode())
-                {
-                    continue;
-                }
-#else // FEATURE_CODE_VERSIONING
-                if (codeStart != pMethod->GetNativeCode())
                 {
                     continue;
                 }
@@ -179,7 +188,11 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 _ASSERTE(methodRegionInfo.hotStartAddress == codeStart);
                 _ASSERTE(methodRegionInfo.hotSize > 0);
 
+#ifdef FEATURE_CODE_VERSIONING
                 PrepareCodeConfig config(!nativeCodeVersion.IsNull() ? nativeCodeVersion : NativeCodeVersion(pMethod), FALSE, FALSE);
+#else
+                PrepareCodeConfig config(NativeCodeVersion(pMethod), FALSE, FALSE);
+#endif // FEATURE_CODE_VERSIONING
                 PerfMap::LogJITCompiledMethod(pMethod, codeStart, methodRegionInfo.hotSize, &config);
             }
         }
@@ -207,6 +220,15 @@ void PerfMap::Disable()
     }
 }
 
+// Signal that all dependencies (AppDomain, ExecutionManager) are ready.
+// This method must be called before any code is JITed or restored from R2R image.
+void PerfMap::SignalDependenciesReady()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    s_dependenciesReady = true;
+}
+
 // Construct a new map for the process.
 PerfMap::PerfMap()
 {
@@ -221,8 +243,8 @@ PerfMap::~PerfMap()
 {
     LIMITED_METHOD_CONTRACT;
 
-    delete m_FileStream;
-    m_FileStream = nullptr;
+    fclose(m_fp);
+    m_fp = nullptr;
 }
 
 void PerfMap::OpenFileForPid(int pid, const char* basePath)
@@ -240,16 +262,8 @@ void PerfMap::OpenFile(SString& path)
     STANDARD_VM_CONTRACT;
 
     // Open the file stream.
-    m_FileStream = new (nothrow) CFileStream();
-    if(m_FileStream != nullptr)
-    {
-        HRESULT hr = m_FileStream->OpenForWrite(path.GetUnicode());
-        if(FAILED(hr))
-        {
-            delete m_FileStream;
-            m_FileStream = nullptr;
-        }
-    }
+    if (fopen_lp(&m_fp, path.GetUnicode(), W("w")) != 0)
+        m_fp = nullptr;
 }
 
 // Write a line to the map file.
@@ -260,7 +274,7 @@ void PerfMap::WriteLine(SString& line)
     _ASSERTE(s_csPerfMap.OwnedByCurrentThread());
 #endif
 
-    if (m_FileStream == nullptr || m_ErrorEncountered)
+    if (m_fp == nullptr || m_ErrorEncountered)
     {
         return;
     }
@@ -268,19 +282,12 @@ void PerfMap::WriteLine(SString& line)
     EX_TRY
     {
         // Write the line.
-        // The PAL already takes a lock when writing, so we don't need to do so here.
-        const char * strLine = line.GetUTF8();
-        ULONG inCount = line.GetCount();
-        ULONG outCount;
-        m_FileStream->Write(strLine, inCount, &outCount);
-
-        if (inCount != outCount)
+        if (fprintf(m_fp, "%s", line.GetUTF8()) < 0)
         {
             // This will cause us to stop writing to the file.
             // The file will still remain open until shutdown so that we don't have to take a lock at this level when we touch the file stream.
             m_ErrorEncountered = true;
         }
-
     }
     EX_CATCH{} EX_END_CATCH
 }
@@ -332,7 +339,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
                 s_Current->WriteLine(line);
             }
 
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
+            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
     }
     EX_CATCH{} EX_END_CATCH
@@ -373,7 +380,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
         if (methodRegionInfo.hotSize > 0)
         {
             CrstHolder ch(&(s_csPerfMap));
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, nullptr);
+            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
 
         if (methodRegionInfo.coldSize > 0)
@@ -386,7 +393,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
                 name.Append(W("[PreJit-cold]"));
             }
 
-            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, nullptr);
+            PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
         }
     }
     EX_CATCH{} EX_END_CATCH
@@ -443,7 +450,14 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
                 s_Current->WriteLine(line);
             }
 
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
+            // For block-level stub allocations, the memory may be reserved but not yet committed.
+            // Emitting code bytes in that case can cause jitdump logging to fail, and the bytes
+            // are optional in the jitdump specification.
+            //
+            // Even when the memory is committed, block-level stubs are reported at commit time
+            // before the actual stub code has been written, so the code bytes would be zeros or
+            // uninitialized. We therefore skip code bytes for block allocations entirely.
+            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/ stubAllocationType != PerfMapStubType::Block);
         }
     }
     EX_CATCH{} EX_END_CATCH
