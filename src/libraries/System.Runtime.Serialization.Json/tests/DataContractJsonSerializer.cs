@@ -1718,6 +1718,18 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    public static void DCJS_SerializationEvents_NoStreamingContext()
+    {
+        var input = new MyType_NoStreamingContext() { Value = "string value" };
+        var output = SerializeAndDeserialize<MyType_NoStreamingContext>(input, @"{""Value"":""string value""}");
+
+        Assert.True(input.OnSerializingMethodInvoked, "input.OnSerializingMethodInvoked is false");
+        Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
+        Assert.True(output.OnDeserializingMethodInvoked, "output.OnDeserializingMethodInvoked is false");
+        Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
+    }
+
+    [Fact]
     public static void DCJS_DeserializeEmptyString()
     {
         var serializer = new DataContractJsonSerializer(typeof(object));
