@@ -774,17 +774,17 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid);
 }
 
-static MethodDesc* MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExiting_I32_I32_RetVoid = nullptr;
-static void Call_System_Private_CoreLib_System_Threading_Thread_OnThreadExiting_I32_I32_RetVoid(void * arg0, void * arg1)
+static MethodDesc* MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid(void * arg0, void * arg1)
 {
     int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
 
     // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExiting_I32_I32_RetVoid)
+    if (!MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid)
     {
-        LookupUnmanagedCallersOnlyMethodByName("System.Threading.Thread, System.Private.CoreLib", "OnThreadExiting", &MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExiting_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Threading.Thread, System.Private.CoreLib", "OnThreadExited", &MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid);
     }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExiting_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_Thread_OnThreadExiting_I32_I32_RetVoid);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid = nullptr;
@@ -1052,7 +1052,7 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 3308959471, "OnFirstChanceException#2:System.Private.CoreLib:System:AppContext", { &MD_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid } },
     { 3570701864, "OnProcessExit#1:System.Private.CoreLib:System:AppContext", { &MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid } },
     { 2158495436, "OnResourceResolve#4:System.Private.CoreLib:System.Runtime.Loader:AssemblyLoadContext", { &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid } },
-    { 771783454, "OnThreadExiting#2:System.Private.CoreLib:System.Threading:Thread", { &MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExiting_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_Thread_OnThreadExiting_I32_I32_RetVoid } },
+    { 2049352127, "OnThreadExited#2:System.Private.CoreLib:System.Threading:Thread", { &MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid } },
     { 3572430398, "OnTypeResolve#4:System.Private.CoreLib:System.Runtime.Loader:AssemblyLoadContext", { &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid } },
     { 4206970338, "OnUnhandledException#2:System.Private.CoreLib:System:AppContext", { &MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid } },
     { 1873201650, "ParseAsAssemblySpec#3:System.Private.CoreLib:System.Reflection:AssemblyName", { &MD_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid } },
@@ -1067,7 +1067,7 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 1963568864, "Setup#4:System.Private.CoreLib:System:AppContext", { &MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid } },
     { 1343309100, "StartAssemblyLoad#3:System.Private.CoreLib:System.Runtime.Loader:AssemblyLoadContext", { &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid } },
     { 3495913109, "StopAssemblyLoad#2:System.Private.CoreLib:System.Runtime.Loader:AssemblyLoadContext", { &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid } },
-    { 167179540, "TimerHandler#0:System.Private.CoreLib:System.Threading:TimerQueue", { &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid } },
+    { 167179540, "TimerHandler#0:System.Private.CoreLib:System.Threading:TimerQueue", { &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid } }
 };
 
 const size_t g_ReverseThunksCount = sizeof(g_ReverseThunks) / sizeof(g_ReverseThunks[0]);

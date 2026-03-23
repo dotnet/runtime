@@ -4704,13 +4704,13 @@ LONG ThreadBaseExceptionAppDomainFilter(EXCEPTION_POINTERS *pExceptionInfo, PVOI
 
 // Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
 // in the native code.
+#ifdef TARGET_WINDOWS
 LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 {
     CallOutFilterParam *pParam = static_cast<CallOutFilterParam *>(pv);
 
     _ASSERTE(pParam && (pParam->OneShot == TRUE || pParam->OneShot == FALSE));
 
-#ifdef TARGET_WINDOWS
     if (pParam->OneShot == TRUE)
     {
         pParam->OneShot = FALSE;
@@ -4723,9 +4723,9 @@ LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
             PAL_CPP_THROW(SEHException *, new SEHException(pExceptionInfo->ExceptionRecord,
                                                            pExceptionInfo->ContextRecord));
     }
-#endif // TARGET_WINDOWS
     return EXCEPTION_CONTINUE_SEARCH;
 }
+#endif // TARGET_WINDOWS
 
 
 //==========================================================================

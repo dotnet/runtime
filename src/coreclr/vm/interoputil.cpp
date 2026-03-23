@@ -2744,10 +2744,12 @@ static HRESULT InvokeExHelper(
                                                pParam->pExcepInfo,
                                                pParam->pspCaller);
     }
+#ifdef TARGET_WINDOWS
     PAL_EXCEPT_FILTER(CallOutFilter)
     {
         _ASSERTE(!"CallOutFilter returned EXECUTE_HANDLER.");
     }
+#endif // TARGET_WINDOWS
     PAL_ENDTRY;
 
     return param.hr;
@@ -2808,10 +2810,12 @@ static HRESULT InvokeHelper(
                                            pParam->pExcepInfo,
                                            pParam->piArgErr);
     }
+#ifdef TARGET_WINDOWS
     PAL_EXCEPT_FILTER(CallOutFilter)
     {
         _ASSERTE(!"CallOutFilter returned EXECUTE_HANDLER.");
     }
+#endif // TARGET_WINDOWS
     PAL_ENDTRY;
 
     return param.hr;

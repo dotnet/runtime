@@ -173,7 +173,9 @@ LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOI
 // Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
 // in the native code.
 struct CallOutFilterParam { BOOL OneShot; };
+#ifdef TARGET_WINDOWS
 LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv);
+#endif // TARGET_WINDOWS
 
 
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,

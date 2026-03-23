@@ -220,6 +220,8 @@ internal sealed class PInvokeCollector {
         if (!_typeUnsupportedOnBrowserCache.TryGetValue(type, out bool value))
         {
             value = false;
+            bool hasSupportedOSPlatform = false;
+            bool hasSupportedBrowser = false;
             foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(type))
             {
                 try
@@ -232,11 +234,11 @@ internal sealed class PInvokeCollector {
                         break;
                     }
                     if (cattr.AttributeType.FullName == "System.Runtime.Versioning.SupportedOSPlatformAttribute" &&
-                        cattr.ConstructorArguments.Count > 0 &&
-                        cattr.ConstructorArguments[0].Value?.ToString() != "browser")
+                        cattr.ConstructorArguments.Count > 0)
                     {
-                        value = true;
-                        break;
+                        hasSupportedOSPlatform = true;
+                        if (cattr.ConstructorArguments[0].Value?.ToString() == "browser")
+                            hasSupportedBrowser = true;
                     }
                 }
                 catch
@@ -244,6 +246,9 @@ internal sealed class PInvokeCollector {
                     // Assembly not found, ignore
                 }
             }
+
+            if (!value && hasSupportedOSPlatform && !hasSupportedBrowser)
+                value = true;
 
             _typeUnsupportedOnBrowserCache[type] = value;
         }
