@@ -47,6 +47,14 @@ type UnionWithDisallowUnmapped = Foo | Bar of x:int
 [<JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")>]
 type UnionWithFieldConflictingDiscriminator = Conflict of Kind:int
 
+[<AllowNullLiteral>]
+type RefObj(name: string) =
+    member _.Name = name
+
+type UnionWithRefField = WithRef of obj:RefObj | WithoutRef
+
+type WrapperWithSharedRef = { First: UnionWithRefField; Second: UnionWithRefField }
+
 // -- Serialization Tests --
 
 [<Fact>]
@@ -522,10 +530,10 @@ let ``Union type info has no PolymorphismOptions`` (unionType: Type) =
 
 [<Theory>]
 [<MemberData(nameof(getUnionTypes))>]
-let ``Union type info has Kind None`` (unionType: Type) =
+let ``Union type info has Kind Object`` (unionType: Type) =
     let options = JsonSerializerOptions.Default
     let typeInfo = options.GetTypeInfo(unionType)
-    Assert.Equal(JsonTypeInfoKind.None, typeInfo.Kind)
+    Assert.Equal(JsonTypeInfoKind.Object, typeInfo.Kind)
 
 [<Fact>]
 let ``Union with JsonPolymorphic attribute has no PolymorphismOptions`` () =
@@ -538,3 +546,31 @@ let ``Union with default JsonPolymorphic attribute has no PolymorphismOptions`` 
     let options = JsonSerializerOptions.Default
     let typeInfo = options.GetTypeInfo(typeof<UnionWithDefaultPolymorphic>)
     Assert.Null(typeInfo.PolymorphismOptions)
+
+// -- ReferenceHandler Tests --
+
+[<Fact>]
+let ``Shared reference in union fields serializes with $id and $ref`` () =
+    let options = JsonSerializerOptions(ReferenceHandler = ReferenceHandler.Preserve)
+    let shared = RefObj("shared")
+    let value = { First = WithRef shared; Second = WithRef shared }
+    let json = JsonSerializer.Serialize(value, options)
+    Assert.Equal("""{"$id":"1","First":{"$id":"2","$type":"WithRef","obj":{"$id":"3","Name":"shared"}},"Second":{"$id":"4","$type":"WithRef","obj":{"$ref":"3"}}}""", json)
+
+[<Fact>]
+let ``Recursive union serializes with $id metadata using ReferenceHandler.Preserve`` () =
+    let options = JsonSerializerOptions(ReferenceHandler = ReferenceHandler.Preserve)
+    let value = Node(Node(Leaf, Leaf), Leaf)
+    let json = JsonSerializer.Serialize(value, options)
+    Assert.Equal("""{"$id":"1","$type":"Node","left":{"$id":"2","$type":"Node","left":{"$id":"3","$type":"Leaf"},"right":{"$ref":"3"}},"right":{"$ref":"3"}}""", json)
+
+[<Fact>]
+let ``Fieldless union serializes as object with $id using ReferenceHandler.Preserve`` () =
+    let options = JsonSerializerOptions(ReferenceHandler = ReferenceHandler.Preserve)
+    let json = JsonSerializer.Serialize(Point, options)
+    Assert.Equal("""{"$id":"1","$type":"Point"}""", json)
+
+[<Fact>]
+let ``Fieldless union without Preserve still serializes as string`` () =
+    let json = JsonSerializer.Serialize(Point)
+    Assert.Equal("\"Point\"", json)

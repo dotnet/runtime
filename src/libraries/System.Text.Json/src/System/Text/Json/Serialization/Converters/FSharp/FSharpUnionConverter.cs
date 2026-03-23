@@ -21,6 +21,7 @@ namespace System.Text.Json.Serialization.Converters
     // The discriminator property name defaults to "$type" but can be customized via [JsonPolymorphic].
     internal sealed class FSharpUnionConverter<T> : JsonConverter<T>
     {
+        internal override bool CanHaveMetadata => true;
         private readonly CaseInfo[] _casesByTag;
         private readonly Dictionary<string, CaseInfo> _casesByName;
         private readonly Dictionary<string, CaseInfo>? _casesByNameCaseInsensitive;
@@ -37,6 +38,9 @@ namespace System.Text.Json.Serialization.Converters
             JsonSerializerOptions options,
             string typeDiscriminatorPropertyName)
         {
+            ConverterStrategy = ConverterStrategy.Object;
+            SupportsMultipleTokenTypes = true;
+            RequiresReadAhead = true;
             _tagReader = tagReader;
             _typeDiscriminatorPropertyName = typeDiscriminatorPropertyName;
             _typeDiscriminatorPropertyNameEncoded = JsonEncodedText.Encode(typeDiscriminatorPropertyName, options.Encoder);
@@ -140,18 +144,34 @@ namespace System.Text.Json.Serialization.Converters
 
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            // Fallback for direct converter invocations. The normal pipeline
+            // uses TryRead -> OnTryRead which forwards state automatically.
+            ReadStack state = default;
+            JsonTypeInfo jsonTypeInfo = options.GetTypeInfoInternal(typeToConvert);
+            state.Initialize(jsonTypeInfo);
+            state.Push();
+
+            OnTryRead(ref reader, typeToConvert, options, ref state, out T? value);
+            return value!;
+        }
+
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
+        {
             if (reader.TokenType == JsonTokenType.String)
             {
-                return ReadFromString(ref reader, options);
+                value = ReadFromString(ref reader, options);
+                return true;
             }
 
             if (reader.TokenType == JsonTokenType.StartObject)
             {
-                return ReadFromObject(ref reader, options);
+                value = ReadFromObject(ref reader, options, ref state);
+                return true;
             }
 
             ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(typeof(T));
-            return default!;
+            value = default;
+            return true;
         }
 
         private T ReadFromString(ref Utf8JsonReader reader, JsonSerializerOptions options)
@@ -178,7 +198,7 @@ namespace System.Text.Json.Serialization.Converters
             return (T)caseInfo.Constructor((object[])caseInfo.DefaultFieldValues!.Clone());
         }
 
-        private T ReadFromObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        private T ReadFromObject(ref Utf8JsonReader reader, JsonSerializerOptions options, scoped ref ReadStack state)
         {
             Debug.Assert(reader.TokenType == JsonTokenType.StartObject);
 
@@ -309,7 +329,8 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 CaseFieldInfo field = caseInfo.Fields![fieldIndex];
-                object? fieldValue = field.Converter.ReadAsObject(ref reader, field.FieldType, options);
+                state.Current.JsonPropertyInfo = field.PropertyInfoForTypeInfo;
+                field.Converter.TryReadAsObject(ref reader, field.FieldType, options, ref state, out object? fieldValue);
                 fieldValues[fieldIndex] = fieldValue!;
             }
 
@@ -347,29 +368,63 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
+            // Fallback for direct converter invocations. The normal pipeline
+            // uses TryWrite -> OnTryWrite which forwards state automatically.
+            WriteStack state = default;
+            JsonTypeInfo typeInfo = options.GetTypeInfoInternal(typeof(T));
+            state.Initialize(typeInfo);
+            state.Push();
+
+            try
+            {
+                OnTryWrite(writer, value, options, ref state);
+            }
+            catch
+            {
+                state.DisposePendingDisposablesOnException();
+                throw;
+            }
+        }
+
+        internal override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        {
             int tag = _tagReader(value!);
             CaseInfo caseInfo = _casesByTag[tag];
 
-            if (caseInfo.IsFieldless)
+            // Fieldless cases serialize as strings when reference tracking is not active.
+            if (caseInfo.IsFieldless && state.NewReferenceId is null)
             {
                 writer.WriteStringValue(caseInfo.EncodedDiscriminatorName);
-                return;
+                return true;
             }
 
             writer.WriteStartObject();
+
+            // Write $id metadata if a new reference was registered by TryWrite.
+            if (state.NewReferenceId is not null)
+            {
+                writer.WriteString(JsonSerializer.s_metadataId, state.NewReferenceId);
+                state.NewReferenceId = null;
+            }
+
             writer.WriteString(_typeDiscriminatorPropertyNameEncoded, caseInfo.EncodedDiscriminatorName);
 
-            object[] fieldValues = caseInfo.FieldReader(value);
-            Debug.Assert(fieldValues.Length == caseInfo.Fields!.Length);
-
-            for (int i = 0; i < caseInfo.Fields.Length; i++)
+            if (!caseInfo.IsFieldless)
             {
-                CaseFieldInfo field = caseInfo.Fields[i];
-                writer.WritePropertyName(field.EncodedFieldName);
-                field.Converter.WriteAsObject(writer, fieldValues[i], options);
+                object[] fieldValues = caseInfo.FieldReader(value);
+                Debug.Assert(fieldValues.Length == caseInfo.Fields!.Length);
+
+                for (int i = 0; i < caseInfo.Fields.Length; i++)
+                {
+                    CaseFieldInfo field = caseInfo.Fields[i];
+                    writer.WritePropertyName(field.EncodedFieldName);
+                    state.Current.JsonPropertyInfo = field.PropertyInfoForTypeInfo;
+                    field.Converter.TryWriteAsObject(writer, fieldValues[i], options, ref state);
+                }
             }
 
             writer.WriteEndObject();
+            return true;
         }
 
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
@@ -474,6 +529,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             private readonly JsonSerializerOptions _options;
             private JsonConverter? _converter;
+            private JsonPropertyInfo? _propertyInfoForTypeInfo;
 
             public CaseFieldInfo(
                 string fieldName,
@@ -491,6 +547,7 @@ namespace System.Text.Json.Serialization.Converters
             public JsonEncodedText EncodedFieldName { get; }
             public Type FieldType { get; }
             public JsonConverter Converter => _converter ??= _options.GetConverterInternal(FieldType);
+            public JsonPropertyInfo PropertyInfoForTypeInfo => _propertyInfoForTypeInfo ??= _options.GetTypeInfoInternal(FieldType).PropertyInfoForTypeInfo;
         }
     }
 }
