@@ -152,7 +152,25 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
                 if (immVal == 0)
                     return true;
                 break;
-#endif
+            case GT_LSH:
+            case GT_RSH:
+            case GT_RSZ:
+            case GT_ROL:
+            case GT_ROR:
+                return emitter::isValidImmShift(immVal, emitActualTypeSize(parentNode->TypeGet()));
+#endif // TARGET_ARM64
+
+#ifdef TARGET_ARM
+            case GT_LSH:
+            case GT_RSH:
+            case GT_RSZ:
+            case GT_ROL:
+            case GT_ROR:
+            case GT_LSH_HI:
+            case GT_RSH_LO:
+                // ARM32: shift amount 0-31 for LSL; LSR/ASR/ROR use 0 to mean 32
+                return (immVal >= 0) && (immVal <= 32);
+#endif // TARGET_ARM
 
             default:
                 break;
@@ -2979,10 +2997,7 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
     }
 #endif // TARGET_ARM
 
-    if (shiftBy->IsCnsIntOrI())
-    {
-        MakeSrcContained(node, shiftBy);
-    }
+    CheckImmedAndMakeContained(node, shiftBy);
 }
 
 //------------------------------------------------------------------------
