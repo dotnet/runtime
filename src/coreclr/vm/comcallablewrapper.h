@@ -410,8 +410,7 @@ struct ComMethodTable
     {
         LIMITED_METHOD_CONTRACT;
 
-        ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
-        return InterlockedIncrement(&comMTWriterHolder.GetRW()->m_cbRefCount);
+        return InterlockedIncrement(&m_cbRefCount);
     }
 
     LONG Release()
@@ -425,10 +424,9 @@ struct ComMethodTable
         }
         CONTRACTL_END;
 
-        ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
         // use a different var here becuase cleanup will delete the object
         // so can no longer make member refs
-        LONG cbRef = InterlockedDecrement(&comMTWriterHolder.GetRW()->m_cbRefCount);
+        LONG cbRef = InterlockedDecrement(&m_cbRefCount);
         if (cbRef == 0)
             Cleanup();
 
@@ -606,8 +604,8 @@ struct ComMethodTable
 
             // Refer to ComMethodTable::LayOutClassMethodTable().
             ULONG cbSize     = *(ULONG *)m_pMDescr;
-            ULONG cbNewSlots = cbSize / (COMMETHOD_PREPAD + sizeof(ComCallMethodDesc));
-            _ASSERTE( (cbSize % (COMMETHOD_PREPAD + sizeof(ComCallMethodDesc))) == 0);
+            ULONG cbNewSlots = cbSize / sizeof(ComCallMethodDesc);
+            _ASSERTE( (cbSize % sizeof(ComCallMethodDesc)) == 0);
 
             // m_cbSlots is the total number of methods in addition to the ones from the
             // default interfaces.  cbNewSlots is the total number of methods introduced
@@ -670,9 +668,8 @@ struct ComMethodTable
         // Generate the IClassX IID if it hasn't been generated yet.
         if (!(m_Flags & enum_GuidGenerated))
         {
-            ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
-            GenerateClassItfGuid(TypeHandle(m_pMT), &comMTWriterHolder.GetRW()->m_IID);
-            comMTWriterHolder.GetRW()->m_Flags |= enum_GuidGenerated;
+            GenerateClassItfGuid(TypeHandle(m_pMT), &m_IID);
+            m_Flags |= enum_GuidGenerated;
         }
 
         return m_IID;
@@ -703,6 +700,11 @@ private:
     ITypeInfo*       m_pITypeInfo; // cached pointer to ITypeInfo
     DispatchInfo*    m_pDispatchInfo; // The dispatch info used to expose IDispatch to COM.
     IID              m_IID; // The IID of the interface.
+
+    // This data structure has the following trailing members
+    // SLOT          m_slots[]; // vtable entries (m_cbSlots of them, plus the 3 or 7 from IUnk/IDisp)
+    // ComCallMethodDesc m_comCallMethodDesc[]; // descriptors for the COM call, not true MethodDesc*. (m_cbSlots of them)
+
     friend struct ::cdac_data<ComMethodTable>;
 };
 

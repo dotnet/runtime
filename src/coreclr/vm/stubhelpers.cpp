@@ -461,6 +461,22 @@ extern "C" void QCALLTYPE InterfaceMarshaler_GetObjectForComCallableWrapperIUnkn
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE InterfaceMarshaler_ValidateComVisibilityForIUnknown(IUnknown* unk)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ComMethodTable* pComMT = ComMethodTable::ComMethodTableFromIP(unk);
+
+    if (pComMT->IsIClassX())
+    {
+        pComMT->CheckParentComVisibility(FALSE);
+    }
+
+    END_QCALL;
+}
+
 #endif // FEATURE_COMINTEROP
 
 FCIMPL0(void, StubHelpers::ClearLastError)

@@ -140,8 +140,6 @@ void FixContext(PCONTEXT pContextRecord)
 #undef FIXUPREG
 }
 
-MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
-
 #ifdef TARGET_UNIX
 BOOL HandleHardwareException(PAL_SEHException* ex);
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
@@ -3106,7 +3104,7 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
         THROWS;
     }
     CONTRACTL_END;
-    
+
     Thread* pThread = GET_THREAD();
     pThread->DecPreventAbort();
 
@@ -3542,7 +3540,7 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClau
     CLR_BOOL result = FALSE;
 
     BEGIN_QCALL;
-    
+
     Thread* pThread = GET_THREAD();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
@@ -3554,8 +3552,6 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClau
 }
 
 extern uint32_t g_exceptionCount;
-
-MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
 
 static CLR_BOOL CheckExceptionInterception(StackFrameIterator* pStackFrameIterator, ExInfo *pExInfo)
 {
@@ -3643,12 +3639,6 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
             TADDR sp = GetRegdisplaySP(pRD);
             if (pMD->IsILStub())
             {
-                MethodDesc * pUserMDForILStub = NULL;
-                Frame * pILStubFrame = NULL;
-                if (!pExInfo->m_frameIter.m_crawl.IsFunclet())    // only make this callback on the main method body of IL stubs
-                {
-                    pUserMDForILStub = GetUserMethodForILStub(pThread, sp, pMD, &pILStubFrame);
-                }
                 //
                 // NotifyOfCHFFilter has two behaviors
                 //  * Notifify debugger, get interception info and unwind (function will not return)
@@ -3656,7 +3646,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
                 //          We NULL it out because we get the interception event after this point.
                 //  * Notifify debugger and return.
                 //      In this case the normal EH proceeds and we need to reset m_sfResumeStackFrame to the sf catch handler.
-                EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pExInfo->m_ptrs, pILStubFrame);
+                EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pExInfo->m_ptrs, NULL);
             }
             else
             {
@@ -3887,7 +3877,7 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
 extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
-    
+
     CLR_BOOL result = FALSE;
     BEGIN_QCALL;
 
@@ -4017,7 +4007,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             // Check if there are any further managed frames on the stack or a catch for all exceptions in native code (marked by
             // DebuggerU2MCatchHandlerFrame with CatchesAllExceptions() returning true).
             // If not, the exception is unhandled.
-            bool isNotHandledByRuntime = 
+            bool isNotHandledByRuntime =
                 (pFrame == FRAME_TOP) ||
                 (IsTopmostDebuggerU2MCatchHandlerFrame(pFrame) && !((DebuggerU2MCatchHandlerFrame*)pFrame)->CatchesAllExceptions())
 #ifdef HOST_UNIX
@@ -4342,7 +4332,7 @@ void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo)
         if ((GetRegdisplaySP(pFrameIter->m_crawl.GetRegisterSet()) == handlingFrameSP)
 #if TARGET_ARM64
             && (GetControlPC(pFrameIter->m_crawl.GetRegisterSet()) == handlingFramePC)
-#endif  
+#endif
             )
         {
             // invoke only a partial second-pass here...

@@ -31,8 +31,6 @@ class Module;
 struct VASigCookie;
 class ComCallMethodDesc;
 
-
-#define COMMETHOD_PREPAD                        16   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
 #define COMMETHOD_CALL_PRESTUB_SIZE             6    // 32-bit indirect relative call
 #define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   -10  // the offset of the call target address inside the prestub
 

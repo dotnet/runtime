@@ -49,7 +49,6 @@ class ComCallMethodDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
-#define COMMETHOD_PREPAD                        24   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
 #ifdef FEATURE_COMINTEROP
 #define COMMETHOD_CALL_PRESTUB_SIZE             24
 #define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   16   // the offset of the call target address inside the prestub

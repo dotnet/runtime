@@ -145,11 +145,11 @@ UMEntryThunkData *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
         Holder<UMEntryThunkData *, DoNothing, UMEntryThunkData::FreeUMEntryThunk> umHolder;
         umHolder.Assign(pThunk);
 
-        UMThunkMarshInfo *pMarshInfo = (UMThunkMarshInfo *)(void *)(m_pDomain->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMThunkMarshInfo))));
+        UMThunkMarshInfo *pMarshInfo = (UMThunkMarshInfo *)(void *)(m_pDomain->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DelegateUMThunkMarshInfo))));
         Holder<UMThunkMarshInfo *, DoNothing, UMEntryThunkCache::DestroyMarshInfo> miHolder;
         miHolder.Assign(pMarshInfo);
 
-        pMarshInfo->LoadTimeInit(pMD);
+        new (pMarshInfo) DelegateUMThunkMarshInfo(pMD);
 
         pThunk->LoadTimeInit((PCODE)NULL, NULL, pMarshInfo, pMD);
 
@@ -298,6 +298,28 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
     RETURN pData;
 }
 
+UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk(LoaderAllocator* pLoaderAllocator, AllocMemTracker* pamTracker)
+{
+    CONTRACT (UMEntryThunkData*)
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pLoaderAllocator));
+        PRECONDITION(CheckPointer(pamTracker));
+        INJECT_FAULT(COMPlusThrowOM());
+        POSTCONDITION(CheckPointer(RETVAL));
+    }
+    CONTRACT_END;
+
+    UMEntryThunkData* pData = (UMEntryThunkData*)pamTracker->Track(pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(UMEntryThunkData))));
+    UMEntryThunk* pThunk = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
+    pData->m_pUMEntryThunk = pThunk;
+    pThunk->Init(pThunk, dac_cast<TADDR>(pData), NULL, dac_cast<TADDR>(PRECODE_UMENTRY_THUNK));
+
+    RETURN pData;
+}
+
 void UMEntryThunkData::Terminate()
 {
     CONTRACTL
@@ -354,7 +376,7 @@ UMThunkMarshInfo::~UMThunkMarshInfo()
 #endif
 }
 
-MethodDesc* UMThunkMarshInfo::GetILStubMethodDesc(MethodDesc* pInvokeMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwStubFlags)
+MethodDesc* DelegateUMThunkMarshInfo::GetILStubMethodDesc(MethodDesc* pInvokeMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
 
@@ -385,22 +407,14 @@ MethodDesc* UMThunkMarshInfo::GetILStubMethodDesc(MethodDesc* pInvokeMD, PInvoke
 // The RunTimeInit() must be called subsequently to fully
 // UMThunkMarshInfo.
 //----------------------------------------------------------
-VOID UMThunkMarshInfo::LoadTimeInit(MethodDesc* pMD)
+DelegateUMThunkMarshInfo::DelegateUMThunkMarshInfo(MethodDesc* pMD)
+    : DelegateUMThunkMarshInfo(pMD->GetSignature(), pMD->GetModule(), pMD)
 {
-    LIMITED_METHOD_CONTRACT;
-    PRECONDITION(pMD != NULL);
-
-    LoadTimeInit(pMD->GetSignature(), pMD->GetModule(), pMD);
 }
 
-VOID UMThunkMarshInfo::LoadTimeInit(Signature sig, Module * pModule, MethodDesc * pMD)
+DelegateUMThunkMarshInfo::DelegateUMThunkMarshInfo(Signature sig, Module * pModule, MethodDesc * pMD)
 {
     LIMITED_METHOD_CONTRACT;
-
-    FillMemory(this, sizeof(UMThunkMarshInfo), 0); // Prevent problems with partial deletes
-
-    // This will be overwritten by the actual code pointer (or NULL) at the end of UMThunkMarshInfo::RunTimeInit()
-    m_pILStub = (PCODE)1;
 
     m_pMD = pMD;
     m_pModule = pModule;
@@ -414,7 +428,7 @@ VOID UMThunkMarshInfo::LoadTimeInit(Signature sig, Module * pModule, MethodDesc 
 // It can safely be called multiple times and by concurrent
 // threads.
 //----------------------------------------------------------
-VOID UMThunkMarshInfo::RunTimeInit()
+void DelegateUMThunkMarshInfo::RunTimeInit()
 {
     STANDARD_VM_CONTRACT;
 
@@ -422,14 +436,14 @@ VOID UMThunkMarshInfo::RunTimeInit()
     if (IsCompletelyInited())
         return;
 
-    MethodDesc * pMD = GetMethod();
+    MethodDesc * pMD = m_pMD;
 
     PInvokeStaticSigInfo sigInfo;
 
     if (pMD != NULL)
         new (&sigInfo) PInvokeStaticSigInfo(pMD);
     else
-        new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
+        new (&sigInfo) PInvokeStaticSigInfo(m_sig, m_pModule);
 
     DWORD dwStubFlags = 0;
 
@@ -439,7 +453,6 @@ VOID UMThunkMarshInfo::RunTimeInit()
     MethodDesc* pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
     PCODE pFinalILStub = JitILStub(pStubMD);
 
-    // Must be the last thing we set!
-    InterlockedCompareExchangeT<PCODE>(&m_pILStub, pFinalILStub, (PCODE)1);
+    SetILStubEntry(pFinalILStub);
 }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS

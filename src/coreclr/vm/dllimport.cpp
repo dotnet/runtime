@@ -1569,9 +1569,8 @@ public:
                 pTargetMD)
     {
         STANDARD_VM_CONTRACT;
-        // We're creating a reverse stub where only the target has a managed 'this' pointer.
-        // So explicitly tell the stub linker that there is no this pointer to get correct argument indexes.
         m_slIL.SetHasThis(false);
+        m_slIL.SetCallingConvention(CorInfoCallConvExtension::Stdcall, SF_IsVarArgStub(dwStubFlags));
     }
 
     void BeginEmit(DWORD dwStubFlags)  // COM to CLR IL
@@ -1587,6 +1586,18 @@ public:
         _ASSERTE(dwNativeThisArg == 0);
         pDispatch->EmitLDARG(dwNativeThisArg);
         pDispatch->EmitCALL(METHOD__INTERFACEMARSHALER__GET_OBJECT_FOR_COM_CALLABLE_WRAPPER_IUNKNOWN, 1, 1);
+
+        if (SF_IsFieldGetterStub(dwStubFlags)
+            || SF_IsFieldSetterStub(dwStubFlags)
+            || m_slIL.GetTargetMD()->IsInterface())
+        {
+            // Make sure we're not trying to call on the class interface of a class with ComVisible(false) members
+            //  in its hierarchy.
+            // If we have a fieldcall or a null interface MD, we could be dealing with the IClassX interface.
+            ILCodeStream* pSetup = m_slIL.GetSetupCodeStream();
+            pSetup->EmitLDARG(0);
+            pSetup->EmitCALL(METHOD__INTERFACEMARSHALER__VALIDATE_COM_VISIBILITY_FOR_IUNKNOWN, 1, 0);
+        }
     }
 };
 
@@ -2211,15 +2222,11 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             pcsEmit->EmitLDIND_REF();                  // Get Delegate object
             pcsEmit->EmitLDFLD(tokDelegate_methodPtr); // get _methodPtr
         }
-#ifdef FEATURE_COMINTEROP
-        else if (SF_IsCOMStub(dwStubFlags)) // COM -> CLR call
+        else
         {
-            // managed target is passed directly in the secret argument
-            EmitLoadStubContext(pcsEmit, dwStubFlags);
-        }
-#endif // FEATURE_COMINTEROP
-        else // direct reverse P/Invoke (CoreCLR hosting)
-        {
+            // One of the following:
+            // - COM -> CLR call
+            // - direct reverse P/Invoke (CoreCLR hosting)
             EmitLoadStubContext(pcsEmit, dwStubFlags);
             CONSISTENCY_CHECK(0 == offsetof(UMEntryThunkData, m_pManagedTarget)); // if this changes, just add back the EmitLDC/EmitADD below
             // pcsEmit->EmitLDC(offsetof(UMEntryThunkData, m_pManagedTarget));
