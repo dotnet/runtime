@@ -361,10 +361,12 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Gets the process name from /proc/pid/exe basename, falling back to the stat comm field.
-        /// Using /proc/pid/exe is more reliable than stat.comm during the fork/exec race window:
-        /// the exe symlink is updated early in execve (when the new memory map is created), before
-        /// stat.comm is updated, so it reflects the new binary even if stat.comm still shows the
-        /// parent's name.
+        /// This eliminates the fork/exec race on glibc Linux (where vfork() is used): vfork() keeps
+        /// the parent suspended until exec_mmap() runs in the child, so /proc/pid/exe is already
+        /// updated to the new binary by the time the parent can call this method. stat.comm may
+        /// still lag behind (it is updated by setup_new_exec(), which runs after exec_mmap()), which
+        /// is why reading /proc/pid/exe is preferred here. The race is fully closed for the cases
+        /// where it was observed to fail in practice.
         /// </summary>
         private static string GetExeBasenameOrComm(Interop.procfs.ProcPid procPid, string comm)
         {
