@@ -71,7 +71,9 @@
   <!-- Back-compat: keep ComputeLinkedFilesToPublish scheduled after NativeCompile so that
        external targets using BeforeTargets/AfterTargets="ComputeLinkedFilesToPublish" still
        fire at approximately the same point in the publish pipeline. -->
-  <Target Name="ComputeLinkedFilesToPublish" AfterTargets="NativeCompile" />
+  <Target Name="ComputeLinkedFilesToPublish"
+          AfterTargets="NativeCompile"
+          DependsOnTargets="NativeCompile" />
 
   <!--
     Classify ResolvedFileToPublish for NativeAOT, then replace CoreCLR runtime pack
