@@ -248,6 +248,8 @@ For each confirmed change:
 - The current "latest" typically becomes the new "oldest"
 - A newer version becomes the new "latest"
 
+**Oldest and newest may be the same version.** This is expected and acceptable. It happens most often during preview .NET releases — aggressive EOL pruning (Rules 1–2) can leave only one active version for a distro. For pre-GA releases, set the "oldest" to the oldest version we expect to support at GA, even if that's also the newest. A second version can be added later when one becomes available.
+
 ### 9. Validate
 
 Re-scan to confirm no EOL references remain:
