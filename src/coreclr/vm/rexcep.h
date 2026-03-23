@@ -171,7 +171,7 @@ DEFINE_EXCEPTION(g_SystemNS,           InvalidCastException,           false,  C
 #ifdef FEATURE_COMINTEROP
 DEFINE_EXCEPTION(g_InteropNS,          InvalidComObjectException,      false,  COR_E_INVALIDCOMOBJECT)
 DEFINE_EXCEPTION(g_InteropNS,          InvalidOleVariantTypeException, false,  COR_E_INVALIDOLEVARIANTTYPE)
-#endif // defined(FEATURE_COMINTEROP)
+#endif // FEATURE_COMINTEROP
 DEFINE_EXCEPTION(g_ReflectionNS,       InvalidFilterCriteriaException, false,  COR_E_INVALIDFILTERCRITERIA)
 
 DEFINE_EXCEPTION(g_SystemNS,           InvalidOperationException,      false,  COR_E_INVALIDOPERATION)
@@ -261,8 +261,10 @@ DEFINE_EXCEPTION(g_SecurityNS,         VerificationException,          false,  C
 DEFINE_EXCEPTION(g_InteropNS,          COMException,                   false,  E_FAIL)
 #ifdef FEATURE_COMINTEROP
 DEFINE_EXCEPTION(g_InteropNS,          ExternalException,              false,  E_FAIL)
+#endif // FEATURE_COMINTEROP
+#ifdef TARGET_WINDOWS
 DEFINE_EXCEPTION(g_InteropNS,          SEHException,                   false,  E_FAIL)
-#endif // defined(FEATURE_COMINTEROP)
+#endif // TARGET_WINDOWS
 DEFINE_EXCEPTION(g_SystemNS,           NotImplementedException,        false,  E_NOTIMPL)
 
 DEFINE_EXCEPTION(g_SystemNS,           OutOfMemoryException,           false,  E_OUTOFMEMORY, CTL_E_OUTOFMEMORY, STD_CTL_SCODE(31001))

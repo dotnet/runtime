@@ -2353,11 +2353,11 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
 #endif // ALIGN_ACCESS
 
         default:
-#ifdef FEATURE_COMINTEROP
+#ifdef TARGET_WINDOWS
             return kSEHException;
 #else
-            return kException;
-#endif // FEATURE_COMINTEROP
+            UNREACHABLE_MSG("Unknown FaultReportResult");
+#endif // TARGET_WINDOWS
     }
 }
 
@@ -4710,6 +4710,7 @@ LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 
     _ASSERTE(pParam && (pParam->OneShot == TRUE || pParam->OneShot == FALSE));
 
+#ifdef TARGET_WINDOWS
     if (pParam->OneShot == TRUE)
     {
         pParam->OneShot = FALSE;
@@ -4722,6 +4723,7 @@ LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
             PAL_CPP_THROW(SEHException *, new SEHException(pExceptionInfo->ExceptionRecord,
                                                            pExceptionInfo->ContextRecord));
     }
+#endif // TARGET_WINDOWS
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
@@ -7035,7 +7037,9 @@ bool DebugIsEECxxExceptionPointer(void* pv)
 
         HRException             boilerplate1;
         COMException            boilerplate2;
+#ifdef TARGET_WINDOWS
         SEHException            boilerplate3;
+#endif // TARGET_WINDOWS
 
         // clrex.h
 
@@ -7060,7 +7064,9 @@ bool DebugIsEECxxExceptionPointer(void* pv)
         {
             *((TADDR*)&boilerplate1),
             *((TADDR*)&boilerplate2),
+#ifdef TARGET_WINDOWS
             *((TADDR*)&boilerplate3),
+#endif // TARGET_WINDOWS
             *((TADDR*)&boilerplate4),
             *((TADDR*)&boilerplate5),
             *((TADDR*)&boilerplate6),

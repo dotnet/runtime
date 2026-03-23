@@ -8,7 +8,7 @@ using System.Runtime.Versioning;
 
 namespace Internal.Runtime.InteropServices
 {
-    [UnsupportedOSPlatform("browser")]
+    [SupportedOSPlatform("windows")]
     internal static class ComActivator
     {
         /// <summary>
