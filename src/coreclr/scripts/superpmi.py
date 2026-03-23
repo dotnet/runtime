@@ -4118,7 +4118,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
                 if os.path.isfile(mct_file):
                     urls.append(mct_file)
             else:
-                urls += get_files_from_path(mch_file, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mct", ".zip"]))
+                urls += get_files_from_path(mch_file, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mc", ".mct", ".zip"]))
         elif item.lower().startswith("http:") or item.lower().startswith("https:"):  # probably could use urllib.parse to be more precise
             urls.append(item)
         elif os.path.isdir(item):
@@ -4151,7 +4151,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     if len(mct_urls) != 0:
         local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False, is_azure_storage=True, display_progress=not skip_progress)
 
-    # Even though we might have downloaded MCT files, only return the set of MCH files.
+    # Even though we might have downloaded MCT files, only return the set of MCH/MC files.
     local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch", ".mc"])]
 
     return local_mch_files
