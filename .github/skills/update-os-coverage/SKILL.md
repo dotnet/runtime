@@ -49,7 +49,7 @@ Work in this skill is driven by two **inputs** and gated by one **prerequisite**
 
 ### Gate — what must be true before acting
 
-- **Container image availability** — A container image for the target OS version must exist at [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker). No image, no change. See [Step 5](#5-check-container-image-availability) for how to check. If the gate fails, search [open issues](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/issues) for the missing image. If no tracking issue exists, file one requesting the image (with the distro, version, and purpose — e.g., "helix testing, amd64").
+- **Container image availability** — A container image for the target OS version must exist at [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker). No image, no change. See [Step 6](#6-check-container-image-availability) for how to check. If the gate fails, search [open issues](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/issues) for the missing image. If no tracking issue exists, file one requesting the image (with the distro, version, and purpose — e.g., "helix testing, amd64").
 
 ### How the pieces fit together
 
@@ -87,7 +87,25 @@ For pre-GA .NET versions, determine the GA date. .NET releases GA in November:
 - Even versions (10, 12, 14) GA in odd years — LTS
 - Odd versions (11, 13, 15) GA in even years — STS
 
-### 2. Scan pipeline files for OS references
+### 2. Fetch supported-os.json
+
+Fetch the support matrix for the .NET version that corresponds to the target branch. This is the **primary source of truth** for which OS versions should have CI coverage.
+
+```bash
+# Match branch to dotnet/core directory:
+#   main           → the highest version directory (e.g., 11.0)
+#   release/9.0    → release-notes/9.0/supported-os.json
+#   release/8.0    → release-notes/8.0/supported-os.json
+
+curl -sL https://github.com/dotnet/core/raw/refs/heads/main/release-notes/{version}/supported-os.json
+```
+
+Review the `supported-versions` list for each distro family (Linux, Windows, macOS, etc.). This tells you:
+
+- **Release branches:** Which distro versions **must** have CI coverage — any gaps need to be closed at best speed.
+- **main:** The current baseline. `main` may go beyond this (proactively adding pre-release distros), but should not fall behind it.
+
+### 3. Scan pipeline files for OS references
 
 Scan these files for OS version references:
 
@@ -130,9 +148,9 @@ grep -rn -oP '(?:Ubuntu|Debian|Fedora|openSUSE|Alpine|Centos|AzureLinux|OSX|Wind
   eng/pipelines/ | sort -u
 ```
 
-### 3. Check lifecycle status
+### 4. Check lifecycle status (supplementary)
 
-Query [endoflife.date](https://endoflife.date) for each distro+version:
+Use [endoflife.date](https://endoflife.date) to fill in lifecycle details not captured in `supported-os.json` — particularly EOL dates for versions currently in our pipeline files and for candidate replacements:
 
 ```bash
 # Check a specific version
@@ -170,7 +188,7 @@ Categorize each OS version:
 
 > **Note:** The `eol` field can be a date string (`"2026-06-10"`) or a boolean (`false`). A value of `false` means no EOL date has been announced — treat as active.
 
-### 4. Check for newer versions to add
+### 5. Check for newer versions to add
 
 For each distro in our coverage, check if newer versions are available that we aren't testing against:
 
@@ -182,7 +200,7 @@ curl -s https://endoflife.date/api/{product}.json \
 
 For `main` — also check for pre-release distro versions. See [Rule 3](#rule-3--add-pre-release-distros-proactively-in-main).
 
-### 5. Check container image availability
+### 6. Check container image availability
 
 Before recommending a new OS version, verify a container image exists at [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker):
 
@@ -202,19 +220,6 @@ If no image exists:
 - Search [open issues](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/issues) for the missing image
 - If no tracking issue exists, file one requesting the image (with the distro, version, and purpose — e.g., "helix testing, amd64")
 - Do **not** add the OS version to pipeline files until an image is published
-
-### 6. Cross-reference with supported-os.json (release branches)
-
-For release branches, fetch the support matrix and check alignment:
-
-```bash
-curl -sL https://github.com/dotnet/core/raw/refs/heads/main/release-notes/{version}/supported-os.json
-```
-
-For each distro version listed in `supported-versions`:
-
-- Check whether a corresponding Helix queue or build container exists in the release branch's pipeline files
-- Flag gaps — these need coverage added at best speed
 
 ### 7. Present findings
 
@@ -316,7 +321,7 @@ If a distro version is currently in preview but expected to GA **before** the .N
 1. The distro version is expected to GA before the .NET GA date
 2. It passes the [Rule 2](#rule-2--only-add-versions-that-survive-ga--6-months) EOL check
 3. Preview builds of the distro are publicly available
-4. A container image exists at [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) (see [Step 5](#5-check-container-image-availability))
+4. A container image exists at [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) (see [Step 6](#6-check-container-image-availability))
 
 If conditions 1–3 are met but no container image exists, do not add it yet. Check for or file a tracking issue at dotnet-buildtools-prereqs-docker.
 
