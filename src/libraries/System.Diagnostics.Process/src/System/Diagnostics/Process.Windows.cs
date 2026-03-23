@@ -422,13 +422,11 @@ namespace System.Diagnostics
         }
 
         /// <summary>Starts the process using the supplied start info.</summary>
-        private unsafe bool StartWithCreateProcess(ProcessStartInfo startInfo, SafeFileHandle stdinHandle, SafeFileHandle stdoutHandle, SafeFileHandle stderrHandle)
+        private unsafe bool StartWithCreateProcess(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             // See knowledge base article Q190351 for an explanation of the following code.  Noteworthy tricky points:
             //    * The handles are duplicated as inheritable before they are passed to CreateProcess so
             //      that the child process can use them
-            //    * CreateProcess allows you to redirect all or none of the standard IO handles, so we use
-            //      Console.OpenStandard*Handle for the handles that are not being redirected
 
             var commandLine = new ValueStringBuilder(stackalloc char[256]);
             BuildCommandLine(startInfo, ref commandLine);
@@ -453,26 +451,25 @@ namespace System.Diagnostics
             {
                 startupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
 
-                // A process could be started with INVALID_HANDLE_VALUE, we need to take this into account.
-                if (!stdinHandle.IsInvalid)
+                if (stdinHandle is not null && !stdinHandle.IsInvalid)
                 {
                     inheritableStdinHandle = DuplicateAsInheritable(stdinHandle);
                     startupInfo.hStdInput = inheritableStdinHandle.DangerousGetHandle();
                 }
 
-                if (!stdoutHandle.IsInvalid)
+                if (stdoutHandle is not null && !stdoutHandle.IsInvalid)
                 {
                     inheritableStdoutHandle = DuplicateAsInheritable(stdoutHandle);
                     startupInfo.hStdOutput = inheritableStdoutHandle.DangerousGetHandle();
                 }
 
-                if (!stderrHandle.IsInvalid)
+                if (stderrHandle is not null && !stderrHandle.IsInvalid)
                 {
                     inheritableStderrHandle = DuplicateAsInheritable(stderrHandle);
                     startupInfo.hStdError = inheritableStderrHandle.DangerousGetHandle();
                 }
 
-                if (!stdinHandle.IsInvalid || !stdoutHandle.IsInvalid || !stderrHandle.IsInvalid)
+                if (stdinHandle is not null || stdoutHandle is not null || stderrHandle is not null)
                 {
                     startupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
                 }

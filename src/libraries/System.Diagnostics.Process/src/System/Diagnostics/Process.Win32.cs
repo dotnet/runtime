@@ -24,11 +24,9 @@ namespace System.Diagnostics
 
         private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
-            Debug.Assert(startInfo.UseShellExecute == (stdinHandle is null && stdoutHandle is null && stderrHandle is null));
-
             return startInfo.UseShellExecute
                 ? StartWithShellExecuteEx(startInfo)
-                : StartWithCreateProcess(startInfo, stdinHandle!, stdoutHandle!, stderrHandle!);
+                : StartWithCreateProcess(startInfo, stdinHandle, stdoutHandle, stderrHandle);
         }
 
         private unsafe bool StartWithShellExecuteEx(ProcessStartInfo startInfo)

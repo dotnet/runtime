@@ -2871,6 +2871,16 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
     GenTree* storeException  = m_compiler->gtNewStoreLclVarNode(exceptionLclNum, exceptionInd);
     LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeException));
 
+    if (ReuseContinuations())
+    {
+        // If we may reuse this continuation later then make sure we don't see the same exception again.
+        GenTree* continuation    = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned exceptionOffset = OFFSETOF__CORINFO_Continuation__data + layout.ExceptionOffset;
+        GenTree* null            = m_compiler->gtNewNull();
+        GenTree* nullException   = StoreAtOffset(continuation, exceptionOffset, null, TYP_REF);
+        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, nullException));
+    }
+
     GenTree* exception = m_compiler->gtNewLclVarNode(exceptionLclNum, TYP_REF);
     GenTree* null      = m_compiler->gtNewNull();
     GenTree* neNull    = m_compiler->gtNewOperNode(GT_NE, TYP_INT, exception, null);
@@ -3244,6 +3254,16 @@ void AsyncTransformation::CreateResumptionsAndSuspensions()
 //
 bool AsyncTransformation::ReuseContinuations()
 {
+#ifdef DEBUG
+    static ConfigMethodRange s_range;
+    s_range.EnsureInit(JitConfig.JitAsyncReuseContinuationsRange());
+
+    if (!s_range.Contains(m_compiler->info.compMethodHash()))
+    {
+        return false;
+    }
+#endif
+
     return JitConfig.JitAsyncReuseContinuations() != 0;
 }
 

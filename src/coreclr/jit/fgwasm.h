@@ -115,6 +115,16 @@ public:
 //
 class WasmInterval
 {
+public:
+
+    // interval kind
+    enum class Kind
+    {
+        Block,
+        Loop,
+        Try
+    };
+
 private:
 
     // m_chain refers to the conflict set member with the lowest m_start.
@@ -130,17 +140,17 @@ private:
     // Largest end index of any chained interval
     unsigned m_chainEnd;
 
-    // true if this is a loop interval (extents cannot change)
-    bool m_isLoop;
+    // kind of interval
+    Kind m_kind;
 
 public:
 
-    WasmInterval(unsigned start, unsigned end, bool isLoop)
+    WasmInterval(unsigned start, unsigned end, Kind kind)
         : m_chain(nullptr)
         , m_start(start)
         , m_end(end)
         , m_chainEnd(end)
-        , m_isLoop(isLoop)
+        , m_kind(kind)
     {
         m_chain = this;
     }
@@ -180,9 +190,19 @@ public:
         return m_chain;
     }
 
+    bool IsBlock() const
+    {
+        return m_kind == Kind::Block;
+    }
+
     bool IsLoop() const
     {
-        return m_isLoop;
+        return m_kind == Kind::Loop;
+    }
+
+    bool IsTry() const
+    {
+        return m_kind == Kind::Try;
     }
 
     void SetChain(WasmInterval* c)
@@ -194,21 +214,39 @@ public:
     static WasmInterval* NewBlock(Compiler* comp, BasicBlock* start, BasicBlock* end)
     {
         WasmInterval* result =
-            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, /* isLoop */ false);
+            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, Kind::Block);
         return result;
     }
 
     static WasmInterval* NewLoop(Compiler* comp, BasicBlock* start, BasicBlock* end)
     {
         WasmInterval* result =
-            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, /* isLoop */ true);
+            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, Kind::Loop);
         return result;
     }
 
+    static WasmInterval* NewTry(Compiler* comp, BasicBlock* start, BasicBlock* end)
+    {
+        WasmInterval* result =
+            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, Kind::Try);
+        return result;
+    }
 #ifdef DEBUG
     void Dump(bool chainExtent = false)
     {
-        printf("[%03u,%03u]%s", m_start, chainExtent ? m_chainEnd : m_end, m_isLoop && !chainExtent ? " L" : "");
+        printf("[%03u,%03u]", m_start, chainExtent ? m_chainEnd : m_end);
+
+        if (!chainExtent)
+        {
+            if (m_kind == Kind::Loop)
+            {
+                printf("L");
+            }
+            else if (m_kind == Kind::Try)
+            {
+                printf("T");
+            }
+        }
 
         if (m_chain != this)
         {
@@ -218,6 +256,21 @@ public:
         else
         {
             printf("\n");
+        }
+    }
+
+    const char* KindString() const
+    {
+        switch (m_kind)
+        {
+            case Kind::Block:
+                return "Block";
+            case Kind::Loop:
+                return "Loop";
+            case Kind::Try:
+                return "Try";
+            default:
+                return "??";
         }
     }
 #endif

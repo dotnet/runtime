@@ -360,8 +360,6 @@ namespace System.Diagnostics
 
         private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
-            Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null);
-
             if (PlatformDoesNotSupportProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
@@ -388,7 +386,10 @@ namespace System.Diagnostics
             // Unix applications expect the terminal to be in an echoing state by default.
             // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
             // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
-            bool usesTerminal = Interop.Sys.IsATty(stdinHandle) || Interop.Sys.IsATty(stdoutHandle) || Interop.Sys.IsATty(stderrHandle);
+            // When a handle is null, the child inherits the parent's standard stream which could be a terminal.
+            bool usesTerminal = (stdinHandle is null || Interop.Sys.IsATty(stdinHandle))
+                || (stdoutHandle is null || Interop.Sys.IsATty(stdoutHandle))
+                || (stderrHandle is null || Interop.Sys.IsATty(stderrHandle));
 
             if (startInfo.UseShellExecute)
             {
@@ -451,7 +452,7 @@ namespace System.Diagnostics
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
             string[] envp, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
-            SafeFileHandle stdinHandle, SafeFileHandle stdoutHandle, SafeFileHandle stderrHandle,
+            SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
             bool usesTerminal, bool throwOnNoExec = true)
         {
             if (string.IsNullOrEmpty(resolvedFilename))

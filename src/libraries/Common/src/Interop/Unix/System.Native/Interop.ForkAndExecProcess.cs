@@ -15,12 +15,34 @@ internal static partial class Interop
         internal static unsafe int ForkAndExecProcess(
             string filename, string[] argv, string[] envp, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
-            out int lpChildPid, SafeFileHandle stdinFd, SafeFileHandle stdoutFd, SafeFileHandle stderrFd, bool shouldThrow = true)
+            out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd, bool shouldThrow = true)
         {
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
+
+            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
             try
             {
+                int stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
+
+                if (stdinFd is not null)
+                {
+                    stdinFd.DangerousAddRef(ref stdinRefAdded);
+                    stdinRawFd = stdinFd.DangerousGetHandle().ToInt32();
+                }
+
+                if (stdoutFd is not null)
+                {
+                    stdoutFd.DangerousAddRef(ref stdoutRefAdded);
+                    stdoutRawFd = stdoutFd.DangerousGetHandle().ToInt32();
+                }
+
+                if (stderrFd is not null)
+                {
+                    stderrFd.DangerousAddRef(ref stderrRefAdded);
+                    stderrRawFd = stderrFd.DangerousGetHandle().ToInt32();
+                }
+
                 AllocNullTerminatedArray(argv, ref argvPtr);
                 AllocNullTerminatedArray(envp, ref envpPtr);
                 fixed (uint* pGroups = groups)
@@ -28,7 +50,7 @@ internal static partial class Interop
                     result = ForkAndExecProcess(
                         filename, argvPtr, envpPtr, cwd,
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
-                        out lpChildPid, stdinFd, stdoutFd, stderrFd);
+                        out lpChildPid, stdinRawFd, stdoutRawFd, stderrRawFd);
                 }
                 return result == 0 ? 0 : Marshal.GetLastPInvokeError();
             }
@@ -36,6 +58,13 @@ internal static partial class Interop
             {
                 FreeArray(envpPtr, envp.Length);
                 FreeArray(argvPtr, argv.Length);
+
+                if (stdinRefAdded)
+                    stdinFd!.DangerousRelease();
+                if (stdoutRefAdded)
+                    stdoutFd!.DangerousRelease();
+                if (stderrRefAdded)
+                    stderrFd!.DangerousRelease();
             }
         }
 
@@ -43,7 +72,7 @@ internal static partial class Interop
         private static unsafe partial int ForkAndExecProcess(
             string filename, byte** argv, byte** envp, string? cwd,
             int setUser, uint userId, uint groupId, uint* groups, int groupsLength,
-            out int lpChildPid, SafeFileHandle stdinFd, SafeFileHandle stdoutFd, SafeFileHandle stderrFd);
+            out int lpChildPid, int stdinFd, int stdoutFd, int stderrFd);
 
         private static unsafe void AllocNullTerminatedArray(string[] arr, ref byte** arrPtr)
         {
