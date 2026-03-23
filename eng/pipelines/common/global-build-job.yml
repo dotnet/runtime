@@ -174,7 +174,7 @@ jobs:
 
     - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
-    - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
+    - ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), not(in(parameters.hostedOs, 'linux', 'windows'))) }}:
       - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
         displayName: Install Build Dependencies
 
@@ -237,7 +237,7 @@ jobs:
         displayName: Disk Usage after Build
         condition: always()
 
-      # If intended to send extra steps after regular build add them here.
+    # If intended to send extra steps after regular build add them here.
     - ${{ if ne(parameters.postBuildSteps,'') }}:
       - ${{ each postBuildStep in parameters.postBuildSteps }}:
         - ${{ if ne(postBuildStep.template, '') }}:
