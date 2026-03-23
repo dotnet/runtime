@@ -2757,6 +2757,16 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
+#if defined(TARGET_WASM)
+    // Catch resumptions are allowed to jump into try blocks at any point.
+    // They are transients during Wasm control flow restructuring.
+    //
+    if (m_compiler->fgWasmHasCatchResumptions && blockPred->HasFlag(BBF_CATCH_RESUMPTION))
+    {
+        return true;
+    }
+#endif // defined(TARGET_WASM)
+
     JITDUMP("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;

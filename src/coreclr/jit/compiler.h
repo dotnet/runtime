@@ -2253,7 +2253,13 @@ class FlowGraphTryRegion
     EHblkDsc* m_ehDsc;
     BitVec m_blocks;
 
+    // Edges from blocks outside the try region to blocks inside the try region.
+    // This includes edges from any catch handler, and edges from some ancestor
+    // region to some decendant region.
+    jitstd::vector<FlowEdge*> m_entryEdges;
+
     bool m_requiresRuntimeResumption;
+    bool m_hasSideEntry;
 
     FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* regions);
 
@@ -2262,9 +2268,19 @@ class FlowGraphTryRegion
         m_requiresRuntimeResumption = true;
     }
 
+    void SetHasSideEntry()
+    {
+        m_hasSideEntry = true;
+    }
+
     bool IsMutualProtectWith(FlowGraphTryRegion* other)
     {
         return EHblkDsc::ebdIsSameTry(this->m_ehDsc, other->m_ehDsc);
+    }
+
+    void AddEntryEdge(FlowEdge* edge)
+    {
+        m_entryEdges.push_back(edge);
     }
 
 public:
@@ -2279,12 +2295,24 @@ public:
         return m_ehDsc->HasCatchHandler();
     }
 
+    const jitstd::vector<FlowEdge*>& EntryEdges()
+    {
+        return m_entryEdges;
+    }
+
     // True if resumption from a catch in this or in an enclosed
     // try region requires runtime support.
     //
     bool RequiresRuntimeResumption() const
     {
         return m_requiresRuntimeResumption;
+    }
+
+    // True if control can enter the try via some block other than the header block.
+    //
+    bool HasSideEntry() const
+    {
+        return m_hasSideEntry;
     }
 
 #ifdef DEBUG
@@ -2305,6 +2333,12 @@ private:
     unsigned m_numRegions;
     unsigned m_numTryCatchRegions;
     bool m_tryRegionsIncludeHandlerBlocks;
+    bool m_hasMultipleEntryTryRegions;
+
+    void SetHasMultipleEntryTryRegions()
+    {
+        m_hasMultipleEntryTryRegions = true;
+    }
 
 public:
 
@@ -2328,6 +2362,8 @@ public:
     FlowGraphDfsTree* GetDfsTree() const { return m_dfsTree; }
 
     bool TryRegionsIncludeHandlerBlocks() const { return m_tryRegionsIncludeHandlerBlocks; }
+
+    bool HasMultipleEntryTryRegions() const { return m_hasMultipleEntryTryRegions; }
 
 #ifdef DEBUG
     static void Dump(FlowGraphTryRegions* regions);
@@ -5347,6 +5383,7 @@ public:
 #ifdef TARGET_WASM
     jitstd::vector<WasmInterval*>* fgWasmIntervals = nullptr;
     BasicBlock** fgIndexToBlockMap = nullptr;
+    bool fgWasmHasCatchResumptions = false;
 #endif
 
     FlowGraphDfsTree* m_dfsTree = nullptr;

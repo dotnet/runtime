@@ -2049,10 +2049,11 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
         if (commonEnclosingTryIndex == innermostDispatchingTryIndex)
         {
-            JITDUMP("Continuation " FMT_BB " is within dispatching try EH#%02u; cannot handle this case yet\n",
+            JITDUMP("Continuation " FMT_BB " is within dispatching try EH#%02u, marking as catch resumption\n",
                     continuationBlock->bbNum, innermostDispatchingTryIndex);
 
-            NYI_WASM("WasmEHFlow: continuation is within dispatching try");
+            fgWasmHasCatchResumptions = true;
+            continuationBlock->SetFlags(BBF_CATCH_RESUMPTION);
         }
 
         ArrayStack<BasicBlock*>* catchRetBlocks = getCatchRetBlocksForTryRegion(innermostDispatchingTryIndex);

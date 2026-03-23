@@ -7599,7 +7599,9 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
     , m_parent(nullptr)
     , m_ehDsc(ehDsc)
     , m_blocks(BitVecOps::UninitVal())
+    , m_entryEdges(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
     , m_requiresRuntimeResumption(false)
+    , m_hasSideEntry(false)
 {
     BitVecTraits traits = regions->GetBlockBitVecTraits();
     m_blocks            = BitVecOps::MakeEmpty(&traits);
@@ -7683,6 +7685,40 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
             {
                 BitVecOps::AddElemD(&traits, region->m_blocks, block->bbPostorderNum);
                 region = region->m_parent;
+
+                // Enumerate block's pred edges to find the try entry edges.
+                //
+                for (FlowEdge* const edge : block->PredEdges())
+                {
+                    BasicBlock* const predBlock = edge->getSourceBlock();
+
+                    if (comp->bbInTryRegions(tryIndex, predBlock))
+                    {
+                        continue;
+                    }
+
+                    // "Normal" entry edges
+                    //
+                    if (block == dsc->ebdTryBeg)
+                    {
+                        region->AddEntryEdge(edge);
+                        continue;
+                    }
+
+                    // Runtime async edges and catch resumption edges
+                    //
+                    if (block->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
+                    {
+                        region->AddEntryEdge(edge);
+                        region->SetHasSideEntry();
+                        regions->SetHasMultipleEntryTryRegions();
+                        continue;
+                    }
+
+                    JITDUMP("Unexpected try region entry edge from " FMT_BB " to " FMT_BB "\n", predBlock->bbNum,
+                            block->bbNum);
+                    assert(!"Unexpected try region entry edge");
+                }
             }
         }
         else
@@ -7754,6 +7790,22 @@ void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
         printf(" " FMT_BB, block->bbNum);
         return BasicBlockVisit::Continue;
     });
+
+    printf(" [entries]: ");
+    for (FlowEdge* const edge : region->EntryEdges())
+    {
+        BasicBlock* const predBlock = edge->getSourceBlock();
+        BasicBlock* const succBlock = edge->getDestinationBlock();
+        printf(" " FMT_BB "->" FMT_BB, predBlock->bbNum, succBlock->bbNum);
+        if (succBlock->HasFlag(BBF_ASYNC_RESUMPTION))
+        {
+            printf("[async]");
+        }
+        if (succBlock->HasFlag(BBF_CATCH_RESUMPTION))
+        {
+            printf("[catch]");
+        }
+    }
 }
 
 //------------------------------------------------------------------------
