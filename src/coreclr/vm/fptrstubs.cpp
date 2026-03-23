@@ -76,6 +76,9 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
 
     if (pPrecode != NULL)
     {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+            "FuncPtrStubs::GetFuncPtrStub pMD=%p type=%d - found existing stub, entryPoint=" FMT_ADDR "\n",
+            pMD, type, DBG_ADDR(pPrecode->GetEntryPoint())));
         return pPrecode->GetEntryPoint();
     }
 
@@ -141,6 +144,10 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
                 pPrecode = pNewPrecode;
                 m_hashTable.Add(pPrecode);
                 amt.SuppressRelease();
+                LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+                    "FuncPtrStubs::GetFuncPtrStub pMD=%p type=%d - created new stub,"
+                    " target=" FMT_ADDR " setTargetAfter=%d\n",
+                    pMD, type, DBG_ADDR(target), setTargetAfterAddingToHashTable));
             }
             else
             {
@@ -149,25 +156,35 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
         }
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (setTargetAfterAddingToHashTable)
     {
         GCX_PREEMP();
 
         _ASSERTE(pMD->IsVersionableWithVtableSlotBackpatch());
 
-        PCODE temporaryEntryPoint = pMD->GetTemporaryEntryPoint();
+        LoaderAllocator *mdLoaderAllocator = pMD->GetLoaderAllocator();
         MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
 
-        // Set the funcptr stub's entry point to the current entry point inside the lock and after the funcptr stub is exposed,
-        // to synchronize with backpatching in MethodDesc::BackpatchEntryPointSlots()
-        PCODE entryPoint = pMD->GetMethodEntryPoint();
-        if (entryPoint != temporaryEntryPoint)
-        {
-            // Need only patch the precode from the prestub, since if someone else managed to patch the precode already then its
-            // target would already be up-to-date
-            pPrecode->SetTargetInterlocked(entryPoint, TRUE /* fOnlyRedirectFromPrestub */);
-        }
+        // Register the funcptr precode's target slot in the backpatching table. This records the slot and
+        // immediately backpatches it to the current entry point. During non-final tiers, GetMethodEntryPoint()
+        // returns the temporary entry point (method's precode), so calls through the funcptr stub will flow
+        // through the method's precode to the current code. At final tier, the slot is updated to point
+        // directly to the final code along with all other registered entry point slots.
+        PCODE currentEntryPoint = pMD->GetMethodEntryPoint();
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+            "FuncPtrStubs::GetFuncPtrStub pMD=%p (%s::%s) - registering funcptr precode target in backpatch table,"
+            " currentEntryPoint=" FMT_ADDR "\n",
+            pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, DBG_ADDR(currentEntryPoint)));
+        MethodDescBackpatchInfoTracker *backpatchTracker = mdLoaderAllocator->GetMethodDescBackpatchInfoTracker();
+        backpatchTracker->AddSlotAndPatch_Locked(
+            pMD,
+            mdLoaderAllocator,
+            (TADDR)pPrecode->GetTargetSlot(),
+            EntryPointSlots::SlotType_Normal,
+            currentEntryPoint);
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     return pPrecode->GetEntryPoint();
 }

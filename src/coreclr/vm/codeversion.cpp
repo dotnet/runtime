@@ -1851,9 +1851,16 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
                 if (doPublish)
                 {
                     bool mayHaveEntryPointSlotsToBackpatch2 = pMethodDesc->MayHaveEntryPointSlotsToBackpatch();
-                    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder2(
-                        mayHaveEntryPointSlotsToBackpatch2);
-                    pMethodDesc->TrySetInitialCodeEntryPointForVersionableMethod(pCode, mayHaveEntryPointSlotsToBackpatch2);
+                    if (handleCallCountingForFirstCall && mayHaveEntryPointSlotsToBackpatch2)
+                    {
+                        pMethodDesc->SetBackpatchableEntryPoint(pCode, false /* isFinalTier */, TRUE /* fOnlyRedirectFromPrestub */);
+                    }
+                    else
+                    {
+                        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder2(
+                            mayHaveEntryPointSlotsToBackpatch2);
+                        pMethodDesc->TrySetInitialCodeEntryPointForVersionableMethod(pCode, mayHaveEntryPointSlotsToBackpatch2);
+                    }
                 }
                 else
                 {
