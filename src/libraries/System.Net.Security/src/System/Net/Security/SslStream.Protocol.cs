@@ -24,7 +24,7 @@ namespace System.Net.Security
         // on OSX, we have two implementations of SafeDeleteContext, so store a reference to the base class
         private SafeDeleteContext? _securityContext;
 #else
-        private SafeDeleteSslContext? _securityContext;
+        internal SafeDeleteSslContext? _securityContext;
 #endif
 
         private SslConnectionInfo _connectionInfo;
@@ -1007,14 +1007,20 @@ namespace System.Net.Security
         --*/
 
         //This method validates a remote certificate.
-        internal bool VerifyRemoteCertificate(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        internal bool VerifyRemoteCertificate(SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        {
+            X509Chain? chain = null;
+            X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
+
+            return VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, out sslPolicyErrors, out chainStatus);
+        }
+
+        internal bool VerifyRemoteCertificate(X509Certificate2? certificate, X509Chain? chain, SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
             sslPolicyErrors = SslPolicyErrors.None;
             chainStatus = X509ChainStatusFlags.NoError;
 
-            // We don't catch exceptions in this method, so it's safe for "accepted" be initialized with true.
             bool success = false;
-            X509Chain? chain = null;
 
             // We need to note the number of certs in ExtraStore that were
             // provided (by the user), we will add more from the received peer
@@ -1022,10 +1028,10 @@ namespace System.Net.Security
             // validation.
             // TODO: this forces allocation of X509Certificate2Collection
             int preexistingExtraCertsCount = _sslAuthenticationOptions.CertificateChainPolicy?.ExtraStore?.Count ?? 0;
+            RemoteCertificateValidationCallback? remoteCertValidationCallback = _sslAuthenticationOptions.CertValidationDelegate;
 
             try
             {
-                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
                 if (_remoteCertificate != null &&
                     certificate != null &&
                     certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
@@ -1095,6 +1101,15 @@ namespace System.Net.Security
 
                 if (remoteCertValidationCallback != null)
                 {
+                    // Ensure connection info is populated before calling the user callback,
+                    // which may access properties like SslProtocol or CipherAlgorithm.
+                    // During inline cert validation the handshake hasn't completed yet, so
+                    // _connectionInfo may not have been set by ProcessHandshakeSuccess.
+                    if (_connectionInfo.Protocol == 0 && _securityContext is not null)
+                    {
+                        SslStreamPal.QueryContextConnectionInfo(_securityContext, ref _connectionInfo);
+                    }
+
                     success = remoteCertValidationCallback(this, certificate, chain, sslPolicyErrors);
                 }
                 else
@@ -1104,7 +1119,7 @@ namespace System.Net.Security
                         sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
                     }
 
-                    success = (sslPolicyErrors == SslPolicyErrors.None);
+                    success = sslPolicyErrors == SslPolicyErrors.None;
                 }
 
                 if (NetEventSource.Log.IsEnabled())
@@ -1116,7 +1131,7 @@ namespace System.Net.Security
                 if (!success)
                 {
 #pragma warning disable CS0162 // unreachable code detected (compile time const)
-                    if (SslStreamPal.CanGenerateCustomAlerts)
+                    if (SslStreamPal.CanGenerateCustomAlerts && !SslStreamPal.CertValidationInCallback)
                     {
                         CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
                     }
@@ -1227,7 +1242,7 @@ namespace System.Net.Security
             return GenerateToken(default, out _);
         }
 
-        private static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)
+        internal static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)
         {
             foreach (X509ChainStatus chainStatus in chain.ChainStatus)
             {
