@@ -43,16 +43,7 @@ namespace System.Text.Json.Serialization.Converters
             _effectiveUnmappedMemberHandling = typeof(T).GetUniqueCustomAttribute<JsonUnmappedMemberHandlingAttribute>(inherit: false)?.UnmappedMemberHandling
                 ?? options.UnmappedMemberHandling;
 
-            int maxTag = 0;
-            foreach (FSharpCoreReflectionProxy.FSharpUnionCaseInfo uc in unionCases)
-            {
-                if (uc.Tag > maxTag)
-                {
-                    maxTag = uc.Tag;
-                }
-            }
-
-            _casesByTag = new CaseInfo[maxTag + 1];
+            _casesByTag = new CaseInfo[unionCases.Length];
             _casesByName = new Dictionary<string, CaseInfo>(unionCases.Length, StringComparer.Ordinal);
 
             Dictionary<string, CaseInfo>? caseInsensitiveMap = options.PropertyNameCaseInsensitive
