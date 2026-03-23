@@ -285,7 +285,7 @@ namespace __OptionValidationGeneratedAttributes
             {
                 length = stringValue.Length;
             }
-            else if (value is System.Collections.ICollection collectionValue)
+            else if (value is global::System.Collections.ICollection collectionValue)
             {
                 length = collectionValue.Count;
             }
@@ -332,7 +332,7 @@ namespace __OptionValidationGeneratedAttributes
             {
                 length = stringValue.Length;
             }
-            else if (value is System.Collections.ICollection collectionValue)
+            else if (value is global::System.Collections.ICollection collectionValue)
             {
                 length = collectionValue.Count;
             }
@@ -376,7 +376,7 @@ namespace __OptionValidationGeneratedAttributes
             {
                 length = stringValue.Length;
             }
-            else if (value is System.Collections.ICollection collectionValue)
+            else if (value is global::System.Collections.ICollection collectionValue)
             {
                 length = collectionValue.Count;
             }
@@ -448,7 +448,7 @@ namespace __OptionValidationGeneratedAttributes
                         }
                         if (_needToConvertMinMax)
                         {
-                            System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+                            global::System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
                             if (OperandType == typeof(global::System.TimeSpan))
                             {
                                 if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
@@ -484,7 +484,7 @@ namespace __OptionValidationGeneratedAttributes
                 return true;
             }
 
-            System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+            global::System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
             object? convertedValue;
 
             if (OperandType == typeof(global::System.TimeSpan))
@@ -535,7 +535,7 @@ namespace __OptionValidationGeneratedAttributes
                 (true, true) => "The field {0} must be between {1} exclusive and {2} exclusive.",
             };
         }
-        private object? ConvertValue(object? value, System.Globalization.CultureInfo formatProvider)
+        private object? ConvertValue(object? value, global::System.Globalization.CultureInfo formatProvider)
         {
             if (value is string stringValue)
             {
