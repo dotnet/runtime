@@ -24,6 +24,11 @@ namespace System.Diagnostics
     {
         private const int DefaultBufferSize = 1024;  // Byte buffer size
 
+        /// <summary>
+        /// Default timeout in milliseconds to wait for redirected streams to complete after the process exits.
+        /// </summary>
+        private const int StreamDrainDefaultTimeoutMs = 300;
+
         private readonly Stream _stream;
         private readonly Decoder _decoder;
         private readonly byte[] _byteBuffer;
@@ -253,7 +258,29 @@ namespace System.Diagnostics
             }
         }
 
-        internal Task EOF => _readToBufferTask ?? Task.CompletedTask;
+        internal void CancelDueToProcessExit()
+        {
+            Task? task = _readToBufferTask;
+            if (task is not null && !task.Wait(StreamDrainDefaultTimeoutMs))
+            {
+                _cts.Cancel();
+                task.GetAwaiter().GetResult();
+            }
+        }
+
+        internal async Task CancelDueToProcessExitAsync(CancellationToken cancellationToken)
+        {
+            Task? task = _readToBufferTask;
+            if (task is not null)
+            {
+                Task completed = await Task.WhenAny(task, Task.Delay(StreamDrainDefaultTimeoutMs, cancellationToken)).ConfigureAwait(false);
+                if (completed != task)
+                {
+                    _cts.Cancel();
+                    await task.ConfigureAwait(false);
+                }
+            }
+        }
 
         public void Dispose()
         {

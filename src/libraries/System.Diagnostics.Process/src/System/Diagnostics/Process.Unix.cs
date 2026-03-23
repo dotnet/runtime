@@ -205,10 +205,10 @@ namespace System.Diagnostics
             bool exited = GetWaitState().WaitForExit(milliseconds);
             Debug.Assert(exited || milliseconds != Timeout.Infinite);
 
-            if (exited && milliseconds == Timeout.Infinite) // if we have a hard timeout, we cannot wait for the streams
+            if (exited)
             {
-                _output?.EOF.GetAwaiter().GetResult();
-                _error?.EOF.GetAwaiter().GetResult();
+                _output?.CancelDueToProcessExit();
+                _error?.CancelDueToProcessExit();
             }
 
             return exited;
