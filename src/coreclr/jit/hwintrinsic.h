@@ -605,6 +605,7 @@ struct HWIntrinsicInfo
             *pSimdSize = lookup(id).simdSize;
             succeeded  = true;
         }
+
         return succeeded;
     }
 
