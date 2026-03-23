@@ -2356,7 +2356,7 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
 #ifdef TARGET_WINDOWS
             return kSEHException;
 #else
-            UNREACHABLE_MSG("Unknown FaultReportResult");
+            return (DWORD)kException;
 #endif // TARGET_WINDOWS
     }
 }
