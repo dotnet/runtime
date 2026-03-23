@@ -832,7 +832,7 @@
                     BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'maccatalyst' and '$(UseNativeAOTRuntime)' == 'true'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'iossimulator') and '$(UseNativeAOTRuntime)' == 'true'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj"
                     Exclude="@(ProjectExclusions)"
                     BuildInParallel="false" />
