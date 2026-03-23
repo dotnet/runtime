@@ -74,6 +74,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <XHarnessTargetFramework>net8.0</XHarnessTargetFramework>
     <!-- XHarness telemetry not supported with custom WASM workloads yet -->
     <EnableXHarnessTelemetry Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">false</EnableXHarnessTelemetry>
   </PropertyGroup>
@@ -91,6 +92,7 @@
   <PropertyGroup Condition="'$(NeedsWorkload)' == 'true'">
     <NeedsDotNetSdk>false</NeedsDotNetSdk>
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <XHarnessTargetFramework>net8.0</XHarnessTargetFramework>
     <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
   </PropertyGroup>
 
