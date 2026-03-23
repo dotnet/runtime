@@ -329,8 +329,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForSwap(treeNode->AsOp());
             break;
 
+        case GT_BFI:
+            genCodeForBfi(treeNode->AsBfm());
+            break;
+
         case GT_BFIZ:
             genCodeForBfiz(treeNode->AsOp());
+            break;
+
+        case GT_BFX:
+            genCodeForBfx(treeNode->AsBfm());
             break;
 #endif // TARGET_ARM64
 
