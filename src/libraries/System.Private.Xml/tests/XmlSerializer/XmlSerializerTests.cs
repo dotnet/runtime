@@ -1677,6 +1677,30 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
+    public static void Xml_InheritedShouldSerializeMethod_WithDefaultValue()
+    {
+        var value = new DerivedTypeWithInheritedShouldSerialize();
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<DerivedTypeWithInheritedShouldSerialize xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Foo, actual.Foo);
+        Assert.Equal(value.Bar, actual.Bar);
+    }
+
+    [Fact]
+    public static void Xml_InheritedShouldSerializeMethod_WithNonDefaultValue()
+    {
+        var value = new DerivedTypeWithInheritedShouldSerialize() { Foo = "SomeValue", Bar = "SomeBar" };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<DerivedTypeWithInheritedShouldSerialize Bar=\"SomeBar\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Foo>SomeValue</Foo></DerivedTypeWithInheritedShouldSerialize>"));
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Foo, actual.Foo);
+        Assert.Equal(value.Bar, actual.Bar);
+    }
+
+    [Fact]
     public static void Xml_KnownTypesThroughConstructorWithArrayProperties()
     {
         int[] intArray = new int[] { 1, 2, 3 };
