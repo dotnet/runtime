@@ -905,6 +905,23 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ServiceInstanceRegisteredAsInstanceIsNotDisposedWhenProviderIsDisposed()
+        {
+            // Arrange
+            var serviceCollection = new TestServiceCollection();
+            var instance = new FakeService();
+            serviceCollection.AddSingleton(instance);
+            var serviceProvider = CreateServiceProvider(serviceCollection);
+
+            // Act
+            serviceProvider.GetService<FakeService>();
+            (serviceProvider as IDisposable).Dispose();
+
+            // Assert
+            Assert.False(instance.Disposed);
+        }
+
+        [Fact]
         public void ResolvesMixedOpenClosedGenericsAsEnumerable()
         {
             // Arrange
