@@ -247,13 +247,32 @@ inline void DestroyHandleCommon(OBJECTHANDLE handle, HandleType type)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
 
     DiagHandleDestroyed(handle);
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, type);
+}
+
+// Variant of DestroyHandleCommon that is safe to call from preemptive mode
+// and from threads that the runtime does not know about.
+// It takes the handle table lock to prevent races with GC scanning,
+// bypassing the lock-free cache path.
+inline void DestroyHandleInPreemptiveMode(OBJECTHANDLE handle, HandleType type)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    DiagHandleDestroyed(handle);
+    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfTypeLocked(handle, type);
 }
 
 inline void DestroyHandle(OBJECTHANDLE handle)

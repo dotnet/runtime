@@ -76,6 +76,7 @@ void ExInfo::ReleaseResources()
     {
         if (!CLRException::IsPreallocatedExceptionHandle(m_hThrowable))
         {
+            GCX_COOP();
             DestroyHandle(m_hThrowable);
         }
         m_hThrowable = NULL;

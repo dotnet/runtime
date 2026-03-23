@@ -50,7 +50,16 @@ CLRException::~CLRException()
         STRESS_LOG1(LF_EH, LL_INFO100, "CLRException::~CLRException destroying throwable: obj = %x\n", GetThrowableHandle());
         // clear the handle first, so if we SO on destroying it, we don't have a dangling reference
         SetThrowableHandle(NULL);
-        DestroyHandle(throwableHandle);
+
+        if (GetThreadNULLOk() != NULL)
+        {
+            GCX_COOP();
+            DestroyHandle(throwableHandle);
+        }
+        else
+        {
+            DestroyHandleInPreemptiveMode(throwableHandle, HNDTYPE_DEFAULT);
+        }
     }
 }
 

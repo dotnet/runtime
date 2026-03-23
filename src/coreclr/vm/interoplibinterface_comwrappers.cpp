@@ -236,7 +236,18 @@ namespace InteropLibImports
         CONTRACTL_END;
         ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
 
-        DestroyRefcountedHandle(objectHandle);
+        // This can be called from threads without a managed Thread (e.g. via
+        // COM release on a native thread). Use the unsafe variant that nulls
+        // the handle before recycling when we cannot enter cooperative mode.
+        if (GetThreadNULLOk() != nullptr)
+        {
+            GCX_COOP();
+            DestroyRefcountedHandle(objectHandle);
+        }
+        else
+        {
+            DestroyHandleInPreemptiveMode(objectHandle, HNDTYPE_REFCOUNTED);
+        }
     }
 
     bool GetGlobalPeggingState() noexcept

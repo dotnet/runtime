@@ -268,6 +268,7 @@ public:
         // Never, ever destroy a preallocated exception handle.
         if ((m_hThrowable != NULL) && !CLRException::IsPreallocatedExceptionHandle(m_hThrowable))
         {
+            GCX_COOP();
             DestroyHandle(m_hThrowable);
         }
 

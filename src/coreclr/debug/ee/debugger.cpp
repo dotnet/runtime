@@ -10984,6 +10984,12 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             OBJECTHANDLE objectHandle = pEvent->DisposeHandle.vmObjectHandle.GetRawPtr();
             CorDebugHandleType handleType = pEvent->DisposeHandle.handleType;
 
+            // Switch to cooperative mode if a managed thread exists.
+            // On the native debugger helper thread (no managed Thread),
+            // the IFTHREAD variant is a no-op and the MODE_COOPERATIVE
+            // contract in DestroyHandleCommon is also a no-op.
+            GCX_COOP_EEINTERFACE_IFTHREAD();
+
             switch (handleType)
             {
             case HANDLE_STRONG:
@@ -12304,6 +12310,7 @@ HRESULT Debugger::UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF
         }
         else
         {
+            GCX_COOP_EEINTERFACE_IFTHREAD();
             DestroyLongWeakHandle(objHandle);
         }
     }
@@ -12313,6 +12320,7 @@ HRESULT Debugger::UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF
         {
             m_pForceCatchHandlerFoundEventsTable->Remove(objHandle);
         }
+        GCX_COOP_EEINTERFACE_IFTHREAD();
         DestroyLongWeakHandle(objHandle);
     }
     return S_OK;

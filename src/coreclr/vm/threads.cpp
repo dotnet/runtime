@@ -2294,9 +2294,6 @@ Thread::~Thread()
     {
         // Destroy any handles that we're using to hold onto exception objects
         SafeSetThrowables(NULL);
-
-        DestroyShortWeakHandle(m_ExposedObject);
-        DestroyStrongHandle(m_StrongHndToExposedObject);
     }
 
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
@@ -2584,6 +2581,15 @@ void Thread::CooperativeCleanup()
     OBJECTREF threadObjMaybe = GetExposedObjectRaw();
     if (threadObjMaybe != NULL)
         ((THREADBASEREF)threadObjMaybe)->SetIsDead();
+
+    // Destroy handles that we're using to hold onto exception objects and the exposed thread object.
+    // This runs under GCX_COOP() above, so it is safe to destroy handles here.
+    SafeSetThrowables(NULL);
+
+    DestroyShortWeakHandle(m_ExposedObject);
+    m_ExposedObject = NULL;
+    DestroyStrongHandle(m_StrongHndToExposedObject);
+    m_StrongHndToExposedObject = NULL;
 }
 
 // See general comments on thread destruction (code:#threadDestruction) above.

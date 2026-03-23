@@ -170,6 +170,11 @@ void GCHandleManager::DestroyHandleOfType(OBJECTHANDLE handle, HandleType type)
     ::HndDestroyHandle(::HndGetHandleTable(handle), type, handle);
 }
 
+void GCHandleManager::DestroyHandleOfTypeLocked(OBJECTHANDLE handle, HandleType type)
+{
+    ::HndDestroyHandleLocked(::HndGetHandleTable(handle), type, handle);
+}
+
 void GCHandleManager::DestroyHandleOfUnknownType(OBJECTHANDLE handle)
 {
     ::HndDestroyHandleOfUnknownType(::HndGetHandleTable(handle), handle);
