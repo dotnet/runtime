@@ -1140,9 +1140,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-            # - ios_arm64
-            # - tvos_arm64
+            - ios_arm64
+            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1187,9 +1186,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-            # - ios_arm64
-            # - tvos_arm64
+            - ios_arm64
+            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1234,9 +1232,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-            # - ios_arm64
-            # - tvos_arm64
+            - ios_arm64
+            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
