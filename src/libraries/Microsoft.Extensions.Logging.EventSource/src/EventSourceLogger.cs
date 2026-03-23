@@ -112,7 +112,8 @@ namespace Microsoft.Extensions.Logging.EventSource
                     message,
                     activityTraceId,
                     activitySpanId,
-                    activityTraceFlags);
+                    activityTraceFlags,
+                    exception?.ToString() ?? string.Empty);
             }
 
             // See if they want the message as its component parts.
