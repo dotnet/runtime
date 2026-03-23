@@ -3463,27 +3463,17 @@ namespace System.Numerics
             {
                 if (bits is null)
                 {
-                    int value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(_sign) : _sign;
-                    Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+                    BinaryPrimitives.WriteInt32BigEndian(destination, _sign);
                 }
                 else if (_sign >= 0)
                 {
                     // When the value is positive, we simply need to copy all bits as big endian
 
-                    ref byte startAddress = ref MemoryMarshal.GetReference(destination);
-                    ref byte address = ref Unsafe.Add(ref startAddress, (bits.Length - 1) * sizeof(uint));
+                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination);
 
                     for (int i = 0; i < bits.Length; i++)
                     {
-                        uint part = bits[i];
-
-                        if (BitConverter.IsLittleEndian)
-                        {
-                            part = BinaryPrimitives.ReverseEndianness(part);
-                        }
-
-                        Unsafe.WriteUnaligned(ref address, part);
-                        address = ref Unsafe.Subtract(ref address, sizeof(uint));
+                        uintDestination[bits.Length - 1 - i] = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(bits[i]) : bits[i];
                     }
                 }
                 else
@@ -3491,8 +3481,8 @@ namespace System.Numerics
                     // When the value is negative, we need to copy the two's complement representation
                     // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                    ref byte startAddress = ref MemoryMarshal.GetReference(destination);
-                    ref byte address = ref Unsafe.Add(ref startAddress, byteCount - sizeof(uint));
+                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination);
+                    int uintCount = byteCount / sizeof(uint);
 
                     int i = 0;
                     uint part;
@@ -3502,14 +3492,7 @@ namespace System.Numerics
                         // first do complement and +1 as long as carry is needed
                         part = ~bits[i] + 1;
 
-                        if (BitConverter.IsLittleEndian)
-                        {
-                            part = BinaryPrimitives.ReverseEndianness(part);
-                        }
-
-                        Unsafe.WriteUnaligned(ref address, part);
-                        address = ref Unsafe.Subtract(ref address, sizeof(uint));
-
+                        uintDestination[uintCount - 1 - i] = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(part) : part;
                         i++;
                     }
                     while ((part == 0) && (i < bits.Length));
@@ -3519,27 +3502,19 @@ namespace System.Numerics
                         // now ones complement is sufficient
                         part = ~bits[i];
 
-                        if (BitConverter.IsLittleEndian)
-                        {
-                            part = BinaryPrimitives.ReverseEndianness(part);
-                        }
-
-                        Unsafe.WriteUnaligned(ref address, part);
-                        address = ref Unsafe.Subtract(ref address, sizeof(uint));
-
+                        uintDestination[uintCount - 1 - i] = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(part) : part;
                         i++;
                     }
 
-                    if (Unsafe.AreSame(ref address, ref startAddress))
+                    if (uintCount > bits.Length)
                     {
                         // We need one extra part to represent the sign as the most
                         // significant bit of the two's complement value was 0.
-                        Unsafe.WriteUnaligned(ref address, uint.MaxValue);
+                        uintDestination[0] = uint.MaxValue;
                     }
                     else
                     {
-                        // Otherwise we should have been precisely one part behind address
-                        Debug.Assert(Unsafe.AreSame(ref startAddress, ref Unsafe.Add(ref address, sizeof(uint))));
+                        Debug.Assert(uintCount == bits.Length);
                     }
                 }
 
@@ -3565,26 +3540,17 @@ namespace System.Numerics
             {
                 if (bits is null)
                 {
-                    int value = BitConverter.IsLittleEndian ? _sign : BinaryPrimitives.ReverseEndianness(_sign);
-                    Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+                    BinaryPrimitives.WriteInt32LittleEndian(destination, _sign);
                 }
                 else if (_sign >= 0)
                 {
                     // When the value is positive, we simply need to copy all bits as little endian
 
-                    ref byte address = ref MemoryMarshal.GetReference(destination);
+                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination);
 
                     for (int i = 0; i < bits.Length; i++)
                     {
-                        uint part = bits[i];
-
-                        if (!BitConverter.IsLittleEndian)
-                        {
-                            part = BinaryPrimitives.ReverseEndianness(part);
-                        }
-
-                        Unsafe.WriteUnaligned(ref address, part);
-                        address = ref Unsafe.Add(ref address, sizeof(uint));
+                        uintDestination[i] = BitConverter.IsLittleEndian ? bits[i] : BinaryPrimitives.ReverseEndianness(bits[i]);
                     }
                 }
                 else
@@ -3592,8 +3558,8 @@ namespace System.Numerics
                     // When the value is negative, we need to copy the two's complement representation
                     // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                    ref byte address = ref MemoryMarshal.GetReference(destination);
-                    ref byte lastAddress = ref Unsafe.Add(ref address, byteCount - sizeof(uint));
+                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination);
+                    int uintCount = byteCount / sizeof(uint);
 
                     int i = 0;
                     uint part;
@@ -3603,14 +3569,7 @@ namespace System.Numerics
                         // first do complement and +1 as long as carry is needed
                         part = ~bits[i] + 1;
 
-                        if (!BitConverter.IsLittleEndian)
-                        {
-                            part = BinaryPrimitives.ReverseEndianness(part);
-                        }
-
-                        Unsafe.WriteUnaligned(ref address, part);
-                        address = ref Unsafe.Add(ref address, sizeof(uint));
-
+                        uintDestination[i] = BitConverter.IsLittleEndian ? part : BinaryPrimitives.ReverseEndianness(part);
                         i++;
                     }
                     while ((part == 0) && (i < bits.Length));
@@ -3620,27 +3579,19 @@ namespace System.Numerics
                         // now ones complement is sufficient
                         part = ~bits[i];
 
-                        if (!BitConverter.IsLittleEndian)
-                        {
-                            part = BinaryPrimitives.ReverseEndianness(part);
-                        }
-
-                        Unsafe.WriteUnaligned(ref address, part);
-                        address = ref Unsafe.Add(ref address, sizeof(uint));
-
+                        uintDestination[i] = BitConverter.IsLittleEndian ? part : BinaryPrimitives.ReverseEndianness(part);
                         i++;
                     }
 
-                    if (Unsafe.AreSame(ref address, ref lastAddress))
+                    if (uintCount > bits.Length)
                     {
                         // We need one extra part to represent the sign as the most
                         // significant bit of the two's complement value was 0.
-                        Unsafe.WriteUnaligned(ref address, uint.MaxValue);
+                        uintDestination[bits.Length] = uint.MaxValue;
                     }
                     else
                     {
-                        // Otherwise we should have been precisely one part ahead address
-                        Debug.Assert(Unsafe.AreSame(ref lastAddress, ref Unsafe.Subtract(ref address, sizeof(uint))));
+                        Debug.Assert(uintCount == bits.Length);
                     }
                 }
 
