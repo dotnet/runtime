@@ -44,7 +44,6 @@ namespace System.IO
         public MemoryStream(int capacity)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(capacity, MemStreamMaxLength);
 
             _buffer = capacity != 0 ? new byte[capacity] : [];
             _capacity = capacity;
