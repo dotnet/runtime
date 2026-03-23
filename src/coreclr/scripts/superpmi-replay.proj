@@ -25,6 +25,10 @@
   </Target> -->
 
   <PropertyGroup>
+    <HelixBaseUri>https://helix.int-dot.net/</HelixBaseUri>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <!-- Default to standard type -->
     <SuperPmiReplayType Condition=" '$(_SuperPmiReplayType)' == '' ">standard</SuperPmiReplayType>
     <SuperPmiReplayType Condition=" '$(_SuperPmiReplayType)' != '' ">$(_SuperPmiReplayType)</SuperPmiReplayType>
