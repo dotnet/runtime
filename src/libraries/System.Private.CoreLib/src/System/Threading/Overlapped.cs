@@ -68,12 +68,10 @@ namespace System.Threading
 
         [Obsolete("This overload is not safe and has been deprecated. Use Pack(IOCompletionCallback?, object?) instead.")]
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public NativeOverlapped* Pack(IOCompletionCallback? iocb)
             => Pack(iocb, null);
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public NativeOverlapped* Pack(IOCompletionCallback? iocb, object? userData)
         {
             if (_pNativeOverlapped != null)
@@ -95,12 +93,10 @@ namespace System.Threading
 
         [Obsolete("This overload is not safe and has been deprecated. Use UnsafePack(IOCompletionCallback?, object?) instead.")]
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public NativeOverlapped* UnsafePack(IOCompletionCallback? iocb)
             => UnsafePack(iocb, null);
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public NativeOverlapped* UnsafePack(IOCompletionCallback? iocb, object? userData)
         {
             if (_pNativeOverlapped != null)
@@ -134,7 +130,6 @@ namespace System.Threading
             FreeNativeOverlapped(nativeOverlappedPtr);
         }
 
-        [RequiresUnsafe]
         private NativeOverlapped* AllocateNativeOverlapped(object? userData)
         {
             NativeOverlapped* pNativeOverlapped = null;

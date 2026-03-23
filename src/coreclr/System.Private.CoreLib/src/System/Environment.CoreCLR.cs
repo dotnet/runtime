@@ -104,6 +104,20 @@ namespace System
             return mainMethodArgs;
         }
 
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void InitializeCommandLineArgs(char* exePath, int argc, char** argv, string[]* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = InitializeCommandLineArgs(exePath, argc, argv);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
         internal static partial int GetProcessorCount();
 
