@@ -62,9 +62,6 @@ Compare a range of commits for a specific benchmark filter:
 - **Supported repositories:** `dotnet/runtime` and `EgorBot/runtime-utils`.
 - **Result variability:** Results can vary between runs due to VM differences.
   Do not compare results across different architectures or cloud providers.
-- **AI-generated content disclosure:** When posting EgorBot comments under a
-  user's credentials (not a bot account), include a visible note that the
-  content was AI/Copilot-generated.
 
 ## Links
 

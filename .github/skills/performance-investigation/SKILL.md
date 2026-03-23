@@ -120,10 +120,6 @@ EgorBot and MihuBot post results as PR comments. Look for:
 - **Memory/allocation changes** — check `Allocated` column if
   `[MemoryDiagnoser]` is enabled
 
-> **AI-generated content disclosure:** When posting bot invocation comments
-> under a user's credentials (not a bot account), include a visible note that
-> the content was AI/Copilot-generated.
-
 ---
 
 ## Workflow 2: Regression Investigation
