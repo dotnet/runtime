@@ -1197,21 +1197,18 @@ namespace System
         }
 
         // Returns the guid in "registry" format.
-        public override string ToString() => ToString("d", null);
-
-        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format)
-        {
-            return ToString(format, null);
-        }
+        public override string ToString() => ToString(null);
 
         // IFormattable interface
         // We currently ignore provider
-        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format, IFormatProvider? provider) => ToString(format);
+
+        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format)
         {
-            int guidSize;
+            int flags;
             if (string.IsNullOrEmpty(format))
             {
-                guidSize = 36;
+                flags = 36 + TryFormatFlags_UseDashes;
             }
             else
             {
@@ -1224,32 +1221,34 @@ namespace System
                 switch (format[0] | 0x20)
                 {
                     case 'd':
-                        guidSize = 36;
+                        flags = 36 + TryFormatFlags_UseDashes;
                         break;
 
                     case 'n':
-                        guidSize = 32;
+                        flags = 32;
                         break;
 
-                    case 'b' or 'p':
-                        guidSize = 38;
+                    case 'b':
+                        flags = 38 + TryFormatFlags_UseDashes + TryFormatFlags_CurlyBraces;
                         break;
 
-                    case 'x':
-                        guidSize = 68;
+                    case 'p':
+                        flags = 38 + TryFormatFlags_UseDashes + TryFormatFlags_Parens;
                         break;
+
+                    case 'x': return ToStringX();
 
                     default:
-                        guidSize = 0;
+                        flags = 0;
                         ThrowBadGuidFormatSpecification();
                         break;
-                };
+                }
             }
 
-            string guidString = string.FastAllocateString(guidSize);
+            string guidString = string.FastAllocateString((byte)flags);
 
-            bool result = TryFormatCore(new Span<char>(ref guidString.GetRawStringData(), guidString.Length), out int bytesWritten, format);
-            Debug.Assert(result && bytesWritten == guidString.Length, "Formatting guid should have succeeded.");
+            bool result = TryFormatCore(new Span<char>(ref guidString.GetRawStringData(), (byte)flags), out int charsWritten, flags);
+            Debug.Assert(result && charsWritten == guidString.Length, "Formatting guid should have succeeded.");
 
             return guidString;
         }
@@ -1323,7 +1322,9 @@ namespace System
             return TryFormatCore(destination, out charsWritten, flags);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // only used from two callers
+        // (Vectorized) implementation for D, N, P and B formats:
+        // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal unsafe bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten, int flags) where TChar : unmanaged, IUtfChar<TChar>
         {
             // The low byte of flags contains the required length.
@@ -1336,81 +1337,92 @@ namespace System
             charsWritten = (byte)flags;
             flags >>= 8;
 
-            fixed (TChar* guidChars = &MemoryMarshal.GetReference(destination))
+            ref TChar d = ref MemoryMarshal.GetReference(destination);
+
+            // The low byte of flags now contains the opening brace char (if any)
+            if ((byte)flags != 0)
             {
-                TChar* p = guidChars;
+                d = TChar.CastFrom((byte)flags);
+                d = ref Unsafe.Add(ref d, 1);
+            }
+            flags >>= 8;
 
-                // The low byte of flags now contains the opening brace char (if any)
-                if ((byte)flags != 0)
+            if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
+            {
+                (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) = FormatGuidVector128Utf8(this, flags < 0 /* dash */);
+
+                if (typeof(TChar) == typeof(byte))
                 {
-                    *p++ = TChar.CastFrom((byte)flags);
-                }
-                flags >>= 8;
-
-                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
-                {
-                    // Vectorized implementation for D, N, P and B formats:
-                    // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-                    (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) = FormatGuidVector128Utf8(this, flags < 0 /* dash */);
-
-                    if (typeof(TChar) == typeof(byte))
+                    ref byte pChar = ref Unsafe.As<TChar, byte>(ref d);
+                    if (flags < 0 /* dash */)
                     {
-                        byte* pChar = (byte*)p;
-                        if (flags < 0 /* dash */)
-                        {
-                            // We need to merge these vectors in this order:
-                            // xxxxxxxxxxxxxxxx
-                            //                     yyyyyyyyyyyyyyyy
-                            //         zzzzzzzzzzzzzzzz
-                            vecX.Store(pChar);
-                            vecY.Store(pChar + 20);
-                            vecZ.Store(pChar + 8);
-                            p += 36;
-                        }
-                        else
-                        {
-                            // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
-                            vecX.Store(pChar);
-                            vecY.Store(pChar + 16);
-                            p += 32;
-                        }
+                        // We need to merge these vectors in this order:
+                        // xxxxxxxxxxxxxxxx
+                        //                     yyyyyyyyyyyyyyyy
+                        //         zzzzzzzzzzzzzzzz
+                        vecX.StoreUnsafe(ref pChar);
+                        vecY.StoreUnsafe(ref pChar, 20);
+                        vecZ.StoreUnsafe(ref pChar, 8);
+                        d = ref Unsafe.Add(ref d, 36);
                     }
                     else
                     {
-                        // Expand to UTF-16
-                        (Vector128<ushort> x0, Vector128<ushort> x1) = Vector128.Widen(vecX);
-                        (Vector128<ushort> y0, Vector128<ushort> y1) = Vector128.Widen(vecY);
-                        ushort* pChar = (ushort*)p;
-                        if (flags < 0 /* dash */)
-                        {
-                            (Vector128<ushort> z0, Vector128<ushort> z1) = Vector128.Widen(vecZ);
-
-                            // We need to merge these vectors in this order:
-                            // xxxxxxxxxxxxxxxx
-                            //                     yyyyyyyyyyyyyyyy
-                            //         zzzzzzzzzzzzzzzz
-                            x0.Store(pChar);
-                            y0.Store(pChar + 20);
-                            y1.Store(pChar + 28);
-                            z0.Store(pChar + 8); // overlaps x1
-                            z1.Store(pChar + 16);
-                            p += 36;
-                        }
-                        else
-                        {
-                            // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
-                            x0.Store(pChar);
-                            x1.Store(pChar + 8);
-                            y0.Store(pChar + 16);
-                            y1.Store(pChar + 24);
-                            p += 32;
-                        }
+                        // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
+                        vecX.StoreUnsafe(ref pChar);
+                        vecY.StoreUnsafe(ref pChar, 16);
+                        d = ref Unsafe.Add(ref d, 32);
                     }
                 }
                 else
                 {
-                    // Non-vectorized fallback for D, N, P and B formats:
-                    // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+                    ref ushort pChar = ref Unsafe.As<TChar, ushort>(ref d);
+                    if (flags < 0 /* dash */)
+                    {
+                        // We need to merge these vectors in this order:
+                        // xxxxxxxxxxxxxxxx
+                        //                     yyyyyyyyyyyyyyyy
+                        //         zzzzzzzzzzzzzzzz
+                        Vector128.WidenLower(vecX).StoreUnsafe(ref pChar);
+                        if (Vector256.IsHardwareAccelerated)
+                        {
+                            Vector256.WidenLower(Vector128.ToVector256Unsafe(vecY)).StoreUnsafe(ref pChar, 20);
+                            Vector256.WidenLower(Vector128.ToVector256Unsafe(vecZ)).StoreUnsafe(ref pChar, 8);
+                        }
+                        else
+                        {
+                            Vector128.WidenLower(vecY).StoreUnsafe(ref pChar, 20);
+                            Vector128.WidenUpper(vecY).StoreUnsafe(ref pChar, 28);
+                            Vector128.WidenLower(vecZ).StoreUnsafe(ref pChar, 8);
+                            Vector128.WidenUpper(vecZ).StoreUnsafe(ref pChar, 16);
+                        }
+                        d = ref Unsafe.Add(ref d, 36);
+                    }
+                    else
+                    {
+                        // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
+                        if (Vector256.IsHardwareAccelerated)
+                        {
+                            Vector256.WidenLower(Vector128.ToVector256Unsafe(vecX)).StoreUnsafe(ref pChar);
+                            Vector256.WidenLower(Vector128.ToVector256Unsafe(vecY)).StoreUnsafe(ref pChar, 16);
+                        }
+                        else
+                        {
+                            Vector128.WidenLower(vecX).StoreUnsafe(ref pChar);
+                            Vector128.WidenUpper(vecX).StoreUnsafe(ref pChar, 8);
+                            Vector128.WidenLower(vecY).StoreUnsafe(ref pChar, 16);
+                            Vector128.WidenUpper(vecY).StoreUnsafe(ref pChar, 24);
+                        }
+                        d = ref Unsafe.Add(ref d, 32);
+                    }
+                }
+            }
+            else
+            {
+                fixed (TChar* guidChars = &d)
+                {
+                    TChar* p = guidChars;
+                    // Non-vectorized fallback for:
+                    // dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd
                     p += HexsToChars(p, _a >> 24, _a >> 16);
                     p += HexsToChars(p, _a >> 8, _a);
                     if (flags < 0 /* dash */)
@@ -1435,18 +1447,26 @@ namespace System
                     p += HexsToChars(p, _f, _g);
                     p += HexsToChars(p, _h, _i);
                     p += HexsToChars(p, _j, _k);
+                    d = ref *p;
                 }
-
-                // The low byte of flags now contains the closing brace char (if any)
-                if ((byte)flags != 0)
-                {
-                    *p = TChar.CastFrom((byte)flags);
-                }
-
-                Debug.Assert(p == guidChars + charsWritten - ((byte)flags != 0 ? 1 : 0));
             }
 
+            // The low byte of flags now contains the closing brace char (if any)
+            if ((byte)flags != 0)
+            {
+                d = TChar.CastFrom((byte)flags);
+            }
+
+            Debug.Assert(Unsafe.AreSame(in d, in Unsafe.Add(ref destination[0], charsWritten - ((byte)flags != 0 ? 1 : 0))));
             return true;
+        }
+
+        private string ToStringX()
+        {
+            string guidString = string.FastAllocateString(68);
+            bool result = TryFormatX(new Span<char>(ref guidString.GetRawStringData(), guidString.Length), out int charsWritten);
+            Debug.Assert(result && charsWritten == guidString.Length, "Formatting guid should have succeeded.");
+            return guidString;
         }
 
         private bool TryFormatX<TChar>(Span<TChar> dest, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
@@ -1544,14 +1564,7 @@ namespace System
                 //                     yyyyyyyyyyyyyyyy
                 //         zzzzzzzzzzzzzzzz
                 //
-                // Vector "x" - just one dash, shift all elements after it.
-                Vector128<byte> vecX = Vector128.Shuffle(hexLow,
-                    Vector128.Create(0x706050403020100, 0xD0CFF0B0A0908FF).AsByte());
-
-                // Vector "y" - same here.
-                Vector128<byte> vecY = Vector128.Shuffle(hexHigh,
-                    Vector128.Create(0x7060504FF030201, 0xF0E0D0C0B0A0908).AsByte());
-
+                // "x" is hexLow and "y" is hexHigh.
                 // Vector "z" - we need to merge some elements of hexLow with hexHigh and add 4 dashes.
                 Vector128<byte> vecZ;
                 Vector128<byte> dashesMask = Vector128.Create(0x00002D000000002D, 0x2D000000002D0000).AsByte();
@@ -1568,14 +1581,12 @@ namespace System
                 }
                 else
                 {
-                    Vector128<byte> mid1 = Vector128.Shuffle(hexLow,
-                        Vector128.Create(0x0D0CFF0B0A0908FF, 0xFFFFFFFFFFFF0F0E).AsByte());
-                    Vector128<byte> mid2 = Vector128.Shuffle(hexHigh,
-                        Vector128.Create(0xFFFFFFFFFFFFFFFF, 0xFF03020100FFFFFF).AsByte());
-                    vecZ = (mid1 | mid2 | dashesMask);
+                    vecZ = Vector128.Shuffle(Ssse3.AlignRight(hexHigh, hexLow, 8),
+                        Vector128.Create(0x0504FF03020100FF, 0xFF0B0A0908FF0706).AsByte());
+                    vecZ |= dashesMask;
                 }
 
-                return (vecX, vecY, vecZ);
+                return (hexLow, hexHigh, vecZ);
             }
 
             // N format - no dashes.
