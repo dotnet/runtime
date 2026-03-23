@@ -15,9 +15,16 @@ public sealed class ObjectFactory : IContractFactory<IObject>
             target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
         TargetPointer syncTableEntries = target.ReadPointer(
             target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
+        uint syncBlockIsHashOrSyncBlockIndex = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex);
+        uint syncBlockIsHashCode = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashCode);
+        uint syncBlockHashCodeMask = target.ReadGlobal<uint>(Constants.Globals.SyncBlockHashCodeMask);
+        uint syncBlockIndexMask = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIndexMask);
         return version switch
         {
-            1 => new Object_1(target, methodTableOffset, objectToMethodTableUnmask, stringMethodTable, syncTableEntries),
+            1 => new Object_1(target, methodTableOffset, objectToMethodTableUnmask,
+                stringMethodTable, syncTableEntries,
+                syncBlockIsHashOrSyncBlockIndex, syncBlockIsHashCode,
+                syncBlockHashCodeMask, syncBlockIndexMask),
             _ => default(Object),
         };
     }
