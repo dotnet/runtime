@@ -2744,7 +2744,6 @@ static HRESULT InvokeExHelper(
                                                pParam->pExcepInfo,
                                                pParam->pspCaller);
     }
-#ifdef TARGET_WINDOWS
     PAL_EXCEPT_FILTER(CallOutFilter)
     {
         _ASSERTE(!"CallOutFilter returned EXECUTE_HANDLER.");
