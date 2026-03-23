@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 #if !NET
 using System.Runtime.Serialization;
 #endif
+using System.Text.Json.Reflection;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -25,6 +26,7 @@ namespace System.Text.Json.Serialization.Converters
         private readonly Func<object, int> _tagReader;
         private readonly string _typeDiscriminatorPropertyName;
         private readonly JsonEncodedText _typeDiscriminatorPropertyNameEncoded;
+        private readonly JsonUnmappedMemberHandling _effectiveUnmappedMemberHandling;
 
         [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
         [RequiresDynamicCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
@@ -37,6 +39,8 @@ namespace System.Text.Json.Serialization.Converters
             _tagReader = tagReader;
             _typeDiscriminatorPropertyName = typeDiscriminatorPropertyName;
             _typeDiscriminatorPropertyNameEncoded = JsonEncodedText.Encode(typeDiscriminatorPropertyName, options.Encoder);
+            _effectiveUnmappedMemberHandling = typeof(T).GetUniqueCustomAttribute<JsonUnmappedMemberHandlingAttribute>(inherit: false)?.UnmappedMemberHandling
+                ?? options.UnmappedMemberHandling;
 
             int maxTag = 0;
             foreach (FSharpCoreReflectionProxy.FSharpUnionCaseInfo uc in unionCases)
@@ -279,11 +283,17 @@ namespace System.Text.Json.Serialization.Converters
 
             if (caseInfo.IsFieldless)
             {
-                // Skip to end of object.
+                // Skip to end of object, validating unmapped members.
                 while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
                 {
                     if (reader.TokenType == JsonTokenType.PropertyName)
                     {
+                        if (!reader.ValueTextEquals(_typeDiscriminatorPropertyName) &&
+                            _effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                        {
+                            ThrowHelper.ThrowJsonException_UnmappedJsonProperty(typeof(T), reader.GetString()!);
+                        }
+
                         reader.Read();
                         reader.TrySkip();
                     }
@@ -321,7 +331,11 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (fieldName is null || !TryGetFieldIndex(fieldName, caseInfo, out int fieldIndex))
                 {
-                    // Unknown property — skip it.
+                    if (_effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                    {
+                        ThrowHelper.ThrowJsonException_UnmappedJsonProperty(typeof(T), fieldName ?? string.Empty);
+                    }
+
                     reader.TrySkip();
                     continue;
                 }

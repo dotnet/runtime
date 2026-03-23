@@ -1,8 +1,6 @@
 ﻿module System.Text.Json.Tests.FSharp.UnionTests
 
 open System
-open System.IO
-open System.Text
 open System.Text.Json
 open System.Text.Json.Serialization
 open System.Text.Json.Serialization.Metadata
@@ -41,6 +39,9 @@ type UnionWithDefaultPolymorphic =
     | Delta of v:int
 
 type UnionWithMultipleFields = | Multi of x:int * y:string * z:float
+
+[<JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)>]
+type UnionWithDisallowUnmapped = Foo | Bar of x:int
 
 // -- Serialization Tests --
 
@@ -418,3 +419,50 @@ let ``Out-of-order combined with RespectRequired throws for missing fields`` () 
 let ``String form for multi-field case with RespectRequired throws`` () =
     let options = JsonSerializerOptions(RespectRequiredConstructorParameters = true)
     Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>("\"Rectangle\"", options) |> ignore)
+
+// -- UnmappedMemberHandling Tests --
+
+[<Fact>]
+let ``Unknown property is skipped by default`` () =
+    let json = """{"$type":"Circle","radius":3.14,"extra":"ignored"}"""
+    let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json)
+    Assert.Equal(Circle 3.14, result)
+
+[<Fact>]
+let ``Unknown property throws when UnmappedMemberHandling is Disallow via options`` () =
+    let options = JsonSerializerOptions(UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow)
+    let json = """{"$type":"Circle","radius":3.14,"extra":"ignored"}"""
+    let ex = Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options) |> ignore)
+    Assert.Contains("extra", ex.Message)
+
+[<Fact>]
+let ``Unknown property throws when UnmappedMemberHandling is Disallow via attribute`` () =
+    let json = """{"$type":"Bar","x":1,"extra":"ignored"}"""
+    let ex = Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<UnionWithDisallowUnmapped>(json) |> ignore)
+    Assert.Contains("extra", ex.Message)
+
+[<Fact>]
+let ``Fieldless case in object form with extra property throws when Disallow`` () =
+    let options = JsonSerializerOptions(UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow)
+    let json = """{"$type":"Point","extra":"ignored"}"""
+    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options) |> ignore)
+
+[<Fact>]
+let ``Fieldless case in object form with extra property is skipped by default`` () =
+    let json = """{"$type":"Point","extra":"ignored"}"""
+    let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json)
+    Assert.Equal(Point, result)
+
+[<Fact>]
+let ``Discriminator property alone does not trigger unmapped error on fieldless case`` () =
+    let options = JsonSerializerOptions(UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow)
+    let json = """{"$type":"Point"}"""
+    let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options)
+    Assert.Equal(Point, result)
+
+[<Fact>]
+let ``Disallow unmapped does not affect known fields`` () =
+    let options = JsonSerializerOptions(UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow)
+    let json = """{"$type":"Rectangle","height":10,"length":20}"""
+    let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options)
+    Assert.Equal(Rectangle(10.0, 20.0), result)
