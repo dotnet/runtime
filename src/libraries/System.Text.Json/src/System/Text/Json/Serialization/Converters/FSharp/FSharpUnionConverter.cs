@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -246,7 +245,7 @@ namespace System.Text.Json.Serialization.Converters
 
             // Read fields.
             object[] fieldValues = (object[])caseInfo.DefaultFieldValues!.Clone();
-            BitArray populatedFields = new(caseInfo.Fields!.Length);
+            ValueBitArray populatedFields = new(caseInfo.Fields!.Length);
 
             while (reader.Read())
             {
@@ -297,7 +296,7 @@ namespace System.Text.Json.Serialization.Converters
             return (T)caseInfo.Constructor(fieldValues);
         }
 
-        private static void ThrowForMissingRequiredFields(CaseInfo caseInfo, BitArray populatedFields)
+        private static void ThrowForMissingRequiredFields(CaseInfo caseInfo, ValueBitArray populatedFields)
         {
             var builder = new System.Text.StringBuilder();
             bool first = true;
