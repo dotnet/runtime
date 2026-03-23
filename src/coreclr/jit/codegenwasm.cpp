@@ -1419,7 +1419,9 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, size, is64BitOp ? INT64_MIN : INT32_MIN);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_eq : INS_i32_eq);
 
-            GetEmitter()->emitIns(is64BitOp ? INS_i64_and : INS_i32_and);
+            // Wasm relops always produce i32 results
+            //
+            GetEmitter()->emitIns(INS_i32_and);
             genJumpToThrowHlpBlk(SCK_ARITH_EXCPN);
         }
     }
@@ -1555,6 +1557,14 @@ void CodeGen::genCodeForShift(GenTree* tree)
     // TODO-WASM: Zero-extend the 2nd operand for shifts and rotates as needed when the 1st and 2nd operand are
     // different types. The shift operand width in IR is always TYP_INT; the WASM operations have the same widths
     // for both the shift and shiftee. So the shift may need to be extended (zero-extended) for TYP_LONG.
+
+    if (treeNode->TypeIs(TYP_LONG))
+    {
+        assert(treeNode->gtGetOp2()->TypeIs(TYP_INT));
+        // Zero-extend the shift amount to 64 bits for long shifts/rotates.
+        // Wasteful if the amount was a constant, perhaps we should contain it if so.
+        GetEmitter()->emitIns(INS_i64_extend_u_i32);
+    }
 
     instruction ins;
     switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
@@ -1900,6 +1910,8 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
     // Handle intrinsics that can be implemented by target-specific instructions
     instruction ins = INS_invalid;
 
+    bool canHaveMixedTypes = false;
+
     switch (PackIntrinsicAndType(treeNode->gtIntrinsicName, treeNode->TypeGet()))
     {
         case PackIntrinsicAndType(NI_System_Math_Abs, TYP_FLOAT):
@@ -1963,24 +1975,12 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             break;
 
         case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_INT):
-            ins = INS_i32_clz;
-            break;
         case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG):
-            ins = INS_i64_clz;
-            break;
-
         case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_INT):
-            ins = INS_i32_ctz;
-            break;
         case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG):
-            ins = INS_i64_ctz;
-            break;
-
         case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_INT):
-            ins = INS_i32_popcnt;
-            break;
         case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_LONG):
-            ins = INS_i64_popcnt;
+            canHaveMixedTypes = true;
             break;
 
         default:
@@ -1988,7 +1988,58 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             unreached();
     }
 
+    bool needsTruncation = false;
+    bool needsExtension  = false;
+
+    if (canHaveMixedTypes)
+    {
+        var_types treeType    = treeNode->TypeGet();
+        var_types operandType = genActualType(treeNode->gtGetOp1()->TypeGet());
+
+        needsTruncation = (operandType == TYP_LONG) && (treeType == TYP_INT);
+        needsExtension  = (operandType == TYP_INT) && (treeType == TYP_LONG);
+
+        switch (PackIntrinsicAndType(treeNode->gtIntrinsicName, operandType))
+        {
+            case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_INT):
+                ins = INS_i32_clz;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG):
+                ins = INS_i64_clz;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_INT):
+                ins = INS_i32_ctz;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG):
+                ins = INS_i64_ctz;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_INT):
+                ins = INS_i32_popcnt;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_LONG):
+                ins = INS_i64_popcnt;
+                break;
+
+            default:
+                unreached();
+        }
+    }
+
     GetEmitter()->emitIns(ins);
+
+    if (needsTruncation)
+    {
+        GetEmitter()->emitIns(INS_i32_wrap_i64);
+    }
+    else if (needsExtension)
+    {
+        GetEmitter()->emitIns(INS_i64_extend_u_i32);
+    }
 
     WasmProduceReg(treeNode);
 }

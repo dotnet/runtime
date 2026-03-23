@@ -102,7 +102,9 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         // Everything in the second keys is a string reference.
         SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)systemClass.GetSerializationRecord("Keys")!;
         SerializationRecord[] array = arrayRecord.GetArray();
-        Assert.Equivalent(new string[] { "TheOther", "That", "This" }, array.OfType<PrimitiveTypeRecord<string>>().Select(sr => sr.Value).ToArray());
+        Assert.Equal(
+            new string[] { "TheOther", "That", "This" }.Order(),
+            array.OfType<PrimitiveTypeRecord<string>>().Select(sr => sr.Value).Order());
     }
 
     [Fact]
@@ -122,7 +124,9 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         // Everything in the second keys is a string reference.
         SZArrayRecord<SerializationRecord> keysRecord = (SZArrayRecord<SerializationRecord>)systemClass.GetSerializationRecord("Keys")!;
         SerializationRecord[] keysRecords = keysRecord.GetArray();
-        Assert.Equivalent(new string[] { "Yowza", "Youza", "Meeza" }, keysRecords.OfType<PrimitiveTypeRecord<string>>().Select(sr => sr.Value).ToArray());
+        Assert.Equal(
+            new string[] { "Yowza", "Youza", "Meeza" }.Order(),
+            keysRecords.OfType<PrimitiveTypeRecord<string>>().Select(sr => sr.Value).Order());
 
         SZArrayRecord<SerializationRecord?> valuesRecord = (SZArrayRecord<SerializationRecord?>)systemClass.GetSerializationRecord("Values")!;
         SerializationRecord[] valuesRecords = valuesRecord.GetArray();
