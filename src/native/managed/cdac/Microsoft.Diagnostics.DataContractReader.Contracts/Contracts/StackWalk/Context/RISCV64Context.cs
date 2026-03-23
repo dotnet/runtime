@@ -38,6 +38,8 @@ internal struct RISCV64Context : IPlatformContext
 
     public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
 
+    public readonly int StackPointerRegister => 2;
+
     public TargetPointer StackPointer
     {
         readonly get => new(Sp);

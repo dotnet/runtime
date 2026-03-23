@@ -43,6 +43,8 @@ internal struct ARM64Context : IPlatformContext
                                                        ContextFlagsValues.CONTEXT_FLOATING_POINT |
                                                        ContextFlagsValues.CONTEXT_DEBUG_REGISTERS);
 
+    public readonly int StackPointerRegister => 31;
+
     public TargetPointer StackPointer
     {
         readonly get => new(Sp);

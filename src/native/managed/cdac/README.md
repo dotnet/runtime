@@ -51,6 +51,44 @@ ISOSDacInterface* / IXCLRDataProcess (COM-style API surface)
 | `mscordaccore_universal` | Entry point that wires everything together |
 | `tests` | Unit tests with mock memory infrastructure |
 
+## GC Stress Verification (GCSTRESS_CDAC)
+
+The cDAC includes a GC stress verification mode that compares the cDAC's stack reference
+enumeration against the runtime's own GC root scanning at every GC stress instruction-level
+trigger point.
+
+### How it works
+
+When `DOTNET_GCStress=0x24` (0x20 cDAC + 0x4 instruction JIT), at each stress point:
+1. The cDAC is loaded in-process and enumerates stack GC references via `GetStackReferences`
+2. The runtime enumerates the same references via `StackWalkFrames` + `GcStackCrawlCallBack`
+3. The tool compares the two sets and reports mismatches
+
+### Usage
+
+```bash
+DOTNET_GCStress=0x24 DOTNET_GCStressCdacLogFile=results.txt corerun test.dll
+```
+
+Configuration variables:
+- `DOTNET_GCStress=0x24` — Enable instruction-level GC stress + cDAC verification
+- `DOTNET_GCStressCdacFailFast=1` — Assert on mismatch (default: log and continue)
+- `DOTNET_GCStressCdacLogFile=<path>` — Write detailed results to a log file
+
+### Files
+
+| File | Location | Purpose |
+|------|----------|---------|
+| `cdacgcstress.h/cpp` | `src/coreclr/vm/` | In-process cDAC loading and comparison |
+| `test-cdac-gcstress.ps1` | `src/native/managed/cdac/tests/gcstress/` | Build and test script |
+| `known-issues.md` | `src/native/managed/cdac/tests/gcstress/` | Documented gaps |
+
+### Known limitations
+
+See [tests/gcstress/known-issues.md](tests/gcstress/known-issues.md) for the full list.
+Key gaps include dynamic method (IL Stub) GC refs, frame duplication on deep stacks,
+and unimplemented `PromoteCallerStack` for stub frames. Current pass rate: ~99.7%.
+
 ## Contract specifications
 
 Each contract has a specification document in

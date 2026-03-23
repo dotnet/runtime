@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 internal class ARM64GCInfoTraits : IGCInfoTraits
 {
-    public static uint DenormalizeStackBaseRegister(uint reg) => reg ^ 0x29u;
+    public static uint DenormalizeStackBaseRegister(uint reg) => reg ^ 29u;
     public static uint DenormalizeCodeLength(uint len) => len << 2;
     public static uint NormalizeCodeLength(uint len) => len >> 2;
     public static uint DenormalizeCodeOffset(uint offset) => offset << 2;
@@ -40,4 +40,18 @@ internal class ARM64GCInfoTraits : IGCInfoTraits
     public static int NUM_INTERRUPTIBLE_RANGES_ENCBASE => 1;
 
     public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => true;
+
+    // Preserved (non-scratch): x19-x28
+    // Scratch: x0-x17, x29(FP), x30(LR)
+    public static bool IsScratchRegister(uint regNum) => regNum <= 17 || regNum >= 29;
+
+    // ARM64 has a fixed stack parameter scratch area.
+    // Stack slots with GC_SP_REL base in [0, scratchAreaSize) are scratch slots.
+    public static bool IsScratchStackSlot(int spOffset, uint spBase, uint fixedStackParameterScratchArea)
+    {
+        // GC_SP_REL = 1
+        return spBase == 1
+            && spOffset >= 0
+            && (uint)spOffset < fixedStackParameterScratchArea;
+    }
 }

@@ -77,6 +77,7 @@ public unsafe class ExceptionStateTests
         var mockThread = new Mock<IThread>();
         mockThread.Setup(t => t.GetCurrentExceptionHandle(threadAddr)).Returns(thrownObjectHandle);
         mockThread.Setup(t => t.GetThreadData(threadAddr)).Returns(new ThreadData(
+            ThreadAddress: threadAddr,
             Id: 1,
             OSId: new TargetNUInt(1234),
             State: default,
@@ -450,6 +451,7 @@ public unsafe class ExceptionStateTests
         var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget);
         var mockThread = new Mock<IThread>();
         mockThread.Setup(t => t.GetThreadData(threadAddr)).Returns(new ThreadData(
+            ThreadAddress: threadAddr,
             Id: 1,
             OSId: new TargetNUInt(1234),
             State: default,

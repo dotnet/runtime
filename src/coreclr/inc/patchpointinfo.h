@@ -7,6 +7,8 @@
 
 #include <clrtypes.h>
 
+#include "../vm/cdacdata.h"
+
 #ifndef _PATCHPOINTINFO_H_
 #define _PATCHPOINTINFO_H_
 
@@ -217,6 +219,8 @@ struct PatchpointInfo
     }
 
 private:
+    friend struct ::cdac_data<PatchpointInfo>;
+
     enum
     {
         OFFSET_SHIFT = 0x1,

@@ -2478,10 +2478,10 @@ public sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            if (frameAddr == 0 || ppMD == null)
+            if (frameAddr == 0 || ppMD is null)
                 throw new ArgumentException();
 
-            IStackWalk stackWalkContract = _target.Contracts.StackWalk;
+            Contracts.IStackWalk stackWalkContract = _target.Contracts.StackWalk;
             TargetPointer methodDescPtr = stackWalkContract.GetMethodDescPtr(frameAddr.ToTargetPointer(_target));
             if (methodDescPtr == TargetPointer.Null)
                 throw new ArgumentException();
@@ -3759,8 +3759,178 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSStackRefEnum : ISOSStackRefEnum
+    {
+        private readonly SOSStackRefData[] _refs;
+        private uint _index;
+
+        public SOSStackRefEnum(SOSStackRefData[] refs)
+        {
+            _refs = refs;
+        }
+
+        int ISOSStackRefEnum.Next(uint count, SOSStackRefData[] refs, uint* pFetched)
+        {
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pFetched is null || refs is null)
+                    throw new NullReferenceException();
+
+                count = Math.Min(count, (uint)refs.Length);
+                uint written = 0;
+                while (written < count && _index < _refs.Length)
+                    refs[written++] = _refs[(int)_index++];
+
+                *pFetched = written;
+                // COMPAT: S_FALSE means more items remain, S_OK means enumeration is complete.
+                // This is the inverse of the standard COM IEnumXxx convention, but matches
+                // the legacy DAC behavior (see SOSHandleEnum.Next).
+                hr = _index < _refs.Length ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+
+            return hr;
+        }
+
+        int ISOSStackRefEnum.EnumerateErrors(DacComNullableByRef<ISOSStackRefErrorEnum> ppEnum)
+        {
+            return HResults.E_NOTIMPL;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            _index = Math.Min(_index + count, (uint)_refs.Length);
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Reset()
+        {
+            _index = 0;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            if (pCount is null) return HResults.E_POINTER;
+            *pCount = (uint)_refs.Length;
+            return HResults.S_OK;
+        }
+    }
+
     int ISOSDacInterface.GetStackReferences(int osThreadID, DacComNullableByRef<ISOSStackRefEnum> ppEnum)
-        => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        SOSStackRefData[]? sosRefs = null;
+        try
+        {
+            Contracts.IThread threadContract = _target.Contracts.Thread;
+            Contracts.ThreadStoreData threadStoreData = threadContract.GetThreadStoreData();
+
+            TargetPointer threadPtr = threadStoreData.FirstThread;
+            Contracts.ThreadData? matchingThread = null;
+            while (threadPtr != TargetPointer.Null)
+            {
+                Contracts.ThreadData td = threadContract.GetThreadData(threadPtr);
+                if ((int)td.OSId.Value == osThreadID)
+                {
+                    matchingThread = td;
+                    break;
+                }
+                threadPtr = td.NextThread;
+            }
+
+            if (matchingThread is null)
+                throw new ArgumentException($"Thread with OS ID {osThreadID} not found");
+
+            Contracts.IStackWalk stackWalk = _target.Contracts.StackWalk;
+            IReadOnlyList<Contracts.StackReferenceData> refs = stackWalk.WalkStackReferences(matchingThread.Value);
+
+            sosRefs = new SOSStackRefData[refs.Count];
+            for (int i = 0; i < refs.Count; i++)
+            {
+                Contracts.StackReferenceData r = refs[i];
+                sosRefs[i] = new SOSStackRefData
+                {
+                    HasRegisterInformation = r.HasRegisterInformation ? 1 : 0,
+                    Register = r.Register,
+                    Offset = r.Offset,
+                    Address = r.Address.ToClrDataAddress(_target),
+                    Object = r.Object.ToClrDataAddress(_target),
+                    Flags = r.Flags,
+                    SourceType = r.IsStackSourceFrame ? SOSStackSourceType.SOS_StackSourceFrame : SOSStackSourceType.SOS_StackSourceIP,
+                    Source = r.Source.ToClrDataAddress(_target),
+                    StackPointer = r.StackPointer.ToClrDataAddress(_target),
+                };
+            }
+
+            ppEnum.Interface = new SOSStackRefEnum(sosRefs);
+            // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
+            // Leak a refcount here to match previous behavior and avoid breaking customer code.
+            ComInterfaceMarshaller<ISOSStackRefEnum>.ConvertToUnmanaged(ppEnum.Interface);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+            if (!ppEnum.IsNullRef)
+                ppEnum.Interface = default;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacComNullableByRef<ISOSStackRefEnum> legacyOut = new(isNullRef: false);
+            int hrLocal = _legacyImpl.GetStackReferences(osThreadID, legacyOut);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+
+            if (hrLocal == HResults.S_OK && legacyOut.Interface is not null)
+            {
+                ISOSStackRefEnum legacyRefEnum = legacyOut.Interface;
+
+                uint legacyCount;
+                legacyRefEnum.GetCount(&legacyCount);
+
+                SOSStackRefData[] legacyRefs = new SOSStackRefData[legacyCount];
+                uint legacyFetched;
+                legacyRefEnum.Next(legacyCount, legacyRefs, &legacyFetched);
+
+                if (hr == HResults.S_OK && sosRefs is not null)
+                {
+                    Debug.WriteLine($"GetStackReferences debug: cDAC={sosRefs.Length} refs, DAC={legacyFetched} refs");
+
+                    Debug.Assert((uint)sosRefs.Length == legacyFetched, $"cDAC: {sosRefs.Length} refs, DAC: {legacyFetched} refs");
+
+                    // Verify every DAC ref exists in the cDAC set (by Address which is unique per slot)
+                    for (uint i = 0; i < legacyFetched; i++)
+                    {
+                        SOSStackRefData dac = legacyRefs[i];
+                        bool found = false;
+                        for (int j = 0; j < sosRefs.Length; j++)
+                        {
+                            if (sosRefs[j].Address == dac.Address)
+                            {
+                                SOSStackRefData cdac = sosRefs[j];
+                                Debug.Assert(cdac.Object == dac.Object, $"Address {dac.Address:x}: Object cDAC: {cdac.Object:x}, DAC: {dac.Object:x}");
+                                Debug.Assert(cdac.SourceType == dac.SourceType, $"Address {dac.Address:x}: SourceType cDAC: {cdac.SourceType}, DAC: {dac.SourceType}");
+                                Debug.Assert(cdac.Source == dac.Source, $"Address {dac.Address:x}: Source cDAC: {cdac.Source:x}, DAC: {dac.Source:x}");
+                                Debug.Assert(cdac.Flags == dac.Flags, $"Address {dac.Address:x}: Flags cDAC: {cdac.Flags:x}, DAC: {dac.Flags:x}");
+                                found = true;
+                                break;
+                            }
+                        }
+                        Debug.Assert(found, $"DAC ref at Address {dac.Address:x} (Object {dac.Object:x}) not found in cDAC results");
+                    }
+                }
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)
     {

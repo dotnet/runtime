@@ -50,7 +50,10 @@ struct CodeBlockHandle
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle);
 
     // Extension Methods (implemented in terms of other APIs)
+    // Returns true if the code block is a funclet (exception handler, filter, or finally)
     bool IsFunclet(CodeBlockHandle codeInfoHandle);
+    // Returns true if the code block is specifically a filter funclet
+    bool IsFilterFunclet(CodeBlockHandle codeInfoHandle);
 ```
 
 ```csharp
@@ -449,6 +452,8 @@ There are two distinct clause data types. JIT-compiled code uses `EEExceptionCla
 * For R2R code (`ReadyToRunJitManager`), exception clause data is found via the `ExceptionInfo` section (section type 104) of the R2R image. The section is located by traversing `ReadyToRunInfo::Composite` to reach the `ReadyToRunCoreInfo`, then reading its `Header` pointer to the `ReadyToRunCoreHeader`, and iterating through the inline `ReadyToRunSection` array that immediately follows the header. The `ExceptionInfo` section contains an `ExceptionLookupTableEntry` array, where each entry maps a `MethodStartRVA` to an `ExceptionInfoRVA`. A binary search (falling back to linear scan for small ranges) finds the entry matching the method's RVA. The exception clauses span from that entry's `ExceptionInfoRVA` to the next entry's `ExceptionInfoRVA`, both offset from the image base. The clause array is strided using the size of `R2RExceptionClause`.
 
 After obtaining the clause array bounds, the common iteration logic classifies each clause by its flags. The native `COR_ILEXCEPTION_CLAUSE` flags are bit flags: `Filter` (0x1), `Finally` (0x2), `Fault` (0x4). If none are set, the clause is `Typed`. For typed clauses, if the `CachedClass` flag (0x10000000) is set (JIT-only, used for dynamic methods), the union field contains a resolved `TypeHandle` pointer; the clause is a catch-all if this pointer equals the `ObjectMethodTable` global. Otherwise, the union field is a metadata `ClassToken`. To determine whether a typed clause is a catch-all handler, the `ClassToken` (which may be a `TypeDef` or `TypeRef`) is resolved to a `MethodTable` via the `Loader` contract's module lookup maps (`TypeDefToMethodTable` or `TypeRefToMethodTable`) and compared against the `ObjectMethodTable` global. For typed clauses without a cached type handle, the module address is resolved by walking `CodeBlockHandle` → `MethodDesc` → `MethodTable` → `TypeHandle` → `Module` via the `RuntimeTypeSystem` contract.
+
+`IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
 
 ### RangeSectionMap
 

@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DumpTypes>Heap;Full</DumpTypes>
+    <DumpTypes>Full</DumpTypes>
   </PropertyGroup>
 </Project>

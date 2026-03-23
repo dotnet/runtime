@@ -747,6 +747,8 @@ CONFIG_STRING_INFO(INTERNAL_PerfTypesToLog, W("PerfTypesToLog"), "Log facility L
 CONFIG_STRING_INFO(INTERNAL_PrestubGC, W("PrestubGC"), "")
 CONFIG_STRING_INFO(INTERNAL_PrestubHalt, W("PrestubHalt"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_RestrictedGCStressExe, W("RestrictedGCStressExe"), "")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCStressCdacFailFast, W("GCStressCdacFailFast"), 0, "If nonzero, assert on cDAC/runtime GC ref mismatch during GC stress (GCSTRESS_CDAC mode).")
+RETAIL_CONFIG_STRING_INFO(INTERNAL_GCStressCdacLogFile, W("GCStressCdacLogFile"), "Log file path for cDAC GC stress verification results.")
 CONFIG_DWORD_INFO(INTERNAL_ReturnSourceTypeForTesting, W("ReturnSourceTypeForTesting"), 0, "Allows returning the (internal only) source type of an IL to Native mapping for debugging purposes")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RSStressLog, W("RSStressLog"), 0, "Allows turning on logging for RS startup")
 CONFIG_DWORD_INFO(INTERNAL_SBDumpOnNewIndex, W("SBDumpOnNewIndex"), 0, "Used for Syncblock debugging. It's been a while since any of those have been used.")
