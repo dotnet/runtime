@@ -158,10 +158,37 @@ namespace Internal.JitInterface
         /// <returns></returns>
         public static WasmFuncType GetSignature(MethodDesc method)
         {
-            return GetSignature(method.Signature, method.IsUnmanagedCallersOnly);
+            return GetSignature(method.Signature, GetLoweringFlags(method));
         }
 
-        public static WasmFuncType GetSignature(MethodSignature signature, bool isUnmanagedCallersOnly)
+        public static LoweringFlags GetLoweringFlags(MethodDesc method)
+        {
+            LoweringFlags flags = 0;
+            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg())
+            {
+                flags |= LoweringFlags.HasGenericContextArg;
+            }
+            if (method.IsAsyncCall())
+            {
+                flags |= LoweringFlags.IsAsyncCall;
+            }
+            if (method.IsUnmanagedCallersOnly)
+            {
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
+            }
+            return flags;
+        }
+
+        [Flags]
+        public enum LoweringFlags
+        {
+            None = 0x0,
+            HasGenericContextArg = 0x1,
+            IsAsyncCall = 0x2,
+            IsUnmanagedCallersOnly = 0x4
+        }
+
+        public static WasmFuncType GetSignature(MethodSignature signature, LoweringFlags flags)
         {
             TypeDesc returnType = signature.ReturnType;
             WasmValueType pointerType = (signature.ReturnType.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
@@ -198,7 +225,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (isUnmanagedCallersOnly) // reverse P/Invoke
+            if (flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly)) // reverse P/Invoke
             {
                 if (hasReturnBuffer)
                 {
@@ -220,12 +247,12 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg())
+            if (flags.HasFlag(LoweringFlags.HasGenericContextArg))
             {
                 result.Add(pointerType); // generic context
             }
 
-            if (method.IsAsyncCall())
+            if (flags.HasFlag(LoweringFlags.IsAsyncCall))
             {
                 result.Add(pointerType); // async continuation
             }
@@ -235,7 +262,7 @@ namespace Internal.JitInterface
                 result.Add(LowerType(signature[i]));
             }
 
-            if (!isUnmanagedCallersOnly)
+            if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly))
             {
                 result.Add(pointerType); // PE entrypoint parameter
             }

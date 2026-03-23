@@ -88,6 +88,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_typeNode.Type, _context);
 
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
+        bool INodeWithTypeSignature.IsAsyncCall => false;
+        bool INodeWithTypeSignature.HasGenericContextArg => false;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {

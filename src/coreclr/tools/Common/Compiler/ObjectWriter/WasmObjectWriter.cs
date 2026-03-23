@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -68,17 +69,30 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
-            WriteSignatureIndexForFunction(node.Signature, node.IsUnmanagedCallersOnly, node);
+            WasmLowering.LoweringFlags flags = WasmLowering.LoweringFlags.None;
+            if (node.HasGenericContextArg)
+            {
+                flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
+            }
+            if (node.IsAsyncCall)
+            {
+                flags |= WasmLowering.LoweringFlags.IsAsyncCall;
+            }
+            if (node.IsUnmanagedCallersOnly)
+            {
+                flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
+            }
+            WriteSignatureIndexForFunction(node.Signature, flags, node);
 
             _uniqueSymbols.Add(node.GetMangledName(_nodeFactory.NameMangler), _methodCount);
             _methodCount++;
         }
 
-        private void WriteSignatureIndexForFunction(MethodSignature managedSignature, bool isUnmanagedCallersOnly, ISymbolNode node)
+        private void WriteSignatureIndexForFunction(MethodSignature managedSignature, WasmLowering.LoweringFlags flags, ISymbolNode node)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
 
-            WasmFuncType signature = Internal.JitInterface.WasmLowering.GetSignature(managedSignature, isUnmanagedCallersOnly);
+            WasmFuncType signature = WasmLowering.GetSignature(managedSignature, flags);
             Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_uniqueSignatures.TryGetValue(key, out int signatureIndex))
             {
