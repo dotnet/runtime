@@ -15,6 +15,9 @@
 #define ZSTD_STATIC_LINKING_ONLY
 #include <zstd.h>
 #include <zdict.h>
+
+#include <lzma.h>
+
 #endif // !TARGET_WASM
 
 static const Entry s_compressionNative[] =
@@ -42,6 +45,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(CompressionNative_InflateInit2_)
     DllImportEntry(CompressionNative_InflateReset2_)
 #if !defined(TARGET_WASM)
+    // zstd
     DllImportEntry(ZSTD_createCCtx)
     DllImportEntry(ZSTD_createDCtx)
     DllImportEntry(ZSTD_freeCCtx)
@@ -74,6 +78,8 @@ static const Entry s_compressionNative[] =
     DllImportEntry(ZSTD_CCtx_refPrefix)
     DllImportEntry(ZSTD_CCtx_setPledgedSrcSize)
     DllImportEntry(ZDICT_trainFromBuffer)
+    // xz / lzma
+    DllImportEntry(lzma_stream_decoder)
 #endif // !TARGET_WASM
 };
 

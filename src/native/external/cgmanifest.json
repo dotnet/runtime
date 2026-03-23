@@ -6,6 +6,16 @@
       "component": {
         "type": "git",
         "git": {
+          "repositoryUrl": "https://github.com/tukaani-project/xz",
+          "commitHash": "3d078b52adbff566ccfc51067dfbf742ecf3ef86"
+        }
+      },
+      "developmentDependency": false
+    },
+    {
+      "component": {
+        "type": "git",
+        "git": {
           "repositoryUrl": "https://github.com/facebook/zstd",
           "commitHash": "f8745da6ff1ad1e7bab384bd1f9d742439278e99"
         }
