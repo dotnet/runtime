@@ -257,16 +257,21 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         {
             switch (targetOperation)
             {
-                case IFieldReferenceOperation:
-                case IParameterReferenceOperation:
+                case IFieldReferenceOperation fieldRef:
+                {
+                    // Visit the instance to ensure that method calls or other operations
+                    // used as the instance are properly analyzed for diagnostics.
+                    Visit(fieldRef.Instance, state);
+                    var current = state.Current;
+                    TValue targetValue = GetFieldTargetValue(fieldRef, in current.Context);
+                    TValue value = Visit(valueOperation, state);
+                    HandleAssignment(value, targetValue, assignmentOperation, in current.Context);
+                    return value;
+                }
+                case IParameterReferenceOperation parameterRef:
                 {
                     var current = state.Current;
-                    TValue targetValue = targetOperation switch
-                    {
-                        IFieldReferenceOperation fieldRef => GetFieldTargetValue(fieldRef, in current.Context),
-                        IParameterReferenceOperation parameterRef => GetParameterTargetValue(parameterRef.Parameter),
-                        _ => throw new InvalidOperationException()
-                    };
+                    TValue targetValue = GetParameterTargetValue(parameterRef.Parameter);
                     TValue value = Visit(valueOperation, state);
                     HandleAssignment(value, targetValue, assignmentOperation, in current.Context);
                     return value;
