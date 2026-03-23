@@ -122,12 +122,15 @@ At each step:
 
 1. **Rebuild the affected component** — use incremental builds where possible
    (see [incremental rebuilds](local-benchmarking.md#incremental-rebuilds)).
-2. **Run the standalone benchmark** with the freshly-built CoreRun:
+2. **Run the standalone benchmark** with the freshly-built CoreRun from the
+   testhost folder (see
+   [local benchmarking guide](local-benchmarking.md#building-dotnet-runtime-and-obtaining-corerun)
+   for the exact path):
    ```
    cd PerfRepro
    dotnet run -c Release -f net{ver} -- \
        --filter '*' \
-       --coreRun {runtime}/artifacts/bin/testhost/.../CoreRun
+       --coreRun {runtime}/artifacts/bin/testhost/net{ver}-{os}-Release-{arch}/shared/Microsoft.NETCore.App/{ver}/CoreRun
    ```
 3. **Determine good or bad** — compare the result against your threshold.
 

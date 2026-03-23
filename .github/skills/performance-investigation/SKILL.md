@@ -194,8 +194,8 @@ improvements. For ARM64-specific diffs or tier-0 analysis:
 @MihuBot -arm -tier0
 ```
 
-See [MihuBot reference](references/mihubot-reference.md) for the full JIT diff
-options, including `-nocctors`, `-includeKnownNoise`, and others.
+See [MihuBot reference](references/mihubot-reference.md) for the full set of JIT
+diff options and usage guidance.
 
 ### Interpreting JIT Diffs
 

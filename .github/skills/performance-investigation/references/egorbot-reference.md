@@ -12,7 +12,8 @@ see the [EgorBot manual](https://github.com/EgorBo/EgorBot).
 ## Command Format
 
 Mention `@EgorBot` in a PR or issue comment. The benchmark source goes in a
-fenced ` ```cs ` code block in the same comment.
+fenced C# code block (a code fence that begins with three backticks followed
+by `cs`) in the same comment.
 
 ```
 @EgorBot [targets...] [options...] [BDN arguments...]

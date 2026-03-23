@@ -24,6 +24,10 @@ The key artifact is the **testhost** folder containing **CoreRun** at:
 artifacts/bin/testhost/net{version}-{os}-Release-{arch}/shared/Microsoft.NETCore.App/{version}/
 ```
 
+> **Note:** This is different from the bare `corerun` binary under
+> `artifacts/bin/coreclr/`. BenchmarkDotNet needs the testhost layout because
+> it contains both CoreRun and the complete framework assemblies side-by-side.
+
 CoreRun is a lightweight host that loads the locally-built runtime and
 libraries. BenchmarkDotNet uses it via the `--coreRun` argument to benchmark
 private builds without installing them as SDKs.
@@ -127,13 +131,17 @@ affected component:
 | Component changed | Fast rebuild command |
 |-------------------|---------------------|
 | A single library (e.g., System.Text.Json) | `cd src/libraries/System.Text.Json/src && dotnet build -c Release --no-restore` |
-| CoreLib | `build.cmd/sh clr.corelib -c Release` |
+| CoreLib | `build.cmd/sh clr.corelib -c Release` followed by `build.cmd/sh libs.pretest -c Release` |
 | CoreCLR (JIT, GC, runtime) | `build.cmd/sh clr -c Release` |
 | All libraries | `build.cmd/sh libs -c Release` |
 
-After an incremental library rebuild, the updated DLL is placed in the testhost
-folder automatically. CoreRun picks up the new version on the next benchmark
-run.
+After an incremental library rebuild (other than System.Private.CoreLib), the
+updated DLL is placed in the testhost folder automatically. CoreRun picks up
+the new version on the next benchmark run.
+
+For System.Private.CoreLib, you must run `build.cmd/sh libs.pretest -c Release`
+after rebuilding to copy the updated CoreLib into the testhost layout;
+otherwise benchmarks may silently run against the older CoreLib.
 
 **Caveat:** If a rebuild crosses a commit that changes the build infrastructure
 (e.g., SDK version bump in `global.json`), the incremental build may fail. In a
