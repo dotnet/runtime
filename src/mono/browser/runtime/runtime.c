@@ -254,7 +254,17 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 		return sysglobal_native_handle;
 
 #if WASM_SUPPORTS_DLOPEN
-	return dlopen(name, flags);
+	dlerror ();
+	void *dl_handle = dlopen (name, flags);
+	if (!dl_handle && err && !*err)
+	{
+		const char *dl_error = dlerror ();
+		if (dl_error && *dl_error)
+			*err = strdup (dl_error);
+		else
+			*err = strdup (name);
+	}
+	return dl_handle;
 #endif
 
 	return NULL;
@@ -275,15 +285,19 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	assert (handle != sysglobal_native_handle);
 
 #if WASM_SUPPORTS_DLOPEN
-	if (!wasm_dl_is_pinvoke_tables (handle)) {
-		return dlsym (handle, name);
+	if (!wasm_dl_is_pinvoke_table (handle)) {
+		void *addr = dlsym (handle, name);
+		if (!addr && err && !*err)
+			*err = strdup (name);
+		return addr;
 	}
 #endif
 	PinvokeTable* index = (PinvokeTable*)handle;
 	PinvokeImport key = { name, NULL };
     PinvokeImport* result = (PinvokeImport *)bsearch(&key, index->imports, index->count, sizeof(PinvokeImport), import_compare_name);
     if (!result) {
-        // *err = g_strdup_printf ("Symbol not found: %s", name);
+		if (err && !*err)
+			*err = strdup (name);
         return NULL;
     }
     return result->func;
