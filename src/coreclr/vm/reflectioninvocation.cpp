@@ -356,6 +356,22 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
     }
 
+    // This is duplicated logic from MethodDesc::GetCallTarget
+    PCODE pTarget;
+    if (pMeth->IsVtableMethod())
+    {
+        pTarget = pMeth->GetSingleCallableAddrOfVirtualizedCode(&gc.target, ownerType);
+    }
+    else
+    {
+        pTarget = pMeth->GetSingleCallableAddrOfCode();
+    }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    MethodDesc* pMethod = PortableEntryPoint::GetMethodDesc(pTarget);
+    (void)pMethod->GetInterpreterCodeWithPrestub();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 #ifdef _DEBUG
     if (g_pConfig->ShouldInvokeHalt(pMeth))
     {
@@ -426,16 +442,6 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     callDescrData.hasRetBuff = argit.HasRetBuffArg();
 #endif // TARGET_WASM
 
-    // This is duplicated logic from MethodDesc::GetCallTarget
-    PCODE pTarget;
-    if (pMeth->IsVtableMethod())
-    {
-        pTarget = pMeth->GetSingleCallableAddrOfVirtualizedCode(&gc.target, ownerType);
-    }
-    else
-    {
-        pTarget = pMeth->GetSingleCallableAddrOfCode();
-    }
     callDescrData.pTarget = pTarget;
 
     // Build the arguments on the stack
