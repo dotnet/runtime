@@ -246,7 +246,8 @@ namespace System.Text.Json.Serialization.Converters
 
             // Read fields.
             object[] fieldValues = (object[])caseInfo.DefaultFieldValues!.Clone();
-            BitArray populatedFields = new(caseInfo.Fields!.Length);
+            bool trackRequired = options.RespectRequiredConstructorParameters;
+            BitArray? populatedFields = trackRequired ? new BitArray(caseInfo.Fields!.Length) : null;
 
             while (reader.Read())
             {
@@ -285,11 +286,15 @@ namespace System.Text.Json.Serialization.Converters
                 CaseFieldInfo field = caseInfo.Fields![fieldIndex];
                 object? fieldValue = field.Converter.ReadAsObject(ref reader, field.FieldType, options);
                 fieldValues[fieldIndex] = fieldValue!;
-                populatedFields[fieldIndex] = true;
+
+                if (populatedFields is not null)
+                {
+                    populatedFields[fieldIndex] = true;
+                }
             }
 
             // Validate required fields when RespectRequiredConstructorParameters is enabled.
-            if (options.RespectRequiredConstructorParameters && !populatedFields.HasAllSet())
+            if (populatedFields is not null && !populatedFields.HasAllSet())
             {
                 ThrowForMissingRequiredFields(caseInfo, populatedFields);
             }
