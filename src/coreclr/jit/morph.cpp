@@ -1780,12 +1780,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // Push the stub address onto the list of arguments.
         NewCallArg indirCellAddrArg =
             NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell);
-#ifdef TARGET_WASM
-        // On wasm we need to ensure we put the indirection cell address last in LIR, after the SP and formal args.
+        // On wasm we need to ensure we put the indirection cell address last in LIR, after the SP and formal args,
+        // because it is used as the portable entry point (PEP) which is the last argument slot. On other targets
+        // it shouldn't matter whether we evaluate the argument early or late since it goes into a dedicated register.
         PushBack(comp, indirCellAddrArg);
-#else
-        InsertAfterThisOrFirst(comp, indirCellAddrArg);
-#endif // TARGET_WASM
     }
 #endif // defined(FEATURE_READYTORUN)
 
