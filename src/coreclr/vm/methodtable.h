@@ -2045,8 +2045,10 @@ public:
     bool IsHFA();
 #endif // FEATURE_HFA
 
-    // Returns the size in bytes of this type if it is a HW vector type; 0 otherwise.
-    int GetVectorSize();
+    // Returns the HFA type for this type, if it is a valid HW vector type.
+    // Floating point HFA types will return CORINFO_HFA_ELEM_NONE.
+    // Vector classes with invalid generic parameters return CORINFO_HFA_ELEM_NONE.
+    CorInfoHFAElemType GetVectorHFA();
 
     // Get the HFA type. This is supported both with FEATURE_HFA, in which case it
     // depends on the cached bit on the class, or without, in which case it is recomputed
