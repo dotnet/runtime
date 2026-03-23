@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Strategies;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -13,10 +13,10 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal const FileOptions NoBuffering = (FileOptions)0x20000000;
+        private const FileOptions UninitializedOptions = (FileOptions)(-1);
         private long _length = -1; // negative means that hasn't been fetched.
         private bool _lengthCanBeCached; // file has been opened for reading and not shared for writing.
-        private volatile FileOptions _fileOptions = (FileOptions)(-1);
+        private FileOptions _fileOptions = UninitializedOptions;
 
         public SafeFileHandle() : base(true)
         {
@@ -106,7 +106,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;
 
-        internal bool IsNoBuffering => (GetFileOptions() & NoBuffering) != 0;
+        internal bool IsNoBuffering => (GetFileOptions() & FileStreamHelpers.NoBuffering) != 0;
 
         internal bool CanSeek => !IsClosed && Type == FileHandleType.RegularFile;
 
@@ -280,7 +280,7 @@ namespace Microsoft.Win32.SafeHandles
         internal unsafe FileOptions GetFileOptions()
         {
             FileOptions fileOptions = _fileOptions;
-            if (fileOptions != (FileOptions)(-1))
+            if (fileOptions != UninitializedOptions)
             {
                 return fileOptions;
             }
@@ -323,7 +323,7 @@ namespace Microsoft.Win32.SafeHandles
             }
             if ((options & Interop.NtDll.CreateOptions.FILE_NO_INTERMEDIATE_BUFFERING) != 0)
             {
-                result |= NoBuffering;
+                result |= FileStreamHelpers.NoBuffering;
             }
 
             return _fileOptions = result;
@@ -331,11 +331,22 @@ namespace Microsoft.Win32.SafeHandles
 
         internal FileHandleType GetFileTypeCore()
         {
+            Debug.Assert(Path is null || _fileOptions != UninitializedOptions, "When Path is set, _fileOptions are also provided.");
+
             int kernelFileType = Interop.Kernel32.GetFileType(this);
             return kernelFileType switch
             {
                 Interop.Kernel32.FileTypes.FILE_TYPE_CHAR => FileHandleType.CharacterDevice,
                 Interop.Kernel32.FileTypes.FILE_TYPE_PIPE => GetPipeOrSocketType(),
+                // GetFileType can return FILE_TYPE_DISK for regular files, directories and symbolic links.
+                // When Path is not null, it means that the handle was created by SafeFileHandle.Open.
+                // This method resolves symbolic links, so it can't be a symbolic link.
+                // However, it accepts FILE_FLAG_BACKUP_SEMANTICS as an option,
+                // which makes it possible to open a directory.
+                // So when Path is not null and options don't include FILE_FLAG_BACKUP_SEMANTICS,
+                // it's a regular file. In such case, we don't need to call GetDiskBasedType() which would be
+                // an extra sys-call.
+                Interop.Kernel32.FileTypes.FILE_TYPE_DISK when Path is not null && ((_fileOptions & FileStreamHelpers.BackupOrRestore) == 0) => FileHandleType.RegularFile,
                 Interop.Kernel32.FileTypes.FILE_TYPE_DISK => GetDiskBasedType(),
                 _ => FileHandleType.Unknown
             };

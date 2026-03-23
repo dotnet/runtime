@@ -273,9 +273,9 @@ internal readonly struct Loader_1 : ILoader
         throw new InvalidOperationException("Failed to resolve RVA in Webcil image.");
     }
 
-    TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
+    private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNullOk)
     {
-        if (rva == 0)
+        if (rva == 0 && !isNullOk)
             return TargetPointer.Null;
         Data.PEAssembly assembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
         if (assembly.PEImage == TargetPointer.Null)
@@ -291,6 +291,10 @@ internal readonly struct Loader_1 : ILoader
             offset = RvaToOffset(rva, peImageLayout);
         return peImageLayout.Base + offset;
     }
+
+    TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva) => GetRvaData(peAssemblyPtr, rva, false);
+
+    TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => GetRvaData(peAssemblyPtr, rva, true);
 
     bool ILoader.TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
     {

@@ -2558,6 +2558,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PRead.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PRead.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadV.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.ReadV.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PReadV.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PReadV.cs</Link>
     </Compile>
@@ -2569,6 +2572,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Read.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.WriteV.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.WriteV.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadDir.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ReadDir.cs</Link>
@@ -2867,7 +2873,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WaitThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerThread.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.WorkerTracking.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Unix.cs" Condition="'$(TargetsWindows)' != 'true' and '$(TargetsBrowser)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
@@ -2895,7 +2901,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Wasi.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureMultithreading)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Browser.Threads.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Browser.Threads.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Browser.Threads.cs" />
   </ItemGroup>
