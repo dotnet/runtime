@@ -471,6 +471,32 @@ let ``Disallow unmapped does not affect known fields`` () =
     let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options)
     Assert.Equal(Rectangle(10.0, 20.0), result)
 
+// -- AllowDuplicateProperties Tests --
+
+[<Fact>]
+let ``Duplicate field throws when AllowDuplicateProperties is false`` () =
+    let options = JsonSerializerOptions(AllowDuplicateProperties = false)
+    let json = """{"$type":"Circle","radius":1.0,"radius":2.0}"""
+    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options) |> ignore)
+
+[<Fact>]
+let ``Duplicate discriminator throws when AllowDuplicateProperties is false`` () =
+    let options = JsonSerializerOptions(AllowDuplicateProperties = false)
+    let json = """{"$type":"Circle","$type":"Point","radius":3.14}"""
+    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options) |> ignore)
+
+[<Fact>]
+let ``Duplicate discriminator in fieldless case throws when AllowDuplicateProperties is false`` () =
+    let options = JsonSerializerOptions(AllowDuplicateProperties = false)
+    let json = """{"$type":"Point","$type":"Circle"}"""
+    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options) |> ignore)
+
+[<Fact>]
+let ``Duplicate field is last-wins when AllowDuplicateProperties is true`` () =
+    let json = """{"$type":"Circle","radius":1.0,"radius":2.0}"""
+    let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json)
+    Assert.Equal(Circle 2.0, result)
+
 // -- Field/Discriminator Conflict Tests --
 
 [<Fact>]

@@ -222,16 +222,25 @@ namespace System.Text.Json.Serialization.Converters
 
             // Restore reader to re-read all properties for field population.
             reader = checkpoint;
+            bool discriminatorSeen = false;
 
             if (caseInfo.IsFieldless)
             {
-                // Skip to end of object, validating unmapped members.
+                // Skip to end of object, validating unmapped members and duplicate properties.
                 while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
                 {
                     if (reader.TokenType == JsonTokenType.PropertyName)
                     {
-                        if (!reader.ValueTextEquals(_typeDiscriminatorPropertyName) &&
-                            _effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                        if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
+                        {
+                            if (!options.AllowDuplicateProperties && discriminatorSeen)
+                            {
+                                ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(_typeDiscriminatorPropertyName);
+                            }
+
+                            discriminatorSeen = true;
+                        }
+                        else if (_effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                         {
                             ThrowHelper.ThrowJsonException_UnmappedJsonProperty(typeof(T), reader.GetString()!);
                         }
@@ -246,8 +255,8 @@ namespace System.Text.Json.Serialization.Converters
 
             // Read fields.
             object[] fieldValues = (object[])caseInfo.DefaultFieldValues!.Clone();
-            bool trackRequired = options.RespectRequiredConstructorParameters;
-            BitArray? populatedFields = trackRequired ? new BitArray(caseInfo.Fields!.Length) : null;
+            bool trackPopulated = options.RespectRequiredConstructorParameters || !options.AllowDuplicateProperties;
+            BitArray? populatedFields = trackPopulated ? new BitArray(caseInfo.Fields!.Length) : null;
 
             while (reader.Read())
             {
@@ -264,6 +273,12 @@ namespace System.Text.Json.Serialization.Converters
                 // Skip the discriminator property when encountered during field reading.
                 if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
                 {
+                    if (!options.AllowDuplicateProperties && discriminatorSeen)
+                    {
+                        ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(_typeDiscriminatorPropertyName);
+                    }
+
+                    discriminatorSeen = true;
                     reader.Read();
                     reader.TrySkip();
                     continue;
@@ -283,18 +298,23 @@ namespace System.Text.Json.Serialization.Converters
                     continue;
                 }
 
+                if (populatedFields is not null)
+                {
+                    if (!options.AllowDuplicateProperties && populatedFields[fieldIndex])
+                    {
+                        ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(fieldName!);
+                    }
+
+                    populatedFields[fieldIndex] = true;
+                }
+
                 CaseFieldInfo field = caseInfo.Fields![fieldIndex];
                 object? fieldValue = field.Converter.ReadAsObject(ref reader, field.FieldType, options);
                 fieldValues[fieldIndex] = fieldValue!;
-
-                if (populatedFields is not null)
-                {
-                    populatedFields[fieldIndex] = true;
-                }
             }
 
             // Validate required fields when RespectRequiredConstructorParameters is enabled.
-            if (populatedFields is not null && !populatedFields.HasAllSet())
+            if (options.RespectRequiredConstructorParameters && populatedFields is not null && !populatedFields.HasAllSet())
             {
                 ThrowForMissingRequiredFields(caseInfo, populatedFields);
             }
@@ -327,13 +347,7 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
-            if (value is null)
-            {
-                writer.WriteNullValue();
-                return;
-            }
-
-            int tag = _tagReader(value);
+            int tag = _tagReader(value!);
             CaseInfo caseInfo = _casesByTag[tag];
 
             if (caseInfo.IsFieldless)
