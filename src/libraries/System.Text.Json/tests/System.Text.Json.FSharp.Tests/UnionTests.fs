@@ -366,51 +366,42 @@ let ``RespectRequired succeeds when all fields present`` () =
     let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options)
     Assert.Equal(Rectangle(10.0, 20.0), result)
 
-// -- AllowOutOfOrderMetadataProperties Tests --
+// -- Out-of-Order Discriminator Tests --
 
 [<Fact>]
-let ``Out-of-order discriminator succeeds when AllowOutOfOrder is on`` () =
-    let options = JsonSerializerOptions(AllowOutOfOrderMetadataProperties = true)
+let ``Out-of-order discriminator succeeds`` () =
     let json = """{"radius":3.14,"$type":"Circle"}"""
-    let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options)
+    let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json)
     Assert.Equal(Circle 3.14, result)
 
 [<Fact>]
 let ``Out-of-order discriminator in middle succeeds`` () =
-    let options = JsonSerializerOptions(AllowOutOfOrderMetadataProperties = true)
     let json = """{"height":10.0,"$type":"Rectangle","length":20.0}"""
-    let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options)
+    let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json)
     Assert.Equal(Rectangle(10.0, 20.0), result)
 
 [<Fact>]
-let ``Out-of-order discriminator throws when AllowOutOfOrder is off`` () =
-    let json = """{"radius":3.14,"$type":"Circle"}"""
-    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json) |> ignore)
-
-[<Fact>]
 let ``Out-of-order fieldless case from object form`` () =
-    let options = JsonSerializerOptions(AllowOutOfOrderMetadataProperties = true)
     let json = """{"extra":"ignored","$type":"Point"}"""
-    let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options)
+    let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json)
     Assert.Equal(Point, result)
 
 [<Fact>]
 let ``Out-of-order with nested object field value`` () =
-    let options = JsonSerializerOptions(AllowOutOfOrderMetadataProperties = true)
     let json = """{"value":42,"$type":"SomeValue"}"""
-    let result = JsonSerializer.Deserialize<UnionWithOption>(json, options)
+    let result = JsonSerializer.Deserialize<UnionWithOption>(json)
     Assert.Equal(SomeValue(Some 42), result)
 
 [<Fact>]
-let ``Out-of-order combined with RespectRequired succeeds when all fields present`` () =
-    let options = JsonSerializerOptions(AllowOutOfOrderMetadataProperties = true, RespectRequiredConstructorParameters = true)
+let ``Out-of-order with RespectRequired succeeds when all fields present`` () =
+    let options = JsonSerializerOptions(RespectRequiredConstructorParameters = true)
     let json = """{"radius":3.14,"$type":"Circle"}"""
     let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options)
     Assert.Equal(Circle 3.14, result)
 
 [<Fact>]
-let ``Out-of-order combined with RespectRequired throws for missing fields`` () =
-    let options = JsonSerializerOptions(AllowOutOfOrderMetadataProperties = true, RespectRequiredConstructorParameters = true)
+let ``Out-of-order with RespectRequired throws for missing fields`` () =
+    let options = JsonSerializerOptions(RespectRequiredConstructorParameters = true)
     let json = """{"height":10.0,"$type":"Rectangle"}"""
     let ex = Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options) |> ignore)
     Assert.Contains("length", ex.Message)

@@ -191,95 +191,46 @@ namespace System.Text.Json.Serialization.Converters
         {
             Debug.Assert(reader.TokenType == JsonTokenType.StartObject);
 
-            // Checkpoint at StartObject for potential out-of-order restore.
-            Utf8JsonReader startCheckpoint = reader;
+            // The converter uses ConverterStrategy.Value which ensures the entire
+            // JSON value is buffered before Read() is called, so we can always
+            // scan ahead for the discriminator and restore the reader position.
+            Utf8JsonReader checkpoint = reader;
 
-            // Read the first property.
-            reader.Read();
-
-            if (reader.TokenType == JsonTokenType.EndObject)
+            // Scan for the type discriminator property.
+            string? caseName = null;
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
             {
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(typeof(T));
-            }
+                if (reader.TokenType != JsonTokenType.PropertyName)
+                {
+                    ThrowHelper.ThrowJsonException();
+                }
 
-            if (reader.TokenType != JsonTokenType.PropertyName)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
-            CaseInfo caseInfo;
-
-            if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
-            {
-                // Fast path: discriminator is the first property.
+                bool isDiscriminator = reader.ValueTextEquals(_typeDiscriminatorPropertyName);
                 reader.Read();
-                if (reader.TokenType != JsonTokenType.String)
+
+                if (isDiscriminator)
                 {
-                    ThrowHelper.ThrowJsonException();
-                }
-
-                string? caseName = reader.GetString();
-                if (caseName is null)
-                {
-                    ThrowHelper.ThrowJsonException();
-                }
-
-                caseInfo = LookupCaseByName(caseName);
-            }
-            else if (options.AllowOutOfOrderMetadataProperties)
-            {
-                // Slow path: scan ahead to find the discriminator.
-                // The converter uses ConverterStrategy.Value which ensures the entire
-                // JSON value is buffered before Read() is called, enabling checkpoint restore.
-
-                // Skip the first property value.
-                if (!reader.Read())
-                {
-                    ThrowHelper.ThrowJsonException();
-                }
-
-                reader.TrySkip();
-
-                string? caseName = null;
-                while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
-                {
-                    if (reader.TokenType != JsonTokenType.PropertyName)
+                    if (reader.TokenType != JsonTokenType.String)
                     {
                         ThrowHelper.ThrowJsonException();
                     }
 
-                    bool isDiscriminator = reader.ValueTextEquals(_typeDiscriminatorPropertyName);
-                    reader.Read();
-
-                    if (isDiscriminator)
-                    {
-                        if (reader.TokenType != JsonTokenType.String)
-                        {
-                            ThrowHelper.ThrowJsonException();
-                        }
-
-                        caseName = reader.GetString();
-                        break;
-                    }
-
-                    reader.TrySkip();
+                    caseName = reader.GetString();
+                    break;
                 }
 
-                if (caseName is null)
-                {
-                    ThrowHelper.ThrowJsonException();
-                }
-
-                caseInfo = LookupCaseByName(caseName);
-
-                // Restore reader to StartObject so field-reading loop processes all properties.
-                reader = startCheckpoint;
+                reader.TrySkip();
             }
-            else
+
+            if (caseName is null)
             {
                 ThrowHelper.ThrowJsonException();
-                return default!;
             }
+
+            CaseInfo caseInfo = LookupCaseByName(caseName);
+
+            // Restore reader to re-read all properties for field population.
+            reader = checkpoint;
 
             if (caseInfo.IsFieldless)
             {
