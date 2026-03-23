@@ -259,9 +259,6 @@ DEFINE_EXCEPTION(g_SecurityNS,         VerificationException,          false,  C
 
 
 DEFINE_EXCEPTION(g_InteropNS,          COMException,                   false,  E_FAIL)
-#ifdef FEATURE_COMINTEROP
-DEFINE_EXCEPTION(g_InteropNS,          ExternalException,              false,  E_FAIL)
-#endif // FEATURE_COMINTEROP
 #ifdef TARGET_WINDOWS
 DEFINE_EXCEPTION(g_InteropNS,          SEHException,                   false,  E_FAIL)
 #endif // TARGET_WINDOWS
