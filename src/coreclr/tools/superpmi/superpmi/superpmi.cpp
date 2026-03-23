@@ -410,7 +410,6 @@ int __cdecl main(int argc, char* argv[])
         {
             return (int)SpmiResult::GeneralFailure;
         }
-        mc->Reset();
 
         if (o.ignoreStoredConfig)
         {
