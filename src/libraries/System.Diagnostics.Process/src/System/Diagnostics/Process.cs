@@ -1278,19 +1278,16 @@ namespace System.Diagnostics
                     }
                 }
             }
+
             bool anyRedirection = startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError;
-            if (startInfo.UseShellExecute && anyRedirection)
+            bool anyHandle = startInfo.StandardInput is not null || startInfo.StandardOutput is not null || startInfo.StandardError is not null;
+            if (startInfo.UseShellExecute && (anyRedirection || anyHandle))
             {
                 throw new InvalidOperationException(SR.CantRedirectStreams);
             }
 
-            bool anyHandle = startInfo.StandardInput is not null || startInfo.StandardOutput is not null || startInfo.StandardError is not null;
             if (anyHandle)
             {
-                if (startInfo.UseShellExecute)
-                {
-                    throw new InvalidOperationException(SR.CantRedirectStreams);
-                }
                 if (startInfo.StandardInput is not null && startInfo.RedirectStandardInput)
                 {
                     throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
@@ -1320,15 +1317,15 @@ namespace System.Diagnostics
 
             try
             {
-                if (anyRedirection)
+                if (anyRedirection || anyHandle)
                 {
                     // Windows supports creating non-inheritable pipe in atomic way.
                     // When it comes to Unixes, it depends whether they support pipe2 sys-call or not.
                     // If they don't, the pipe is created as inheritable and made non-inheritable with another sys-call.
                     // Some process could be started in the meantime, so in order to prevent accidental handle inheritance,
-                    // a WriterLock is used around the pipe creation code.
+                    // a writer lock is used around the pipe creation code.
 
-                    bool requiresLock = !SupportsAtomicNonInheritablePipeCreation;
+                    bool requiresLock = anyRedirection && !SupportsAtomicNonInheritablePipeCreation;
 
                     if (requiresLock)
                     {
@@ -1345,6 +1342,10 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out childInputPipeHandle, out parentInputPipeHandle);
                         }
+                        else if (!OperatingSystem.IsAndroid())
+                        {
+                            childInputPipeHandle = Console.OpenStandardInputHandle();
+                        }
 
                         if (startInfo.StandardOutput is not null)
                         {
@@ -1354,6 +1355,10 @@ namespace System.Diagnostics
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputPipeHandle, asyncRead: OperatingSystem.IsWindows());
                         }
+                        else if (!OperatingSystem.IsAndroid())
+                        {
+                            childOutputPipeHandle = Console.OpenStandardOutputHandle();
+                        }
 
                         if (startInfo.StandardError is not null)
                         {
@@ -1362,6 +1367,10 @@ namespace System.Diagnostics
                         else if (startInfo.RedirectStandardError)
                         {
                             SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorPipeHandle, asyncRead: OperatingSystem.IsWindows());
+                        }
+                        else if (!OperatingSystem.IsAndroid())
+                        {
+                            childErrorPipeHandle = Console.OpenStandardErrorHandle();
                         }
                     }
                     finally

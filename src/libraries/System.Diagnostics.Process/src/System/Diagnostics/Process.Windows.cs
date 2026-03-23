@@ -451,26 +451,23 @@ namespace System.Diagnostics
             {
                 startupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
 
-                if (stdinHandle is not null && !stdinHandle.IsInvalid)
-                {
-                    inheritableStdinHandle = DuplicateAsInheritable(stdinHandle);
-                    startupInfo.hStdInput = inheritableStdinHandle.DangerousGetHandle();
-                }
-
-                if (stdoutHandle is not null && !stdoutHandle.IsInvalid)
-                {
-                    inheritableStdoutHandle = DuplicateAsInheritable(stdoutHandle);
-                    startupInfo.hStdOutput = inheritableStdoutHandle.DangerousGetHandle();
-                }
-
-                if (stderrHandle is not null && !stderrHandle.IsInvalid)
-                {
-                    inheritableStderrHandle = DuplicateAsInheritable(stderrHandle);
-                    startupInfo.hStdError = inheritableStderrHandle.DangerousGetHandle();
-                }
-
                 if (stdinHandle is not null || stdoutHandle is not null || stderrHandle is not null)
                 {
+                    Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null, "All or none of the standard handles must be provided.");
+
+                    // The user can't specify invalid handle via ProcessStartInfo.Standar*Handle APIs.
+                    // However, Console.OpenStandard*Handle() can return INVALID_HANDLE_VALUE for a process
+                    // that was started with INVALID_HANDLE_VALUE as given standard handle.
+                    // As soon as SafeFileHandle.IsInheritabe() is added, we can use it here to avoid unnecessary duplication.
+                    inheritableStdinHandle = !stdinHandle.IsInvalid ? DuplicateAsInheritable(stdinHandle) : stdinHandle;
+                    inheritableStdoutHandle = !stdoutHandle.IsInvalid ? DuplicateAsInheritable(stdoutHandle) : stdoutHandle;
+                    inheritableStderrHandle = !stderrHandle.IsInvalid ? DuplicateAsInheritable(stderrHandle) : stderrHandle;
+
+                    startupInfo.hStdInput = inheritableStdinHandle.DangerousGetHandle();
+                    startupInfo.hStdOutput = inheritableStdoutHandle.DangerousGetHandle();
+                    startupInfo.hStdError = inheritableStderrHandle.DangerousGetHandle();
+
+                    // If STARTF_USESTDHANDLES is not set, the new process will inherit the standard handles.
                     startupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
                 }
 

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -75,6 +74,39 @@ namespace System.Diagnostics.Tests
 
                 Assert.Equal(OperatingSystem.IsWindows() ? "Hello from stdout \r\n" : "Hello from stdout\n", await outputTask);
                 Assert.Equal(OperatingSystem.IsWindows() ? "Error from stderr \r\n" : "Error from stderr\n", await errorTask);
+
+                process.WaitForExit();
+                Assert.Equal(0, process.ExitCode);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task CanRedirectOutputAndErrorToSamePipe(bool readAsync)
+        {
+            ProcessStartInfo startInfo = OperatingSystem.IsWindows()
+                ? new("cmd") { ArgumentList = { "/c", "echo Hello from stdout && echo Error from stderr 1>&2" } }
+                : new("sh") { ArgumentList = { "-c", "echo 'Hello from stdout' && echo 'Error from stderr' >&2" } };
+
+            string expectedOutput = OperatingSystem.IsWindows()
+                ? "Hello from stdout \r\nError from stderr \r\n"
+                : "Hello from stdout\nError from stderr\n";
+
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe, asyncRead: readAsync);
+
+            startInfo.StandardOutput = writePipe;
+            startInfo.StandardError = writePipe;
+
+            using (readPipe)
+            using (writePipe)
+            {
+                using Process process = Process.Start(startInfo)!;
+
+                using FileStream combinedStream = new(readPipe, FileAccess.Read, bufferSize: 1, isAsync: readAsync);
+                using StreamReader combinedReader = new(combinedStream);
+
+                Assert.Equal(expectedOutput, await combinedReader.ReadToEndAsync());
 
                 process.WaitForExit();
                 Assert.Equal(0, process.ExitCode);
