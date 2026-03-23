@@ -289,35 +289,37 @@ namespace System.Runtime.Serialization
 
             private void InvokeOnDeserializing(ClassDataContract classContract)
             {
-                Debug.Assert(_objectLocal != null);
-                Debug.Assert(_objectType != null);
-
                 if (classContract.BaseClassContract != null)
                     InvokeOnDeserializing(classContract.BaseClassContract);
-                if (classContract.OnDeserializing != null)
-                {
-                    _ilg.LoadAddress(_objectLocal);
-                    _ilg.ConvertAddress(_objectLocal.LocalType, _objectType);
-                    _ilg.Load(_contextArg);
-                    _ilg.LoadMember(XmlFormatGeneratorStatics.GetStreamingContextMethod);
-                    _ilg.Call(classContract.OnDeserializing);
-                }
+
+                InvokeDeserializationEventMethod(classContract.OnDeserializing);
             }
 
             private void InvokeOnDeserialized(ClassDataContract classContract)
             {
+                if (classContract.BaseClassContract != null)
+                    InvokeOnDeserialized(classContract.BaseClassContract);
+
+                InvokeDeserializationEventMethod(classContract.OnDeserialized);
+            }
+
+            private void InvokeDeserializationEventMethod(MethodInfo? method)
+            {
                 Debug.Assert(_objectLocal != null);
                 Debug.Assert(_objectType != null);
 
-                if (classContract.BaseClassContract != null)
-                    InvokeOnDeserialized(classContract.BaseClassContract);
-                if (classContract.OnDeserialized != null)
+                if (method != null)
                 {
                     _ilg.LoadAddress(_objectLocal);
-                    _ilg.ConvertAddress(_objectLocal.LocalType, _objectType);
-                    _ilg.Load(_contextArg);
-                    _ilg.LoadMember(XmlFormatGeneratorStatics.GetStreamingContextMethod);
-                    _ilg.Call(classContract.OnDeserialized);
+                    _ilg.ConvertAddress(_objectLocal.LocalType, _objectType!);
+
+                    if (method.GetParameters()?.Length == 1)
+                    {
+                        _ilg.Load(_contextArg);
+                        _ilg.Call(XmlFormatGeneratorStatics.GetStreamingContextMethod);
+                    }
+
+                    _ilg.Call(method);
                 }
             }
 
