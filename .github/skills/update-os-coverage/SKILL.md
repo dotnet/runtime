@@ -29,6 +29,14 @@ See also: [OS onboarding guide](docs/project/os-onboarding.md) for broader conte
 - A `supported-os.json` change in dotnet/core requires corresponding release branch updates
 - An issue like [dotnet/runtime#125690](https://github.com/dotnet/runtime/issues/125690) identifies stale OS references
 
+### Example prompts
+
+- "Please update helix and build queues to match supported OSes."
+- "Align release/9.0 OS coverage with supported-os.json"
+- "Debian 13 was just added to supported-os.json for 9.0 — update release/9.0"
+- "Add Fedora 44 coverage to main"
+- "Audit OS references in main for EOL versions"
+
 ## Inputs and gates
 
 Work in this skill is driven by two **inputs** and gated by one **prerequisite**:
