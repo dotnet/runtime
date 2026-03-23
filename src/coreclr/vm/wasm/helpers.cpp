@@ -198,11 +198,6 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBl
     return 0;
 }
 
-extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("JIT_WriteBarrier_Callable is not implemented on wasm");
-}
-
 EXTERN_C void JIT_WriteBarrier_End()
 {
     PORTABILITY_ASSERT("JIT_WriteBarrier_End is not implemented on wasm");
