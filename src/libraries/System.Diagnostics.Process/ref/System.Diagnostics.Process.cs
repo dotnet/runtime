@@ -253,9 +253,9 @@ namespace System.Diagnostics
         public bool RedirectStandardInput { get { throw null; } set { } }
         public bool RedirectStandardOutput { get { throw null; } set { } }
         public System.Text.Encoding? StandardErrorEncoding { get { throw null; } set { } }
-        public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardError { get { throw null; } set { } }
-        public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardInput { get { throw null; } set { } }
-        public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardOutput { get { throw null; } set { } }
+        public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardErrorHandle { get { throw null; } set { } }
+        public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardInputHandle { get { throw null; } set { } }
+        public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardOutputHandle { get { throw null; } set { } }
         public bool LeaveHandlesOpen { get { throw null; } set { } }
         public System.Text.Encoding? StandardInputEncoding { get { throw null; } set { } }
         public System.Text.Encoding? StandardOutputEncoding { get { throw null; } set { } }

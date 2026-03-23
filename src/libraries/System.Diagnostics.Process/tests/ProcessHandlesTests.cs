@@ -21,7 +21,7 @@ namespace System.Diagnostics.Tests
 
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe, asyncRead: readAsync);
 
-            startInfo.StandardOutput = writePipe;
+            startInfo.StandardOutputHandle = writePipe;
 
             using (readPipe)
             using (writePipe)
@@ -54,8 +54,8 @@ namespace System.Diagnostics.Tests
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle outputRead, out SafeFileHandle outputWrite, asyncRead: readAsync);
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle errorRead, out SafeFileHandle errorWrite, asyncRead: readAsync);
 
-            startInfo.StandardOutput = outputWrite;
-            startInfo.StandardError = errorWrite;
+            startInfo.StandardOutputHandle = outputWrite;
+            startInfo.StandardErrorHandle = errorWrite;
 
             using (outputRead)
             using (outputWrite)
@@ -95,8 +95,8 @@ namespace System.Diagnostics.Tests
 
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe, asyncRead: readAsync);
 
-            startInfo.StandardOutput = writePipe;
-            startInfo.StandardError = writePipe;
+            startInfo.StandardOutputHandle = writePipe;
+            startInfo.StandardErrorHandle = writePipe;
 
             using (readPipe)
             using (writePipe)
@@ -122,9 +122,9 @@ namespace System.Diagnostics.Tests
                 ? new("cmd") { ArgumentList = { "/c", "exit 42" } }
                 : new("sh") { ArgumentList = { "-c", "exit 42" } };
 
-            startInfo.StandardInput = Console.OpenStandardInputHandle();
-            startInfo.StandardOutput = Console.OpenStandardOutputHandle();
-            startInfo.StandardError = Console.OpenStandardErrorHandle();
+            startInfo.StandardInputHandle = Console.OpenStandardInputHandle();
+            startInfo.StandardOutputHandle = Console.OpenStandardOutputHandle();
+            startInfo.StandardErrorHandle = Console.OpenStandardErrorHandle();
 
             using Process process = Process.Start(startInfo)!;
 
@@ -182,12 +182,12 @@ namespace System.Diagnostics.Tests
                     expectedOutput = "test line\nanother test\n";
                 }
 
-                producerInfo.StandardOutput = writePipe;
+                producerInfo.StandardOutputHandle = writePipe;
 
                 using SafeFileHandle outputHandle = File.OpenHandle(tempFile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
 
-                consumerInfo.StandardInput = readPipe;
-                consumerInfo.StandardOutput = outputHandle;
+                consumerInfo.StandardInputHandle = readPipe;
+                consumerInfo.StandardOutputHandle = outputHandle;
 
                 using Process producer = Process.Start(producerInfo)!;
                 using Process consumer = Process.Start(consumerInfo)!;
@@ -221,7 +221,7 @@ namespace System.Diagnostics.Tests
 
                 SafeFileHandle outputHandle = File.OpenHandle(tempFile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
 
-                startInfo.StandardOutput = outputHandle;
+                startInfo.StandardOutputHandle = outputHandle;
                 startInfo.LeaveHandlesOpen = true;
 
                 using Process process = Process.Start(startInfo)!;
@@ -247,10 +247,10 @@ namespace System.Diagnostics.Tests
             ProcessStartInfo startInfo = new("cmd")
             {
                 RedirectStandardInput = true,
-                StandardInput = Console.OpenStandardInputHandle()
+                StandardInputHandle = Console.OpenStandardInputHandle()
             };
 
-            using (startInfo.StandardInput)
+            using (startInfo.StandardInputHandle)
             {
                 Assert.Throws<InvalidOperationException>(() => Process.Start(startInfo));
             }
@@ -262,10 +262,10 @@ namespace System.Diagnostics.Tests
             ProcessStartInfo startInfo = new("cmd")
             {
                 RedirectStandardOutput = true,
-                StandardOutput = Console.OpenStandardOutputHandle()
+                StandardOutputHandle = Console.OpenStandardOutputHandle()
             };
 
-            using (startInfo.StandardOutput)
+            using (startInfo.StandardOutputHandle)
             {
                 Assert.Throws<InvalidOperationException>(() => Process.Start(startInfo));
             }
@@ -277,10 +277,10 @@ namespace System.Diagnostics.Tests
             ProcessStartInfo startInfo = new("cmd")
             {
                 RedirectStandardError = true,
-                StandardError = Console.OpenStandardErrorHandle()
+                StandardErrorHandle = Console.OpenStandardErrorHandle()
             };
 
-            using (startInfo.StandardError)
+            using (startInfo.StandardErrorHandle)
             {
                 Assert.Throws<InvalidOperationException>(() => Process.Start(startInfo));
             }
@@ -292,10 +292,10 @@ namespace System.Diagnostics.Tests
             ProcessStartInfo startInfo = new("cmd")
             {
                 UseShellExecute = true,
-                StandardOutput = Console.OpenStandardOutputHandle()
+                StandardOutputHandle = Console.OpenStandardOutputHandle()
             };
 
-            using (startInfo.StandardOutput)
+            using (startInfo.StandardOutputHandle)
             {
                 Assert.Throws<InvalidOperationException>(() => Process.Start(startInfo));
             }
@@ -305,9 +305,9 @@ namespace System.Diagnostics.Tests
         public void StandardHandles_DefaultIsNull()
         {
             ProcessStartInfo startInfo = new("cmd");
-            Assert.Null(startInfo.StandardInput);
-            Assert.Null(startInfo.StandardOutput);
-            Assert.Null(startInfo.StandardError);
+            Assert.Null(startInfo.StandardInputHandle);
+            Assert.Null(startInfo.StandardOutputHandle);
+            Assert.Null(startInfo.StandardErrorHandle);
         }
 
         [Fact]
@@ -317,14 +317,14 @@ namespace System.Diagnostics.Tests
 
             ProcessStartInfo startInfo = new("cmd")
             {
-                StandardInput = handle,
-                StandardOutput = handle,
-                StandardError = handle
+                StandardInputHandle = handle,
+                StandardOutputHandle = handle,
+                StandardErrorHandle = handle
             };
 
-            Assert.Same(handle, startInfo.StandardInput);
-            Assert.Same(handle, startInfo.StandardOutput);
-            Assert.Same(handle, startInfo.StandardError);
+            Assert.Same(handle, startInfo.StandardInputHandle);
+            Assert.Same(handle, startInfo.StandardOutputHandle);
+            Assert.Same(handle, startInfo.StandardErrorHandle);
         }
     }
 }

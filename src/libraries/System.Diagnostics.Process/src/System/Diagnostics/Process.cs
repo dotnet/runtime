@@ -1280,7 +1280,7 @@ namespace System.Diagnostics
             }
 
             bool anyRedirection = startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError;
-            bool anyHandle = startInfo.StandardInput is not null || startInfo.StandardOutput is not null || startInfo.StandardError is not null;
+            bool anyHandle = startInfo.StandardInputHandle is not null || startInfo.StandardOutputHandle is not null || startInfo.StandardErrorHandle is not null;
             if (startInfo.UseShellExecute && (anyRedirection || anyHandle))
             {
                 throw new InvalidOperationException(SR.CantRedirectStreams);
@@ -1288,18 +1288,22 @@ namespace System.Diagnostics
 
             if (anyHandle)
             {
-                if (startInfo.StandardInput is not null && startInfo.RedirectStandardInput)
+                if (startInfo.StandardInputHandle is not null && startInfo.RedirectStandardInput)
                 {
                     throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
                 }
-                if (startInfo.StandardOutput is not null && startInfo.RedirectStandardOutput)
+                if (startInfo.StandardOutputHandle is not null && startInfo.RedirectStandardOutput)
                 {
                     throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
                 }
-                if (startInfo.StandardError is not null && startInfo.RedirectStandardError)
+                if (startInfo.StandardErrorHandle is not null && startInfo.RedirectStandardError)
                 {
                     throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
                 }
+
+                ValidateHandle(startInfo.StandardInputHandle, nameof(startInfo.StandardInputHandle));
+                ValidateHandle(startInfo.StandardOutputHandle, nameof(startInfo.StandardOutputHandle));
+                ValidateHandle(startInfo.StandardErrorHandle, nameof(startInfo.StandardErrorHandle));
             }
 
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
@@ -1334,9 +1338,9 @@ namespace System.Diagnostics
 
                     try
                     {
-                        if (startInfo.StandardInput is not null)
+                        if (startInfo.StandardInputHandle is not null)
                         {
-                            childInputPipeHandle = startInfo.StandardInput;
+                            childInputPipeHandle = startInfo.StandardInputHandle;
                         }
                         else if (startInfo.RedirectStandardInput)
                         {
@@ -1347,9 +1351,9 @@ namespace System.Diagnostics
                             childInputPipeHandle = Console.OpenStandardInputHandle();
                         }
 
-                        if (startInfo.StandardOutput is not null)
+                        if (startInfo.StandardOutputHandle is not null)
                         {
-                            childOutputPipeHandle = startInfo.StandardOutput;
+                            childOutputPipeHandle = startInfo.StandardOutputHandle;
                         }
                         else if (startInfo.RedirectStandardOutput)
                         {
@@ -1360,9 +1364,9 @@ namespace System.Diagnostics
                             childOutputPipeHandle = Console.OpenStandardOutputHandle();
                         }
 
-                        if (startInfo.StandardError is not null)
+                        if (startInfo.StandardErrorHandle is not null)
                         {
-                            childErrorPipeHandle = startInfo.StandardError;
+                            childErrorPipeHandle = startInfo.StandardErrorHandle;
                         }
                         else if (startInfo.RedirectStandardError)
                         {
@@ -1401,17 +1405,17 @@ namespace System.Diagnostics
                 // process will not receive EOF when the child process closes its handles.
                 // It's OK to do it for handles returned by Console.OpenStandard*Handle APIs,
                 // because these handles are not owned and won't be closed by Dispose.
-                // When LeaveHandlesOpen is true, we must NOT close handles that were passed in
-                // by the caller via StartInfo.StandardInput/Output/Error.
-                if (startInfo.StandardInput is null || !startInfo.LeaveHandlesOpen)
+                // When LeaveHandlesOpen is true, we must NOT dispose handles that were passed in
+                // by the caller via StartInfo.StandardInputHandle/OutputHandle/ErrorHandle.
+                if (startInfo.StandardInputHandle is null || !startInfo.LeaveHandlesOpen)
                 {
                     childInputPipeHandle?.Dispose();
                 }
-                if (startInfo.StandardOutput is null || !startInfo.LeaveHandlesOpen)
+                if (startInfo.StandardOutputHandle is null || !startInfo.LeaveHandlesOpen)
                 {
                     childOutputPipeHandle?.Dispose();
                 }
-                if (startInfo.StandardError is null || !startInfo.LeaveHandlesOpen)
+                if (startInfo.StandardErrorHandle is null || !startInfo.LeaveHandlesOpen)
                 {
                     childErrorPipeHandle?.Dispose();
                 }
@@ -1437,6 +1441,18 @@ namespace System.Diagnostics
             }
 
             return true;
+        }
+
+        private static void ValidateHandle(SafeFileHandle? handle, string paramName)
+        {
+            if (handle is not null)
+            {
+                ObjectDisposedException.ThrowIf(handle.IsClosed, paramName);
+                if (handle.IsInvalid)
+                {
+                    throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
+                }
+            }
         }
 
         /// <devdoc>
