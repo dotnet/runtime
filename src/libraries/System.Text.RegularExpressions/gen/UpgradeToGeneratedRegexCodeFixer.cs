@@ -121,6 +121,21 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     memberName = $"{DefaultRegexPropertyName}{memberCount++}";
                 }
+
+                // When the BatchFixer applies multiple fixes concurrently, each fix sees the
+                // original compilation and picks the same first-available name. To avoid
+                // duplicates, determine this node's position among all Regex call sites in
+                // the type that would generate new names, and offset accordingly.
+                int precedingCount = CountPrecedingRegexCallSites(
+                    typeSymbol, compilation, regexSymbol, nodeToFix, cancellationToken);
+                for (int i = 0; i < precedingCount; i++)
+                {
+                    memberName = $"{DefaultRegexPropertyName}{memberCount++}";
+                    while (GetAllMembers(typeSymbol).Any(m => m.Name == memberName))
+                    {
+                        memberName = $"{DefaultRegexPropertyName}{memberCount++}";
+                    }
+                }
             }
 
             // Add partial to all ancestors.
@@ -324,6 +339,10 @@ namespace System.Text.RegularExpressions.Generator
             // Add the member to the type.
             if (oldMember is null)
             {
+                // Prepend a blank line so the generated member is visually separated from preceding members.
+                newMember = newMember.WithLeadingTrivia(
+                    newMember.GetLeadingTrivia().Insert(0, SyntaxFactory.ElasticCarriageReturnLineFeed));
+
                 newTypeDeclarationOrCompilationUnit = newTypeDeclarationOrCompilationUnit is TypeDeclarationSyntax newTypeDeclaration ?
                     newTypeDeclaration.AddMembers((MemberDeclarationSyntax)newMember) :
                     ((CompilationUnitSyntax)newTypeDeclarationOrCompilationUnit).AddMembers((ClassDeclarationSyntax)generator.ClassDeclaration("Program", modifiers: DeclarationModifiers.Partial, members: new[] { newMember }));
@@ -456,6 +475,105 @@ namespace System.Text.RegularExpressions.Generator
                     yield return member;
                 }
             }
+        }
+
+        /// <summary>
+        /// Counts how many Regex call sites in the same type (across all partial declarations)
+        /// appear before the given node in a deterministic order. This ensures that when the
+        /// BatchFixer applies fixes concurrently against the original compilation, each fix
+        /// picks a unique generated property name.
+        /// </summary>
+        private static int CountPrecedingRegexCallSites(
+            INamedTypeSymbol typeSymbol, Compilation compilation,
+            INamedTypeSymbol regexSymbol, SyntaxNode nodeToFix,
+            CancellationToken cancellationToken)
+        {
+            // Build a map from SyntaxTree to its index in the compilation, used as a
+            // tiebreaker when FilePath is null/empty (e.g., in-memory documents).
+            var treeIndexMap = new Dictionary<SyntaxTree, int>();
+            int treeCounter = 0;
+            foreach (SyntaxTree tree in compilation.SyntaxTrees)
+            {
+                treeIndexMap[tree] = treeCounter++;
+            }
+
+            var callSites = new List<(string FilePath, int TreeIndex, int Position)>();
+            var semanticModelCache = new Dictionary<SyntaxTree, SemanticModel>();
+
+            foreach (SyntaxReference syntaxRef in typeSymbol.DeclaringSyntaxReferences)
+            {
+                SyntaxNode declSyntax = syntaxRef.GetSyntax(cancellationToken);
+
+                if (!semanticModelCache.TryGetValue(syntaxRef.SyntaxTree, out SemanticModel? declModel))
+                {
+                    declModel = compilation.GetSemanticModel(syntaxRef.SyntaxTree);
+                    semanticModelCache[syntaxRef.SyntaxTree] = declModel;
+                }
+
+                int treeIndex = treeIndexMap.TryGetValue(syntaxRef.SyntaxTree, out int idx) ? idx : -1;
+
+                foreach (SyntaxNode descendant in declSyntax.DescendantNodes())
+                {
+                    if (descendant is not (InvocationExpressionSyntax or ObjectCreationExpressionSyntax or ImplicitObjectCreationExpressionSyntax))
+                    {
+                        continue;
+                    }
+
+                    // Skip call sites inside nested type declarations — they belong to
+                    // a different type and won't affect this type's generated names.
+                    // Extension blocks are not nested types, so don't skip those.
+                    // Only check ancestors up to (not including) declSyntax, so that
+                    // types *containing* declSyntax (e.g., an outer class) are not
+                    // mistaken for nested types.
+                    if (descendant.Ancestors().TakeWhile(a => a != declSyntax).Any(a =>
+                        a is TypeDeclarationSyntax && a is not ExtensionBlockDeclarationSyntax))
+                    {
+                        continue;
+                    }
+
+                    IOperation? op = declModel.GetOperation(descendant, cancellationToken);
+                    bool isFixableRegexCall = op switch
+                    {
+                        IInvocationOperation inv => inv.TargetMethod.IsStatic &&
+                            SymbolEqualityComparer.Default.Equals(inv.TargetMethod.ContainingType, regexSymbol) &&
+                            UpgradeToGeneratedRegexAnalyzer.FixableMethodNames.Contains(inv.TargetMethod.Name) &&
+                            UpgradeToGeneratedRegexAnalyzer.ValidateParameters(inv.Arguments),
+                        IObjectCreationOperation create => SymbolEqualityComparer.Default.Equals(create.Type, regexSymbol) &&
+                            create.Arguments.Length <= 2 &&
+                            UpgradeToGeneratedRegexAnalyzer.ValidateParameters(create.Arguments),
+                        _ => false
+                    };
+
+                    if (isFixableRegexCall)
+                    {
+                        callSites.Add((syntaxRef.SyntaxTree.FilePath ?? string.Empty, treeIndex, descendant.SpanStart));
+                    }
+                }
+            }
+
+            if (callSites.Count <= 1)
+            {
+                return 0;
+            }
+
+            callSites.Sort((a, b) =>
+            {
+                int cmp = StringComparer.Ordinal.Compare(a.FilePath, b.FilePath);
+                if (cmp != 0) return cmp;
+                cmp = a.TreeIndex.CompareTo(b.TreeIndex);
+                return cmp != 0 ? cmp : a.Position.CompareTo(b.Position);
+            });
+
+            string currentFilePath = nodeToFix.SyntaxTree.FilePath ?? string.Empty;
+            int currentTreeIndex = treeIndexMap.TryGetValue(nodeToFix.SyntaxTree, out int currentIdx) ? currentIdx : -1;
+            int currentPosition = nodeToFix.SpanStart;
+
+            int index = callSites.FindIndex(c =>
+                StringComparer.Ordinal.Equals(c.FilePath, currentFilePath) &&
+                c.TreeIndex == currentTreeIndex &&
+                c.Position == currentPosition);
+
+            return index > 0 ? index : 0;
         }
     }
 }
