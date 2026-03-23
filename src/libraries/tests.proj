@@ -611,6 +611,7 @@
 
   <ItemGroup>
     <SmokeTestProject Condition="'$(UseNativeAOTRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
+    <SmokeTestProject Condition="'$(TargetsAppleMobile)' == 'true' and '$(UseNativeAOTRuntime)' == 'true'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
   </ItemGroup>
 
   <!-- browser smoke tests Mono -->
