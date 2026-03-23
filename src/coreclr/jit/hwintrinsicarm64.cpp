@@ -38,6 +38,16 @@ static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_Sve_Arm64;
         case InstructionSet_Sve2:
             return InstructionSet_Sve2_Arm64;
+        case InstructionSet_Sha3:
+            return InstructionSet_Sha3_Arm64;
+        case InstructionSet_Sm4:
+            return InstructionSet_Sm4_Arm64;
+        case InstructionSet_SveAes:
+            return InstructionSet_SveAes_Arm64;
+        case InstructionSet_SveSha3:
+            return InstructionSet_SveSha3_Arm64;
+        case InstructionSet_SveSm4:
+            return InstructionSet_SveSm4_Arm64;
         default:
             return InstructionSet_NONE;
     }
@@ -108,6 +118,26 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
         if (strcmp(className, "Sve") == 0)
         {
             return InstructionSet_Sve;
+        }
+        if (strcmp(className, "Sha3") == 0)
+        {
+            return InstructionSet_Sha3;
+        }
+        if (strcmp(className, "Sm4") == 0)
+        {
+            return InstructionSet_Sm4;
+        }
+        if (strcmp(className, "SveAes") == 0)
+        {
+            return InstructionSet_SveAes;
+        }
+        if (strcmp(className, "SveSha3") == 0)
+        {
+            return InstructionSet_SveSha3;
+        }
+        if (strcmp(className, "SveSm4") == 0)
+        {
+            return InstructionSet_SveSm4;
         }
     }
     else if (className[0] == 'V')
