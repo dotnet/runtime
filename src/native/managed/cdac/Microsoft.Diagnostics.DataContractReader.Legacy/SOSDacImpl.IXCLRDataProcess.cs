@@ -481,15 +481,13 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.GetExceptionStateByExceptionRecord(EXCEPTION_RECORD64* record, DacComNullableByRef<IXCLRDataExceptionState> exState)
         => _legacyProcess is not null ? _legacyProcess.GetExceptionStateByExceptionRecord(record, exState) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.TranslateExceptionRecordToNotification(EXCEPTION_RECORD64* record, IXCLRDataExceptionNotification notify)
+    int IXCLRDataProcess.TranslateExceptionRecordToNotification(EXCEPTION_RECORD64* record, void* notify)
     {
         // Note: there is intentionally no DEBUG block calling the legacy implementation here.
         // TranslateExceptionRecordToNotification fires callbacks on the provided notify object;
         // calling both the cDAC and legacy implementations would double-fire every callback.
-        if (!System.Runtime.InteropServices.ComWrappers.TryGetComInstance(notify, out nint unk))
-            return HResults.E_FAIL;
         StrategyBasedComWrappers cw = new();
-        object notifyObject = cw.GetOrCreateObjectForComInstance(unk, CreateObjectFlags.UniqueInstance);
+        object notifyObject = cw.GetOrCreateObjectForComInstance(notify, CreateObjectFlags.UniqueInstance);
         ComObject comObj = (ComObject)notifyObject;
         IXCLRDataExceptionNotification notifyTyped = (IXCLRDataExceptionNotification)(object)comObj;
 
@@ -626,7 +624,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         finally
         {
             comObj.FinalRelease();
-            Marshal.Release(unk);
         }
         return hr;
     }

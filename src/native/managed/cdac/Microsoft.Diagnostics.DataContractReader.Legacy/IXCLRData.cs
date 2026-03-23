@@ -244,7 +244,7 @@ public unsafe partial interface IXCLRDataProcess
     [PreserveSig]
     int GetExceptionStateByExceptionRecord(EXCEPTION_RECORD64* record, DacComNullableByRef<IXCLRDataExceptionState> exState);
     [PreserveSig]
-    int TranslateExceptionRecordToNotification(EXCEPTION_RECORD64* record, IXCLRDataExceptionNotification notify);
+    int TranslateExceptionRecordToNotification(EXCEPTION_RECORD64* record, void* notify);
 
     [PreserveSig]
     int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
