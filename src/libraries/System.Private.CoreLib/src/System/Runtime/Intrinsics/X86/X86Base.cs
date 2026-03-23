@@ -66,6 +66,26 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
             public static (long Quotient, long Remainder) DivRem(ulong lower, long upper, long divisor) => DivRem(lower, upper, divisor);
+
+#if !MONO
+            /// <summary>
+            ///   <para>unsigned _umul128(unsigned __int64 Multiplier, unsigned __int64  Multiplicand, unsigned __int64 * HighProduct)</para>
+            ///   <para>  MUL reg/m64</para>
+            /// </summary>
+            /// <remarks>
+            ///   <para>Its functionality is exposed by the public <see cref="Math.BigMul(ulong, ulong, out ulong)" />.</para>
+            ///   <para>In the future it might emit mulx on compatible hardware</para>
+            /// </remarks>
+            internal static (ulong Lower, ulong Upper) BigMul(ulong left, ulong right) => BigMul(left, right);
+
+            /// <summary>
+            ///   <para>  IMUL reg/m64</para>
+            /// </summary>
+            /// <remarks>
+            ///   <para>Its functionality is exposed by the public <see cref="Math.BigMul(long, long, out long)" />.</para>
+            /// </remarks>
+            internal static (long Lower, long Upper) BigMul(long left, long right) => BigMul(left, right);
+#endif
         }
 
         /// <summary>
