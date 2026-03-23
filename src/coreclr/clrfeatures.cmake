@@ -1,3 +1,12 @@
+# riscv64 and loongarch64 do not have a separate CID-only asm stub layer yet.
+# Forcing FEATURE_DYNAMIC_CODE_COMPILED on keeps the feature matrix consistent with
+# the top-level build and avoids unresolved CID/VSD stub symbols at link time.
+if (NOT DEFINED FEATURE_DYNAMIC_CODE_COMPILED)
+  if (CLR_CMAKE_TARGET_ARCH_RISCV64 OR CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+    set(FEATURE_DYNAMIC_CODE_COMPILED 1)
+  endif()
+endif()
+
 if (FEATURE_DYNAMIC_CODE_COMPILED)
   set(FEATURE_TIERED_COMPILATION 1)
   set(FEATURE_REJIT 1)

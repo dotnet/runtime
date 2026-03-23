@@ -39,13 +39,14 @@ namespace ILCompiler.ReadyToRun
 
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
             if (map.ThrowingMethodStub is not null)
             {
                 // We don't write out the throwing method stub for R2R
                 // as emitting loose methods is not supported/very expensive.
                 // Instead, we defer to the runtime to generate the type map
                 // and throw on error cases.
-                return section.Place(writer.GetUnsignedConstant(0)); // Invalid type map state
+                return section.Place(writer.GetTuple(typeMapGroupVertex, writer.GetUnsignedConstant(0))); // Invalid type map state
             }
 
             VertexHashtable typeMapHashTable = new();
@@ -61,7 +62,6 @@ namespace ILCompiler.ReadyToRun
             }
 
             Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
-            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
             Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
             return section.Place(tuple);
         }
