@@ -559,7 +559,7 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
         {
             UnmanagedCallersOnlyCaller invokeConnectionPointProviderMethod(METHOD__STUBHELPERS__INVOKE_CONNECTION_POINT_PROVIDER_METHOD);
 
-            // Construct the delegate and invoke the provider method in one helper.
+            // Using GetMultiCallableAddrOfCode() for the event target since it is stored for future invokes.
             invokeConnectionPointProviderMethod.InvokeThrowing(
                 &pProvider,
                 pProvMethodDesc->GetSingleCallableAddrOfCode(),

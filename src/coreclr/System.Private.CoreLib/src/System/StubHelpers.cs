@@ -1550,7 +1550,7 @@ namespace System.StubHelpers
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static unsafe void GetDispatchExPropertyFlags(PropertyInfo* pMemberInfo, int* pResult, Exception* pException)
+        private static unsafe int GetDispatchExPropertyFlags(PropertyInfo* pMemberInfo, Exception* pException)
         {
             try
             {
@@ -1566,11 +1566,12 @@ namespace System.StubHelpers
                     result |= DispatchExPropertyCanWrite;
                 }
 
-                *pResult = result;
+                return result;
             }
             catch (Exception ex)
             {
                 *pException = ex;
+                return 0;
             }
         }
 

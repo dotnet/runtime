@@ -1893,9 +1893,8 @@ HRESULT __stdcall   DispatchEx_GetMemberProperties (
                             DispatchExPropertyCanWrite = 2,
                         };
 
-                        INT32 propertyFlags = 0;
                         UnmanagedCallersOnlyCaller getDispatchExPropertyFlags(METHOD__STUBHELPERS__GET_DISPATCH_EX_PROPERTY_FLAGS);
-                        getDispatchExPropertyFlags.InvokeThrowing(&MemberInfoObj, &propertyFlags);
+                        INT32 propertyFlags = getDispatchExPropertyFlags.InvokeThrowing_Ret<INT32>(&MemberInfoObj);
 
                         bool bCanRead = (propertyFlags & DispatchExPropertyCanRead) != 0;
                         bool bCanWrite = (propertyFlags & DispatchExPropertyCanWrite) != 0;
