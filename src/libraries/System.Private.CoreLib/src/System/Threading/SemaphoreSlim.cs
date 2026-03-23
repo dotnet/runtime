@@ -401,10 +401,14 @@ namespace System.Threading
                     // that synchronous waiter succeeds so that they have a chance to release.
                     Debug.Assert(!waitSuccessful || m_currentCount > 0,
                         "If the wait was successful, there should be count available.");
-                    if (m_currentCount > 0)
+                    // Use CAS rather than a plain decrement: the lock-free fast path in WaitAsync
+                    // can decrement m_currentCount concurrently (it holds no lock).
+                    int currentCount = m_currentCount;
+                    while (currentCount > 0 && Interlocked.CompareExchange(ref m_currentCount, currentCount - 1, currentCount) != currentCount)
+                        currentCount = m_currentCount;
+                    if (currentCount > 0)
                     {
                         waitSuccessful = true;
-                        m_currentCount--;
                     }
                     else if (oce is not null)
                     {
@@ -678,12 +682,41 @@ namespace System.Threading
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<bool>(cancellationToken);
 
+            // Fast path: try a lock-free acquire; falls through to the lock if it fails.
+            // Skipped when m_waitHandle is non-null to keep its state consistent under the lock.
+            if (m_waitHandle is null)
+            {
+                int current = m_currentCount;
+                // The waiter checks are best-effort: a sync waiter incrementing m_waitCount inside
+                // the lock may not be visible yet, but the CAS will fail if the count has changed.
+                if (current > 0
+                    && Volatile.Read(ref m_asyncHead) is null
+                    && Volatile.Read(ref m_waitCount) == 0
+                    && Interlocked.CompareExchange(ref m_currentCount, current - 1, current) == current)
+                {
+                    // Handle the rare race where AvailableWaitHandle was initialised concurrently.
+                    if (current == 1 && m_waitHandle is not null)
+                    {
+                        lock (m_lockObjAndDisposed)
+                        {
+                            if (m_waitHandle is not null && m_currentCount == 0)
+                                m_waitHandle.Reset();
+                        }
+                    }
+                    return Task.FromResult(true);
+                }
+            }
+
             lock (m_lockObjAndDisposed)
             {
                 // If there are counts available, allow this waiter to succeed.
-                if (m_currentCount > 0)
+                // Use CAS rather than a plain decrement: the lock-free fast path in WaitAsync
+                // can decrement m_currentCount concurrently (it holds no lock).
+                int current = m_currentCount;
+                while (current > 0 && Interlocked.CompareExchange(ref m_currentCount, current - 1, current) != current)
+                    current = m_currentCount;
+                if (current > 0)
                 {
-                    --m_currentCount;
                     if (m_waitHandle is not null && m_currentCount == 0) m_waitHandle.Reset();
                     return Task.FromResult(true);
                 }
@@ -899,7 +932,9 @@ namespace System.Threading
                         waiterTask.TrySetResult(result: true);
                     }
                 }
-                m_currentCount = currentCount;
+                // Use Interlocked.Add (relative delta) rather than an absolute write so that
+                // the lock-free CAS fast path in WaitAsync cannot be overwritten.
+                Interlocked.Add(ref m_currentCount, currentCount - returnCount);
 
                 // Exposing wait handle if it is not null
                 if (m_waitHandle is not null && returnCount == 0 && currentCount > 0)
