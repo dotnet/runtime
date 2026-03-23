@@ -1606,32 +1606,62 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     struct {
         OBJECTREF pNewException;
         STRINGREF pNewFileString;
+        STRINGREF pNewFusionLogString;
     } gc;
     gc.pNewException = NULL;
     gc.pNewFileString = NULL;
+    gc.pNewFusionLogString = NULL;
     GCPROTECT_BEGIN(gc);
 
     gc.pNewFileString = StringObject::NewString(m_name);
     gc.pNewException = AllocateObject(CoreLibBinder::GetException(m_kind));
 
-    MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
-                            COR_CTOR_METHOD_NAME, &gsig_IM_Str_Int_RetVoid);
+    bool usedThreeArgCtor = false;
 
-    if (!pMD)
+    if (!m_requestingAssemblyName.IsEmpty())
     {
-        MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
+        gc.pNewFusionLogString = StringObject::NewString(m_requestingAssemblyName);
+
+        MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
+                                COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_Int_RetVoid);
+
+        if (pMD)
+        {
+            MethodDescCallSite exceptionCtor(pMD);
+
+            ARG_SLOT args[] = {
+                ObjToArgSlot(gc.pNewException),
+                ObjToArgSlot(gc.pNewFileString),
+                ObjToArgSlot(gc.pNewFusionLogString),
+                (ARG_SLOT) m_hr
+            };
+
+            exceptionCtor.Call(args);
+            usedThreeArgCtor = true;
+        }
     }
 
-    MethodDescCallSite  exceptionCtor(pMD);
+    if (!usedThreeArgCtor)
+    {
+        MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
+                                COR_CTOR_METHOD_NAME, &gsig_IM_Str_Int_RetVoid);
 
-    ARG_SLOT args[] = {
-        ObjToArgSlot(gc.pNewException),
-        ObjToArgSlot(gc.pNewFileString),
-        (ARG_SLOT) m_hr
-    };
+        if (!pMD)
+        {
+            MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
+            COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
+        }
 
-    exceptionCtor.Call(args);
+        MethodDescCallSite exceptionCtor(pMD);
+
+        ARG_SLOT args[] = {
+            ObjToArgSlot(gc.pNewException),
+            ObjToArgSlot(gc.pNewFileString),
+            (ARG_SLOT) m_hr
+        };
+
+        exceptionCtor.Call(args);
+    }
 
     GCPROTECT_END();
 
@@ -1665,8 +1695,6 @@ BOOL EEFileLoadException::CheckType(Exception* ex)
 // <TODO>@todo: ideally we would use inner exceptions with these routines</TODO>
 
 /* static */
-
-/* static */
 void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT hr, Exception *pInnerException/* = NULL*/)
 {
     CONTRACTL
@@ -1684,7 +1712,72 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
 
     StackSString name;
     pSpec->GetDisplayName(0, name);
-    EX_THROW_WITH_INNER(EEFileLoadException, (name, hr), pInnerException);
+
+    // Extract the requesting assembly chain for diagnostic purposes
+    {
+        FAULT_NOT_FATAL();
+
+        Exception *inner2 = ExThrowWithInnerHelper(pInnerException);
+        EEFileLoadException *pException = new EEFileLoadException(name, hr);
+        pException->SetInnerException(inner2);
+
+        Assembly *pParentAssembly = pSpec->GetParentAssembly();
+        if (pParentAssembly != NULL)
+        {
+            StackSString parentName;
+            pParentAssembly->GetDisplayName(parentName);
+
+            // Build the requesting assembly chain: start with the immediate parent,
+            // then walk up the binding cache to find transitive requesting assemblies.
+            StackSString requestingChain;
+            requestingChain.Set(parentName);
+
+            EX_TRY
+            {
+                AppDomain *pDomain = pSpec->GetAppDomain();
+                if (pDomain != NULL)
+                {
+                    Assembly *pWalkAssembly = pParentAssembly;
+                    int depth = 0;
+                    const int MaxChainDepth = 10;
+
+                    while (pWalkAssembly != NULL && depth < MaxChainDepth)
+                    {
+                        // Look up the current assembly in the binding cache to find
+                        // which assembly requested its load (its parent).
+                        Assembly *pGrandParent = pDomain->FindCachedParentAssembly(pWalkAssembly);
+                        if (pGrandParent == NULL || pGrandParent == pWalkAssembly)
+                            break;
+
+                        // Skip system assemblies (System.Private.CoreLib etc.)
+                        if (!pGrandParent->IsSystem())
+                        {
+                            StackSString grandParentName;
+                            pGrandParent->GetDisplayName(grandParentName);
+                            requestingChain.Append(W("\n"));
+                            requestingChain.Append(grandParentName);
+                        }
+
+                        pWalkAssembly = pGrandParent;
+                        depth++;
+                    }
+                }
+            }
+            EX_CATCH
+            {
+                // If the chain walk fails for any reason, just use what we have so far
+            }
+            EX_END_CATCH
+
+            pException->SetRequestingAssembly(requestingChain);
+        }
+
+        STRESS_LOG3(LF_EH, LL_INFO100, "EX_THROW_WITH_INNER Type = 0x%x HR = 0x%x, "
+                    INDEBUG(__FILE__) " line %d\n", EEFileLoadException::GetType(),
+                    pException->GetHR(), __LINE__);
+        EX_THROW_DEBUG_TRAP(__FUNCTION__, __FILE__, __LINE__, "EEFileLoadException", pException->GetHR(), "(name, hr)");
+        PAL_CPP_THROW(EEFileLoadException *, pException);
+    }
 }
 
 /* static */

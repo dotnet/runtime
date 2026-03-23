@@ -17,6 +17,43 @@ namespace System.IO
             _message = FormatFileLoadExceptionMessage(FileName, HResult);
         }
 
+        // Do not delete: this is invoked from native code.
+        // Used when the requesting assembly is known, to provide assembly load dependency context.
+        private FileLoadException(string? fileName, string? requestingAssemblyChain, int hResult)
+            : base(null)
+        {
+            HResult = hResult;
+            FileName = fileName;
+            _message = FormatFileLoadExceptionMessage(FileName, HResult);
+            if (requestingAssemblyChain is not null)
+                _message += Environment.NewLine + FormatRequestingAssemblyChain(requestingAssemblyChain);
+        }
+
+        internal static string FormatRequestingAssemblyChain(string requestingAssemblyChain)
+        {
+            int newlineIndex = requestingAssemblyChain.IndexOf('\n');
+            if (newlineIndex < 0)
+                return SR.Format(SR.IO_FileLoad_RequestingAssembly, requestingAssemblyChain);
+
+            var result = new System.Text.StringBuilder();
+            int start = 0;
+            while (start < requestingAssemblyChain.Length)
+            {
+                int end = requestingAssemblyChain.IndexOf('\n', start);
+                string name = end >= 0
+                    ? requestingAssemblyChain.Substring(start, end - start)
+                    : requestingAssemblyChain.Substring(start);
+
+                if (result.Length > 0)
+                    result.Append(Environment.NewLine);
+                result.Append(SR.Format(SR.IO_FileLoad_RequestingAssembly, name));
+
+                start = end >= 0 ? end + 1 : requestingAssemblyChain.Length;
+            }
+
+            return result.ToString();
+        }
+
         internal static string FormatFileLoadExceptionMessage(string? fileName, int hResult)
         {
             string? format = null;
