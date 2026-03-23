@@ -235,25 +235,16 @@ namespace System.Text.Json.Serialization.Converters
 
             // Restore reader to re-read all properties for field population.
             reader = checkpoint;
-            bool discriminatorSeen = false;
 
             if (caseInfo.IsFieldless)
             {
-                // Skip to end of object, validating unmapped members and duplicate discriminators.
+                // Skip to end of object, validating unmapped members.
                 while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
                 {
                     if (reader.TokenType == JsonTokenType.PropertyName)
                     {
-                        if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
-                        {
-                            if (discriminatorSeen)
-                            {
-                                throw new JsonException(SR.Format(SR.FSharpUnionDuplicateDiscriminatorProperty, _typeDiscriminatorPropertyName, typeof(T)));
-                            }
-
-                            discriminatorSeen = true;
-                        }
-                        else if (_effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                        if (!reader.ValueTextEquals(_typeDiscriminatorPropertyName) &&
+                            _effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                         {
                             ThrowHelper.ThrowJsonException_UnmappedJsonProperty(typeof(T), reader.GetString()!);
                         }
@@ -282,15 +273,9 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException();
                 }
 
-                // Skip the discriminator property, detecting duplicates.
+                // Skip the discriminator property when encountered during field reading.
                 if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
                 {
-                    if (discriminatorSeen)
-                    {
-                        throw new JsonException(SR.Format(SR.FSharpUnionDuplicateDiscriminatorProperty, _typeDiscriminatorPropertyName, typeof(T)));
-                    }
-
-                    discriminatorSeen = true;
                     reader.Read();
                     reader.TrySkip();
                     continue;

@@ -266,18 +266,6 @@ let ``Missing custom discriminator in object includes property name in error`` (
 let ``Invalid token type throws JsonException`` () =
     Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>("42") |> ignore)
 
-[<Fact>]
-let ``Duplicate discriminator in object throws JsonException`` () =
-    let json = """{"$type":"Circle","$type":"Point","radius":3.14}"""
-    let ex = Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json) |> ignore)
-    Assert.Contains("$type", ex.Message)
-
-[<Fact>]
-let ``Duplicate discriminator in fieldless case object throws JsonException`` () =
-    let json = """{"$type":"Point","$type":"Circle"}"""
-    let ex = Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json) |> ignore)
-    Assert.Contains("$type", ex.Message)
-
 // -- Metadata Resolution --
 
 let getUnionTypes () = seq {
