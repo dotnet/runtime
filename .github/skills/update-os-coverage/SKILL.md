@@ -274,6 +274,24 @@ Re-scan to confirm no EOL references remain:
 grep -rn '{old-distro-version}' eng/pipelines/
 ```
 
+### 10. Attribute sources
+
+When creating a PR or issue, include a **Sources** section listing every data source consulted. This provides traceability for reviewers. Example:
+
+```markdown
+## Sources
+
+- [.NET 11 supported-os.json](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.json) — authoritative OS support matrix
+- [Container image registry](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json) — verified image availability
+- [endoflife.date](https://endoflife.date/) — EOL date lookups for [openSUSE](https://endoflife.date/opensuse), [Fedora](https://endoflife.date/fedora), [Debian](https://endoflife.date/debian)
+```
+
+Always include:
+
+1. The specific `supported-os.json` URL for the .NET version (link to the exact file, not the directory)
+2. The container image registry URL used to verify image availability
+3. Each endoflife.date product page consulted, linked individually
+
 ## Branch strategy
 
 ### main — proactive
