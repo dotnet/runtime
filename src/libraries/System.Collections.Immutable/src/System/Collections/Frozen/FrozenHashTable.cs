@@ -211,7 +211,10 @@ namespace System.Collections.Frozen
 
             if (minPrimeIndexInclusive >= primes.Length)
             {
-                return HashHelpers.GetPrime(uniqueCodesCount);
+                // Maintain ~0.5 load factor when exceeding the precomputed primes table,
+                // avoiding the sharp performance cliff from ~1.0 load factor.
+                int targetBuckets = (int)Math.Min(minNumBuckets, int.MaxValue);
+                return HashHelpers.GetPrime(targetBuckets);
             }
 
             // Determine the largest number of buckets we're willing to use, based on a multiple of the number of inputs.
