@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -73,11 +74,6 @@ namespace System.Text.Json.Serialization.Converters
                 CaseFieldInfo[]? fields = null;
                 if (!uc.IsFieldless)
                 {
-                    if (uc.Fields.Length > 64)
-                    {
-                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(typeof(T));
-                    }
-
                     fields = new CaseFieldInfo[uc.Fields.Length];
                     for (int i = 0; i < uc.Fields.Length; i++)
                     {
@@ -259,7 +255,7 @@ namespace System.Text.Json.Serialization.Converters
 
             // Read fields.
             object[] fieldValues = (object[])caseInfo.DefaultFieldValues!.Clone();
-            long populatedFields = 0;
+            BitArray populatedFields = new(caseInfo.Fields!.Length);
 
             while (reader.Read())
             {
@@ -298,29 +294,25 @@ namespace System.Text.Json.Serialization.Converters
                 CaseFieldInfo field = caseInfo.Fields![fieldIndex];
                 object? fieldValue = field.Converter.ReadAsObject(ref reader, field.FieldType, options);
                 fieldValues[fieldIndex] = fieldValue!;
-                populatedFields |= 1L << fieldIndex;
+                populatedFields[fieldIndex] = true;
             }
 
             // Validate required fields when RespectRequiredConstructorParameters is enabled.
-            if (options.RespectRequiredConstructorParameters)
+            if (options.RespectRequiredConstructorParameters && !populatedFields.HasAllSet())
             {
-                long allFieldsMask = caseInfo.Fields!.Length == 64 ? ~0L : (1L << caseInfo.Fields.Length) - 1;
-                if (populatedFields != allFieldsMask)
-                {
-                    ThrowForMissingRequiredFields(caseInfo, populatedFields);
-                }
+                ThrowForMissingRequiredFields(caseInfo, populatedFields);
             }
 
             return (T)caseInfo.Constructor(fieldValues);
         }
 
-        private static void ThrowForMissingRequiredFields(CaseInfo caseInfo, long populatedFields)
+        private static void ThrowForMissingRequiredFields(CaseInfo caseInfo, BitArray populatedFields)
         {
             var builder = new System.Text.StringBuilder();
             bool first = true;
             for (int i = 0; i < caseInfo.Fields!.Length; i++)
             {
-                if ((populatedFields & (1L << i)) == 0)
+                if (!populatedFields[i])
                 {
                     if (!first)
                     {
