@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -211,7 +211,8 @@ namespace System.Collections.Frozen
 
             if (minPrimeIndexInclusive >= primes.Length)
             {
-                return HashHelpers.GetPrime(uniqueCodesCount);
+                int targetBuckets = (int)Math.Min(minNumBuckets, int.MaxValue);
+                return HashHelpers.GetPrime(targetBuckets);
             }
 
             // Determine the largest number of buckets we're willing to use, based on a multiple of the number of inputs.
