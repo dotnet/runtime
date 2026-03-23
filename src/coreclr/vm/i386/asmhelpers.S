@@ -353,6 +353,19 @@ LEAF_ENTRY GetCurrentSP, _TEXT
     ret
 LEAF_END GetCurrentSP, _TEXT
 
+// void SaveInterpCalleeSavedRegisters(CalleeSavedRegisters* regs, void* fpRegs)
+// Saves callee-saved GP registers into the provided buffer.
+// Order: Edi, Esi, Ebx, Ebp
+// No FP callee-saved registers on x86, second arg is unused.
+LEAF_ENTRY SaveInterpCalleeSavedRegisters, _TEXT
+    mov     eax, [esp + 4]
+    mov     [eax +  0], edi
+    mov     [eax +  4], esi
+    mov     [eax +  8], ebx
+    mov     [eax + 12], ebp
+    ret
+LEAF_END SaveInterpCalleeSavedRegisters, _TEXT
+
 // ==========================================================================
 // Invoked for vararg forward P/Invoke calls as a stub.
 // Except for secret return buffer, arguments come on the stack so EDX is available as scratch.
