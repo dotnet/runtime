@@ -2356,7 +2356,8 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
 #ifdef TARGET_WINDOWS
             return kSEHException;
 #else
-            return (DWORD)kException;
+            _ASSERTE(!"Expected to be unreachable");
+            return kException;
 #endif // TARGET_WINDOWS
     }
 }
