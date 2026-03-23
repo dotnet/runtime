@@ -7747,13 +7747,33 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 //------------------------------------------------------------------------
 // FlowGraphTryRegion::NumBlocks: Return the number of blocks in the try region.
 //
-// Arguments:
-//    region -- region of interest
+// Returns:
+//    Number of blcoks in the region at the time of FlowGraphTryRegions::Build
+//    Includes blocks in enclosed try regions. Includes blocks in enclosed
+//    handler regions, if FlowGraphTryRegions::Build was called with includeHandlerBlocks == true.
 //
 unsigned FlowGraphTryRegion::NumBlocks() const
 {
     BitVecTraits traits = m_regions->GetBlockBitVecTraits();
     return BitVecOps::Count(&traits, m_blocks);
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::EnclosingRegion: Return the enclosing non-mutual-protect
+//    region, or nullptr.
+//
+// Returns:
+//    Enclosing non-mutual-protect region, or nullptr if there is none.
+//    Note any enclosing region will have a distinct header block.
+//
+FlowGraphTryRegion* FlowGraphTryRegion::EnclosingRegion() const
+{
+    FlowGraphTryRegion* ancestor = m_parent;
+    while (ancestor != nullptr && IsMutualProtectWith(ancestor))
+    {
+        ancestor = ancestor->m_parent;
+    }
+    return ancestor;
 }
 
 #ifdef DEBUG

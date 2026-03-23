@@ -418,8 +418,8 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
 
     switch (block->GetKind())
     {
-        // Funclet returns have no successors
-        //
+            // Funclet returns have no successors
+            //
         case BBJ_EHFINALLYRET:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
@@ -478,6 +478,47 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
 
         default:
             unreached();
+    }
+
+    // If the compiler has a try region object, add back edges from any
+    // catch resumption or async resumption to the header of each enclosing
+    // try with catch handler.
+    //
+    // This makes multi-entry try regions look like multi-entry loops and the SCC
+    // algorithm will transform them into single-entry try regions.
+    //
+    // Note we disregard try/finally/fault here as those do not need to be expressed
+    // as single-entry regions for Wasm codegen. And we consider all mutual-protect
+    // try/catch as a single region.
+    //
+    FlowGraphTryRegions* const tryRegions = comp->fgTryRegions;
+
+    if ((tryRegions != nullptr) && block->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
+    {
+        EHblkDsc* const     dsc    = comp->ehGetBlockTryDsc(block);
+        FlowGraphTryRegion* region = tryRegions->GetTryRegionByHeader(dsc->ebdTryBeg);
+
+        while (region != nullptr)
+        {
+            if (region->HasCatchHandler())
+            {
+                if (!region->HasSideEntry())
+                {
+                    break;
+                }
+
+                BasicBlock* const header = region->GetHeaderBlock();
+                for (FlowEdge* const edge : region->EntryEdges())
+                {
+                    if (block == edge->getDestinationBlock())
+                    {
+                        RETURN_ON_ABORT(func(header));
+                        break;
+                    }
+                }
+            }
+            region = region->EnclosingRegion();
+        }
     }
 }
 

@@ -2273,7 +2273,7 @@ class FlowGraphTryRegion
         m_hasSideEntry = true;
     }
 
-    bool IsMutualProtectWith(FlowGraphTryRegion* other)
+    bool IsMutualProtectWith(FlowGraphTryRegion* other) const
     {
         return EHblkDsc::ebdIsSameTry(this->m_ehDsc, other->m_ehDsc);
     }
@@ -2313,6 +2313,13 @@ public:
     bool HasSideEntry() const
     {
         return m_hasSideEntry;
+    }
+
+    FlowGraphTryRegion* EnclosingRegion() const;
+
+    BasicBlock* GetHeaderBlock() const
+    {
+        return m_ehDsc->ebdTryBeg;
     }
 
 #ifdef DEBUG
@@ -5384,6 +5391,7 @@ public:
     jitstd::vector<WasmInterval*>* fgWasmIntervals = nullptr;
     BasicBlock** fgIndexToBlockMap = nullptr;
     bool fgWasmHasCatchResumptions = false;
+    FlowGraphTryRegions* fgTryRegions = nullptr;
 #endif
 
     FlowGraphDfsTree* m_dfsTree = nullptr;
