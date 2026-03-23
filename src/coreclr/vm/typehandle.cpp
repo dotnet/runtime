@@ -456,6 +456,15 @@ bool TypeHandle::IsFloatHfa() const
     return (GetHFAType() == CORINFO_HFA_ELEM_FLOAT);
 }
 
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+bool TypeHandle::IsNativeHalfType() const
+{
+    WRAPPER_NO_CONTRACT;
+
+    return !IsNull() && AsMethodTable()->IsNativeHalfType();
+}
+#endif // TARGET_XARCH
+
 
 #ifdef FEATURE_64BIT_ALIGNMENT
 bool TypeHandle::RequiresAlign8() const

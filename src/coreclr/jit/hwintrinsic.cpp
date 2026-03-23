@@ -9,12 +9,12 @@
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+#define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, category, flag) \
     { \
             /* name */ #name, \
            /* flags */ static_cast<HWIntrinsicFlag>(flag), \
               /* id */ NI_##isa##_##name, \
-             /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
+             /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, \
              /* isa */ InstructionSet_##isa, \
         /* simdSize */ size, \
          /* numArgs */ numarg, \
@@ -70,7 +70,7 @@ const HWIntrinsicInfo& HWIntrinsicInfo::lookup(NamedIntrinsic id)
 //    The instruction for id and type
 instruction HWIntrinsicInfo::lookupIns(NamedIntrinsic id, var_types type, Compiler* comp)
 {
-    if ((type < TYP_BYTE) || (type > TYP_DOUBLE))
+    if ((type < TYP_BYTE) || (type > TYP_HALF))
     {
         assert(!"Unexpected type");
         return INS_invalid;

@@ -2232,7 +2232,11 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #if defined(TARGET_XARCH)
     unsigned srcSize = genTypeSize(srcType);
 
-    if (srcSize == 4)
+    if (srcSize == 2)
+    {
+        return INS_vmovsh;
+    }
+    else if (srcSize == 4)
     {
         return INS_movss;
     }
@@ -2320,6 +2324,10 @@ instruction CodeGen::ins_Copy(var_types dstType)
     assert(varTypeUsesFloatReg(dstType));
 
 #if defined(TARGET_XARCH)
+    if (dstType == TYP_HALF)
+    {
+        return INS_vmovsh;
+    }
     return INS_movaps;
 #elif defined(TARGET_ARM64)
     if (varTypeIsSIMD(dstType))
@@ -2589,7 +2597,11 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #if defined(TARGET_XARCH)
     unsigned dstSize = genTypeSize(dstType);
 
-    if (dstSize == 4)
+    if (dstSize == 2)
+    {
+        return INS_vmovsh;
+    }
+    else if (dstSize == 4)
     {
         return INS_movss;
     }
