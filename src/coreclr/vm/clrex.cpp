@@ -611,8 +611,6 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
     // on the thread object.
 
 #ifdef TARGET_WINDOWS
-    // WASM has no hardware exception (signal) support, so SEHExceptions
-    // are never produced on that platform.
     if (pException->IsType(SEHException::GetType()))
     {
         SEHException *pSEHException = (SEHException*)pException;
