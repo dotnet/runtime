@@ -82,13 +82,13 @@ public class Bench
 
 Post a comment on the PR:
 
-```
+````
 @EgorBot -amd -arm
 
-​```cs
+```cs
 // Your benchmark code here
-​```
 ```
+````
 
 EgorBot builds dotnet/runtime for the PR and base branch, runs the benchmark on
 dedicated hardware, and posts BDN results back as a comment.

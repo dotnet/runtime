@@ -12,7 +12,7 @@ see the [EgorBot manual](https://github.com/EgorBo/EgorBot).
 ## Command Format
 
 Mention `@EgorBot` in a PR or issue comment. The benchmark source goes in a
-fenced code block (`` ```cs ``) in the same comment.
+fenced ` ```cs ` code block in the same comment.
 
 ```
 @EgorBot [targets...] [options...] [BDN arguments...]
