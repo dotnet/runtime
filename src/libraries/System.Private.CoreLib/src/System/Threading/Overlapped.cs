@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 
@@ -111,6 +112,7 @@ namespace System.Threading
         *  Unpins the native Overlapped struct
         ====================================================================*/
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static Overlapped Unpack(NativeOverlapped* nativeOverlappedPtr)
         {
             ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
@@ -119,6 +121,7 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static void Free(NativeOverlapped* nativeOverlappedPtr)
         {
             ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
@@ -202,6 +205,7 @@ namespace System.Threading
             }
         }
 
+        [RequiresUnsafe]
         internal static void FreeNativeOverlapped(NativeOverlapped* pNativeOverlapped)
         {
             nuint handleCount = GCHandleCountRef(pNativeOverlapped);
@@ -215,12 +219,15 @@ namespace System.Threading
         //
         // The NativeOverlapped structure is followed by GC handle count and inline array of GC handles
         //
+        [RequiresUnsafe]
         private static ref nuint GCHandleCountRef(NativeOverlapped* pNativeOverlapped)
             => ref *(nuint*)(pNativeOverlapped + 1);
 
+        [RequiresUnsafe]
         private static ref GCHandle GCHandleRef(NativeOverlapped* pNativeOverlapped, nuint index)
             => ref *((GCHandle*)((nuint*)(pNativeOverlapped + 1) + 1) + index);
 
+        [RequiresUnsafe]
         internal static Overlapped GetOverlappedFromNative(NativeOverlapped* pNativeOverlapped)
         {
             object? target = GCHandleRef(pNativeOverlapped, 0).Target;

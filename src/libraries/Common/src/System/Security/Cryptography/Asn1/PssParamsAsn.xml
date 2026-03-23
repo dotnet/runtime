@@ -3,7 +3,7 @@
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="PssParamsAsn"
   namespace="System.Security.Cryptography.Asn1"
-  emitType="both">
+  emitType="ref">
 
   <!--
     https://tools.ietf.org/html/rfc8017#appendix-A.2.3
@@ -17,13 +17,11 @@
   -->
   <asn:AsnType
     name="HashAlgorithm"
-    typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn"
     valueTypeName="System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn"
     explicitTag="0"
     defaultDerInit="0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00" />
   <asn:AsnType
     name="MaskGenAlgorithm"
-    typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn"
     valueTypeName="System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn"
     explicitTag="1"
     defaultDerInit="0x30, 0x16, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00" />
