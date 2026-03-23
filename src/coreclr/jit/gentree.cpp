@@ -33905,8 +33905,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
-                bool maskIsZero    = false;
-                bool maskIsAllOnes = false;
+                bool maskIsZero       = false;
+                bool maskIsAllBitsSet = false;
 
                 if (op3->IsCnsMsk())
                 {
@@ -33917,7 +33917,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         GenTreeMskCon* mask      = op3->AsMskCon();
                         uint32_t       elemCount = simdSize / genTypeSize(simdBaseType);
 
-                        maskIsAllOnes = mask->gtSimdMaskVal.GetRawBits() == simdmask_t::GetBitMask(elemCount);
+                        maskIsAllBitsSet = mask->gtSimdMaskVal.GetRawBits() == simdmask_t::GetBitMask(elemCount);
                     }
                 }
                 else
@@ -33928,11 +33928,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     if (!maskIsZero)
                     {
-                        maskIsAllOnes = op3->IsVectorAllBitsSet();
+                        maskIsAllBitsSet = op3->IsVectorAllBitsSet();
                     }
                 }
 
-                if (maskIsAllOnes)
+                if (maskIsAllBitsSet)
                 {
                     if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
                     {
