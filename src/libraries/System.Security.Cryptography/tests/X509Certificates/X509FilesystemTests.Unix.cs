@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Head, "https://get.dot.net/");
                         using HttpResponseMessage response = await client.SendAsync(req, cts.Token).ConfigureAwait(false);
                     }
-                }, maxAttempts: 3, retryWhen: e => e is TaskCanceledException or HttpRequestException).ConfigureAwait(false);
+                }, maxAttempts: 3).ConfigureAwait(false);
 
                 Assert.NotNull(getDotNetCert);
                 Assert.NotNull(getDotNetCert.Subject);
