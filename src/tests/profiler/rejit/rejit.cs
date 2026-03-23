@@ -96,6 +96,18 @@ namespace Profiler.Tests
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private static void TriggerVirtualReJIT()
+        {
+            Console.WriteLine("Virtual ReJIT should be triggered after this method...");
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private static void TriggerVirtualRevert()
+        {
+            Console.WriteLine("Virtual Revert should be triggered after this method...");
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static int TieredRejit()
         {
             string matchString = "Hello from profiler rejit method 'InlineeTarget'!";
@@ -186,6 +198,66 @@ namespace Profiler.Tests
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private static int VirtualRejit()
+        {
+            string matchString = "Hello from profiler rejit method 'VirtualTarget'!";
+            string originalString = "Original VirtualTarget";
+
+            Console.WriteLine("=== Virtual ReJIT at non-final tier (Tier0) ===");
+
+            VirtualBase obj = new VirtualDerived();
+
+            // Call to JIT VirtualDerived.VirtualTarget at Tier0 (non-final tier).
+            // For backpatchable (virtual) methods, this redirects the precode target
+            // to Tier0 native code without modifying the vtable slot.
+            string result = CallVirtualTarget(obj);
+            Console.WriteLine($"Before rejit: {result}");
+
+            // Trigger ReJIT on the virtual method.
+            // The profiler calls RequestReJIT which activates a new IL version.
+            // PublishNativeCodeVersion calls ResetCodeEntryPoint to redirect calls
+            // back through the prestub so the new IL can be compiled.
+            TriggerVirtualReJIT();
+
+            // Call the virtual method again — the rejitted version should execute.
+            result = CallVirtualTarget(obj);
+            Console.WriteLine($"After rejit: {result}");
+
+            if (!result.Contains(matchString))
+            {
+                Console.WriteLine("FAIL: Virtual method ReJIT did not take effect at Tier0!");
+                Console.WriteLine($"Expected result to contain: {matchString}");
+                Console.WriteLine($"Actual result: {result}");
+                return 1;
+            }
+            Console.WriteLine("Virtual ReJIT PASSED.");
+
+            // Trigger revert to restore the original method body.
+            TriggerVirtualRevert();
+
+            // Call the virtual method again — the original version should execute.
+            result = CallVirtualTarget(obj);
+            Console.WriteLine($"After revert: {result}");
+
+            if (!result.Contains(originalString))
+            {
+                Console.WriteLine("FAIL: Virtual method revert did not take effect!");
+                Console.WriteLine($"Expected result to contain: {originalString}");
+                Console.WriteLine($"Actual result: {result}");
+                return 2;
+            }
+            Console.WriteLine("Virtual Revert PASSED.");
+
+            return 100;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        private static string CallVirtualTarget(VirtualBase obj)
+        {
+            return obj.VirtualTarget();
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static void TriggerInliningChain()
         {
             TestWriteLine("TriggerInliningChain");
@@ -239,12 +311,20 @@ namespace Profiler.Tests
             return TieredRejit();
         }
 
+        public static int RunVirtualTest(string[] args)
+        {
+            Console.WriteLine("Running virtual rejit test");
+            return VirtualRejit();
+        }
+
         public static int Main(string[] args)
         {
             if (args.Length > 0 && args[0].Equals("RunTest", StringComparison.OrdinalIgnoreCase))
             {
                 if (args.Length > 1 && args[1].Equals("Tiered", StringComparison.OrdinalIgnoreCase))
                     return RunTieredTest(args);
+                if (args.Length > 1 && args[1].Equals("Virtual", StringComparison.OrdinalIgnoreCase))
+                    return RunVirtualTest(args);
                 return RunTest(args);
             }
 
@@ -266,8 +346,35 @@ namespace Profiler.Tests
                                               { "DOTNET_TieredCompilation", "1" },
                                               { "DOTNET_REJIT_TIERED_MODE", "1" }
                                           });
+            if (result != 100)
+                return result;
+
+            // Run the virtual rejit test (TC enabled, tests backpatchable virtual method ReJIT at Tier0)
+            result = ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
+                                          testName: "ReJITVirtual",
+                                          profilerClsid: ReJitProfilerGuid,
+                                          profileeArguments: "Virtual",
+                                          envVars: new Dictionary<string, string>
+                                          {
+                                              { "DOTNET_TieredCompilation", "1" },
+                                              { "DOTNET_REJIT_VIRTUAL_MODE", "1" }
+                                          });
 
             return result;
+        }
+    }
+
+    abstract class VirtualBase
+    {
+        public abstract string VirtualTarget();
+    }
+
+    class VirtualDerived : VirtualBase
+    {
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public override string VirtualTarget()
+        {
+            return "Original VirtualTarget";
         }
     }
 

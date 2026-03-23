@@ -40,7 +40,11 @@ ReJITProfiler::ReJITProfiler() : Profiler(),
     _targetFuncId(0),
     _targetModuleId(0),
     _targetMethodDef(mdTokenNil),
-    _tieredMode(false)
+    _tieredMode(false),
+    _virtualMode(false),
+    _virtualTargetFuncId(0),
+    _virtualTargetModuleId(0),
+    _virtualTargetMethodDef(mdTokenNil)
 {
 
 }
@@ -92,6 +96,16 @@ HRESULT ReJITProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
         INFO(L"Running in tiered rejit test mode");
     }
 
+    WCHAR virtualModeBuf[16];
+    ULONG virtualModeLen;
+    hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("DOTNET_REJIT_VIRTUAL_MODE"), 16, &virtualModeLen, virtualModeBuf);
+    if (SUCCEEDED(hr) && virtualModeLen > 0 && virtualModeBuf[0] == WCHAR('1'))
+    {
+        _virtualMode = true;
+        _tieredMode = true;
+        INFO(L"Running in virtual rejit test mode");
+    }
+
     return S_OK;
 }
 
@@ -107,7 +121,7 @@ HRESULT ReJITProfiler::Shutdown()
 
     if (_tieredMode)
     {
-        INFO(L" tiered mode rejit count=" << _rejits << L" failures=" << _failures);
+        INFO(L" tiered/virtual mode rejit count=" << _rejits << L" failures=" << _failures);
 
         if (_failures == 0 && _rejits >= 1)
         {
@@ -280,6 +294,34 @@ bool ReJITProfiler::FunctionSeen(FunctionID functionId)
         INFO(L"Requesting revert for method " << GetFunctionIDName(_targetFuncId));
         INFO(L"ModuleID=" << std::hex << _targetModuleId << L" and MethodDef=" << std::hex << _targetMethodDef);
         _profInfo10->RequestRevert(1, &_targetModuleId, &_targetMethodDef, nullptr);
+    }
+    else if (_virtualMode && functionName == VirtualTargetMethodName && EndsWith(moduleName, TargetModuleName))
+    {
+        INFO(L"Found function id for virtual target method");
+        _virtualTargetFuncId = functionId;
+        _virtualTargetModuleId = GetModuleIDForFunction(functionId);
+        _virtualTargetMethodDef = GetMethodDefForFunction(functionId);
+
+        return true;
+    }
+    else if (_virtualMode && functionName == VirtualReJITTriggerMethodName && EndsWith(moduleName, TargetModuleName))
+    {
+        INFO(L"Virtual ReJIT trigger method jitting finished: " << functionName);
+
+        INFO(L"Requesting rejit for virtual method " << GetFunctionIDName(_virtualTargetFuncId));
+        INFO(L"ModuleID=" << std::hex << _virtualTargetModuleId << L" and MethodDef=" << std::hex << _virtualTargetMethodDef);
+
+        _profInfo10->RequestReJIT(1, &_virtualTargetModuleId, &_virtualTargetMethodDef);
+    }
+    else if (_virtualMode && functionName == VirtualRevertTriggerMethodName && EndsWith(moduleName, TargetModuleName))
+    {
+        INFO(L"Virtual Revert trigger method jitting finished: " << functionName);
+
+        INFO(L"Requesting revert for virtual method " << GetFunctionIDName(_virtualTargetFuncId));
+        INFO(L"ModuleID=" << std::hex << _virtualTargetModuleId << L" and MethodDef=" << std::hex << _virtualTargetMethodDef);
+
+        HRESULT hrRevert = _profInfo10->RequestRevert(1, &_virtualTargetModuleId, &_virtualTargetMethodDef, nullptr);
+        INFO(L"RequestRevert returned hr=" << std::hex << hrRevert);
     }
 
     return false;

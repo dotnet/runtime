@@ -1895,7 +1895,20 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
                 {
                     if (!handleCallCounting)
                     {
-                        pMethodDesc->SetCodeEntryPoint(pCode);
+#ifdef FEATURE_TIERED_COMPILATION
+                        if (pMethodDesc->MayHaveEntryPointSlotsToBackpatch() && !activeVersion.IsFinalTier())
+                        {
+                            // For backpatchable methods at non-final tiers, redirect only the precode target
+                            // without updating GetMethodEntryPoint(). This keeps the vtable slot pointing at
+                            // the precode so that future code version changes (e.g. profiler revert) can take
+                            // effect by redirecting the precode, without needing to patch vtable slots.
+                            pMethodDesc->SetBackpatchableEntryPoint(pCode, false /* isFinalTier */);
+                        }
+                        else
+#endif
+                        {
+                            pMethodDesc->SetCodeEntryPoint(pCode);
+                        }
                     }
                 #ifdef FEATURE_TIERED_COMPILATION
                     else if (
@@ -1986,6 +1999,16 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
         {
             LOG((LF_TIEREDCOMPILATION, LL_INFO100, "CVM::PublishNativeCodeVersion pMethod=%p - Resetting\n", pMethod));
             pMethod->ResetCodeEntryPoint();
+#ifdef FEATURE_TIERED_COMPILATION
+            if (pMethod->MayHaveEntryPointSlotsToBackpatch())
+            {
+                // ResetCodeEntryPoint() for backpatchable methods resets recorded slots but does not touch the
+                // precode target. Reset the precode target to prestub so that calls through the precode (which
+                // may have been redirected to native code during a non-final tier) go through the prestub and
+                // trigger compilation of the new code version.
+                Precode::GetPrecodeFromEntryPoint(pMethod->GetTemporaryEntryPoint())->ResetTargetInterlocked();
+            }
+#endif
         }
         else
         {
