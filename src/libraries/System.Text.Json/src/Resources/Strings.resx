@@ -650,6 +650,12 @@
   <data name="FSharpUnionFieldConflictsWithDiscriminator" xml:space="preserve">
     <value>The F# discriminated union type '{0}' has a case field name '{1}' that conflicts with the type discriminator property name '{2}'.</value>
   </data>
+  <data name="FSharpUnionMissingDiscriminatorProperty" xml:space="preserve">
+    <value>Required type discriminator property '{0}' not found when deserializing F# discriminated union type '{1}'.</value>
+  </data>
+  <data name="FSharpUnionDuplicateDiscriminatorProperty" xml:space="preserve">
+    <value>Duplicate type discriminator property '{0}' found when deserializing F# discriminated union type '{1}'.</value>
+  </data>
   <data name="Polymorphism_BaseConverterDoesNotSupportMetadata" xml:space="preserve">
     <value>The converter for polymorphic type '{0}' does not support metadata writes or reads.</value>
   </data>

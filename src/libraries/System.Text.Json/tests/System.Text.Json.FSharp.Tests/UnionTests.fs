@@ -186,8 +186,8 @@ let ``PropertyNamingPolicy applies to case discriminator names`` () =
 [<Fact>]
 let ``PropertyNamingPolicy applies to field names`` () =
     let options = JsonSerializerOptions(PropertyNamingPolicy = JsonNamingPolicy.CamelCase)
-    let json = JsonSerializer.Serialize(Circle 1.0, options)
-    Assert.Contains("\"radius\":", json)
+    let json = JsonSerializer.Serialize(MySingleCaseUnion "hello", options)
+    Assert.Contains("\"item\":", json)
 
 [<Fact>]
 let ``Roundtrip with CamelCase naming policy`` () =
@@ -253,12 +253,30 @@ let ``String form for case with fields throws when RespectRequired is on`` () =
     Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>("\"Circle\"", options) |> ignore)
 
 [<Fact>]
-let ``Missing $type in object throws JsonException`` () =
-    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>("""{"radius":3.14}""") |> ignore)
+let ``Missing $type in object throws JsonException with discriminator name`` () =
+    let ex = Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>("""{"radius":3.14}""") |> ignore)
+    Assert.Contains("$type", ex.Message)
+
+[<Fact>]
+let ``Missing custom discriminator in object includes property name in error`` () =
+    let ex = Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<UnionWithCustomDiscriminator>("""{"x":1}""") |> ignore)
+    Assert.Contains("kind", ex.Message)
 
 [<Fact>]
 let ``Invalid token type throws JsonException`` () =
     Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>("42") |> ignore)
+
+[<Fact>]
+let ``Duplicate discriminator in object throws JsonException`` () =
+    let json = """{"$type":"Circle","$type":"Point","radius":3.14}"""
+    let ex = Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json) |> ignore)
+    Assert.Contains("$type", ex.Message)
+
+[<Fact>]
+let ``Duplicate discriminator in fieldless case object throws JsonException`` () =
+    let json = """{"$type":"Point","$type":"Circle"}"""
+    let ex = Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json) |> ignore)
+    Assert.Contains("$type", ex.Message)
 
 // -- Metadata Resolution --
 
@@ -371,6 +389,9 @@ let ``RespectRequired succeeds when all fields present`` () =
     Assert.Equal(Rectangle(10.0, 20.0), result)
 
 // -- Out-of-Order Discriminator Tests --
+// The union converter always accepts out-of-order discriminators regardless of
+// AllowOutOfOrderMetadataProperties because it uses ConverterStrategy.Value,
+// meaning the JSON is always fully buffered before Read() is called.
 
 [<Fact>]
 let ``Out-of-order discriminator succeeds`` () =
