@@ -44,7 +44,7 @@ namespace System
                 _useReadLine ?
                     ConsolePal.StdInReader.ReadLine(buffer) :
 #endif
-                    ConsolePal.Read(_handle, buffer);
+                    RandomAccess.Read(_handle, buffer, fileOffset: 0);
 
             public override void Write(ReadOnlySpan<byte> buffer) =>
                 ConsolePal.WriteFromConsoleStream(_handle, buffer);
