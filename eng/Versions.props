@@ -65,25 +65,22 @@
     <MicrosoftCodeAnalysisVersion_4_4>4.4.0</MicrosoftCodeAnalysisVersion_4_4>
     <!-- Compatibility with VS 17.8/.NET SDK 8.0.1xx -->
     <MicrosoftCodeAnalysisVersion_4_8>4.8.0</MicrosoftCodeAnalysisVersion_4_8>
-    <!-- Compatibility with the latest Visual Studio Preview release -->
+    <!-- Compatibility with the latest SDK: use MicrosoftCodeAnalysisVersion. -->
     <!--
-      The exact version is always a moving target. This version should never go ahead of the version of Roslyn that is included in the most recent
-      public Visual Studio preview version. If it were to go ahead, then any components depending on this version would not work in Visual Studio
-      and would cause a major regression for any local development that depends on those components contributing to the build.
-      This version must also not go ahead of the most recently release .NET SDK version, as that would break the source-build build.
-      Source-build builds the product with the most recent previously source-built release. Thankfully, these two requirements line up nicely
-      such that any version that satisfies the VS version requirement will also satisfy the .NET SDK version requirement because of how we ship.
-    -->
-    <MicrosoftCodeAnalysisVersion_LatestVS>5.0.0-2.26070.104</MicrosoftCodeAnalysisVersion_LatestVS>
+      MicrosoftCodeAnalysisVersion is updated via dependency flow and is by definition compatible with the Roslyn version that ships in our SDK.
+      Using the latest CodeAnalysis APIs may require updating the global.json SDK for the VMR, which always uses the toolset SDK compiler.
+      When analyzers/generators consume new APIs, this can break local development using the latest preview VS or preview SDK if those APIs
+      are not yet available. This is expected to happen occasionally, just like when adopting new language features.
+   -->
     <!-- Some of the analyzer dependencies used by ILLink project -->
     <MicrosoftCodeAnalysisBannedApiAnalyzersVersion>3.3.5-beta1.23270.2</MicrosoftCodeAnalysisBannedApiAnalyzersVersion>
   </PropertyGroup>
 
   <!--
-    These packages affect the design-time experience in VS, so we update them at the same cadance as the MicrosoftCodeAnalysisVersion_LatestVS version.
+    These packages affect the design-time experience in VS, so we update them at the same cadence as the latest Microsoft.CodeAnalysis version.
   -->
   <PropertyGroup>
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>$(MicrosoftCodeAnalysisVersion_LatestVS)</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>$(MicrosoftCodeAnalysisVersion)</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
   </PropertyGroup>
 
   <PropertyGroup>
