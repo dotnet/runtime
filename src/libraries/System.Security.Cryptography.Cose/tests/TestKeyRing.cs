@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Formats.Cbor;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Tests;
 using Microsoft.IdentityModel.Tokens;
 using Test.Cryptography;
@@ -66,7 +67,7 @@ namespace System.Security.Cryptography.Cose.Tests
             RetryHelper.Execute(
                 () => result = ECDsa.Create(parametersLocalCopy),
                 maxAttempts: 3,
-                retryWhen: e => e is CryptographicException);
+                retryWhen: e => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && e is CryptographicException { HResult: -50 });
             return result!;
         }
 
