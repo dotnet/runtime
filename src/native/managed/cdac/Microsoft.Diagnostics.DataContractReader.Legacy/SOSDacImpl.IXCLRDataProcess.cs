@@ -486,6 +486,14 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         // Note: there is intentionally no DEBUG block calling the legacy implementation here.
         // TranslateExceptionRecordToNotification fires callbacks on the provided notify object;
         // calling both the cDAC and legacy implementations would double-fire every callback.
+
+        void ReleaseCom(object obj)
+        {
+            IntPtr ptr = Marshal.GetIUnknownForObject(obj);
+            Marshal.Release(ptr);
+            Marshal.Release(ptr);
+        }
+
         int hr = HResults.S_OK;
         try
         {
@@ -553,7 +561,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                         }
                         finally
                         {
-                            (notify5 as IDisposable)?.Dispose();
+                            ReleaseCom(notify5);
                         }
                     }
                     break;
@@ -579,7 +587,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                         }
                         finally
                         {
-                            (notify2 as IDisposable)?.Dispose();
+                            ReleaseCom(notify2);
                         }
                     }
                     else
@@ -607,7 +615,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                             }
                             finally
                             {
-                                (notify3 as IDisposable)?.Dispose();
+                                ReleaseCom(notify3);
                             }
                         }
                         hr = HResults.S_OK;
@@ -634,7 +642,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                         }
                         finally
                         {
-                            (notify4 as IDisposable)?.Dispose();
+                            ReleaseCom(notify4);
                         }
                     }
                     break;
@@ -647,7 +655,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
         finally
         {
-            (notify as IDisposable)?.Dispose();
+            ReleaseCom(notify);
         }
         return hr;
     }
