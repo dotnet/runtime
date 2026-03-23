@@ -392,17 +392,68 @@ Statement* Compiler::fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAft
     return stmtLast;
 }
 
-//------------------------------------------------------------------------
-// fgNewStmtFromTree: Create a new statement from a tree and wire the links up.
-//
-// Arguments:
-//    tree  - the root node of the new statement
-//    block - the block to use for debug checks (may be nullptr)
-//    di    - debug info for the new statement
-//
-// Return Value:
-//    The new statement.
-//
+void Compiler::fgInsertStmtListAtEnd(BasicBlock* block, Statement* stmtList)
+{
+    if (stmtList == nullptr)
+    {
+        return;
+    }
+
+    Statement* firstStmt = block->firstStmt();
+    if (firstStmt != nullptr)
+    {
+        Statement* lastStmt = firstStmt->GetPrevStmt();
+        noway_assert(lastStmt != nullptr && lastStmt->GetNextStmt() == nullptr);
+
+        // Append the statement after the last one.
+        Statement* stmtLast = stmtList->GetPrevStmt();
+        lastStmt->SetNextStmt(stmtList);
+        stmtList->SetPrevStmt(lastStmt);
+        firstStmt->SetPrevStmt(stmtLast);
+    }
+    else
+    {
+        // The block is completely empty.
+        block->SetFirstStmt(stmtList);
+    }
+}
+
+void Compiler::fgInsertStmtListBefore(BasicBlock* block, Statement* before, Statement* stmtList)
+{
+    if (stmtList == nullptr)
+    {
+        return;
+    }
+
+    assert(block->firstStmt() != nullptr);
+    Statement* stmtLast = stmtList->GetPrevStmt();
+
+    if (before == block->firstStmt())
+    {
+        // We're inserting before the first statement in the block.
+        Statement* first = block->firstStmt();
+        Statement* last  = block->lastStmt();
+
+        stmtLast->SetNextStmt(first);
+        stmtList->SetPrevStmt(last);
+
+        block->SetFirstStmt(stmtList);
+        first->SetPrevStmt(stmtLast);
+    }
+    else
+    {
+        stmtLast->SetNextStmt(before);
+        stmtList->SetPrevStmt(before->GetPrevStmt());
+
+        stmtList->GetPrevStmt()->SetNextStmt(stmtList);
+        stmtLast->GetNextStmt()->SetPrevStmt(stmtLast);
+    }
+}
+
+/*****************************************************************************
+ *
+ *  Create a new statement from tree and wire the links up.
+ */
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const DebugInfo& di)
 {
     Statement* stmt = gtNewStmt(tree, di);

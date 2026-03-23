@@ -336,20 +336,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVarCommon* data,
 //
 GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
 {
-    GenTreeCall* argCall = nullptr;
-    if (span->OperIs(GT_RET_EXPR))
-    {
-        // NOTE: we don't support chains of RET_EXPR here
-        GenTree* inlineCandidate = span->AsRetExpr()->gtInlineCandidate;
-        if (inlineCandidate->OperIs(GT_CALL))
-        {
-            argCall = inlineCandidate->AsCall();
-        }
-    }
-    else if (span->OperIs(GT_CALL))
-    {
-        argCall = span->AsCall();
-    }
+    GenTreeCall* argCall = span->IsCall() ? span->AsCall() : nullptr;
 
     if ((argCall != nullptr) && argCall->IsSpecialIntrinsic())
     {
@@ -717,20 +704,6 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
         for (int i = 0; i < argsCount; i++)
         {
             impPopStack();
-        }
-
-        // We have to clean up GT_RET_EXPR for String.op_Implicit or MemoryExtensions.AsSpans
-        if ((spanObj != op1) && op1->OperIs(GT_RET_EXPR))
-        {
-            GenTree* inlineCandidate = op1->AsRetExpr()->gtInlineCandidate;
-            assert(inlineCandidate->IsCall());
-            inlineCandidate->gtBashToNOP();
-        }
-        else if ((spanObj != op2) && op2->OperIs(GT_RET_EXPR))
-        {
-            GenTree* inlineCandidate = op2->AsRetExpr()->gtInlineCandidate;
-            assert(inlineCandidate->IsCall());
-            inlineCandidate->gtBashToNOP();
         }
     }
     return unrolled;
