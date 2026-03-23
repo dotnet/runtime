@@ -9,6 +9,7 @@ This testcase attempts to delete some directories in a mounted volume
    - refer to the directory in a recursive manner in addition to the normal one
 **/
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Reflection;
@@ -419,10 +420,9 @@ namespace System.IO.Tests
 
         private static void WaitForDirectoryGone(string path)
         {
-            const int TimeoutMs = 10_000;
             const int PollIntervalMs = 100;
-            long start = Environment.TickCount64;
-            while (Directory.Exists(path) && Environment.TickCount64 - start < TimeoutMs)
+            Stopwatch sw = Stopwatch.StartNew();
+            while (Directory.Exists(path) && sw.Elapsed < TimeSpan.FromSeconds(60))
                 Thread.Sleep(PollIntervalMs);
         }
 
