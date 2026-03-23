@@ -1032,6 +1032,16 @@ Changes to signatures:
   - Managed pointers which point at the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
   - Null managed pointers are permitted to be dereferenced resulting in a `NullReferenceException`.
 
+### III.1.7.7
+Add a new paragraph "III.1.7.7 Managed pointers exposing parameters outside of the method scope" under section "III.1.7 Restrictions on CIL code sequences"
+Managed pointers obtained from method parameters, and byref-like values that contain them, can be made observable outside of a function only through escape paths present in the function signature:
+- By explicit return of a byref or byref-like type
+- By writing to storage exposed by a byref parameter, including byref-like types containing multiple levels of byref fields
+
+The same rule applies to unsafe code. Copying such a managed pointer or byref-like value through unmanaged or other raw storage is permitted, but it is undefined behavior to copy it into storage that makes it observable outside of the function through an escape path not present in the signature. Temporary copies in storage that is not observable outside of the function are permitted.
+
+For example: `void M(Span<T> p)` cannot expose `p` outside of `M`, while `void M(Span<T> p, ref Span<T> q)` can copy `p` into `q`.
+
 ## <a name="byreflike-generics"></a> ByRefLike types in generics
 
 ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required. See [ref struct Generic Parameters](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-13.0/ref-struct-interfaces.md#ref-struct-generic-parameters) for C# language counterpart.
