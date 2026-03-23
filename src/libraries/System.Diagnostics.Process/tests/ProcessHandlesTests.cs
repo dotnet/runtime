@@ -53,19 +53,7 @@ namespace System.Diagnostics.Tests
                 : new("sh") { ArgumentList = { "-c", "echo 'Hello from stdout' && echo 'Error from stderr' >&2" } };
 
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle outputRead, out SafeFileHandle outputWrite, asyncRead: readAsync);
-
-            SafeFileHandle errorRead;
-            SafeFileHandle errorWrite;
-            try
-            {
-                SafeFileHandle.CreateAnonymousPipe(out errorRead, out errorWrite, asyncRead: readAsync);
-            }
-            catch
-            {
-                outputRead.Dispose();
-                outputWrite.Dispose();
-                throw;
-            }
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle errorRead, out SafeFileHandle errorWrite, asyncRead: readAsync);
 
             startInfo.StandardOutput = outputWrite;
             startInfo.StandardError = errorWrite;
@@ -170,12 +158,7 @@ namespace System.Diagnostics.Tests
                 consumerInfo.StandardOutput = outputHandle;
 
                 using Process producer = Process.Start(producerInfo)!;
-
-                writePipe.Close(); // close the parent copy of child handle
-
                 using Process consumer = Process.Start(consumerInfo)!;
-
-                readPipe.Close(); // close the parent copy of child handle
 
                 producer.WaitForExit();
                 consumer.WaitForExit();
@@ -189,6 +172,37 @@ namespace System.Diagnostics.Tests
                 writePipe.Dispose();
 
                 if (tempFile is not null && File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
+        }
+
+        [Fact]
+        public void LeaveHandlesOpen_KeepsHandleOpen()
+        {
+            string tempFile = Path.GetTempFileName();
+
+            try
+            {
+                ProcessStartInfo startInfo = new("hostname");
+
+                SafeFileHandle outputHandle = File.OpenHandle(tempFile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+
+                startInfo.StandardOutput = outputHandle;
+                startInfo.LeaveHandlesOpen = true;
+
+                using Process process = Process.Start(startInfo)!;
+                process.WaitForExit();
+
+                Assert.Equal(0, process.ExitCode);
+                Assert.False(outputHandle.IsClosed);
+
+                outputHandle.Dispose();
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
                 {
                     File.Delete(tempFile);
                 }
