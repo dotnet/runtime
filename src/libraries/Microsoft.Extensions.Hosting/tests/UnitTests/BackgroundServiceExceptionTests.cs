@@ -315,14 +315,18 @@ namespace Microsoft.Extensions.Hosting.Tests
             private int _remaining = count;
             private readonly TaskCompletionSource<bool> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            public Task SignalAndWaitAsync()
+            public async Task SignalAndWaitAsync()
             {
                 if (Interlocked.Decrement(ref _remaining) == 0)
                 {
                     _tcs.SetResult(true);
                 }
 
-                return _tcs.Task;
+                Task completed = await Task.WhenAny(_tcs.Task, Task.Delay(TimeSpan.FromSeconds(30)));
+                if (completed != _tcs.Task)
+                {
+                    throw new TimeoutException("ServiceBarrier timed out waiting for all participants.");
+                }
             }
         }
 
@@ -334,7 +338,6 @@ namespace Microsoft.Extensions.Hosting.Tests
                 await barrier.SignalAndWaitAsync();
 
                 // Await before throwing to make sure the exception is asynchronous
-                // Ignore the cancellation token to ensure this service throws even if the host is trying to shut down
                 await Task.Yield();
 
                 throw new InvalidOperationException("Asynchronous failure");
@@ -349,7 +352,6 @@ namespace Microsoft.Extensions.Hosting.Tests
                 await barrier.SignalAndWaitAsync();
 
                 // Await before throwing to make sure the exception is asynchronous
-                // Ignore the cancellation token to ensure this service throws even if the host is trying to shut down
                 await Task.Yield();
 
                 throw new InvalidOperationException("Second asynchronous failure");
@@ -364,7 +366,6 @@ namespace Microsoft.Extensions.Hosting.Tests
                 await barrier.SignalAndWaitAsync();
 
                 // Await before throwing to make sure the exception is asynchronous
-                // Ignore the cancellation token to ensure this service throws even if the host is trying to shut down
                 await Task.Yield();
 
                 throw new InvalidOperationException("Third asynchronous failure");
