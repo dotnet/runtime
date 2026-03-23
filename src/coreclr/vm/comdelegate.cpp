@@ -1305,8 +1305,9 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
 
     LoaderAllocator *pLoaderAllocator = pTargetMethod->GetLoaderAllocator();
 
+    _ASSERTE(refRealDelegate->GetInvocationList() == NULL);
     if (pLoaderAllocator->IsCollectible())
-        refRealDelegate->SetMethodBase(pLoaderAllocator->GetExposedObject());
+        refRealDelegate->SetInvocationList(pLoaderAllocator->GetExposedObject());
 
     GCPROTECT_END();
 }
@@ -1732,8 +1733,9 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     if (COMDelegate::NeedsWrapperDelegate(pMeth))
         refThis = COMDelegate::CreateWrapperDelegate(refThis, pMeth);
 
+    _ASSERTE(refThis->GetInvocationList() == NULL);
     if (pMeth->GetLoaderAllocator()->IsCollectible())
-        refThis->SetMethodBase(pMeth->GetLoaderAllocator()->GetExposedObject());
+        refThis->SetInvocationList(pMeth->GetLoaderAllocator()->GetExposedObject());
 
     // Open delegates.
     if (invokeArgCount == methodArgCount)
@@ -1837,10 +1839,15 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
     // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
 
-    MethodDesc *pMethodHandle = NULL;
-
     DELEGATEREF thisDel = (DELEGATEREF) orDelegate;
     DELEGATEREF innerDel = NULL;
+
+    MethodDesc *pMethodHandle = thisDel->GetMethodDesc();
+
+    if (pMethodHandle != NULL)
+    {
+        return pMethodHandle;
+    }
 
     INT_PTR count = thisDel->GetInvocationCount();
     if (count != 0)
@@ -1896,6 +1903,9 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     }
 
     _ASSERTE(pMethodHandle);
+
+    thisDel->SetMethodDesc(pMethodHandle);
+
     return pMethodHandle;
 }
 
@@ -2128,7 +2138,7 @@ DELEGATEREF COMDelegate::CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc*
 }
 
 // This method will get the MethodInfo for a delegate
-extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo)
+extern "C" void QCALLTYPE Delegate_CreateMethodInfo(MethodDesc* methodDesc, QCall::ObjectHandleOnStack retMethodInfo)
 {
     QCALL_CONTRACT;
 
@@ -2136,26 +2146,24 @@ extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d
 
     GCX_COOP();
 
-    MethodDesc* pMD = COMDelegate::GetMethodDesc(d.Get());
+    MethodDesc* pMD = methodDesc;
     pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
     retMethodInfo.Set(pMD->AllocateStubMethodInfo());
 
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandleOnStack left, QCall::ObjectHandleOnStack right)
+extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnStack instance)
 {
     QCALL_CONTRACT;
 
-    BOOL fRet = FALSE;
+    MethodDesc* fRet = nullptr;
 
     BEGIN_QCALL;
 
     GCX_COOP();
 
-    MethodDesc* pMDLeft = COMDelegate::GetMethodDesc(left.Get());
-    MethodDesc* pMDRight = COMDelegate::GetMethodDesc(right.Get());
-    fRet = pMDLeft == pMDRight;
+    fRet = COMDelegate::GetMethodDesc(instance.Get());
 
     END_QCALL;
 
@@ -2793,8 +2801,8 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     LoaderAllocator *pTargetMethodLoaderAllocator = pTargetMethod->GetLoaderAllocator();
     BOOL isCollectible = pTargetMethodLoaderAllocator->IsCollectible();
     // A method that may be instantiated over a collectible type, and is static will require a delegate
-    // that has the _methodBase field filled in with the LoaderAllocator of the collectible assembly
-    // associated with the instantiation.
+    // that has the LoaderAllocator of the collectible assembly associated with the instantiation
+    // stored in the MethodInfo cache.
     BOOL fMaybeCollectibleAndStatic = FALSE;
 
     if (isStatic)
