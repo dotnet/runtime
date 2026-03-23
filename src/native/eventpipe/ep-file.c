@@ -239,8 +239,6 @@ file_write_event_to_block (
 	EP_ASSERT (file->event_block != NULL);
 	EP_ASSERT (file->metadata_block != NULL);
 
-	ep_event_instance_set_metadata_id (event_instance, metadata_id);
-
 	// If we are flushing events we need to flush metadata and stacks as well
 	// to ensure referenced metadata/stacks were written to the file before the
 	// event which referenced them.
@@ -251,14 +249,14 @@ file_write_event_to_block (
 		block = (EventPipeEventBlockBase *)file->metadata_block;
 	}
 
-	if (ep_event_block_base_write_event (block, event_instance, capture_thread_id, sequence_number, stack_id, is_sorted_event))
+	if (ep_event_block_base_write_event (block, event_instance, metadata_id, capture_thread_id, sequence_number, stack_id, is_sorted_event))
 		return; // the block is not full, we added the event and continue
 
 	// we can't write this event to the current block (it's full)
 	// so we write what we have in the block to the serializer
 	ep_file_flush (file, flags);
 
-	bool result = ep_event_block_base_write_event (block, event_instance, capture_thread_id, sequence_number, stack_id, is_sorted_event);
+	bool result = ep_event_block_base_write_event (block, event_instance, metadata_id, capture_thread_id, sequence_number, stack_id, is_sorted_event);
 	if (!result)
 		EP_UNREACHABLE ("Should never fail to add event to a clear block. If we do the max size is too small.");
 }

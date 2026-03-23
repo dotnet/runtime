@@ -14,6 +14,7 @@
 #include <eventpipe/ep-session-provider.h>
 #include <eventpipe/ep-string.h>
 #include "typestring.h"
+#include "clrhost.h"
 #include "clrversion.h"
 #include "hostinformation.h"
 
@@ -28,6 +29,7 @@
 #include <minipal/guid.h>
 #include <minipal/strings.h>
 #include <minipal/time.h>
+#include <stdio.h>
 
 #ifdef TARGET_UNIX
 #include <sys/time.h>
@@ -570,6 +572,15 @@ ep_rt_config_value_get_enable_stackwalk (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	return CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeEnableStackwalk) != 0;
+}
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_buffer_guard_level (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeBufferGuardLevel);
 }
 
 /*
@@ -1998,6 +2009,48 @@ ep_rt_volatile_store_ptr_without_barrier (
 {
 	STATIC_CONTRACT_NOTHROW;
 	VolatileStoreWithoutBarrier<void *> ((void **)ptr, value);
+}
+
+/*
+ * Memory Protection
+ */
+
+static
+inline
+bool
+ep_rt_vprotect (
+	void *addr,
+	size_t length,
+	EventPipePageProtection protection)
+{
+	STATIC_CONTRACT_NOTHROW;
+	DWORD oldProtect;
+	bool result = false;
+
+	if (protection == EP_PAGE_PROTECTION_READONLY)
+		result = ClrVirtualProtect (addr, length, PAGE_READONLY, &oldProtect);
+	else if (protection == EP_PAGE_PROTECTION_READWRITE)
+		result = ClrVirtualProtect (addr, length, PAGE_READWRITE, &oldProtect);
+
+	return result;
+}
+
+/*
+ * Fail fast and ensure proper crash dump and diagnostic reporting.
+ */
+
+static
+EP_ALWAYS_INLINE
+void
+ep_rt_fatal_error_with_message (const ep_char8_t *message)
+{
+	if (message != nullptr) {
+		fputs(reinterpret_cast<const char*>(message), stderr);
+		fputs("\n", stderr);
+		fflush(stderr);
+	}
+
+	RaiseFailFastException (NULL, NULL, 0);
 }
 
 #endif /* ENABLE_PERFTRACING */
