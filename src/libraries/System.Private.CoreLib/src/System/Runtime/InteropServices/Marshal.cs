@@ -793,8 +793,10 @@ namespace System.Runtime.InteropServices
                     return new System.InvalidCastException();
                 case HResults.COR_E_INVALIDFILTERCRITERIA:
                     return new System.Reflection.InvalidFilterCriteriaException();
+#if FEATURE_COMINTEROP
                 case HResults.COR_E_INVALIDOLEVARIANTTYPE:
                     return new System.Runtime.InteropServices.InvalidOleVariantTypeException();
+#endif
                 case HResults.COR_E_INVALIDOPERATION:
                     return new System.InvalidOperationException();
                 case HResults.COR_E_INVALIDPROGRAM:
