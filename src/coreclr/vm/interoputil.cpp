@@ -2808,7 +2808,6 @@ static HRESULT InvokeHelper(
                                            pParam->pExcepInfo,
                                            pParam->piArgErr);
     }
-#ifdef TARGET_WINDOWS
     PAL_EXCEPT_FILTER(CallOutFilter)
     {
         _ASSERTE(!"CallOutFilter returned EXECUTE_HANDLER.");
