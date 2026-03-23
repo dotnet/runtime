@@ -12,11 +12,11 @@ internal partial interface ITransactionResourceAsync
 {
     void PrepareRequest(
         [MarshalAs(UnmanagedType.Bool)] bool fRetaining,
-        OletxXactRm grfRM,
+        Interop.Xolehlp.OletxXactRm grfRM,
         [MarshalAs(UnmanagedType.Bool)] bool fWantMoniker,
         [MarshalAs(UnmanagedType.Bool)] bool fSinglePhase);
 
-    void CommitRequest(OletxXactRm grfRM, IntPtr pNewUOW);
+    void CommitRequest(Interop.Xolehlp.OletxXactRm grfRM, IntPtr pNewUOW);
 
     void AbortRequest(
         IntPtr pboidReason,
