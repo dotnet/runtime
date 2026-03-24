@@ -362,7 +362,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 emi.LegacyHandle = handleLocal;
 
                 GCHandle gcHandle = GCHandle.Alloc(emi);
-                *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
+                *handle = (ulong)((IEnum<MethodDescHandle>)emi).GetHandle();
                 hr = emi.Start();
             }
         }

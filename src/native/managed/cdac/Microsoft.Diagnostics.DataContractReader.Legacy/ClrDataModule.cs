@@ -245,8 +245,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
             EnumMethodDefinitions emd = new(reader, flags, handleLocal);
             emd.Start(fullName);
-            GCHandle gcHandle = GCHandle.Alloc(emd);
-            *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
+            *handle = (ulong)((IEnum<uint>)emd).GetHandle();
         }
         catch (System.Exception ex)
         {
@@ -307,11 +306,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         }
         catch (System.Exception ex)
         {
-            // Fall back to the legacy DAC result when available, otherwise propagate the error.
-            if (_legacyModule is not null)
-            {
-                method.Interface = legacyMethod;
-            }
             hr = ex.HResult;
         }
 
@@ -334,7 +328,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             if (gcHandle.Target is not EnumMethodDefinitions emdLocal)
                 throw new ArgumentException();
             emd = emdLocal;
-            emd.Enumerator.Dispose();
+            ((IEnum<uint>)emd).Dispose();
             gcHandle.Free();
         }
         catch (System.Exception ex)
