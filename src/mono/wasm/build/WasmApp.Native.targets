@@ -182,6 +182,9 @@
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
       <_EmccDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_EmccDefaultFlagsRsp>
       <_EmccDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-link.rsp'))</_EmccDefaultLinkFlagsRsp>
+
+      <_WasmLlvmSizeRsp>$(_WasmIntermediateOutputPath)emcc-llvmsize.rsp</_WasmLlvmSizeRsp>
+
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
 
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
@@ -415,7 +418,17 @@
     </ItemGroup>
 
     <!-- for AOT builds we use llvm-size tool to collect size of the DATA segment in each object file -->
-    <Exec Command="llvm-size$(_ExeExt) -d --format=sysv @(_AOTObjectFile->'&quot;%(Identity)&quot;', ' ')"
+    <WriteLinesToFile 
+        Condition="'$(_WasmShouldAOT)' == 'true'"
+        Lines="@(_AOTObjectFile->'&quot;%(Identity)&quot;')" 
+        File="$(_WasmLlvmSizeRsp)" 
+        Overwrite="true" 
+        WriteOnlyWhenDifferent="true" 
+        />
+    <ItemGroup Condition="'$(_WasmShouldAOT)' == 'true'">
+      <FileWrites Include="$(_WasmLlvmSizeRsp)" />
+    </ItemGroup>
+    <Exec Command='llvm-size$(_ExeExt) -d --format=sysv  "@$(_WasmLlvmSizeRsp)"'
           Condition="'$(_WasmShouldAOT)' == 'true'"
           IgnoreStandardErrorWarningFormat="true"
           ConsoleToMsBuild="true"
