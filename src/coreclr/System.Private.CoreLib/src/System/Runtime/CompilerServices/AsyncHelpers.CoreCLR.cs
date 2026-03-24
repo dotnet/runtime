@@ -903,7 +903,7 @@ namespace System.Runtime.CompilerServices
             flags |= ContinuationFlags.ContinueOnThreadPool;
         }
 
-        // Finish suspension when no continuaion context needs to be captured, i.e. for a custom await or for a ConfigureAwait(false) task await:
+        // Finish suspension in the common case of a custom await or for a ConfigureAwait(false) task await:
         // - Capture current ExecutionContext into the continuation
         // - Restore ExecutionContext and SynchronizationContext to the current Thread object
         private static void FinishSuspensionNoContinuationContext(ref ExecutionContext? execCtx, bool resumed, ExecutionContext previousExecCtx, SynchronizationContext previousSyncCtx)
@@ -944,7 +944,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        // Finish suspension when a continuaion context needs to be captured, i.e. for a a standard task await:
+        // Finish suspension in the common case: of a standard task await:
         // - Record continuation context to determine where to continue on resumption
         // - Capture current ExecutionContext into the continuation
         // - Restore ExecutionContext and SynchronizationContext to the current Thread object
