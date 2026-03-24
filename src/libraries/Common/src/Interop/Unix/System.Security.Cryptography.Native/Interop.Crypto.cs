@@ -112,7 +112,6 @@ internal static partial class Interop
             int hour,
             int minute,
             int second,
-            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.Bool)] bool isDst);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509IpAddress", StringMarshalling = StringMarshalling.Utf8)]

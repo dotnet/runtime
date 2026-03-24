@@ -270,9 +270,9 @@ namespace System.Security.Cryptography
                 [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "Parse")]
                 [return: UnsafeAccessorType(XDocumentTypeName)]
                 private static extern object XDocument_Parse(
-                [RequiresUnsafe]
                 [UnsafeAccessorType(XDocumentTypeName)] object?_, string xmlString);
 
+                [RequiresUnsafe]
                 [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Root")]
                 [return: UnsafeAccessorType(XElementTypeName)]
                 private static extern object? XDocument_GetRoot([UnsafeAccessorType(XDocumentTypeName)] object xDocument);

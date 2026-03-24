@@ -96,7 +96,6 @@ internal static partial class Interop
             int inputLength,
             ref GssBuffer token,
             out uint retFlags,
-            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.Bool)] out bool isNtlmUsed);
 
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_InitSecContextEx")]

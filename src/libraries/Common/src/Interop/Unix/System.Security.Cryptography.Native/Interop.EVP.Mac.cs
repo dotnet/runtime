@@ -31,7 +31,6 @@ internal static partial class Interop
             int keyLength,
             ReadOnlySpan<byte> customizationString,
             int customizationStringLength,
-            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.Bool)] bool xof);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacUpdate")]

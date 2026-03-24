@@ -825,7 +825,6 @@ namespace Microsoft.Win32
         [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtCreateBookmark", SetLastError = true)]
         internal static partial EventLogHandle EvtCreateBookmark(
-                            [RequiresUnsafe]
                             [MarshalAs(UnmanagedType.LPWStr)] string bookmarkXml);
 
         [LibraryImport(Interop.Libraries.Wevtapi, SetLastError = true)]

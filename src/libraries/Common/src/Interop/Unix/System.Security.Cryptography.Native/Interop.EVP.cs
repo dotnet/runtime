@@ -32,7 +32,6 @@ internal static partial class Interop
             SafeEvpMdCtxHandle ctx,
             Span<byte> md,
             uint len,
-            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.Bool)] out bool haveFeature);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestUpdate")]

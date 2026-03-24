@@ -72,7 +72,6 @@ namespace System.Runtime.CompilerServices
         [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall)]
         private static unsafe partial void SystemJS_RejectMainPromise(
-            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.LPWStr)] string pMessage, int messageLength,
             [MarshalAs(UnmanagedType.LPWStr)] string pStackTrace, int stackTraceLength);
 
