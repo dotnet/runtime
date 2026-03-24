@@ -27,6 +27,7 @@ namespace System.Diagnostics.Tests
             using (writePipe)
             {
                 using Process process = Process.Start(startInfo)!;
+                writePipe.Close(); // close the parent copy of child handle
 
                 using FileStream fileStream = new(readPipe, FileAccess.Read, bufferSize: 1, isAsync: readAsync);
                 using StreamReader streamReader = new(fileStream);
@@ -63,6 +64,8 @@ namespace System.Diagnostics.Tests
             using (errorWrite)
             {
                 using Process process = Process.Start(startInfo)!;
+                outputWrite.Close(); // close the parent copy of child handle
+                errorWrite.Close(); // close the parent copy of child handle
 
                 using FileStream outputStream = new(outputRead, FileAccess.Read, bufferSize: 1, isAsync: readAsync);
                 using FileStream errorStream = new(errorRead, FileAccess.Read, bufferSize: 1, isAsync: readAsync);
@@ -102,6 +105,7 @@ namespace System.Diagnostics.Tests
             using (writePipe)
             {
                 using Process process = Process.Start(startInfo)!;
+                writePipe.Close(); // close the parent copy of child handle
 
                 using FileStream combinedStream = new(readPipe, FileAccess.Read, bufferSize: 1, isAsync: readAsync);
                 using StreamReader combinedReader = new(combinedStream);
@@ -190,7 +194,11 @@ namespace System.Diagnostics.Tests
                 consumerInfo.StandardOutputHandle = outputHandle;
 
                 using Process producer = Process.Start(producerInfo)!;
+                writePipe.Close(); // close the parent copy of child handle
+
                 using Process consumer = Process.Start(consumerInfo)!;
+                outputHandle.Close(); // close the parent copy of child handle
+                readPipe.Close(); // close the parent copy of child handle
 
                 producer.WaitForExit();
                 consumer.WaitForExit();
@@ -204,37 +212,6 @@ namespace System.Diagnostics.Tests
                 writePipe.Dispose();
 
                 if (tempFile is not null && File.Exists(tempFile))
-                {
-                    File.Delete(tempFile);
-                }
-            }
-        }
-
-        [Fact]
-        public void LeaveHandlesOpen_KeepsHandleOpen()
-        {
-            string tempFile = Path.GetTempFileName();
-
-            try
-            {
-                ProcessStartInfo startInfo = new("hostname");
-
-                SafeFileHandle outputHandle = File.OpenHandle(tempFile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-
-                startInfo.StandardOutputHandle = outputHandle;
-                startInfo.LeaveHandlesOpen = true;
-
-                using Process process = Process.Start(startInfo)!;
-                process.WaitForExit();
-
-                Assert.Equal(0, process.ExitCode);
-                Assert.False(outputHandle.IsClosed);
-
-                outputHandle.Dispose();
-            }
-            finally
-            {
-                if (File.Exists(tempFile))
                 {
                     File.Delete(tempFile);
                 }

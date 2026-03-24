@@ -1405,17 +1405,17 @@ namespace System.Diagnostics
                 // process will not receive EOF when the child process closes its handles.
                 // It's OK to do it for handles returned by Console.OpenStandard*Handle APIs,
                 // because these handles are not owned and won't be closed by Dispose.
-                // When LeaveHandlesOpen is true, we must NOT dispose handles that were passed in
+                // We don't dispose handles that were passed in
                 // by the caller via StartInfo.StandardInputHandle/OutputHandle/ErrorHandle.
-                if (startInfo.StandardInputHandle is null || !startInfo.LeaveHandlesOpen)
+                if (startInfo.StandardInputHandle is null)
                 {
                     childInputPipeHandle?.Dispose();
                 }
-                if (startInfo.StandardOutputHandle is null || !startInfo.LeaveHandlesOpen)
+                if (startInfo.StandardOutputHandle is null)
                 {
                     childOutputPipeHandle?.Dispose();
                 }
-                if (startInfo.StandardErrorHandle is null || !startInfo.LeaveHandlesOpen)
+                if (startInfo.StandardErrorHandle is null)
                 {
                     childErrorPipeHandle?.Dispose();
                 }

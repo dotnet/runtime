@@ -124,7 +124,9 @@ namespace System.Diagnostics
         /// </summary>
         /// <remarks>
         /// <para>
-        /// The handle does not need to be inheritable; the runtime will duplicate it as inheritable.
+        /// The handle does not need to be inheritable; the runtime will duplicate it as inheritable if needed.
+        /// </para>
+        /// <para>
         /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
         /// <see cref="IO.File.OpenHandle"/> to open a file handle,
         /// <see cref="IO.File.OpenNullHandle"/> to provide an empty input,
@@ -132,8 +134,7 @@ namespace System.Diagnostics
         /// (the default behavior when this property is <see langword="null"/>).
         /// </para>
         /// <para>
-        /// By default, <see cref="Process.Start()"/> will dispose this handle after starting the child process.
-        /// Set <see cref="LeaveHandlesOpen"/> to <see langword="true"/> to keep the handle open.
+        /// It's recommended to dispose the handle right after starting the process.
         /// </para>
         /// <para>
         /// This property cannot be used together with <see cref="RedirectStandardInput"/>
@@ -149,7 +150,9 @@ namespace System.Diagnostics
         /// </summary>
         /// <remarks>
         /// <para>
-        /// The handle does not need to be inheritable; the runtime will duplicate it as inheritable.
+        /// The handle does not need to be inheritable; the runtime will duplicate it as inheritable if needed.
+        /// </para>
+        /// <para>
         /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
         /// <see cref="IO.File.OpenHandle"/> to open a file handle,
         /// <see cref="IO.File.OpenNullHandle"/> to discard output,
@@ -157,8 +160,7 @@ namespace System.Diagnostics
         /// (the default behavior when this property is <see langword="null"/>).
         /// </para>
         /// <para>
-        /// By default, <see cref="Process.Start()"/> will dispose this handle after starting the child process.
-        /// Set <see cref="LeaveHandlesOpen"/> to <see langword="true"/> to keep the handle open.
+        /// It's recommended to dispose the handle right after starting the process.
         /// </para>
         /// <para>
         /// This property cannot be used together with <see cref="RedirectStandardOutput"/>
@@ -174,7 +176,9 @@ namespace System.Diagnostics
         /// </summary>
         /// <remarks>
         /// <para>
-        /// The handle does not need to be inheritable; the runtime will duplicate it as inheritable.
+        /// The handle does not need to be inheritable; the runtime will duplicate it as inheritable if needed.
+        /// </para>
+        /// <para>
         /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
         /// <see cref="IO.File.OpenHandle"/> to open a file handle,
         /// <see cref="IO.File.OpenNullHandle"/> to discard error output,
@@ -182,8 +186,7 @@ namespace System.Diagnostics
         /// (the default behavior when this property is <see langword="null"/>).
         /// </para>
         /// <para>
-        /// By default, <see cref="Process.Start()"/> will dispose this handle after starting the child process.
-        /// Set <see cref="LeaveHandlesOpen"/> to <see langword="true"/> to keep the handle open.
+        /// It's recommended to dispose the handle right after starting the process.
         /// </para>
         /// <para>
         /// This property cannot be used together with <see cref="RedirectStandardError"/>
@@ -192,17 +195,6 @@ namespace System.Diagnostics
         /// </remarks>
         /// <value>A <see cref="SafeFileHandle"/> to use as the standard error handle of the child process, or <see langword="null"/> to use the default behavior.</value>
         public SafeFileHandle? StandardErrorHandle { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether the <see cref="StandardInputHandle"/>, <see cref="StandardOutputHandle"/>,
-        /// and <see cref="StandardErrorHandle"/> handles should be left open after the process is started.
-        /// </summary>
-        /// <remarks>
-        /// When <see langword="false"/> (the default), the handles are disposed by <see cref="Process.Start()"/>
-        /// after starting the child process. When <see langword="true"/>, the caller is responsible for disposing the handles.
-        /// </remarks>
-        /// <value><see langword="true"/> to leave the handles open; <see langword="false"/> to dispose them after the process starts. The default is <see langword="false"/>.</value>
-        public bool LeaveHandlesOpen { get; set; }
 
         public Encoding? StandardInputEncoding { get; set; }
 
