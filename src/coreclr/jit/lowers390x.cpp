@@ -602,9 +602,6 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    //EX_THROW(HRException, (E_FAIL));
-    //_ASSERTE(!"NYI");
-//#if 0
     if (comp->opts.OptimizationEnabled())
     {
         if (binOp->OperIs(GT_AND))
@@ -657,7 +654,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     ContainCheckBinary(binOp);
 
     return binOp->gtNext;
-//#endif
 }
 
 //------------------------------------------------------------------------
