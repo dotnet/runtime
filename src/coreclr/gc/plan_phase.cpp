@@ -1802,7 +1802,8 @@ void gc_heap::advance_pins_for_demotion (generation* gen)
         float pin_frag_ratio = (float)gen1_pins_left / (float)total_space_to_skip;
         float pin_surv_ratio = (float)gen1_pins_left / (float)(dd_survived_size (dynamic_data_of (max_generation - 1)));
         bool actual_promote_gen1_pins_p = decide_on_gen1_pin_promotion (pin_frag_ratio, pin_surv_ratio);
-        if (actual_promote_gen1_pins_p)        {
+        if (actual_promote_gen1_pins_p)
+        {
             while (!pinned_plug_que_empty_p() &&
                     (pinned_plug (oldest_pin()) < original_youngest_start))
             {
@@ -2530,7 +2531,7 @@ void gc_heap::decide_on_demotion_pin_surv (heap_segment* region, int* no_pinned_
     int gen_num = heap_segment_gen_num (region);
     int new_gen_num = 0;
     int pinned_surv = heap_segment_pinned_survived (region);
-    int promote_pins_p = large_pins_p;
+    bool promote_pins_p = large_pins_p;
 
     if (pinned_surv == 0)
     {
@@ -2709,7 +2710,6 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
                 // later.
                 //
                 // set generation_allocation_segment to 0, we know we don't have pins so we will not be going through the while loop below
-                // 
                 generation_allocation_segment (consing_gen) = 0;
                 generation_allocation_pointer (consing_gen) = 0;
                 generation_allocation_limit (consing_gen) = 0;
@@ -2805,7 +2805,7 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
         }
 
 #ifdef SIMPLE_DPRINTF
-        dprintf (REGIONS_LOG, ("h%d ad_p_d: PL: %zd, SL: %zd, pfr: %.3f, psr: %.3f, prmoote gen1 %d. gen1_pins_left %Id, total surv %Id (p:%Id), total_space %Id",
+        dprintf (REGIONS_LOG, ("h%d ad_p_d: PL: %zd, SL: %zd, pfr: %.3f, psr: %.3f, promote gen1 %d. gen1_pins_left %Id, total surv %Id (p:%Id), total_space %Id",
             heap_number, gen1_pins_left, total_space_to_skip, pin_frag_ratio, pin_surv_ratio, actual_promote_gen1_pins_p, gen1_pins_left,
             dd_survived_size (dynamic_data_of (max_generation - 1)), dd_pinned_survived_size (dynamic_data_of (max_generation - 1)), total_space_to_skip));
 #endif
