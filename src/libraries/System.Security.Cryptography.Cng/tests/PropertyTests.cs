@@ -194,16 +194,16 @@ namespace System.Security.Cryptography.Cng.Tests
             using (CngKey key = CngKey.Import(TestData.Key_ECDiffieHellmanP256, CngKeyBlobFormat.GenericPublicBlob))
             {
                 // HasProperty gives the same answer when the key doesn't already have the property.
-                Assert.False(key.HasProperty("DefaultSpanProp", CngPropertyOptions.CustomProperty));
-                Assert.False(key.HasProperty("EmptyArrayProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.FalseExpression(key.HasProperty("DefaultSpanProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.FalseExpression(key.HasProperty("EmptyArrayProp", CngPropertyOptions.CustomProperty));
 
                 // default(ReadOnlySpan<byte>) and Array.Empty<byte>() both succeed on SetProperty.
                 key.SetProperty(new CngProperty("DefaultSpanProp", default(ReadOnlySpan<byte>), CngPropertyOptions.CustomProperty));
                 key.SetProperty(new CngProperty("EmptyArrayProp", Array.Empty<byte>(), CngPropertyOptions.CustomProperty));
 
                 // HasProperty gives the same answer after setting.
-                Assert.True(key.HasProperty("DefaultSpanProp", CngPropertyOptions.CustomProperty));
-                Assert.True(key.HasProperty("EmptyArrayProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.TrueExpression(key.HasProperty("DefaultSpanProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.TrueExpression(key.HasProperty("EmptyArrayProp", CngPropertyOptions.CustomProperty));
 
                 // GetProperty gives identical answers.
                 // CNG transforms zero-length values to null on retrieval.
@@ -220,15 +220,15 @@ namespace System.Security.Cryptography.Cng.Tests
                 byte[] value = [1, 2, 3];
 
                 // HasProperty gives the same answer when the key doesn't already have the property.
-                Assert.False(key.HasProperty("SpanProp", CngPropertyOptions.CustomProperty));
-                Assert.False(key.HasProperty("ArrayProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.FalseExpression(key.HasProperty("SpanProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.FalseExpression(key.HasProperty("ArrayProp", CngPropertyOptions.CustomProperty));
 
                 key.SetProperty(new CngProperty("SpanProp", value.AsSpan(), CngPropertyOptions.CustomProperty));
                 key.SetProperty(new CngProperty("ArrayProp", value, CngPropertyOptions.CustomProperty));
 
                 // HasProperty gives the same answer for the same value in both ctors.
-                Assert.True(key.HasProperty("SpanProp", CngPropertyOptions.CustomProperty));
-                Assert.True(key.HasProperty("ArrayProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.TrueExpression(key.HasProperty("SpanProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.TrueExpression(key.HasProperty("ArrayProp", CngPropertyOptions.CustomProperty));
 
                 // GetProperty gives identical answers.
                 Assert.Equal<byte>(value, key.GetProperty("SpanProp", CngPropertyOptions.CustomProperty).GetValue());
@@ -240,8 +240,8 @@ namespace System.Security.Cryptography.Cng.Tests
                 key.SetProperty(new CngProperty("ArrayProp", value2, CngPropertyOptions.CustomProperty));
 
                 // HasProperty gives the same answer when overwriting an existing non-empty value.
-                Assert.True(key.HasProperty("SpanProp", CngPropertyOptions.CustomProperty));
-                Assert.True(key.HasProperty("ArrayProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.TrueExpression(key.HasProperty("SpanProp", CngPropertyOptions.CustomProperty));
+                AssertExtensions.TrueExpression(key.HasProperty("ArrayProp", CngPropertyOptions.CustomProperty));
 
                 // GetProperty gives identical answers after overwrite.
                 Assert.Equal<byte>(value2, key.GetProperty("SpanProp", CngPropertyOptions.CustomProperty).GetValue());
