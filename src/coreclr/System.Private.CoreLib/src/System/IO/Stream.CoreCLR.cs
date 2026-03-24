@@ -9,8 +9,8 @@ namespace System.IO
 {
     public abstract unsafe partial class Stream
     {
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Stream_HasOverriddenSlow")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Stream_HasOverriddenSlow")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool HasOverriddenSlow(MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool isRead);
 

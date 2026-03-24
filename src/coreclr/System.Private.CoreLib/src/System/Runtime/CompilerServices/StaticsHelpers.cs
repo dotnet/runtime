@@ -11,11 +11,12 @@ namespace System.Runtime.CompilerServices
     [DebuggerStepThrough]
     internal static unsafe partial class StaticsHelpers
     {
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetThreadStaticsByIndex(ByteRefOnStack result, int index, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
 
-        [LibraryImport(RuntimeHelpers.QCall)]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
 
         [Intrinsic]

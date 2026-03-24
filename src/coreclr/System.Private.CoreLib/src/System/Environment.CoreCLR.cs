@@ -19,9 +19,9 @@ namespace System
         }
 
         // Terminates this process with the given exit code.
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_Exit")]
         [DoesNotReturn]
-        [RequiresUnsafe]
         private static partial void _Exit(int exitCode);
 
         [DoesNotReturn]
@@ -84,6 +84,7 @@ namespace System
             FailFast(new StackCrawlMarkHandle(ref mark), message, ObjectHandleOnStack.Create(ref exception), errorMessage);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_FailFast", StringMarshalling = StringMarshalling.Utf16)]
         [DoesNotReturn]
         private static partial void FailFast(StackCrawlMarkHandle mark, string? message, ObjectHandleOnStack exception, string? errorMessage);
@@ -105,8 +106,8 @@ namespace System
             return mainMethodArgs;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
         internal static partial int GetProcessorCount();
 
         [UnmanagedCallersOnly]

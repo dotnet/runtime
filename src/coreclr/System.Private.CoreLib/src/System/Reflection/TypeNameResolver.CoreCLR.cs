@@ -192,6 +192,7 @@ namespace System.Reflection
             return assembly;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "UnsafeAccessors_ResolveGenericParamToTypeHandle")]
         private static partial IntPtr ResolveGenericParamToTypeHandle(IntPtr unsafeAccessorMethod, [MarshalAs(UnmanagedType.Bool)] bool isMethodParam, uint paramIndex);
 

@@ -83,8 +83,8 @@ namespace System
             return CanCompareBitsOrUseFastGetHashCodeHelper(pMT);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_CanCompareBitsOrUseFastGetHashCode")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_CanCompareBitsOrUseFastGetHashCode")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool CanCompareBitsOrUseFastGetHashCodeHelper(MethodTable* pMT);
 
@@ -163,8 +163,8 @@ namespace System
             ValueTypeOverride,
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_GetHashCodeStrategy")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_GetHashCodeStrategy")]
         private static unsafe partial ValueTypeHashCodeStrategy GetHashCodeStrategy(
             MethodTable* pMT, ObjectHandleOnStack objHandle, out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT);
 

@@ -21,8 +21,8 @@ namespace System
             return FastAllocateString(TypeHandle.TypeHandleOf<string>().AsMethodTable(), length);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_Intern")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_Intern")]
         private static partial void Intern(StringHandleOnStack src);
 
         public static string Intern(string str)
@@ -32,8 +32,8 @@ namespace System
             return str;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_IsInterned")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_IsInterned")]
         private static partial void IsInterned(StringHandleOnStack src);
 
         public static string? IsInterned(string str)

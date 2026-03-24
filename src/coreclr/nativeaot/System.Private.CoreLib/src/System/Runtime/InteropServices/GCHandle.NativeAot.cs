@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
@@ -32,6 +33,7 @@ namespace System.Runtime.InteropServices
         [RuntimeImport(RuntimeImports.RuntimeLibrary, "GCHandle_InternalTryGetBridgeWait")]
         private static extern bool InternalTryGetBridgeWait(IntPtr handle, ref object? result);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalGetBridgeWait")]
         private static unsafe partial void InternalGetBridgeWait(IntPtr handle, object?* result);
 #endif

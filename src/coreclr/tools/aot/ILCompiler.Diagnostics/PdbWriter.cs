@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
@@ -92,6 +93,7 @@ namespace ILCompiler.Diagnostics
         UIntPtr _pdbMod;
         ISymNGenWriter2 _ngenWriter;
 
+        [RequiresUnsafe]
         [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
         [LibraryImport(DiaSymReaderLibrary, StringMarshalling = StringMarshalling.Utf16)]
         private static partial void CreateNGenPdbWriter(

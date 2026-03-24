@@ -49,8 +49,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetLockHandleIfExists(object obj);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_GetOrCreateLockObject")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Monitor_GetOrCreateLockObject")]
         private static partial void GetOrCreateLockObject(ObjectHandleOnStack obj, ObjectHandleOnStack lockObj);
 
         #endregion

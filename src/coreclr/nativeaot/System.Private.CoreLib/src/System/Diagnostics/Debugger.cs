@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -68,6 +69,7 @@ namespace System.Diagnostics
 
         internal static bool IsNativeDebuggerAttached() => IsNativeDebuggerAttachedInternal() != 0;
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeImports.RuntimeLibrary, EntryPoint = "DebugDebugger_IsNativeDebuggerAttached")]
         private static partial int IsNativeDebuggerAttachedInternal();
     }

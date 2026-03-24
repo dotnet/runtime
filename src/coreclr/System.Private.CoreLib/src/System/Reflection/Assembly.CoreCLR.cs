@@ -54,8 +54,8 @@ namespace System.Reflection
             return RuntimeAssembly.InternalLoad(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExecutingAssembly")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExecutingAssembly")]
         private static partial void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
 
         internal static RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark)
@@ -83,8 +83,8 @@ namespace System.Reflection
             return GetExecutingAssembly(ref stackMark);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryAssembly")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryAssembly")]
         private static partial void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly);
 
         private static RuntimeAssembly? GetEntryAssemblyInternal()
@@ -94,9 +94,9 @@ namespace System.Reflection
             return entryAssembly;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetAssemblyCount")]
         [SuppressGCTransition]
-        [RequiresUnsafe]
         internal static partial uint GetAssemblyCount();
     }
 }

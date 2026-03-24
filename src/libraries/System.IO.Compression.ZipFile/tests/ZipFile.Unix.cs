@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -230,9 +231,11 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static partial int mkfifo(string path, int mode);
 
+        [RequiresUnsafe]
         [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8)]
         private static partial int umask(int umask);
     }

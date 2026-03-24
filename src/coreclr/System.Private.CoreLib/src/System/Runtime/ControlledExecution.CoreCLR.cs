@@ -119,13 +119,13 @@ namespace System.Runtime
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Abort")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Abort")]
         private static partial void AbortThread(ThreadHandle thread);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ResetAbort")]
         [SuppressGCTransition]
-        [RequiresUnsafe]
         private static partial void ResetAbortThread();
 
         private sealed class Canceler

@@ -14,8 +14,8 @@ namespace System.Runtime.CompilerServices
         // In coreclr the table is allocated and written to on the native side.
         internal static int[]? s_table;
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThrowInvalidCastException")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThrowInvalidCastException")]
         private static partial void ThrowInvalidCastExceptionInternal(void* fromTypeHnd, void* toTypeHnd);
 
         [DoesNotReturn]
@@ -35,8 +35,8 @@ namespace System.Runtime.CompilerServices
             throw null!; // Provide hint to the inliner that this method does not return
         }
 
-        [LibraryImport(RuntimeHelpers.QCall)]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj);
 

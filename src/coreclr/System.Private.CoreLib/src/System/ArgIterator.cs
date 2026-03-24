@@ -40,8 +40,8 @@ namespace System
             Init(ThisPtr, cookie);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_Init")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_Init")]
         private static partial void Init(ArgIterator* thisPtr, IntPtr cookie);
 
         // create an arg iterator that points just past 'firstArg'.
@@ -57,8 +57,8 @@ namespace System
             Init(ThisPtr, cookie, ptr);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_Init2")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_Init2")]
         private static partial void Init(ArgIterator* thisPtr, IntPtr cookie, void* ptr);
 
         // Fetch an argument as a typed referece, advance the iterator.
@@ -84,8 +84,8 @@ namespace System
             return result;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_GetNextArg")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_GetNextArg")]
         private static partial void GetNextArg(ArgIterator* thisPtr, TypedReference* pResult);
 
         // Alternate version of GetNextArg() intended primarily for IJW code
@@ -120,8 +120,8 @@ namespace System
             return result;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_GetNextArg2")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_GetNextArg2")]
         private static partial void GetNextArg(ArgIterator* thisPtr, QCallTypeHandle rth, TypedReference* pResult);
 
         // This method should invalidate the iterator (va_end). It is not supported yet.
@@ -146,8 +146,8 @@ namespace System
             return RuntimeTypeHandle.FromIntPtr(GetNextArgType(ThisPtr));
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_GetNextArgType")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_GetNextArgType")]
         private static partial IntPtr GetNextArgType(ArgIterator* thisPtr);
 
         public override int GetHashCode()

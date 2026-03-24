@@ -108,8 +108,8 @@ namespace System.Threading
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
         private static unsafe partial Interop.BOOL StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName, ObjectHandleOnStack exception);
 
         // Called from the runtime
@@ -130,13 +130,13 @@ namespace System.Threading
         // Max iterations to be done in SpinWait without switching GC modes.
         private const int SpinWaitCoopThreshold = 1024;
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SpinWait")]
         [SuppressGCTransition]
-        [RequiresUnsafe]
         private static partial void SpinWaitInternal(int iterations);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SpinWait")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SpinWait")]
         private static partial void LongSpinWaitInternal(int iterations);
 
         [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
@@ -161,8 +161,8 @@ namespace System.Threading
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_YieldThread")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_YieldThread")]
         private static partial Interop.BOOL YieldInternal();
 
         public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
@@ -175,8 +175,8 @@ namespace System.Threading
             return t_currentThread = thread!;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentThread")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentThread")]
         private static partial void GetCurrentThread(ObjectHandleOnStack thread);
 
         private void Initialize()
@@ -185,8 +185,8 @@ namespace System.Threading
             Initialize(ObjectHandleOnStack.Create(ref _this));
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Initialize")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Initialize")]
         private static partial void Initialize(ObjectHandleOnStack thread);
 
         /// <summary>Clean up the thread when it goes away.</summary>
@@ -201,6 +201,7 @@ namespace System.Threading
             GC.KeepAlive(this);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_InformThreadNameChange", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
@@ -240,13 +241,13 @@ namespace System.Threading
             }
         }
 
+        [RequiresUnsafe]
         [SuppressGCTransition]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetIsBackground")]
-        [RequiresUnsafe]
         private static partial Interop.BOOL GetIsBackground(ThreadHandle t);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetIsBackground")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetIsBackground")]
         private static partial void SetIsBackground(ThreadHandle t, Interop.BOOL value);
 
         /// <summary>Returns true if the thread is a threadpool thread.</summary>
@@ -274,8 +275,8 @@ namespace System.Threading
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetPriority")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetPriority")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial void SetPriority(ObjectHandleOnStack thread, int priority);
 
@@ -298,8 +299,8 @@ namespace System.Threading
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentOSThreadId")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentOSThreadId")]
         private static partial ulong GetCurrentOSThreadId();
 
         /// <summary>
@@ -321,9 +322,9 @@ namespace System.Threading
             }
         }
 
+        [RequiresUnsafe]
         [SuppressGCTransition]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetThreadState")]
-        [RequiresUnsafe]
         private static partial int GetThreadState(ThreadHandle t);
 
         internal void SetWaitSleepJoinState()
@@ -344,14 +345,14 @@ namespace System.Threading
             GC.KeepAlive(this);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetWaitSleepJoinState")]
         [SuppressGCTransition]
-        [RequiresUnsafe]
         private static partial void SetWaitSleepJoinState(ThreadHandle t);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ClearWaitSleepJoinState")]
         [SuppressGCTransition]
-        [RequiresUnsafe]
         private static partial void ClearWaitSleepJoinState(ThreadHandle t);
 
         /// <summary>
@@ -359,12 +360,12 @@ namespace System.Threading
         /// single-threaded or multi-threaded apartment.
         /// </summary>
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetApartmentState")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetApartmentState")]
         private static partial int GetApartmentState(ObjectHandleOnStack t);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetApartmentState")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetApartmentState")]
         private static partial int SetApartmentState(ObjectHandleOnStack t, int state);
 
         public ApartmentState GetApartmentState()
@@ -436,9 +437,9 @@ namespace System.Threading
             GC.KeepAlive(this);
         }
 
+        [RequiresUnsafe]
         [SuppressGCTransition]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_DisableComObjectEagerCleanup")]
-        [RequiresUnsafe]
         private static partial void DisableComObjectEagerCleanup(ThreadHandle t);
 #else // !FEATURE_COMINTEROP
         public void DisableComObjectEagerCleanup() { }
@@ -460,10 +461,11 @@ namespace System.Threading
         }
 
 #if TARGET_WINDOWS
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Interrupt")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Interrupt")]
         private static partial void Interrupt(ThreadHandle t);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetOSHandle")]
         private static partial SafeWaitHandle GetOSHandle(ThreadHandle t);
 
@@ -552,8 +554,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CatchAtSafePoint();
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PollGC")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PollGC")]
         private static partial void PollGCInternal();
 
         // GC Suspension is done by simply dropping into native code via p/invoke, and we reuse the p/invoke
@@ -602,8 +604,8 @@ namespace System.Threading
 #endif
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]
         internal static unsafe partial int ReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
 
         internal static void CheckForPendingInterrupt()
@@ -612,8 +614,8 @@ namespace System.Threading
             GC.KeepAlive(CurrentThread);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CheckForPendingInterrupt")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CheckForPendingInterrupt")]
         private static partial void CheckForPendingInterrupt(ThreadHandle t);
 
         [StructLayout(LayoutKind.Sequential)]

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime;
@@ -46,6 +47,7 @@ internal static unsafe partial class MonoDroidExports
         return 0;
     }
 
+    [RequiresUnsafe]
     [LibraryImport("System.Security.Cryptography.Native.Android")]
     internal static partial int AndroidCryptoNative_InitLibraryOnLoad(JavaVM* vm, void* reserved);
 

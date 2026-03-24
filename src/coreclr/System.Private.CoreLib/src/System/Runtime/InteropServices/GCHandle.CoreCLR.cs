@@ -23,8 +23,8 @@ namespace System.Runtime.InteropServices
         private static IntPtr InternalAllocWithGCTransition(object? value, GCHandleType type)
             => _InternalAllocWithGCTransition(ObjectHandleOnStack.Create(ref value), type);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalAllocWithGCTransition")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalAllocWithGCTransition")]
         private static partial IntPtr _InternalAllocWithGCTransition(ObjectHandleOnStack value, GCHandleType type);
 
         internal static void InternalFree(IntPtr handle)
@@ -40,8 +40,8 @@ namespace System.Runtime.InteropServices
         private static void InternalFreeWithGCTransition(IntPtr dependentHandle)
             => _InternalFreeWithGCTransition(dependentHandle);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalFreeWithGCTransition")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalFreeWithGCTransition")]
         private static partial void _InternalFreeWithGCTransition(IntPtr dependentHandle);
 
 #if FEATURE_JAVAMARSHAL
@@ -60,8 +60,8 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool InternalTryGetBridgeWait(IntPtr handle, ref object? result);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalGetBridgeWait")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalGetBridgeWait")]
         private static partial void InternalGetBridgeWait(IntPtr handle, ObjectHandleOnStack result);
 
 #endif

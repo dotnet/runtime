@@ -175,6 +175,7 @@ namespace System.Reflection
         {
             return GetAssemblyNameInternal(null, assemblyFile);
 
+            [RequiresUnsafe]
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetAssemblyName")]
             static extern AssemblyName GetAssemblyNameInternal(
                 [UnsafeAccessorType("System.Reflection.Metadata.MetadataReader, System.Reflection.Metadata")] object? _,

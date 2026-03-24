@@ -47,8 +47,8 @@ namespace System
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall)]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString);
     }
 }

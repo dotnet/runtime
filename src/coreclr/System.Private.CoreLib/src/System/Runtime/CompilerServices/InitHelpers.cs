@@ -11,8 +11,8 @@ namespace System.Runtime.CompilerServices
     [DebuggerStepThrough]
     internal static unsafe partial class InitHelpers
     {
-        [LibraryImport(RuntimeHelpers.QCall)]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void InitClassHelper(MethodTable* mt);
 
         [DebuggerHidden]

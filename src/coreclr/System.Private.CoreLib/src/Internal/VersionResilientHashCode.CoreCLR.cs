@@ -14,8 +14,8 @@ namespace Internal
     /// </summary>
     internal static partial class VersionResilientHashCode
     {
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "VersionResilientHashCode_TypeHashCode")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "VersionResilientHashCode_TypeHashCode")]
         private static partial int TypeHashCode(QCallTypeHandle typeHandle);
 
         public static int TypeHashCode(RuntimeType type)

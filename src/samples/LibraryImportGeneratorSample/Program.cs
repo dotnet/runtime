@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace Demo
@@ -10,12 +11,15 @@ namespace Demo
     {
         public const string NativeExportsNE_Binary = "Microsoft.Interop.Tests." + nameof(NativeExportsNE);
 
+        [RequiresUnsafe]
         [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sumi")]
         public static partial int Sum(int a, int b);
 
+        [RequiresUnsafe]
         [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sumouti")]
         public static partial void Sum(int a, int b, out int c);
 
+        [RequiresUnsafe]
         [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sumrefi")]
         public static partial void Sum(int a, ref int b);
     }

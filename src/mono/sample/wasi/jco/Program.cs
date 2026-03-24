@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -34,6 +35,7 @@ public static class WasiMainWrapper
     {
         return PollWasiEventLoopUntilResolved((Thread)null!, MainAsync(args));
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "PollWasiEventLoopUntilResolved")]
         static extern int PollWasiEventLoopUntilResolved(Thread t, Task<int> mainTask);
     }

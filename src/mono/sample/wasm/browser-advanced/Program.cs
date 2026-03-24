@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.InteropServices;
@@ -41,6 +42,7 @@ namespace Sample
             return 0;
         }
 
+        [RequiresUnsafe]
         [LibraryImport("fibonacci")]
         public static partial int Fibonacci(int n);
 

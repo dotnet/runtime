@@ -32,12 +32,12 @@ namespace System.IO
             return string.Format(format!, fileName, message);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall)]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetFileLoadExceptionMessage(int hResult, StringHandleOnStack retString);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FileLoadException_GetMessageForHR")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FileLoadException_GetMessageForHR")]
         private static partial void GetMessageForHR(int hresult, StringHandleOnStack retString);
     }
 }

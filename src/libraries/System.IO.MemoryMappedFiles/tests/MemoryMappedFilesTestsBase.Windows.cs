@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -20,12 +21,14 @@ namespace System.IO.MemoryMappedFiles.Tests
             return pageSize;
         });
 
+        [RequiresUnsafe]
         [LibraryImport("kernel32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetHandleInformation(IntPtr hObject, out uint lpdwFlags);
 
         private const uint HANDLE_FLAG_INHERIT = 0x00000001;
 
+        [RequiresUnsafe]
         [LibraryImport("kernel32.dll")]
         private static partial void GetSystemInfo(out SYSTEM_INFO input);
 

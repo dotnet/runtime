@@ -4,6 +4,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -139,9 +140,11 @@ public partial class CancelKeyPressTests
         }
     }
 
+    [RequiresUnsafe]
     [LibraryImport("libc", SetLastError = true)]
     private static partial int kill(int pid, int sig);
 
+    [RequiresUnsafe]
     [LibraryImport("libc", SetLastError = true)]
     private static unsafe partial int sigaction(int signum, struct_sigaction* act, struct_sigaction* oldact);
 

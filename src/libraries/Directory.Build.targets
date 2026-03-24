@@ -200,11 +200,10 @@
   </ItemGroup>
 
   <!-- Adds RequiresUnsafeAttribute polyfill for non-CoreLib library source projects that share Common
-       source files annotated with [RequiresUnsafe]. Excluded from shim/facade/ref/PNSE assemblies that
+       source files annotated with [RequiresUnsafe]. Excluded from shim/ref/PNSE assemblies that
        must only contain type-forwards, and projects that opt out of polyfills. -->
   <ItemGroup Condition="'$(SkipIncludePolyfills)' != 'true' and
                         '$(MSBuildProjectExtension)' == '.csproj' and
-                        '$(IsPartialFacadeAssembly)' != 'true' and
                         '$(IsReferenceAssemblyProject)' != 'true' and
                         '$(GeneratePlatformNotSupportedAssemblyMessage)' == '' and
                         '$(GeneratePlatformNotSupportedAssembly)' != 'true' and

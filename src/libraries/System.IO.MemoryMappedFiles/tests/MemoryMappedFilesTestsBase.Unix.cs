@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -33,9 +34,11 @@ namespace System.IO.MemoryMappedFiles.Tests
             return pageSize;
         });
 
+        [RequiresUnsafe]
         [LibraryImport("libc", SetLastError = true)]
         private static partial int sysconf(int name);
 
+        [RequiresUnsafe]
         [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         protected static partial int mkfifo(string path, int mode);
 

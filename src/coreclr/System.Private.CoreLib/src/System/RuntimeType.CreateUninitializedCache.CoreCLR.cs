@@ -76,8 +76,8 @@ namespace System
                 vAllocatorFirstArg = vAllocatorFirstArgTemp;
             }
 
-            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionSerialization_GetCreateUninitializedObjectInfo")]
             [RequiresUnsafe]
+            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionSerialization_GetCreateUninitializedObjectInfo")]
             private static partial void GetCreateUninitializedInfo(
                 QCallTypeHandle type,
                 delegate*<void*, object>* ppfnAllocator,

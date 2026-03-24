@@ -163,8 +163,8 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified class constructor threw an
         // exception when it ran.
 
-        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunClassConstructor")]
         [RequiresUnsafe]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunClassConstructor")]
         private static partial void RunClassConstructor(QCallTypeHandle type);
 
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
@@ -184,8 +184,8 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified module constructor threw an
         // exception when it ran.
 
-        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunModuleConstructor")]
         [RequiresUnsafe]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunModuleConstructor")]
         private static partial void RunModuleConstructor(QCallModule module);
 
         public static void RunModuleConstructor(ModuleHandle module)
@@ -196,12 +196,12 @@ namespace System.Runtime.CompilerServices
             RunModuleConstructor(new QCallModule(ref rm));
         }
 
-        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_CompileMethod")]
         [RequiresUnsafe]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_CompileMethod")]
         internal static partial void CompileMethod(RuntimeMethodHandleInternal method);
 
-        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
         [RequiresUnsafe]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
         private static unsafe partial void PrepareMethod(RuntimeMethodHandleInternal method, IntPtr* pInstantiation, int cInstantiation);
 
         public static void PrepareMethod(RuntimeMethodHandle method) => PrepareMethod(method, null);
@@ -223,8 +223,8 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareDelegate")]
         [RequiresUnsafe]
+        [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareDelegate")]
         private static partial void PrepareDelegate(ObjectHandleOnStack d);
 
         public static void PrepareDelegate(Delegate d)
@@ -244,8 +244,8 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int TryGetHashCode(object? o);
 
-        [LibraryImport(QCall, EntryPoint = "ObjectNative_GetHashCodeSlow")]
         [RequiresUnsafe]
+        [LibraryImport(QCall, EntryPoint = "ObjectNative_GetHashCodeSlow")]
         private static partial int GetHashCodeSlow(ObjectHandleOnStack o);
 
         public static int GetHashCode(object? o)
@@ -352,8 +352,8 @@ namespace System.Runtime.CompilerServices
             return rt.GetUninitializedObject();
         }
 
-        [LibraryImport(QCall, EntryPoint = "ObjectNative_AllocateUninitializedClone")]
         [RequiresUnsafe]
+        [LibraryImport(QCall, EntryPoint = "ObjectNative_AllocateUninitializedClone")]
         internal static partial void AllocateUninitializedClone(ObjectHandleOnStack objHandle);
 
         /// <returns>true if given type is bitwise equatable (memcmp can be used for equality checking)</returns>
@@ -473,8 +473,8 @@ namespace System.Runtime.CompilerServices
         [RequiresUnsafe]
         internal static unsafe MethodTable* GetMethodTable(object obj) => GetMethodTable(obj);
 
-        [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [RequiresUnsafe]
+        [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb);
 
@@ -522,20 +522,20 @@ namespace System.Runtime.CompilerServices
             return AllocateTypeAssociatedMemoryAligned(new QCallTypeHandle(ref rt), (uint)size, (uint)alignment);
         }
 
-        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
         [RequiresUnsafe]
+        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
-        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned")]
         [RequiresUnsafe]
+        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned")]
         private static partial IntPtr AllocateTypeAssociatedMemoryAligned(QCallTypeHandle type, uint size, uint alignment);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RequiresUnsafe]
         private static extern unsafe TailCallArgBuffer* GetTailCallArgBuffer();
 
-        [LibraryImport(QCall, EntryPoint = "TailCallHelp_AllocTailCallArgBufferInternal")]
         [RequiresUnsafe]
+        [LibraryImport(QCall, EntryPoint = "TailCallHelp_AllocTailCallArgBufferInternal")]
         private static unsafe partial TailCallArgBuffer* AllocTailCallArgBufferInternal(int size);
 
         private const int TAILCALLARGBUFFER_ACTIVE = 0;
@@ -633,9 +633,9 @@ namespace System.Runtime.CompilerServices
             return type.GetRuntimeType().Box(ref target);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_SizeOf")]
         [SuppressGCTransition]
-        [RequiresUnsafe]
         private static partial int SizeOf(QCallTypeHandle handle);
 
         /// <summary>
@@ -1330,13 +1330,13 @@ namespace System.Runtime.CompilerServices
             return CanCastTo_NoCacheLookup(srcTH.m_asTAddr, destTH.m_asTAddr) != Interop.BOOL.FALSE;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
         private static partial Interop.BOOL CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
 
+        [RequiresUnsafe]
         [SuppressGCTransition]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_GetCorElementType")]
-        [RequiresUnsafe]
         private static partial int GetCorElementType(void* typeHnd);
     }
 

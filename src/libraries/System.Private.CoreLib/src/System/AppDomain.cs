@@ -427,12 +427,14 @@ namespace System
 
             return principal;
 
+            [RequiresUnsafe]
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetDefaultInstance")]
             [return: UnsafeAccessorType("System.Security.Principal.GenericPrincipal, System.Security.Claims")]
             static extern object GetDefaultPrincipal(
                 [UnsafeAccessorType("System.Security.Principal.GenericPrincipal, System.Security.Claims")] object? _);
 
 #if TARGET_WINDOWS
+            [RequiresUnsafe]
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetDefaultInstance")]
             [return: UnsafeAccessorType("System.Security.Principal.WindowsPrincipal, System.Security.Principal.Windows")]
             static extern object GetDefaultWindowsPrincipal(

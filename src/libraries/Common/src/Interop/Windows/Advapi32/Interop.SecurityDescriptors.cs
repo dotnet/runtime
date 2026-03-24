@@ -28,26 +28,26 @@ internal static partial class Interop
         internal static partial bool SetSecurityDescriptorOwner(
             nint pSecurityDescriptor,
             nint pOwner,
-            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.Bool)] bool bOwnerDefaulted);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetSecurityDescriptorGroup(
             nint pSecurityDescriptor,
             nint pGroup,
-            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.Bool)] bool bGroupDefaulted);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetSecurityDescriptorDacl(
             nint pSecurityDescriptor,
             [MarshalAs(UnmanagedType.Bool)] bool bDaclPresent,
             nint pDacl,
-            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.Bool)] bool bDaclDefaulted);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetSecurityDescriptorSacl(

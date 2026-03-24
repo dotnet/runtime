@@ -14,11 +14,13 @@ namespace System.Runtime.InteropServices
         private static bool HasReferenceTrackerManager
             => HasReferenceTrackerManagerInternal();
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TrackerObjectManager_HasReferenceTrackerManager")]
         [SuppressGCTransition]
         [return: MarshalAs(UnmanagedType.U1)]
         private static partial bool HasReferenceTrackerManagerInternal();
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TrackerObjectManager_TryRegisterReferenceTrackerManager")]
         [SuppressGCTransition]
         [return: MarshalAs(UnmanagedType.U1)]
@@ -27,6 +29,7 @@ namespace System.Runtime.InteropServices
         internal static bool IsGlobalPeggingEnabled
             => IsGlobalPeggingEnabledInternal();
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TrackerObjectManager_IsGlobalPeggingEnabled")]
         [SuppressGCTransition]
         [return: MarshalAs(UnmanagedType.U1)]
@@ -40,8 +43,8 @@ namespace System.Runtime.InteropServices
             RegisterNativeObjectWrapperCache(ObjectHandleOnStack.Create(ref handleSet));
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TrackerObjectManager_RegisterNativeObjectWrapperCache")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TrackerObjectManager_RegisterNativeObjectWrapperCache")]
         private static partial void RegisterNativeObjectWrapperCache(ObjectHandleOnStack nativeObjectWrapperCache);
     }
 }

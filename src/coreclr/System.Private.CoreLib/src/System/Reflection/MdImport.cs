@@ -228,8 +228,8 @@ namespace System.Reflection
         #endregion
 
         #region Static Members
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_GetMarshalAs")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_GetMarshalAs")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool GetMarshalAs(
             IntPtr pNativeType,
@@ -334,8 +334,8 @@ namespace System.Reflection
         }
         #endregion
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_Enum")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_Enum")]
         private static unsafe partial void Enum(IntPtr scope, int type, int parent, ref int length, int* shortResult, ObjectHandleOnStack longResult);
 
         public unsafe void Enum(MetadataTokenType type, int parent, out MetadataEnumResult result)
