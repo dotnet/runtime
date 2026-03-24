@@ -22,7 +22,7 @@
 #
 # Generate breaking change documentation for merged PRs labeled needs-breaking-change-doc-created. Produces two markdown files (issue-draft.md and pr-comment.md) and optionally comments on the PR.
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"1f067eef2a236a6c2d4744f3effd3b7359ea19830c35cd6e0f6ebeac645b6ad6","compiler_version":"v0.63.0","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"4036d89024628e53eb681620e773177858293ed7cc9c323b43dc30c37235b858","compiler_version":"v0.63.0","strict":true,"agent_id":"copilot"}
 
 name: "Breaking Change Documentation"
 "on":
@@ -32,21 +32,6 @@ name: "Breaking Change Documentation"
     types:
     - closed
     - labeled
-  # steps: # Steps injected into pre-activation job
-  # - env:
-      # EVENT_NAME: ${{ github.event_name }}
-      # PR_MERGED: ${{ github.event.pull_request.merged }}
-    # id: merge_check
-    # name: Check merge status
-    # run: |
-      # if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-        # echo "Manual dispatch — skipping merge check"
-        # exit 0
-      # fi
-      # if [ "$PR_MERGED" != "true" ]; then
-        # echo "PR is not merged — skipping"
-        # exit 1
-      # fi
   workflow_dispatch:
     inputs:
       aw_context:
@@ -76,9 +61,10 @@ jobs:
   activation:
     needs: pre_activation
     if: >
-      needs.pre_activation.outputs.activated == 'true' && (((needs.pre_activation.outputs.merge_check_result == 'success') &&
-      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.id == github.repository_id)) &&
-      (github.event_name != 'pull_request' || github.event.action != 'labeled' || github.event.label.name == 'needs-breaking-change-doc-created'))
+      needs.pre_activation.outputs.activated == 'true' && (((github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created'))
+      ) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.id == github.repository_id)) && (github.event_name != 'pull_request' || github.event.action != 'labeled' || github.event.label.name == 'needs-breaking-change-doc-created'))
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -758,6 +744,15 @@ jobs:
           else
             echo 'AWF binary not installed, skipping firewall log summary'
           fi
+      - if: always()
+        name: Upload breaking change drafts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          if-no-files-found: ignore
+          name: breaking-change-docs
+          path: artifacts/docs/breakingChanges/
+          retention-days: 30
+
       - name: Upload agent artifacts
         if: always()
         continue-on-error: true
@@ -1008,11 +1003,15 @@ jobs:
             await main();
 
   pre_activation:
+    if: >
+      ((github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created'))
+      ) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.id == github.repository_id)) && (github.event_name != 'pull_request' || github.event.action != 'labeled' || github.event.label.name == 'needs-breaking-change-doc-created')
     runs-on: ubuntu-slim
     outputs:
       activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
       matched_command: ''
-      merge_check_result: ${{ steps.merge_check.outcome }}
     steps:
       - name: Setup Scripts
         uses: github/gh-aw-actions/setup@9128d2542bbf1bdfec94dabeaf3e1d3c0d402577 # v0.63.0
@@ -1030,20 +1029,6 @@ jobs:
             setupGlobals(core, github, context, exec, io);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/check_membership.cjs');
             await main();
-      - name: Check merge status
-        id: merge_check
-        run: |
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            echo "Manual dispatch — skipping merge check"
-            exit 0
-          fi
-          if [ "$PR_MERGED" != "true" ]; then
-            echo "PR is not merged — skipping"
-            exit 1
-          fi
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          PR_MERGED: ${{ github.event.pull_request.merged }}
 
   safe_outputs:
     needs: agent

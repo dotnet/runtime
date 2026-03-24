@@ -7,6 +7,7 @@ description: >
 on:
   pull_request:
     types: [closed, labeled]
+    names: [needs-breaking-change-doc-created]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -18,47 +19,11 @@ on:
         required: false
         type: boolean
         default: false
-  steps:
-    - name: Check label and merge status
-      id: merge_check
-      env:
-        PR_MERGED: ${{ github.event.pull_request.merged }}
-        PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        EVENT_NAME: ${{ github.event_name }}
-        EVENT_ACTION: ${{ github.event.action }}
-        LABELED_NAME: ${{ github.event.label.name }}
-      run: |
-        if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-          echo "Manual dispatch — skipping label/merge check"
-          exit 0
-        fi
 
-        # For 'labeled' events, the triggering label must be the one we care about
-        if [ "$EVENT_ACTION" = "labeled" ]; then
-          if [ "$LABELED_NAME" != "needs-breaking-change-doc-created" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Label '$LABELED_NAME' is not relevant — skipping"
-            exit 0
-          fi
-        fi
-
-        # For 'closed' events, the label must already be on the PR
-        if [ "$EVENT_ACTION" = "closed" ]; then
-          if [[ ",$PR_LABELS," != *",needs-breaking-change-doc-created,"* ]]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "PR does not have needs-breaking-change-doc-created label — skipping"
-            exit 0
-          fi
-        fi
-
-        # PR must be merged
-        if [ "$PR_MERGED" != "true" ]; then
-          echo "skip=true" >> "$GITHUB_OUTPUT"
-          echo "PR is not merged — skipping"
-          exit 0
-        fi
-
-if: needs.pre_activation.outputs.merge_check_result == 'success' && needs.pre_activation.outputs.merge_check_skip != 'true'
+if: |
+  github.event_name == 'workflow_dispatch' ||
+  (github.event.pull_request.merged == true &&
+   contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created'))
 
 permissions:
   contents: read
@@ -69,6 +34,16 @@ tools:
 safe-outputs:
   add-comment:
     target: "*"
+
+post-steps:
+  - name: Upload breaking change drafts
+    if: always()
+    uses: actions/upload-artifact@v4
+    with:
+      name: breaking-change-docs
+      path: artifacts/docs/breakingChanges/
+      retention-days: 30
+      if-no-files-found: ignore
 ---
 
 # Breaking Change Documentation
@@ -91,9 +66,10 @@ Using the breaking-change-doc skill from
 `.github/skills/breaking-change-doc/SKILL.md`, execute **all steps (0 through
 6)** for the PR above.
 
-In Step 6, if dry-run mode is active, skip posting the comment — the generated
-files under `artifacts/docs/breakingChanges/` are the workflow's outputs and
-can be inspected in the runner workspace.
+In Step 6, if dry-run mode is active, skip posting the comment. The generated
+files in `artifacts/docs/breakingChanges/` are automatically uploaded as a
+workflow artifact named **breaking-change-docs** and can be downloaded from the
+workflow run summary page.
 
 ## When no action is needed
 

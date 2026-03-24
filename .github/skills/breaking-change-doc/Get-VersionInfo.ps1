@@ -223,5 +223,9 @@ try {
         Error              = $_.Exception.Message
     } | ConvertTo-Json
 } finally {
-    Pop-Location
+    try {
+        Pop-Location -ErrorAction Stop
+    } catch {
+        # Ignore failures when restoring location to avoid masking original errors
+    }
 }
