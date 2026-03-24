@@ -785,7 +785,7 @@ namespace System.Text.Unicode
 
             Vector128<byte> prevInputBlock = Vector128<byte>.Zero;
 
-            // This is used to detect whether the previous block of contains incomplete sequences.
+            // This is used to detect whether the previous block contains incomplete sequences.
             // It contains the maximum values the previous bytes can be without generating a carry.
             // If we see larger values, it means we need to go back and validate.
             // The first 13 bytes can never generate a carry for a valid UTF-8 byte sequence, the
@@ -946,7 +946,7 @@ namespace System.Text.Unicode
                     Vector128<byte> twoBytesError = byte1High & byte1Low & byte2High;
 
                     // Check if the sequences with two continuation bytes are valid.
-                    // This is only possible for 3 or 4-byte sequences, then we match the expected occurences
+                    // This is only possible for 3 or 4-byte sequences, then we match the expected occurrences
                     // against the MSB from the table lookup results.
                     Vector128<byte> isThirdByte = Vector128.SubtractSaturate(prev2, thirdByte);
                     Vector128<byte> isFourthByte = Vector128.SubtractSaturate(prev3, fourthByte);
@@ -968,7 +968,7 @@ namespace System.Text.Unicode
 
                     if (AdvSimd.Arm64.IsSupported)
                     {
-                        vecContinuationBytes += Vector128.LessThanOrEqual(Vector128.AsSByte(currentBlock), largestContinuationByte);
+                        vecContinuationBytes += Vector128.LessThanOrEqual(currentBlock.AsSByte(), largestContinuationByte);
                         vecFourByteSequences += Vector128.GreaterThan(currentBlock, fourthByteMinusOne).AsSByte();
                         overflowCounter++;
                         // We have a risk of overflow if overflowCounter reaches 127,
