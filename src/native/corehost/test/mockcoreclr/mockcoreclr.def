@@ -1,8 +1,0 @@
-; Licensed to the .NET Foundation under one or more agreements.
-; The .NET Foundation licenses this file to you under the MIT license.
-
-EXPORTS
-        coreclr_create_delegate
-        coreclr_execute_assembly
-        coreclr_initialize
-        coreclr_shutdown_2

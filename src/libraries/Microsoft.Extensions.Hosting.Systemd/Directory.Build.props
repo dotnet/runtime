@@ -1,7 +1,0 @@
-<Project>
-  <Import Project="..\Directory.Build.props" />
-  <PropertyGroup>
-    <PackageTags>hosting</PackageTags>
-    <IncludePlatformAttributes>true</IncludePlatformAttributes>
-  </PropertyGroup>
-</Project>

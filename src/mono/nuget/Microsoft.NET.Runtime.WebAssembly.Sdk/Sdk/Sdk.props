@@ -1,8 +1,0 @@
-<Project>
-  <PropertyGroup Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' != 'true'">
-    <TargetArchitecture>wasm</TargetArchitecture>
-    <TargetOS>browser</TargetOS>
-    <OutputType Condition="'$(OutputType)' == ''">Exe</OutputType>
-    <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
-  </PropertyGroup>
-</Project>

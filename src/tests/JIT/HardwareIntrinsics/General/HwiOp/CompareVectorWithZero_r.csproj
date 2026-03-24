@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <DebugType>Embedded</DebugType>
-    <Optimize />
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="CompareVectorWithZero.cs" />
-  </ItemGroup>
-</Project>

@@ -1,3 +1,0 @@
-<variations name="attValuelTemp" xml:space="preserve">
-	<variation case_id="77531" xmlFile="books.xml" xslFile="foo.xsl" checkSum="328.51129007756" errorCase="" errorNo="" language="ALL" method="Case not implemented" owner="KPranav" priority="3" title="XSLT17000:  xsl: attribute value Template, Base Spec Case - every place an Attribute Value Template is allowed" type="Interoperability" versions="192"/>
-</variations>

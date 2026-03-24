@@ -1,6 +1,0 @@
-{
-  "diagnosticMessages": true,
-  "longRunningTestSeconds": 120,
-  "shadowCopy": false,
-  "preEnumerateTheories": false
-}

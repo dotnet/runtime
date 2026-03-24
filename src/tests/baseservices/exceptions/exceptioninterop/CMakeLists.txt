@@ -1,4 +1,0 @@
-
-include_directories(${INC_PLATFORM_DIR})
-add_library(ExceptionInteropNative SHARED ExceptionInteropNative.cpp)
-target_link_libraries(ExceptionInteropNative PRIVATE platformdefines)

@@ -1,8 +1,0 @@
-<linker>
-  <assembly fullname="System.Private.Xml.Linq">
-    <type fullname="System.Xml.Linq.XElement">
-      <!-- needed by serialization -->
-      <method name=".ctor" />
-    </type>
-  </assembly>
-</linker>

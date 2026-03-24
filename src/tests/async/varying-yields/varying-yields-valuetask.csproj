@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <DefineConstants>ASYNC1_VALUETASK;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="varying-yields.cs" />
-  </ItemGroup>
-</Project>

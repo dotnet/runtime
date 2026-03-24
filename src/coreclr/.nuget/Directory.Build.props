@@ -1,4 +1,0 @@
-<Project>
-  <Import Project="..\Directory.Build.props" />
-  <Import Project="pkgproj.props" Condition="'$(UsePkgProjTargets)' != 'false'" />
-</Project>

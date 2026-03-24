@@ -1,9 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <TargetArchitecture>wasm</TargetArchitecture>
-    <TargetOS>wasi</TargetOS>
-    <UseMonoRuntime>true</UseMonoRuntime>
-    <OutputType Condition="'$(OutputType)' == ''">Exe</OutputType>
-    <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
-  </PropertyGroup>
-</Project>

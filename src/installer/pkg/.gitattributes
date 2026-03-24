@@ -1,2 +1,0 @@
-# Preserve empty placeholder PDB files when synchronizing into the VMR (by default, binaries are excluded)
-_.pdb vmr-preserve

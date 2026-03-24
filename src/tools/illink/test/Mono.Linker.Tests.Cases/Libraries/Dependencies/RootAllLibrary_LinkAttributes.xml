@@ -1,7 +1,0 @@
-<linker>
-    <assembly fullname="removedattribute">
-        <type fullname="Mono.Linker.Tests.Cases.Libraries.Dependencies.RootAllLibrary_RemovedAttribute">
-            <attribute internal="RemoveAttributeInstances" />
-        </type>
-    </assembly>
-</linker>

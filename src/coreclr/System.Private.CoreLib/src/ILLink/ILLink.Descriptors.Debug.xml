@@ -1,8 +1,0 @@
-<linker>
-  <assembly fullname="System.Private.CoreLib">
-    <type fullname="System.Runtime.InteropServices.Marshal">
-      <!-- Used for testing suppress GC transition -->
-      <method name="GetIsInCooperativeGCModeFunctionPointer" />
-    </type>
-  </assembly>
-</linker>

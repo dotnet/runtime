@@ -1,5 +1,0 @@
-<linker>
-  <assembly fullname="System.Linq" />
-  <assembly fullname="System.Linq.Tests" />
-  <assembly fullname="System.Runtime" />
-</linker>

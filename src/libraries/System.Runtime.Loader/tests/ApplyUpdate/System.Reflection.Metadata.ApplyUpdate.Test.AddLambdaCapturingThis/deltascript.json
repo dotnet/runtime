@@ -1,8 +1,0 @@
-{
-  "changes": [
-    {
-      "document": "AddLambdaCapturingThis.cs",
-      "update": "AddLambdaCapturingThis_v1.cs"
-    }
-  ]
-}

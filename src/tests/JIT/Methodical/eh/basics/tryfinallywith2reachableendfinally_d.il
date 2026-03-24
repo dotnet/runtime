@@ -1,1 +1,0 @@
-#define ASSEMBLY_NAME "tryfinallywith2reachableendfinally_d"

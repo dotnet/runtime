@@ -1,4 +1,0 @@
-<out xmlns:id="id" xmlns:cap="capitalizer">
-	<id>second</id>
-	<ID>SECOND</ID>
-</out>

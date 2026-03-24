@@ -1,3 +1,0 @@
-<Project>
-  <Import Condition="Exists('..\Directory.Build.props')" Project="..\Directory.Build.props" />
-</Project>

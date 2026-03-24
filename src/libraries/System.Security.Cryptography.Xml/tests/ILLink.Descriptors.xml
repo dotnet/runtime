@@ -1,5 +1,0 @@
-<linker>
-  <assembly fullname="System.Private.CoreLib" />
-  <assembly fullname="System.Security.Cryptography" />
-  <assembly fullname="System.Security.Cryptography.Xml" />
-</linker>

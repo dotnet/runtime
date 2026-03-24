@@ -1,1 +1,0 @@
-#define ASSEMBLY_NAME "b323557_d"

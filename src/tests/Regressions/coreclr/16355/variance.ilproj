@@ -1,5 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
-  <ItemGroup>
-    <Compile Include="variance.il" />
-  </ItemGroup>
-</Project>

@@ -1,7 +1,0 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
-#define FX_VER_FILEDESCRIPTION_STR ".NET Runtime"
-
-#include <fxver.h>
-#include <fxver.rc>

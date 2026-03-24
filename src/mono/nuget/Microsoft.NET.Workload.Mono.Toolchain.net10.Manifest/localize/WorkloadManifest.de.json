@@ -1,4 +1,0 @@
-{
-  "workloads/wasm-tools-net10/description": ".NET 10.0 WebAssembly-Buildtools",
-  "workloads/wasm-experimental-net10/description": "Experimentelle .NET 10.0 WebAssembly-Tools"
-}

@@ -1,1 +1,0 @@
-#define ASSEMBLY_NAME "tryfinallyintrycatchwithleaveintotry_d"

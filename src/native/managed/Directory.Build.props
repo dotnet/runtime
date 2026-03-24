@@ -1,9 +1,0 @@
-<Project>
-  <Import Project="..\..\..\Directory.Build.props" />
-  <PropertyGroup>
-
-    <UseBootstrapLayout Condition="'$(NeedsAotPublish)' == 'true' and '$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
-  </PropertyGroup>
-
-  <Import Project=".\native-library.props" Condition="'$(NeedsAotPublish)' == 'true'" />
-</Project>

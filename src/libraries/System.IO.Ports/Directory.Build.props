@@ -1,8 +1,0 @@
-﻿<Project>
-  <Import Project="..\Directory.Build.props" />
-  <PropertyGroup>
-    <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <UnsupportedOSPlatforms>browser;ios;tvos</UnsupportedOSPlatforms>
-    <SupportedOSPlatforms>maccatalyst</SupportedOSPlatforms>
-  </PropertyGroup>
-</Project>

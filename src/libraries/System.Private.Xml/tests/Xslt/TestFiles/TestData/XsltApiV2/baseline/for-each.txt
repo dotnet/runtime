@@ -1,5 +1,0 @@
-<out>
-  <title>XML Primer</title>
-  <title>XSLT Basics</title>
-  <title>Advanced XSLT</title>
-</out>

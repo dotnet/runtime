@@ -1,5 +1,0 @@
-NETLIBRARY
-{
-    global: %GLOBAL_SYMBOLS%;
-    local: *;
-};

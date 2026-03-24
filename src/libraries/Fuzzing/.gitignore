@@ -1,8 +1,0 @@
-TempNugetCache
-publish
-deployment
-crash-*
-timeout-*
-*inputs*
-*corpus*
-*coverage-report*

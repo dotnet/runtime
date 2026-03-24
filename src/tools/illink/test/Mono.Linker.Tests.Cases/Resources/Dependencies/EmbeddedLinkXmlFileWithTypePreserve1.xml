@@ -1,5 +1,0 @@
-<linker>
-    <assembly fullname="test">
-        <type fullname="Mono.Linker.Tests.Cases.Resources.EmbeddedLinkXmlFileWithTypePreserve/PreservedType" preserve="fields" />
-    </assembly>
-</linker>

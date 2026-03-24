@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <DebugType>None</DebugType>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="GitHub_57470.cs" />
-  </ItemGroup>
-</Project>

@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>library</OutputType>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\fieldgetter.ilproj" />
-    <Compile Include="..\test.cs" />
-  </ItemGroup>
-</Project>

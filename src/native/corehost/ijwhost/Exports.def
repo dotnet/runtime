@@ -1,3 +1,0 @@
-EXPORTS
-    _CorDllMain
-    GetTokenForVTableEntry PRIVATE

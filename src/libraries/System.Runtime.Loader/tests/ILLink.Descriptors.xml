@@ -1,5 +1,0 @@
-<linker>
-  <assembly fullname="LoaderLinkTest.Dynamic" />
-  <assembly fullname="ReferencedClassLib" />
-  <assembly fullname="ReferencedClassLibNeutralIsSatellite" />
-</linker>

@@ -1,3 +1,0 @@
-# Needed for serialization
-T:System.Net.CookieVariant
-T:System.Net.PathList

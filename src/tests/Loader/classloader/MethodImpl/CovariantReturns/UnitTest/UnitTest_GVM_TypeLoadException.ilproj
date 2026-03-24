@@ -1,5 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
-  <ItemGroup>
-    <Compile Include="UnitTest_GVM_TypeLoadException.il" />
-  </ItemGroup>
-</Project>

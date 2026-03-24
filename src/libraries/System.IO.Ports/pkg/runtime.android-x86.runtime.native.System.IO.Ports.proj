@@ -1,3 +1,0 @@
-<Project>
-  <Import Project="runtime.native.System.IO.Ports.props" />
-</Project>

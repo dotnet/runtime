@@ -1,2 +1,0 @@
-﻿In pattern ex:*[1] = ex:Name:
-   The element Name must appear before element Gender.

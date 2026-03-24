@@ -1,6 +1,0 @@
-<Project>
-  <Import Project="..\Directory.Build.props" />
-  <PropertyGroup>
-    <IsAotCompatible>false</IsAotCompatible>
-  </PropertyGroup>
-</Project>

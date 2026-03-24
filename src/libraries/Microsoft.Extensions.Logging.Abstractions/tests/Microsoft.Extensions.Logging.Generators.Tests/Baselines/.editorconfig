@@ -1,4 +1,0 @@
-# editorconfig.org
-
-[*.generated.txt]
-insert_final_newline = false

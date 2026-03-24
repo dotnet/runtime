@@ -1,4 +1,0 @@
-{
-  "workloads/wasm-tools-net10/description": "Средства сборки WebAssembly .NET 10.0",
-  "workloads/wasm-experimental-net10/description": "Экспериментальный инструментарий .NET 10.0 WebAssembly"
-}

@@ -1,5 +1,0 @@
-!Makefile
-.stamp-wasm-install-and-select*
-emsdk
-
-runtime/*.d.ts.sha256

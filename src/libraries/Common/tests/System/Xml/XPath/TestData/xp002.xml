@@ -1,7 +1,0 @@
-<Doc>
- <Chap>
-   <Title Attr1="value1" name="This is the name" Attr2="value2">XPath test</Title>
-   <Para>First paragraph <Origin Attr1="value1" Attr2="value2" Attr3="value3"/> End of first paragraph </Para>
-   <Para>Second paragraph </Para>
- </Chap>
-</Doc>

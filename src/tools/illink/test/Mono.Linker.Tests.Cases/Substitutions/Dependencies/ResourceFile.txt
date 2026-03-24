@@ -1,1 +1,0 @@
-This resource will be embedded into an assembly and then removed by ILLink.

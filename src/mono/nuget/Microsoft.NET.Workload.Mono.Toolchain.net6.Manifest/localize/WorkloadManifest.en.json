@@ -1,4 +1,0 @@
-{
-  "workloads/wasm-tools-net6/description": ".NET WebAssembly build tools for net6.0",
-  "workloads/runtimes-windows-net6/description": "Windows Runtime Packs for net6.0"
-}
