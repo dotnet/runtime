@@ -14,7 +14,7 @@ namespace Internal.Cryptography.Pal.AnyOS
         public override Oid GetEncodedMessageType(ReadOnlySpan<byte> encodedMessage)
         {
             ValueAsnReader reader = new ValueAsnReader(encodedMessage, AsnEncodingRules.BER);
-            ValueContentInfoAsn.Decode(ref reader, out ValueContentInfoAsn contentInfo);
+            ValueContentInfoAsn contentInfo = ValueContentInfoAsn.Decode(ref reader);
 
             switch (contentInfo.ContentType)
             {

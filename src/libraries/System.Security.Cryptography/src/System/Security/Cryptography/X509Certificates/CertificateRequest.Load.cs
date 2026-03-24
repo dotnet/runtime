@@ -155,8 +155,8 @@ namespace System.Security.Cryptography.X509Certificates
                 ReadOnlySpan<byte> signature;
                 int signatureUnusedBitCount;
 
-                ValueCertificationRequestInfoAsn.Decode(ref pkcs10Asn, out requestInfo);
-                ValueAlgorithmIdentifierAsn.Decode(ref pkcs10Asn, out algorithmIdentifier);
+                requestInfo = ValueCertificationRequestInfoAsn.Decode(ref pkcs10Asn);
+                algorithmIdentifier = ValueAlgorithmIdentifierAsn.Decode(ref pkcs10Asn);
 
                 if (!pkcs10Asn.TryReadPrimitiveBitString(out signatureUnusedBitCount, out signature))
                 {
@@ -205,7 +205,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 bool foundCertExt = false;
 
-                foreach (ValueAttributeAsn attr in requestInfo.GetAttributes(AsnEncodingRules.DER))
+                foreach (ValueAttributeAsn attr in requestInfo.GetAttributes())
                 {
                     if (attr.AttrType == Oids.Pkcs9ExtensionRequest)
                     {
@@ -220,7 +220,7 @@ namespace System.Security.Cryptography.X509Certificates
                         scoped ReadOnlySpan<byte> firstAttrValue = default;
                         bool foundAttrValue = false;
 
-                        foreach (ReadOnlySpan<byte> values in attr.GetAttrValues(AsnEncodingRules.DER))
+                        foreach (ReadOnlySpan<byte> values in attr.GetAttrValues())
                         {
                             if (foundAttrValue)
                             {
@@ -247,7 +247,7 @@ namespace System.Security.Cryptography.X509Certificates
                         // Minimum length is 1, so do..while
                         do
                         {
-                            ValueX509ExtensionAsn.Decode(ref exts, out ValueX509ExtensionAsn extAsn);
+                            ValueX509ExtensionAsn extAsn = ValueX509ExtensionAsn.Decode(ref exts);
 
                             if (unsafeLoadCertificateExtensions)
                             {
@@ -275,7 +275,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         bool anyAttrValues = false;
 
-                        foreach (ReadOnlySpan<byte> val in attr.GetAttrValues(AsnEncodingRules.DER))
+                        foreach (ReadOnlySpan<byte> val in attr.GetAttrValues())
                         {
                             req.OtherRequestAttributes.Add(new AsnEncodedData(attr.AttrType, val));
                             anyAttrValues = true;
@@ -319,10 +319,9 @@ namespace System.Security.Cryptography.X509Certificates
                         return false;
                     }
 
-                    ValuePssParamsAsn.Decode(
+                    ValuePssParamsAsn pssParams = ValuePssParamsAsn.Decode(
                         algorithmIdentifier.Parameters,
-                        AsnEncodingRules.DER,
-                        out ValuePssParamsAsn pssParams);
+                        AsnEncodingRules.DER);
 
                     RSASignaturePadding padding = pssParams.GetSignaturePadding();
                     hashAlg = HashAlgorithmName.FromOid(pssParams.HashAlgorithm.Algorithm);

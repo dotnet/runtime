@@ -463,7 +463,7 @@ namespace System.Security.Cryptography.X509Certificates
             try
             {
                 read = reader.PeekEncodedValue().Length;
-                ValueSubjectPublicKeyInfoAsn.Decode(ref reader, out spki);
+                spki = ValueSubjectPublicKeyInfoAsn.Decode(ref reader);
             }
             catch (AsnContentException e)
             {

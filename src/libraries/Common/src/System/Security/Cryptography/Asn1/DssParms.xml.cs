@@ -30,19 +30,20 @@ namespace System.Security.Cryptography.Asn1
             writer.PopSequence(tag);
         }
 
-        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueDssParms decoded)
+        internal static ValueDssParms Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
-            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+            return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
 
-        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueDssParms decoded)
+        internal static ValueDssParms Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
                 ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
 
-                DecodeCore(ref reader, expectedTag, out decoded);
+                ValueDssParms decoded = DecodeCore(ref reader, expectedTag);
                 reader.ThrowIfNotEmpty();
+                return decoded;
             }
             catch (AsnContentException e)
             {
@@ -50,16 +51,16 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, out ValueDssParms decoded)
+        internal static ValueDssParms Decode(scoped ref ValueAsnReader reader)
         {
-            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+            return Decode(ref reader, Asn1Tag.Sequence);
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueDssParms decoded)
+        internal static ValueDssParms Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag)
         {
             try
             {
-                DecodeCore(ref reader, expectedTag, out decoded);
+                return DecodeCore(ref reader, expectedTag);
             }
             catch (AsnContentException e)
             {
@@ -67,9 +68,9 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueDssParms decoded)
+        private static ValueDssParms DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag)
         {
-            decoded = default;
+            ValueDssParms decoded = default;
             ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
 
             decoded.P = sequenceReader.ReadInteger();
@@ -77,6 +78,7 @@ namespace System.Security.Cryptography.Asn1
             decoded.G = sequenceReader.ReadInteger();
 
             sequenceReader.ThrowIfNotEmpty();
+            return decoded;
         }
     }
 }

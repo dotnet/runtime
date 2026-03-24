@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
             {
                 ValueAsnReader reader = new ValueAsnReader(keyData, AsnEncodingRules.DER);
                 read = reader.PeekEncodedValue().Length;
-                ValueRSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER, out _);
+                _ = ValueRSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER);
             }
             catch (AsnContentException e)
             {

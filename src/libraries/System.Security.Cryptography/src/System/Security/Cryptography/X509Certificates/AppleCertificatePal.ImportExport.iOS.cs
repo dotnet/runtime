@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 // Permit trailing data after the PKCS12.
                 ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
-                ValuePfxAsn.Decode(ref reader, out _);
+                ValuePfxAsn.Decode(ref reader);
                 return true;
             }
             catch (CryptographicException)
@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.X509Certificates
             try
             {
                 ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
-                ValueContentInfoAsn.Decode(ref reader, out ValueContentInfoAsn contentInfo);
+                ValueContentInfoAsn contentInfo = ValueContentInfoAsn.Decode(ref reader);
 
                 switch (contentInfo.ContentType)
                 {

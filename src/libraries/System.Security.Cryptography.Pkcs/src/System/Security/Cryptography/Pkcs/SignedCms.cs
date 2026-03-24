@@ -214,7 +214,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 // Windows (and thus NetFx) reads the leading data and ignores extra.
                 // So use the Decode overload which doesn't throw on extra data.
-                ValueContentInfoAsn.Decode(ref reader, out ValueContentInfoAsn contentInfo);
+                ValueContentInfoAsn contentInfo = ValueContentInfoAsn.Decode(ref reader);
 
                 if (contentInfo.ContentType != Oids.Pkcs7Signed)
                 {

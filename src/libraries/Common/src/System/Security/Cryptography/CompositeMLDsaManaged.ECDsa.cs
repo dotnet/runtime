@@ -65,7 +65,7 @@ namespace System.Security.Cryptography
             {
                 Helpers.ThrowIfAsnInvalidLength(source);
 
-                ValueECPrivateKey.Decode(source, AsnEncodingRules.BER, out ValueECPrivateKey ecPrivateKey);
+                ValueECPrivateKey ecPrivateKey = ValueECPrivateKey.Decode(source, AsnEncodingRules.BER);
 
                 if (ecPrivateKey.Version != 1 || ecPrivateKey.HasPublicKey)
                 {

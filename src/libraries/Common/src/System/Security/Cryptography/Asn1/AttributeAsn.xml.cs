@@ -124,7 +124,9 @@ namespace System.Security.Cryptography.Asn1
     internal ref partial struct ValueAttributeAsn
     {
         internal string AttrType;
-        internal ReadOnlySpan<byte> AttrValues;
+        internal ReadOnlySpan<byte> AttrValues { get; private set; }
+        internal int AttrValuesLength { get; private set; }
+        private AttrValuesEnumerableCache _attrValuesCache;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -155,19 +157,20 @@ namespace System.Security.Cryptography.Asn1
             writer.PopSequence(tag);
         }
 
-        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueAttributeAsn decoded)
+        internal static ValueAttributeAsn Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
-            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+            return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
 
-        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueAttributeAsn decoded)
+        internal static ValueAttributeAsn Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
                 ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
 
-                DecodeCore(ref reader, expectedTag, out decoded);
+                ValueAttributeAsn decoded = DecodeCore(ref reader, expectedTag);
                 reader.ThrowIfNotEmpty();
+                return decoded;
             }
             catch (AsnContentException e)
             {
@@ -175,16 +178,16 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, out ValueAttributeAsn decoded)
+        internal static ValueAttributeAsn Decode(scoped ref ValueAsnReader reader)
         {
-            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+            return Decode(ref reader, Asn1Tag.Sequence);
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueAttributeAsn decoded)
+        internal static ValueAttributeAsn Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag)
         {
             try
             {
-                DecodeCore(ref reader, expectedTag, out decoded);
+                return DecodeCore(ref reader, expectedTag);
             }
             catch (AsnContentException e)
             {
@@ -192,9 +195,9 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueAttributeAsn decoded)
+        private static ValueAttributeAsn DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag)
         {
-            decoded = default;
+            ValueAttributeAsn decoded = default;
             ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
 
             decoded.AttrType = sequenceReader.ReadObjectIdentifier();
@@ -205,39 +208,99 @@ namespace System.Security.Cryptography.Asn1
             }
 
             decoded.AttrValues = sequenceReader.ReadEncodedValue();
+            {
+                int count = 0;
+                ValueAsnReader cacheReader = new ValueAsnReader(decoded.AttrValues, sequenceReader.RuleSet);
+                ValueAsnReader collReader = cacheReader.ReadSetOf();
+                cacheReader.ThrowIfNotEmpty();
+
+                while (collReader.HasData)
+                {
+                    checked { count++; }
+                    ReadOnlySpan<byte> item = collReader.ReadEncodedValue();
+
+                    if (count <= 10)
+                    {
+                        switch (count)
+                        {
+                            case 1: decoded._attrValuesCache.AttrValues1 = item; break;
+                            case 2: decoded._attrValuesCache.AttrValues2 = item; break;
+                            case 3: decoded._attrValuesCache.AttrValues3 = item; break;
+                            case 4: decoded._attrValuesCache.AttrValues4 = item; break;
+                            case 5: decoded._attrValuesCache.AttrValues5 = item; break;
+                            case 6: decoded._attrValuesCache.AttrValues6 = item; break;
+                            case 7: decoded._attrValuesCache.AttrValues7 = item; break;
+                            case 8: decoded._attrValuesCache.AttrValues8 = item; break;
+                            case 9: decoded._attrValuesCache.AttrValues9 = item; break;
+                            case 10: decoded._attrValuesCache.AttrValues10 = item; break;
+                        }
+                    }
+                }
+
+                if (count <= 10)
+                {
+                    decoded._attrValuesCache.Success = true;
+                }
+                decoded._attrValuesCache.Count = count;
+                decoded._attrValuesCache.RuleSet = sequenceReader.RuleSet;
+                decoded.AttrValuesLength = count;
+            }
 
             sequenceReader.ThrowIfNotEmpty();
+            return decoded;
         }
 
 
-        internal AttrValuesEnumerable GetAttrValues(AsnEncodingRules ruleSet)
+        internal AttrValuesEnumerable GetAttrValues()
         {
-            return new AttrValuesEnumerable(AttrValues, ruleSet);
+            return new AttrValuesEnumerable(AttrValues, _attrValuesCache);
+        }
+
+        internal ref struct AttrValuesEnumerableCache
+        {
+            internal ReadOnlySpan<byte> AttrValues1;
+            internal ReadOnlySpan<byte> AttrValues2;
+            internal ReadOnlySpan<byte> AttrValues3;
+            internal ReadOnlySpan<byte> AttrValues4;
+            internal ReadOnlySpan<byte> AttrValues5;
+            internal ReadOnlySpan<byte> AttrValues6;
+            internal ReadOnlySpan<byte> AttrValues7;
+            internal ReadOnlySpan<byte> AttrValues8;
+            internal ReadOnlySpan<byte> AttrValues9;
+            internal ReadOnlySpan<byte> AttrValues10;
+            internal int Count;
+            internal bool Success;
+            internal AsnEncodingRules RuleSet;
         }
 
         internal readonly ref struct AttrValuesEnumerable
         {
             private readonly ReadOnlySpan<byte> _encoded;
-            private readonly AsnEncodingRules _ruleSet;
+            private readonly AttrValuesEnumerableCache _cache;
 
-            internal AttrValuesEnumerable(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
+            internal AttrValuesEnumerable(ReadOnlySpan<byte> encoded, AttrValuesEnumerableCache cache)
             {
                 _encoded = encoded;
-                _ruleSet = ruleSet;
+                _cache = cache;
             }
 
-            public Enumerator GetEnumerator() => new Enumerator(_encoded, _ruleSet);
+            public Enumerator GetEnumerator() => new Enumerator(_encoded, _cache);
 
             internal ref struct Enumerator
             {
                 private ValueAsnReader _reader;
                 private ReadOnlySpan<byte> _current;
+                private readonly AttrValuesEnumerableCache _cache;
+                private int _index;
 
-                internal Enumerator(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
+                internal Enumerator(ReadOnlySpan<byte> encoded, AttrValuesEnumerableCache cache)
                 {
-                    if (!encoded.IsEmpty)
+                    _cache = cache;
+                    _index = 0;
+
+                    if (!cache.Success && !encoded.IsEmpty)
                     {
-                        ValueAsnReader outerReader = new ValueAsnReader(encoded, ruleSet);
+                        ValueAsnReader outerReader = new ValueAsnReader(encoded, cache.RuleSet);
                         _reader = outerReader.ReadSetOf();
                         outerReader.ThrowIfNotEmpty();
                     }
@@ -249,6 +312,32 @@ namespace System.Security.Cryptography.Asn1
 
                 public bool MoveNext()
                 {
+                    if (_cache.Success)
+                    {
+                        if (_index >= _cache.Count)
+                        {
+                            return false;
+                        }
+
+                        _current = _index switch
+                        {
+                            0 => _cache.AttrValues1,
+                            1 => _cache.AttrValues2,
+                            2 => _cache.AttrValues3,
+                            3 => _cache.AttrValues4,
+                            4 => _cache.AttrValues5,
+                            5 => _cache.AttrValues6,
+                            6 => _cache.AttrValues7,
+                            7 => _cache.AttrValues8,
+                            8 => _cache.AttrValues9,
+                            9 => _cache.AttrValues10,
+                            _ => default,
+                        };
+                        _index++;
+
+                        return true;
+                    }
+
                     if (!_reader.HasData)
                     {
                         return false;

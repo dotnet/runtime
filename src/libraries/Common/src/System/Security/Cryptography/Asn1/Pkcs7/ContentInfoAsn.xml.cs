@@ -140,19 +140,20 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             writer.PopSequence(tag);
         }
 
-        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueContentInfoAsn decoded)
+        internal static ValueContentInfoAsn Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
-            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+            return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
 
-        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueContentInfoAsn decoded)
+        internal static ValueContentInfoAsn Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
                 ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
 
-                DecodeCore(ref reader, expectedTag, out decoded);
+                ValueContentInfoAsn decoded = DecodeCore(ref reader, expectedTag);
                 reader.ThrowIfNotEmpty();
+                return decoded;
             }
             catch (AsnContentException e)
             {
@@ -160,16 +161,16 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             }
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, out ValueContentInfoAsn decoded)
+        internal static ValueContentInfoAsn Decode(scoped ref ValueAsnReader reader)
         {
-            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+            return Decode(ref reader, Asn1Tag.Sequence);
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueContentInfoAsn decoded)
+        internal static ValueContentInfoAsn Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag)
         {
             try
             {
-                DecodeCore(ref reader, expectedTag, out decoded);
+                return DecodeCore(ref reader, expectedTag);
             }
             catch (AsnContentException e)
             {
@@ -177,9 +178,9 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             }
         }
 
-        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueContentInfoAsn decoded)
+        private static ValueContentInfoAsn DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag)
         {
-            decoded = default;
+            ValueContentInfoAsn decoded = default;
             ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
             ValueAsnReader explicitReader;
 
@@ -191,6 +192,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
 
 
             sequenceReader.ThrowIfNotEmpty();
+            return decoded;
         }
     }
 }

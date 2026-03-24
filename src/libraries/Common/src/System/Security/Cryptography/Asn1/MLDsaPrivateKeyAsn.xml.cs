@@ -120,14 +120,15 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueMLDsaPrivateKeyAsn decoded)
+        internal static ValueMLDsaPrivateKeyAsn Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
                 ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
 
-                DecodeCore(ref reader, out decoded);
+                ValueMLDsaPrivateKeyAsn decoded = DecodeCore(ref reader);
                 reader.ThrowIfNotEmpty();
+                return decoded;
             }
             catch (AsnContentException e)
             {
@@ -135,11 +136,11 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, out ValueMLDsaPrivateKeyAsn decoded)
+        internal static ValueMLDsaPrivateKeyAsn Decode(scoped ref ValueAsnReader reader)
         {
             try
             {
-                DecodeCore(ref reader, out decoded);
+                return DecodeCore(ref reader);
             }
             catch (AsnContentException e)
             {
@@ -147,9 +148,9 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(scoped ref ValueAsnReader reader, out ValueMLDsaPrivateKeyAsn decoded)
+        private static ValueMLDsaPrivateKeyAsn DecodeCore(scoped ref ValueAsnReader reader)
         {
-            decoded = default;
+            ValueMLDsaPrivateKeyAsn decoded = default;
             Asn1Tag tag = reader.PeekTag();
             ReadOnlySpan<byte> tmpSpan;
 
@@ -183,16 +184,15 @@ namespace System.Security.Cryptography.Asn1
             }
             else if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
             {
-                System.Security.Cryptography.Asn1.ValueMLDsaPrivateKeyBothAsn tmpBoth;
-                System.Security.Cryptography.Asn1.ValueMLDsaPrivateKeyBothAsn.Decode(ref reader, out tmpBoth);
-                decoded.Both = tmpBoth;
-
+                decoded.Both = System.Security.Cryptography.Asn1.ValueMLDsaPrivateKeyBothAsn.Decode(ref reader);
                 decoded.HasBoth = true;
             }
             else
             {
                 throw new CryptographicException();
             }
+
+            return decoded;
         }
     }
 }

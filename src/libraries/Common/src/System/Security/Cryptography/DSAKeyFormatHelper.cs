@@ -47,7 +47,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            ValueDssParms.Decode(algId.Parameters, AsnEncodingRules.BER, out ValueDssParms parms);
+            ValueDssParms parms = ValueDssParms.Decode(algId.Parameters, AsnEncodingRules.BER);
 
             // Sanity checks from FIPS 186-4 4.1/4.2.  Since FIPS 186-5 withdrew DSA/DSS
             // these will never change again.
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            ValueDssParms.Decode(algId.Parameters, AsnEncodingRules.BER, out ValueDssParms parms);
+            ValueDssParms parms = ValueDssParms.Decode(algId.Parameters, AsnEncodingRules.BER);
 
             // Sanity checks from FIPS 186-4 4.1/4.2.  Since FIPS 186-5 withdrew DSA/DSS
             // these will never change again.

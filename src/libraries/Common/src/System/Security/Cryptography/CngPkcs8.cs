@@ -375,7 +375,7 @@ namespace System.Security.Cryptography
         // signaling the original exception should be thrown.
         private static unsafe AsnWriter? RewritePkcs8ECPrivateKeyWithZeroPublicKey(ReadOnlySpan<byte> source)
         {
-            ValuePrivateKeyInfoAsn.Decode(source, AsnEncodingRules.BER, out ValuePrivateKeyInfoAsn privateKeyInfo);
+            ValuePrivateKeyInfoAsn privateKeyInfo = ValuePrivateKeyInfoAsn.Decode(source, AsnEncodingRules.BER);
             ValueAlgorithmIdentifierAsn privateAlgorithm = privateKeyInfo.PrivateKeyAlgorithm;
 
             if (privateAlgorithm.Algorithm != Oids.EcPublicKey)
@@ -383,7 +383,7 @@ namespace System.Security.Cryptography
                 return null;
             }
 
-            ValueECPrivateKey.Decode(privateKeyInfo.PrivateKey, AsnEncodingRules.BER, out ValueECPrivateKey privateKey);
+            ValueECPrivateKey privateKey = ValueECPrivateKey.Decode(privateKeyInfo.PrivateKey, AsnEncodingRules.BER);
             EccKeyFormatHelper.FromECPrivateKey(privateKey, privateAlgorithm, out ECParameters ecParameters);
 
             fixed (byte* pD = ecParameters.D)

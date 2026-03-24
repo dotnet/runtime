@@ -577,17 +577,15 @@ namespace System.Security.Cryptography.X509Certificates
                     case Oids.Pkcs12PbeWithShaAnd2Key3Des:
                     case Oids.Pkcs12PbeWithShaAnd128BitRC2:
                     case Oids.Pkcs12PbeWithShaAnd40BitRC2:
-                        ValuePBEParameter.Decode(
+                        ValuePBEParameter pbeParameter = ValuePBEParameter.Decode(
                             algorithmIdentifier.Parameters.Value.Span,
-                            AsnEncodingRules.BER,
-                            out ValuePBEParameter pbeParameter);
+                            AsnEncodingRules.BER);
 
                         return pbeParameter.IterationCount;
                     case Oids.PasswordBasedEncryptionScheme2:
-                        ValuePBES2Params.Decode(
+                        ValuePBES2Params pbes2Params = ValuePBES2Params.Decode(
                             algorithmIdentifier.Parameters.Value.Span,
-                            AsnEncodingRules.BER,
-                            out ValuePBES2Params pbes2Params);
+                            AsnEncodingRules.BER);
 
                         if (pbes2Params.KeyDerivationFunc.Algorithm != Oids.Pbkdf2)
                         {
@@ -602,10 +600,9 @@ namespace System.Security.Cryptography.X509Certificates
                             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                         }
 
-                        ValuePbkdf2Params.Decode(
+                        ValuePbkdf2Params pbkdf2Params = ValuePbkdf2Params.Decode(
                             pbes2Params.KeyDerivationFunc.Parameters,
-                            AsnEncodingRules.BER,
-                            out ValuePbkdf2Params pbkdf2Params);
+                            AsnEncodingRules.BER);
 
                         return pbkdf2Params.IterationCount;
                     default:

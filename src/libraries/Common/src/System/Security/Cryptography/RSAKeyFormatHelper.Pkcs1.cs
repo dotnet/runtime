@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
             RSAParametersCallback<TRet> parametersReader,
             bool pinAndClearParameters = true)
         {
-            ValueRSAPrivateKeyAsn.Decode(keyData, AsnEncodingRules.BER, out ValueRSAPrivateKeyAsn key);
+            ValueRSAPrivateKeyAsn key = ValueRSAPrivateKeyAsn.Decode(keyData, AsnEncodingRules.BER);
 
             const int MaxSupportedVersion = 0;
 
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> keyData,
             RSAParametersCallback<TRet> parametersReader)
         {
-            ValueRSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER, out ValueRSAPublicKeyAsn key);
+            ValueRSAPublicKeyAsn key = ValueRSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER);
 
             RSAParameters parameters = new RSAParameters
             {

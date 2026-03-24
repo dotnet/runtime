@@ -98,14 +98,15 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePbkdf2SaltChoice decoded)
+        internal static ValuePbkdf2SaltChoice Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
                 ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
 
-                DecodeCore(ref reader, out decoded);
+                ValuePbkdf2SaltChoice decoded = DecodeCore(ref reader);
                 reader.ThrowIfNotEmpty();
+                return decoded;
             }
             catch (AsnContentException e)
             {
@@ -113,11 +114,11 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, out ValuePbkdf2SaltChoice decoded)
+        internal static ValuePbkdf2SaltChoice Decode(scoped ref ValueAsnReader reader)
         {
             try
             {
-                DecodeCore(ref reader, out decoded);
+                return DecodeCore(ref reader);
             }
             catch (AsnContentException e)
             {
@@ -125,9 +126,9 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(scoped ref ValueAsnReader reader, out ValuePbkdf2SaltChoice decoded)
+        private static ValuePbkdf2SaltChoice DecodeCore(scoped ref ValueAsnReader reader)
         {
-            decoded = default;
+            ValuePbkdf2SaltChoice decoded = default;
             Asn1Tag tag = reader.PeekTag();
             ReadOnlySpan<byte> tmpSpan;
 
@@ -147,16 +148,15 @@ namespace System.Security.Cryptography.Asn1
             }
             else if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
             {
-                System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn tmpOtherSource;
-                System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn.Decode(ref reader, out tmpOtherSource);
-                decoded.OtherSource = tmpOtherSource;
-
+                decoded.OtherSource = System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn.Decode(ref reader);
                 decoded.HasOtherSource = true;
             }
             else
             {
                 throw new CryptographicException();
             }
+
+            return decoded;
         }
     }
 }

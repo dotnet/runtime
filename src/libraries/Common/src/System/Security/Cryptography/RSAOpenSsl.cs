@@ -787,7 +787,7 @@ namespace System.Security.Cryptography
             {
                 ReadOnlySpan<byte> pkcs1Priv = RSAKeyFormatHelper.ReadPkcs8(pkcs8, out int read);
                 Debug.Assert(read == pkcs8.Length);
-                ValueRSAPrivateKeyAsn.Decode(pkcs1Priv, AsnEncodingRules.BER, out _);
+                _ = ValueRSAPrivateKeyAsn.Decode(pkcs1Priv, AsnEncodingRules.BER);
                 return pkcs1Priv;
             }
             catch (CryptographicException)

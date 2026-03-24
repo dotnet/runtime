@@ -139,7 +139,9 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         internal System.Numerics.BigInteger Version;
         internal ReadOnlySpan<byte> Subject;
         internal System.Security.Cryptography.Asn1.ValueSubjectPublicKeyInfoAsn SubjectPublicKeyInfo;
-        internal ReadOnlySpan<byte> Attributes;
+        internal ReadOnlySpan<byte> Attributes { get; private set; }
+        internal int AttributesLength { get; private set; }
+        private AttributesEnumerableCache _attributesCache;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -183,19 +185,20 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             writer.PopSequence(tag);
         }
 
-        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueCertificationRequestInfoAsn decoded)
+        internal static ValueCertificationRequestInfoAsn Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
-            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+            return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
 
-        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueCertificationRequestInfoAsn decoded)
+        internal static ValueCertificationRequestInfoAsn Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
                 ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
 
-                DecodeCore(ref reader, expectedTag, out decoded);
+                ValueCertificationRequestInfoAsn decoded = DecodeCore(ref reader, expectedTag);
                 reader.ThrowIfNotEmpty();
+                return decoded;
             }
             catch (AsnContentException e)
             {
@@ -203,16 +206,16 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, out ValueCertificationRequestInfoAsn decoded)
+        internal static ValueCertificationRequestInfoAsn Decode(scoped ref ValueAsnReader reader)
         {
-            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+            return Decode(ref reader, Asn1Tag.Sequence);
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueCertificationRequestInfoAsn decoded)
+        internal static ValueCertificationRequestInfoAsn Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag)
         {
             try
             {
-                DecodeCore(ref reader, expectedTag, out decoded);
+                return DecodeCore(ref reader, expectedTag);
             }
             catch (AsnContentException e)
             {
@@ -220,9 +223,9 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValueCertificationRequestInfoAsn decoded)
+        private static ValueCertificationRequestInfoAsn DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag)
         {
-            decoded = default;
+            ValueCertificationRequestInfoAsn decoded = default;
             ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
 
             decoded.Version = sequenceReader.ReadInteger();
@@ -232,7 +235,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
 
             decoded.Subject = sequenceReader.ReadEncodedValue();
-            System.Security.Cryptography.Asn1.ValueSubjectPublicKeyInfoAsn.Decode(ref sequenceReader, out decoded.SubjectPublicKeyInfo);
+            decoded.SubjectPublicKeyInfo = System.Security.Cryptography.Asn1.ValueSubjectPublicKeyInfoAsn.Decode(ref sequenceReader);
 
             if (!sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
@@ -240,39 +243,99 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
 
             decoded.Attributes = sequenceReader.ReadEncodedValue();
+            {
+                int count = 0;
+                ValueAsnReader cacheReader = new ValueAsnReader(decoded.Attributes, sequenceReader.RuleSet);
+                ValueAsnReader collReader = cacheReader.ReadSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
+                cacheReader.ThrowIfNotEmpty();
+
+                while (collReader.HasData)
+                {
+                    checked { count++; }
+                    System.Security.Cryptography.Asn1.ValueAttributeAsn item = System.Security.Cryptography.Asn1.ValueAttributeAsn.Decode(ref collReader);
+
+                    if (count <= 10)
+                    {
+                        switch (count)
+                        {
+                            case 1: decoded._attributesCache.Attributes1 = item; break;
+                            case 2: decoded._attributesCache.Attributes2 = item; break;
+                            case 3: decoded._attributesCache.Attributes3 = item; break;
+                            case 4: decoded._attributesCache.Attributes4 = item; break;
+                            case 5: decoded._attributesCache.Attributes5 = item; break;
+                            case 6: decoded._attributesCache.Attributes6 = item; break;
+                            case 7: decoded._attributesCache.Attributes7 = item; break;
+                            case 8: decoded._attributesCache.Attributes8 = item; break;
+                            case 9: decoded._attributesCache.Attributes9 = item; break;
+                            case 10: decoded._attributesCache.Attributes10 = item; break;
+                        }
+                    }
+                }
+
+                if (count <= 10)
+                {
+                    decoded._attributesCache.Success = true;
+                }
+                decoded._attributesCache.Count = count;
+                decoded._attributesCache.RuleSet = sequenceReader.RuleSet;
+                decoded.AttributesLength = count;
+            }
 
             sequenceReader.ThrowIfNotEmpty();
+            return decoded;
         }
 
 
-        internal AttributesEnumerable GetAttributes(AsnEncodingRules ruleSet)
+        internal AttributesEnumerable GetAttributes()
         {
-            return new AttributesEnumerable(Attributes, ruleSet);
+            return new AttributesEnumerable(Attributes, _attributesCache);
+        }
+
+        internal ref struct AttributesEnumerableCache
+        {
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes1;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes2;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes3;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes4;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes5;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes6;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes7;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes8;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes9;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes10;
+            internal int Count;
+            internal bool Success;
+            internal AsnEncodingRules RuleSet;
         }
 
         internal readonly ref struct AttributesEnumerable
         {
             private readonly ReadOnlySpan<byte> _encoded;
-            private readonly AsnEncodingRules _ruleSet;
+            private readonly AttributesEnumerableCache _cache;
 
-            internal AttributesEnumerable(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
+            internal AttributesEnumerable(ReadOnlySpan<byte> encoded, AttributesEnumerableCache cache)
             {
                 _encoded = encoded;
-                _ruleSet = ruleSet;
+                _cache = cache;
             }
 
-            public Enumerator GetEnumerator() => new Enumerator(_encoded, _ruleSet);
+            public Enumerator GetEnumerator() => new Enumerator(_encoded, _cache);
 
             internal ref struct Enumerator
             {
                 private ValueAsnReader _reader;
                 private System.Security.Cryptography.Asn1.ValueAttributeAsn _current;
+                private readonly AttributesEnumerableCache _cache;
+                private int _index;
 
-                internal Enumerator(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
+                internal Enumerator(ReadOnlySpan<byte> encoded, AttributesEnumerableCache cache)
                 {
-                    if (!encoded.IsEmpty)
+                    _cache = cache;
+                    _index = 0;
+
+                    if (!cache.Success && !encoded.IsEmpty)
                     {
-                        ValueAsnReader outerReader = new ValueAsnReader(encoded, ruleSet);
+                        ValueAsnReader outerReader = new ValueAsnReader(encoded, cache.RuleSet);
                         _reader = outerReader.ReadSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
                         outerReader.ThrowIfNotEmpty();
                     }
@@ -284,12 +347,38 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
                 public bool MoveNext()
                 {
+                    if (_cache.Success)
+                    {
+                        if (_index >= _cache.Count)
+                        {
+                            return false;
+                        }
+
+                        _current = _index switch
+                        {
+                            0 => _cache.Attributes1,
+                            1 => _cache.Attributes2,
+                            2 => _cache.Attributes3,
+                            3 => _cache.Attributes4,
+                            4 => _cache.Attributes5,
+                            5 => _cache.Attributes6,
+                            6 => _cache.Attributes7,
+                            7 => _cache.Attributes8,
+                            8 => _cache.Attributes9,
+                            9 => _cache.Attributes10,
+                            _ => default,
+                        };
+                        _index++;
+
+                        return true;
+                    }
+
                     if (!_reader.HasData)
                     {
                         return false;
                     }
 
-                    System.Security.Cryptography.Asn1.ValueAttributeAsn.Decode(ref _reader, out _current);
+                    _current = System.Security.Cryptography.Asn1.ValueAttributeAsn.Decode(ref _reader);
                     return true;
                 }
             }

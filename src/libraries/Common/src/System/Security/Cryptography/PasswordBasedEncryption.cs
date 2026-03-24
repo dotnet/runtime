@@ -545,7 +545,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            ValuePBES2Params.Decode(algorithmParameters.Value, AsnEncodingRules.BER, out ValuePBES2Params pbes2Params);
+            ValuePBES2Params pbes2Params = ValuePBES2Params.Decode(algorithmParameters.Value, AsnEncodingRules.BER);
 
             if (pbes2Params.KeyDerivationFunc.Algorithm != Oids.Pbkdf2)
             {
@@ -681,10 +681,9 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                ValueRc2CbcParameters.Decode(
+                ValueRc2CbcParameters rc2Parameters = ValueRc2CbcParameters.Decode(
                     encryptionScheme.Parameters,
-                    AsnEncodingRules.BER,
-                    out ValueRc2CbcParameters rc2Parameters);
+                    AsnEncodingRules.BER);
 
                 // iv is the eight-octet initialization vector
                 if (rc2Parameters.Iv.Length != 8)
@@ -768,7 +767,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            ValuePbkdf2Params.Decode(parameters.Value, AsnEncodingRules.BER, out ValuePbkdf2Params pbkdf2Params);
+            ValuePbkdf2Params pbkdf2Params = ValuePbkdf2Params.Decode(parameters.Value, AsnEncodingRules.BER);
 
             // No OtherSource is defined in RFC 2898 or RFC 8018, so whatever
             // algorithm was requested isn't one we know.
@@ -857,7 +856,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            ValuePBEParameter.Decode(algorithmParameters.Value, AsnEncodingRules.BER, out ValuePBEParameter pbeParameters);
+            ValuePBEParameter pbeParameters = ValuePBEParameter.Decode(algorithmParameters.Value, AsnEncodingRules.BER);
 
             if (pbeParameters.Salt.Length != 8)
             {
@@ -918,10 +917,9 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
             }
 
-            ValuePBEParameter.Decode(
+            ValuePBEParameter pbeParameters = ValuePBEParameter.Decode(
                 algorithmIdentifier.Parameters,
-                AsnEncodingRules.BER,
-                out ValuePBEParameter pbeParameters);
+                AsnEncodingRules.BER);
 
             int iterationCount = NormalizeIterationCount(pbeParameters.IterationCount, IterationLimit);
             Span<byte> iv = stackalloc byte[cipher.BlockSize / 8];

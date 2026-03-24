@@ -1693,7 +1693,7 @@ namespace System.Security.Cryptography
             out MLKem kem)
         {
             MLKemAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
-            ValueMLKemPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER, out ValueMLKemPrivateKeyAsn kemKey);
+            ValueMLKemPrivateKeyAsn kemKey = ValueMLKemPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER);
 
             if (kemKey.HasSeed)
             {

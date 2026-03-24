@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Asn1
             ValueAsnReader reader;
 
             reader = new ValueAsnReader(SharedPbkdf2Params.DefaultPrf, AsnEncodingRules.DER);
-            System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn.Decode(ref reader, out decoded.Prf);
+            decoded.Prf = System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn.Decode(ref reader);
             reader.ThrowIfNotEmpty();
         }
 #endif
@@ -65,19 +65,20 @@ namespace System.Security.Cryptography.Asn1
             writer.PopSequence(tag);
         }
 
-        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePbkdf2Params decoded)
+        internal static ValuePbkdf2Params Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
-            Decode(Asn1Tag.Sequence, encoded, ruleSet, out decoded);
+            return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
 
-        internal static void Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValuePbkdf2Params decoded)
+        internal static ValuePbkdf2Params Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
                 ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
 
-                DecodeCore(ref reader, expectedTag, out decoded);
+                ValuePbkdf2Params decoded = DecodeCore(ref reader, expectedTag);
                 reader.ThrowIfNotEmpty();
+                return decoded;
             }
             catch (AsnContentException e)
             {
@@ -85,16 +86,16 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, out ValuePbkdf2Params decoded)
+        internal static ValuePbkdf2Params Decode(scoped ref ValueAsnReader reader)
         {
-            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+            return Decode(ref reader, Asn1Tag.Sequence);
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValuePbkdf2Params decoded)
+        internal static ValuePbkdf2Params Decode(scoped ref ValueAsnReader reader, Asn1Tag expectedTag)
         {
             try
             {
-                DecodeCore(ref reader, expectedTag, out decoded);
+                return DecodeCore(ref reader, expectedTag);
             }
             catch (AsnContentException e)
             {
@@ -102,13 +103,13 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag, out ValuePbkdf2Params decoded)
+        private static ValuePbkdf2Params DecodeCore(scoped ref ValueAsnReader reader, Asn1Tag expectedTag)
         {
-            decoded = default;
+            ValuePbkdf2Params decoded = default;
             ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
             ValueAsnReader defaultReader;
 
-            System.Security.Cryptography.Asn1.ValuePbkdf2SaltChoice.Decode(ref sequenceReader, out decoded.Salt);
+            decoded.Salt = System.Security.Cryptography.Asn1.ValuePbkdf2SaltChoice.Decode(ref sequenceReader);
 
             if (!sequenceReader.TryReadInt32(out decoded.IterationCount))
             {
@@ -133,16 +134,17 @@ namespace System.Security.Cryptography.Asn1
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
             {
-                System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn.Decode(ref sequenceReader, out decoded.Prf);
+                decoded.Prf = System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn.Decode(ref sequenceReader);
             }
             else
             {
                 defaultReader = new ValueAsnReader(SharedPbkdf2Params.DefaultPrf, AsnEncodingRules.DER);
-                System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn.Decode(ref defaultReader, out decoded.Prf);
+                decoded.Prf = System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn.Decode(ref defaultReader);
             }
 
 
             sequenceReader.ThrowIfNotEmpty();
+            return decoded;
         }
     }
 }

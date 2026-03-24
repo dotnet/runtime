@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
             {
                 ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.BER);
                 read = reader.PeekEncodedValue().Length;
-                ValueEncryptedPrivateKeyInfoAsn.Decode(ref reader, out epki);
+                epki = ValueEncryptedPrivateKeyInfoAsn.Decode(ref reader);
             }
             catch (AsnContentException e)
             {
@@ -297,7 +297,7 @@ namespace System.Security.Cryptography
             {
                 ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.BER);
                 localRead = reader.PeekEncodedValue().Length;
-                ValueEncryptedPrivateKeyInfoAsn.Decode(ref reader, out epki);
+                epki = ValueEncryptedPrivateKeyInfoAsn.Decode(ref reader);
             }
             catch (AsnContentException e)
             {

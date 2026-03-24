@@ -2207,7 +2207,7 @@ namespace System.Security.Cryptography
             out MLDsa dsa)
         {
             MLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
-            ValueMLDsaPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER, out ValueMLDsaPrivateKeyAsn dsaKey);
+            ValueMLDsaPrivateKeyAsn dsaKey = ValueMLDsaPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER);
 
             if (dsaKey.HasSeed)
             {

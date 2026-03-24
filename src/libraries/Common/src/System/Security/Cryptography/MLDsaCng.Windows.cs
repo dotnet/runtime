@@ -498,7 +498,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    ValueMLDsaPrivateKeyAsn.Decode(privateKey, AsnEncodingRules.BER, out mldsaPrivateKeyAsn);
+                    mldsaPrivateKeyAsn = ValueMLDsaPrivateKeyAsn.Decode(privateKey, AsnEncodingRules.BER);
                 }
                 catch (AsnContentException e)
                 {

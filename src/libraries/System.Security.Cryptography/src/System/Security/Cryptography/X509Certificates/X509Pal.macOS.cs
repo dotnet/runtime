@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.X509Certificates
                     try
                     {
                         ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
-                        ValuePfxAsn.Decode(ref reader, out _);
+                        ValuePfxAsn.Decode(ref reader);
                         contentType = X509ContentType.Pkcs12;
                     }
                     catch (CryptographicException)

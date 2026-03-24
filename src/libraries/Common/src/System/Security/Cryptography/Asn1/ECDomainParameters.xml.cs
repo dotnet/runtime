@@ -94,14 +94,15 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueECDomainParameters decoded)
+        internal static ValueECDomainParameters Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
                 ValueAsnReader reader = new ValueAsnReader(encoded, ruleSet);
 
-                DecodeCore(ref reader, out decoded);
+                ValueECDomainParameters decoded = DecodeCore(ref reader);
                 reader.ThrowIfNotEmpty();
+                return decoded;
             }
             catch (AsnContentException e)
             {
@@ -109,11 +110,11 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(scoped ref ValueAsnReader reader, out ValueECDomainParameters decoded)
+        internal static ValueECDomainParameters Decode(scoped ref ValueAsnReader reader)
         {
             try
             {
-                DecodeCore(ref reader, out decoded);
+                return DecodeCore(ref reader);
             }
             catch (AsnContentException e)
             {
@@ -121,17 +122,14 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(scoped ref ValueAsnReader reader, out ValueECDomainParameters decoded)
+        private static ValueECDomainParameters DecodeCore(scoped ref ValueAsnReader reader)
         {
-            decoded = default;
+            ValueECDomainParameters decoded = default;
             Asn1Tag tag = reader.PeekTag();
 
             if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
             {
-                System.Security.Cryptography.Asn1.ValueSpecifiedECDomain tmpSpecified;
-                System.Security.Cryptography.Asn1.ValueSpecifiedECDomain.Decode(ref reader, out tmpSpecified);
-                decoded.Specified = tmpSpecified;
-
+                decoded.Specified = System.Security.Cryptography.Asn1.ValueSpecifiedECDomain.Decode(ref reader);
                 decoded.HasSpecified = true;
             }
             else if (tag.HasSameClassAndValue(Asn1Tag.ObjectIdentifier))
@@ -142,6 +140,8 @@ namespace System.Security.Cryptography.Asn1
             {
                 throw new CryptographicException();
             }
+
+            return decoded;
         }
     }
 }

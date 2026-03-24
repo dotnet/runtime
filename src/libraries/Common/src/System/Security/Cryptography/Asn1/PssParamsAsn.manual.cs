@@ -27,10 +27,9 @@ namespace System.Security.Cryptography.Asn1
                 throw new CryptographicException(SR.Cryptography_Pkcs_InvalidSignatureParameters);
             }
 
-            ValueAlgorithmIdentifierAsn.Decode(
+            ValueAlgorithmIdentifierAsn mgfParams = ValueAlgorithmIdentifierAsn.Decode(
                 MaskGenAlgorithm.Parameters,
-                AsnEncodingRules.DER,
-                out ValueAlgorithmIdentifierAsn mgfParams);
+                AsnEncodingRules.DER);
 
             if (mgfParams.Algorithm != HashAlgorithm.Algorithm)
             {

@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
             {
                 ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.DER);
                 read = reader.PeekEncodedValue().Length;
-                ValueSubjectPublicKeyInfoAsn.Decode(ref reader, out spki);
+                spki = ValueSubjectPublicKeyInfoAsn.Decode(ref reader);
             }
             catch (AsnContentException e)
             {
@@ -56,7 +56,7 @@ namespace System.Security.Cryptography
                 // X.509 SubjectPublicKeyInfo is described as DER.
                 ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.DER);
                 read = reader.PeekEncodedValue().Length;
-                ValueSubjectPublicKeyInfoAsn.Decode(ref reader, out spki);
+                spki = ValueSubjectPublicKeyInfoAsn.Decode(ref reader);
             }
             catch (AsnContentException e)
             {
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography
             {
                 ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.BER);
                 int read = reader.PeekEncodedValue().Length;
-                ValuePrivateKeyInfoAsn.Decode(ref reader, out ValuePrivateKeyInfoAsn privateKeyInfo);
+                ValuePrivateKeyInfoAsn privateKeyInfo = ValuePrivateKeyInfoAsn.Decode(ref reader);
 
                 if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0)
                 {
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography
             {
                 ValueAsnReader reader = new ValueAsnReader(source, AsnEncodingRules.BER);
                 int read = reader.PeekEncodedValue().Length;
-                ValuePrivateKeyInfoAsn.Decode(ref reader, out ValuePrivateKeyInfoAsn privateKeyInfo);
+                ValuePrivateKeyInfoAsn privateKeyInfo = ValuePrivateKeyInfoAsn.Decode(ref reader);
 
                 if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm) < 0)
                 {

@@ -82,7 +82,7 @@ namespace Internal.Cryptography.Pal.AnyOS
         {
             ValueAsnReader reader = new ValueAsnReader(encodedMessage, AsnEncodingRules.BER);
 
-            ValueContentInfoAsn.Decode(ref reader, out ValueContentInfoAsn parsedContentInfo);
+            ValueContentInfoAsn parsedContentInfo = ValueContentInfoAsn.Decode(ref reader);
 
             if (parsedContentInfo.ContentType != Oids.Pkcs7Enveloped)
             {

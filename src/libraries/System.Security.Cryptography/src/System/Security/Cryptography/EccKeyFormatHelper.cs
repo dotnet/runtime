@@ -92,7 +92,7 @@ namespace System.Security.Cryptography
             in ValueAlgorithmIdentifierAsn algId,
             out ECParameters ret)
         {
-            ValueECPrivateKey.Decode(keyData, AsnEncodingRules.BER, out ValueECPrivateKey key);
+            ValueECPrivateKey key = ValueECPrivateKey.Decode(keyData, AsnEncodingRules.BER);
             FromECPrivateKey(key, algId, out ret);
         }
 
@@ -146,7 +146,7 @@ namespace System.Security.Cryptography
             else
             {
                 Debug.Assert(algId.HasParameters);
-                ValueECDomainParameters.Decode(algId.Parameters, AsnEncodingRules.DER, out domainParameters);
+                domainParameters = ValueECDomainParameters.Decode(algId.Parameters, AsnEncodingRules.DER);
             }
 
             Debug.Assert((x == null) == (y == null));
@@ -197,10 +197,9 @@ namespace System.Security.Cryptography
 
             int fieldWidth = publicKeyBytes.Length / 2;
 
-            ValueECDomainParameters.Decode(
+            ValueECDomainParameters domainParameters = ValueECDomainParameters.Decode(
                 algId.Parameters,
-                AsnEncodingRules.DER,
-                out ValueECDomainParameters domainParameters);
+                AsnEncodingRules.DER);
 
             ret = new ECParameters
             {
