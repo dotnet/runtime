@@ -61,7 +61,7 @@ public class EdgeCaseTests : ReadTests
         }
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsReleaseRuntime))]
     [InlineData(100)]
     [InlineData(64_001)]
     [InlineData(127_000)]
