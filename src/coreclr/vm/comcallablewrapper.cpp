@@ -281,7 +281,7 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
     SLOT* rgVtable = (SLOT*)((ComMethodTable *)this+1);
 
     // Our entries in the vtable are UMEntryThunk stubs.
-    UMEntryThunk* pUMEntryThunk = (UMEntryThunk*)(rgVtable[i]);
+    UMEntryThunk* pUMEntryThunk = (UMEntryThunk*)(PCODEToPINSTR((PCODE)rgVtable[i]));
 
     ComCallUMThunkMarshInfo* pMarshInfo = (ComCallUMThunkMarshInfo*)pUMEntryThunk->GetData()->GetUMThunkMarshInfo();
 

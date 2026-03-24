@@ -1757,6 +1757,13 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         UMEntryThunkData *pEntryThunk = (UMEntryThunkData*)arg;
         target = pEntryThunk->GetManagedTarget();
         LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke or COM-to-CLR case %p\n", target));
+
+        if (target == (PCODE)NULL)
+        {
+            LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: No managed target for reverse P/Invoke or COM-to-CLR stub (such as field access stub)\n"));
+            return FALSE;
+        }
+
         trace->InitForManaged(target);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
