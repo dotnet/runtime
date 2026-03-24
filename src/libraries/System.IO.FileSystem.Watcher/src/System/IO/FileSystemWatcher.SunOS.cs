@@ -103,6 +103,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
@@ -494,37 +495,12 @@ namespace System.IO
                                 break;
                             }
 
-                            // Check if this is a cancellation event
-                            if (cookie == CancellationCookie)
+                            if (!HandleEvent(cookie, events))
                             {
-                                Debug.WriteLine($"[RI] ProcessEvents: got CancellationCookie");
+                                Debug.WriteLine($"[RI] ProcessEvents: !HandleEvent");
                                 break;
                             }
-
-                            // Check if watcher is still alive before processing event
-                            if (!_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
-                            {
-                                Debug.WriteLine($"[RI] ProcessEvents: no watcher");
-                                break;
-                            }
-
-                            // Route event to appropriate handler
-                            if (_cookieMap!.TryGetValue(cookie, out FileNode? node))
-                            {
-                                if (node is DirectoryNode dirNode)
-                                {
-                                    HandleDirectoryEvent(watcher, dirNode, events);
-                                }
-                                else
-                                {
-                                    HandleFileEvent(watcher, node, events);
-                                }
-                            }
-                            else
-                            {
-                                Debug.WriteLine($"[FSW] ProcessEvents: unknown cookie={cookie}");
-                            }
-                        }
+                        } // unsafe
                     } // end while
                     Debug.WriteLine($"[RI] ProcessEvents: finished loop");
                 }
@@ -547,6 +523,50 @@ namespace System.IO
             } // end of ProcessEvents
 
             // ===== Event Handlers =====
+
+            /// <summary>
+            /// Handle one event. Method does not inline to prevent a strong reference to the watcher.
+            /// </summary>
+            /// <param name="cookie">Opaque value identifying file or directory.</param>
+            /// <param name="events">Mask of PortFs events.</param>
+            /// <returns><see langword="true"/> if we can continue processing events,
+            /// else <see langword="false"/>.</returns>
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private bool HandleEvent(nuint cookie, int events)
+            {
+
+                // Check if this is a cancellation event
+                if (cookie == CancellationCookie)
+                {
+                    Debug.WriteLine($"[RI] ProcessEvents: got CancellationCookie");
+                    return false;
+                }
+
+                // Check if watcher is still alive before processing event
+                if (!_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
+                {
+                    Debug.WriteLine($"[RI] ProcessEvents: no watcher");
+                    return false;
+                }
+
+                // Route event to appropriate handler
+                if (_cookieMap!.TryGetValue(cookie, out FileNode? node))
+                {
+                    if (node is DirectoryNode dirNode)
+                    {
+                        HandleDirectoryEvent(watcher, dirNode, events);
+                    }
+                    else
+                    {
+                        HandleFileEvent(watcher, node, events);
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine($"[FSW] ProcessEvents: unknown cookie={cookie}");
+                }
+                return true;
+            }
 
             private void HandleDirectoryEvent(FileSystemWatcher watcher, DirectoryNode dir, int events)
             {
