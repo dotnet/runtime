@@ -1053,6 +1053,9 @@ DEFINE_METHOD(STUBHELPERS,          GET_PENDING_EXCEPTION_OBJECT, GetPendingExce
 DEFINE_METHOD(STUBHELPERS,          CREATE_CUSTOM_MARSHALER, CreateCustomMarshaler, SM_IntPtr_Int_IntPtr_RetObj)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER, GetIEnumeratorToEnumVariantMarshaler, SM_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          GET_DISPATCH_EX_PROPERTY_FLAGS, GetDispatchExPropertyFlags, SM_PtrPropertyInfo_PtrException_RetInt)
+DEFINE_METHOD(STUBHELPERS,          CALL_ICUSTOM_QUERY_INTERFACE, CallICustomQueryInterface, SM_PtrICustomQueryInterface_PtrGuid_PtrIntPtr_PtrException_RetInt)
+DEFINE_METHOD(STUBHELPERS,          INVOKE_CONNECTION_POINT_PROVIDER_METHOD, InvokeConnectionPointProviderMethod, NoSig)
 #endif // FEATURE_COMINTEROP
 
 DEFINE_METHOD(STUBHELPERS,          CHECK_STRING_LENGTH,    CheckStringLength,          SM_Int_RetVoid)
