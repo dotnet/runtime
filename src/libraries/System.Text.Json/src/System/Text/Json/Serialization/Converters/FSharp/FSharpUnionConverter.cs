@@ -211,15 +211,13 @@ namespace System.Text.Json.Serialization.Converters
             bool preserveReferences = !typeof(T).IsValueType &&
                 options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve;
 
-            // Scan for the type discriminator property and $ref metadata.
+            // Scan for the type discriminator and any reference metadata ($id, $ref).
             string? caseName = null;
+            string? referenceId = null;
             string? refId = null;
             while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
             {
-                if (reader.TokenType != JsonTokenType.PropertyName)
-                {
-                    ThrowHelper.ThrowJsonException();
-                }
+                Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
                 if (preserveReferences)
                 {
@@ -234,6 +232,18 @@ namespace System.Text.Json.Serialization.Converters
 
                         refId = reader.GetString();
                         break;
+                    }
+
+                    if (metadata is MetadataPropertyName.Id)
+                    {
+                        reader.Read();
+                        if (reader.TokenType != JsonTokenType.String)
+                        {
+                            ThrowHelper.ThrowJsonException();
+                        }
+
+                        referenceId = reader.GetString();
+                        continue;
                     }
                 }
 
@@ -254,9 +264,9 @@ namespace System.Text.Json.Serialization.Converters
                 reader.TrySkip();
             }
 
+            // Handle $ref: resolve to a previously registered object.
             if (refId is not null)
             {
-                // $ref node — resolve to a previously registered object.
                 // Validate that no other properties are present (matching metadata pipeline behavior).
                 while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
                 {
@@ -276,7 +286,6 @@ namespace System.Text.Json.Serialization.Converters
             // Restore reader to re-read all properties for field population.
             reader = checkpoint;
             bool discriminatorSeen = false;
-            string? referenceId = null;
 
             if (caseInfo.IsFieldless)
             {
@@ -294,19 +303,8 @@ namespace System.Text.Json.Serialization.Converters
 
                             discriminatorSeen = true;
                         }
-                        else if (preserveReferences &&
-                            JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null) is MetadataPropertyName.Id)
-                        {
-                            reader.Read();
-                            if (reader.TokenType != JsonTokenType.String)
-                            {
-                                ThrowHelper.ThrowJsonException();
-                            }
-
-                            referenceId = reader.GetString();
-                            continue;
-                        }
-                        else if (_effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                        else if (_effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow
+                            && !(preserveReferences && JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null) is not MetadataPropertyName.None))
                         {
                             ThrowHelper.ThrowJsonException_UnmappedJsonProperty(typeof(T), reader.GetString()!);
                         }
@@ -343,7 +341,7 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException();
                 }
 
-                // Skip the discriminator property during field reading.
+                // Skip the discriminator and metadata properties during field reading.
                 if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
                 {
                     if (discriminatorSeen)
@@ -357,17 +355,11 @@ namespace System.Text.Json.Serialization.Converters
                     continue;
                 }
 
-                // Capture $id metadata for reference registration.
                 if (preserveReferences &&
-                    JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null) is MetadataPropertyName.Id)
+                    JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null) is not MetadataPropertyName.None)
                 {
                     reader.Read();
-                    if (reader.TokenType != JsonTokenType.String)
-                    {
-                        ThrowHelper.ThrowJsonException();
-                    }
-
-                    referenceId = reader.GetString();
+                    reader.TrySkip();
                     continue;
                 }
 
