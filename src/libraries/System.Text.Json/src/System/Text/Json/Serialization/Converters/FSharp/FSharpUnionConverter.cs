@@ -222,39 +222,44 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (preserveReferences)
                 {
-                    MetadataPropertyName metadata = JsonSerializer.GetMetadataPropertyName(reader.GetUnescapedSpan(), resolver: null);
-                    if (metadata is MetadataPropertyName.Ref)
+                    switch (JsonSerializer.GetMetadataPropertyName(reader.GetUnescapedSpan(), resolver: null))
                     {
-                        if (hasNonMetadataProperties || referenceId is not null)
-                        {
-                            ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
-                        }
+                        case MetadataPropertyName.Ref:
+                            if (hasNonMetadataProperties || referenceId is not null)
+                            {
+                                ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
+                            }
 
-                        reader.Read();
-                        if (reader.TokenType != JsonTokenType.String)
-                        {
-                            ThrowHelper.ThrowJsonException();
-                        }
+                            reader.Read();
+                            if (reader.TokenType != JsonTokenType.String)
+                            {
+                                ThrowHelper.ThrowJsonException();
+                            }
 
-                        refId = reader.GetString();
-                        break;
-                    }
+                            string refValue = reader.GetString()!;
 
-                    if (metadata is MetadataPropertyName.Id)
-                    {
-                        if (referenceId is not null)
-                        {
-                            ThrowHelper.ThrowJsonException();
-                        }
+                            // Validate that no other properties follow $ref.
+                            while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+                            {
+                                ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
+                            }
 
-                        reader.Read();
-                        if (reader.TokenType != JsonTokenType.String)
-                        {
-                            ThrowHelper.ThrowJsonException();
-                        }
+                            return (T)state.ReferenceResolver.ResolveReference(refValue);
 
-                        referenceId = reader.GetString();
-                        continue;
+                        case MetadataPropertyName.Id:
+                            if (referenceId is not null)
+                            {
+                                ThrowHelper.ThrowJsonException();
+                            }
+
+                            reader.Read();
+                            if (reader.TokenType != JsonTokenType.String)
+                            {
+                                ThrowHelper.ThrowJsonException();
+                            }
+
+                            referenceId = reader.GetString();
+                            continue;
                     }
                 }
 
@@ -276,18 +281,6 @@ namespace System.Text.Json.Serialization.Converters
                 reader.TrySkip();
             }
 
-            // Handle $ref: resolve to a previously registered object.
-            if (refId is not null)
-            {
-                // Validate that no other properties follow $ref.
-                while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
-                {
-                    ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
-                }
-
-                return (T)state.ReferenceResolver.ResolveReference(refId);
-            }
-
             if (caseName is null)
             {
                 throw new JsonException(SR.Format(SR.FSharpUnionMissingDiscriminatorProperty, _typeDiscriminatorPropertyName, typeof(T)));
@@ -295,65 +288,18 @@ namespace System.Text.Json.Serialization.Converters
 
             CaseInfo caseInfo = LookupCaseByName(caseName);
 
-            // Restore reader to re-read all properties for field population.
+            // Second pass: restore reader and process all properties in a single loop.
             reader = checkpoint;
             bool discriminatorSeen = false;
-
-            if (caseInfo.IsFieldless)
-            {
-                // Skip to end of object, validating unmapped members and duplicate properties.
-                while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
-                {
-                    if (reader.TokenType == JsonTokenType.PropertyName)
-                    {
-                        if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
-                        {
-                            if (discriminatorSeen)
-                            {
-                                ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(_typeDiscriminatorPropertyName);
-                            }
-
-                            discriminatorSeen = true;
-                        }
-                        else if (_effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow
-                            && !(preserveReferences && JsonSerializer.GetMetadataPropertyName(reader.GetUnescapedSpan(), resolver: null) is not MetadataPropertyName.None))
-                        {
-                            ThrowHelper.ThrowJsonException_UnmappedJsonProperty(typeof(T), reader.GetString()!);
-                        }
-
-                        reader.Read();
-                        reader.TrySkip();
-                    }
-                }
-
-                T fieldlessValue = (T)caseInfo.Constructor(Array.Empty<object>());
-
-                if (referenceId is not null)
-                {
-                    state.ReferenceResolver.AddReference(referenceId, fieldlessValue);
-                }
-
-                return fieldlessValue;
-            }
-
-            // Read fields.
-            object[] fieldValues = (object[])caseInfo.DefaultFieldValues!.Clone();
-            bool trackPopulated = options.RespectRequiredConstructorParameters || !options.AllowDuplicateProperties;
+            object[]? fieldValues = caseInfo.IsFieldless ? null : (object[])caseInfo.DefaultFieldValues!.Clone();
+            bool trackPopulated = !caseInfo.IsFieldless && (options.RespectRequiredConstructorParameters || !options.AllowDuplicateProperties);
             BitArray? populatedFields = trackPopulated ? new BitArray(caseInfo.Fields!.Length) : null;
 
-            while (reader.Read())
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
             {
-                if (reader.TokenType == JsonTokenType.EndObject)
-                {
-                    break;
-                }
+                Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
-                if (reader.TokenType != JsonTokenType.PropertyName)
-                {
-                    ThrowHelper.ThrowJsonException();
-                }
-
-                // Skip the discriminator and metadata properties during field reading.
+                // Skip discriminator property, detecting duplicates.
                 if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
                 {
                     if (discriminatorSeen)
@@ -367,6 +313,7 @@ namespace System.Text.Json.Serialization.Converters
                     continue;
                 }
 
+                // Skip metadata properties ($id, $ref) already processed in the first pass.
                 if (preserveReferences &&
                     JsonSerializer.GetMetadataPropertyName(reader.GetUnescapedSpan(), resolver: null) is not MetadataPropertyName.None)
                 {
@@ -375,10 +322,29 @@ namespace System.Text.Json.Serialization.Converters
                     continue;
                 }
 
+                // Try to match a union case field.
                 string? fieldName = reader.GetString();
                 reader.Read();
 
-                if (fieldName is null || !TryGetFieldIndex(fieldName, caseInfo, out int fieldIndex))
+                if (fieldValues is not null && fieldName is not null && TryGetFieldIndex(fieldName, caseInfo, out int fieldIndex))
+                {
+                    if (populatedFields is not null)
+                    {
+                        if (!options.AllowDuplicateProperties && populatedFields[fieldIndex])
+                        {
+                            ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(fieldName);
+                        }
+
+                        populatedFields[fieldIndex] = true;
+                    }
+
+                    CaseFieldInfo field = caseInfo.Fields![fieldIndex];
+                    state.Current.JsonPropertyInfo = field.PropertyInfoForTypeInfo;
+                    state.Current.NumberHandling = field.NumberHandling;
+                    field.Converter.TryReadAsObject(ref reader, field.FieldType, options, ref state, out object? fieldValue);
+                    fieldValues[fieldIndex] = fieldValue!;
+                }
+                else
                 {
                     if (_effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                     {
@@ -386,33 +352,17 @@ namespace System.Text.Json.Serialization.Converters
                     }
 
                     reader.TrySkip();
-                    continue;
                 }
-
-                if (populatedFields is not null)
-                {
-                    if (!options.AllowDuplicateProperties && populatedFields[fieldIndex])
-                    {
-                        ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(fieldName!);
-                    }
-
-                    populatedFields[fieldIndex] = true;
-                }
-
-                CaseFieldInfo field = caseInfo.Fields![fieldIndex];
-                state.Current.JsonPropertyInfo = field.PropertyInfoForTypeInfo;
-                state.Current.NumberHandling = field.NumberHandling;
-                field.Converter.TryReadAsObject(ref reader, field.FieldType, options, ref state, out object? fieldValue);
-                fieldValues[fieldIndex] = fieldValue!;
             }
 
-            // Validate required fields when RespectRequiredConstructorParameters is enabled.
             if (options.RespectRequiredConstructorParameters && populatedFields is not null && !populatedFields.HasAllSet())
             {
                 ThrowForMissingRequiredFields(caseInfo, populatedFields);
             }
 
-            T result = (T)caseInfo.Constructor(fieldValues);
+            T result = caseInfo.IsFieldless
+                ? (T)caseInfo.Constructor(Array.Empty<object>())
+                : (T)caseInfo.Constructor(fieldValues!);
 
             if (referenceId is not null)
             {
