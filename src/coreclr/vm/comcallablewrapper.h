@@ -235,8 +235,6 @@ public:
     // Sets up the class method table for the IClassX and also lays it out.
     static ComMethodTable *SetupComMethodTableForClass(MethodTable *pMT, BOOL bLayOutComMT);
 
-    MethodDesc * GetICustomQueryInterfaceGetInterfaceMD();
-
     BOOL HasInvisibleParent()
     {
         LIMITED_METHOD_CONTRACT;
@@ -328,7 +326,6 @@ private:
         enum_IsSafeTypeForMarshalling         = 0x2000, // The class can be safely marshalled out of process via DCOM
     };
     DWORD                                   m_flags;
-    MethodDesc*                             m_pICustomQueryInterfaceGetInterfaceMD;
     ULONG                                   m_cbInterfaces;
     SLOT*                                   m_rgpIPtr[1];
 };
@@ -1046,6 +1043,7 @@ private:
 template<>
 struct cdac_data<ComCallWrapper>
 {
+    static constexpr size_t Handle = offsetof(ComCallWrapper, m_ppThis);
     static constexpr size_t SimpleWrapper = offsetof(ComCallWrapper, m_pSimpleWrapper);
     static constexpr size_t IPtr = offsetof(ComCallWrapper, m_rgpIPtr);
     static constexpr size_t Next = offsetof(ComCallWrapper, m_pNext);
@@ -1118,9 +1116,9 @@ private:
 
     enum SimpleComCallWrapperFlags
     {
-        enum_IsAggregated                      = 0x1,
-        enum_IsExtendsCom                      = 0x2,
-        enum_IsHandleWeak                      = 0x4,
+        enum_IsAggregated                      = 0x1,  // [cDAC] [BuiltInCOM]: Contract depends on this value
+        enum_IsExtendsCom                      = 0x2,  // [cDAC] [BuiltInCOM]: Contract depends on this value
+        enum_IsHandleWeak                      = 0x4,  // [cDAC] [BuiltInCOM]: Contract depends on this value
         enum_IsComActivated                    = 0x8,
         // unused                              = 0x10,
         // unused                              = 0x80,
@@ -1132,6 +1130,7 @@ private:
 public :
     enum : LONGLONG
     {
+        // [cDAC] [BuiltInCOM] : Contract depends on the values of CLEANUP_SENTINEL and COM_REFCOUNT_MASK
         CLEANUP_SENTINEL        = 0x0000000080000000,       // Sentinel -> 1 bit
         COM_REFCOUNT_MASK       = 0x000000007FFFFFFF,       // COM -> 31 bits
         EXT_COM_REFCOUNT_MASK   = 0x00000000FFFFFFFF,       // For back-compat, preserve the higher-bit so that outside can observe it
@@ -1623,6 +1622,7 @@ private:
 template<>
 struct cdac_data<SimpleComCallWrapper>
 {
+    static constexpr size_t OuterIUnknown = offsetof(SimpleComCallWrapper, m_pOuter);
     static constexpr size_t RefCount = offsetof(SimpleComCallWrapper, m_llRefCount);
     static constexpr size_t Flags = offsetof(SimpleComCallWrapper, m_flags);
     static constexpr size_t MainWrapper = offsetof(SimpleComCallWrapper, m_pWrap);
