@@ -1136,12 +1136,12 @@ PhaseStatus AsyncTransformation::Run()
         TransformTailAwaits(blocksWithTailAwaits);
         if (numNormalAwaits > 0)
         {
+            // This may have changed blocks, so refind the normal awaits.
             blocksWithNormalAwaits.Reset();
             blocksWithTailAwaits.Reset();
             numNormalAwaits = 0;
             numTailAwaits   = 0;
             FindAwaits(blocksWithNormalAwaits, blocksWithTailAwaits, &numNormalAwaits, &numTailAwaits);
-            assert((numTailAwaits == 0) && (blocksWithTailAwaits.Height() == 0));
         }
 
         result = PhaseStatus::MODIFIED_EVERYTHING;
@@ -1214,14 +1214,18 @@ PhaseStatus AsyncTransformation::Run()
                     return GenTree::VisitResult::Continue;
                 });
 
-                if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall())
+                if (tree->IsCall())
                 {
-                    // Transform call; continue with the remainder block.
-                    // Transform takes care to update liveness.
-                    Transform(block, tree->AsCall(), defs, liveness, &block);
-                    defs.clear();
-                    any = true;
-                    break;
+                    GenTreeCall* call = tree->AsCall();
+                    if (call->IsAsync() && !call->IsTailCall() && !call->GetAsyncInfo().IsTailAwait)
+                    {
+                        // Transform call; continue with the remainder block.
+                        // Transform takes care to update analyses.
+                        Transform(block, tree->AsCall(), defs, liveness, &block);
+                        defs.clear();
+                        any = true;
+                        break;
+                    }
                 }
 
                 // Update liveness to reflect state after this node.
