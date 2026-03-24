@@ -246,7 +246,8 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         }
 
         // POSIX_SPAWN_SETSIGDEF to reset signal handlers to default
-        short flags = POSIX_SPAWN_SETSIGDEF;
+        // POSIX_SPAWN_SETSIGMASK to set the child's signal mask
+        short flags = POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK;
         if ((result = posix_spawnattr_setflags(&attr, flags)) != 0)
         {
             int saved_errno = result;
@@ -259,6 +260,17 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         sigset_t all_signals;
         sigfillset(&all_signals);
         if ((result = posix_spawnattr_setsigdefault(&attr, &all_signals)) != 0)
+        {
+            int saved_errno = result;
+            posix_spawnattr_destroy(&attr);
+            errno = saved_errno;
+            return -1;
+        }
+
+        // Set the child's signal mask to empty (unblock all signals)
+        sigset_t no_signals;
+        sigemptyset(&no_signals);
+        if ((result = posix_spawnattr_setsigmask(&attr, &no_signals)) != 0)
         {
             int saved_errno = result;
             posix_spawnattr_destroy(&attr);
