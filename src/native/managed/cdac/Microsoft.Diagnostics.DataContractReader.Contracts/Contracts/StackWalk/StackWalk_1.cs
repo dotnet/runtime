@@ -47,23 +47,27 @@ internal partial class StackWalk_1 : IStackWalk
         bool IsActiveFrame = false) : IStackDataFrameHandle
     { }
 
-    private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData)
+    private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData, bool skipDuplicateActiveICF = false)
     {
         public IPlatformAgnosticContext Context { get; set; } = context;
         public StackWalkState State { get; set; } = state;
         public FrameIterator FrameIter { get; set; } = frameIter;
         public ThreadData ThreadData { get; set; } = threadData;
 
+        // When true, CheckForSkippedFrames will skip past an active InlinedCallFrame
+        // that was just processed as SW_FRAME without advancing the FrameIterator.
+        // This prevents a duplicate SW_SKIPPED_FRAME yield for the same managed IP.
+        //
+        // Must be false for ClrDataStackWalk (which needs exact DAC frame parity)
+        // and true for WalkStackReferences (which matches native DacStackReferenceWalker
+        // behavior of not re-enumerating the same InlinedCallFrame).
+        public bool SkipDuplicateActiveICF { get; } = skipDuplicateActiveICF;
+
+
         // Track isFirst exactly like native CrawlFrame::isFirst in StackFrameIterator.
         // Starts true, set false after processing a managed (frameless) frame,
         // set back to true when encountering a ResumableFrame (FRAME_ATTR_RESUMABLE).
         public bool IsFirst { get; set; } = true;
-
-        // When an active InlinedCallFrame is processed as SW_FRAME without advancing
-        // the FrameIterator, the same Frame would be re-encountered by
-        // CheckForSkippedFrames. This flag tells CheckForSkippedFrames to advance
-        // past it, preventing a duplicate SW_SKIPPED_FRAME -> SW_FRAMELESS yield.
-        public bool SkipCurrentFrameInCheck { get; set; }
 
         public bool IsCurrentFrameResumable()
         {
@@ -86,14 +90,18 @@ internal partial class StackWalk_1 : IStackWalk
         /// Update the IsFirst state for the NEXT frame, matching native stackwalk.cpp:
         /// - After a frameless frame: isFirst = false (line 2202)
         /// - After a ResumableFrame: isFirst = true (line 2235)
-        /// - After other Frames: isFirst = false
+        /// - After other Frames: isFirst = false (implicit in line 2235 assignment)
         /// </summary>
         public void AdvanceIsFirst()
         {
             if (State == StackWalkState.SW_FRAMELESS)
+            {
                 IsFirst = false;
+            }
             else
+            {
                 IsFirst = IsCurrentFrameResumable();
+            }
         }
 
         public StackDataFrameHandle ToDataFrame()
@@ -156,7 +164,7 @@ internal partial class StackWalk_1 : IStackWalk
             yield break;
         }
 
-        StackWalkData stackWalkData = new(context, state, frameIterator, threadData);
+        StackWalkData stackWalkData = new(context, state, frameIterator, threadData, skipDuplicateActiveICF: skipInitialFrames);
 
         yield return stackWalkData.ToDataFrame();
         stackWalkData.AdvanceIsFirst();
@@ -710,13 +718,6 @@ internal partial class StackWalk_1 : IStackWalk
                 {
                     handle.FrameIter.Next();
                 }
-                else
-                {
-                    // Active InlinedCallFrame: FrameIter was NOT advanced. The next
-                    // CheckForSkippedFrames would re-encounter this same Frame and
-                    // create a spurious SW_SKIPPED_FRAME -> SW_FRAMELESS duplicate.
-                    handle.SkipCurrentFrameInCheck = true;
-                }
                 break;
             case StackWalkState.SW_ERROR:
             case StackWalkState.SW_COMPLETE:
@@ -769,12 +770,11 @@ internal partial class StackWalk_1 : IStackWalk
             return false;
         }
 
-        // If the current Frame was already processed as SW_FRAME (e.g., an active
-        // InlinedCallFrame that wasn't advanced), skip it to avoid a duplicate
-        // SW_SKIPPED_FRAME -> SW_FRAMELESS yield for the same managed IP.
-        if (handle.SkipCurrentFrameInCheck)
+        // If the current Frame was already processed as SW_FRAME (active InlinedCallFrame
+        // that wasn't advanced), skip past it to avoid a duplicate SW_SKIPPED_FRAME yield.
+        // Only applies to WalkStackReferences (SkipDuplicateActiveICF=true).
+        if (handle.SkipDuplicateActiveICF && handle.FrameIter.IsInlineCallFrameWithActiveCall())
         {
-            handle.SkipCurrentFrameInCheck = false;
             handle.FrameIter.Next();
             if (!handle.FrameIter.IsValid())
             {
