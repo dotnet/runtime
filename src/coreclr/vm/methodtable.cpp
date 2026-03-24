@@ -708,44 +708,6 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
     return pMT;
 }
 
-
-#ifdef FEATURE_COMINTEROP
-//==========================================================================================
-OBJECTREF MethodTable::GetObjCreateDelegate()
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-    _ASSERT(!IsInterface());
-    if (GetOHDelegate())
-        return ObjectFromHandle(GetOHDelegate());
-    else
-        return NULL;
-}
-
-//==========================================================================================
-void MethodTable::SetObjCreateDelegate(OBJECTREF orDelegate)
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_NOTRIGGER;
-        THROWS; // From CreateHandle
-    }
-    CONTRACTL_END;
-
-    if (GetOHDelegate())
-        StoreObjectInHandle(GetOHDelegate(), orDelegate);
-    else
-        SetOHDelegate (GetAppDomain()->CreateHandle(orDelegate));
-}
-#endif // FEATURE_COMINTEROP
-
-
 //==========================================================================================
 void MethodTable::SetInterfaceMap(WORD wNumInterfaces, InterfaceInfo_t* iMap)
 {
@@ -4886,22 +4848,6 @@ BOOL MethodTable::IsExtensibleRCW()
     WRAPPER_NO_CONTRACT;
     _ASSERTE(GetClass());
     return IsComObjectType() && !GetClass()->IsComImport();
-}
-
-//==========================================================================================
-OBJECTHANDLE MethodTable::GetOHDelegate()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(GetClass());
-    return GetClass()->GetOHDelegate();
-}
-
-//==========================================================================================
-void MethodTable::SetOHDelegate (OBJECTHANDLE _ohDelegate)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(GetClass());
-    GetClass()->SetOHDelegate(_ohDelegate);
 }
 
 //==========================================================================================
