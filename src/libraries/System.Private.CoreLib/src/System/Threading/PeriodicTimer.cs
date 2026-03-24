@@ -131,7 +131,7 @@ namespace System.Threading
         /// The value of the Result property of the returned <see cref="ValueTask" /> is <see langword="true"/> when it's completed due to the timer firing, and
         /// <see langword="false"/> when the timer is disposed or stopped.
         /// The task enters the Canceled state when cancellation is requested.
-        /// If the <see cref="CancellationToken"/> was already cancelled when <see cref="WaitForNextAsync"/> was called,
+        /// If the <see cref="CancellationToken"/> was already cancelled when <see cref="WaitForNextTickAsync"/> was called,
         /// the returned task is created in the Canceled state.
         /// </para>
         /// The <see cref="PeriodicTimer"/> behaves like an auto-reset event, in that multiple ticks are coalesced into a single tick if they occur between
