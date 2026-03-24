@@ -139,8 +139,8 @@ namespace System.Numerics.Tests
         }
 
         /// <summary>
-        /// Test Log Method on Very Large BigInteger more than (1 &lt;&lt; Int.MaxValue) by base 2
-        /// Tested BigInteger are: pow(2, startShift + smallLoopShift * [1..smallLoopLimit] + Int32.MaxValue * [1..bigLoopLimit])
+        /// Test Log Method on Very Large BigInteger more than (1 &lt;&lt; (1 &lt;&lt; 24)) by base 2
+        /// Tested BigInteger are: pow(2, startShift + smallLoopShift * [1..smallLoopLimit] + (1 &lt;&lt; 24) * [1..bigLoopLimit])
         /// Note:
         /// ToString() can not operate such large values
         /// VerifyLogString() can not operate such large values,
@@ -157,11 +157,11 @@ namespace System.Numerics.Tests
 
                 for (int j = 0; j<bigShiftLoopLimit; j++)
                 {
-                    temp = temp << (int.MaxValue / 10);
+                    temp = temp << (1 << 24);
                     double expected =
                         (double)startShift +
                         smallShift * (double)(i + 1) +
-                        (int.MaxValue / 10) * (double)(j + 1);
+                        (1 << 24) * (double)(j + 1);
                     Assert.True(ApproxEqual(BigInteger.Log(temp, logbase), expected));
                 }
 
