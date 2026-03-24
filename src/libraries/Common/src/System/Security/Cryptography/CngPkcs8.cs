@@ -151,62 +151,56 @@ namespace System.Security.Cryptography
             return ret;
         }
 
-        internal static unsafe Pkcs8Response ImportEncryptedPkcs8PrivateKey(
+        internal static Pkcs8Response ImportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+            try
             {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                // Since there's no bytes-based-password PKCS8 import in CNG, just do the decryption
+                // here and call the unencrypted PKCS8 import.
+                ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(
+                    passwordBytes,
+                    source,
+                    out bytesRead);
+
+                Span<byte> decryptedSpan = decrypted;
+
+                try
                 {
+                    return ImportPkcs8(decryptedSpan);
+                }
+                catch (CryptographicException e)
+                {
+                    AsnWriter? pkcs8ZeroPublicKey = RewritePkcs8ECPrivateKeyWithZeroPublicKey(decryptedSpan);
+
+                    if (pkcs8ZeroPublicKey == null)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
+                    }
+
                     try
                     {
-                        // Since there's no bytes-based-password PKCS8 import in CNG, just do the decryption
-                        // here and call the unencrypted PKCS8 import.
-                        ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(
-                            passwordBytes,
-                            manager.Memory,
-                            out bytesRead);
-
-                        Span<byte> decryptedSpan = decrypted;
-
-                        try
-                        {
-                            return ImportPkcs8(decryptedSpan);
-                        }
-                        catch (CryptographicException e)
-                        {
-                            AsnWriter? pkcs8ZeroPublicKey = RewritePkcs8ECPrivateKeyWithZeroPublicKey(decryptedSpan);
-
-                            if (pkcs8ZeroPublicKey == null)
-                            {
-                                throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
-                            }
-
-                            try
-                            {
-                                return ImportPkcs8(pkcs8ZeroPublicKey);
-                            }
-                            catch (CryptographicException)
-                            {
-                                throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
-                            }
-                        }
-                        finally
-                        {
-                            CryptoPool.Return(decrypted);
-                        }
+                        return ImportPkcs8(pkcs8ZeroPublicKey);
                     }
-                    catch (AsnContentException e)
+                    catch (CryptographicException)
                     {
                         throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
                     }
                 }
+                finally
+                {
+                    CryptoPool.Return(decrypted);
+                }
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
             }
         }
 
-        internal static unsafe Pkcs8Response ImportEncryptedPkcs8PrivateKey(
+        internal static Pkcs8Response ImportEncryptedPkcs8PrivateKey(
            ReadOnlySpan<char> password,
            ReadOnlySpan<byte> source,
            out int bytesRead)
@@ -222,60 +216,50 @@ namespace System.Security.Cryptography
 
                 source = source.Slice(0, len);
 
-                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+                try
                 {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
+                    bytesRead = len;
+                    return ImportPkcs8(source, password);
+                }
+                catch (CryptographicException)
+                {
+                }
+
+                ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(password, source, out int innerRead);
+                Span<byte> decryptedSpan = decrypted;
+
+                try
+                {
+                    if (innerRead != len)
                     {
-                        try
-                        {
-                            bytesRead = len;
-                            return ImportPkcs8(source, password);
-                        }
-                        catch (CryptographicException)
-                        {
-                        }
-
-                        ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(
-                            password,
-                            manager.Memory.Slice(0, len),
-                            out int innerRead);
-
-                        Span<byte> decryptedSpan = decrypted;
-
-                        try
-                        {
-                            if (innerRead != len)
-                            {
-                                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                            }
-
-                            bytesRead = len;
-                            return ImportPkcs8(decryptedSpan);
-                        }
-                        catch (CryptographicException e)
-                        {
-                            AsnWriter? pkcs8ZeroPublicKey = RewritePkcs8ECPrivateKeyWithZeroPublicKey(decryptedSpan);
-
-                            if (pkcs8ZeroPublicKey == null)
-                            {
-                                throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
-                            }
-
-                            try
-                            {
-                                bytesRead = len;
-                                return ImportPkcs8(pkcs8ZeroPublicKey);
-                            }
-                            catch (CryptographicException)
-                            {
-                                throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
-                            }
-                        }
-                        finally
-                        {
-                            CryptoPool.Return(decrypted);
-                        }
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     }
+
+                    bytesRead = len;
+                    return ImportPkcs8(decryptedSpan);
+                }
+                catch (CryptographicException e)
+                {
+                    AsnWriter? pkcs8ZeroPublicKey = RewritePkcs8ECPrivateKeyWithZeroPublicKey(decryptedSpan);
+
+                    if (pkcs8ZeroPublicKey == null)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
+                    }
+
+                    try
+                    {
+                        bytesRead = len;
+                        return ImportPkcs8(pkcs8ZeroPublicKey);
+                    }
+                    catch (CryptographicException)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
+                    }
+                }
+                finally
+                {
+                    CryptoPool.Return(decrypted);
                 }
             }
             catch (AsnContentException e)
@@ -332,7 +316,7 @@ namespace System.Security.Cryptography
 
                 return KeyFormatHelper.ReencryptPkcs8(
                     randomString,
-                    rented.AsMemory(0, rentWritten),
+                    rented.AsSpan(0, rentWritten),
                     passwordBytes,
                     pbeParameters);
             }
@@ -369,7 +353,7 @@ namespace System.Security.Cryptography
 
                 return KeyFormatHelper.ReencryptPkcs8(
                     password,
-                    rented.AsMemory(0, rentWritten),
+                    rented.AsSpan(0, rentWritten),
                     password,
                     pbeParameters);
             }
@@ -391,40 +375,34 @@ namespace System.Security.Cryptography
         // signaling the original exception should be thrown.
         private static unsafe AsnWriter? RewritePkcs8ECPrivateKeyWithZeroPublicKey(ReadOnlySpan<byte> source)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    PrivateKeyInfoAsn privateKeyInfo = PrivateKeyInfoAsn.Decode(manager.Memory, AsnEncodingRules.BER);
-                    AlgorithmIdentifierAsn privateAlgorithm = privateKeyInfo.PrivateKeyAlgorithm;
+            ValuePrivateKeyInfoAsn.Decode(source, AsnEncodingRules.BER, out ValuePrivateKeyInfoAsn privateKeyInfo);
+            ValueAlgorithmIdentifierAsn privateAlgorithm = privateKeyInfo.PrivateKeyAlgorithm;
 
-                    if (privateAlgorithm.Algorithm != Oids.EcPublicKey)
+            if (privateAlgorithm.Algorithm != Oids.EcPublicKey)
+            {
+                return null;
+            }
+
+            ValueECPrivateKey.Decode(privateKeyInfo.PrivateKey, AsnEncodingRules.BER, out ValueECPrivateKey privateKey);
+            EccKeyFormatHelper.FromECPrivateKey(privateKey, privateAlgorithm, out ECParameters ecParameters);
+
+            fixed (byte* pD = ecParameters.D)
+            {
+                try
+                {
+                    if (!ecParameters.Curve.IsExplicit || ecParameters.Q.X != null || ecParameters.Q.Y != null)
                     {
                         return null;
                     }
 
-                    ECPrivateKey privateKey = ECPrivateKey.Decode(privateKeyInfo.PrivateKey, AsnEncodingRules.BER);
-                    EccKeyFormatHelper.FromECPrivateKey(privateKey, privateAlgorithm, out ECParameters ecParameters);
-
-                    fixed (byte* pD = ecParameters.D)
-                    {
-                        try
-                        {
-                            if (!ecParameters.Curve.IsExplicit || ecParameters.Q.X != null || ecParameters.Q.Y != null)
-                            {
-                                return null;
-                            }
-
-                            byte[] zero = new byte[ecParameters.D!.Length];
-                            ecParameters.Q.Y = zero;
-                            ecParameters.Q.X = zero;
-                            return EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters, privateKeyInfo.Attributes);
-                        }
-                        finally
-                        {
-                            Array.Clear(ecParameters.D!);
-                        }
-                    }
+                    byte[] zero = new byte[ecParameters.D!.Length];
+                    ecParameters.Q.Y = zero;
+                    ecParameters.Q.X = zero;
+                    return EccKeyFormatHelper.WritePkcs8PrivateKey(ecParameters, privateKeyInfo.Attributes);
+                }
+                finally
+                {
+                    Array.Clear(ecParameters.D!);
                 }
             }
         }
