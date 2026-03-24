@@ -1,197 +1,109 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
-
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.Loader;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using Xunit;
+using Xunit.Internal;
+using Xunit.Runner.Common;
+using Xunit.Runner.InProc.SystemConsole;
 using Xunit.Sdk;
 
 // @TODO medium-to-longer term, we should try to get rid of the special-unicorn-single-file runner in favor of making the real runner work for single file.
 // https://github.com/dotnet/runtime/issues/70432
-public class SingleFileTestRunner : XunitTestFramework
+public static class SingleFileTestRunner
 {
-    private SingleFileTestRunner(IMessageSink messageSink)
-    : base(messageSink) { }
-
-    public static int Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
-        var asm = typeof(SingleFileTestRunner).Assembly;
-        Console.WriteLine("Running assembly:" + asm.FullName);
+        Console.OutputEncoding = Encoding.UTF8;
+
+        var testAssembly = typeof(SingleFileTestRunner).Assembly;
+        Console.WriteLine("Running assembly:" + testAssembly.FullName);
 
         // The current RemoteExecutor implementation is not compatible with the SingleFileTestRunner.
         Environment.SetEnvironmentVariable("DOTNET_REMOTEEXECUTOR_SUPPORTED", "0");
 
-        // To detect ReadyToRun testing mode, we set a constant in
-        // eng/testing/tests.singlefile.targets, which we use in the following
-        // preprocessor directive. In the case that it is defined, we set an
-        // environment variable that we consume later to implement
-        // PlatformDetection.IsReadyToRunCompiled. This last value is used for the
-        // [ActiveIssue] annotations designed to exclude tests from running.
-
 #if TEST_READY_TO_RUN_COMPILED
-        Environment.SetEnvironmentVariable("TEST_READY_TO_RUN_MODE" ,"1");
+        Environment.SetEnvironmentVariable("TEST_READY_TO_RUN_MODE", "1");
 #endif
 
-        var diagnosticSink = new ConsoleDiagnosticMessageSink();
-        var testsFinished = new TaskCompletionSource();
-        var testSink = new TestMessageSink();
+        // Environment.ProcessPath works in NativeAOT (returns native exe path),
+        // unlike Assembly.Location which returns empty string.
+        var processPath = Environment.ProcessPath ?? "test";
 
-#pragma warning disable CS0618 // Delegating*Sink types are marked obsolete
-        var summarySink = new DelegatingExecutionSummarySink(testSink,
-            () => false,
-            (completed, summary) => Console.WriteLine($"Tests run: {summary.Total}, Errors: {summary.Errors}, Failures: {summary.Failed}, Skipped: {summary.Skipped}. Time: {TimeSpan.FromSeconds((double)summary.Time).TotalSeconds}s"));
-        var resultsXmlAssembly = new XElement("assembly");
-        var resultsSink = new DelegatingXmlCreationSink(summarySink, resultsXmlAssembly);
-#pragma warning restore CS0618
+        string? xmlResultFileName = null;
+        var excludedTraits = new Dictionary<string, HashSet<string>>();
 
-        testSink.Execution.TestSkippedEvent += args => { Console.WriteLine($"[SKIP] {args.Message.Test.DisplayName}"); };
-        testSink.Execution.TestFailedEvent += args => { Console.WriteLine($"[FAIL] {args.Message.Test.DisplayName}{Environment.NewLine}{Xunit.ExceptionUtility.CombineMessages(args.Message)}{Environment.NewLine}{Xunit.ExceptionUtility.CombineStackTraces(args.Message)}"); };
-
-        testSink.Execution.TestAssemblyFinishedEvent += args =>
-        {
-            Console.WriteLine($"Finished {args.Message.TestAssembly.Assembly}{Environment.NewLine}");
-            testsFinished.SetResult();
-        };
-
-        var assemblyConfig = new TestAssemblyConfiguration()
-        {
-            // Turn off pre-enumeration of theories, since there is no theory selection UI in this runner
-            PreEnumerateTheories = false,
-        };
-
-        var xunitTestFx = new SingleFileTestRunner(diagnosticSink);
-        var asmInfo = Reflector.Wrap(asm);
-        var asmName = asm.GetName();
-
-        var discoverySink = new TestDiscoverySink();
-        var discoverer = xunitTestFx.CreateDiscoverer(asmInfo);
-        discoverer.Find(false, discoverySink, TestFrameworkOptions.ForDiscovery(assemblyConfig));
-        discoverySink.Finished.WaitOne();
-
-        string xmlResultFileName = null;
-        XunitFilters filters = new XunitFilters();
-        // Quick hack wo much validation to get args that are passed (notrait, xml)
-        Dictionary<string, List<string>> noTraits = new Dictionary<string, List<string>>();
         for (int i = 0; i < args.Length; i++)
         {
-            if (args[i].Equals("-notrait", StringComparison.OrdinalIgnoreCase) ||
-                args[i].Equals("-trait-", StringComparison.OrdinalIgnoreCase))
+            if ((args[i].Equals("-trait-", StringComparison.OrdinalIgnoreCase) ||
+                 args[i].Equals("-notrait", StringComparison.OrdinalIgnoreCase)) && i + 1 < args.Length)
             {
-                var traitKeyValue = args[i + 1].Split("=", StringSplitOptions.TrimEntries);
-
-                if (!noTraits.TryGetValue(traitKeyValue[0], out List<string> values))
+                var parts = args[++i].Split('=', 2);
+                if (parts.Length == 2)
                 {
-                    noTraits.Add(traitKeyValue[0], values = new List<string>());
+                    if (!excludedTraits.TryGetValue(parts[0], out var values))
+                        excludedTraits[parts[0]] = values = new HashSet<string>();
+                    values.Add(parts[1]);
                 }
-
-                values.Add(traitKeyValue[1]);
-                i++;
             }
-
-            if (args[i].Equals("-xml", StringComparison.OrdinalIgnoreCase))
+            else if (args[i].Equals("-xml", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
-                xmlResultFileName = args[i + 1].Trim();
-                i++;
-            }
-
-            if (args[i].Equals("-class", StringComparison.OrdinalIgnoreCase))
-            {
-                filters.IncludedClasses.Add(args[i + 1].Trim());
-                i++;
-            }
-
-            if (args[i].Equals("-noclass", StringComparison.OrdinalIgnoreCase) ||
-                args[i].Equals("-class-", StringComparison.OrdinalIgnoreCase))
-            {
-                filters.ExcludedClasses.Add(args[i + 1].Trim());
-                i++;
-            }
-
-            if (args[i].Equals("-method", StringComparison.OrdinalIgnoreCase))
-            {
-                filters.IncludedMethods.Add(args[i + 1].Trim());
-                i++;
-            }
-
-            if (args[i].Equals("-nomethod", StringComparison.OrdinalIgnoreCase) ||
-                args[i].Equals("-method-", StringComparison.OrdinalIgnoreCase))
-            {
-                filters.ExcludedMethods.Add(args[i + 1].Trim());
-                i++;
-            }
-
-            if (args[i].Equals("-namespace", StringComparison.OrdinalIgnoreCase))
-            {
-                filters.IncludedNamespaces.Add(args[i + 1].Trim());
-                i++;
-            }
-
-            if (args[i].Equals("-nonamespace", StringComparison.OrdinalIgnoreCase) ||
-                args[i].Equals("-namespace-", StringComparison.OrdinalIgnoreCase))
-            {
-                filters.ExcludedNamespaces.Add(args[i + 1].Trim());
-                i++;
-            }
-
-            if (args[i].Equals("-parallel", StringComparison.OrdinalIgnoreCase))
-            {
-                string parallelismArg = args[i + 1].Trim().ToLower();
-                var (parallelizeAssemblies, parallelizeTestCollections) = parallelismArg switch
-                {
-                    "all" => (true, true),
-                    "assemblies" => (true, false),
-                    "collections" => (false, true),
-                    "none" => (false, false),
-                    _ => throw new ArgumentException($"Unknown parallelism option '{parallelismArg}'.")
-                };
-
-                assemblyConfig.ParallelizeAssembly = parallelizeAssemblies;
-                assemblyConfig.ParallelizeTestCollections = parallelizeTestCollections;
-                i++;
+                xmlResultFileName = args[++i];
             }
         }
 
-        foreach (KeyValuePair<string, List<string>> kvp in noTraits)
+        var project = new XunitProject();
+        var targetFramework = testAssembly.GetTargetFramework();
+        var projectAssembly = new XunitProjectAssembly(
+            project, processPath, new AssemblyMetadata(3, targetFramework))
         {
-            filters.ExcludedTraits.Add(kvp.Key, kvp.Value);
-        }
+            Assembly = testAssembly
+        };
+        projectAssembly.Configuration.PreEnumerateTheories = false;
 
-        var filteredTestCases = discoverySink.TestCases.Where(filters.Filter).ToList();
-        var executor = xunitTestFx.CreateExecutor(asmName);
-        executor.RunTests(filteredTestCases, resultsSink, TestFrameworkOptions.ForExecution(assemblyConfig));
+        foreach (var (key, values) in excludedTraits)
+            foreach (var value in values)
+                projectAssembly.Configuration.Filters.AddExcludedTraitFilter(key, value);
 
-        resultsSink.Finished.WaitOne();
+        if (xmlResultFileName is not null)
+            project.Configuration.Output.Add("xml", xmlResultFileName);
 
-        // Helix need to see results file in the drive to detect if the test has failed or not
-        if(xmlResultFileName != null)
+        project.Add(projectAssembly);
+
+        var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+
+        var consoleHelper = new ConsoleHelper(Console.In, Console.Out);
+        var logger = new ConsoleRunnerLogger(useColors: true, useAnsiColor: false, consoleHelper, waitForAcknowledgment: false);
+
+        var pipelineStartup = await ProjectAssemblyRunner.InvokePipelineStartup(testAssembly, null);
+
+        var reporter = project.RunnerReporter;
+        var reporterMessageHandler = await reporter.CreateMessageHandler(logger, null);
+
+        int failCount;
+        try
         {
-            resultsXmlAssembly.Save(xmlResultFileName);
+            consoleHelper.WriteLine(ProjectAssemblyRunner.Banner);
+
+            var projectRunner = new ProjectAssemblyRunner(
+                testAssembly, AutomatedMode.Off,
+                NullSourceInformationProvider.Instance, cts);
+
+            failCount = await projectRunner.Run(
+                projectAssembly, reporterMessageHandler, null, logger, pipelineStartup);
+        }
+        finally
+        {
+            if (pipelineStartup is not null)
+                await pipelineStartup.StopAsync();
+            await reporterMessageHandler.DisposeAsync();
         }
 
-        var failed = resultsSink.ExecutionSummary.Failed > 0 || resultsSink.ExecutionSummary.Errors > 0;
-        return failed ? 1 : 0;
+        return failCount > 0 ? 1 : 0;
     }
 }
-
-// This is about running on desktop FX, which we don't do
-#pragma warning disable xUnit3000
-internal class ConsoleDiagnosticMessageSink : IMessageSink
-{
-    public bool OnMessage(IMessageSinkMessage message)
-    {
-        if (message is IDiagnosticMessage diagnosticMessage)
-        {
-            return true;
-        }
-        return false;
-    }
-}
-#pragma warning restore xUnit3000
