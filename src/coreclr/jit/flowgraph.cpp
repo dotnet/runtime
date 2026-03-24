@@ -7684,7 +7684,6 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
             while (region != nullptr)
             {
                 BitVecOps::AddElemD(&traits, region->m_blocks, block->bbPostorderNum);
-                region = region->m_parent;
 
                 // Enumerate block's pred edges to find the try entry edges.
                 //
@@ -7709,6 +7708,10 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
                     //
                     if (block->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
                     {
+                        JITDUMP("Found %s resumption edge from " FMT_BB " to " FMT_BB "\n",
+                                block->HasFlag(BBF_ASYNC_RESUMPTION) ? "async" : "catch", predBlock->bbNum,
+                                block->bbNum);
+
                         region->AddEntryEdge(edge);
                         region->SetHasSideEntry();
                         regions->SetHasMultipleEntryTryRegions();
@@ -7718,6 +7721,13 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
                     JITDUMP("Unexpected try region entry edge from " FMT_BB " to " FMT_BB "\n", predBlock->bbNum,
                             block->bbNum);
                     assert(!"Unexpected try region entry edge");
+                }
+
+                region = region->m_parent;
+
+                if (region != nullptr)
+                {
+                    tryIndex = comp->ehGetIndex(region->m_ehDsc);
                 }
             }
         }
