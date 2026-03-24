@@ -177,7 +177,7 @@ namespace System.IO.Tests
         public void SafeFileHandle_IsInheritable_ReturnsCorrectInformation_FromIntPtr(FileShare share)
         {
             using SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, share);
-            using SafeFileHandle createdFromIntPtr = new SafeFileHandle(handle.DangerousGetHandle(), ownsHandle: false);
+            using SafeFileHandle createdFromIntPtr = new(handle.DangerousGetHandle(), ownsHandle: false);
             Assert.Equal((share & FileShare.Inheritable) != 0, createdFromIntPtr.IsInheritable());
         }
 
@@ -185,8 +185,8 @@ namespace System.IO.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Pipes are not supported on browser")]
         public void SafeFileHandle_IsInheritable_InheritablePipe()
         {
-            using var pipeServer = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable);
-            using SafeFileHandle handle = new SafeFileHandle(pipeServer.ClientSafePipeHandle.DangerousGetHandle(), ownsHandle: false);
+            using AnonymousPipeServerStream pipeServer = new(PipeDirection.Out, HandleInheritability.Inheritable);
+            using SafeFileHandle handle = new(pipeServer.ClientSafePipeHandle.DangerousGetHandle(), ownsHandle: false);
             Assert.True(handle.IsInheritable());
             pipeServer.DisposeLocalCopyOfClientHandle();
         }
