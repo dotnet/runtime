@@ -118,7 +118,7 @@ namespace System.Xml
 
             if (hasHalfByteCached && !allowOddChars)
             {
-                throw new XmlException(SR.Xml_InvalidBinHexValueOddCount, new string(chars));
+                throw new XmlException(SR.Xml_InvalidBinHexValueOddCount, (string?)null);
             }
 
             if (bytesDecoded < bytes.Length)
@@ -162,7 +162,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    throw new XmlException(SR.Xml_InvalidBinHexValue, chars.ToString());
+                    throw new XmlException(SR.Xml_InvalidBinHexValue, ch.ToString());
                 }
 
                 if (hasHalfByteCached)
