@@ -11585,6 +11585,7 @@ namespace System.Numerics
         static virtual TSelf Remainder(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
         int GetByteCount();
         int GetShortestBitLength();
+        static virtual TSelf Log10(TSelf value) { throw null; }
         static virtual TSelf LeadingZeroCount(TSelf value) { throw null; }
         static abstract TSelf PopCount(TSelf value);
         static virtual TSelf ReadBigEndian(byte[] source, bool isUnsigned) { throw null; }
