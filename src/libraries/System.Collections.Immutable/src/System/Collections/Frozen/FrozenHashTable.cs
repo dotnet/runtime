@@ -185,17 +185,22 @@ namespace System.Collections.Frozen
             // Based on our observations, in more than 99.5% of cases the number of buckets that meets our criteria is
             // at least twice as big as the number of unique hash codes.
             // Use long to avoid integer overflow when uniqueCodesCount is large (> ~1 billion).
-            long minNumBuckets = (long)uniqueCodesCount * 2;
+            int bucketMultiplier = 2;
 
-            // EXPERIMENTAL: env-var switches for benchmarking prime-tuning value.
-            // These are read uncached during construction (cold path only, not on lookup hot path).
-            // DOTNET_FROZEN_SKIP_TUNING=1: skip collision-counting loop, just use GetPrime(2*N).
-            // DOTNET_FROZEN_TUNING_THRESHOLD=N: skip tuning when uniqueCodesCount > N.
-            if (Environment.GetEnvironmentVariable("DOTNET_FROZEN_SKIP_TUNING") == "1")
+            // EXPERIMENTAL: env-var switches for benchmarking load-factor and tuning-loop value.
+            // Read uncached during construction (cold path only, not on lookup hot path).
+            // DOTNET_FROZEN_BUCKET_MULTIPLIER=N: set bucket count to N*uniqueCodesCount (default 2, i.e. LF ~0.5).
+            //   Set to 1 for LF ~1.0 (half the memory, better locality, more collisions).
+            // DOTNET_FROZEN_TUNING_THRESHOLD=N: skip the collision-counting tuning loop when
+            //   uniqueCodesCount > N. Set to 0 to skip tuning entirely.
+            if (Environment.GetEnvironmentVariable("DOTNET_FROZEN_BUCKET_MULTIPLIER") is string multStr
+                && int.TryParse(multStr, out int mult)
+                && mult >= 1)
             {
-                int targetBuckets = (int)Math.Min(minNumBuckets, int.MaxValue);
-                return HashHelpers.GetPrime(targetBuckets);
+                bucketMultiplier = mult;
             }
+
+            long minNumBuckets = (long)uniqueCodesCount * bucketMultiplier;
 
             if (Environment.GetEnvironmentVariable("DOTNET_FROZEN_TUNING_THRESHOLD") is string thresholdStr
                 && int.TryParse(thresholdStr, out int maxTuningSize)
