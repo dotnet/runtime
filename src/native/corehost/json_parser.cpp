@@ -32,7 +32,7 @@ void get_line_column_from_offset(const char* data, size_t size, size_t offset, i
             (*line)++;
             *column = 1;
         }
-        else if (data[i] == '\r' && data[i + 1] == '\n')
+        else if (data[i] == '\r' && (i + 1) < offset && data[i + 1] == '\n')
         {
             (*line)++;
             *column = 1;
