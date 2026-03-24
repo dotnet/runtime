@@ -214,7 +214,7 @@
     <value>Invalid handle.</value>
   </data>
   <data name="CantSetHandleAndRedirect" xml:space="preserve">
-    <value>The StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties cannot be used together with RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError.</value>
+    <value>The StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties cannot be used together with the corresponding RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties.</value>
   </data>
   <data name="DirectoryNotValidAsInput" xml:space="preserve">
     <value>The FileName property should not be a directory unless UseShellExecute is set.</value>

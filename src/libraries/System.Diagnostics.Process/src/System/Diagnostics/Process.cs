@@ -1321,7 +1321,7 @@ namespace System.Diagnostics
 
             try
             {
-                if (anyRedirection || anyHandle)
+                if (!startInfo.UseShellExecute)
                 {
                     // Windows supports creating non-inheritable pipe in atomic way.
                     // When it comes to Unixes, it depends whether they support pipe2 sys-call or not.
