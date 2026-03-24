@@ -386,7 +386,7 @@ namespace System.Diagnostics
             // Unix applications expect the terminal to be in an echoing state by default.
             // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
             // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
-            // When a handle is null, the child inherits the parent's standard stream which could be a terminal.
+            // Handle can be null only for UseShellExecute or platforms that don't support Console.Open* methods like Android.
             bool usesTerminal = (stdinHandle is not null && Interop.Sys.IsATty(stdinHandle))
                 || (stdoutHandle is not null && Interop.Sys.IsATty(stdoutHandle))
                 || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle));
