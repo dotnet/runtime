@@ -493,6 +493,16 @@ namespace System
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(nuint value) => BitOperations.IsPow2(value);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        public static nuint Log10(nuint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return (nuint)ulong.Log10((ulong)value);
+            }
+            return (nuint)uint.Log10((uint)value);
+        }
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
         [Intrinsic]
         public static nuint Log2(nuint value) => (nuint)BitOperations.Log2(value);

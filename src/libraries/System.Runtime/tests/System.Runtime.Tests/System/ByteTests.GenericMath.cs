@@ -181,6 +181,18 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal((byte)0x00, BinaryIntegerHelper<byte>.Log10((byte)0x00));
+            Assert.Equal((byte)0x00, BinaryIntegerHelper<byte>.Log10((byte)0x01));
+            Assert.Equal((byte)0x01, BinaryIntegerHelper<byte>.Log10((byte)0x0A));
+            Assert.Equal((byte)0x02, BinaryIntegerHelper<byte>.Log10((byte)0x64));
+            Assert.Equal((byte)0x02, BinaryIntegerHelper<byte>.Log10((byte)0x7F));
+            Assert.Equal((byte)0x02, BinaryIntegerHelper<byte>.Log10((byte)0x80));
+            Assert.Equal((byte)0x02, BinaryIntegerHelper<byte>.Log10((byte)0xFF));
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             Assert.Equal((byte)0x00, BinaryIntegerHelper<byte>.PopCount((byte)0x00));

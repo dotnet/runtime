@@ -189,6 +189,18 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal((ulong)0x0000000000000000, BinaryIntegerHelper<ulong>.Log10((ulong)0x0000000000000000));
+            Assert.Equal((ulong)0x0000000000000000, BinaryIntegerHelper<ulong>.Log10((ulong)0x0000000000000001));
+            Assert.Equal((ulong)0x0000000000000001, BinaryIntegerHelper<ulong>.Log10((ulong)0x000000000000000A));
+            Assert.Equal((ulong)0x0000000000000002, BinaryIntegerHelper<ulong>.Log10((ulong)0x0000000000000064));
+            Assert.Equal((ulong)0x0000000000000012, BinaryIntegerHelper<ulong>.Log10((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.Equal((ulong)0x0000000000000012, BinaryIntegerHelper<ulong>.Log10((ulong)0x8000000000000000));
+            Assert.Equal((ulong)0x0000000000000013, BinaryIntegerHelper<ulong>.Log10((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             Assert.Equal((ulong)0x0000000000000000, BinaryIntegerHelper<ulong>.PopCount((ulong)0x0000000000000000));

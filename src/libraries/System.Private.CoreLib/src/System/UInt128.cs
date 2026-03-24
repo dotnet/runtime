@@ -979,6 +979,59 @@ namespace System
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(UInt128 value) => PopCount(value) == 1U;
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        public static UInt128 Log10(UInt128 value)
+        {
+            value |= 1U;
+            uint log2 = (uint)Log2(value) + 1;
+            uint approx = (log2 * 1233) >> 12;
+            return value < PowersOf10[(int)approx] ? approx - 1 : approx;
+        }
+
+        // Lookup table for power-of-10 boundaries corrections
+        private static readonly UInt128[] PowersOf10 =
+        [
+            new UInt128(0, 1UL),
+            new UInt128(0, 10UL),
+            new UInt128(0, 100UL),
+            new UInt128(0, 1_000UL),
+            new UInt128(0, 10_000UL),
+            new UInt128(0, 100_000UL),
+            new UInt128(0, 1_000_000UL),
+            new UInt128(0, 10_000_000UL),
+            new UInt128(0, 100_000_000UL),
+            new UInt128(0, 1_000_000_000UL),
+            new UInt128(0, 10_000_000_000UL),
+            new UInt128(0, 100_000_000_000UL),
+            new UInt128(0, 1_000_000_000_000UL),
+            new UInt128(0, 10_000_000_000_000UL),
+            new UInt128(0, 100_000_000_000_000UL),
+            new UInt128(0, 1_000_000_000_000_000UL),
+            new UInt128(0, 10_000_000_000_000_000UL),
+            new UInt128(0, 100_000_000_000_000_000UL),
+            new UInt128(0, 1_000_000_000_000_000_000UL),
+            new UInt128(0, 10_000_000_000_000_000_000UL),
+            new UInt128(5, 7766279631452241920UL),
+            new UInt128(54, 3875820019684212736UL),
+            new UInt128(542, 1864712049423024128UL),
+            new UInt128(5421, 200376420520689664UL),
+            new UInt128(54210, 2003764205206896640UL),
+            new UInt128(542101, 1590897978359414784UL),
+            new UInt128(5421010, 15908979783594147840UL),
+            new UInt128(54210108, 11515845246265065472UL),
+            new UInt128(542101086, 4477988020393345024UL),
+            new UInt128(5421010862, 7886392056514347008UL),
+            new UInt128(54210108624, 5076944270305263616UL),
+            new UInt128(542101086242, 13875954555633532928UL),
+            new UInt128(5421010862427, 9632337040368467968UL),
+            new UInt128(54210108624275, 4089650035136921600UL),
+            new UInt128(542101086242752, 4003012203950112768UL),
+            new UInt128(5421010862427522, 3136633892082024448UL),
+            new UInt128(54210108624275221, 12919594847110692864UL),
+            new UInt128(542101086242752217, 68739955140067328UL),
+            new UInt128(5421010862427522170, 687399551400673280UL),
+        ];
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
         public static UInt128 Log2(UInt128 value)
         {

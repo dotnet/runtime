@@ -230,6 +230,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal(0x00, BinaryIntegerHelper<Int128>.Log10(Zero));
+            Assert.Equal(0x00, BinaryIntegerHelper<Int128>.Log10(One));
+            Assert.Equal(0x26, BinaryIntegerHelper<Int128>.Log10(MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<Int128>.Log10(MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<Int128>.Log10(NegativeOne));
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             Assert.Equal(0x00, BinaryIntegerHelper<Int128>.PopCount(Zero));

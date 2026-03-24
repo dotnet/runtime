@@ -960,6 +960,7 @@ namespace System
         public static bool IsOddInteger(byte value) { throw null; }
         public static bool IsPow2(byte value) { throw null; }
         public static byte LeadingZeroCount(byte value) { throw null; }
+        public static byte Log10(byte value) { throw null; }
         public static byte Log2(byte value) { throw null; }
         public static byte Max(byte x, byte y) { throw null; }
         public static byte Min(byte x, byte y) { throw null; }
@@ -1177,6 +1178,7 @@ namespace System
         int System.Numerics.IBinaryInteger<char>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<char>.GetShortestBitLength() { throw null; }
         static char System.Numerics.IBinaryInteger<char>.LeadingZeroCount(char value) { throw null; }
+        static char System.Numerics.IBinaryInteger<char>.Log10(char value) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.PopCount(char value) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.RotateLeft(char value, int rotateAmount) { throw null; }
         static char System.Numerics.IBinaryInteger<char>.RotateRight(char value, int rotateAmount) { throw null; }
@@ -3607,6 +3609,7 @@ namespace System
         public static bool IsPositive(System.Int128 value) { throw null; }
         public static bool IsPow2(System.Int128 value) { throw null; }
         public static System.Int128 LeadingZeroCount(System.Int128 value) { throw null; }
+        public static System.Int128 Log10(System.Int128 value) { throw null; }
         public static System.Int128 Log2(System.Int128 value) { throw null; }
         public static System.Int128 Max(System.Int128 x, System.Int128 y) { throw null; }
         public static System.Int128 MaxMagnitude(System.Int128 x, System.Int128 y) { throw null; }
@@ -3794,6 +3797,7 @@ namespace System
         public static bool IsPositive(short value) { throw null; }
         public static bool IsPow2(short value) { throw null; }
         public static short LeadingZeroCount(short value) { throw null; }
+        public static short Log10(short value) { throw null; }
         public static short Log2(short value) { throw null; }
         public static short Max(short x, short y) { throw null; }
         public static short MaxMagnitude(short x, short y) { throw null; }
@@ -3935,6 +3939,7 @@ namespace System
         public static bool IsPositive(int value) { throw null; }
         public static bool IsPow2(int value) { throw null; }
         public static int LeadingZeroCount(int value) { throw null; }
+        public static int Log10(int value) { throw null; }
         public static int Log2(int value) { throw null; }
         public static int Max(int x, int y) { throw null; }
         public static int MaxMagnitude(int x, int y) { throw null; }
@@ -4076,6 +4081,7 @@ namespace System
         public static bool IsPositive(long value) { throw null; }
         public static bool IsPow2(long value) { throw null; }
         public static long LeadingZeroCount(long value) { throw null; }
+        public static long Log10(long value) { throw null; }
         public static long Log2(long value) { throw null; }
         public static long Max(long x, long y) { throw null; }
         public static long MaxMagnitude(long x, long y) { throw null; }
@@ -4223,6 +4229,7 @@ namespace System
         public static bool IsPositive(nint value) { throw null; }
         public static bool IsPow2(nint value) { throw null; }
         public static nint LeadingZeroCount(nint value) { throw null; }
+        public static nint Log10(nint value) { throw null; }
         public static nint Log2(nint value) { throw null; }
         public static nint Max(nint x, nint y) { throw null; }
         public static nint MaxMagnitude(nint x, nint y) { throw null; }
@@ -5236,6 +5243,7 @@ namespace System
         public static bool IsPositive(sbyte value) { throw null; }
         public static bool IsPow2(sbyte value) { throw null; }
         public static sbyte LeadingZeroCount(sbyte value) { throw null; }
+        public static sbyte Log10(sbyte value) { throw null; }
         public static sbyte Log2(sbyte value) { throw null; }
         public static sbyte Max(sbyte x, sbyte y) { throw null; }
         public static sbyte MaxMagnitude(sbyte x, sbyte y) { throw null; }
@@ -6886,6 +6894,7 @@ namespace System
         public static bool IsOddInteger(System.UInt128 value) { throw null; }
         public static bool IsPow2(System.UInt128 value) { throw null; }
         public static System.UInt128 LeadingZeroCount(System.UInt128 value) { throw null; }
+        public static System.UInt128 Log10(System.UInt128 value) { throw null; }
         public static System.UInt128 Log2(System.UInt128 value) { throw null; }
         public static System.UInt128 Max(System.UInt128 x, System.UInt128 y) { throw null; }
         public static System.UInt128 Min(System.UInt128 x, System.UInt128 y) { throw null; }
@@ -7079,6 +7088,7 @@ namespace System
         public static bool IsOddInteger(ushort value) { throw null; }
         public static bool IsPow2(ushort value) { throw null; }
         public static ushort LeadingZeroCount(ushort value) { throw null; }
+        public static ushort Log10(ushort value) { throw null; }
         public static ushort Log2(ushort value) { throw null; }
         public static ushort Max(ushort x, ushort y) { throw null; }
         public static ushort Min(ushort x, ushort y) { throw null; }
@@ -7220,6 +7230,7 @@ namespace System
         public static bool IsOddInteger(uint value) { throw null; }
         public static bool IsPow2(uint value) { throw null; }
         public static uint LeadingZeroCount(uint value) { throw null; }
+        public static uint Log10(uint value) { throw null; }
         public static uint Log2(uint value) { throw null; }
         public static uint Max(uint x, uint y) { throw null; }
         public static uint Min(uint x, uint y) { throw null; }
@@ -7361,6 +7372,7 @@ namespace System
         public static bool IsOddInteger(ulong value) { throw null; }
         public static bool IsPow2(ulong value) { throw null; }
         public static ulong LeadingZeroCount(ulong value) { throw null; }
+        public static ulong Log10(ulong value) { throw null; }
         public static ulong Log2(ulong value) { throw null; }
         public static ulong Max(ulong x, ulong y) { throw null; }
         public static ulong Min(ulong x, ulong y) { throw null; }
@@ -7507,6 +7519,7 @@ namespace System
         public static bool IsOddInteger(nuint value) { throw null; }
         public static bool IsPow2(nuint value) { throw null; }
         public static nuint LeadingZeroCount(nuint value) { throw null; }
+        public static nuint Log10(nuint value) { throw null; }
         public static nuint Log2(nuint value) { throw null; }
         public static nuint Max(nuint x, nuint y) { throw null; }
         public static nuint Min(nuint x, nuint y) { throw null; }

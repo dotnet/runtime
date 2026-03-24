@@ -344,6 +344,31 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nint)0x0000000000000000), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x0000000000000000)));
+                Assert.Equal(unchecked((nint)0x0000000000000000), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x0000000000000001)));
+                Assert.Equal(unchecked((nint)0x0000000000000001), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x000000000000000A)));
+                Assert.Equal(unchecked((nint)0x0000000000000002), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x0000000000000064)));
+                Assert.Equal(unchecked((nint)0x0000000000000012), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
+                Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x8000000000000000)));
+                Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<nint>.Log10(unchecked((nint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.Equal((nint)0x00000000, BinaryIntegerHelper<nint>.Log10((nint)0x00000000));
+                Assert.Equal((nint)0x00000000, BinaryIntegerHelper<nint>.Log10((nint)0x00000001));
+                Assert.Equal((nint)0x00000001, BinaryIntegerHelper<nint>.Log10((nint)0x0000000A));
+                Assert.Equal((nint)0x00000002, BinaryIntegerHelper<nint>.Log10((nint)0x00000064));
+                Assert.Equal((nint)0x00000009, BinaryIntegerHelper<nint>.Log10((nint)0x7FFFFFFF));
+                Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x80000000)));
+                Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<nint>.Log10(unchecked((nint)0xFFFFFFFF)));
+            }
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             if (Environment.Is64BitProcess)
