@@ -57,11 +57,16 @@
   <Target Name="RunMergedTests" DependsOnTargets="PrepareTestsToRun">
     <ItemGroup>
       <_StaleCrashedMarkers Include="$(__LogsDir)\*.crashed" />
+      <_StaleTestRunXmls Include="$(__LogsDir)\*.testRun.xml" />
     </ItemGroup>
     <Delete Files="@(_StaleCrashedMarkers)" />
+    <Delete Files="@(_StaleTestRunXmls)" />
 
+    <PropertyGroup Condition="'$(RunnerFilter)' != ''">
+      <_NormalizedRunnerFilter>$([System.String]::new('$(RunnerFilter)').Replace('/','.').Replace('\','.'))</_NormalizedRunnerFilter>
+    </PropertyGroup>
     <ItemGroup Condition="'$(RunnerFilter)' != ''">
-      <MergedTestWrapperScripts Remove="@(MergedTestWrapperScripts)" Condition="!$([System.String]::new('%(MergedTestWrapperScripts.RelativeResultsPath)').Replace('/','.').Replace('\','.').Contains('$(RunnerFilter)'))" />
+      <MergedTestWrapperScripts Remove="@(MergedTestWrapperScripts)" Condition="!$([System.String]::new('%(MergedTestWrapperScripts.RelativeResultsPath)').Replace('/','.').Replace('\','.').Contains('$(_NormalizedRunnerFilter)'))" />
     </ItemGroup>
 
     <Message Text="Runner filter '$(RunnerFilter)' matched @(MergedTestWrapperScripts->Count()) runner(s)" Importance="high" Condition="'$(RunnerFilter)' != ''" />

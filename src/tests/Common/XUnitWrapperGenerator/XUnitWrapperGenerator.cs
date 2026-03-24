@@ -986,7 +986,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             if (skipReason != null)
             {
-                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new ConditionalTest(t, "false", skipReason)));
+                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new AlwaysSkippedTest(t, skipReason)));
             }
             return ImmutableArray<ITestInfo>.Empty;
         }
@@ -1062,7 +1062,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             if (skipReason != null)
             {
-                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new ConditionalTest(t, "false", skipReason)));
+                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new AlwaysSkippedTest(t, skipReason)));
             }
             return ImmutableArray<ITestInfo>.Empty;
         }
@@ -1070,7 +1070,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             if (skipReason != null)
             {
-                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new ConditionalTest(t, "false", skipReason)));
+                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new AlwaysSkippedTest(t, skipReason)));
             }
             return ImmutableArray<ITestInfo>.Empty;
         }
@@ -1094,7 +1094,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 // When tracking skip reasons (e.g. ActiveIssue), emit a runtime skip instead
                 // of eliminating the test at compile time.
-                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new ConditionalTest(t, "false", skipReason)));
+                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new AlwaysSkippedTest(t, skipReason)));
             }
             // If the target platform is skipped, then we don't have any tests to emit.
             return ImmutableArray<ITestInfo>.Empty;

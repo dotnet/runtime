@@ -1244,8 +1244,8 @@ def parse_crashed_runner_file(args, item):
                     exit_code = parts[0][len("ExitCode="):]
                     if len(parts) > 1 and parts[1].startswith("Script="):
                         script = parts[1][len("Script="):]
-    except Exception:
-        pass
+    except Exception as e:
+        print("Warning: Failed to parse crash file %s: %s" % (crash_file, e))
 
     return {"name": name, "exit_code": exit_code, "script": script}
 
@@ -1366,7 +1366,11 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
 
     xml_result_file = os.path.join(args.logs_dir, item)
     print("Analyzing {}".format(xml_result_file))
-    xml_assemblies = xml.etree.ElementTree.parse(xml_result_file).getroot()
+    try:
+        xml_assemblies = xml.etree.ElementTree.parse(xml_result_file).getroot()
+    except Exception as e:
+        print("Warning: Failed to parse %s (possibly truncated from a crashed runner): %s" % (xml_result_file, e))
+        return
     for assembly in xml_assemblies:
         if "name" not in assembly.attrib:
             continue
@@ -1555,6 +1559,9 @@ def _fetch_issue_titles(issues):
     """
     issue_titles = {}
     try:
+        import shutil
+        if shutil.which("gh") is None:
+            return issue_titles
         print("Fetching issue titles from GitHub (%d issues)..." % len(issues))
         for ref in issues:
             repo, number, _ = _parse_issue_reference(ref)
@@ -1573,11 +1580,15 @@ def _fetch_issue_titles(issues):
 
     return issue_titles
 
-def print_active_issue_summary(tests):
-    """ Print a brief summary of ActiveIssue-skipped tests (always shown).
+def print_active_issue_summary(tests, show_details=False):
+    """ Print a summary of ActiveIssue-skipped tests.
+
+    When show_details is True, fetches issue titles from GitHub and prints
+    per-issue breakdown with runner info.
 
     Args:
         tests: list of test result dicts
+        show_details: if True, fetch titles and show per-issue test breakdown
 
     Returns:
         dict mapping issue reference to list of (test_name, runner_name) tuples
@@ -1596,47 +1607,38 @@ def print_active_issue_summary(tests):
     if not issues:
         return issues
 
+    issue_titles = _fetch_issue_titles(issues) if show_details else {}
+
     total_tests = sum(len(v) for v in issues.values())
     print("ActiveIssue Summary (%d issues, %d tests):" % (len(issues), total_tests))
     print("  %5s | %s" % ("Tests", "Issue"))
     print("  ------|%s" % ("-" * 60))
     for ref in sorted(issues.keys(), key=lambda u: len(issues[u]), reverse=True):
         _, _, display_issue = _parse_issue_reference(ref)
-        print("  %5d | %s" % (len(issues[ref]), display_issue))
-    print("")
-
-    return issues
-
-def print_active_issue_details(issues):
-    """ Print per-issue breakdown of ActiveIssue-skipped tests with runner info.
-    Fetches issue titles from GitHub via the gh CLI.
-
-    Args:
-        issues: dict mapping issue reference to list of (test_name, runner_name) tuples
-    """
-    if not issues:
-        return
-
-    issue_titles = _fetch_issue_titles(issues)
-
-    total_tests = sum(len(v) for v in issues.values())
-    print("ActiveIssue Details (%d issues, %d tests):" % (len(issues), total_tests))
-    print("")
-    for ref in sorted(issues.keys(), key=lambda u: len(issues[u]), reverse=True):
         title = issue_titles.get(ref, "")
         title_suffix = " - %s" % title if title else ""
-        _, _, display_issue = _parse_issue_reference(ref)
-        print("  %s%s (%d tests)" % (display_issue, title_suffix, len(issues[ref])))
-        # Group tests by runner
-        by_runner = defaultdict(list)
-        for test_name, runner_name in issues[ref]:
-            by_runner[runner_name].append(test_name)
-        for runner in sorted(by_runner.keys()):
-            tests_in_runner = by_runner[runner]
-            print("    [%s]" % runner)
-            for test_name in sorted(tests_in_runner):
-                print("      %s" % test_name)
+        print("  %5d | %s%s" % (len(issues[ref]), display_issue, title_suffix))
     print("")
+
+    if show_details:
+        print("ActiveIssue Details:")
+        print("")
+        for ref in sorted(issues.keys(), key=lambda u: len(issues[u]), reverse=True):
+            _, _, display_issue = _parse_issue_reference(ref)
+            title = issue_titles.get(ref, "")
+            title_suffix = " - %s" % title if title else ""
+            print("  %s%s (%d tests)" % (display_issue, title_suffix, len(issues[ref])))
+            by_runner = defaultdict(list)
+            for test_name, runner_name in issues[ref]:
+                by_runner[runner_name].append(test_name)
+            for runner in sorted(by_runner.keys()):
+                tests_in_runner = by_runner[runner]
+                print("    [%s]" % runner)
+                for test_name in sorted(tests_in_runner):
+                    print("      %s" % test_name)
+        print("")
+
+    return issues
 
 def create_repro(args, env, tests):
     """ Go through the failing tests and create repros for them
@@ -1705,9 +1707,7 @@ def main(args):
     tests = []
     crashed_runners = parse_test_results(args, tests, assemblies)
     print_summary(tests, assemblies, crashed_runners)
-    active_issues = print_active_issue_summary(tests)
-    if args.active_issue_details:
-        print_active_issue_details(active_issues)
+    active_issues = print_active_issue_summary(tests, show_details=args.active_issue_details)
     repro_count = create_repro(args, env, tests)
 
     print("")

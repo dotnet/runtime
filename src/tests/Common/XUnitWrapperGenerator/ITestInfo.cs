@@ -172,20 +172,6 @@ public sealed class ConditionalTest : ITestInfo
     public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
     {
         CodeBuilder builder = new();
-
-        // When the condition is the literal "false" (e.g. ActiveIssue-skipped tests),
-        // emit only the skip reporting without an if/else to avoid CS0162.
-        if (_condition == "false")
-        {
-            string skipReporting = testReporterWrapper.GenerateSkippedTestReporting(_innerTest, _skipReason);
-            if (skipReporting.Length > 0)
-            {
-                builder.AppendLine(skipReporting);
-                builder.AppendLine("return;");
-            }
-            return builder;
-        }
-
         builder.AppendLine($"if ({_condition})");
 
         using (builder.NewBracesScope())
@@ -461,6 +447,65 @@ public sealed class TestWithCustomDisplayName : ITestInfo
         int hash = 17;
         hash = hash * 23 + (_inner?.GetHashCode() ?? 0);
         hash = hash * 23 + (DisplayNameForFiltering?.GetHashCode() ?? 0);
+        return hash;
+    }
+}
+
+/// <summary>
+/// A test that is always skipped at runtime with the given reason.
+/// Used for tests that are compile-time eliminated (e.g. by <c>[ActiveIssue]</c>)
+/// but should still appear in results as skipped.
+/// </summary>
+public sealed class AlwaysSkippedTest : ITestInfo
+{
+    public AlwaysSkippedTest(ITestInfo innerTest, string skipReason)
+    {
+        TestNameExpression = innerTest.TestNameExpression;
+        DisplayNameForFiltering = innerTest.DisplayNameForFiltering;
+        Method = innerTest.Method;
+        ContainingType = innerTest.ContainingType;
+        _innerTest = innerTest;
+        _skipReason = skipReason;
+    }
+
+    public string TestNameExpression { get; }
+    public string DisplayNameForFiltering { get; }
+    public string Method { get; }
+    public string ContainingType { get; }
+
+    private readonly ITestInfo _innerTest;
+    private readonly string _skipReason;
+
+    public CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper)
+    {
+        CodeBuilder builder = new();
+        string skipReporting = testReporterWrapper.GenerateSkippedTestReporting(_innerTest, _skipReason);
+        if (skipReporting.Length > 0)
+        {
+            builder.AppendLine(skipReporting);
+            builder.AppendLine("return;");
+        }
+        return builder;
+    }
+
+    public override bool Equals(object obj)
+    {
+        return obj is AlwaysSkippedTest other
+            && TestNameExpression == other.TestNameExpression
+            && Method == other.Method
+            && ContainingType == other.ContainingType
+            && _skipReason == other._skipReason
+            && _innerTest.Equals(other._innerTest);
+    }
+
+    public override int GetHashCode()
+    {
+        int hash = 17;
+        hash = hash * 23 + (TestNameExpression?.GetHashCode() ?? 0);
+        hash = hash * 23 + (Method?.GetHashCode() ?? 0);
+        hash = hash * 23 + (ContainingType?.GetHashCode() ?? 0);
+        hash = hash * 23 + (_skipReason?.GetHashCode() ?? 0);
+        hash = hash * 23 + (_innerTest?.GetHashCode() ?? 0);
         return hash;
     }
 }
