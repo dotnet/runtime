@@ -406,14 +406,7 @@ public partial class ApkBuilder
             project.BuildCMake(OutputDir);
             abi = project.Abi;
 
-            if (StripDebugSymbols)
-            {
-                // Strip debug symbols post-build to reduce binary size while keeping the app debuggable.
-                // This preserves android:debuggable=true so adb shell run-as continues to work.
-                string libMonodroidPath = Path.Combine(OutputDir, "monodroid", "libmonodroid.so");
-                if (File.Exists(libMonodroidPath))
-                    project.StripBinaryInPlace(libMonodroidPath, MinApiLevel!);
-            }
+
         }
 
         // 2. Compile Java files
@@ -556,8 +549,12 @@ public partial class ApkBuilder
             }
 
             File.Copy(dynamicLib, Path.Combine(OutputDir, destRelative), true);
-            if (StripDebugSymbols && project is not null)
-                project.StripBinaryInPlace(Path.Combine(OutputDir, destRelative), MinApiLevel!);
+            if (StripDebugSymbols)
+            {
+                if (project is null)
+                    throw new InvalidOperationException("StripDebugSymbols is enabled, but no Android project is available to strip native libraries during APK packaging.");
+                project.StripBinaryInPlace(Path.Combine(OutputDir, destRelative));
+            }
             Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} {NormalizePathToUnix(destRelative)}", workingDir: OutputDir);
         }
         Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} classes.dex", workingDir: OutputDir);
