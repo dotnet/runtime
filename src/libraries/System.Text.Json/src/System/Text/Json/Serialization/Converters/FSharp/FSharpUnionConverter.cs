@@ -211,9 +211,8 @@ namespace System.Text.Json.Serialization.Converters
             bool preserveReferences = !typeof(T).IsValueType &&
                 options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve;
 
-            // Scan for the type discriminator property (and $id/$ref metadata if applicable).
+            // Scan for the type discriminator property and $ref metadata.
             string? caseName = null;
-            string? referenceId = null;
             string? refId = null;
             while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
             {
@@ -227,13 +226,6 @@ namespace System.Text.Json.Serialization.Converters
                     reader.Read();
                     refId = reader.GetString();
                     break;
-                }
-
-                if (preserveReferences && reader.ValueTextEquals(JsonSerializer.s_idPropertyName))
-                {
-                    reader.Read();
-                    referenceId = reader.GetString();
-                    continue;
                 }
 
                 bool isDiscriminator = reader.ValueTextEquals(_typeDiscriminatorPropertyName);
@@ -256,8 +248,12 @@ namespace System.Text.Json.Serialization.Converters
             if (refId is not null)
             {
                 // $ref node — resolve to a previously registered object.
-                // Read to end of object (no other properties allowed after $ref).
-                while (reader.Read() && reader.TokenType != JsonTokenType.EndObject) { }
+                // Validate that no other properties are present (matching metadata pipeline behavior).
+                while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+                {
+                    ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
+                }
+
                 return (T)state.ReferenceResolver.ResolveReference(refId);
             }
 
@@ -271,6 +267,7 @@ namespace System.Text.Json.Serialization.Converters
             // Restore reader to re-read all properties for field population.
             reader = checkpoint;
             bool discriminatorSeen = false;
+            string? referenceId = null;
 
             if (caseInfo.IsFieldless)
             {
@@ -288,10 +285,11 @@ namespace System.Text.Json.Serialization.Converters
 
                             discriminatorSeen = true;
                         }
-                        else if (preserveReferences &&
-                            (reader.ValueTextEquals(JsonSerializer.s_idPropertyName) || reader.ValueTextEquals(JsonSerializer.s_refPropertyName)))
+                        else if (preserveReferences && reader.ValueTextEquals(JsonSerializer.s_idPropertyName))
                         {
-                            // Skip $id/$ref metadata properties.
+                            reader.Read();
+                            referenceId = reader.GetString();
+                            continue;
                         }
                         else if (_effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                         {
@@ -330,7 +328,7 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException();
                 }
 
-                // Skip the discriminator and metadata properties during field reading.
+                // Skip the discriminator property during field reading.
                 if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
                 {
                     if (discriminatorSeen)
@@ -344,11 +342,11 @@ namespace System.Text.Json.Serialization.Converters
                     continue;
                 }
 
-                if (preserveReferences &&
-                    (reader.ValueTextEquals(JsonSerializer.s_idPropertyName) || reader.ValueTextEquals(JsonSerializer.s_refPropertyName)))
+                // Capture $id metadata for reference registration.
+                if (preserveReferences && reader.ValueTextEquals(JsonSerializer.s_idPropertyName))
                 {
                     reader.Read();
-                    reader.TrySkip();
+                    referenceId = reader.GetString();
                     continue;
                 }
 
