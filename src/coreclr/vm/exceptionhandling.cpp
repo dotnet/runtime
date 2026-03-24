@@ -2160,22 +2160,6 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
 
 #endif // TARGET_UNIX
 
-#ifdef FEATURE_COMINTEROP
-EXTERN_C EXCEPTION_DISPOSITION __cdecl
-ReverseComUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                                  IN     PVOID               pEstablisherFrame,
-                                  IN OUT PCONTEXT            pContextRecord,
-                                  IN OUT PDISPATCHER_CONTEXT pDispatcherContext
-                                 )
-{
-    if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
-    {
-        ComMethodFrame::DoSecondPassHandlerCleanup(GetThread()->GetFrame());
-    }
-    return ExceptionContinueSearch;
-}
-#endif // FEATURE_COMINTEROP
-
 #if !defined(TARGET_UNIX) && !defined(TARGET_X86)
 EXTERN_C EXCEPTION_DISPOSITION __cdecl
 FixRedirectContextHandler(
