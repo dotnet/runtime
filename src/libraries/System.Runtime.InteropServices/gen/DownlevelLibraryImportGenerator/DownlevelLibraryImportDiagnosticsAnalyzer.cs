@@ -216,7 +216,7 @@ namespace Microsoft.Interop.Analyzers
                 signatureContext.ElementTypeInformation,
                 LibraryImportData.From(libraryImportData).SetLastError,
                 generatorDiagnostics,
-                DownlevelLibraryImportGeneratorHelpers.GeneratorResolver,
+                new ByValueContentsMarshalKindValidator(DownlevelLibraryImportGeneratorHelpers.GeneratorResolver),
                 new CodeEmitOptions(SkipInit: false));
 
             // Check if a forwarder stub would be generated and if so, report CannotForwardToDllImport for invalid StringMarshalling

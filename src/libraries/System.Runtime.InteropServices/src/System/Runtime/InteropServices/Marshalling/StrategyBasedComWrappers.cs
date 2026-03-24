@@ -79,6 +79,7 @@ namespace System.Runtime.InteropServices.Marshalling
         protected virtual IIUnknownCacheStrategy CreateCacheStrategy() => CreateDefaultCacheStrategy();
 
         /// <inheritdoc cref="ComWrappers.ComputeVtables" />
+        [RequiresUnsafe]
         protected sealed override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
         {
             if (GetOrCreateInterfaceDetailsStrategy().GetComExposedTypeDetails(obj.GetType().TypeHandle) is { } details)
