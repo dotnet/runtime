@@ -214,7 +214,6 @@ namespace System.Text.Json.Serialization.Converters
             // Scan for the type discriminator and any reference metadata ($id, $ref).
             string? caseName = null;
             string? referenceId = null;
-            string? refId = null;
             bool hasNonMetadataProperties = false;
             while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
             {
