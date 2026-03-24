@@ -1359,7 +1359,6 @@ namespace System.StubHelpers
         internal const int Free = 2;
     }
 
-    #pragma warning disable IDE0060 // Remove unused parameter
     internal static unsafe class StructureMarshaler<T>  where T : notnull
     {
         [Conditional("DEBUG")]
@@ -1376,6 +1375,7 @@ namespace System.StubHelpers
         private static void ConvertToUnmanagedCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             Validate();
+            _ = ref cleanupWorkList;
             SpanHelpers.Memmove(ref *unmanaged, ref Unsafe.As<T, byte>(ref managed), (nuint)sizeof(T));
         }
 
@@ -1399,6 +1399,7 @@ namespace System.StubHelpers
         public static void ConvertToManaged(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             Validate();
+            _ = ref cleanupWorkList;
             SpanHelpers.Memmove(ref Unsafe.As<T, byte>(ref managed), ref *unmanaged, (nuint)sizeof(T));
         }
 
@@ -1406,6 +1407,11 @@ namespace System.StubHelpers
         private static void FreeCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             Validate();
+#nullable disable warnings // https://github.com/dotnet/roslyn/issues/82919
+            _ = ref managed;
+#nullable restore warnings
+            _ = unmanaged;
+            _ = ref cleanupWorkList;
         }
 
         public static void Free(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
@@ -1414,7 +1420,6 @@ namespace System.StubHelpers
             NativeMemory.Clear(unmanaged, (nuint)nativeSize);
         }
     }
-    #pragma warning restore IDE0060 // Remove unused parameter
 
     internal static unsafe class LayoutClassMarshaler<T> where T : notnull
     {
@@ -1427,9 +1432,9 @@ namespace System.StubHelpers
             private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _convertToManaged;
             private static readonly delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> _free;
 
-#pragma warning disable CA1810 // Static constructor is required to initialize with the out parameters
-            private static readonly nuint s_nativeSize;
+            private static readonly nuint s_nativeSizeForBlittableTypes;
 
+#pragma warning disable CA1810 // Static constructor is required to initialize with the out parameters
             static Methods()
             {
                 RuntimeTypeHandle th = typeof(T).TypeHandle;
@@ -1437,14 +1442,14 @@ namespace System.StubHelpers
                 Debug.Assert(hasLayout, "Non-layout classes should not use the layout class marshaler.");
                 if (isBlittable)
                 {
-                    s_nativeSize = (nuint)nativeSize;
+                    s_nativeSizeForBlittableTypes = (nuint)nativeSize;
                     _convertToUnmanaged = &BlittableConvertToUnmanaged;
                     _convertToManaged = &BlittableConvertToManaged;
                     _free = &BlittableFree;
                 }
                 else
                 {
-                    s_nativeSize = 0;
+                    s_nativeSizeForBlittableTypes = 0;
                     StubHelpers.CreateLayoutClassMarshalStubs(new QCallTypeHandle(ref th), out _convertToUnmanaged, out _convertToManaged, out _free);
                 }
             }
@@ -1452,12 +1457,12 @@ namespace System.StubHelpers
 
             private static void BlittableConvertToUnmanaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
             {
-                SpanHelpers.Memmove(ref *unmanaged, ref managed, s_nativeSize);
+                SpanHelpers.Memmove(ref *unmanaged, ref managed, s_nativeSizeForBlittableTypes);
             }
 
             private static void BlittableConvertToManaged(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
             {
-                SpanHelpers.Memmove(ref managed, ref *unmanaged, s_nativeSize);
+                SpanHelpers.Memmove(ref managed, ref *unmanaged, s_nativeSizeForBlittableTypes);
             }
 
             private static void BlittableFree(ref byte managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
@@ -1476,7 +1481,7 @@ namespace System.StubHelpers
         {
             try
             {
-                CallConvertToUnmanaged(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);;
+                CallConvertToUnmanaged(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
             }
             catch (TypeInitializationException ex)
             {
@@ -1510,7 +1515,7 @@ namespace System.StubHelpers
         {
             try
             {
-                CallConvertToManaged(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);;
+                CallConvertToManaged(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
             }
             catch (TypeInitializationException ex)
             {
@@ -1528,7 +1533,7 @@ namespace System.StubHelpers
         {
             try
             {
-                CallFree(managed, unmanaged, ref cleanupWorkList);;
+                CallFree(managed, unmanaged, ref cleanupWorkList);
             }
             catch (TypeInitializationException ex)
             {

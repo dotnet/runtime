@@ -175,7 +175,6 @@ enum PInvokeStubFlags
     PINVOKESTUB_FL_TARGET_HAS_THIS          = 0x00020000,
     PINVOKESTUB_FL_CHECK_PENDING_EXCEPTION  = 0x00040000,
     PINVOKESTUB_FL_SHARED_STUB              = 0x00080000,
-
     // unused                               = 0x00100000,
     // unused                               = 0x00200000,
     // unused                               = 0x00400000,
