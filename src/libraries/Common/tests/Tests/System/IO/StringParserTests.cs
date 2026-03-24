@@ -103,10 +103,10 @@ namespace Tests.System.IO
             char separator = ',';
 
             StringParser sp = new StringParser(buffer, separator);
-            Assert.Throws<OverflowException>(() => sp.ParseNextInt32());
-            Assert.Throws<OverflowException>(() => sp.ParseNextUInt32());
-            Assert.Throws<OverflowException>(() => sp.ParseNextInt64());
-            Assert.Throws<OverflowException>(() => sp.ParseNextUInt64());
+            Assert.Throws<InvalidDataException>(() => sp.ParseNextInt32());
+            Assert.Throws<InvalidDataException>(() => sp.ParseNextUInt32());
+            Assert.Throws<InvalidDataException>(() => sp.ParseNextInt64());
+            Assert.Throws<InvalidDataException>(() => sp.ParseNextUInt64());
         }
 
         [Fact]
