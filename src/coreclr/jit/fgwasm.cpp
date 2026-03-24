@@ -2072,7 +2072,6 @@ PhaseStatus Compiler::fgWasmEhFlow()
                     continuationBlock->bbNum, innermostDispatchingTryIndex);
 
             fgWasmHasCatchResumptions = true;
-            continuationBlock->SetFlags(BBF_CATCH_RESUMPTION);
         }
 
         ArrayStack<BasicBlock*>* catchRetBlocks = getCatchRetBlocksForTryRegion(innermostDispatchingTryIndex);
@@ -2339,6 +2338,7 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     //
     BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, succCount, cases, caseCount, true);
     switchBlock->SetSwitch(swtDesc);
+    switchBlock->SetFlags(BBF_CATCH_RESUMPTION);
 
     // Build the IR for the switch
     //

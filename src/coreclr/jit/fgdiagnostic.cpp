@@ -2752,6 +2752,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     // Async resumptions are allowed to jump into try blocks at any point. They
     // are introduced late enough that the invariant of single entry is no
     // longer necessary.
+    // TODO: revoke for wasm after SCC
     if (blockPred->HasFlag(BBF_ASYNC_RESUMPTION))
     {
         return true;
@@ -2760,7 +2761,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
 #if defined(TARGET_WASM)
     // Catch resumptions are allowed to jump into try blocks at any point.
     // They are transients during Wasm control flow restructuring.
-    //
+    // TODO: revoke after SCC
     if (m_compiler->fgWasmHasCatchResumptions && blockPred->HasFlag(BBF_CATCH_RESUMPTION))
     {
         return true;

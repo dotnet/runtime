@@ -7691,12 +7691,22 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
                 {
                     BasicBlock* const predBlock = edge->getSourceBlock();
 
+                    // Disregard catchret edges, these are modelled by
+                    // catch resumptions now.
+                    //
+                    if (predBlock->KindIs(BBJ_EHCATCHRET))
+                    {
+                        continue;
+                    }
+
+                    // Disregard edges from within the try region
+                    //
                     if (comp->bbInTryRegions(tryIndex, predBlock))
                     {
                         continue;
                     }
 
-                    // "Normal" entry edges
+                    // "Normal" entry edges.
                     //
                     if (block == dsc->ebdTryBeg)
                     {
@@ -7704,12 +7714,12 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
                         continue;
                     }
 
-                    // Runtime async edges and catch resumption edges
+                    // Async resumption and catch resumption entry edges
                     //
-                    if (block->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
+                    if (predBlock->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
                     {
                         JITDUMP("Found %s resumption edge from " FMT_BB " to " FMT_BB "\n",
-                                block->HasFlag(BBF_ASYNC_RESUMPTION) ? "async" : "catch", predBlock->bbNum,
+                                predBlock->HasFlag(BBF_ASYNC_RESUMPTION) ? "async" : "catch", predBlock->bbNum,
                                 block->bbNum);
 
                         region->AddEntryEdge(edge);
@@ -7827,11 +7837,11 @@ void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
         BasicBlock* const predBlock = edge->getSourceBlock();
         BasicBlock* const succBlock = edge->getDestinationBlock();
         printf(" " FMT_BB "->" FMT_BB, predBlock->bbNum, succBlock->bbNum);
-        if (succBlock->HasFlag(BBF_ASYNC_RESUMPTION))
+        if (predBlock->HasFlag(BBF_ASYNC_RESUMPTION))
         {
             printf("[async]");
         }
-        if (succBlock->HasFlag(BBF_CATCH_RESUMPTION))
+        if (predBlock->HasFlag(BBF_CATCH_RESUMPTION))
         {
             printf("[catch]");
         }
