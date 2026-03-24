@@ -792,10 +792,13 @@ namespace LibraryImportGenerator.UnitTests
             {
                 var originalCompilation = await project.GetCompilationAsync(cancellationToken);
                 var (newCompilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);
-                // The generator should inject exactly two extra syntax trees:
-                // one for the EmbeddedAttribute definition and one for the LibraryImport interop types,
-                // but no method stubs.
-                Assert.Equal(originalCompilation!.SyntaxTrees.Count() + 2, newCompilation.SyntaxTrees.Count());
+                // The DownlevelLibraryImportGenerator should inject type definitions (for example, via
+                // RegisterPostInitializationOutput) but, when there are no [LibraryImport] usages, it
+                // must not emit any stub output such as the generated "LibraryImports" stub tree.
+                var originalTrees = originalCompilation!.SyntaxTrees.ToImmutableArray();
+                var newTrees = newCompilation.SyntaxTrees.ToImmutableArray();
+                var addedTrees = newTrees.Except(originalTrees).ToImmutableArray();
+                Assert.DoesNotContain(addedTrees, tree => tree.FilePath.Contains("LibraryImports", StringComparison.Ordinal));
                 return (newCompilation, diagnostics);
             }
         }

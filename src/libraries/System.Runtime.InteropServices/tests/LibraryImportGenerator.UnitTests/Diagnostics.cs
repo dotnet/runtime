@@ -238,6 +238,33 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
+        [OuterLoop("Uses the network for downlevel ref packs")]
+        public async Task StringMarshallingForwardingNotSupported_ReportsDiagnostic()
+        {
+            // The downlevel injected StringMarshalling enum only has Utf16 = 2.
+            // Use a numeric cast to exercise a non-Utf16 value that should trigger CannotForwardToDllImport.
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", StringMarshalling = (StringMarshalling)1)]
+                    public static partial void {|#0:Method1|}(string s);
+                }
+                """;
+
+            var test = new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<DownlevelLibraryImportGenerator, Microsoft.Interop.Analyzers.DownlevelLibraryImportDiagnosticsAnalyzer>.Test(TestTargetFramework.Standard2_0)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+            test.ExpectedDiagnostics.Add(
+                VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
+                    .WithLocation(0)
+                    .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"));
+            await test.RunAsync();
+        }
+
+        [Fact]
         public async Task InvalidStringMarshallingConfiguration_ReportsDiagnostic()
         {
             string source = $$"""
