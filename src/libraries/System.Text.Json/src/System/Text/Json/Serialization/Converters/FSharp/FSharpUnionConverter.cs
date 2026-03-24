@@ -79,7 +79,7 @@ namespace System.Text.Json.Serialization.Converters
                             ?? prop.Name;
                         JsonEncodedText encodedFieldName = JsonEncodedText.Encode(fieldName, options.Encoder);
 
-                        fields[i] = new CaseFieldInfo(fieldName, encodedFieldName, prop.PropertyType, options);
+                        fields[i] = new CaseFieldInfo(fieldName, encodedFieldName, prop, options);
                     }
 
                     // Validate that no field name conflicts with the discriminator property name.
@@ -331,6 +331,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 CaseFieldInfo field = caseInfo.Fields![fieldIndex];
                 state.Current.JsonPropertyInfo = field.PropertyInfoForTypeInfo;
+                state.Current.NumberHandling = field.NumberHandling;
                 field.Converter.TryReadAsObject(ref reader, field.FieldType, options, ref state, out object? fieldValue);
                 fieldValues[fieldIndex] = fieldValue!;
             }
@@ -427,6 +428,7 @@ namespace System.Text.Json.Serialization.Converters
                     CaseFieldInfo field = caseInfo.Fields[i];
                     writer.WritePropertyName(field.EncodedFieldName);
                     state.Current.JsonPropertyInfo = field.PropertyInfoForTypeInfo;
+                    state.Current.NumberHandling = field.NumberHandling;
                     field.Converter.TryWriteAsObject(writer, fieldValues[i], options, ref state);
                 }
             }
@@ -539,23 +541,75 @@ namespace System.Text.Json.Serialization.Converters
             private JsonConverter? _converter;
             private JsonPropertyInfo? _propertyInfoForTypeInfo;
 
+            [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
+            [RequiresDynamicCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
             public CaseFieldInfo(
                 string fieldName,
                 JsonEncodedText encodedFieldName,
-                Type fieldType,
+                PropertyInfo propertyInfo,
                 JsonSerializerOptions options)
             {
                 FieldName = fieldName;
                 EncodedFieldName = encodedFieldName;
-                FieldType = fieldType;
+                FieldType = propertyInfo.PropertyType;
                 _options = options;
+
+                // Honor [JsonConverter] on the field PropertyInfo.
+                JsonConverterAttribute? converterAttr = propertyInfo.GetCustomAttribute<JsonConverterAttribute>(inherit: false);
+                if (converterAttr is not null)
+                {
+                    _converter = ResolveCustomConverter(converterAttr, FieldType, propertyInfo, options);
+                }
+
+                // Honor [JsonNumberHandling] on the field PropertyInfo.
+                NumberHandling = propertyInfo.GetCustomAttribute<JsonNumberHandlingAttribute>(inherit: false)?.Handling;
             }
 
             public string FieldName { get; }
             public JsonEncodedText EncodedFieldName { get; }
             public Type FieldType { get; }
+            public JsonNumberHandling? NumberHandling { get; }
             public JsonConverter Converter => _converter ??= _options.GetConverterInternal(FieldType);
             public JsonPropertyInfo PropertyInfoForTypeInfo => _propertyInfoForTypeInfo ??= _options.GetTypeInfoInternal(FieldType).PropertyInfoForTypeInfo;
+
+            [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
+            [RequiresDynamicCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
+            private static JsonConverter ResolveCustomConverter(JsonConverterAttribute converterAttribute, Type fieldType, PropertyInfo propertyInfo, JsonSerializerOptions options)
+            {
+                Type? converterType = converterAttribute.ConverterType;
+                JsonConverter? converter;
+
+                if (converterType is null)
+                {
+                    converter = converterAttribute.CreateConverter(fieldType);
+                    if (converter is null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(propertyInfo.DeclaringType!, propertyInfo, fieldType);
+                    }
+                }
+                else
+                {
+                    ConstructorInfo? ctor = converterType.GetConstructor(Type.EmptyTypes);
+                    if (!typeof(JsonConverter).IsAssignableFrom(converterType) || ctor is null || !ctor.IsPublic)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeInvalid(propertyInfo.DeclaringType!, propertyInfo);
+                    }
+
+                    converter = (JsonConverter)Activator.CreateInstance(converterType)!;
+                }
+
+                if (!converter!.CanConvert(fieldType))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(propertyInfo.DeclaringType!, propertyInfo, fieldType);
+                }
+
+                if (converter is JsonConverterFactory factory)
+                {
+                    converter = factory.GetConverterInternal(fieldType, options);
+                }
+
+                return converter!;
+            }
         }
     }
 }
