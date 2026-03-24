@@ -36,7 +36,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private readonly ExclusionFilters _filters;
 
         // Tracks non-recursive watchers used when parent directories of a watched path do not yet exist.
-        // Key: deepest existing ancestor directory path. Value: the watcher for that directory.
+        // Key: the file or directory path being watched that requires pending-creation handling.
+        // Value: the corresponding pending-creation watcher, which internally watches the deepest existing ancestor directory.
         // We made sure that browser/iOS/tvOS never uses FileSystemWatcher so this is always empty on those platforms.
         private readonly ConcurrentDictionary<string, PendingCreationWatcher> _pendingCreationWatchers
             = new(StringComparer.OrdinalIgnoreCase);
@@ -250,12 +251,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
             return _root;
         }
 
-        // Returns a change token that fires only when the target file identified by filePath is
-        // actually created.  A non-recursive FileSystemWatcher is placed at the deepest existing
+        // Returns a change token that fires when the target file identified by filePath is
+        // actually created. A non-recursive FileSystemWatcher is placed at the deepest existing
         // ancestor of filePath and automatically advances through intermediate directory levels as
-        // they are created, so no recursive inotify watches are added and the token does not fire
-        // for intermediate directory creations.  The watcher self-recovers if a watched directory
-        // is deleted, so the token only ever fires on file creation.
+        // they are created, so no recursive watches are added and the token does not fire
+        // for intermediate directory creations. The token may also be triggered when the watcher
+        // encounters an error (including deletion of the watched directory), allowing callers to
+        // observe this and re-register a new watcher if desired.
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
@@ -266,11 +268,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
             string watchDir = FindDeepestExistingAncestor(filePath);
 
             // Compute the remaining path components from watchDir down to the target file.
-            // filePath uses '/' separators; _root ends with the OS directory separator.
+            // filePath uses '/' separators; _root may or may not end with a directory separator.
             string relWatchDir = watchDir.Length > _root.Length
                 ? watchDir.Substring(_root.Length).Replace(Path.DirectorySeparatorChar, '/')
                 : string.Empty;
 
+            if (relWatchDir.Length > 0 && relWatchDir[0] == '/')
+            {
+                relWatchDir = relWatchDir.Substring(1);
+            }
             string remainingRelPath = relWatchDir.Length > 0
                 ? filePath.Substring(relWatchDir.Length + 1) // skip "relWatchDir/"
                 : filePath;
@@ -671,11 +677,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         // Watches a directory non-recursively for the creation of a specific sequence of path
         // components leading to a target file.  When an intermediate directory component is
-        // created the watcher automatically advances to watch the next level, so the CTS is
-        // only cancelled when the final target file is actually created.
-        // The watcher self-recovers when the watched directory is deleted (Error event), so
-        // no spurious CTS cancellation occurs for directory churn.
-        // Only ONE inotify watch (or equivalent) is active at any given time.
+        // created the watcher automatically advances to watch the next level, so the token is
+        // only triggered when the final target file is actually created or when the underlying
+        // FileSystemWatcher reports an error (for example, if the watched directory is deleted).
+        // Only one non-recursive FileSystemWatcher is active at any given time.
         private sealed class PendingCreationWatcher : IDisposable
         {
             private readonly CancellationTokenSource _cts = new();

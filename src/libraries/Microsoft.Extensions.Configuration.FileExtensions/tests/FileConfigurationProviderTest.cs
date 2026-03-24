@@ -119,8 +119,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
         public async Task ResolveFileProvider_WithMissingParentDirectory_WatchTokenFiresWhenFileCreated()
         {
             // Verify the fix for https://github.com/dotnet/runtime/issues/116713:
-            // When ResolveFileProvider() resolves to an ancestor directory because the immediate
-            // parent of the config file does not yet exist, Watch() should return a change token
+            // When the parent of the config file does not yet exist, Watch() should return a change token
             // that fires when the target file is created (via a non-recursive pending watcher),
             // rather than adding recursive watches on the entire ancestor directory tree.
             string rootDir = Path.Combine(Path.GetTempPath(), "pfp_cfg_test_" + Guid.NewGuid().ToString("N"));
@@ -138,23 +137,25 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
                     ReloadDelay = 0,
                 };
 
-                // ResolveFileProvider walks up to rootDir (first existing ancestor).
+                // ResolveFileProvider sets FileProvider to the directory containing the file path,
+                // even if that directory does not yet exist on disk.
                 source.ResolveFileProvider();
 
                 Assert.NotNull(source.FileProvider);
                 var physicalProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
                 Assert.Equal(missingSubDir + Path.DirectorySeparatorChar, physicalProvider.Root);
 
-                // The path was relativized to remove the missing segment.
+                // The configuration Path is reduced to the file name relative to the provider root.
+                // Verify that the intermediate directory name is not part of Path.
                 Assert.DoesNotContain("subdir", source.Path, StringComparison.OrdinalIgnoreCase);
 
-                // Watch() must return a valid (non-null) change token even though the parent dir is missing.
+                // Watch() must return a valid (non-null) change token even though the directory is missing.
                 var token = source.FileProvider.Watch(source.Path!);
                 Assert.NotNull(token);
 
-                // The token should fire when the target file is created in the previously-missing directory.
+                // The token should fire only when the target file is created, not when just the directory appears.
                 var tcs = new TaskCompletionSource<bool>();
-                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
                 cts.Token.Register(() => tcs.TrySetCanceled());
                 token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
 
