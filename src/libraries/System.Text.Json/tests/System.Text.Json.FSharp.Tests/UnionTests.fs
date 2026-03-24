@@ -585,3 +585,9 @@ let ``Fieldless union serializes as object with $id using ReferenceHandler.Prese
 let ``Fieldless union without Preserve still serializes as string`` () =
     let json = JsonSerializer.Serialize(Point)
     Assert.Equal("\"Point\"", json)
+
+[<Fact>]
+let ``Struct union does not emit $id with ReferenceHandler.Preserve`` () =
+    let options = JsonSerializerOptions(ReferenceHandler = ReferenceHandler.Preserve)
+    let json = JsonSerializer.Serialize(StructCircle 3.14, options)
+    Assert.Equal("""{"$type":"StructCircle","radius":3.14}""", json)
