@@ -392,8 +392,6 @@ namespace
             MethodDesc *pMD = pCMD->GetCallMethodDesc();
             _ASSERTE(IsMethodVisibleFromCom(pMD) && "Calls are not permitted on this member since it isn't visible from COM. The only way you can have reached this code path is if your native interface doesn't match the managed interface.");
 
-            // Marshaling is fully described by the parameter type in WinRT. BestFit custom attributes
-            // are not going to affect the marshaling behavior.
             ReadBestFitCustomAttribute(pMD, &BestFit, &ThrowOnUnmappableChar);
         }
 

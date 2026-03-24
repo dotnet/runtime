@@ -2935,7 +2935,6 @@ void ComMethodTable::LayOutClassMethodTable()
     AllocMemTracker amTracker;
     LoaderAllocator* pLoaderAllocator = m_pMT->GetLoaderAllocator();
     ComCallMethodDesc* pMethodDescMemory = NULL;
-    size_t writeableOffset = 0;
     unsigned cbNumParentVirtualMethods = 0;
     unsigned cbTotalParentFields = 0;
     unsigned cbParentComMTSlots = 0;
@@ -3013,8 +3012,6 @@ void ComMethodTable::LayOutClassMethodTable()
     // in it's hierarchy.
     //
 
-    unsigned cbNewSlots = 0;
-
     //
     // Copy the members down from our parent's template
     // We guarantee to have at least all the slots from parent's template
@@ -3037,10 +3034,10 @@ void ComMethodTable::LayOutClassMethodTable()
         cbAlloc = cbMethodDescs;
         if (cbAlloc > 0)
         {
-            BYTE* pMDMemoryPtr = (BYTE*)amTracker.Track(m_pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbAlloc + sizeof(UINT_PTR))));
+            pMDMemoryPtr = (BYTE*)amTracker.Track(m_pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbAlloc + sizeof(UINT_PTR))));
 
             // initialize the method desc memory to zero
-            FillMemory(pMDMemoryPtr, cbAlloc, 0x0);
+            FillMemory(pMDMemoryPtr, cbAlloc + sizeof(UINT_PTR), 0x0);
 
             *(UINT_PTR *)(pMDMemoryPtr) = cbMethodDescs; // fill in the size of the method desc's
 

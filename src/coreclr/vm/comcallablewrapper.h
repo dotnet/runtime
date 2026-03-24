@@ -424,7 +424,6 @@ struct ComMethodTable
         }
         CONTRACTL_END;
 
-        // use a different var here becuase cleanup will delete the object
         // so can no longer make member refs
         LONG cbRef = InterlockedDecrement(&m_cbRefCount);
         if (cbRef == 0)
