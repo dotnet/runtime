@@ -2986,6 +2986,10 @@ void AsyncTransformation::FinishContextHandlingOnSuspension(BasicBlock*         
     CallArg* execContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
     CallArg* syncContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
     assert((execContextArg != nullptr) == (syncContextArg != nullptr));
+
+    // In most cases we can use a helper. It is not the case when the call has
+    // no contexts to restore, which is the case for task-returning thunks or
+    // more specifically when the EE told us !CORINFO_ASYNC_SAVE_CONTEXTS.
     if (execContextArg != nullptr && subLayout.NeedsExecutionContext())
     {
         JITDUMP("    Call [%06u] has async context and captured execution context; using finish-suspension helper\n",
