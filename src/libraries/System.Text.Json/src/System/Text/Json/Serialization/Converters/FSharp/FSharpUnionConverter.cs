@@ -203,18 +203,37 @@ namespace System.Text.Json.Serialization.Converters
         {
             Debug.Assert(reader.TokenType == JsonTokenType.StartObject);
 
-            // The converter uses ConverterStrategy.Value which ensures the entire
-            // JSON value is buffered before Read() is called, so we can always
-            // scan ahead for the discriminator and restore the reader position.
+            // This converter opts into read-ahead buffering (via RequiresReadAhead),
+            // so by the time ReadFromObject is called the entire JSON value has been
+            // buffered and we can safely scan ahead for the discriminator and restore the reader position.
             Utf8JsonReader checkpoint = reader;
 
-            // Scan for the type discriminator property.
+            bool preserveReferences = !typeof(T).IsValueType &&
+                options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve;
+
+            // Scan for the type discriminator property (and $id/$ref metadata if applicable).
             string? caseName = null;
+            string? referenceId = null;
+            string? refId = null;
             while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
             {
                 if (reader.TokenType != JsonTokenType.PropertyName)
                 {
                     ThrowHelper.ThrowJsonException();
+                }
+
+                if (preserveReferences && reader.ValueTextEquals(JsonSerializer.s_refPropertyName))
+                {
+                    reader.Read();
+                    refId = reader.GetString();
+                    break;
+                }
+
+                if (preserveReferences && reader.ValueTextEquals(JsonSerializer.s_idPropertyName))
+                {
+                    reader.Read();
+                    referenceId = reader.GetString();
+                    continue;
                 }
 
                 bool isDiscriminator = reader.ValueTextEquals(_typeDiscriminatorPropertyName);
@@ -232,6 +251,14 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 reader.TrySkip();
+            }
+
+            if (refId is not null)
+            {
+                // $ref node — resolve to a previously registered object.
+                // Read to end of object (no other properties allowed after $ref).
+                while (reader.Read() && reader.TokenType != JsonTokenType.EndObject) { }
+                return (T)state.ReferenceResolver.ResolveReference(refId);
             }
 
             if (caseName is null)
@@ -261,6 +288,11 @@ namespace System.Text.Json.Serialization.Converters
 
                             discriminatorSeen = true;
                         }
+                        else if (preserveReferences &&
+                            (reader.ValueTextEquals(JsonSerializer.s_idPropertyName) || reader.ValueTextEquals(JsonSerializer.s_refPropertyName)))
+                        {
+                            // Skip $id/$ref metadata properties.
+                        }
                         else if (_effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                         {
                             ThrowHelper.ThrowJsonException_UnmappedJsonProperty(typeof(T), reader.GetString()!);
@@ -271,7 +303,14 @@ namespace System.Text.Json.Serialization.Converters
                     }
                 }
 
-                return (T)caseInfo.Constructor(Array.Empty<object>());
+                T fieldlessValue = (T)caseInfo.Constructor(Array.Empty<object>());
+
+                if (referenceId is not null)
+                {
+                    state.ReferenceResolver.AddReference(referenceId, fieldlessValue);
+                }
+
+                return fieldlessValue;
             }
 
             // Read fields.
@@ -291,7 +330,7 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException();
                 }
 
-                // Skip the discriminator property when encountered during field reading.
+                // Skip the discriminator and metadata properties during field reading.
                 if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
                 {
                     if (discriminatorSeen)
@@ -300,6 +339,14 @@ namespace System.Text.Json.Serialization.Converters
                     }
 
                     discriminatorSeen = true;
+                    reader.Read();
+                    reader.TrySkip();
+                    continue;
+                }
+
+                if (preserveReferences &&
+                    (reader.ValueTextEquals(JsonSerializer.s_idPropertyName) || reader.ValueTextEquals(JsonSerializer.s_refPropertyName)))
+                {
                     reader.Read();
                     reader.TrySkip();
                     continue;
@@ -342,7 +389,14 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowForMissingRequiredFields(caseInfo, populatedFields);
             }
 
-            return (T)caseInfo.Constructor(fieldValues);
+            T result = (T)caseInfo.Constructor(fieldValues);
+
+            if (referenceId is not null)
+            {
+                state.ReferenceResolver.AddReference(referenceId, result);
+            }
+
+            return result;
         }
 
         private static void ThrowForMissingRequiredFields(CaseInfo caseInfo, BitArray populatedFields)

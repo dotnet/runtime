@@ -555,6 +555,20 @@ let ``Shared reference in union fields serializes with $id and $ref`` () =
     Assert.Equal("""{"$id":"1","First":{"$id":"2","$type":"WithRef","obj":{"$id":"3","Name":"shared"}},"Second":{"$id":"4","$type":"WithRef","obj":{"$ref":"3"}}}""", json)
 
 [<Fact>]
+let ``Union with $ref deserializes correctly`` () =
+    let options = JsonSerializerOptions(ReferenceHandler = ReferenceHandler.Preserve)
+    let json = """{"$id":"1","$type":"Node","left":{"$id":"2","$type":"Leaf"},"right":{"$ref":"2"}}"""
+    let result = JsonSerializer.Deserialize<RecursiveUnion>(json, options)
+    Assert.Equal(Node(Leaf, Leaf), result)
+
+[<Fact>]
+let ``Fieldless union with $id deserializes from object form`` () =
+    let options = JsonSerializerOptions(ReferenceHandler = ReferenceHandler.Preserve)
+    let json = """{"$id":"1","$type":"Point"}"""
+    let result = JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options)
+    Assert.Equal(Point, result)
+
+[<Fact>]
 let ``Recursive union serializes with $id metadata using ReferenceHandler.Preserve`` () =
     let options = JsonSerializerOptions(ReferenceHandler = ReferenceHandler.Preserve)
     let value = Node(Node(Leaf, Leaf), Leaf)
