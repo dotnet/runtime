@@ -9,6 +9,17 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
+/// <summary>
+/// Describes a resolved physical location for a variable value.
+/// A variable can span up to 2 locations (e.g., split across register and stack).
+/// </summary>
+public readonly struct NativeVarLocation
+{
+    public ulong AddressOrValue { get; init; }
+    public ulong Size { get; init; }
+    public bool IsRegisterValue { get; init; }
+}
+
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 {

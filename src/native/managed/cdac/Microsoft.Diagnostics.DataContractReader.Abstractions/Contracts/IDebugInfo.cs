@@ -74,17 +74,6 @@ public readonly struct DebugVarInfo
     public int StackOffset2 { get; init; }
 }
 
-/// <summary>
-/// Describes a resolved physical location for a variable value.
-/// A variable can span up to 2 locations (e.g., split across register and stack).
-/// </summary>
-public readonly struct NativeVarLocation
-{
-    public ulong AddressOrValue { get; init; }
-    public ulong Size { get; init; }
-    public bool IsRegisterValue { get; init; }
-}
-
 public interface IDebugInfo : IContract
 {
     static string IContract.Name { get; } = nameof(DebugInfo);
