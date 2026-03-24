@@ -237,9 +237,13 @@ public:
     static const size_t MAX_MODULES = 5;
     ModuleDesc    modules[MAX_MODULES];     // descriptor of the modules images
 
-#if defined(HOST_64BIT) && HOST_WINDOWS
+#if defined(HOST_64BIT)
 #define MEMORY_MAPPED_STRESSLOG
+#ifdef HOST_WINDOWS
 #define MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS (void*)0x400000000000
+#else
+#define MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS nullptr
+#endif
 #endif
 
 #ifdef MEMORY_MAPPED_STRESSLOG
