@@ -323,7 +323,7 @@ JS_ENGINES = [NODE_JS]
     </PropertyGroup>
 
     <RemoveDir Directories="$(WASI_SDK_PATH)" />
-    <Exec Command="curl -L -o wasi-sdk-$(WasiSdkVersion).tar.gz $(WasiSdkUrl) &amp;&amp; mkdir -p $(WASI_SDK_PATH) &amp;&amp; tar --strip-components=1 -xzf wasi-sdk-$(WasiSdkVersion).tar.gz -C $(WASI_SDK_PATH) &amp;&amp; cp $(WasiLocalPath)/wasi-sdk-version.txt $(WASI_SDK_PATH)wasi-sdk-version.txt"
+    <Exec Command="curl --silent --show-error --fail --retry 3 --retry-delay 5 -L -o wasi-sdk-$(WasiSdkVersion).tar.gz $(WasiSdkUrl) &amp;&amp; mkdir -p $(WASI_SDK_PATH) &amp;&amp; tar --strip-components=1 -xzf wasi-sdk-$(WasiSdkVersion).tar.gz -C $(WASI_SDK_PATH) &amp;&amp; cp $(WasiLocalPath)/wasi-sdk-version.txt $(WASI_SDK_PATH)wasi-sdk-version.txt"
           Condition="'$(HostOS)' != 'windows'"
           WorkingDirectory="$(ArtifactsObjDir)"
           IgnoreStandardErrorWarningFormat="true" />
