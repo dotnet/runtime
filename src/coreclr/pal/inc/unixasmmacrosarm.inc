@@ -152,10 +152,35 @@ C_FUNC(\Name):
 // d2
 // d1
 // d0                          <- __PWTB_FloatArgumentRegisters
-.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, saveFpArgs = 1, pushArgRegs = 0
+// Optional: Callee saved floating point registers (if pushCalleeSavedFloatRegs=1)
+//   d15
+//   d14
+//   d13
+//   d12
+//   d11
+//   d10
+//   d9
+//   d8                        <- __PWTB_FloatCalleeSavedRegisters
+//
+// pushCalleeSavedFloatRegs - Optional parameter. If set to 1, the macro will also save
+//                            the callee-saved floating point registers (d8-d15) to the stack.
+//                            These registers are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
+//
+.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, saveFpArgs = 1, pushArgRegs = 0, pushCalleeSavedFloatRegs = 0
 
-        __PWTB_FloatArgumentRegisters = \extraLocals
+        __PWTB_FloatCalleeSavedRegisters = \extraLocals
         __PWTB_SaveFPArgs = \saveFpArgs
+        __PWTB_PushCalleeSavedFloatRegs = \pushCalleeSavedFloatRegs
+
+        // If pushCalleeSavedFloatRegs is specified, reserve space for d8-d15 (8 registers * 8 bytes = 64 bytes)
+        .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+                .if ((__PWTB_FloatCalleeSavedRegisters % 8) != 0)
+                __PWTB_FloatCalleeSavedRegisters = __PWTB_FloatCalleeSavedRegisters + 4
+                .endif
+                __PWTB_FloatArgumentRegisters = __PWTB_FloatCalleeSavedRegisters + 64
+        .else
+                __PWTB_FloatArgumentRegisters = \extraLocals
+        .endif
 
         .if (__PWTB_SaveFPArgs == 1)
                 .if ((__PWTB_FloatArgumentRegisters % 8) != 0)
@@ -172,6 +197,7 @@ C_FUNC(\Name):
         .endif
 
         __PWTB_StackAlloc = __PWTB_TransitionBlock
+        __PWTB_ArgumentRegisters = __PWTB_StackAlloc + 36
 
         .ifnc \pushArgRegs, DoNotPushArgRegs
                 PUSH_ARGUMENT_REGISTERS
@@ -186,6 +212,12 @@ C_FUNC(\Name):
         .if (__PWTB_SaveFPArgs == 1)
                 add r6, sp, #(__PWTB_FloatArgumentRegisters)
                 vstm r6, {d0-d7}
+        .endif
+
+        // Save callee-saved floating point registers if requested
+        .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+                add r6, sp, #(__PWTB_FloatCalleeSavedRegisters)
+                vstm r6, {d8-d15}
         .endif
 
         CHECK_STACK_ALIGNMENT
@@ -288,6 +320,43 @@ C_FUNC(\Name):
         add     \target, sp, 4
 .endm
 
+// Pushes a full TransitionBlock on the stack including float argument registers.
+// On exit, \target contains the TransitionBlock pointer.
+//
+// Stack layout (from sp going up):
+//   sp+0:   padding (4 bytes) - for 8-byte alignment
+//   sp+4:   d8-d15 (64 bytes) - FP callee-saved
+//   sp+68:  padding (4 bytes) - to make d0-d7 8-byte aligned at TransitionBlock-68
+//   sp+72:  d0-d7 (64 bytes) - float argument registers (at TransitionBlock - 68)
+//   sp+136: padding (4 bytes) - to keep total allocation 8-byte aligned
+//   sp+140: TransitionBlock starts here (CalleeSavedRegisters + ArgumentRegisters pushed above)
+//
+// GetNegSpaceSize() for ARM32 = 64 (FloatArgumentRegisters) + 4 (padding) = 68
+// GetOffsetOfFloatArgumentRegisters() = -68
+//
+// Total stack alloc: 4 + 64 + 4 + 64 + 4 = 140 bytes
+// Stack: Arguments(16) + callee-saved(36) + alloc(140) = 192 bytes
+// 192 % 8 = 0, properly aligned for ARM32 (8-byte alignment required)
+.macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
+        // Push argument registers (r0-r3) - these will be at highest address in TransitionBlock
+        PUSH_ARGUMENT_REGISTERS
+        PUSH_CALLEE_SAVED_REGISTERS
+        PROLOG_STACK_SAVE_OFFSET r7, #12
+        // let r7 point the saved r7 in the stack (clang FP style)
+        // Allocate space for: padding (4) + d8-d15 (64) + padding (4) + d0-d7 (64) + padding (4) = 140 bytes
+        alloc_stack 140
+        // Save floating point argument registers (d0-d7) at sp+72 (TransitionBlock - 68)
+        add     r12, sp, #72
+        vstm    r12, {d0-d7}
+        // Save FP callee-saved registers (d8-d15) at sp+4
+        add     r12, sp, #4
+        vstm    r12, {d8-d15}
+        CHECK_STACK_ALIGNMENT
+        END_PROLOGUE
+        // TransitionBlock is at sp + 140
+        add     \target, sp, #140
+.endm
+
 .macro POP_COOP_PINVOKE_FRAME
         free_stack 4
         POP_CALLEE_SAVED_REGISTERS
@@ -318,3 +387,24 @@ C_FUNC(\Name):
         movw \DestReg, #((\Constant) & 0xFFFF)
         movt \DestReg, #((\Constant) >> 16)
 .endm
+
+
+// thumb with PIC version
+.macro INLINE_GET_TLS_VAR var
+        ldr     r0, 2f
+1:
+        add     r0, pc, r0
+        bl      __tls_get_addr
+        b       3f
+
+        // Inline data
+        // LLVM assembler has no concept of subsections and this is not expressible as
+        // cross-section relocation.
+        .p2align 2
+2:
+        .extern \var
+        .type \var, tls_object
+        .long  \var(TLSGD) + (2b - 1b - 4)
+3:
+.endm
+

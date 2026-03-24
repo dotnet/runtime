@@ -80,7 +80,7 @@
 	.class public auto ansi _CL
 	{
 		.custom instance void [System]System.ComponentModel.EditorBrowsableAttribute::.ctor(valuetype [System]System.ComponentModel.EditorBrowsableState) = ( 01 00 01 00 00 00 00 00 )
-		.method public hidebysig static int32 MAIN$CONS7() cil managed
+		.method public hidebysig static int32 MAINCONS7() cil managed
 		{
 			.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 			    01 00 00 00

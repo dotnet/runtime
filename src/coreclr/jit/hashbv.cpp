@@ -356,7 +356,7 @@ bool hashBvNode::sameAs(hashBvNode* other)
 
 hashBv::hashBv(Compiler* comp)
 {
-    this->compiler      = comp;
+    this->m_compiler    = comp;
     this->log2_hashSize = 0;
 
     int hts = hashtable_size();
@@ -387,7 +387,7 @@ hashBv* hashBv::Create(Compiler* compiler)
         result->nodeArr = result->initialVector;
     }
 
-    result->compiler      = compiler;
+    result->m_compiler    = compiler;
     result->log2_hashSize = 0;
     result->numNodes      = 0;
 
@@ -401,7 +401,7 @@ void hashBv::Init(Compiler* compiler)
 
 hashBvGlobalData* hashBv::globalData()
 {
-    return &compiler->hbvGlobalData;
+    return &m_compiler->hbvGlobalData;
 }
 
 hashBvNode** hashBv::getNewVector(int vectorLength)
@@ -409,7 +409,7 @@ hashBvNode** hashBv::getNewVector(int vectorLength)
     assert(vectorLength > 0);
     assert(isPow2(vectorLength));
 
-    hashBvNode** newVector = new (compiler, CMK_hashBv) hashBvNode*[vectorLength]();
+    hashBvNode** newVector = new (m_compiler, CMK_hashBv) hashBvNode*[vectorLength]();
     return newVector;
 }
 
@@ -754,7 +754,7 @@ hashBvNode* hashBv::getNodeForIndexHelper(indexType index, bool canAdd)
     else if (canAdd)
     {
         // missing node, insert it before the current one
-        hashBvNode* temp = hashBvNode::Create(index, this->compiler);
+        hashBvNode* temp = hashBvNode::Create(index, this->m_compiler);
         temp->next       = node;
         *prev            = temp;
         this->numNodes++;
@@ -1068,7 +1068,7 @@ public:
         // it's in other, not this
         // so put one in
         result           = true;
-        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->compiler);
+        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->m_compiler);
         lhs->numNodes++;
         temp->XorWith(r);
         temp->next = (*l)->next;
@@ -1100,7 +1100,7 @@ public:
         // it's in other, not this
         // so put one in
         result           = true;
-        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->compiler);
+        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->m_compiler);
         lhs->numNodes++;
         temp->XorWith(r);
         temp->next = nullptr;
@@ -1138,7 +1138,7 @@ public:
         // it's in other, not this
         // so put one in
         result           = true;
-        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->compiler);
+        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->m_compiler);
         lhs->numNodes++;
         temp->OrWith(r);
         temp->next = *l;
@@ -1168,7 +1168,7 @@ public:
         // copy it
         // LeftGap(lhs, l, r, result, terminate);
         result           = true;
-        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->compiler);
+        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->m_compiler);
         lhs->numNodes++;
         temp->OrWith(r);
         temp->next = nullptr;
@@ -1551,7 +1551,7 @@ void hashBv::Subtract(hashBv* other)
 
 void hashBv::Subtract3(hashBv* o1, hashBv* o2)
 {
-    this->copyFrom(o1, compiler);
+    this->copyFrom(o1, m_compiler);
     this->Subtract(o2);
 }
 
@@ -1641,7 +1641,7 @@ void hashBv::copyFrom(hashBv* other, Compiler* comp)
             }
             else
             {
-                newNode = hashBvNode::Create(otherNode->baseIndex, this->compiler);
+                newNode = hashBvNode::Create(otherNode->baseIndex, this->m_compiler);
             }
             newNode->copyFrom(otherNode);
 
@@ -1677,7 +1677,7 @@ void hashBv::InorderTraverse(nodeAction n)
 {
     int hts = hashtable_size();
 
-    hashBvNode** x = new (compiler, CMK_hashBv) hashBvNode*[hts];
+    hashBvNode** x = new (m_compiler, CMK_hashBv) hashBvNode*[hts];
 
     {
         // keep an array of the current pointers
@@ -1727,8 +1727,8 @@ void hashBv::InorderTraverseTwo(hashBv* other, dualNodeAction a)
     sizeThis  = this->hashtable_size();
     sizeOther = other->hashtable_size();
 
-    nodesThis  = new (compiler, CMK_hashBv) hashBvNode*[sizeThis];
-    nodesOther = new (compiler, CMK_hashBv) hashBvNode*[sizeOther];
+    nodesThis  = new (m_compiler, CMK_hashBv) hashBvNode*[sizeThis];
+    nodesOther = new (m_compiler, CMK_hashBv) hashBvNode*[sizeOther];
 
     // populate the arrays
     for (int i = 0; i < sizeThis; i++)

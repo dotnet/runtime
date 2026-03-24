@@ -71,7 +71,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Dispose_WhileInUse_DisposeDelayed()
         {
             using (var listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -105,7 +105,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ExecutionContext_FlowsIfNotSuppressed(bool suppressed)
@@ -147,13 +147,13 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ExecutionContext_SocketAsyncEventArgs_Ctor_Default_FlowIsNotSuppressed()
         {
             await ExecutionContext_SocketAsyncEventArgs_Ctors(() => new SocketAsyncEventArgs(), false);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ExecutionContext_SocketAsyncEventArgs_Ctor_UnsafeSuppressExecutionContextFlow(bool suppressed)
@@ -522,7 +522,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false, 1)]
         [InlineData(false, 10_000)]
         [InlineData(true, 1)]           // This should fit with SYN flag
@@ -688,7 +688,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't yet support receiving data with AcceptAsync.
         public void AcceptAsync_WithReceiveBuffer_Success()
         {
@@ -1043,7 +1043,7 @@ namespace System.Net.Sockets.Tests
             }, 30_000));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task SendTo_DifferentEP_Success(bool ipv4)
@@ -1088,6 +1088,121 @@ namespace System.Net.Sockets.Tests
 
             result = await receiver2.ReceiveFromAsync(receiveBuffer, remoteEp).WaitAsync(TestSettings.PassingTestTimeout);
             Assert.Equal(sendBuffer.Length, result.ReceivedBytes);
+        }
+
+        [ConditionalFact(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public void Connect_Parallel_Success()
+        {
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                socket.DualMode = false;
+                socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
+                return socket;
+            });
+            Socket a = portBlocker.MainSocket;
+            // the port blocker did not call Socket.Bind so we called bind() but we did not update properties on Socket
+            Socket b  = new Socket(portBlocker.SecondarySocket.SafeHandle);
+
+            a.Listen(1);
+            b.Listen(1);
+            Task<Socket> t1 = a.AcceptAsync();
+            Task<Socket> t2 = b.AcceptAsync();
+
+            var mres = new ManualResetEventSlim();
+            SocketAsyncEventArgs saea = new SocketAsyncEventArgs();
+            saea.RemoteEndPoint = new DnsEndPoint("localhost", portBlocker.Port);
+            saea.Completed += (_, _) => mres.Set();
+            if (Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel))
+            {
+                mres.Wait(TestSettings.PassingTestTimeout);
+            }
+            // we should see attemopt to both sockets
+            Task.WaitAll(new Task[] { t1, t2 }, TestSettings.PassingTestTimeout);
+            Assert.True(saea.ConnectSocket.Connected);
+        }
+
+        [ConditionalFact(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public void Connect_Parallel_Fails()
+        {
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                socket.DualMode = false;
+                socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
+                return socket;
+            });
+            Socket a = portBlocker.MainSocket;
+            // the port blocker did not call Socket.Bind so we called bind() but we did not update properties on Socket
+            Socket b = new Socket(portBlocker.SecondarySocket.SafeHandle);
+
+            // do NOT a.Listen(1);
+            // do NOT b.Listen(1);
+            // Do NOT a.AcceptAsync();
+            // Do NOT b.AcceptAsync();
+
+            var mres = new ManualResetEventSlim();
+            SocketAsyncEventArgs saea = new SocketAsyncEventArgs();
+            saea.RemoteEndPoint = new DnsEndPoint("localhost", portBlocker.Port);
+            saea.Completed += (_, _) => mres.Set();
+            if (Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel))
+            {
+                Assert.True(mres.Wait(TestSettings.PassingTestLongTimeout), "Completed did not get called in time");
+            }
+            // we should see attemopt to both sockets
+            Assert.Null(saea.ConnectSocket);
+            Assert.NotEqual(SocketError.Success, saea.SocketError);
+        }
+
+        [ConditionalTheory(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
+        [InlineData(true)]
+        [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public void Connect_Parallel_FailsOver(bool preferIPv6)
+        {
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                socket.DualMode = false;
+                socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
+                return socket;
+            });
+            Socket a = portBlocker.MainSocket;
+            Socket b = new Socket(portBlocker.SecondarySocket.SafeHandle);
+
+            if (preferIPv6)
+            {
+                a.Listen(1);
+            }
+            else
+            {
+                b.Listen(1);
+            }
+
+            var mres = new ManualResetEventSlim();
+            SocketAsyncEventArgs saea = new SocketAsyncEventArgs();
+            saea.RemoteEndPoint = new DnsEndPoint("localhost", portBlocker.Port);
+            saea.Completed += (_, _) => mres.Set();
+
+            if (Socket.ConnectAsync(a.SocketType, a.ProtocolType, saea, ConnectAlgorithm.Parallel))
+            {
+                mres.Wait(TestSettings.PassingTestTimeout);
+            }
+            // we should see attempt to both sockets
+            Assert.NotNull(saea.ConnectSocket);
+            Assert.True(saea.ConnectSocket.Connected);
+            if (preferIPv6)
+            {
+                Assert.Equal(AddressFamily.InterNetworkV6, saea.ConnectSocket.AddressFamily);
+                Assert.Equal(a.LocalEndPoint, saea.ConnectSocket.RemoteEndPoint);
+            }
+            else
+            {
+                Assert.Equal(AddressFamily.InterNetwork, saea.ConnectSocket.AddressFamily);
+                Assert.Equal(b.LocalEndPoint, saea.ConnectSocket.RemoteEndPoint);
+            }
         }
     }
 

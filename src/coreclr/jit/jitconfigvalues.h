@@ -126,6 +126,9 @@ CONFIG_STRING(JitInlineMethodsWithEHRange, "JitInlineMethodsWithEHRange")
 CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
 
+// Enable devirtualization for generic virtual methods
+RELEASE_CONFIG_INTEGER(JitEnableGenericVirtualDevirtualization, "JitEnableGenericVirtualDevirtualization", 1)
+
 //
 // MinOpts
 //
@@ -397,6 +400,7 @@ RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",        
 RELEASE_CONFIG_INTEGER(EnableAVX,                   "EnableAVX",                 1) // Allows AVX and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX2,                  "EnableAVX2",                1) // Allows AVX2, BMI1, BMI2, F16C, FMA, LZCNT, MOVBE and dependent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX512,                "EnableAVX512",              1) // Allows AVX512 F+BW+CD+DQ+VL and depdendent hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512BMM,             "EnableAVX512BMM",           1) // Allows AVX10v2 and depdendent hardware intrinsics to be disabled
 
 RELEASE_CONFIG_INTEGER(EnableAVX512v2,              "EnableAVX512v2",            1) // Allows AVX512 IFMA+VBMI and depdendent hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX512v3,              "EnableAVX512v3",            1) // Allows AVX512 BITALG+VBMI2+VNNI+VPOPCNTDQ and depdendent hardware intrinsics to be disabled
@@ -448,18 +452,18 @@ RELEASE_CONFIG_INTEGER(EnableApxZU,                 "EnableApxZU",              
 RELEASE_CONFIG_INTEGER(JitDisableSimdVN, "JitDisableSimdVN", 0)
 #endif
 
-// Default 0, enable the CSE of Constants, including nearby offsets. (only for ARM/ARM64)
+// Default 0, enable the CSE of Constants, including nearby offsets. (only for ARM/ARM64/RISCV64)
 // If 1, disable all the CSE of Constants
-// If 2, enable the CSE of Constants but don't combine with nearby offsets. (only for ARM/ARM64)
+// If 2, enable the CSE of Constants but don't combine with nearby offsets. (only for ARM/ARM64/RISCV64)
 // If 3, enable the CSE of Constants including nearby offsets. (all platforms)
 // If 4, enable the CSE of Constants but don't combine with nearby offsets. (all platforms)
 //
-#define CONST_CSE_ENABLE_ARM            0
-#define CONST_CSE_DISABLE_ALL           1
-#define CONST_CSE_ENABLE_ARM_NO_SHARING 2
-#define CONST_CSE_ENABLE_ALL            3
-#define CONST_CSE_ENABLE_ALL_NO_SHARING 4
-RELEASE_CONFIG_INTEGER(JitConstCSE, "JitConstCSE", CONST_CSE_ENABLE_ARM)
+#define CONST_CSE_ENABLE_ARM_RISCV64            0
+#define CONST_CSE_DISABLE_ALL                   1
+#define CONST_CSE_ENABLE_ARM_RISCV64_NO_SHARING 2
+#define CONST_CSE_ENABLE_ALL                    3
+#define CONST_CSE_ENABLE_ALL_NO_SHARING         4
+RELEASE_CONFIG_INTEGER(JitConstCSE, "JitConstCSE", CONST_CSE_ENABLE_ARM_RISCV64)
 
 // If nonzero, use the greedy RL policy.
 //
@@ -586,6 +590,13 @@ OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, "JitDoOptimizeMaskConversions",
                                                                                     // conversions
 
 OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
+OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
+                  "JitAsyncDefaultValueAnalysisRange") // Enable async default value analysis based on method hash range
+// Enable continuation reuse based on method hash range
+OPT_CONFIG_STRING(JitAsyncReuseContinuationsRange, "JitAsyncReuseContinuationsRange")
+// Save and reuse continuation instances in runtime async functions. Also
+// implies use of shared continuation layouts for all suspension points.
+RELEASE_CONFIG_INTEGER(JitAsyncReuseContinuations, "JitAsyncReuseContinuations", 1)
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
@@ -604,6 +615,9 @@ RELEASE_CONFIG_STRING(AltJitExcludeAssemblies, "AltJitExcludeAssemblies")
 
 // If set, measure the IR size after some phases and report it in the time log.
 RELEASE_CONFIG_INTEGER(JitMeasureIR, "JitMeasureIR", 0)
+
+// If set, report JIT metrics back to the EE after each method compilation.
+RELEASE_CONFIG_INTEGER(JitReportMetrics, "JitReportMetrics", 0)
 
 // If set, gather JIT function info and write to this file.
 RELEASE_CONFIG_STRING(JitFuncInfoFile, "JitFuncInfoLogFile")
@@ -854,6 +868,14 @@ CONFIG_INTEGER(JitUseScalableVectorT, "JitUseScalableVectorT", 0)
 // Disable emitDispIns by default
 CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #endif // defined(TARGET_LOONGARCH64)
+
+#if defined(TARGET_WASM)
+// Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
+CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
+// Specify methods that will fail with R2R unsupported after codegen.
+// Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
+CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
+#endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.
 RELEASE_CONFIG_INTEGER(JitEnregStructLocals, "JitEnregStructLocals", 1)

@@ -184,8 +184,8 @@ namespace System.Security.Cryptography.Pkcs
 
             try
             {
-                AsnReader reader = new AsnReader(derSignature, AsnEncodingRules.DER);
-                AsnReader sequence = reader.ReadSequence();
+                ValueAsnReader reader = new(derSignature.Span, AsnEncodingRules.DER);
+                ValueAsnReader sequence = reader.ReadSequence();
 
                 if (reader.HasData)
                 {
@@ -197,7 +197,7 @@ namespace System.Security.Cryptography.Pkcs
                 // partial-fill gymnastics.
                 ieeeSignature.Clear();
 
-                ReadOnlySpan<byte> val = sequence.ReadIntegerBytes().Span;
+                ReadOnlySpan<byte> val = sequence.ReadIntegerBytes();
 
                 if (val.Length > fieldSize && val[0] == 0)
                 {
@@ -209,7 +209,7 @@ namespace System.Security.Cryptography.Pkcs
                     val.CopyTo(ieeeSignature.Slice(fieldSize - val.Length, val.Length));
                 }
 
-                val = sequence.ReadIntegerBytes().Span;
+                val = sequence.ReadIntegerBytes();
 
                 if (val.Length > fieldSize && val[0] == 0)
                 {

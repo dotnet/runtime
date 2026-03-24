@@ -6,11 +6,13 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace CopyConstructorMarshaler
 {
     public class CopyConstructorMarshaler
     {
+        [ActiveIssue("C++/CLI, IJW not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public static void CopyConstructorsInArgumentStackSlots()
         {
@@ -22,6 +24,7 @@ namespace CopyConstructorMarshaler
             Assert.Equal(0, (int)testMethod.Invoke(testInstance, null));
         }
 
+        [ActiveIssue("C++/CLI, IJW not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public static void CopyConstructorsInArgumentStackSlotsWithUnsafeValueType()
         {

@@ -334,7 +334,7 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
             }
         }
 
-        if ((jitResult == CORJIT_OK) || (jitResult == CORJIT_BADCODE))
+        if ((jitResult == CORJIT_OK) || (jitResult == CORJIT_BADCODE) || (jitResult == CORJIT_R2R_UNSUPPORTED))
         {
             // capture the results of compilation
             pParam->pThis->mc->cr->recCompileMethod(&NEntryBlock, &NCodeSizeBlock, jitResult);

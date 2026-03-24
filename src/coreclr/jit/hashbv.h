@@ -174,7 +174,7 @@ public:
 
     union
     {
-        Compiler* compiler;
+        Compiler* m_compiler;
         // for freelist
         hashBv* next;
     };

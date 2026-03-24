@@ -142,7 +142,7 @@ var_types ABIPassingSegment::GetRegisterType() const
             case 3:
             case 4:
                 return TYP_INT;
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             case 5:
             case 6:
             case 7:
@@ -164,13 +164,14 @@ var_types ABIPassingSegment::GetRegisterType() const
 //
 // Parameters:
 //   layout - The layout of the class that this segment is part of
+//      or nullptr if there is no layout
 //
 // Return Value:
 //   A type that matches ABIPassingSegment::Size and the register.
 //
 var_types ABIPassingSegment::GetRegisterType(ClassLayout* layout) const
 {
-    if (genIsValidIntReg(GetRegister()))
+    if ((layout != nullptr) && (genIsValidIntReg(GetRegister())))
     {
         assert(Offset < layout->GetSize());
         if (((Offset % TARGET_POINTER_SIZE) == 0) && (Size == TARGET_POINTER_SIZE))

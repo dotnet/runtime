@@ -225,12 +225,24 @@ protected:
         LIMITED_METHOD_CONTRACT;
     }
 
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    FORCEINLINE BOOL IsRegPassedStruct(TypeHandle th)
     {
-        return pMT->IsRegPassedStruct();
+        return th.AsMethodTable()->IsRegPassedStruct();
     }
 
+#if defined(UNIX_AMD64_ABI)
+    FORCEINLINE SystemVEightByteRegistersInfo GetEightByteRegistersInfo(TypeHandle th)
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
+    }
+#endif // defined(UNIX_AMD64_ABI)
+
 public:
+    FORCEINLINE BOOL IsRetBuffPassedAsFirstArg()
+    {
+        return ::IsRetBuffPassedAsFirstArg();
+    }
+
     BOOL HasThis()
     {
         LIMITED_METHOD_CONTRACT;
@@ -393,8 +405,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     CallDescrData callDescrData;
 
     callDescrData.pSrc = pTransitionBlock + sizeof(TransitionBlock);
-    _ASSERTE((nStackBytes % TARGET_POINTER_SIZE) == 0);
-    callDescrData.numStackSlots = nStackBytes / TARGET_POINTER_SIZE;
+    callDescrData.numStackSlots = ALIGN_UP(nStackBytes, TARGET_REGISTER_SIZE) / TARGET_REGISTER_SIZE;
 #ifdef CALLDESCR_ARGREGS
     callDescrData.pArgumentRegisters = (ArgumentRegisters*)(pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters());
 #endif
@@ -411,6 +422,8 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 #ifdef TARGET_WASM
     // WASM-TODO: this is now called from the interpreter, so the arguments layout is OK. reconsider with codegen
     callDescrData.nArgsSize = nStackBytes;
+    callDescrData.hasThis = argit.HasThis();
+    callDescrData.hasRetBuff = argit.HasRetBuffArg();
 #endif // TARGET_WASM
 
     // This is duplicated logic from MethodDesc::GetCallTarget
@@ -1271,15 +1284,22 @@ static void PrepareMethodHelper(MethodDesc * pMD)
 
     pMD->EnsureActive();
 
-    if (pMD->ShouldCallPrestub())
-        pMD->DoPrestub(NULL);
-
     if (pMD->IsWrapperStub())
     {
-        pMD = pMD->GetWrappedMethodDesc();
         if (pMD->ShouldCallPrestub())
             pMD->DoPrestub(NULL);
+        pMD = pMD->GetWrappedMethodDesc();
     }
+
+    if (pMD->IsAsyncThunkMethod())
+    {
+        if (pMD->ShouldCallPrestub())
+            pMD->DoPrestub(NULL);
+        pMD = pMD->GetAsyncVariant();
+    }
+
+    if (pMD->ShouldCallPrestub())
+        pMD->DoPrestub(NULL);
 }
 
 // This method triggers a given method to be jitted. CoreCLR implementation of this method triggers jiting of the given method only.

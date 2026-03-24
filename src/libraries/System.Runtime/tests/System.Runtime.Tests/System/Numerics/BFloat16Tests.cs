@@ -1344,7 +1344,7 @@ namespace System.Numerics.Tests
             yield return new object[] { (BFloat16)(2.297f), (BFloat16)(8.938f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(10))
             yield return new object[] { (BFloat16)(2.719f), (BFloat16)(14.19f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (e)
             yield return new object[] { (BFloat16)(3.141f), (BFloat16)(22.12f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (pi)
-            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0.0 };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
         [Theory]
@@ -1388,7 +1388,7 @@ namespace System.Numerics.Tests
             yield return new object[] { (BFloat16)(2.297f), (BFloat16)(4.906f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (ln(10))
             yield return new object[] { (BFloat16)(2.719f), (BFloat16)(6.594f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (e)
             yield return new object[] { (BFloat16)(3.141f), (BFloat16)(8.812f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi)
-            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0.0f };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
         [Theory]
@@ -1550,8 +1550,8 @@ namespace System.Numerics.Tests
             yield return new object[] { (BFloat16)(-0.5078f), (BFloat16)(-0.707f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
             yield return new object[] { (BFloat16)(-0.5f), (BFloat16)(-0.6914f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
             yield return new object[] { (BFloat16)(-0.4707f), (BFloat16)(-0.6367f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
-            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), 0.0f };
-            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), 0.0f };
+            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), (BFloat16)0.0f };
             yield return new object[] { (BFloat16)(0.375f), (BFloat16)(0.3184f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
             yield return new object[] { (BFloat16)(0.543f), (BFloat16)(0.4336f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))
             yield return new object[] { (BFloat16)(0.8906f), (BFloat16)(0.6367f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
@@ -1714,7 +1714,7 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.Zero, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.One, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.E, BFloat16.PositiveInfinity, BFloat16.Zero };
-            yield return new object[] { BFloat16.PositiveInfinity, 10.0f, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, (BFloat16)10.0f, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.Zero };
         }
 
@@ -2269,6 +2269,91 @@ namespace System.Numerics.Tests
         {
             AssertEqual(-expectedResult, BFloat16.RadiansToDegrees(-value), allowedVariance);
             AssertEqual(+expectedResult, BFloat16.RadiansToDegrees(+value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(float.PositiveInfinity, int.MaxValue)]
+        [InlineData(float.NaN, int.MaxValue)]
+        [InlineData(0.0f, int.MinValue)]
+        [InlineData(1.0f, 0)]
+        [InlineData(2.0f, 1)]
+        [InlineData(4.0f, 2)]
+        [InlineData(0.5f, -1)]
+        public static void ILogB(float value, int expectedResult)
+        {
+            Assert.Equal(expectedResult, BFloat16.ILogB((BFloat16)value));
+        }
+
+        [Fact]
+        public static void ILogB_Subnormal()
+        {
+            // BFloat16.Epsilon is the smallest positive subnormal value
+            // Its ILogB should be -133
+            Assert.Equal(-133, BFloat16.ILogB(BFloat16.Epsilon));
+
+            // Test another subnormal value: 0x0040 (half of max subnormal)
+            BFloat16 subnormal = BitConverter.UInt16BitsToBFloat16(0x0040);
+            Assert.Equal(-127, BFloat16.ILogB(subnormal));
+        }
+
+        public static IEnumerable<object[]> TryWriteSignificandBigEndianTest_TestData() =>
+        [
+            [BFloat16.NegativeInfinity, 1, new byte[] { 0x80 }],
+            [BFloat16.MinValue, 1, new byte[] { 0xFF }],
+            [(BFloat16)(-1.0f), 1, new byte[] { 0x80 }],
+            [-BFloat16.Epsilon, 1, new byte[] { 0x01 }],
+            [BFloat16.NaN, 1, new byte[] { 0xC0 }],
+            [(BFloat16)0.0f, 1, new byte[] { 0x00 }],
+            [(BFloat16)1.0f, 1, new byte[] { 0x80 }],
+            [BFloat16.MaxValue, 1, new byte[] { 0xFF }],
+            [BFloat16.PositiveInfinity, 1, new byte[] { 0x80 }],
+        ];
+
+        [Theory]
+        [MemberData(nameof(TryWriteSignificandBigEndianTest_TestData))]
+        public static void TryWriteSignificandBigEndianTest(BFloat16 value, int expectedBytesWritten, byte[] expectedBytes)
+        {
+            Span<byte> destination = [0];
+            Assert.True(FloatingPointHelper<BFloat16>.TryWriteSignificandBigEndian(value, destination, out int bytesWritten));
+            Assert.Equal(expectedBytesWritten, bytesWritten);
+            Assert.Equal(expectedBytes, destination.ToArray());
+        }
+
+        [Fact]
+        public static void TryWriteSignificandBigEndianTest_EmptyDestination()
+        {
+            Assert.False(FloatingPointHelper<BFloat16>.TryWriteSignificandBigEndian(default, Span<byte>.Empty, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+        }
+
+        public static IEnumerable<object[]> TryWriteSignificandLittleEndianTest_TestData() =>
+        [
+            [BFloat16.NegativeInfinity, 1, new byte[] { 0x80 }],
+            [BFloat16.MinValue, 1, new byte[] { 0xFF }],
+            [(BFloat16)(-1.0f), 1, new byte[] { 0x80 }],
+            [-BFloat16.Epsilon, 1, new byte[] { 0x01 }],
+            [BFloat16.NaN, 1, new byte[] { 0xC0 }],
+            [(BFloat16)0.0f, 1, new byte[] { 0x00 }],
+            [(BFloat16)1.0f, 1, new byte[] { 0x80 }],
+            [BFloat16.MaxValue, 1, new byte[] { 0xFF }],
+            [BFloat16.PositiveInfinity, 1, new byte[] { 0x80 }],
+        ];
+
+        [Theory]
+        [MemberData(nameof(TryWriteSignificandLittleEndianTest_TestData))]
+        public static void TryWriteSignificandLittleEndianTest(BFloat16 value, int expectedBytesWritten, byte[] expectedBytes)
+        {
+            Span<byte> destination = [0];
+            Assert.True(FloatingPointHelper<BFloat16>.TryWriteSignificandLittleEndian(value, destination, out int bytesWritten));
+            Assert.Equal(expectedBytesWritten, bytesWritten);
+            Assert.Equal(expectedBytes, destination.ToArray());
+        }
+
+        [Fact]
+        public static void TryWriteSignificandLittleEndianTest_EmptyDestination()
+        {
+            Assert.False(FloatingPointHelper<BFloat16>.TryWriteSignificandLittleEndian(default, Span<byte>.Empty, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
         }
 
         #region AssertExtentions

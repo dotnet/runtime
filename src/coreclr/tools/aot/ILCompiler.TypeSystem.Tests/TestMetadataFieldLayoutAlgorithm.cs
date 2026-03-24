@@ -43,6 +43,10 @@ namespace TypeSystemTests
             {
                 return ComputeCStructFieldLayout(type, numInstanceFields);
             }
+            else if (layoutMetadata.Kind == MetadataLayoutKind.CUnion)
+            {
+                return ComputeCUnionFieldLayout(type, numInstanceFields);
+            }
             else
             {
                 return ComputeAutoFieldLayout(type, numInstanceFields, layoutMetadata);

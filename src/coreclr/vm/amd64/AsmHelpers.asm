@@ -11,9 +11,13 @@ extern  ProfileLeave:proc
 extern  ProfileTailcall:proc
 extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
+extern IL_Throw_Impl:proc
+extern IL_ThrowExact_Impl:proc
+extern IL_Rethrow_Impl:proc
 ifdef FEATURE_INTERPRETER
 extern ExecuteInterpretedMethod:proc
 extern GetInterpThreadContextWithPossiblyMissingThreadOrCallStub:proc
+extern CallInterpreterFuncletWorker:proc
 endif
 
 extern g_pPollGC:QWORD
@@ -405,7 +409,6 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT
         call    JIT_PatchpointWorkerWorkerWithPolicy
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
-        TAILJMP_RAX
 NESTED_END JIT_Patchpoint, _TEXT
 
 ; first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
@@ -518,8 +521,9 @@ NESTED_ENTRY CallEHFunclet, _TEXT
         movdqa  xmm14, [r8 + OFFSETOF__CONTEXT__Xmm14]
         movdqa  xmm15, [r8 + OFFSETOF__CONTEXT__Xmm15]
 
-         ; Save the SP of this function.
+        ; Save the SP of this function.
         mov     [r9], rsp
+
         ; Invoke the funclet
         call    rdx
 
@@ -544,6 +548,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         mov     [r9], rsp
         ; Restore RBP to match main function RBP
         mov     rbp, rdx
+
         ; Invoke the filter funclet
         call    r8
 
@@ -555,7 +560,7 @@ ifdef FEATURE_INTERPRETER
 
 NESTED_ENTRY InterpreterStub, _TEXT
 
-        PROLOG_WITH_TRANSITION_BLOCK
+        PROLOG_WITH_TRANSITION_BLOCK 0, <PushCalleeSavedFloatRegs>
 
         __InterpreterStubArgumentRegistersOffset = __PWTB_ArgumentRegisters
         ; IR bytecode address
@@ -1178,6 +1183,48 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetDouble, _TEXT
 
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT
+        push_nonvol_reg rbp
+        set_frame rbp, 0
+        push_vol_reg r8
+        push_vol_reg rax ; align
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        movsx rax, al  ; Sign extend 1 byte to 64 bit
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
+        mov r8, [rbp - 8]
+        mov qword ptr [r8], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT
+        push_nonvol_reg rbp
+        set_frame rbp, 0
+        push_vol_reg r8
+        push_vol_reg rax ; align
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        movsx rax, ax  ; Sign extend 2 bytes to 64 bit
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
+        mov r8, [rbp - 8]
+        mov qword ptr [r8], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetI2, _TEXT
+
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT
         push_nonvol_reg rbp
         set_frame rbp, 0
@@ -1198,6 +1245,148 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetI8, _TEXT
 
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT
+        push_nonvol_reg rbp
+        set_frame rbp, 0
+        push_vol_reg r8
+        push_vol_reg rax ; align
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        movzx rax, al  ; Zero extend 1 byte to 64 bit
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
+        mov r8, [rbp - 8]
+        mov qword ptr [r8], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT
+        push_nonvol_reg rbp
+        set_frame rbp, 0
+        push_vol_reg r8
+        push_vol_reg rax ; align
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        movzx rax, ax  ; Zero extend 2 bytes to 64 bit
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
+        mov r8, [rbp - 8]
+        mov qword ptr [r8], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetU2, _TEXT
+
+;==========================================================================
+; Create a real TransitionBlock and call CallInterpreterFuncletWorker
+; to execute an interpreter funclet (catch/finally/filter handler).
+;
+; extern "C" DWORD_PTR CallInterpreterFunclet(
+;     OBJECTREF throwable,        // rcx
+;     void* pHandler,             // rdx
+;     REGDISPLAY *pRD,            // r8
+;     ExInfo *pExInfo,            // r9
+;     bool isFilter               // [rsp+28h]
+; );
+;==========================================================================
+extern CallInterpreterFuncletWorker:proc
+
+NESTED_ENTRY CallInterpreterFunclet, _TEXT
+
+        PROLOG_WITH_TRANSITION_BLOCK 16, <PushCalleeSavedFloatRegs>
+
+        ; Pass TransitionBlock* as last (6th) argument on stack
+        ; Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+        ; Original args: rcx=throwable, rdx=pHandler, r8=pRD, r9=pExInfo, [rsp+__PWTB_ArgumentRegisters+20h]=isFilter
+
+        ; Move isFilter to 5th param slot
+        mov     rax, [rsp + __PWTB_ArgumentRegisters + 20h] ; isFilter (5th param from original caller)
+        mov     [rsp + 20h], rax                            ; pass isFilter as 5th param on stack
+
+        ; Put TransitionBlock* as 6th param on stack
+        lea     rax, [rsp + __PWTB_TransitionBlock]
+        mov     [rsp + 28h], rax                            ; TransitionBlock* as 6th param
+
+        ; rcx, rdx, r8, r9 remain unchanged (throwable, pHandler, pRD, pExInfo)
+
+        call    CallInterpreterFuncletWorker
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END CallInterpreterFunclet, _TEXT
+
+extern AsyncHelpers_ResumeInterpreterContinuationWorker:proc
+
+NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT
+        PROLOG_WITH_TRANSITION_BLOCK 0, <PushCalleeSavedFloatRegs>
+
+        lea r8, [rsp + __PWTB_TransitionBlock]
+        call AsyncHelpers_ResumeInterpreterContinuationWorker
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END AsyncHelpers_ResumeInterpreterContinuation, _TEXT
+
 endif ; FEATURE_INTERPRETER
+
+;==========================================================================
+; Capture a transition block with register values and call the IL_Throw_Impl
+; implementation written in C.
+;
+; Input state:
+;   RCX = Pointer to exception object
+;==========================================================================
+NESTED_ENTRY IL_Throw, _TEXT
+        ; Shadow space for the call is included in PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdx
+
+        ; RCX already contains exception object
+        ; RDX contains pointer to TransitionBlock
+        call    IL_Throw_Impl
+        ; Should never return
+        int     3
+NESTED_END IL_Throw, _TEXT
+
+;==========================================================================
+; Capture a transition block with register values and call the IL_ThrowExact_Impl
+; implementation written in C.
+;
+; Input state:
+;   RCX = Pointer to exception object
+;==========================================================================
+NESTED_ENTRY IL_ThrowExact, _TEXT
+        ; Shadow space for the call is included in PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rdx
+
+        ; RCX already contains exception object
+        ; RDX contains pointer to TransitionBlock
+        call    IL_ThrowExact_Impl
+        ; Should never return
+        int     3
+NESTED_END IL_ThrowExact, _TEXT
+
+;==========================================================================
+; Capture a transition block with register values and call the IL_Rethrow_Impl
+; implementation written in C.
+;==========================================================================
+NESTED_ENTRY IL_Rethrow, _TEXT
+        ; Shadow space for the call is included in PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rcx
+
+        ; RCX contains pointer to TransitionBlock
+        call    IL_Rethrow_Impl
+        ; Should never return
+        int     3
+NESTED_END IL_Rethrow, _TEXT
 
         end

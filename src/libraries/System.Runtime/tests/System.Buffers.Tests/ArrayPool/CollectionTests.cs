@@ -76,7 +76,7 @@ namespace System.Buffers.ArrayPool.Tests
 
         // This test can cause problems for other tests run in parallel (from other assemblies) as
         // it pushes the physical memory usage above 80% temporarily.
-        [ConditionalFact(nameof(IsStressModeEnabledAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(CollectionTests), nameof(IsStressModeEnabledAndRemoteExecutorSupported))]
         public unsafe void ThreadLocalIsCollectedUnderHighPressure()
         {
             RemoteInvokeWithTrimming(() =>
@@ -151,7 +151,7 @@ namespace System.Buffers.ArrayPool.Tests
         private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/44037")]
-        [ConditionalFact(nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(CollectionTests), nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
         public void PollingEventFires()
         {
             RemoteInvokeWithTrimming(() =>

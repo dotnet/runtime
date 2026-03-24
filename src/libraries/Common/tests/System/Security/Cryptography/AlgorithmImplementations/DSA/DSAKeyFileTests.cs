@@ -87,7 +87,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
                 DSATestData.Dsa512Parameters);
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSAKeyFileTests), nameof(SupportsFips186_3))]
         public static void ReadWriteDsa2048DeficientXPkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -192,7 +192,7 @@ CU+l4wPQR0rRmYHIJJIvFh5OXk84pV0crsOrekw7tHeNU6DMzw==",
                 DSATestData.GetDSA1024Params());
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSAKeyFileTests), nameof(SupportsFips186_3))]
         public static void ReadWriteDsa2048EncryptedPkcs8()
         {
             ReadBase64EncryptedPkcs8(
@@ -219,7 +219,7 @@ EDVKgNkAxxCnPVjTUalttxCxTv7FC/vxfN7ulB2uKzicegsf6t/nS6i2dpJjUYDF
                 DSATestData.GetDSA2048Params());
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSAKeyFileTests), nameof(SupportsFips186_3))]
         public static void ReadWriteDsa2048DeficientXEncryptedPkcs8()
         {
             ReadBase64EncryptedPkcs8(
@@ -278,7 +278,7 @@ pfTBO6zjtLRN4Q==",
                 DSATestData.GetDSA1024Params());
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DSAKeyFileTests), nameof(SupportsFips186_3))]
         public static void ReadWriteDsa2048SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(

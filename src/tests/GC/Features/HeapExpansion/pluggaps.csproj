@@ -11,6 +11,9 @@
     <Compile Include="pluggaps.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="GCUtil_HeapExpansion.csproj" />
   </ItemGroup>
 </Project>

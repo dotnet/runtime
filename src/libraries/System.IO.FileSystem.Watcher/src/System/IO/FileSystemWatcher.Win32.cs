@@ -434,5 +434,8 @@ namespace System.IO
                 DirectoryHandle?.Dispose();
             }
         }
+
+        private void RestartForInternalBufferSize()
+            => Restart();
     }
 }

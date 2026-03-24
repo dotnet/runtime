@@ -146,6 +146,11 @@ namespace System.Net.Http
                 hostIndex = 9;
                 protocol = "socks5";
             }
+            else if (value.StartsWith("socks5h://", StringComparison.OrdinalIgnoreCase))
+            {
+                hostIndex = 10;
+                protocol = "socks5h";
+            }
             else if (value.StartsWith("socks4a://", StringComparison.OrdinalIgnoreCase))
             {
                 hostIndex = 10;

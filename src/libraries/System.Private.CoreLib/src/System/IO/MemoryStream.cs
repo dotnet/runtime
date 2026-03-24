@@ -46,7 +46,7 @@ namespace System.IO
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(capacity, MemStreamMaxLength);
 
-            _buffer = capacity != 0 ? new byte[capacity] : Array.Empty<byte>();
+            _buffer = capacity != 0 ? new byte[capacity] : [];
             _capacity = capacity;
             _expandable = true;
             _writable = true;
@@ -283,7 +283,7 @@ namespace System.IO
                     }
                     else
                     {
-                        _buffer = Array.Empty<byte>();
+                        _buffer = [];
                     }
                     _capacity = value;
                 }
@@ -570,7 +570,7 @@ namespace System.IO
         {
             int count = _length - _origin;
             if (count == 0)
-                return Array.Empty<byte>();
+                return [];
             byte[] copy = GC.AllocateUninitializedArray<byte>(count);
             _buffer.AsSpan(_origin, count).CopyTo(copy);
             return copy;

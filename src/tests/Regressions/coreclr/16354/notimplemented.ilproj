@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
+    <MonoAotIncompatible>true</MonoAotIncompatible>  <!-- https://github.com/dotnet/runtime/issues/90427  -->
     <!-- Needed for CrossGenTest -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
 
@@ -7,7 +8,7 @@
     <CrossGenTest>false</CrossGenTest>
 
     <!-- https://github.com/dotnet/runtime/issues/111191 -->
-    <NativeAotIncompatible>true</NativeAotIncompatible>    
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="notimplemented.il" />

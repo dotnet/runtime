@@ -246,6 +246,46 @@ namespace System.IO.Tests
         protected override bool SupportsConcurrentBidirectionalUse => false;
     }
 
+    public abstract class AnonymousPipeFileStream_SafeFileHandle_CreateAnonymousPipe : AnonymousPipeFileStreamConnectedConformanceTests
+    {
+        protected abstract bool AsyncReads { get; }
+        protected abstract bool AsyncWrites { get; }
+
+        protected override Task<StreamPair> CreateConnectedStreamsAsync()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: AsyncReads, asyncWrite: AsyncWrites);
+
+            FileStream writeStream = new(writeHandle, FileAccess.Write);
+            FileStream readStream = new(readHandle, FileAccess.Read);
+
+            return Task.FromResult<StreamPair>((writeStream, readStream));
+        }
+    }
+
+    public class AnonymousPipeFileStreamConnectedConformanceTests_SyncRead_SyncWrite : AnonymousPipeFileStream_SafeFileHandle_CreateAnonymousPipe
+    {
+        protected override bool AsyncReads => false;
+        protected override bool AsyncWrites => false;
+    }
+
+    public class AnonymousPipeFileStreamConnectedConformanceTests_AsyncRead_SyncWrite : AnonymousPipeFileStream_SafeFileHandle_CreateAnonymousPipe
+    {
+        protected override bool AsyncReads => true;
+        protected override bool AsyncWrites => false;
+    }
+
+    public class AnonymousPipeFileStreamConnectedConformanceTests_SyncRead_AsyncWrite : AnonymousPipeFileStream_SafeFileHandle_CreateAnonymousPipe
+    {
+        protected override bool AsyncReads => false;
+        protected override bool AsyncWrites => true;
+    }
+
+    public class AnonymousPipeFileStreamConnectedConformanceTests_AsyncRead_AsyncWrite : AnonymousPipeFileStream_SafeFileHandle_CreateAnonymousPipe
+    {
+        protected override bool AsyncReads => true;
+        protected override bool AsyncWrites => true;
+    }
+
     public class NamedPipeFileStreamConnectedConformanceTests : ConnectedStreamConformanceTests
     {
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()

@@ -13,4 +13,7 @@
     <Compile Include="thdchaos.cs" />
     <Compile Include="livingobject.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

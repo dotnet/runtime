@@ -59,10 +59,10 @@ namespace System.Security.Cryptography.X509Certificates
             // (https://tools.ietf.org/html/rfc5754#section-2) (and that you MUST
             // be able to read it even if someone wrote it down)
 
-            PssParamsAsn parameters = new PssParamsAsn
+            ValuePssParamsAsn parameters = new ValuePssParamsAsn
             {
-                HashAlgorithm = new AlgorithmIdentifierAsn { Algorithm = digestOid },
-                MaskGenAlgorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Mgf1 },
+                HashAlgorithm = new ValueAlgorithmIdentifierAsn { Algorithm = digestOid },
+                MaskGenAlgorithm = new ValueAlgorithmIdentifierAsn { Algorithm = Oids.Mgf1 },
                 SaltLength = cbSalt,
                 TrailerField = 1,
             };
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             parameters.Encode(writer);
 
-            AlgorithmIdentifierAsn identifier = new AlgorithmIdentifierAsn
+            ValueAlgorithmIdentifierAsn identifier = new ValueAlgorithmIdentifierAsn
             {
                 Algorithm = Oids.RsaPss,
                 Parameters = writer.Encode(),

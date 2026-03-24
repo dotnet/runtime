@@ -318,7 +318,10 @@ namespace System.Security.Cryptography.Pkcs
                     throw new CryptographicException(SR.Cryptography_Pkcs_PssParametersMissing);
                 }
 
-                PssParamsAsn pssParams = PssParamsAsn.Decode(signatureParameters.Value, AsnEncodingRules.DER);
+                ValuePssParamsAsn.Decode(
+                    signatureParameters.Value.Span,
+                    AsnEncodingRules.DER,
+                    out ValuePssParamsAsn pssParams);
 
                 if (pssParams.HashAlgorithm.Algorithm != digestAlgorithmOid)
                 {

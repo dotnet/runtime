@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 #pragma warning disable 8500
 
@@ -18,6 +19,7 @@ public unsafe class Program
     public static Type GrabPtr<T>() => typeof(T*);
     public static Type GrabFnptr<T>() => typeof(delegate*<T>);
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", TestRuntimes.Mono)]
     [Fact]
     public static void TestEntryPoint()
     {

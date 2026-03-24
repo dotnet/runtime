@@ -183,6 +183,8 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     //
 #define DEFINE_DACVAR(size_type, id, var) \
     ReportMem(m_dacGlobals.id, sizeof(size_type));
+#define DEFINE_DACVAR_VOLATILE(size_type, id, var) \
+    ReportMem(m_dacGlobals.id, sizeof(size_type));
 
     ULONG64 dacTableAddress;
     HRESULT hr = GetDacTableAddress(m_pTarget, m_globalBase, &dacTableAddress);
@@ -593,7 +595,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
             // Pulls in data to translate from token to MethodDesc
             FindLoadedMethodRefOrDef(pMD->GetMethodTable()->GetModule(), pMD->GetMemberDef());
 
-            PCODE addr = pMD->GetNativeCode();
+            PCODE addr = pMD->GetCodeForInterpreterOrJitted();
             if (addr != (PCODE)NULL)
             {
                 EECodeInfo codeInfo(addr);

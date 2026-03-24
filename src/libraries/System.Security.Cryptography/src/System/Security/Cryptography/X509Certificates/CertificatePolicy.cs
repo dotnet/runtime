@@ -289,7 +289,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+                ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.DER);
                 int inhibitAnyPolicy;
                 reader.TryReadInt32(out inhibitAnyPolicy);
                 reader.ThrowIfNotEmpty();
@@ -317,8 +317,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
-                AsnValueReader sequenceReader = reader.ReadSequence();
+                ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.DER);
+                ValueAsnReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 //OidCollection usages
@@ -339,8 +339,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
-                AsnValueReader sequenceReader = reader.ReadSequence();
+                ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.DER);
+                ValueAsnReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 HashSet<string> policies = new HashSet<string>();
@@ -368,8 +368,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
-                AsnValueReader sequenceReader = reader.ReadSequence();
+                ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.DER);
+                ValueAsnReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 List<CertificatePolicyMappingAsn> mappings = new List<CertificatePolicyMappingAsn>();

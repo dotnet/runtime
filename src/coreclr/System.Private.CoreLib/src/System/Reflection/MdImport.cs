@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -227,18 +228,23 @@ namespace System.Reflection
         #endregion
 
         #region Static Members
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe bool GetMarshalAs(
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_GetMarshalAs")]
+        [RequiresUnsafe]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static unsafe partial bool GetMarshalAs(
             IntPtr pNativeType,
             int cNativeType,
             out int unmanagedType,
             out int safeArraySubType,
             out byte* safeArrayUserDefinedSubType,
+            out int safeArrayUserDefinedSubTypeLength,
             out int arraySubType,
             out int sizeParamIndex,
             out int sizeConst,
             out byte* marshalType,
+            out int marshalTypeLength,
             out byte* marshalCookie,
+            out int marshalCookieLength,
             out int iidParamIndex);
 
         internal static unsafe MarshalAsAttribute GetMarshalAs(ConstArray nativeType, RuntimeModule scope)
@@ -249,11 +255,14 @@ namespace System.Reflection
                     out int unmanagedTypeRaw,
                     out int safeArraySubTypeRaw,
                     out byte* safeArrayUserDefinedSubTypeRaw,
+                    out int safeArrayUserDefinedSubTypeLength,
                     out int arraySubTypeRaw,
                     out int sizeParamIndex,
                     out int sizeConst,
                     out byte* marshalTypeRaw,
+                    out int marshalTypeLength,
                     out byte* marshalCookieRaw,
+                    out int marshalCookieLength,
                     out int iidParamIndex))
             {
                 throw new BadImageFormatException();
@@ -261,21 +270,32 @@ namespace System.Reflection
 
             string? safeArrayUserDefinedTypeName = safeArrayUserDefinedSubTypeRaw == null
                 ? null
-                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(safeArrayUserDefinedSubTypeRaw));
+                : Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(safeArrayUserDefinedSubTypeRaw, safeArrayUserDefinedSubTypeLength));
             string? marshalTypeName = marshalTypeRaw == null
                 ? null
-                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalTypeRaw));
+                : Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(marshalTypeRaw, marshalTypeLength));
             string? marshalCookie = marshalCookieRaw == null
                 ? null
-                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalCookieRaw));
+                : Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(marshalCookieRaw, marshalCookieLength));
 
-            RuntimeType? safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
-                TypeNameResolver.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
+            RuntimeType? safeArrayUserDefinedType = null;
+
+            try
+            {
+                safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
+                    TypeNameResolver.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
+            }
+            catch (TypeLoadException)
+            {
+                // The user may have supplied a bad type name string causing this TypeLoadException
+                Debug.Assert(safeArrayUserDefinedTypeName is not null);
+            }
+
             RuntimeType? marshalTypeRef = null;
 
             try
             {
-                marshalTypeRef = marshalTypeName is null ? null : TypeNameResolver.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
+                marshalTypeRef = string.IsNullOrEmpty(marshalTypeName) ? null : TypeNameResolver.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
             }
             catch (TypeLoadException)
             {
@@ -315,6 +335,7 @@ namespace System.Reflection
         #endregion
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_Enum")]
+        [RequiresUnsafe]
         private static unsafe partial void Enum(IntPtr scope, int type, int parent, ref int length, int* shortResult, ObjectHandleOnStack longResult);
 
         public unsafe void Enum(MetadataTokenType type, int parent, out MetadataEnumResult result)
@@ -358,6 +379,7 @@ namespace System.Reflection
             Enum(MetadataTokenType.Event, mdTypeDef, out result);
         }
 
+        [RequiresUnsafe]
         private static unsafe string? ConvertMetadataStringPermitInvalidContent(char* stringMetadataEncoding, int length)
         {
             Debug.Assert(stringMetadataEncoding != null);
@@ -368,6 +390,7 @@ namespace System.Reflection
 
         #region FCalls
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe int GetDefaultValue(
             IntPtr scope,
             int mdToken,
@@ -392,6 +415,7 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe int GetUserString(IntPtr scope, int mdToken, out char* stringMetadataEncoding, out int length);
 
         public unsafe string? GetUserString(int mdToken)
@@ -404,6 +428,7 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe int GetName(IntPtr scope, int mdToken, out byte* name);
 
         public unsafe MdUtf8String GetName(int mdToken)
@@ -413,6 +438,7 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe int GetNamespace(IntPtr scope, int mdToken, out byte* namesp);
 
         public unsafe MdUtf8String GetNamespace(int mdToken)
@@ -422,8 +448,10 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe int GetEventProps(IntPtr scope, int mdToken, out void* name, out int eventAttributes);
 
+        [RequiresUnsafe]
         public unsafe void GetEventProps(int mdToken, out void* name, out EventAttributes eventAttributes)
         {
             ThrowBadImageExceptionForHR(GetEventProps(m_metadataImport2, mdToken, out name, out int eventAttributesRaw));
@@ -440,8 +468,10 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe int GetPropertyProps(IntPtr scope, int mdToken, out void* name, out int propertyAttributes, out ConstArray signature);
 
+        [RequiresUnsafe]
         public unsafe void GetPropertyProps(int mdToken, out void* name, out PropertyAttributes propertyAttributes, out ConstArray signature)
         {
             ThrowBadImageExceptionForHR(GetPropertyProps(m_metadataImport2, mdToken, out name, out int propertyAttributesRaw, out signature));
@@ -584,6 +614,7 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe int GetPInvokeMap(IntPtr scope,
             int token,
             out int attributes,

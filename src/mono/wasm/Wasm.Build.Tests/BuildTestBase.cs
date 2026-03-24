@@ -30,7 +30,6 @@ namespace Wasm.Build.Tests
         public static readonly string DefaultTargetFramework = $"net{TargetMajorVersion}.0";
         public static readonly string PreviousTargetFramework = $"net{TargetMajorVersion - 1}.0";
         public static readonly string Previous2TargetFramework = $"net{TargetMajorVersion - 2}.0";
-        public static readonly string TargetFrameworkForTasks = $"net{Environment.Version.Major}.0";
         public static readonly string DefaultTargetFrameworkForBlazor = DefaultTargetFramework;
         public static readonly string DefaultTargetFrameworkForBlazorTemplate = $"net{Environment.Version.Major}.0";
         private const string DefaultEnvironmentLocale = "en-US";
@@ -64,6 +63,8 @@ namespace Wasm.Build.Tests
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
+        public static bool IsMonoRuntime => s_buildEnv.IsMonoRuntime;
+        public static bool IsCoreClrRuntime => s_buildEnv.IsCoreClrRuntime;
         public static bool UseWebcil => s_buildEnv.UseWebcil;
         public static string GetNuGetConfigPath()
             => Path.Combine(BuildEnvironment.TestDataPath, "nuget.config");

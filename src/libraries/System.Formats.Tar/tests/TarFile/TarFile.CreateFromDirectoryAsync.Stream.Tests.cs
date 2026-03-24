@@ -66,5 +66,46 @@ namespace System.Formats.Tar.Tests
                 }
             }
         }
+
+        [Theory]
+        [MemberData(nameof(GetTarEntryFormats))]
+        public async Task CreateFromDirectoryAsync_WithFormat(TarEntryFormat format)
+        {
+            using (TempDirectory source = new TempDirectory())
+            {
+                string fileName = "file.txt";
+                File.Create(Path.Join(source.Path, fileName)).Dispose();
+
+                await using (MemoryStream archive = new MemoryStream())
+                {
+                    await TarFile.CreateFromDirectoryAsync(source.Path, archive, includeBaseDirectory: false, format);
+
+                    archive.Position = 0;
+                    await using (TarReader reader = new TarReader(archive))
+                    {
+                        TarEntry entry = await reader.GetNextEntryAsync();
+                        Assert.NotNull(entry);
+                        Assert.Equal(format, entry.Format);
+                        Assert.Equal(fileName, entry.Name);
+
+                        Assert.Null(await reader.GetNextEntryAsync());
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetInvalidTarEntryFormats))]
+        public async Task CreateFromDirectoryAsync_InvalidFormat_Throws(TarEntryFormat format)
+        {
+            using (TempDirectory source = new TempDirectory())
+            {
+                await using (MemoryStream archive = new MemoryStream())
+                {
+                    await Assert.ThrowsAsync<ArgumentOutOfRangeException>("format", () =>
+                        TarFile.CreateFromDirectoryAsync(source.Path, archive, includeBaseDirectory: false, format));
+                }
+            }
+        }
     }
 }

@@ -19,12 +19,6 @@
 
 namespace
 {
-    static void CallFunc_Void_RetF64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        double (*fptr)() = (double (*)())pcode;
-        *((double*)pRet) = (*fptr)();
-    }
-
     static void CallFunc_F64_RetF64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         double (*fptr)(double) = (double (*)(double))pcode;
@@ -85,40 +79,10 @@ namespace
         *((int32_t*)pRet) = (*fptr)();
     }
 
-    static void CallFunc_F64_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(double, int32_t) = (int32_t (*)(double, int32_t))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_F64(0), ARG_I32(1));
-    }
-
-    static void CallFunc_F32_F32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(float, float) = (int32_t (*)(float, float))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_F32(0), ARG_F32(1));
-    }
-
     static void CallFunc_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         int32_t (*fptr)(int32_t) = (int32_t (*)(int32_t))pcode;
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0));
-    }
-
-    static void CallFunc_I32_F64_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(int32_t, double) = (int32_t (*)(int32_t, double))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_F64(1));
-    }
-
-    static void CallFunc_I32_F32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(int32_t, float) = (int32_t (*)(int32_t, float))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_F32(1));
-    }
-
-    static void CallFunc_I32_F32_I32_I32_F32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(int32_t, float, int32_t, int32_t, float) = (int32_t (*)(int32_t, float, int32_t, int32_t, float))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_F32(1), ARG_I32(2), ARG_I32(3), ARG_F32(4));
     }
 
     static void CallFunc_I32_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -157,16 +121,10 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6));
     }
 
-    static void CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    static void CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
-        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7), ARG_I32(8), ARG_I32(9), ARG_I32(10));
-    }
-
-    static void CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7), ARG_I32(8), ARG_I32(9), ARG_I32(10), ARG_I32(11), ARG_I32(12), ARG_I32(13), ARG_I32(14), ARG_I32(15), ARG_I32(16));
+        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7), ARG_I32(8), ARG_I32(9), ARG_I32(10), ARG_I32(11), ARG_I32(12), ARG_I32(13));
     }
 
     static void CallFunc_I32_I32_I32_I64_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -229,12 +187,6 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I64(1), ARG_I64(2), ARG_I32(3));
     }
 
-    static void CallFunc_I32_IND_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t) = (int32_t (*)(int32_t, int32_t))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_IND(1));
-    }
-
     static void CallFunc_I32_IND_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
@@ -245,18 +197,6 @@ namespace
     {
         int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_IND(1), ARG_I32(2), ARG_I32(3), ARG_I32(4));
-    }
-
-    static void CallFunc_I32_IND_I32_IND_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_IND(1), ARG_I32(2), ARG_IND(3), ARG_I32(4));
-    }
-
-    static void CallFunc_I32_IND_IND_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_IND(1), ARG_IND(2));
     }
 
     static void CallFunc_I64_I32_I64_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -331,6 +271,12 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_IND(0), ARG_IND(1), ARG_I32(2), ARG_IND(3));
     }
 
+    static void CallFunc_IND_IND_IND_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
+        *((int32_t*)pRet) = (*fptr)(ARG_IND(0), ARG_IND(1), ARG_IND(2));
+    }
+
     static void CallFunc_Void_RetI64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         int64_t (*fptr)() = (int64_t (*)())pcode;
@@ -341,12 +287,6 @@ namespace
     {
         int64_t (*fptr)(int32_t) = (int64_t (*)(int32_t))pcode;
         *((int64_t*)pRet) = (*fptr)(ARG_I32(0));
-    }
-
-    static void CallFunc_I32_I32_RetI64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int64_t (*fptr)(int32_t, int32_t) = (int64_t (*)(int32_t, int32_t))pcode;
-        *((int64_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1));
     }
 
     static void CallFunc_I32_I32_I32_I64_RetI64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -377,20 +317,6 @@ namespace
     {
         int64_t (*fptr)(int64_t, int64_t) = (int64_t (*)(int64_t, int64_t))pcode;
         *((int64_t*)pRet) = (*fptr)(ARG_I64(0), ARG_I64(1));
-    }
-
-    static void CallFunc_I32_RetIND(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(int32_t) = (int32_t (*)(int32_t))pcode;
-        PORTABILITY_ASSERT("Indirect struct return is not yet implemented.");
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0));
-    }
-
-    static void CallFunc_I32_I32_RetIND(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t) = (int32_t (*)(int32_t, int32_t))pcode;
-        PORTABILITY_ASSERT("Indirect struct return is not yet implemented.");
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1));
     }
 
     static void CallFunc_Void_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -459,12 +385,6 @@ namespace
         (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_IND(3), ARG_IND(4), ARG_I32(5));
     }
 
-    static void CallFunc_I32_I32_IND_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_I32(0), ARG_I32(1), ARG_IND(2));
-    }
-
     static void CallFunc_I32_I32_IND_IND_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
@@ -477,22 +397,10 @@ namespace
         (*fptr)(ARG_I32(0), ARG_I32(1), ARG_IND(2), ARG_IND(3), ARG_I32(4), ARG_I32(5));
     }
 
-    static void CallFunc_I32_IND_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        void (*fptr)(int32_t, int32_t) = (void (*)(int32_t, int32_t))pcode;
-        (*fptr)(ARG_I32(0), ARG_IND(1));
-    }
-
     static void CallFunc_I32_IND_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
         (*fptr)(ARG_I32(0), ARG_IND(1), ARG_I32(2));
-    }
-
-    static void CallFunc_I32_IND_IND_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        void (*fptr)(int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_I32(0), ARG_IND(1), ARG_IND(2), ARG_I32(3));
     }
 
     static void CallFunc_I64_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -555,15 +463,14 @@ namespace
         (*fptr)(ARG_IND(0), ARG_IND(1));
     }
 
-    static void CallFunc_IND_IND_I32_I32_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    static void CallFunc_IND_IND_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
-        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG_IND(1), ARG_I32(2), ARG_I32(3), ARG_I32(4));
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_IND(0), ARG_IND(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6));
     }
 }
 
 const StringToWasmSigThunk g_wasmThunks[] = {
-    { "d", (void*)&CallFunc_Void_RetF64 },
     { "dd", (void*)&CallFunc_F64_RetF64 },
     { "ddd", (void*)&CallFunc_F64_F64_RetF64 },
     { "dddd", (void*)&CallFunc_F64_F64_F64_RetF64 },
@@ -574,20 +481,14 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "ffff", (void*)&CallFunc_F32_F32_F32_RetF32 },
     { "ffi", (void*)&CallFunc_F32_I32_RetF32 },
     { "i", (void*)&CallFunc_Void_RetI32 },
-    { "idi", (void*)&CallFunc_F64_I32_RetI32 },
-    { "iff", (void*)&CallFunc_F32_F32_RetI32 },
     { "ii", (void*)&CallFunc_I32_RetI32 },
-    { "iid", (void*)&CallFunc_I32_F64_RetI32 },
-    { "iif", (void*)&CallFunc_I32_F32_RetI32 },
-    { "iifiif", (void*)&CallFunc_I32_F32_I32_I32_F32_RetI32 },
     { "iii", (void*)&CallFunc_I32_I32_RetI32 },
     { "iiii", (void*)&CallFunc_I32_I32_I32_RetI32 },
     { "iiiii", (void*)&CallFunc_I32_I32_I32_I32_RetI32 },
     { "iiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_RetI32 },
     { "iiiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetI32 },
     { "iiiiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_I32_RetI32 },
-    { "iiiiiiiiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
-    { "iiiiiiiiiiiiiiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
+    { "iiiiiiiiiiiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetI32 },
     { "iiiil", (void*)&CallFunc_I32_I32_I32_I64_RetI32 },
     { "iiiini", (void*)&CallFunc_I32_I32_I32_IND_I32_RetI32 },
     { "iiil", (void*)&CallFunc_I32_I32_I64_RetI32 },
@@ -598,11 +499,8 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "iiliiil", (void*)&CallFunc_I32_I64_I32_I32_I32_I64_RetI32 },
     { "iill", (void*)&CallFunc_I32_I64_I64_RetI32 },
     { "iilli", (void*)&CallFunc_I32_I64_I64_I32_RetI32 },
-    { "iin", (void*)&CallFunc_I32_IND_RetI32 },
     { "iini", (void*)&CallFunc_I32_IND_I32_RetI32 },
     { "iiniii", (void*)&CallFunc_I32_IND_I32_I32_I32_RetI32 },
-    { "iinini", (void*)&CallFunc_I32_IND_I32_IND_I32_RetI32 },
-    { "iinn", (void*)&CallFunc_I32_IND_IND_RetI32 },
     { "ilili", (void*)&CallFunc_I64_I32_I64_I32_RetI32 },
     { "in", (void*)&CallFunc_IND_RetI32 },
     { "ini", (void*)&CallFunc_IND_I32_RetI32 },
@@ -615,16 +513,14 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "inni", (void*)&CallFunc_IND_IND_I32_RetI32 },
     { "innii", (void*)&CallFunc_IND_IND_I32_I32_RetI32 },
     { "innin", (void*)&CallFunc_IND_IND_I32_IND_RetI32 },
+    { "innn", (void*)&CallFunc_IND_IND_IND_RetI32 },
     { "l", (void*)&CallFunc_Void_RetI64 },
     { "li", (void*)&CallFunc_I32_RetI64 },
-    { "lii", (void*)&CallFunc_I32_I32_RetI64 },
     { "liiil", (void*)&CallFunc_I32_I32_I32_I64_RetI64 },
     { "lil", (void*)&CallFunc_I32_I64_RetI64 },
     { "lili", (void*)&CallFunc_I32_I64_I32_RetI64 },
     { "lill", (void*)&CallFunc_I32_I64_I64_RetI64 },
     { "lll", (void*)&CallFunc_I64_I64_RetI64 },
-    { "ni", (void*)&CallFunc_I32_RetIND },
-    { "nii", (void*)&CallFunc_I32_I32_RetIND },
     { "v", (void*)&CallFunc_Void_RetVoid },
     { "vdii", (void*)&CallFunc_F64_I32_I32_RetVoid },
     { "vfii", (void*)&CallFunc_F32_I32_I32_RetVoid },
@@ -636,12 +532,9 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "viiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetVoid },
     { "viiinn", (void*)&CallFunc_I32_I32_I32_IND_IND_RetVoid },
     { "viiinni", (void*)&CallFunc_I32_I32_I32_IND_IND_I32_RetVoid },
-    { "viin", (void*)&CallFunc_I32_I32_IND_RetVoid },
     { "viinni", (void*)&CallFunc_I32_I32_IND_IND_I32_RetVoid },
     { "viinnii", (void*)&CallFunc_I32_I32_IND_IND_I32_I32_RetVoid },
-    { "vin", (void*)&CallFunc_I32_IND_RetVoid },
     { "vini", (void*)&CallFunc_I32_IND_I32_RetVoid },
-    { "vinni", (void*)&CallFunc_I32_IND_IND_I32_RetVoid },
     { "vl", (void*)&CallFunc_I64_RetVoid },
     { "vn", (void*)&CallFunc_IND_RetVoid },
     { "vni", (void*)&CallFunc_IND_I32_RetVoid },
@@ -652,7 +545,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "vniiiiii", (void*)&CallFunc_IND_I32_I32_I32_I32_I32_I32_RetVoid },
     { "vniiiiiiiiiii", (void*)&CallFunc_IND_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetVoid },
     { "vnn", (void*)&CallFunc_IND_IND_RetVoid },
-    { "vnniii", (void*)&CallFunc_IND_IND_I32_I32_I32_RetVoid }
+    { "vnniiiii", (void*)&CallFunc_IND_IND_I32_I32_I32_I32_I32_RetVoid }
 };
 
 const size_t g_wasmThunksCount = sizeof(g_wasmThunks) / sizeof(g_wasmThunks[0]);

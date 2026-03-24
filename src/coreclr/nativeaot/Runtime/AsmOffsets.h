@@ -72,8 +72,10 @@ ASM_OFFSET(    4,     8, InterfaceDispatchCell, m_pCache)
 #ifdef INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 ASM_OFFSET(    8,     0, InterfaceDispatchCache, m_pCell)
 #endif
+ASM_OFFSET(    C,    18, InterfaceDispatchCache, m_cEntries)
 ASM_OFFSET(   10,    20, InterfaceDispatchCache, m_rgEntries)
 ASM_SIZEOF(    8,    10, InterfaceDispatchCacheEntry)
+ASM_CONST(     3,     3, IDC_CACHE_POINTER_MASK)
 #endif
 
 // Undefine macros that are only used in this header for convenience.

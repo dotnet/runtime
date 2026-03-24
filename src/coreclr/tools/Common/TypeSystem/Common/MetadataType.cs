@@ -125,6 +125,7 @@ namespace Internal.TypeSystem
         Auto,
         Sequential,
         Explicit,
-        CStruct
+        CStruct,
+        CUnion
     }
 }

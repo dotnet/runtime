@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -79,7 +80,8 @@ namespace System.Threading
         // Until Rosetta 2 is removed, we need to use the non-PThread mutexes on Apple platforms.
         // On FreeBSD, pthread process-shared robust mutexes cannot be placed in shared memory mapped
         // independently by the processes involved. See https://github.com/dotnet/runtime/issues/10519.
-        private static bool UsePThreadMutexes => !OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD();
+        // On OpenBSD, cross process mutexes are not supported in the pthread implementation. See https://github.com/dotnet/runtime/pull/125089.
+        private static bool UsePThreadMutexes => !OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD() && !OperatingSystem.IsOpenBSD();
 
         private readonly SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader = header;
         protected nuint _lockCount;
@@ -259,6 +261,7 @@ namespace System.Threading
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe void InitializeSharedData(void* v)
         {
             if (UsePThreadMutexes)
@@ -646,10 +649,10 @@ namespace System.Threading
 
             public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize, ref LockHolder lockHolder)
             {
+                lockHolder.Dispose();
                 LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
                 try
                 {
-                    lockHolder.Dispose();
                     MutexTryAcquireLockResult result = _processDataHeader._processData!.TryAcquireLock(waitInfo, timeoutMilliseconds, ref scope);
                     return result switch
                     {

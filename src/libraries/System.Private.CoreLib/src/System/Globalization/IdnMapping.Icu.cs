@@ -7,14 +7,14 @@ namespace System.Globalization
 {
     public sealed partial class IdnMapping
     {
-        private unsafe string IcuGetAsciiCore(string unicodeString, char* unicode, int count)
+        private string IcuGetAsciiCore(string unicodeString, int index, int count)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(unicodeString != null && unicodeString.Length >= count);
 
+            ReadOnlySpan<char> unicode = unicodeString.AsSpan(index, count);
             uint flags = IcuFlags;
-            CheckInvalidIdnCharacters(unicode, count, flags, nameof(unicode));
+            CheckInvalidIdnCharacters(unicode, flags, nameof(unicode));
 
             const int StackallocThreshold = 512;
             // Each unicode character is represented by up to 3 ASCII chars
@@ -23,16 +23,16 @@ namespace System.Globalization
             int actualLength;
             if ((uint)estimatedLength < StackallocThreshold)
             {
-                char* outputStack = stackalloc char[estimatedLength];
+                Span<char> outputStack = stackalloc char[estimatedLength];
                 actualLength = Interop.Globalization.ToAscii(flags, unicode, count, outputStack, estimatedLength);
                 if (actualLength > 0 && actualLength <= estimatedLength)
                 {
-                    return GetStringForOutput(unicodeString, unicode, count, outputStack, actualLength);
+                    return GetStringForOutput(unicodeString, unicode, outputStack.Slice(0, actualLength));
                 }
             }
             else
             {
-                actualLength = Interop.Globalization.ToAscii(flags, unicode, count, null, 0);
+                actualLength = Interop.Globalization.ToAscii(flags, unicode, count, Span<char>.Empty, 0);
             }
             if (actualLength == 0)
             {
@@ -40,68 +40,109 @@ namespace System.Globalization
             }
 
             char[] outputHeap = new char[actualLength];
-            fixed (char* pOutputHeap = &outputHeap[0])
+            actualLength = Interop.Globalization.ToAscii(flags, unicode, count, outputHeap, actualLength);
+            if (actualLength == 0 || actualLength > outputHeap.Length)
             {
-                actualLength = Interop.Globalization.ToAscii(flags, unicode, count, pOutputHeap, actualLength);
-                if (actualLength == 0 || actualLength > outputHeap.Length)
-                {
-                    throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
-                }
-                return GetStringForOutput(unicodeString, unicode, count, pOutputHeap, actualLength);
+                throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
             }
+
+            return GetStringForOutput(unicodeString, unicode, outputHeap.AsSpan(0, actualLength));
         }
 
-        private unsafe string IcuGetUnicodeCore(string asciiString, char* ascii, int count)
+        private bool IcuTryGetAsciiCore(ReadOnlySpan<char> unicode, Span<char> destination, out int charsWritten)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(asciiString != null && asciiString.Length >= count);
 
             uint flags = IcuFlags;
-            CheckInvalidIdnCharacters(ascii, count, flags, nameof(ascii));
+            CheckInvalidIdnCharacters(unicode, flags, nameof(unicode));
+
+            int actualLength = Interop.Globalization.ToAscii(flags, unicode, unicode.Length, destination, destination.Length);
+
+            if (actualLength <= destination.Length)
+            {
+                if (actualLength == 0)
+                {
+                    throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(unicode));
+                }
+
+                charsWritten = actualLength;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
+        }
+
+        private string IcuGetUnicodeCore(string asciiString, int index, int count)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+
+            ReadOnlySpan<char> ascii = asciiString.AsSpan(index, count);
+            uint flags = IcuFlags;
+            CheckInvalidIdnCharacters(ascii, flags, nameof(ascii));
 
             const int StackAllocThreshold = 512;
             if ((uint)count < StackAllocThreshold)
             {
-                char* output = stackalloc char[count];
-                return IcuGetUnicodeCore(asciiString, ascii, count, flags, output, count, reattempt: true);
+                Span<char> output = stackalloc char[count];
+                return IcuGetUnicodeCore(asciiString, ascii, flags, output, reattempt: true);
             }
             else
             {
                 char[] output = new char[count];
-                fixed (char* pOutput = &output[0])
-                {
-                    return IcuGetUnicodeCore(asciiString, ascii, count, flags, pOutput, count, reattempt: true);
-                }
+                return IcuGetUnicodeCore(asciiString, ascii, flags, output, reattempt: true);
             }
         }
 
-        private unsafe string IcuGetUnicodeCore(string asciiString, char* ascii, int count, uint flags, char* output, int outputLength, bool reattempt)
+        private static string IcuGetUnicodeCore(string asciiString, ReadOnlySpan<char> ascii, uint flags, Span<char> output, bool reattempt)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(asciiString != null && asciiString.Length >= count);
 
-            int realLen = Interop.Globalization.ToUnicode(flags, ascii, count, output, outputLength);
+            int realLen = Interop.Globalization.ToUnicode(flags, ascii, ascii.Length, output, output.Length);
 
             if (realLen == 0)
             {
                 throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
             }
-            else if (realLen <= outputLength)
+            else if (realLen <= output.Length)
             {
-                return GetStringForOutput(asciiString, ascii, count, output, realLen);
+                return GetStringForOutput(asciiString, ascii, output.Slice(0, realLen));
             }
             else if (reattempt)
             {
                 char[] newOutput = new char[realLen];
-                fixed (char* pNewOutput = newOutput)
-                {
-                    return IcuGetUnicodeCore(asciiString, ascii, count, flags, pNewOutput, realLen, reattempt: false);
-                }
+                return IcuGetUnicodeCore(asciiString, ascii, flags, newOutput, reattempt: false);
             }
 
             throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
+        }
+
+        private bool IcuTryGetUnicodeCore(ReadOnlySpan<char> ascii, Span<char> destination, out int charsWritten)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+
+            uint flags = IcuFlags;
+            CheckInvalidIdnCharacters(ascii, flags, nameof(ascii));
+
+            int actualLength = Interop.Globalization.ToUnicode(flags, ascii, ascii.Length, destination, destination.Length);
+
+            if (actualLength <= destination.Length)
+            {
+                if (actualLength == 0)
+                {
+                    throw new ArgumentException(SR.Argument_IdnIllegalName, nameof(ascii));
+                }
+
+                charsWritten = actualLength;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
         }
 
         private uint IcuFlags
@@ -122,11 +163,11 @@ namespace System.Globalization
         /// To match Windows behavior, we walk the string ourselves looking for these
         /// bad characters so we can continue to throw ArgumentException in these cases.
         /// </summary>
-        private static unsafe void CheckInvalidIdnCharacters(char* s, int count, uint flags, string paramName)
+        private static void CheckInvalidIdnCharacters(ReadOnlySpan<char> s, uint flags, string paramName)
         {
             if ((flags & Interop.Globalization.UseStd3AsciiRules) == 0)
             {
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < s.Length; i++)
                 {
                     char c = s[i];
 

@@ -13,6 +13,9 @@
 
     <CLRTestBashEnvironmentVariable Include="LD_LIBRARY_PATH" Value="$LD_LIBRARY_PATH:$%28pwd)/Subdirectory" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
   <PropertyGroup>
     <PathEnvSetupCommands><![CDATA[
       mkdir Subdirectory

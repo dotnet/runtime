@@ -652,28 +652,32 @@ namespace System.Text.Json.Serialization.Tests
 
         public static string s_json_flipped => $"{{{s_partialJson2},{s_partialJson1}}}";
 
-        public static string s_json_minimal => @"{""ReadOnlyPoint2D"":{""X"":1,""Y"":2}}";
+        public static string s_json_minimal => """{"ReadOnlyPoint2D":{"X":1,"Y":2}}""";
 
         private const string s_partialJson1 =
-             @"
-                ""FirstName"":""John"",
-                ""LastName"":""Doe"",
-                ""EmailAddress"":""johndoe@live.com"",
-                ""Id"":""f2c92fcc-459f-4287-90b6-a7cbd82aeb0e"",
-                ""Age"":24,
-                ""Point2D"":{""X"":1,""Y"":2},
-                ""ReadOnlyPoint2D"":{""X"":1,""Y"":2}
-            ";
+             """
+
+                     "FirstName":"John",
+                     "LastName":"Doe",
+                     "EmailAddress":"johndoe@live.com",
+                     "Id":"f2c92fcc-459f-4287-90b6-a7cbd82aeb0e",
+                     "Age":24,
+                     "Point2D":{"X":1,"Y":2},
+                     "ReadOnlyPoint2D":{"X":1,"Y":2}
+
+                 """;
 
         private const string s_partialJson2 =
-            @"
-                ""Point2DWithExtDataClass"":{""X"":1,""Y"":2,""b"":3},
-                ""ReadOnlyPoint2DWithExtDataClass"":{""X"":1,""Y"":2,""b"":3},
-                ""Point3DStruct"":{""X"":1,""Y"":2,""Z"":3},
-                ""ReadOnlyPoint3DStruct"":{""X"":1,""Y"":2,""Z"":3},
-                ""Point2DWithExtData"":{""X"":1,""Y"":2,""b"":3},
-                ""ReadOnlyPoint2DWithExtData"":{""X"":1,""Y"":2,""b"":3}
-            ";
+            """
+
+                    "Point2DWithExtDataClass":{"X":1,"Y":2,"b":3},
+                    "ReadOnlyPoint2DWithExtDataClass":{"X":1,"Y":2,"b":3},
+                    "Point3DStruct":{"X":1,"Y":2,"Z":3},
+                    "ReadOnlyPoint3DStruct":{"X":1,"Y":2,"Z":3},
+                    "Point2DWithExtData":{"X":1,"Y":2,"b":3},
+                    "ReadOnlyPoint2DWithExtData":{"X":1,"Y":2,"b":3}
+
+                """;
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -773,23 +777,25 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         public static readonly string s_json =
-             @"{
-                ""FirstName"":""John"",
-                ""LastName"":""Doe"",
-                ""EmailAddress"":""johndoe@live.com"",
-                ""Id"":""f2c92fcc-459f-4287-90b6-a7cbd82aeb0e"",
-                ""Age"":24,
-                ""Point2D"":{""X"":1,""Y"":2},
-                ""Junk"":""Data"",
-                ""ReadOnlyPoint2D"":{""X"":1,""Y"":2},
-                ""Point2DWithExtDataClass"":{""X"":1,""Y"":2,""b"":3},
-                ""ReadOnlyPoint2DWithExtDataClass"":{""X"":1,""Y"":2,""b"":3},
-                ""Point3DStruct"":{""X"":1,""Y"":2,""Z"":3},
-                ""More"":""Junk"",
-                ""ReadOnlyPoint3DStruct"":{""X"":1,""Y"":2,""Z"":3},
-                ""Point2DWithExtData"":{""X"":1,""Y"":2,""b"":3},
-                ""ReadOnlyPoint2DWithExtData"":{""X"":1,""Y"":2,""b"":3}
-            }";
+             """
+                     {
+                                     "FirstName":"John",
+                                     "LastName":"Doe",
+                                     "EmailAddress":"johndoe@live.com",
+                                     "Id":"f2c92fcc-459f-4287-90b6-a7cbd82aeb0e",
+                                     "Age":24,
+                                     "Point2D":{"X":1,"Y":2},
+                                     "Junk":"Data",
+                                     "ReadOnlyPoint2D":{"X":1,"Y":2},
+                                     "Point2DWithExtDataClass":{"X":1,"Y":2,"b":3},
+                                     "ReadOnlyPoint2DWithExtDataClass":{"X":1,"Y":2,"b":3},
+                                     "Point3DStruct":{"X":1,"Y":2,"Z":3},
+                                     "More":"Junk",
+                                     "ReadOnlyPoint3DStruct":{"X":1,"Y":2,"Z":3},
+                                     "Point2DWithExtData":{"X":1,"Y":2,"b":3},
+                                     "ReadOnlyPoint2DWithExtData":{"X":1,"Y":2,"b":3}
+                                 }
+                 """;
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -1000,7 +1006,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public static string s_json_flipped => $"{{{s_partialJson2},{s_partialJson1}}}";
 
-        public static string s_json_minimal => @"{""MyDecimal"" : 3.3}";
+        public static string s_json_minimal => """{"MyDecimal" : 3.3}""";
 
         private const string s_partialJson1 =
             @"""MyByte"" : 7," +
@@ -1602,14 +1608,16 @@ namespace System.Text.Json.Serialization.Tests
 
         public Parameterized_Person(Guid id) => Id = id;
 
-        public static readonly string s_json = @"{
-            ""FirstName"":""Jet"",
-            ""Id"":""270bb22b-4816-4bd9-9acd-8ec5b1a896d3"",
-            ""EmailAddress"":""jetdoe@outlook.com"",
-            ""Id"":""0b3aa420-2e98-47f7-8a49-fea233b89416"",
-            ""LastName"":""Doe"",
-            ""Id"":""63cf821d-fd47-4782-8345-576d9228a534""
-            }";
+        public static readonly string s_json = """
+                {
+                            "FirstName":"Jet",
+                            "Id":"270bb22b-4816-4bd9-9acd-8ec5b1a896d3",
+                            "EmailAddress":"jetdoe@outlook.com",
+                            "Id":"0b3aa420-2e98-47f7-8a49-fea233b89416",
+                            "LastName":"Doe",
+                            "Id":"63cf821d-fd47-4782-8345-576d9228a534"
+                            }
+            """;
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -1638,14 +1646,16 @@ namespace System.Text.Json.Serialization.Tests
 
         public Parameterized_Person_ObjExtData(Guid id) => Id = id;
 
-        public static readonly string s_json = @"{
-            ""FirstName"":""Jet"",
-            ""Id"":""270bb22b-4816-4bd9-9acd-8ec5b1a896d3"",
-            ""EmailAddress"":""jetdoe@outlook.com"",
-            ""Id"":""0b3aa420-2e98-47f7-8a49-fea233b89416"",
-            ""LastName"":""Doe"",
-            ""Id"":""63cf821d-fd47-4782-8345-576d9228a534""
-            }";
+        public static readonly string s_json = """
+                {
+                            "FirstName":"Jet",
+                            "Id":"270bb22b-4816-4bd9-9acd-8ec5b1a896d3",
+                            "EmailAddress":"jetdoe@outlook.com",
+                            "Id":"0b3aa420-2e98-47f7-8a49-fea233b89416",
+                            "LastName":"Doe",
+                            "Id":"63cf821d-fd47-4782-8345-576d9228a534"
+                            }
+            """;
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -1671,11 +1681,13 @@ namespace System.Text.Json.Serialization.Tests
 
         public Parameterized_Person_Simple(Guid id) => Id = id;
 
-        public static readonly string s_json = @"{
-            ""FirstName"":""Jet"",
-            ""Id"":""270bb22b-4816-4bd9-9acd-8ec5b1a896d3"",
-            ""LastName"":""Doe""
-            }";
+        public static readonly string s_json = """
+                {
+                            "FirstName":"Jet",
+                            "Id":"270bb22b-4816-4bd9-9acd-8ec5b1a896d3",
+                            "LastName":"Doe"
+                            }
+            """;
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -1755,30 +1767,32 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         public static readonly string s_json =
-            @"{
-              ""ActiveOrUpcomingEvents"": [
-                {
-                  ""Id"": 10,
-                  ""ImageUrl"": ""https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png"",
-                  ""Name"": ""Just a name"",
-                  ""CampaignName"": ""The very new campaign"",
-                  ""CampaignManagedOrganizerName"": ""Name FamilyName"",
-                  ""Description"": ""The .NET Foundation works with Microsoft and the broader industry to increase the exposure of open source projects in the .NET community and the .NET Foundation. The .NET Foundation provides access to these resources to projects and looks to promote the activities of our communities."",
-                  ""StartDate"": ""2019-01-30T12:01:02+00:00"",
-                  ""EndDate"": ""2019-01-30T12:01:02+00:00""
-                }
-              ],
-              ""FeaturedCampaign"": {
-                ""Id"": 234235,
-                ""Title"": ""Promoting Open Source"",
-                ""Description"": ""Very nice campaign"",
-                ""ImageUrl"": ""https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png"",
-                ""OrganizationName"": ""The Company XYZ"",
-                ""Headline"": ""The Headline""
-              },
-              ""IsNewAccount"": false,
-              ""HasFeaturedCampaign"": true
-            }";
+            """
+                    {
+                                  "ActiveOrUpcomingEvents": [
+                                    {
+                                      "Id": 10,
+                                      "ImageUrl": "https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png",
+                                      "Name": "Just a name",
+                                      "CampaignName": "The very new campaign",
+                                      "CampaignManagedOrganizerName": "Name FamilyName",
+                                      "Description": "The .NET Foundation works with Microsoft and the broader industry to increase the exposure of open source projects in the .NET community and the .NET Foundation. The .NET Foundation provides access to these resources to projects and looks to promote the activities of our communities.",
+                                      "StartDate": "2019-01-30T12:01:02+00:00",
+                                      "EndDate": "2019-01-30T12:01:02+00:00"
+                                    }
+                                  ],
+                                  "FeaturedCampaign": {
+                                    "Id": 234235,
+                                    "Title": "Promoting Open Source",
+                                    "Description": "Very nice campaign",
+                                    "ImageUrl": "https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png",
+                                    "OrganizationName": "The Company XYZ",
+                                    "Headline": "The Headline"
+                                  },
+                                  "IsNewAccount": false,
+                                  "HasFeaturedCampaign": true
+                                }
+                """;
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -1850,70 +1864,72 @@ namespace System.Text.Json.Serialization.Tests
                 ObjWCtorMixedParams,
                 ObjWCtorMixedParams>? myTuple) => MyTuple = myTuple;
 
-        private const string s_inner_json = @"
-            {
-                ""MyByte"": 7,
-                ""MyChar"": ""a"",
-                ""MyString"": ""Hello"",
-                ""MyDecimal"": 3.3,
-                ""MyBooleanFalse"": false,
-                ""MyDouble"": 2.2,
-                ""MyDateTimeOffset"": ""2019-01-30T12:01:02+01:00"",
-                ""MyGuid"": ""1b33498a-7b7d-4dda-9c13-f6aa4ab449a6"",
-                ""MyEnum"": 2,
-                ""MyInt64Enum"": -9223372036854775808,
-                ""MyUInt64Enum"": 18446744073709551615,
-                ""MySimpleStruct"": { ""One"": 11, ""Two"": 1.9999 },
-                ""MyInt16ThreeDimensionArray"": [ [ [ 11, 12 ], [ 13, 14 ] ], [ [ 21, 22 ], [ 23, 24 ] ] ],
-                ""MyInt16ThreeDimensionList"": [ [ [ 11, 12 ], [ 13, 14 ] ], [ [ 21, 22 ], [ 23, 24 ] ] ],
-                ""MyStringList"": [ ""Hello"" ],
-                ""MyStringIList"": [ ""Hello"" ],
-                ""MyStringIEnumerableT"": [ ""Hello"" ],
-                ""MyStringIReadOnlyListT"": [ ""Hello"" ],
-                ""MyStringToStringKeyValuePair"": { ""Key"": ""myKey"", ""Value"": ""myValue"" },
-                ""MyStringToStringGenericDict"": { ""key"": ""value"" },
-                ""MyStringToStringIImmutableDict"": { ""key"": ""value"" },
-                ""MyStringImmutableSortedSetT"": [ ""Hello"" ],
-                ""MyListOfNullString"": [ null ],
-                ""MySByte"": 8,
-                ""MyBooleanTrue"": true,
-                ""MySingle"": 1.1,
-                ""MyDateTime"": ""2019-01-30T12:01:02Z"",
-                ""MyUri"": ""https://github.com/dotnet/runtime"",
-                ""MySimpleTestStruct"": {
-                  ""MyInt16"": 0,
-                  ""MyInt32"": 0,
-                  ""MyInt64"": 64,
-                  ""MyUInt16"": 0,
-                  ""MyUInt32"": 0,
-                  ""MyUInt64"": 0,
-                  ""MyByte"": 0,
-                  ""MySByte"": 0,
-                  ""MyChar"": ""\u0000"",
-                  ""MyString"": ""Hello"",
-                  ""MyDecimal"": 0,
-                  ""MyBooleanTrue"": false,
-                  ""MyBooleanFalse"": false,
-                  ""MySingle"": 0,
-                  ""MyDouble"": 0,
-                  ""MyDateTime"": ""0001-01-01T00:00:00"",
-                  ""MyDateTimeOffset"": ""0001-01-01T00:00:00+00:00"",
-                  ""MyEnum"": 0,
-                  ""MyInt64Enum"": 0,
-                  ""MyUInt64Enum"": 0,
-                  ""MySimpleStruct"": {
-                    ""One"": 0,
-                    ""Two"": 0
-                  },
-                  ""MyInt32Array"": [ 32 ]
-                },
-                ""MyStringIEnumerable"": [ ""Hello"" ],
-                ""MyStringICollection"": [ ""Hello"" ],
-                ""MyStringISetT"": [ ""Hello"" ],
-                ""MyStringToStringIDict"": { ""key"": ""value"" },
-                ""MyStringToStringGenericIDict"": { ""key"": ""value"" },
-                ""MyStringImmutablQueueT"": [ ""Hello"" ]
-              }";
+        private const string s_inner_json = """
+
+                {
+                    "MyByte": 7,
+                    "MyChar": "a",
+                    "MyString": "Hello",
+                    "MyDecimal": 3.3,
+                    "MyBooleanFalse": false,
+                    "MyDouble": 2.2,
+                    "MyDateTimeOffset": "2019-01-30T12:01:02+01:00",
+                    "MyGuid": "1b33498a-7b7d-4dda-9c13-f6aa4ab449a6",
+                    "MyEnum": 2,
+                    "MyInt64Enum": -9223372036854775808,
+                    "MyUInt64Enum": 18446744073709551615,
+                    "MySimpleStruct": { "One": 11, "Two": 1.9999 },
+                    "MyInt16ThreeDimensionArray": [ [ [ 11, 12 ], [ 13, 14 ] ], [ [ 21, 22 ], [ 23, 24 ] ] ],
+                    "MyInt16ThreeDimensionList": [ [ [ 11, 12 ], [ 13, 14 ] ], [ [ 21, 22 ], [ 23, 24 ] ] ],
+                    "MyStringList": [ "Hello" ],
+                    "MyStringIList": [ "Hello" ],
+                    "MyStringIEnumerableT": [ "Hello" ],
+                    "MyStringIReadOnlyListT": [ "Hello" ],
+                    "MyStringToStringKeyValuePair": { "Key": "myKey", "Value": "myValue" },
+                    "MyStringToStringGenericDict": { "key": "value" },
+                    "MyStringToStringIImmutableDict": { "key": "value" },
+                    "MyStringImmutableSortedSetT": [ "Hello" ],
+                    "MyListOfNullString": [ null ],
+                    "MySByte": 8,
+                    "MyBooleanTrue": true,
+                    "MySingle": 1.1,
+                    "MyDateTime": "2019-01-30T12:01:02Z",
+                    "MyUri": "https://github.com/dotnet/runtime",
+                    "MySimpleTestStruct": {
+                      "MyInt16": 0,
+                      "MyInt32": 0,
+                      "MyInt64": 64,
+                      "MyUInt16": 0,
+                      "MyUInt32": 0,
+                      "MyUInt64": 0,
+                      "MyByte": 0,
+                      "MySByte": 0,
+                      "MyChar": "\u0000",
+                      "MyString": "Hello",
+                      "MyDecimal": 0,
+                      "MyBooleanTrue": false,
+                      "MyBooleanFalse": false,
+                      "MySingle": 0,
+                      "MyDouble": 0,
+                      "MyDateTime": "0001-01-01T00:00:00",
+                      "MyDateTimeOffset": "0001-01-01T00:00:00+00:00",
+                      "MyEnum": 0,
+                      "MyInt64Enum": 0,
+                      "MyUInt64Enum": 0,
+                      "MySimpleStruct": {
+                        "One": 0,
+                        "Two": 0
+                      },
+                      "MyInt32Array": [ 32 ]
+                    },
+                    "MyStringIEnumerable": [ "Hello" ],
+                    "MyStringICollection": [ "Hello" ],
+                    "MyStringISetT": [ "Hello" ],
+                    "MyStringToStringIDict": { "key": "value" },
+                    "MyStringToStringGenericIDict": { "key": "value" },
+                    "MyStringImmutablQueueT": [ "Hello" ]
+                  }
+            """;
 
         public static string s_json =>
             $@"{{
@@ -2008,7 +2024,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Initialize() { }
 
-        public static readonly string s_json = @"{}";
+        public static readonly string s_json = "{}";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -2041,7 +2057,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Initialize() { }
 
-        public static readonly string s_json = @"{""XValue"":1,""YValue"":2}";
+        public static readonly string s_json = """{"XValue":1,"YValue":2}""";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -2064,7 +2080,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Initialize() { }
 
-        public static readonly string s_json = @"{""X"":1,""Y"":2}";
+        public static readonly string s_json = """{"X":1,"Y":2}""";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -2087,7 +2103,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Initialize() { }
 
-        public static readonly string s_json = @"{""X"":1,""Y"":2}";
+        public static readonly string s_json = """{"X":1,"Y":2}""";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -2112,7 +2128,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Initialize() { }
 
-        public static readonly string s_json = @"{""X"":1,""Y"":2,""Z"":3}";
+        public static readonly string s_json = """{"X":1,"Y":2,"Z":3}""";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -2145,7 +2161,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Initialize() { }
 
-        public static readonly string s_json = @"{""A"":1,""B"":""NaN"",""C"":""2"",""D"": 3,""E"":""4""}";
+        public static readonly string s_json = """{"A":1,"B":"NaN","C":"2","D": 3,"E":"4"}""";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -2237,7 +2253,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public int[]? Arr { get; }
 
-        public static readonly string s_json = @"{""X"":1,""Y"":2,""Arr"":[1,2]}";
+        public static readonly string s_json = """{"X":1,"Y":2,"Arr":[1,2]}""";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -2266,7 +2282,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public Dictionary<string, int>? Dict { get; }
 
-        public static readonly string s_json = @"{""X"":1,""Y"":2,""Dict"":{""1"":1,""2"":2}}";
+        public static readonly string s_json = """{"X":1,"Y":2,"Dict":{"1":1,"2":2}}""";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 

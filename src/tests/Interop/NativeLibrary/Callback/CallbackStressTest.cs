@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 [assembly: DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
 public class CallbackStressTest
@@ -126,6 +127,10 @@ public class CallbackStressTest
 #endif
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/166", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/54905", TestPlatforms.Android)]
     [Fact]
     public static int TestEntryPoint()
     {

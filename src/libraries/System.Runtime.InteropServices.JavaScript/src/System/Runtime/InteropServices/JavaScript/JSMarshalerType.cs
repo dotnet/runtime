@@ -462,6 +462,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (underlying == MarshalerType.Byte
                 || underlying == MarshalerType.Int32
                 || underlying == MarshalerType.Double
+                || underlying == MarshalerType.Single
                 || underlying == MarshalerType.String
                 || underlying == MarshalerType.Object
                 || underlying == MarshalerType.JSObject
@@ -475,6 +476,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (underlying == MarshalerType.Byte
                 || underlying == MarshalerType.Int32
                 || underlying == MarshalerType.Double
+                || underlying == MarshalerType.Single
                 ) return;
             throw new ArgumentException(SR.Format(SR.UnsupportedElementType, underlying), nameof(underlyingType));
         }
@@ -486,7 +488,6 @@ namespace System.Runtime.InteropServices.JavaScript
             if (underlying == MarshalerType.Array
                 || underlying == MarshalerType.ArraySegment
                 || underlying == MarshalerType.Span
-
                 || underlying == MarshalerType.Task
                 || underlying == MarshalerType.Action
                 || underlying == MarshalerType.Function

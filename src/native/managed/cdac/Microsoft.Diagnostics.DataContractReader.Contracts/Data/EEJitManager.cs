@@ -11,7 +11,9 @@ internal sealed class EEJitManager : IData<EEJitManager>
         Target.TypeInfo type = target.GetTypeInfo(DataType.EEJitManager);
 
         StoreRichDebugInfo = target.Read<byte>(address + (ulong)type.Fields[nameof(StoreRichDebugInfo)].Offset) != 0;
+        AllCodeHeaps = target.ReadPointer(address + (ulong)type.Fields[nameof(AllCodeHeaps)].Offset);
     }
 
     public bool StoreRichDebugInfo { get; init; }
+    public TargetPointer AllCodeHeaps { get; init; }
 }

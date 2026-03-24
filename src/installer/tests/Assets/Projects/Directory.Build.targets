@@ -1,6 +1,5 @@
 <Project>
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
-  <Import Project="$(RepositoryEngineeringDir)pruning.targets" />
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
   <PropertyGroup>

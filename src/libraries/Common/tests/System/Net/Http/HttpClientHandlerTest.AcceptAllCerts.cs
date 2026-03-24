@@ -94,7 +94,7 @@ namespace System.Net.Http.Functional.Tests
         };
 
         [OuterLoop]
-        [ConditionalTheory(nameof(ClientSupportsDHECipherSuites))]
+        [ConditionalTheory(typeof(HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test), nameof(ClientSupportsDHECipherSuites))]
         [MemberData(nameof(InvalidCertificateServers))]
         public async Task InvalidCertificateServers_CertificateValidationDisabled_Succeeds(string url)
         {

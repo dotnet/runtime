@@ -18,8 +18,6 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeMultiTargetRoslynComponentTargets>false</IncludeMultiTargetRoslynComponentTargets>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddBuildOutputToToolsPackage</TargetsForTfmSpecificContentInPackage>
-    <!-- TODO: Add package readme -->
-    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
     <!-- Don't use the TFM but a short form of it without the version to simulate the package layout. -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <OutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(OutputPath)net\</OutputPath>
