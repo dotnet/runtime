@@ -1,7 +1,6 @@
 ﻿module System.Text.Json.Tests.FSharp.UnionTests
 
 open System
-open System.Reflection
 open System.Text.Json
 open System.Text.Json.Serialization
 open System.Text.Json.Serialization.Metadata
@@ -386,8 +385,8 @@ let ``RespectRequired succeeds when all fields present`` () =
 
 // -- Out-of-Order Discriminator Tests --
 // The union converter always accepts out-of-order discriminators regardless of
-// AllowOutOfOrderMetadataProperties because it uses ConverterStrategy.Value,
-// meaning the JSON is always fully buffered before Read() is called.
+// AllowOutOfOrderMetadataProperties because it buffers the entire JSON payload
+// before invoking Read() (using read-ahead/RequiresReadAhead).
 
 [<Fact>]
 let ``Out-of-order discriminator succeeds`` () =
@@ -488,16 +487,14 @@ let ``Duplicate field throws when AllowDuplicateProperties is false`` () =
     Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options) |> ignore)
 
 [<Fact>]
-let ``Duplicate discriminator throws when AllowDuplicateProperties is false`` () =
-    let options = JsonSerializerOptions(AllowDuplicateProperties = false)
+let ``Duplicate discriminator always throws`` () =
     let json = """{"$type":"Circle","$type":"Point","radius":3.14}"""
-    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options) |> ignore)
+    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json) |> ignore)
 
 [<Fact>]
-let ``Duplicate discriminator in fieldless case throws when AllowDuplicateProperties is false`` () =
-    let options = JsonSerializerOptions(AllowDuplicateProperties = false)
+let ``Duplicate discriminator in fieldless case always throws`` () =
     let json = """{"$type":"Point","$type":"Circle"}"""
-    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json, options) |> ignore)
+    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<MyMultiCaseUnion>(json) |> ignore)
 
 [<Fact>]
 let ``Duplicate field is last-wins when AllowDuplicateProperties is true`` () =

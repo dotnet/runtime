@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 #if !NET
@@ -253,7 +254,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
                         {
-                            if (!options.AllowDuplicateProperties && discriminatorSeen)
+                            if (discriminatorSeen)
                             {
                                 ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(_typeDiscriminatorPropertyName);
                             }
@@ -293,7 +294,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Skip the discriminator property when encountered during field reading.
                 if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
                 {
-                    if (!options.AllowDuplicateProperties && discriminatorSeen)
+                    if (discriminatorSeen)
                     {
                         ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(_typeDiscriminatorPropertyName);
                     }
@@ -345,6 +346,7 @@ namespace System.Text.Json.Serialization.Converters
 
         private static void ThrowForMissingRequiredFields(CaseInfo caseInfo, BitArray populatedFields)
         {
+            const int CutOffLength = 60;
             var builder = new System.Text.StringBuilder();
             bool first = true;
             for (int i = 0; i < caseInfo.Fields!.Length; i++)
@@ -353,13 +355,19 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (!first)
                     {
-                        builder.Append(", ");
+                        builder.Append(CultureInfo.CurrentUICulture.TextInfo.ListSeparator);
+                        builder.Append(' ');
                     }
 
                     builder.Append('\'');
                     builder.Append(caseInfo.Fields[i].FieldName);
                     builder.Append('\'');
                     first = false;
+
+                    if (builder.Length >= CutOffLength)
+                    {
+                        break;
+                    }
                 }
             }
 
