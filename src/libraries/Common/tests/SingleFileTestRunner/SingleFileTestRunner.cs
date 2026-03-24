@@ -73,6 +73,7 @@ public static class SingleFileTestRunner
             project.Configuration.Output.Add("xml", xmlResultFileName);
 
         project.Add(projectAssembly);
+        project.RunnerReporter = new DefaultRunnerReporter();
 
         var cts = new CancellationTokenSource();
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
