@@ -153,6 +153,41 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     _ASSERTE(!"NYI POWERPC64");
 }
 
+bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
+{
+    assert((ins == INS_mov)); //|| (ins == INS_sve_mov));
+
+    if (canSkip && (dst == src))
+    {
+        // These elisions used to be explicit even when optimizations were disabled
+        return true;
+    }
+
+    _ASSERTE(!"NYI POWERPC64");
+}
+
+//------------------------------------------------------------------------
+// IsMovInstruction: Determines whether a give instruction is a move instruction
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
+bool emitter::IsMovInstruction(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_mov:
+	{
+	    return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // emitIns_Mov: Emits a move instruction
 //
@@ -167,8 +202,29 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 void emitter::emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt /* = INS_OPTS_NONE */)
 {
-    //TODO POWERPC64 vikas
-    _ASSERTE(!"NYI POWERPC64");
+    assert(IsMovInstruction(ins));
+
+    emitAttr  size     = EA_SIZE(attr);
+    emitAttr  elemsize = EA_UNKNOWN;
+    insFormat fmt      = IF_NONE;
+
+    switch (ins)
+    {
+	case INS_mov:
+	    assert(insOptsNone(opt));
+
+	    if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+            {
+                // These instructions have no side effect and can be skipped
+                return;
+            }
+
+	    _ASSERTE(!"NYI POWERPC64");
+	    break;
+
+	default:
+	    _ASSERTE(!"NYI POWERPC64");
+    }
 }
 
 /*****************************************************************************

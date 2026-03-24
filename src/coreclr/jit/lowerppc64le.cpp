@@ -85,7 +85,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 //
 GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    _ASSERTE(!"NYI");
+    return storeLoc->gtNext;
 }
 
 //------------------------------------------------------------------------

@@ -42,7 +42,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -60,7 +61,8 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
 //
 void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -77,9 +79,51 @@ void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNum
 //
 target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
+//------------------------------------------------------------------------
+// genSetRegToConst: Generate code to set a register 'targetReg' of type 'targetType'
+//    to the constant specified by the constant (GT_CNS_INT or GT_CNS_DBL) in 'tree'.
+//
+// Notes:
+//    This does not call genProduceReg() on the target register.
+//
+void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree)
+{
+    switch (tree->gtOper)
+    {
+        case GT_CNS_INT:
+	{
+            // relocatable values tend to come down as a CNS_INT of native int type
+            // so the line between these two opcodes is kind of blurry
+            GenTreeIntConCommon* con    = tree->AsIntConCommon();
+            ssize_t              cnsVal = con->IconValue();
+
+            emitAttr attr = emitActualTypeSize(targetType);
+
+            // TODO-CQ: Currently we cannot do this for all handles because of
+            // https://github.com/dotnet/runtime/issues/60712
+            if (con->ImmedValNeedsReloc(compiler))
+            {
+                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
+            }
+
+            if (targetType == TYP_BYREF)
+            {
+                attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+            }
+
+            instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal);
+            regSet.verifyRegUsed(targetReg);
+        }
+        break;
+
+	default:
+	    abort();
+    }
+}
 
 //------------------------------------------------------------------------
 // genCodeForTreeNode Generate code for a single node in the tree.
@@ -89,7 +133,50 @@ target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t s
 //
 void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 {
-    _ASSERTE("!NYI");
+    regNumber targetReg  = treeNode->GetRegNum();
+    var_types targetType = treeNode->TypeGet();
+    emitter*  emit       = GetEmitter();
+
+#ifdef DEBUG
+    // Validate that all the operands for the current node are consumed in order.
+    // This is important because LSRA ensures that any necessary copies will be
+    // handled correctly.
+    lastConsumedNode = nullptr;
+    if (compiler->verbose)
+    {
+        unsigned seqNum = treeNode->gtSeqNum; // Useful for setting a conditional break in Visual Studio
+        compiler->gtDispLIRNode(treeNode, "Generating: ");
+    }
+#endif // DEBUG
+
+    // Is this a node whose value is already in a register?  LSRA denotes this by
+    // setting the GTF_REUSE_REG_VAL flag.
+    if (treeNode->IsReuseRegVal())
+    {
+        genCodeForReuseVal(treeNode);
+        return;
+    }
+
+    // contained nodes are part of their parents for codegen purposes
+    // ex : immediates, most LEAs
+    if (treeNode->isContained())
+    {
+        return;
+    }
+
+    switch (treeNode->gtOper)
+    {
+	case GT_NOP:
+	    break;
+
+	case GT_CNS_INT:
+	    genSetRegToConst(targetReg, targetType, treeNode);
+            genProduceReg(treeNode);
+	    break;
+
+        default:
+	    abort();
+    }
 }
 
 //---------------------------------------------------------------------
@@ -105,7 +192,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //
 void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -114,7 +202,8 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 //
 void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //---------------------------------------------------------------------
@@ -128,7 +217,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 //
 void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //---------------------------------------------------------------------
@@ -142,7 +232,8 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 //
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //---------------------------------------------------------------------
@@ -156,7 +247,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 //
 void CodeGen::genPutArgReg(GenTreeOp* tree)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //---------------------------------------------------------------------
@@ -170,7 +262,8 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
 //
 void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 #ifdef FEATURE_SIMD
@@ -186,7 +279,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
 {
 
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 #endif // FEATURE_SIMD
@@ -198,7 +292,8 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
                                       unsigned            prologSize,
 				      unsigned epilogSize DEBUGARG(void* codePtr))
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 
@@ -207,7 +302,8 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 //
 void CodeGen::genRangeCheck(GenTree* oper)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //---------------------------------------------------------------------
@@ -221,7 +317,8 @@ void CodeGen::genRangeCheck(GenTree* oper)
 //
 void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //---------------------------------------------------------------------
@@ -235,7 +332,8 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 //
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -250,7 +348,8 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 //
 void CodeGen::genCodeForShift(GenTree* tree)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -261,7 +360,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
 //
 void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -274,7 +374,8 @@ void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 //
 void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //----------------------------------------------------------------------------------
@@ -285,6 +386,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 //
 void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 {
+    abort();
 }
 //------------------------------------------------------------------------
 // inst_SETCC: Generate code to set a register to 0 or 1 based on a condition.
@@ -296,7 +398,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 //
 void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstReg)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 
@@ -305,7 +408,8 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
 //
 void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 
@@ -317,7 +421,8 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 
@@ -329,7 +434,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 //
 void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -340,7 +446,8 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 //
 void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -348,7 +455,8 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 //
 void CodeGen::genCall(GenTreeCall* call)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
     
 //------------------------------------------------------------------------
@@ -362,7 +470,8 @@ void CodeGen::genCall(GenTreeCall* call)
 //
 void CodeGen::genCallInstruction(GenTreeCall* call)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -371,7 +480,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 //
 void CodeGen::genJmpPlaceVarArgs()
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -392,7 +502,8 @@ instruction CodeGen::genGetVolatileLdStIns(instruction   currentIns,
 					GenTreeIndir* indir,
 					bool*         needsBarrier)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -403,13 +514,15 @@ instruction CodeGen::genGetVolatileLdStIns(instruction   currentIns,
 //
 void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 // The following classes
@@ -546,7 +659,8 @@ private:
 //
 void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 
@@ -565,7 +679,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 //
 void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
     
 
@@ -598,7 +713,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 //
 void CodeGen::genPushCalleeSavedRegisters()
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -635,7 +751,8 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 				   regNumber   tmpReg,
 				   bool        inUnwindRegion /* = false */)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //---------------------------------------------------------------------
@@ -647,7 +764,8 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 //
 int CodeGenInterface::genCallerSPtoFPdelta() const
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //---------------------------------------------------------------------
@@ -657,7 +775,8 @@ int CodeGenInterface::genCallerSPtoFPdelta() const
 
 int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //---------------------------------------------------------------------
@@ -666,7 +785,8 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 //
 int CodeGenInterface::genSPtoFPdelta() const
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //---------------------------------------------------------------------
@@ -679,7 +799,8 @@ int CodeGenInterface::genSPtoFPdelta() const
 
 int CodeGenInterface::genTotalFrameSize() const
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //-----------------------------------------------------------------------------------
@@ -694,7 +815,8 @@ int CodeGenInterface::genTotalFrameSize() const
 //
 void CodeGen::genProfilingLeaveCallback(unsigned helper)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //  move an immediate value into an integer register
@@ -702,7 +824,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
                                      regNumber      reg,                                     ssize_t        imm,
                                      insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //-----------------------------------------------------------------------------------
@@ -718,7 +841,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
 //
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 /*****************************************************************************
@@ -728,7 +852,8 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -756,7 +881,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 //
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 
@@ -776,7 +902,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 //
 void CodeGen::genIntToFloatCast(GenTree* treeNode)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //-----------------------------------------------------------------------------
@@ -794,7 +921,8 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 //
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 
@@ -1089,7 +1217,8 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
 void CodeGen::genFuncletProlog(BasicBlock* block)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 /*****************************************************************************
@@ -1101,7 +1230,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
 void CodeGen::genFuncletEpilog()
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -1120,7 +1250,8 @@ void CodeGen::genFuncletEpilog()
 //
 void CodeGen::genFloatToIntCast(GenTree* treeNode)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 /*****************************************************************************
@@ -1135,12 +1266,14 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 {    
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -1151,7 +1284,8 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 //
 void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 #ifdef FEATURE_SIMD
@@ -1165,7 +1299,8 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 //
 void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 #endif // FEATURE_SIMD
     
@@ -1180,7 +1315,8 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
 //
 void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 //------------------------------------------------------------------------
@@ -1194,7 +1330,8 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 //
 void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
  
 //------------------------------------------------------------------------
@@ -1213,7 +1350,8 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 //
 void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 
@@ -1228,7 +1366,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
-    _ASSERTE("!NYI");
+    //_ASSERTE("!NYI");
+    abort();
 }
 
 

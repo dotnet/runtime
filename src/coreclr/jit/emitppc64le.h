@@ -61,7 +61,8 @@ bool     emitInsIsVectorWide(instruction ins);
 bool     emitInsDestIsOp2(instruction ins);
 emitAttr emitInsTargetRegSize(instrDesc* id);
 emitAttr emitInsLoadStoreSize(instrDesc* id);
-
+bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
+bool IsMovInstruction(instruction ins);
 
 public:
 inline static bool isFloatReg(regNumber reg)
@@ -73,6 +74,11 @@ inline static bool isGeneralRegister(regNumber reg)
 {
     return (reg >= REG_R0 && reg <= REG_R31);
 } // Excludes REG_ZR
+
+inline static bool insOptsNone(insOpts opt)
+{
+    return (opt == INS_OPTS_NONE);
+}
 
 
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);

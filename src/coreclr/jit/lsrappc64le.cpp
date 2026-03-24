@@ -406,6 +406,21 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildKills(tree, killMask);
             break;
 
+	case GT_NOP:
+            srcCount = 0;
+            assert(tree->TypeIs(TYP_VOID));
+            assert(dstCount == 0);
+            break;
+
+	case GT_STORE_LCL_VAR:
+	    srcCount = BuildStoreLoc(tree->AsLclVarCommon());
+            break;
+
+	case GT_LCL_VAR:
+	    srcCount = 0;
+	    BuildDef(tree);
+	    break;
+
 	default:
 	{
 	    _ASSERTE(!"NYI");
