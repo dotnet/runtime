@@ -477,6 +477,152 @@ public class ExecutionManagerTests
         Assert.Equal(expectedHeapList, info.HeapListAddress);
     }
 
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeHeapType_LoaderCodeHeap(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        TargetPointer heapAddr = emBuilder.AddLoaderCodeHeap();
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        Assert.Equal(CodeHeapType.LoaderCodeHeap, em.GetCodeHeapType(heapAddr));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeHeapType_HostCodeHeap(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        TargetPointer baseAddr    = new(0x0001_0000);
+        TargetPointer currentAddr = new(0x0001_8000);
+        TargetPointer heapAddr = emBuilder.AddHostCodeHeap(baseAddr, currentAddr);
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        Assert.Equal(CodeHeapType.HostCodeHeap, em.GetCodeHeapType(heapAddr));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetLoaderCodeHeapInfo_ReturnsLoaderHeapAddress(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        TargetPointer heapAddr = emBuilder.AddLoaderCodeHeap();
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        TargetPointer loaderHeap = em.GetLoaderCodeHeapInfo(heapAddr);
+        // m_LoaderHeap is an embedded struct; the address is heapAddr + field offset.
+        ulong loaderHeapFieldOffset = (ulong)emBuilder.Types[DataType.LoaderCodeHeap].Fields[nameof(Data.LoaderCodeHeap.LoaderHeap)].Offset;
+        TargetPointer expectedLoaderHeap = new TargetPointer(heapAddr.Value + loaderHeapFieldOffset);
+        Assert.Equal(expectedLoaderHeap, loaderHeap);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetHostCodeHeapInfo_ReturnsAddresses(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        TargetPointer expectedBase    = new(0x0002_0000);
+        TargetPointer expectedCurrent = new(0x0002_4000);
+        TargetPointer heapAddr = emBuilder.AddHostCodeHeap(expectedBase, expectedCurrent);
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        em.GetHostCodeHeapInfo(heapAddr, out TargetPointer baseAddr, out TargetPointer currentAddr);
+        Assert.Equal(expectedBase, baseAddr);
+        Assert.Equal(expectedCurrent, currentAddr);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeHeapList_SingleNode(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+
+        TargetPointer heapAddr = emBuilder.AddLoaderCodeHeap();
+
+        TargetPointer codeRangeStart = new(0x1000_0000);
+        uint codeRangeSize = 0x1000;
+        var nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart.Value, codeRangeSize);
+
+        TargetPointer nodeAddr = emBuilder.AddCodeHeapListNode(
+            next: TargetPointer.Null,
+            startAddress: codeRangeStart,
+            endAddress: codeRangeStart + codeRangeSize,
+            mapBase: codeRangeStart,
+            headerMap: nibBuilder.NibbleMapFragment.Address,
+            heap: heapAddr);
+
+        emBuilder.SetAllCodeHeaps(nodeAddr);
+
+        var target = CreateTarget(emBuilder);
+        var em = target.Contracts.ExecutionManager;
+
+        List<TargetPointer> heaps = em.GetCodeHeapList();
+        Assert.Single(heaps);
+        Assert.Equal(heapAddr, heaps[0]);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeHeapList_LinkedList_TwoNodes(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+
+        TargetPointer loaderHeap = emBuilder.AddLoaderCodeHeap();
+
+        TargetPointer baseAddr    = new(0x0003_0000);
+        TargetPointer currentAddr = new(0x0003_8000);
+        TargetPointer hostHeap = emBuilder.AddHostCodeHeap(baseAddr, currentAddr);
+
+        TargetPointer codeRangeStart1 = new(0x1000_0000);
+        TargetPointer codeRangeStart2 = new(0x2000_0000);
+        uint codeRangeSize = 0x1000;
+
+        var nib1 = emBuilder.CreateNibbleMap(codeRangeStart1.Value, codeRangeSize);
+        var nib2 = emBuilder.CreateNibbleMap(codeRangeStart2.Value, codeRangeSize);
+
+        // Build list: node2 -> null, node1 -> node2
+        TargetPointer node2 = emBuilder.AddCodeHeapListNode(
+            next: TargetPointer.Null,
+            startAddress: codeRangeStart2,
+            endAddress: codeRangeStart2 + codeRangeSize,
+            mapBase: codeRangeStart2,
+            headerMap: nib2.NibbleMapFragment.Address,
+            heap: hostHeap);
+
+        TargetPointer node1 = emBuilder.AddCodeHeapListNode(
+            next: node2,
+            startAddress: codeRangeStart1,
+            endAddress: codeRangeStart1 + codeRangeSize,
+            mapBase: codeRangeStart1,
+            headerMap: nib1.NibbleMapFragment.Address,
+            heap: loaderHeap);
+
+        emBuilder.SetAllCodeHeaps(node1);
+
+        var target = CreateTarget(emBuilder);
+        var em = target.Contracts.ExecutionManager;
+
+        List<TargetPointer> heaps = em.GetCodeHeapList();
+        Assert.Equal(2, heaps.Count);
+
+        // First heap (from node1) is a LoaderCodeHeap
+        Assert.Equal(loaderHeap, heaps[0]);
+        Assert.Equal(CodeHeapType.LoaderCodeHeap, em.GetCodeHeapType(heaps[0]));
+        ulong loaderHeapFieldOffset = (ulong)emBuilder.Types[DataType.LoaderCodeHeap].Fields[nameof(Data.LoaderCodeHeap.LoaderHeap)].Offset;
+        Assert.Equal(new TargetPointer(loaderHeap.Value + loaderHeapFieldOffset), em.GetLoaderCodeHeapInfo(heaps[0]));
+
+        // Second heap (from node2) is a HostCodeHeap
+        Assert.Equal(hostHeap, heaps[1]);
+        Assert.Equal(CodeHeapType.HostCodeHeap, em.GetCodeHeapType(heaps[1]));
+        em.GetHostCodeHeapInfo(heaps[1], out TargetPointer gotBase, out TargetPointer gotCurrent);
+        Assert.Equal(baseAddr, gotBase);
+        Assert.Equal(currentAddr, gotCurrent);
+    }
+
     public static IEnumerable<object[]> StdArchAllVersions()
     {
         const int highestVersion = 2;

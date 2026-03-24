@@ -42,6 +42,13 @@ public struct JitManagerInfo
     public TargetPointer HeapListAddress;
 }
 
+public enum CodeHeapType : byte
+{
+    LoaderCodeHeap  = 0,
+    HostCodeHeap    = 1,
+    UnknownCodeHeap = 0xff,
+}
+
 public interface IExecutionManager : IContract
 {
     static string IContract.Name { get; } = nameof(ExecutionManager);
@@ -59,6 +66,10 @@ public interface IExecutionManager : IContract
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
+    CodeHeapType GetCodeHeapType(TargetPointer codeHeapAddress) => throw new NotImplementedException();
+    TargetPointer GetLoaderCodeHeapInfo(TargetPointer codeHeapAddress) => throw new NotImplementedException();
+    void GetHostCodeHeapInfo(TargetPointer codeHeapAddress, out TargetPointer baseAddress, out TargetPointer currentAddress) => throw new NotImplementedException();
+    List<TargetPointer> GetCodeHeapList() => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager

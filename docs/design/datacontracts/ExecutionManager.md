@@ -46,11 +46,41 @@ struct CodeBlockHandle
     // Gets information about the EEJitManager: its address, code type, and head of the code heap list.
     JitManagerInfo GetEEJitManagerInfo();
 
+    // Gets the type of the code heap at the given address.
+    CodeHeapType GetCodeHeapType(TargetPointer codeHeapAddress);
+    // Gets the address of the embedded LoaderHeap within a LoaderCodeHeap object.
+    // Only valid when GetCodeHeapType returns CodeHeapType.LoaderCodeHeap.
+    TargetPointer GetLoaderCodeHeapInfo(TargetPointer codeHeapAddress);
+    // Gets the base and current committed addresses of a HostCodeHeap object.
+    // Only valid when GetCodeHeapType returns CodeHeapType.HostCodeHeap.
+    void GetHostCodeHeapInfo(TargetPointer codeHeapAddress, out TargetPointer baseAddress, out TargetPointer currentAddress);
+    // Walks the linked list of CodeHeapListNodes starting from the EEJitManager's AllCodeHeaps head
+    // and returns the Heap pointer from each node.
+    List<TargetPointer> GetCodeHeapList();
+
     // Get the exception clause info for the code block
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle);
 
     // Extension Methods (implemented in terms of other APIs)
     bool IsFunclet(CodeBlockHandle codeInfoHandle);
+```
+
+```csharp
+public struct JitManagerInfo
+{
+    public TargetPointer ManagerAddress;
+    public uint CodeType;
+    public TargetPointer HeapListAddress;
+}
+```
+
+```csharp
+public enum CodeHeapType : byte
+{
+    LoaderCodeHeap  = 0,
+    HostCodeHeap    = 1,
+    UnknownCodeHeap = 0xff,
+}
 ```
 
 ```csharp
@@ -106,6 +136,11 @@ Data descriptors used:
 | `CodeHeapListNode` | `EndAddress` | End address of the used portion of the code heap |
 | `CodeHeapListNode` | `MapBase` | Start of the map - start address rounded down based on OS page size |
 | `CodeHeapListNode` | `HeaderMap` | Bit array used to find the start of methods - relative to `MapBase` |
+| `CodeHeapListNode` | `Heap` | Pointer to the `CodeHeap` object managed by this node |
+| `CodeHeap` | `HeapType` | `uint8` discriminant identifying the concrete heap type (`CodeHeapType` enum: `LoaderCodeHeap`=0, `HostCodeHeap`=1, `UnknownCodeHeap`=0xff) |
+| `LoaderCodeHeap` | `LoaderHeap` | Offset of the embedded `ExplicitControlLoaderHeap` within the `LoaderCodeHeap` object; adding this to the object's base address yields the loader heap address |
+| `HostCodeHeap` | `BaseAddress` | Pointer to the base of the committed memory region |
+| `HostCodeHeap` | `CurrentAddress` | Pointer to the last available committed byte in the region |
 | `EEJitManager` | `StoreRichDebugInfo` | Boolean value determining if debug info associated with the JitManager contains rich info. |
 | `EEJitManager` | `AllCodeHeaps` | Pointer to the head of the linked list of all code heaps managed by the EEJitManager. |
 | `RealCodeHeader` | `MethodDesc` | Pointer to the corresponding `MethodDesc` |
@@ -451,6 +486,60 @@ There are two distinct clause data types. JIT-compiled code uses `EEExceptionCla
 * For R2R code (`ReadyToRunJitManager`), exception clause data is found via the `ExceptionInfo` section (section type 104) of the R2R image. The section is located by traversing `ReadyToRunInfo::Composite` to reach the `ReadyToRunCoreInfo`, then reading its `Header` pointer to the `ReadyToRunCoreHeader`, and iterating through the inline `ReadyToRunSection` array that immediately follows the header. The `ExceptionInfo` section contains an `ExceptionLookupTableEntry` array, where each entry maps a `MethodStartRVA` to an `ExceptionInfoRVA`. A binary search (falling back to linear scan for small ranges) finds the entry matching the method's RVA. The exception clauses span from that entry's `ExceptionInfoRVA` to the next entry's `ExceptionInfoRVA`, both offset from the image base. The clause array is strided using the size of `R2RExceptionClause`.
 
 After obtaining the clause array bounds, the common iteration logic classifies each clause by its flags. The native `COR_ILEXCEPTION_CLAUSE` flags are bit flags: `Filter` (0x1), `Finally` (0x2), `Fault` (0x4). If none are set, the clause is `Typed`. For typed clauses, if the `CachedClass` flag (0x10000000) is set (JIT-only, used for dynamic methods), the union field contains a resolved `TypeHandle` pointer; the clause is a catch-all if this pointer equals the `ObjectMethodTable` global. Otherwise, the union field is a metadata `ClassToken`. To determine whether a typed clause is a catch-all handler, the `ClassToken` (which may be a `TypeDef` or `TypeRef`) is resolved to a `MethodTable` via the `Loader` contract's module lookup maps (`TypeDefToMethodTable` or `TypeRefToMethodTable`) and compared against the `ObjectMethodTable` global. For typed clauses without a cached type handle, the module address is resolved by walking `CodeBlockHandle` → `MethodDesc` → `MethodTable` → `TypeHandle` → `Module` via the `RuntimeTypeSystem` contract.
+
+### EE JIT Manager and Code Heap Info
+
+```csharp
+JitManagerInfo IExecutionManager.GetEEJitManagerInfo()
+{
+    TargetPointer eeJitManagerPtr = Target.ReadGlobalPointer("EEJitManagerAddress");
+    TargetPointer eeJitManagerAddr = Target.ReadPointer(eeJitManagerPtr);
+    TargetPointer allCodeHeaps = Target.ReadPointer(eeJitManagerAddr + /* EEJitManager::AllCodeHeaps offset */);
+
+    return new JitManagerInfo
+    {
+        ManagerAddress = eeJitManagerAddr,
+        CodeType = 0, // miManaged | miIL
+        HeapListAddress = allCodeHeaps,
+    };
+}
+
+CodeHeapType IExecutionManager.GetCodeHeapType(TargetPointer codeHeapAddress)
+{
+    byte heapType = Target.Read<byte>(codeHeapAddress + /* CodeHeap::HeapType offset */);
+    return heapType switch
+    {
+        0 /* LoaderCodeHeap */  => CodeHeapType.LoaderCodeHeap,
+        1 /* HostCodeHeap */    => CodeHeapType.HostCodeHeap,
+        _                       => CodeHeapType.UnknownCodeHeap,
+    };
+}
+
+TargetPointer IExecutionManager.GetLoaderCodeHeapInfo(TargetPointer codeHeapAddress)
+{
+    return codeHeapAddress + /* LoaderCodeHeap::LoaderHeap offset */;
+}
+
+void IExecutionManager.GetHostCodeHeapInfo(TargetPointer codeHeapAddress,
+    out TargetPointer baseAddress, out TargetPointer currentAddress)
+{
+    baseAddress = Target.ReadPointer(codeHeapAddress + /* HostCodeHeap::BaseAddress offset */);
+    currentAddress = Target.ReadPointer(codeHeapAddress + /* HostCodeHeap::CurrentAddress offset */);
+}
+
+List<TargetPointer> IExecutionManager.GetCodeHeapList()
+{
+    TargetPointer heapListHead = GetEEJitManagerInfo().HeapListAddress;
+    List<TargetPointer> result = [];
+    TargetPointer nodeAddr = heapListHead;
+    while (nodeAddr != TargetPointer.Null)
+    {
+        result.Add(Target.ReadPointer(nodeAddr + /* CodeHeapListNode::Heap offset */));
+        nodeAddr = Target.ReadPointer(nodeAddr + /* CodeHeapListNode::Next offset */);
+    }
+    return result;
+}
+```
 
 ### RangeSectionMap
 
