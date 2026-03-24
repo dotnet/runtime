@@ -146,12 +146,15 @@ namespace System.IO
                 ThrowForInvalidData();
             }
 
-            if (!int.TryParse(span, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int result))
+            try
+            {
+                return int.Parse(span, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+            }
+            catch (FormatException)
             {
                 ThrowForInvalidData();
+                return default; // unreachable
             }
-
-            return result;
         }
 
         /// <summary>Moves to the next component and parses it as an Int64.</summary>
@@ -166,12 +169,15 @@ namespace System.IO
                 ThrowForInvalidData();
             }
 
-            if (!long.TryParse(span, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long result))
+            try
+            {
+                return long.Parse(span, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+            }
+            catch (FormatException)
             {
                 ThrowForInvalidData();
+                return default; // unreachable
             }
-
-            return result;
         }
 
         /// <summary>Moves to the next component and parses it as a UInt32.</summary>
@@ -179,12 +185,15 @@ namespace System.IO
         {
             MoveNextOrFail();
 
-            if (!uint.TryParse(_buffer.AsSpan(_startIndex, _endIndex - _startIndex), NumberStyles.None, CultureInfo.InvariantCulture, out uint result))
+            try
+            {
+                return uint.Parse(_buffer.AsSpan(_startIndex, _endIndex - _startIndex), NumberStyles.None, CultureInfo.InvariantCulture);
+            }
+            catch (FormatException)
             {
                 ThrowForInvalidData();
+                return default; // unreachable
             }
-
-            return result;
         }
 
         /// <summary>Moves to the next component and parses it as a UInt64.</summary>
@@ -192,12 +201,15 @@ namespace System.IO
         {
             MoveNextOrFail();
 
-            if (!ulong.TryParse(_buffer.AsSpan(_startIndex, _endIndex - _startIndex), NumberStyles.None, CultureInfo.InvariantCulture, out ulong result))
+            try
+            {
+                return ulong.Parse(_buffer.AsSpan(_startIndex, _endIndex - _startIndex), NumberStyles.None, CultureInfo.InvariantCulture);
+            }
+            catch (FormatException)
             {
                 ThrowForInvalidData();
+                return default; // unreachable
             }
-
-            return result;
         }
 
         /// <summary>Moves to the next component and parses it as a Char.</summary>
