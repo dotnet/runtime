@@ -18,6 +18,10 @@ public sealed class ZipStreamEntry
     private long _compressedLength;
     private long _length;
 
+    // Running CRC32 computed over decompressed bytes for data-descriptor entries
+    private uint _runningCrc;
+    private long _totalDecompressedBytesRead;
+
     internal ZipStreamEntry(
         string fullName,
         ZipCompressionMethod compressionMethod,
@@ -132,11 +136,21 @@ public sealed class ZipStreamEntry
     /// <exception cref="NotSupportedException">
     /// The entry uses an unsupported compression method, or is a Stored entry with a data descriptor.
     /// </exception>
+    /// <exception cref="InvalidDataException">
+    /// The decompressed data does not match the expected CRC-32 checksum or length.
+    /// </exception>
     public int Read(Span<byte> buffer)
     {
         Stream stream = GetOrCreateDecompressionStream();
+        int bytesRead = stream.Read(buffer);
 
-        return stream.Read(buffer);
+        if (_hasDataDescriptor && bytesRead > 0)
+        {
+            _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, buffer.Slice(0, bytesRead));
+            _totalDecompressedBytesRead += bytesRead;
+        }
+
+        return bytesRead;
     }
 
     /// <summary>
@@ -149,11 +163,21 @@ public sealed class ZipStreamEntry
     /// <exception cref="NotSupportedException">
     /// The entry uses an unsupported compression method, or is a Stored entry with a data descriptor.
     /// </exception>
+    /// <exception cref="InvalidDataException">
+    /// The decompressed data does not match the expected CRC-32 checksum or length.
+    /// </exception>
     public async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         Stream stream = GetOrCreateDecompressionStream();
+        int bytesRead = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-        return await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+        if (_hasDataDescriptor && bytesRead > 0)
+        {
+            _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, buffer.Span.Slice(0, bytesRead));
+            _totalDecompressedBytesRead += bytesRead;
+        }
+
+        return bytesRead;
     }
 
     private Stream GetOrCreateDecompressionStream()
@@ -188,6 +212,12 @@ public sealed class ZipStreamEntry
                 ZipCompressionMethod.Stored => _boundedStream,
                 _ => throw new NotSupportedException(SR.UnsupportedCompression)
             };
+
+            // Wrap with CRC validation for entries with known CRC and uncompressed length.
+            // CrcValidatingReadStream computes a running CRC over decompressed bytes and
+            // throws InvalidDataException if the checksum does not match once all expected
+            // bytes have been read.
+            _decompressionStream = new CrcValidatingReadStream(_decompressionStream, _crc32, _length);
         }
         else
         {
@@ -220,7 +250,15 @@ public sealed class ZipStreamEntry
         byte[] skipBuffer = ArrayPool<byte>.Shared.Rent(4096);
         try
         {
-            while (streamToDrain.Read(skipBuffer) > 0) { }
+            int bytesRead;
+            while ((bytesRead = streamToDrain.Read(skipBuffer)) > 0)
+            {
+                if (_hasDataDescriptor)
+                {
+                    _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, skipBuffer.AsSpan(0, bytesRead));
+                    _totalDecompressedBytesRead += bytesRead;
+                }
+            }
         }
         finally
         {
@@ -245,7 +283,15 @@ public sealed class ZipStreamEntry
         byte[] skipBuffer = ArrayPool<byte>.Shared.Rent(4096);
         try
         {
-            while (await streamToDrain.ReadAsync(skipBuffer.AsMemory(), cancellationToken).ConfigureAwait(false) > 0) { }
+            int bytesRead;
+            while ((bytesRead = await streamToDrain.ReadAsync(skipBuffer.AsMemory(), cancellationToken).ConfigureAwait(false)) > 0)
+            {
+                if (_hasDataDescriptor)
+                {
+                    _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, skipBuffer.AsSpan(0, bytesRead));
+                    _totalDecompressedBytesRead += bytesRead;
+                }
+            }
         }
         finally
         {
@@ -258,6 +304,17 @@ public sealed class ZipStreamEntry
         _crc32 = crc32;
         _compressedLength = compressedLength;
         _length = length;
+
+        // Validate that the decompressed data matches the data descriptor values.
+        if (_runningCrc != crc32)
+        {
+            throw new InvalidDataException(SR.CrcMismatch);
+        }
+
+        if (_totalDecompressedBytesRead != length)
+        {
+            throw new InvalidDataException(SR.UnexpectedStreamLength);
+        }
     }
 
     /// <summary>
