@@ -1026,19 +1026,18 @@ namespace System.Tests
                 arr[i - 1] = "17";
                 Assert.True(arr[0] == "5" && arr[i - 1] == "17");
             }
+        }
 
-            // allocate max size byte array
-            {
-                if (IntPtr.Size == 8)
-                {
-                    int i = 0x7FFFFFC7;
-                    var arr = GC.AllocateUninitializedArray<byte>(i);
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsReleaseRuntime))]
+        [OuterLoop]
+        private static void AllocateUninitializedArray_MaxSize()
+        {
+            int i = 0x7FFFFFC7;
+            var arr = GC.AllocateUninitializedArray<byte>(i);
 
-                    arr[0] = 5;
-                    arr[i - 1] = 17;
-                    Assert.True(arr[0] == 5 && arr[i - 1] == 17);
-                }
-            }
+            arr[0] = 5;
+            arr[i - 1] = 17;
+            Assert.True(arr[0] == 5 && arr[i - 1] == 17);
         }
 
         [Fact]
@@ -1080,19 +1079,18 @@ namespace System.Tests
                 arr[i - 1] = "17";
                 Assert.True(arr[0] == "5" && arr[i - 1] == "17");
             }
+        }
 
-            // allocate max size byte array
-            {
-                if (IntPtr.Size == 8)
-                {
-                    int i = 0x7FFFFFC7;
-                    var arr = GC.AllocateArray<byte>(i);
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsReleaseRuntime))]
+        [OuterLoop]
+        private static void AllocateArray_MaxSize()
+        {
+            int i = 0x7FFFFFC7;
+            var arr = GC.AllocateArray<byte>(i);
 
-                    arr[0] = 5;
-                    arr[i - 1] = 17;
-                    Assert.True(arr[0] == 5 && arr[i - 1] == 17);
-                }
-            }
+            arr[0] = 5;
+            arr[i - 1] = 17;
+            Assert.True(arr[0] == 5 && arr[i - 1] == 17);
         }
 
         [Theory]
