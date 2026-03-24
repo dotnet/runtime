@@ -307,7 +307,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                     VerifyCS.Diagnostic(DiagnosticId.LibraryImportMethodMissingRequiresUnsafe)
                         .WithSpan(7, 25, 7, 37)
                         .WithArguments("C.NativeMethod()")
-                        .WithSeverity(DiagnosticSeverity.Info)
+                        .WithSeverity(DiagnosticSeverity.Warning)
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -363,7 +363,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                     VerifyCS.Diagnostic(DiagnosticId.ExternMethodMissingRequiresUnsafe)
                         .WithSpan(7, 32, 7, 44)
                         .WithArguments("C.NativeMethod()")
-                        .WithSeverity(DiagnosticSeverity.Info)
+                        .WithSeverity(DiagnosticSeverity.Warning)
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
