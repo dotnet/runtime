@@ -210,10 +210,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                     // signature, so for instance methods adjust the index down.
                     int mdIndex = (int)(header.IsInstance ? index : index + 1);
                     string? paramName = GetParameterName(mdReader, methodDef, mdIndex);
-                    if (paramName is not null)
-                    {
-                        OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, paramName);
-                    }
+                    OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, paramName ?? string.Empty);
                 }
                 else
                 {
@@ -296,7 +293,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             if (nameLen is not null)
                 *nameLen = 0;
 
-            GetMethodInfo(out MethodDescHandle mdh, out MetadataReader mdReader, out MethodDefinition methodDef, out Contracts.ModuleHandle moduleHandle, out uint token);
+            GetMethodInfo(out MethodDescHandle mdh, out MetadataReader mdReader, out MethodDefinition methodDef, out Contracts.ModuleHandle moduleHandle, out _);
             GetMethodSignatureInfo(mdReader, methodDef, out SignatureHeader argHeader, out uint numArgs);
 
             uint numLocals = GetLocalVariableCount(mdh, moduleHandle);
@@ -440,6 +437,8 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         header = blobReader.ReadSignatureHeader();
         if (header.Kind != SignatureKind.Method)
             throw new BadImageFormatException();
+        if (header.IsGeneric)
+            blobReader.ReadCompressedInteger(); // skip generic arity
         uint paramCount = (uint)blobReader.ReadCompressedInteger();
         numArgs = paramCount + (header.IsInstance ? 1u : 0u);
     }

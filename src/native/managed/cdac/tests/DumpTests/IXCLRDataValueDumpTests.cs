@@ -75,7 +75,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
         });
 
         // --- ByRef and GenericInst: pointer-sized ---
-        // GenericInstAndByRefVars(List<int> listArg, ref int refArg)
+        // GenericInstAndByRefVars(List<int> listArg, KeyValuePair<int, string> kvpArg, ref int refArg)
         var byRefArgs = GetArgumentValues("GenericInstAndByRefVars");
         AssertEach(byRefArgs, new Dictionary<string, Action<IXCLRDataValue, string>>
         {
