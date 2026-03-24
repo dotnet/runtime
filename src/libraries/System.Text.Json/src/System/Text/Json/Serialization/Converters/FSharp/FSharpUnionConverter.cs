@@ -221,27 +221,30 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException();
                 }
 
-                if (preserveReferences)
-                {
-                    MetadataPropertyName metadata = JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null);
-                    if (metadata is MetadataPropertyName.Ref)
-                    {
-                        reader.Read();
-                        if (reader.TokenType != JsonTokenType.String)
-                        {
-                            ThrowHelper.ThrowJsonException();
-                        }
+                MetadataPropertyName metadata = JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null);
 
-                        refId = reader.GetString();
-                        break;
+                if (metadata is MetadataPropertyName.Ref)
+                {
+                    if (!preserveReferences)
+                    {
+                        goto DefaultProperty;
                     }
+
+                    reader.Read();
+                    if (reader.TokenType != JsonTokenType.String)
+                    {
+                        ThrowHelper.ThrowJsonException();
+                    }
+
+                    refId = reader.GetString();
+                    break;
                 }
 
-                bool isDiscriminator = reader.ValueTextEquals(_typeDiscriminatorPropertyName);
-                reader.Read();
-
-                if (isDiscriminator)
+                // Match discriminator: either $type (detected by GetMetadataPropertyName)
+                // or a custom name (e.g. "kind") via direct comparison.
+                if (metadata is MetadataPropertyName.Type || reader.ValueTextEquals(_typeDiscriminatorPropertyName))
                 {
+                    reader.Read();
                     if (reader.TokenType != JsonTokenType.String)
                     {
                         ThrowHelper.ThrowJsonException();
@@ -251,6 +254,8 @@ namespace System.Text.Json.Serialization.Converters
                     break;
                 }
 
+            DefaultProperty:
+                reader.Read();
                 reader.TrySkip();
             }
 
@@ -285,7 +290,9 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (reader.TokenType == JsonTokenType.PropertyName)
                     {
-                        if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
+                        MetadataPropertyName metadata = JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null);
+
+                        if (metadata is MetadataPropertyName.Type || reader.ValueTextEquals(_typeDiscriminatorPropertyName))
                         {
                             if (discriminatorSeen)
                             {
@@ -294,8 +301,7 @@ namespace System.Text.Json.Serialization.Converters
 
                             discriminatorSeen = true;
                         }
-                        else if (preserveReferences &&
-                            JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null) is MetadataPropertyName.Id)
+                        else if (metadata is MetadataPropertyName.Id && preserveReferences)
                         {
                             reader.Read();
                             if (reader.TokenType != JsonTokenType.String)
@@ -343,8 +349,10 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException();
                 }
 
+                MetadataPropertyName metadata = JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null);
+
                 // Skip the discriminator property during field reading.
-                if (reader.ValueTextEquals(_typeDiscriminatorPropertyName))
+                if (metadata is MetadataPropertyName.Type || reader.ValueTextEquals(_typeDiscriminatorPropertyName))
                 {
                     if (discriminatorSeen)
                     {
@@ -358,8 +366,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Capture $id metadata for reference registration.
-                if (preserveReferences &&
-                    JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null) is MetadataPropertyName.Id)
+                if (metadata is MetadataPropertyName.Id && preserveReferences)
                 {
                     reader.Read();
                     if (reader.TokenType != JsonTokenType.String)
