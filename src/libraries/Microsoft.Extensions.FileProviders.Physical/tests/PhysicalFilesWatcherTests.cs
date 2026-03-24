@@ -8,7 +8,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Extensions.FileProviders.Physical.Tests
@@ -17,13 +16,38 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
     {
         private const int WaitTimeForTokenToFire = 500;
 
+        public static TheoryData<bool> WatcherModeData
+        {
+            get
+            {
+                var data = new TheoryData<bool>();
+                if (!PlatformDetection.IsBrowser && !PlatformDetection.IsiOS && !PlatformDetection.IstvOS)
+                {
+                    data.Add(false); // useActivePolling = false → real FileSystemWatcher
+                }
+                data.Add(true); // useActivePolling = true → polling
+                return data;
+            }
+        }
+
+        private static PhysicalFilesWatcher CreateWatcher(string rootPath, bool useActivePolling)
+        {
+            FileSystemWatcher? fsw = useActivePolling ? null : new FileSystemWatcher(rootPath);
+            var watcher = new PhysicalFilesWatcher(rootPath, fsw, pollForChanges: useActivePolling);
+            if (useActivePolling)
+            {
+                watcher.UseActivePolling = true;
+            }
+            return watcher;
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void CreateFileChangeToken_DoesNotAllowPathsAboveRoot()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
             using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false))
             {
                 var token = physicalFilesWatcher.CreateFileChangeToken(Path.GetFullPath(Path.Combine(root.Path, "..")));
                 Assert.IsType<NullChangeToken>(token);
@@ -42,7 +66,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         {
             using (var root = new TempDirectory(GetTestFilePath()))
             using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false))
             {
                 var token = physicalFilesWatcher.CreateFileChangeToken("**");
                 var called = false;
@@ -135,7 +159,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         {
             using (var root = new TempDirectory(GetTestFilePath()))
             using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: true))
             {
                 physicalFilesWatcher.UseActivePolling = true;
 
@@ -162,7 +186,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         {
             using (var root = new TempDirectory(GetTestFilePath()))
             using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: true))
             {
                 var changeToken = physicalFilesWatcher.GetOrAddFilePathChangeToken("some-path");
 
@@ -187,7 +211,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         {
             using (var root = new TempDirectory(GetTestFilePath()))
             using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false))
             {
                 var changeToken = physicalFilesWatcher.GetOrAddFilePathChangeToken("some-path");
 
@@ -202,7 +226,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         {
             using (var root = new TempDirectory(GetTestFilePath()))
             using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
-            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: true))
             {
                 physicalFilesWatcher.UseActivePolling = true;
 
@@ -223,25 +247,19 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
-        public async Task GetOrAddFilePathChangeToken_FiresWhenFileIsCreated_WithMissingParentDirectory()
+        [Theory]
+        [MemberData(nameof(WatcherModeData))]
+        public async Task GetOrAddFilePathChangeToken_FiresWhenFileIsCreated_WithMissingParentDirectory(bool useActivePolling)
         {
             using var root = new TempDirectory(GetTestFilePath());
             string missingDir = Path.Combine(root.Path, "missingdir");
             string targetFile = Path.Combine(missingDir, "file.txt");
 
-            using var physicalFilesWatcher = new PhysicalFilesWatcher(
-                root.Path + Path.DirectorySeparatorChar,
-                new FileSystemWatcher(root.Path),
-                pollForChanges: false);
+            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling);
 
-            // filePath's parent directory doesn't exist yet – should get a pending creation token
-            IChangeToken token = physicalFilesWatcher.GetOrAddFilePathChangeToken("missingdir/file.txt");
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("missingdir/file.txt");
 
             var tcs = new TaskCompletionSource<bool>();
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            cts.Token.Register(() => tcs.TrySetCanceled());
             token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
 
             // Create the missing directory – the token must NOT fire yet
@@ -252,30 +270,23 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             // Create the actual file – now the token must fire
             File.WriteAllText(targetFile, string.Empty);
 
-            Assert.True(await tcs.Task);
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
-        public async Task GetOrAddFilePathChangeToken_FiresOnlyWhenFileIsCreated_WithMultipleMissingDirectories()
+        [Theory]
+        [MemberData(nameof(WatcherModeData))]
+        public async Task GetOrAddFilePathChangeToken_FiresOnlyWhenFileIsCreated_WithMultipleMissingDirectories(bool useActivePolling)
         {
-            // Verifies that the token fires exactly once – when the target file is created –
-            // and does NOT fire when intermediate missing directory levels are created.
             using var root = new TempDirectory(GetTestFilePath());
             string level1 = Path.Combine(root.Path, "level1");
             string level2 = Path.Combine(level1, "level2");
             string targetFile = Path.Combine(level2, "file.txt");
 
-            using var physicalFilesWatcher = new PhysicalFilesWatcher(
-                root.Path + Path.DirectorySeparatorChar,
-                new FileSystemWatcher(root.Path),
-                pollForChanges: false);
+            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling);
 
-            IChangeToken token = physicalFilesWatcher.GetOrAddFilePathChangeToken("level1/level2/file.txt");
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("level1/level2/file.txt");
 
             var tcs = new TaskCompletionSource<bool>();
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            cts.Token.Register(() => tcs.TrySetCanceled());
             token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
 
             // Create level1 – token must NOT fire
@@ -291,7 +302,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             // Create the target file – now the token must fire exactly once
             File.WriteAllText(targetFile, string.Empty);
 
-            Assert.True(await tcs.Task);
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         [Fact]
@@ -301,11 +312,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             // Verifies that the token fires when a watched directory is deleted (error event).
             using var root = new TempDirectory(GetTestFilePath());
             string dir = Path.Combine(root.Path, "dir");
-
-            using var physicalFilesWatcher = new PhysicalFilesWatcher(
-                root.Path,
-                new FileSystemWatcher(root.Path),
-                pollForChanges: false);
+            
+            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling: false);
 
             IChangeToken token = physicalFilesWatcher.GetOrAddFilePathChangeToken("dir/file.txt");
 
@@ -355,10 +363,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             Directory.CreateDirectory(rootPath);
             try
             {
-                using var physicalFilesWatcher = new PhysicalFilesWatcher(
-                    rootPath,
-                    new FileSystemWatcher(rootPath),
-                    pollForChanges: false);
+                using var physicalFilesWatcher = CreateWatcher(rootPath, useActivePolling: false);
 
                 IChangeToken token = physicalFilesWatcher.GetOrAddFilePathChangeToken("file.txt");
                 Assert.False(token.HasChanged);
