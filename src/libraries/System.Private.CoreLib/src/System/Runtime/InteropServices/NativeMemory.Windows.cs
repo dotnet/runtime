@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -47,6 +48,7 @@ namespace System.Runtime.InteropServices
         ///    <para>This method is a thin wrapper over the C <c>free</c> API or a platform dependent aligned free API such as <c>_aligned_free</c> on Win32.</para>
         /// </remarks>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static void AlignedFree(void* ptr)
         {
             if (ptr != null)
@@ -69,6 +71,7 @@ namespace System.Runtime.InteropServices
         ///     <para>This method is not compatible with <see cref="Free" /> or <see cref="Realloc" />, instead <see cref="AlignedFree" /> or <see cref="AlignedRealloc" /> should be called.</para>
         /// </remarks>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static void* AlignedRealloc(void* ptr, nuint byteCount, nuint alignment)
         {
             if (!BitOperations.IsPow2(alignment))
@@ -140,6 +143,7 @@ namespace System.Runtime.InteropServices
         ///    <para>This method is a thin wrapper over the C <c>free</c> API.</para>
         /// </remarks>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static void Free(void* ptr)
         {
             if (ptr != null)
@@ -159,6 +163,7 @@ namespace System.Runtime.InteropServices
         ///     <para>This method is a thin wrapper over the C <c>realloc</c> API.</para>
         /// </remarks>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static void* Realloc(void* ptr, nuint byteCount)
         {
             // The Windows implementation treats size == 0 as Free, we want an "empty" allocation

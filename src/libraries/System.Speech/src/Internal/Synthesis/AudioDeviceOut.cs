@@ -365,7 +365,7 @@ namespace System.Speech.Internal.Synthesis
                         {
                             if (_asyncDispatch != null && !_aborted)
                             {
-                                _asyncDispatch.Post(inItem._userData);
+                                _asyncDispatch.Post(inItem._userData!);
                             }
                             _queueIn.RemoveAt(0);
                         }
@@ -388,7 +388,7 @@ namespace System.Speech.Internal.Synthesis
         {
             foreach (InItem item in _queueOut)
             {
-                WaveHeader waveHeader = item._waveHeader;
+                WaveHeader waveHeader = item._waveHeader!;
                 Interop.WinMM.MMSYSERR result = Interop.WinMM.waveOutUnprepareHeader(
                             _hwo, waveHeader.WAVEHDR.AddrOfPinnedObject(), waveHeader.SizeHDR);
                 if (result != Interop.WinMM.MMSYSERR.NOERROR)
@@ -420,7 +420,7 @@ namespace System.Speech.Internal.Synthesis
                         }
                         else
                         {
-                            _asyncDispatch.Post(inItem._userData);
+                            _asyncDispatch.Post(inItem._userData!);
                         }
                     }
                     _queueIn.Clear();
@@ -448,7 +448,7 @@ namespace System.Speech.Internal.Synthesis
                 _waveHeader = waveHeader;
             }
 
-            internal InItem(object userData)
+            internal InItem(TTSEvent userData)
             {
                 _userData = userData;
             }
@@ -464,8 +464,8 @@ namespace System.Speech.Internal.Synthesis
                 _waveHeader?.ReleaseData();
             }
 
-            internal WaveHeader _waveHeader;
-            internal object _userData;
+            internal WaveHeader? _waveHeader;
+            internal object? _userData;
         }
 
         #endregion
