@@ -1,14 +1,14 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.IO;
-using System.Xml;
+using System.Reflection.Metadata;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using static ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILTrim.DependencyAnalysis.NodeFactory>;
+using static ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>;
 
-namespace ILTrim.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents an IL Link descriptor based root.
@@ -26,141 +26,51 @@ namespace ILTrim.DependencyAnalysis
         {
             return DescriptorReader.GetDependencies(
                 _module.Context,
-                XmlReader.Create(content),
+                content,
                 _module,
                 factory.Settings.FeatureSwitches,
                 factory);
         }
 
-        private class DescriptorReader : ILCompiler.ProcessLinkerXmlBase
+        private class DescriptorReader : ProcessLinkerXmlBase
         {
             private readonly NodeFactory _factory;
             private DependencyList _dependencies = new DependencyList();
 
-            public static DependencyList GetDependencies(TypeSystemContext context, XmlReader reader, ModuleDesc owningModule,
+            public static DependencyList GetDependencies(TypeSystemContext context, Stream content, EcmaModule owningModule,
                 IReadOnlyDictionary<string, bool> featureSwitchValues, NodeFactory factory)
             {
-                var rdr = new DescriptorReader(context, reader, owningModule, featureSwitchValues, factory);
-                rdr.ProcessXml();
+                var rdr = new DescriptorReader(context, content, owningModule, featureSwitchValues, factory);
+                rdr.ProcessXml(false);
                 return rdr._dependencies;
             }
 
-            private DescriptorReader(TypeSystemContext context, XmlReader reader, ModuleDesc owningModule,
+            private DescriptorReader(TypeSystemContext context, Stream content, EcmaModule owningModule,
                 IReadOnlyDictionary<string, bool> featureSwitchValues, NodeFactory factory)
-                : base(context, reader, owningModule, featureSwitchValues)
+                : base(factory.Logger, context, content, default(ManifestResource), owningModule, "descriptor", featureSwitchValues)
             {
                 _factory = factory;
             }
 
-            protected override void ProcessType(ModuleDesc assembly)
+            protected override void ProcessAssembly(ModuleDesc assembly, System.Xml.XPath.XPathNavigator nav, bool warnOnUnresolvedTypes)
             {
-                if (ShouldProcessElement())
-                {
-                    string typeName = _reader.GetAttribute("fullname");
-
-                    List<TypeDesc> types = new List<TypeDesc>();
-                    if (typeName.Contains('*'))
-                    {
-                        typeName = typeName.Replace("*", ".*");
-                        var regex = new System.Text.RegularExpressions.Regex(typeName);
-
-                        foreach (var type in assembly.GetAllTypes())
-                        {
-                            if (regex.IsMatch(type.GetFullName()))
-                                types.Add(type);
-                        }
-
-                        if (!_reader.IsEmptyElement)
-                            _reader.Skip();
-                    }
-                    else
-                    {
-                        TypeDesc type = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(assembly, typeName, throwIfNotFound: false);
-                        if (type == null)
-                        {
-                            _reader.Skip();
-                            return;
-                        }
-
-                        ProcessTypeAttributes(!_reader.IsEmptyElement, type);
-
-                        if (!_reader.IsEmptyElement)
-                        {
-                            _reader.Read();
-
-                            while (_reader.IsStartElement())
-                            {
-                                if (_reader.Name == "method")
-                                {
-                                    ProcessMethod(type);
-                                }
-                                else if (_reader.Name == "field")
-                                {
-                                    ProcessField(type);
-                                }
-
-                                _reader.Skip();
-                            }
-                        }
-
-                        types.Add(type);
-                    }
-
-                    foreach (var type in types)
-                    {
-                        var ecmaType = (EcmaType)type;
-                        if (_factory.IsModuleTrimmed(ecmaType.EcmaModule))
-                        {
-                            _dependencies.Add(_factory.TypeDefinition(ecmaType.EcmaModule, ecmaType.Handle),
-                                "Type rooted by descriptor");
-                            _dependencies.Add(_factory.ConstructedType(ecmaType), "Type rooted by descriptor");
-                        }
-                    }
-                }
-
-                _reader.Skip();
+                ProcessTypes(assembly, nav, warnOnUnresolvedTypes);
             }
 
-            private void ProcessTypeAttributes(bool hasContent, TypeDesc type)
+            protected override void ProcessType(TypeDesc type, System.Xml.XPath.XPathNavigator nav)
             {
-
-                string preserve = _reader.GetAttribute("preserve");
-
-                bool preserveMethods = false;
-                bool preserveFields = false;
-
-                if ((!hasContent && preserve != "nothing") || (preserve == "all"))
+                var ecmaType = (EcmaType)type;
+                if (_factory.IsModuleTrimmed(ecmaType.Module))
                 {
-                    preserveFields = true;
-                    preserveMethods = true;
-                }
-                else if (preserve == "fields")
-                {
-                    preserveFields = true;
-                }
-                else if (preserve == "methods")
-                {
-                    preserveMethods = true;
-                }
+                    _dependencies.Add(_factory.TypeDefinition(ecmaType.Module, ecmaType.Handle),
+                        "Type rooted by descriptor");
+                    _dependencies.Add(_factory.ConstructedType(ecmaType), "Type rooted by descriptor");
 
-                if (preserveFields)
-                {
-                    foreach (FieldDesc field in type.GetFields())
-                    {
-                        ProcessField(field);
-                    }
-                }
-
-                if (preserveMethods)
-                {
-                    foreach (MethodDesc method in type.GetMethods())
-                    {
-                        ProcessMethod(method);
-                    }
+                    ProcessTypeChildren(ecmaType, nav);
                 }
             }
 
-            protected override void ProcessField(FieldDesc field)
+            protected override void ProcessField(TypeDesc type, FieldDesc field, System.Xml.XPath.XPathNavigator nav)
             {
                 var ecmaField = (EcmaField)field;
                 if (_factory.IsModuleTrimmed(ecmaField.Module))
@@ -168,12 +78,22 @@ namespace ILTrim.DependencyAnalysis
                         "Field rooted by descriptor");
             }
 
-            protected override void ProcessMethod(MethodDesc method)
+            protected override void ProcessMethod(TypeDesc type, MethodDesc method, System.Xml.XPath.XPathNavigator nav, object customData)
             {
                 var ecmaMethod = (EcmaMethod)method;
                 if (_factory.IsModuleTrimmed(ecmaMethod.Module))
                     _dependencies.Add(_factory.MethodDefinition(ecmaMethod.Module, ecmaMethod.Handle),
                         "Method rooted by descriptor");
+            }
+
+            protected override MethodDesc? GetMethod(TypeDesc type, string signature)
+            {
+                foreach (MethodDesc meth in type.GetAllMethods())
+                {
+                    if (signature == GetMethodSignature(meth, false))
+                        return meth;
+                }
+                return null;
             }
         }
     }

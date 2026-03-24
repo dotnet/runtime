@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -12,7 +12,7 @@ using Internal.TypeSystem.Ecma;
 
 using ILCompiler.DependencyAnalysisFramework;
 
-namespace ILTrim.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis
 {
     // Used for HandleKey<AssemblyReferenceValue> in NodeFactory,
     // to compare assemblies by simple name.
@@ -61,13 +61,13 @@ namespace ILTrim.DependencyAnalysis
         {
             MetadataReader reader = _module.MetadataReader;
             var builder = writeContext.MetadataBuilder;
-            AssemblyName referenceName = _reference.GetName();
+            var referenceName = _reference.GetName();
 
             return builder.AddAssemblyReference(
                 builder.GetOrAddString(referenceName.Name),
                 referenceName.Version,
                 builder.GetOrAddString(referenceName.CultureName),
-                builder.GetOrAddBlob(referenceName.GetPublicKeyToken()),
+                builder.GetOrAddBlob(referenceName.PublicKeyOrToken),
                 default(AssemblyFlags),
                 default(BlobHandle));
         }

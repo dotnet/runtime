@@ -4,7 +4,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Platforms>x64;x86</Platforms>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <!-- Suppress analyzer warnings in old prototype code -->
+    <NoWarn>$(NoWarn);SA1400;SA1121;IDE0074;IDE0059;CA1859</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ILTrim.Core" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
@@ -13,6 +20,7 @@
   <PropertyGroup>
     <ToolsCommonPath>$(MSBuildThisFileDirectory)..\..\Common\</ToolsCommonPath>
     <TypeSystemPath>$(ToolsCommonPath)TypeSystem\</TypeSystemPath>
+    <LibrariesCommonPath>$(MSBuildThisFileDirectory)..\..\..\..\libraries\Common\src\</LibrariesCommonPath>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(TypeSystemPath)\Common\Properties\Resources.resx">
@@ -98,6 +106,12 @@
     <Compile Include="$(TypeSystemPath)\Common\FieldLayoutAlgorithm.cs">
       <Link>Common\FieldLayoutAlgorithm.cs</Link>
     </Compile>
+    <Compile Include="$(TypeSystemPath)\Common\FieldLayoutIntervalCalculator.cs">
+      <Link>Common\FieldLayoutIntervalCalculator.cs</Link>
+    </Compile>
+    <Compile Include="$(TypeSystemPath)\Common\ImpliedRepeatedFieldDesc.cs">
+      <Link>Common\ImpliedRepeatedFieldDesc.cs</Link>
+    </Compile>
     <Compile Include="$(TypeSystemPath)\Common\IModuleResolver.cs">
       <Link>Common\IModuleResolver.cs</Link>
     </Compile>
@@ -112,6 +126,9 @@
     </Compile>
     <Compile Include="$(TypeSystemPath)\Common\InstantiatedType.MethodImpls.cs">
       <Link>Common\InstantiatedType.MethodImpls.cs</Link>
+    </Compile>
+    <Compile Include="$(TypeSystemPath)\Common\InstantiatedType.Metadata.cs">
+      <Link>Common\InstantiatedType.Metadata.cs</Link>
     </Compile>
     <Compile Include="$(TypeSystemPath)\Common\LayoutInt.cs">
       <Link>Common\LayoutInt.cs</Link>
@@ -169,6 +186,18 @@
     </Compile>
     <Compile Include="$(TypeSystemPath)\Common\TypeSystemContext.cs">
       <Link>Common\TypeSystemContext.cs</Link>
+    </Compile>
+    <Compile Include="$(TypeSystemPath)\Common\TypeSystemContext.Resolution.cs">
+      <Link>Common\TypeSystemContext.Resolution.cs</Link>
+    </Compile>
+    <Compile Include="$(TypeSystemPath)\Common\TypeSystemContext.FieldLayout.cs">
+      <Link>Common\TypeSystemContext.FieldLayout.cs</Link>
+    </Compile>
+    <Compile Include="$(TypeSystemPath)\Common\VersionResilientHashCode.TypeSystem.cs">
+      <Link>Common\VersionResilientHashCode.TypeSystem.cs</Link>
+    </Compile>
+    <Compile Include="$(TypeSystemPath)\Common\TypeWithRepeatedFields.cs">
+      <Link>Common\TypeWithRepeatedFields.cs</Link>
     </Compile>
     <Compile Include="$(TypeSystemPath)\Common\TypeSystemHelpers.cs">
       <Link>Common\TypeSystemHelpers.cs</Link>
@@ -306,6 +335,12 @@
     <Compile Include="$(TypeSystemPath)\IL\MethodIL.cs">
       <Link>IL/MethodIL.cs</Link>
     </Compile>
+    <Compile Include="$(TypeSystemPath)\IL\MethodIL.Symbols.cs">
+      <Link>IL/MethodIL.Symbols.cs</Link>
+    </Compile>
+    <Compile Include="$(TypeSystemPath)\IL\ILProvider.cs">
+      <Link>IL/ILProvider.cs</Link>
+    </Compile>
     <Compile Include="$(TypeSystemPath)\IL\MethodILDebugView.cs">
       <Link>IL/MethodILDebugView.cs</Link>
     </Compile>
@@ -321,6 +356,9 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)System\FormattingHelpers.cs">
       <Link>Utilities\FormattingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesCommonPath)Internal\VersionResilientHashCode.cs">
+      <Link>Common\VersionResilientHashCode.cs</Link>
     </Compile>
   </ItemGroup>
 

@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
 
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Platforms>x64;x86</Platforms>
+    <!-- Suppress analyzer warnings in old prototype code -->
+    <NoWarn>$(NoWarn);xUnit2020;CS8602;CS8604</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

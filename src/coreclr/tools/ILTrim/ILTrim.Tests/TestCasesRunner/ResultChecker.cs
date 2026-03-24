@@ -17,6 +17,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Xunit;
 
+using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
+
 namespace Mono.Linker.Tests.TestCasesRunner
 {
     public class ResultChecker
@@ -223,21 +225,26 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 }
             }
 
-            public PEReader? Resolve(string simpleName)
+            public PEReader? ResolveAssembly(AssemblyNameInfo info)
             {
-                if (_assemblyReaders.TryGetValue(simpleName, out var reader))
+                if (_assemblyReaders.TryGetValue(info.Name, out var reader))
                 {
                     return reader;
                 }
 
-                if (_assemblyPaths.TryGetValue(simpleName, out var asmPath))
+                if (_assemblyPaths.TryGetValue(info.Name, out var asmPath))
                 {
                     reader = new PEReader(File.OpenRead(asmPath));
-                    _assemblyReaders.Add(simpleName, reader);
+                    _assemblyReaders.Add(info.Name, reader);
                     return reader;
                 }
 
                 return null;
+            }
+
+            public PEReader? ResolveModule(AssemblyNameInfo info, string module)
+            {
+                throw new NotImplementedException();
             }
         }
 
@@ -249,7 +256,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 var verifier = new Verifier(
                     new Resolver(peReader, linkResult.OutputAssemblyPath.FileNameWithoutExtension, linkResult.OutputAssemblyPath.Parent.ToString()),
                     new VerifierOptions() { });
-                verifier.SetSystemModuleName(typeof(object).Assembly.GetName());
+                verifier.SetSystemModuleName(AssemblyNameInfo.Parse(typeof(object).Assembly.GetName().Name));
                 foreach (var result in verifier.Verify(peReader))
                 {
                     Assert.True(false, $"IL Verififaction failed: {result.Message}{Environment.NewLine}Type token: {MetadataTokens.GetToken(result.Type):x}, Method token: {MetadataTokens.GetToken(result.Method):x}");

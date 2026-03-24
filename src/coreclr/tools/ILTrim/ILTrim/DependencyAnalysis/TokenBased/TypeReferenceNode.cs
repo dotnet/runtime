@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace ILTrim.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents an entry in the Type Reference metadata table.
@@ -31,7 +31,7 @@ namespace ILTrim.DependencyAnalysis
             {
                 // Resolve to an EcmaType to go through any forwarders.
                 var ecmaType = (EcmaType)_module.GetObject(Handle);
-                EcmaAssembly referencedAssembly = (EcmaAssembly)ecmaType.EcmaModule;
+                EcmaAssembly referencedAssembly = (EcmaAssembly)ecmaType.Module;
                 return factory.AssemblyReference(_module, referencedAssembly);
             }
             else
@@ -45,9 +45,9 @@ namespace ILTrim.DependencyAnalysis
             yield return new(GetResolutionScopeNode(factory), "Resolution Scope of a type reference");
 
             var typeDescObject = _module.GetObject(Handle);
-            if (typeDescObject is EcmaType typeDef && factory.IsModuleTrimmed(typeDef.EcmaModule))
+            if (typeDescObject is EcmaType typeDef && factory.IsModuleTrimmed(typeDef.Module))
             {
-                yield return new(factory.GetNodeForToken(typeDef.EcmaModule, typeDef.Handle), "Target of a type reference");
+                yield return new(factory.GetNodeForToken(typeDef.Module, typeDef.Handle), "Target of a type reference");
             }
         }
 

@@ -7,9 +7,9 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.Dataflow
 {
-    public class ILProvider
+    public class ILTrimILProvider : Internal.IL.ILProvider
     {
-        public MethodIL GetMethodIL(MethodDesc method)
+        public override MethodIL GetMethodIL(MethodDesc method)
         {
             return EcmaMethodIL.Create((EcmaMethod)method.GetTypicalMethodDefinition());
         }

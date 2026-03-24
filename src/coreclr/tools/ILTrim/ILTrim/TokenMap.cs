@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection.Metadata;
@@ -6,7 +6,7 @@ using System.Reflection.Metadata.Ecma335;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace ILTrim
+namespace ILCompiler
 {
     /// <summary>
     /// Manages tokens in a single output assembly and assigns new tokens to the tokens in the input.

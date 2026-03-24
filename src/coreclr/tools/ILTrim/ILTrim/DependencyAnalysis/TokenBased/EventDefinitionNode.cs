@@ -10,7 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 
 using Internal.TypeSystem.Ecma;
 
-namespace ILTrim.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a row in the Property table.

@@ -14,7 +14,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public const string ConfigDirectoryName = "Release";
 #endif
 
-#if NET6_0
+#if NET11_0       
+		public const string TFMDirectoryName = "net11.0";
+#elif NET10_0
+		public const string TFMDirectoryName = "net10.0";
+#elif NET9_0
+		public const string TFMDirectoryName = "net9.0";
+#elif NET8_0
+		public const string TFMDirectoryName = "net8.0";
+#elif NET7_0
+		public const string TFMDirectoryName = "net7.0";
+#elif NET6_0
 		public const string TFMDirectoryName = "net6.0";
 #elif NET5_0
 		public const string TFMDirectoryName = "net5.0";

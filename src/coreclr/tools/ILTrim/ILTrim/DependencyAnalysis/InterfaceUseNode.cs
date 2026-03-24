@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace ILTrim.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents an interface that is considered used at runtime (e.g. there's a cast to it

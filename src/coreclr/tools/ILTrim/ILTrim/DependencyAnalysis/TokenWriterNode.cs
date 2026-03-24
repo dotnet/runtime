@@ -11,7 +11,7 @@ using Internal.TypeSystem.Ecma;
 
 using ILCompiler.DependencyAnalysisFramework;
 
-namespace ILTrim.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Base class for all nodes that output a row in one of the metadata tables,

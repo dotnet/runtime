@@ -7,7 +7,7 @@ using System.Reflection.Metadata;
 
 using Internal.TypeSystem.Ecma;
 
-namespace ILTrim.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents an entry in the TypeDef metadata table.
@@ -49,11 +49,11 @@ namespace ILTrim.DependencyAnalysis
             var type = _module.GetType(Handle);
             if (type.IsDelegate)
             {
-                var invokeMethod = type.GetMethod("Invoke", null) as EcmaMethod;
+                var invokeMethod = type.GetMethod("Invoke"u8, null) as EcmaMethod;
                 if (invokeMethod != null)
                     yield return new(factory.MethodDefinition(_module, invokeMethod.Handle), "Delegate invoke");
 
-                var ctorMethod = type.GetMethod(".ctor", null) as EcmaMethod;
+                var ctorMethod = type.GetMethod(".ctor"u8, null) as EcmaMethod;
                 if (ctorMethod != null)
                     yield return new(factory.MethodDefinition(_module, ctorMethod.Handle), "Delegate ctor");
             }

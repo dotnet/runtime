@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -10,7 +10,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-namespace ILTrim.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a type that is considered allocated at runtime (e.g. with a "new").
@@ -31,7 +31,7 @@ namespace ILTrim.DependencyAnalysis
         {
             List<CombinedDependencyListEntry> result = null;
 
-            if (factory.IsModuleTrimmed(_type.EcmaModule))
+            if (factory.IsModuleTrimmed(_type.Module))
             {
                 // Quickly check if going over the virtual slots is worth it for this type.
                 bool hasVirtualMethods = false;
@@ -71,7 +71,7 @@ namespace ILTrim.DependencyAnalysis
                             if (!implHandle.IsNil)
                             {
                                 result.Add(new(
-                                    factory.MethodImplementation(_type.EcmaModule, implHandle),
+                                    factory.MethodImplementation(_type.Module, implHandle),
                                     declUse,
                                     "Explicitly implemented virtual method"));
                             }
@@ -102,12 +102,12 @@ namespace ILTrim.DependencyAnalysis
                             interfaceMethodUse,
                             "Interface method"));
 
-                        if (factory.IsModuleTrimmed(_type.EcmaModule))
+                        if (factory.IsModuleTrimmed(_type.Module))
                         {
                             MethodImplementationHandle implHandle = TryGetMethodImplementationHandle(_type, interfaceMethodDefinition);
                             if (!implHandle.IsNil)
                             {
-                                result.Add(new(factory.MethodImplementation(_type.EcmaModule, implHandle),
+                                result.Add(new(factory.MethodImplementation(_type.Module, implHandle),
                                     interfaceMethodUse,
                                     "Explicitly implemented interface method"));
                             }
@@ -229,7 +229,7 @@ namespace ILTrim.DependencyAnalysis
             foreach (MethodImplementationHandle implRecordHandle in reader.GetTypeDefinition(implementingType.Handle).GetMethodImplementations())
             {
                 MethodImplementation implRecord = reader.GetMethodImplementation(implRecordHandle);
-                if (implementingType.EcmaModule.TryGetMethod(implRecord.MethodDeclaration) == declMethod)
+                if (implementingType.Module.TryGetMethod(implRecord.MethodDeclaration) == declMethod)
                 {
                     return implRecordHandle;
                 }

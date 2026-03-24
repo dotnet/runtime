@@ -6,7 +6,7 @@ namespace Internal.IL
     /// <summary>
     /// An enumeration of all of the operation codes that are used in the CLI Common Intermediate Language.
     /// </summary>
-    internal enum ILOpcode
+    public enum ILOpcode
     {
         nop = 0x00,
         break_ = 0x01,

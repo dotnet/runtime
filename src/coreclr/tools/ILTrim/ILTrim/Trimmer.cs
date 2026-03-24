@@ -14,11 +14,11 @@ using Internal.TypeSystem.Ecma;
 
 using ILCompiler.DependencyAnalysisFramework;
 
-using ILTrim.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ILTrim
+namespace ILCompiler
 {
     public static class Trimmer
     {
@@ -85,7 +85,7 @@ namespace ILTrim
             }
 
             analyzer.AddRoot(factory.VirtualMethodUse(
-                (EcmaMethod)context.GetWellKnownType(WellKnownType.Object).GetMethod("Finalize", null)),
+                (EcmaMethod)context.GetWellKnownType(WellKnownType.Object).GetMethod("Finalize"u8, null)),
                 "Finalizer");
 
             analyzer.ComputeMarkedNodes();

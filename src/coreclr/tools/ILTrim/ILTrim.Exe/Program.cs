@@ -3,98 +3,132 @@
 
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
-using System.Reflection.PortableExecutable;
 
-using Internal.CommandLine;
-
-namespace ILTrim
+namespace ILCompiler
 {
-    public class Program
+    internal sealed class ILTrimRootCommand : RootCommand
     {
-        static void Main(string[] args)
+        public Argument<string> InputPath { get; } =
+            new("input") { Description = "The input assembly" };
+        public Option<string[]> References { get; } =
+            new("--reference", "-r") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Reference assemblies" };
+        public Option<string[]> TrimAssemblies { get; } =
+            new("--trim", "-t") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Trim assemblies" };
+        public Option<string> OutputPath { get; } =
+            new("--out", "-o") { Description = "Output path" };
+        public Option<string> LogStrategy { get; } =
+            new("--log", "-l") { Description = "Logging strategy (None, FullGraph, FirstMark)" };
+        public Option<string> LogFile { get; } =
+            new("--logFile") { Description = "Path to the log file" };
+        public Option<int> Parallelism { get; } =
+            new("--parallelism") { DefaultValueFactory = _ => -1, Description = "Degree of parallelism" };
+        public Option<bool> LibraryMode { get; } =
+            new("--library") { Description = "Use library mode for the input assembly" };
+        public Option<string[]> FeatureSwitches { get; } =
+            new("--feature") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Feature switch in the format <name>=<value>" };
+
+        public ILTrimRootCommand() : base("ILTrim - IL-level assembly trimmer")
         {
-            string input = null;
-            IReadOnlyList<string> references = null;
-            IReadOnlyList<string> trimAssemblies = null;
-            string outputPath = null;
-            LogStrategy logStrategy = LogStrategy.None;
-            string logFile = null;
-            int? parallelism = null;
-            bool libraryMode = false;
-            IReadOnlyList<KeyValuePair<string, bool>> featureSwitches = null;
+            Arguments.Add(InputPath);
+            Options.Add(References);
+            Options.Add(TrimAssemblies);
+            Options.Add(OutputPath);
+            Options.Add(LogStrategy);
+            Options.Add(LogFile);
+            Options.Add(Parallelism);
+            Options.Add(LibraryMode);
+            Options.Add(FeatureSwitches);
 
-            ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
+            this.SetAction(result =>
             {
-                syntax.ApplicationName = typeof(Program).Assembly.GetName().Name;
+                string input = result.GetValue(InputPath);
+                if (string.IsNullOrEmpty(input))
+                {
+                    Console.Error.WriteLine("Input assembly is required");
+                    return 1;
+                }
 
-                syntax.DefineOptionList("r|reference", ref references, requireValue: false, "Reference assemblies");
-                syntax.DefineOptionList("t|trim", ref trimAssemblies, requireValue: false, "Trim assemblies");
-                syntax.DefineOption("o|out", ref outputPath, requireValue: false, "Output path");
-
-                string logStrategyName = null;
-                syntax.DefineOption("l|log", ref logStrategyName, requireValue: false, "Logging strategy");
-                syntax.DefineOption("logFile", ref logFile, requireValue: false, "Path to the log file");
+                global::ILCompiler.LogStrategy logStrategy = global::ILCompiler.LogStrategy.None;
+                string logStrategyName = result.GetValue(LogStrategy);
+                string logFile = result.GetValue(LogFile);
                 if (logStrategyName != null)
                 {
-                    if (!Enum.TryParse<LogStrategy>(logStrategyName, out logStrategy))
+                    if (!Enum.TryParse(logStrategyName, out logStrategy))
                     {
-                        throw new CommandLineException("Unknown log strategy");
+                        Console.Error.WriteLine("Unknown log strategy");
+                        return 1;
                     }
 
-                    if (logStrategy == LogStrategy.FullGraph || logStrategy == LogStrategy.FirstMark)
+                    if (logStrategy == global::ILCompiler.LogStrategy.FullGraph || logStrategy == global::ILCompiler.LogStrategy.FirstMark)
                     {
                         if (logFile == null)
-                            throw new CommandLineException("Specified log strategy requires a logFile option");
+                        {
+                            Console.Error.WriteLine("Specified log strategy requires a logFile option");
+                            return 1;
+                        }
                     }
-                    else
+                    else if (logFile != null)
                     {
-                        if (logFile != null)
-                            throw new CommandLineException("Specified log strategy can't use logFile option");
+                        Console.Error.WriteLine("Specified log strategy can't use logFile option");
+                        return 1;
                     }
                 }
                 else if (logFile != null)
                 {
-                    throw new CommandLineException("Log file can only be specified with logging strategy selection.");
+                    Console.Error.WriteLine("Log file can only be specified with logging strategy selection.");
+                    return 1;
                 }
 
-                int p = -1;
-                syntax.DefineOption("parallelism", ref p, requireValue: false, "Degree of parallelism");
-                parallelism = p == -1 ? null : p;
+                int p = result.GetValue(Parallelism);
+                int? parallelism = p == -1 ? null : p;
 
-                syntax.DefineOption("library", ref libraryMode, "Use library mode for the input assembly");
-
-                syntax.DefineOptionList<KeyValuePair<string, bool>>("feature", ref featureSwitches, requireValue: false, help: "Feature switch", valueConverter: (value) =>
+                string[] featureSwitchArgs = result.GetValue(FeatureSwitches);
+                var featureSwitchesDictionary = new Dictionary<string, bool>();
+                foreach (string value in featureSwitchArgs)
                 {
                     int sep = value.IndexOf('=');
                     if (sep == -1)
-                        throw new CommandLineException("The format of --feature value is <featureswitch>=<value>");
+                    {
+                        Console.Error.WriteLine("The format of --feature value is <featureswitch>=<value>");
+                        return 1;
+                    }
 
                     string fsName = value.Substring(0, sep);
                     string fsValue = value.Substring(sep + 1);
-                    return new KeyValuePair<string, bool>(fsName, bool.Parse(fsValue));
-                });
+                    featureSwitchesDictionary[fsName] = bool.Parse(fsValue);
+                }
 
-                syntax.DefineParameter("input", ref input, "The input assembly");
+                var settings = new TrimmerSettings(
+                    MaxDegreeOfParallelism: parallelism,
+                    LogStrategy: logStrategy,
+                    LogFile: logFile,
+                    LibraryMode: result.GetValue(LibraryMode),
+                    FeatureSwitches: featureSwitchesDictionary);
+
+                string[] references = result.GetValue(References);
+                string[] trimAssemblies = result.GetValue(TrimAssemblies);
+
+                Trimmer.TrimAssembly(
+                    input.Trim(),
+                    trimAssemblies,
+                    result.GetValue(OutputPath) ?? Directory.GetCurrentDirectory(),
+                    references,
+                    settings);
+
+                return 0;
             });
-
-            if (input == null)
-                throw new CommandLineException("Input assembly is required");
-
-            Dictionary<string, bool> featureSwitchesDictionary = new(featureSwitches ?? Array.Empty<KeyValuePair<string, bool>>());
-            var settings = new TrimmerSettings(
-                MaxDegreeOfParallelism: parallelism,
-                LogStrategy: logStrategy,
-                LogFile: logFile,
-                LibraryMode: libraryMode,
-                FeatureSwitches: featureSwitchesDictionary);
-            Trimmer.TrimAssembly(
-                input.Trim(),
-                trimAssemblies,
-                outputPath ?? Directory.GetCurrentDirectory(),
-                references,
-                settings);
         }
+    }
+
+    public class Program
+    {
+        private static int Main(string[] args) =>
+            new ILTrimRootCommand()
+                .Parse(args)
+                .Invoke();
     }
 }

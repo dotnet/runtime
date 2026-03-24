@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -6,13 +6,16 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysisFramework;
-using ILCompiler.Logging;
 
-namespace ILTrim.DependencyAnalysis
+using ILCompiler;
+using ILLink.Shared.TrimAnalysis;
+
+namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Class that aids in interning nodes of the dependency graph.
@@ -22,7 +25,7 @@ namespace ILTrim.DependencyAnalysis
         IReadOnlySet<string> _trimAssemblies { get; }
         public TrimmerSettings Settings { get; }
 
-        public ILCompiler.Logger Logger { get; }
+        public Logger Logger { get; }
 
         public FlowAnnotations FlowAnnotations { get; }
 
@@ -30,8 +33,9 @@ namespace ILTrim.DependencyAnalysis
         {
             _trimAssemblies = new HashSet<string>(trimAssemblies);
             Settings = settings;
-            Logger = new ILCompiler.Logger(Console.Out, isVerbose: false);
-            FlowAnnotations = new FlowAnnotations(Logger, new ILProvider());
+            var ilProvider = new ILTrimILProvider();
+            Logger = new Logger(Console.Out, ilProvider, isVerbose: false, disableGeneratedCodeHeuristics: false);
+            FlowAnnotations = new FlowAnnotations(Logger, ilProvider, new CompilerGeneratedState(ilProvider, Logger, disableGeneratedCodeHeuristics: false));
         }
 
         /// <summary>
@@ -305,6 +309,61 @@ namespace ILTrim.DependencyAnalysis
         {
             return Settings.LibraryMode;
         }
+
+        // --- Dataflow support properties and methods ---
+
+        private CompilerTypeSystemContext _typeSystemContext;
+        public CompilerTypeSystemContext TypeSystemContext
+        {
+            get => _typeSystemContext;
+            set => _typeSystemContext = value;
+        }
+
+        private MetadataManager _metadataManager = new UsageBasedMetadataManager();
+        public MetadataManager MetadataManager => _metadataManager;
+
+        NodeCache<TypeDesc, ReflectedTypeNode> _reflectedTypes = new NodeCache<TypeDesc, ReflectedTypeNode>(key
+            => new ReflectedTypeNode(key));
+        public ReflectedTypeNode ReflectedType(TypeDesc type) => _reflectedTypes.GetOrAdd(type);
+
+        NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods = new NodeCache<MethodDesc, ReflectedMethodNode>(key
+            => new ReflectedMethodNode(key));
+        public ReflectedMethodNode ReflectedMethod(MethodDesc method) => _reflectedMethods.GetOrAdd(method);
+
+        NodeCache<FieldDesc, ReflectedFieldNode> _reflectedFields = new NodeCache<FieldDesc, ReflectedFieldNode>(key
+            => new ReflectedFieldNode(key));
+        public ReflectedFieldNode ReflectedField(FieldDesc field) => _reflectedFields.GetOrAdd(field);
+
+        NodeCache<DefType, StructMarshallingDataNode> _structMarshallingDataNodes = new NodeCache<DefType, StructMarshallingDataNode>(key
+            => new StructMarshallingDataNode(key));
+        public StructMarshallingDataNode StructMarshallingData(DefType type) => _structMarshallingDataNodes.GetOrAdd(type);
+
+        NodeCache<DefType, DelegateMarshallingDataNode> _delegateMarshallingDataNodes = new NodeCache<DefType, DelegateMarshallingDataNode>(key
+            => new DelegateMarshallingDataNode(key));
+        public DelegateMarshallingDataNode DelegateMarshallingData(DefType type) => _delegateMarshallingDataNodes.GetOrAdd(type);
+
+        private ReflectedDelegateNode _unknownReflectedDelegate = new ReflectedDelegateNode(null);
+        NodeCache<TypeDesc, ReflectedDelegateNode> _reflectedDelegates = new NodeCache<TypeDesc, ReflectedDelegateNode>(key
+            => new ReflectedDelegateNode(key));
+        public ReflectedDelegateNode ReflectedDelegate(TypeDesc type)
+        {
+            if (type == null)
+                return _unknownReflectedDelegate;
+            return _reflectedDelegates.GetOrAdd(type);
+        }
+
+        NodeCache<MetadataType, ObjectGetTypeCalledNode> _objectGetTypeCalledNodes = new NodeCache<MetadataType, ObjectGetTypeCalledNode>(key
+            => new ObjectGetTypeCalledNode(key));
+        public ObjectGetTypeCalledNode ObjectGetTypeCalled(MetadataType type) => _objectGetTypeCalledNodes.GetOrAdd(type);
+
+        NodeCache<TypeDesc, DataflowAnalyzedTypeDefinitionNode> _dataflowAnalyzedTypes = new NodeCache<TypeDesc, DataflowAnalyzedTypeDefinitionNode>(key
+            => new DataflowAnalyzedTypeDefinitionNode(key));
+        public DataflowAnalyzedTypeDefinitionNode DataflowAnalyzedTypeDefinition(TypeDesc type) => _dataflowAnalyzedTypes.GetOrAdd(type);
+
+        public ExternalTypeMapRequestNode ExternalTypeMapRequest(TypeDesc type) => new ExternalTypeMapRequestNode(type);
+        public ProxyTypeMapRequestNode ProxyTypeMapRequest(TypeDesc type) => new ProxyTypeMapRequestNode(type);
+
+        public EcmaModule ModuleMetadata(ModuleDesc module) => (EcmaModule)module;
 
         private struct HandleKey<T> : IEquatable<HandleKey<T>> where T : struct, IEquatable<T>
         {
