@@ -120,6 +120,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetModuleBaseName.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleFileNameEx.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetModuleFileNameEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleInformation.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.HandleInformation.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetProcessWorkingSetSizeEx.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.SetProcessWorkingSetSizeEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessWorkingSetSizeEx.cs"
