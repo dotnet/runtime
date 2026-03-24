@@ -18,6 +18,7 @@ public class Test_pluggaps
     public static List<byte[]> bList = new List<byte[]>();
 
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
+    [SkipOnCoreClr("This test is not compatible with HeapVerify.", RuntimeTestModes.HeapVerify)]
     [Fact]
     public static void TestEntryPoint()
     {

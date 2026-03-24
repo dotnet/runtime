@@ -12013,6 +12013,7 @@ internal class D : C
 }
 public class CTest
 {
+    [SkipOnCoreClr("This test simply takes too long to complete under heap verify; it is not fundamentally incompatible.", RuntimeTestModes.HeapVerify)]
     [Fact]
     public static int TestEntryPoint()
     {

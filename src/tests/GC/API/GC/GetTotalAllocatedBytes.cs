@@ -178,6 +178,7 @@ public class Test_GetTotalAllocatedBytes
 
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/121482", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsArm))]
+    [SkipOnCoreClr("This test is not compatible with HeapVerify.", RuntimeTestModes.HeapVerify)]
     [Fact]
     public static void TestEntryPoint() 
     {

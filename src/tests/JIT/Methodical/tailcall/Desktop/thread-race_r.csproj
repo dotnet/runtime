@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- NOTE: this test simply takes too long to complete under heap verify or GCStress. It is not fundamentally incompatible. -->
-    <HeapVerifyIncompatible>true</HeapVerifyIncompatible>
-    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- NOTE: this test simply takes too long to complete under GCStress. It is not fundamentally incompatible. -->
+    <!-- Needed for GCStressIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <GCStressIncompatible>true</GCStressIncompatible>
     <IsLongRunningGCTest>true</IsLongRunningGCTest>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>

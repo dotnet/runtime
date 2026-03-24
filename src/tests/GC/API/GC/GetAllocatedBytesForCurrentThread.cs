@@ -101,6 +101,7 @@ public class Test_GetAllocatedBytesForCurrentThread
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
+    [SkipOnCoreClr("This test is not compatible with HeapVerify.", RuntimeTestModes.HeapVerify)]
     [Fact]
     public static int TestEntryPoint() 
     {
