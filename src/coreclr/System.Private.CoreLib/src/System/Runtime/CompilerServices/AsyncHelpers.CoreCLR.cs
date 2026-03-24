@@ -903,6 +903,113 @@ namespace System.Runtime.CompilerServices
             flags |= ContinuationFlags.ContinueOnThreadPool;
         }
 
+        // Finish suspension when no continuaion context needs to be captured, i.e. for a custom await or for a ConfigureAwait(false) task await:
+        // - Capture current ExecutionContext into the continuation
+        // - Restore ExecutionContext and SynchronizationContext to the current Thread object
+        private static void FinishSuspensionNoContinuationContext(ref ExecutionContext? execCtx, bool resumed, ExecutionContext previousExecCtx, SynchronizationContext previousSyncCtx)
+        {
+            Thread thread = Thread.CurrentThreadAssumedInitialized;
+
+            ExecutionContext? threadExecCtx = thread._executionContext;
+
+            // Commonly when we reuse a continuation we have already the right
+            // context saved, or we are saving null and it is already null.
+            if (threadExecCtx != execCtx)
+            {
+                if (threadExecCtx != null && threadExecCtx.InstanceIsFlowSuppressed)
+                {
+                    execCtx = ExecutionContext.DefaultFlowSuppressed;
+                }
+                else
+                {
+                    execCtx = threadExecCtx;
+                }
+            }
+            else
+            {
+                Debug.Assert(threadExecCtx == null || !threadExecCtx.InstanceIsFlowSuppressed);
+            }
+
+            if (!resumed)
+            {
+                if (previousSyncCtx != thread._synchronizationContext)
+                {
+                    thread._synchronizationContext = previousSyncCtx;
+                }
+
+                if (previousExecCtx != threadExecCtx)
+                {
+                    thread._executionContext = previousExecCtx;
+                }
+            }
+        }
+
+        // Finish suspension when a continuaion context needs to be captured, i.e. for a a standard task await:
+        // - Record continuation context to determine where to continue on resumption
+        // - Capture current ExecutionContext into the continuation
+        // - Restore ExecutionContext and SynchronizationContext to the current Thread object
+        private static void FinishSuspensionWithContinuationContext(ref object continuationContext, ref ContinuationFlags flags, ref ExecutionContext? execCtx, bool resumed, ExecutionContext previousExecCtx, SynchronizationContext previousSyncCtx)
+        {
+            Thread thread = Thread.CurrentThreadAssumedInitialized;
+            SynchronizationContext? threadSyncCtx = thread._synchronizationContext;
+            if (threadSyncCtx != null && threadSyncCtx.GetType() != typeof(SynchronizationContext))
+            {
+                flags |= ContinuationFlags.ContinueOnCapturedSynchronizationContext;
+                if (continuationContext != threadSyncCtx)
+                {
+                    continuationContext = threadSyncCtx;
+                }
+            }
+            else
+            {
+                TaskScheduler? sched = TaskScheduler.InternalCurrent;
+                if (sched != null && sched != TaskScheduler.Default)
+                {
+                    flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
+                    if (continuationContext != sched)
+                    {
+                        continuationContext = sched;
+                    }
+                }
+                else
+                {
+                    flags |= ContinuationFlags.ContinueOnThreadPool;
+                }
+            }
+
+            ExecutionContext? threadExecCtx = thread._executionContext;
+            // Commonly when we reuse a continuation we have already the right
+            // context saved, or we are saving null and it is already null.
+            if (threadExecCtx != execCtx)
+            {
+                if (threadExecCtx != null && threadExecCtx.InstanceIsFlowSuppressed)
+                {
+                    execCtx = ExecutionContext.DefaultFlowSuppressed;
+                }
+                else
+                {
+                    execCtx = threadExecCtx;
+                }
+            }
+            else
+            {
+                Debug.Assert(threadExecCtx == null || !threadExecCtx.InstanceIsFlowSuppressed);
+            }
+
+            if (!resumed)
+            {
+                if (previousSyncCtx != threadSyncCtx)
+                {
+                    thread._synchronizationContext = previousSyncCtx;
+                }
+
+                if (previousExecCtx != threadExecCtx)
+                {
+                    thread._executionContext = previousExecCtx;
+                }
+            }
+        }
+
         [StackTraceHidden]
         internal static T CompletedTaskResult<T>(Task<T> task)
         {
