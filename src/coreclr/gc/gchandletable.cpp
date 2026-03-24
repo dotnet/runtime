@@ -170,11 +170,6 @@ void GCHandleManager::DestroyHandleOfType(OBJECTHANDLE handle, HandleType type)
     ::HndDestroyHandle(::HndGetHandleTable(handle), type, handle);
 }
 
-void GCHandleManager::DestroyHandleOfTypeLocked(OBJECTHANDLE handle, HandleType type)
-{
-    ::HndDestroyHandleLocked(::HndGetHandleTable(handle), type, handle);
-}
-
 void GCHandleManager::DestroyHandleOfUnknownType(OBJECTHANDLE handle)
 {
     ::HndDestroyHandleOfUnknownType(::HndGetHandleTable(handle), handle);
@@ -225,5 +220,10 @@ HandleType GCHandleManager::HandleFetchType(OBJECTHANDLE handle)
 void GCHandleManager::TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2)
 {
     ::Ref_TraceRefCountHandles(callback, param1, param2);
+}
+
+void GCHandleManager::DestroyHandleOfTypeLocked(OBJECTHANDLE handle, HandleType type)
+{
+    ::HndDestroyHandleLocked(::HndGetHandleTable(handle), type, handle);
 }
 

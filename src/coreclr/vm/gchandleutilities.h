@@ -258,8 +258,8 @@ inline void DestroyHandleCommon(OBJECTHANDLE handle, HandleType type)
 
 // Variant of DestroyHandleCommon that is safe to call from preemptive mode
 // and from threads that the runtime does not know about.
-// It takes the handle table lock to prevent races with GC scanning,
-// bypassing the lock-free cache path.
+// It takes the handle table lock to synchronize with GC handle scanning,
+// preventing races that would occur on the lock-free cache path.
 inline void DestroyHandleInPreemptiveMode(OBJECTHANDLE handle, HandleType type)
 {
     CONTRACTL

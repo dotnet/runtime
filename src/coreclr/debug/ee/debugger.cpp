@@ -10984,22 +10984,18 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             OBJECTHANDLE objectHandle = pEvent->DisposeHandle.vmObjectHandle.GetRawPtr();
             CorDebugHandleType handleType = pEvent->DisposeHandle.handleType;
 
-            // Switch to cooperative mode if a managed thread exists.
-            // On the native debugger helper thread (no managed Thread),
-            // the IFTHREAD variant is a no-op and the MODE_COOPERATIVE
-            // contract in DestroyHandleCommon is also a no-op.
-            GCX_COOP_EEINTERFACE_IFTHREAD();
-
+            // Use the preemptive-mode-safe variant because this can run on
+            // the native debugger helper thread which has no managed Thread.
             switch (handleType)
             {
             case HANDLE_STRONG:
-                DestroyStrongHandle(objectHandle);
+                DestroyHandleInPreemptiveMode(objectHandle, HNDTYPE_STRONG);
                 break;
             case HANDLE_WEAK_TRACK_RESURRECTION:
-                DestroyLongWeakHandle(objectHandle);
+                DestroyHandleInPreemptiveMode(objectHandle, HNDTYPE_WEAK_LONG);
                 break;
             case HANDLE_PINNED:
-                DestroyPinningHandle(objectHandle);
+                DestroyHandleInPreemptiveMode(objectHandle, HNDTYPE_PINNED);
                 break;
             default:
                 pEvent->hr = E_INVALIDARG;
@@ -12310,8 +12306,7 @@ HRESULT Debugger::UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF
         }
         else
         {
-            GCX_COOP_EEINTERFACE_IFTHREAD();
-            DestroyLongWeakHandle(objHandle);
+            DestroyHandleInPreemptiveMode(objHandle, HNDTYPE_WEAK_LONG);
         }
     }
     else
@@ -12320,8 +12315,7 @@ HRESULT Debugger::UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF
         {
             m_pForceCatchHandlerFoundEventsTable->Remove(objHandle);
         }
-        GCX_COOP_EEINTERFACE_IFTHREAD();
-        DestroyLongWeakHandle(objHandle);
+        DestroyHandleInPreemptiveMode(objHandle, HNDTYPE_WEAK_LONG);
     }
     return S_OK;
 }

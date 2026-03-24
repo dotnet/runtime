@@ -11,7 +11,7 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 8
+#define GC_INTERFACE_MINOR_VERSION 9
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
@@ -619,10 +619,6 @@ public:
 
     virtual void DestroyHandleOfType(OBJECTHANDLE handle, HandleType type) PURE_VIRTUAL
 
-    // Variant of DestroyHandleOfType that takes the handle table lock.
-    // Safe to call from preemptive mode or from threads not known to the runtime.
-    virtual void DestroyHandleOfTypeLocked(OBJECTHANDLE handle, HandleType type) PURE_VIRTUAL
-
     virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle) PURE_VIRTUAL
 
     virtual void SetExtraInfoForHandle(OBJECTHANDLE handle, HandleType type, void* pExtraInfo) PURE_VIRTUAL
@@ -642,6 +638,10 @@ public:
     virtual HandleType HandleFetchType(OBJECTHANDLE handle) PURE_VIRTUAL
 
     virtual void TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2) PURE_VIRTUAL
+
+    // Variant of DestroyHandleOfType that takes the handle table lock.
+    // Safe to call from preemptive mode or from threads not known to the runtime.
+    virtual void DestroyHandleOfTypeLocked(OBJECTHANDLE handle, HandleType type) PURE_VIRTUAL
 };
 
 // Enum representing the type to be passed to GC.CoreCLR.cs used to deduce the type of configuration.

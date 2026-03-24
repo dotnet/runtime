@@ -2292,8 +2292,26 @@ Thread::~Thread()
 
     if (!IsAtProcessExit())
     {
-        // Destroy any handles that we're using to hold onto exception objects
-        SafeSetThrowables(NULL);
+        // Destroy any remaining handles that weren't cleaned up by CooperativeCleanup.
+        // Use DestroyHandleInPreemptiveMode since the destructor can run outside
+        // cooperative mode (e.g., if HasStarted failed and CooperativeCleanup was skipped).
+        if (m_LastThrownObjectHandle != NULL &&
+            !CLRException::IsPreallocatedExceptionHandle(m_LastThrownObjectHandle))
+        {
+            DestroyHandleInPreemptiveMode(m_LastThrownObjectHandle, HNDTYPE_DEFAULT);
+            m_LastThrownObjectHandle = NULL;
+        }
+
+        if (m_ExposedObject != NULL)
+        {
+            DestroyHandleInPreemptiveMode(m_ExposedObject, HNDTYPE_WEAK_SHORT);
+            m_ExposedObject = NULL;
+        }
+        if (m_StrongHndToExposedObject != NULL)
+        {
+            DestroyHandleInPreemptiveMode(m_StrongHndToExposedObject, HNDTYPE_STRONG);
+            m_StrongHndToExposedObject = NULL;
+        }
     }
 
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
