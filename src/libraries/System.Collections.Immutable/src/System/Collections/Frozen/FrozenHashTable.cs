@@ -189,14 +189,15 @@ namespace System.Collections.Frozen
 
             // If the minimum bucket count combined with hash codes exceeds array length limits,
             // skip the expensive collision-counting loop below — any bucket count it finds
-            // would cause Create to fail. Fall back to the next prime above uniqueCodesCount.
+            // would cause Create to fail. Fall back to a prime that maintains ~0.5 load factor.
 #if NET
             if (minNumBuckets + hashCodes.Length > Array.MaxLength)
 #else
             if (minNumBuckets + hashCodes.Length > 0x7FFFFFC7)
 #endif
             {
-                return HashHelpers.GetPrime(uniqueCodesCount);
+                int targetBuckets = (int)Math.Min(minNumBuckets, int.MaxValue);
+                return HashHelpers.GetPrime(targetBuckets);
             }
 
             // In our precomputed primes table, find the index of the smallest prime that's at least as large as our number of
