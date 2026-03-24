@@ -319,20 +319,20 @@ namespace System.Diagnostics
                             if (argEnd != -1)
                             {
                                 name = GetUntruncatedNameFromArg(argRemainder.Slice(0, argEnd), prefix: stat.comm);
-                                return name ?? GetExeBasenameOrComm(procPid, stat.comm);
+                                return name ?? stat.comm;
                             }
                         }
 
                         if (n == 0)
                         {
-                            return GetExeBasenameOrComm(procPid, stat.comm);
+                            return stat.comm;
                         }
                     }
                 }
             }
             catch (IOException)
             {
-                return GetExeBasenameOrComm(procPid, stat.comm);
+                return stat.comm;
             }
             finally
             {
@@ -357,26 +357,6 @@ namespace System.Diagnostics
                     return null;
                 }
             }
-        }
-
-        /// <summary>
-        /// Gets the process name from /proc/pid/exe basename, falling back to the stat comm field.
-        /// This eliminates the fork/exec race on glibc Linux (where vfork() is used): vfork() keeps
-        /// the parent suspended until exec_mmap() runs in the child, so /proc/pid/exe is already
-        /// updated to the new binary by the time the parent can call this method. stat.comm may
-        /// still lag behind (it is updated by setup_new_exec(), which runs after exec_mmap()), which
-        /// is why reading /proc/pid/exe is preferred here. The race is fully closed for the cases
-        /// where it was observed to fail in practice.
-        /// </summary>
-        private static string GetExeBasenameOrComm(Interop.procfs.ProcPid procPid, string comm)
-        {
-            if (GetExePath(procPid) is string exePath &&
-                Path.GetFileName(exePath) is { Length: > 0 } exeBasename)
-            {
-                return exeBasename;
-            }
-
-            return comm;
         }
 
         // ----------------------------------

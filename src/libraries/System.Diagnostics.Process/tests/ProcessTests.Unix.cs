@@ -351,7 +351,16 @@ namespace System.Diagnostics.Tests
             {
                 try
                 {
-                    Assert.Equal(Program, px.ProcessName);
+                    // ProcessName may transiently reflect the parent process name immediately after
+                    // fork() if execve() hasn't completed yet, so poll briefly until it stabilizes.
+                    string processName = px.ProcessName;
+                    for (int i = 0; processName != Program && i < 20; i++)
+                    {
+                        Thread.Sleep(50);
+                        px.Refresh();
+                        processName = px.ProcessName;
+                    }
+                    Assert.Equal(Program, processName);
                 }
                 finally
                 {
@@ -374,7 +383,16 @@ namespace System.Diagnostics.Tests
             {
                 try
                 {
-                    Assert.Equal(Program, px.ProcessName);
+                    // ProcessName may transiently reflect the parent process name immediately after
+                    // fork() if execve() hasn't completed yet, so poll briefly until it stabilizes.
+                    string processName = px.ProcessName;
+                    for (int i = 0; processName != Program && i < 20; i++)
+                    {
+                        Thread.Sleep(50);
+                        px.Refresh();
+                        processName = px.ProcessName;
+                    }
+                    Assert.Equal(Program, processName);
                 }
                 finally
                 {
