@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -183,8 +184,8 @@ internal static partial class Interop
             return Utf8StringMarshaller.ConvertToManaged(message)!;
         }
 
-[RequiresUnsafe]
 #if SERIAL_PORTS
+        [RequiresUnsafe]
         [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPlatformToPal")]
         internal static partial Error ConvertErrorPlatformToPal(int platformErrno);
 
@@ -195,8 +196,8 @@ internal static partial class Interop
         [RequiresUnsafe]
         [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_StrErrorR")]
         private static unsafe partial byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
-[RequiresUnsafe]
 #else
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConvertErrorPlatformToPal")]
         [SuppressGCTransition]
         internal static partial Error ConvertErrorPlatformToPal(int platformErrno);

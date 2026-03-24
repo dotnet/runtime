@@ -14,6 +14,7 @@ using MemoryMarshal = Microsoft.Quic.Polyfill.MemoryMarshal;
 using MemoryMarshal = System.Runtime.InteropServices.MemoryMarshal;
 #endif
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Quic

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -102,9 +103,9 @@ internal static partial class Interop
                     int cchCount1,
                     char* lpString2,
                     int cchCount2,
-                    [RequiresUnsafe]
                     [MarshalAs(UnmanagedType.Bool)] bool bIgnoreCase);
 
+        [RequiresUnsafe]
         [LibraryImport("kernel32.dll", EntryPoint = "FindStringOrdinal", SetLastError = SetLastErrorForDebug)]
         internal static unsafe partial int FindStringOrdinal(
                     uint dwFindStringOrdinalFlags,

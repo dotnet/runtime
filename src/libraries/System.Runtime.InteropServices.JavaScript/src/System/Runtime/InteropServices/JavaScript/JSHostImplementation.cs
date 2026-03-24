@@ -273,8 +273,8 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-[RequiresUnsafe]
 #if FEATURE_WASM_MANAGED_THREADS
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]
         private static extern ref bool GetThreadExternalEventloop(Thread @this);
 

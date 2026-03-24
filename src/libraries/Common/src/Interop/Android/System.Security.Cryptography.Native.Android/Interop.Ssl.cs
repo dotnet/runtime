@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;

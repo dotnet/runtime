@@ -23,6 +23,7 @@ namespace System.Diagnostics.Tracing
             EventPipeProviderConfigurationNative* providers,
             uint numProviders);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Disable")]
         internal static partial void Disable(ulong sessionID);
 
@@ -39,12 +40,15 @@ namespace System.Diagnostics.Tracing
         [RequiresUnsafe]
         internal static unsafe partial IntPtr DefineEvent(IntPtr provHandle, uint eventID, long keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_GetProvider", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial IntPtr GetProvider(string providerName);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_DeleteProvider")]
         internal static partial void DeleteProvider(IntPtr provHandle);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_EventActivityIdControl")]
         internal static partial int EventActivityIdControl(uint controlCode, ref Guid activityId);
 

@@ -6,6 +6,7 @@ using Microsoft.Win32.SafeHandles;
 #else
 using Internal.Win32.SafeHandles;
 #endif
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop

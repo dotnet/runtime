@@ -868,6 +868,7 @@ namespace System.Threading
 
 #if !MONO
         #region MemoryBarrierProcessWide
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
         private static partial void _MemoryBarrierProcessWide();
 

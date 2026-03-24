@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -27,8 +28,8 @@ internal static partial class Interop
 #if MONO
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void CFRunLoopRun();
-[RequiresUnsafe]
 #else
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
         internal static partial void CFRunLoopRun();
 #endif

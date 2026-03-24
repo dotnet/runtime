@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Eventing.Reader;
 using System.Runtime.InteropServices;
 #if NET
