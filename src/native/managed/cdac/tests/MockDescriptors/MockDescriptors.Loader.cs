@@ -41,7 +41,7 @@ internal partial class MockDescriptors
                 ]);
         }
 
-        internal TargetPointer AddModule(string? path = null, string? fileName = null, string? simpleName = null)
+        internal TargetPointer AddModule(string? path = null, string? fileName = null, string? simpleName = null, byte[]? simpleNameBytes = null)
         {
             TargetTestHelpers helpers = _builder.TargetTestHelpers;
             Target.TypeInfo typeInfo = Types[DataType.Module];
@@ -49,12 +49,13 @@ internal partial class MockDescriptors
             MockMemorySpace.HeapFragment module = _allocator.Allocate(size, "Module");
             _builder.AddHeapFragment(module);
 
-            if (simpleName != null)
+            byte[]? rawSimpleName = simpleName is not null ? Encoding.UTF8.GetBytes(simpleName) : simpleNameBytes;
+            if (rawSimpleName != null)
             {
                 // Simple name data (UTF-8, null-terminated)
-                ulong simpleNameSize = (ulong)Encoding.UTF8.GetByteCount(simpleName) + 1;
-                MockMemorySpace.HeapFragment simpleNameFragment = _allocator.Allocate(simpleNameSize, $"Module simple name = {simpleName}");
-                Encoding.UTF8.GetBytes(simpleName).AsSpan().CopyTo(simpleNameFragment.Data);
+                ulong simpleNameSize = (ulong)rawSimpleName.Length + 1;
+                MockMemorySpace.HeapFragment simpleNameFragment = _allocator.Allocate(simpleNameSize, "Module simple name");
+                rawSimpleName.AsSpan().CopyTo(simpleNameFragment.Data);
                 simpleNameFragment.Data[^1] = 0;
                 _builder.AddHeapFragment(simpleNameFragment);
 
