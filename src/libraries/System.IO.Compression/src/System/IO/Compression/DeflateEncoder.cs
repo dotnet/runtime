@@ -69,25 +69,7 @@ namespace System.IO.Compression
             ValidateWindowLog(windowLog);
 
             int resolvedWindowLog = windowLog == -1 ? ZLibNative.DefaultWindowLog : windowLog;
-
-            // zlib-ng rejects windowBits 8 for raw deflate and gzip; classic zlib silently upgrades to 9.
-            // Clamp to 9 for these formats to match DeflateStream behavior.
-            if (format != CompressionFormat.ZLib)
-            {
-                resolvedWindowLog = Math.Max(resolvedWindowLog, 9);
-            }
-
-            // Compute windowBits based on the compression format:
-            // - Deflate: negative windowLog produces raw deflate (no header/trailer)
-            // - ZLib: positive windowLog produces zlib format
-            // - GZip: windowLog + 16 produces gzip format
-            int windowBits = format switch
-            {
-                CompressionFormat.Deflate => -resolvedWindowLog,
-                CompressionFormat.ZLib => resolvedWindowLog,
-                CompressionFormat.GZip => resolvedWindowLog + 16,
-                _ => throw new ArgumentOutOfRangeException(nameof(format))
-            };
+            int windowBits = ResolveWindowBits(resolvedWindowLog, format);
 
             int memLevel = quality == (int)ZLibNative.CompressionLevel.NoCompression
                 ? ZLibNative.Deflate_NoCompressionMemLevel
@@ -107,24 +89,8 @@ namespace System.IO.Compression
         {
             ArgumentNullException.ThrowIfNull(options);
 
-            // -1 means use the default window log
             int windowLog = options.WindowLog == -1 ? ZLibNative.DefaultWindowLog : options.WindowLog;
-
-            // zlib-ng rejects windowBits 8 for raw deflate and gzip; classic zlib silently upgrades to 9.
-            // Clamp to 9 for these formats to match DeflateStream behavior.
-            if (format != CompressionFormat.ZLib)
-            {
-                windowLog = Math.Max(windowLog, 9);
-            }
-
-            // Compute windowBits based on the compression format:
-            int windowBits = format switch
-            {
-                CompressionFormat.Deflate => -windowLog,
-                CompressionFormat.ZLib => windowLog,
-                CompressionFormat.GZip => windowLog + 16,
-                _ => throw new ArgumentOutOfRangeException(nameof(format))
-            };
+            int windowBits = ResolveWindowBits(windowLog, format);
 
             int memLevel = options.CompressionLevel == (int)ZLibNative.CompressionLevel.NoCompression
                 ? ZLibNative.Deflate_NoCompressionMemLevel
@@ -135,6 +101,27 @@ namespace System.IO.Compression
                 windowBits,
                 memLevel,
                 (ZLibNative.CompressionStrategy)options.CompressionStrategy);
+        }
+
+        /// <summary>
+        /// Resolves windowLog to windowBits based on the compression format.
+        /// Clamps windowLog 8 to 9 for Deflate and GZip to match zlib-ng behavior.
+        /// </summary>
+        private static int ResolveWindowBits(int windowLog, CompressionFormat format)
+        {
+            // zlib-ng rejects windowBits 8 for raw deflate and gzip; classic zlib silently upgrades to 9.
+            if (format != CompressionFormat.ZLib)
+            {
+                windowLog = Math.Max(windowLog, 9);
+            }
+
+            return format switch
+            {
+                CompressionFormat.Deflate => -windowLog,
+                CompressionFormat.ZLib => windowLog,
+                CompressionFormat.GZip => windowLog + 16,
+                _ => throw new ArgumentOutOfRangeException(nameof(format))
+            };
         }
 
         private static void ValidateQuality(int quality)
