@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Async covariant return NYI in NativeAOT -->
+    <DisableProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot'">true</DisableProjectBuild>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
