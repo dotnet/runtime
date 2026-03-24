@@ -28,12 +28,14 @@ public class ConvertDllsToWebcil : Task
     public ITaskItem[] WebcilCandidates { get; set; }
 
     /// <summary>
-    /// Non-DLL files from shared locations (runtime pack, NuGet cache) that were not
-    /// converted to webcil. These are candidates for Framework SourceType materialization.
-    /// When <see cref="IsEnabled"/> is true, items with WasmNativeBuildOutput metadata
-    /// (per-project native build outputs) are excluded — they're already unique per project.
-    /// When <see cref="IsEnabled"/> is false, all candidates (DLL and non-DLL), including
-    /// those with WasmNativeBuildOutput metadata, appear here with no additional filtering.
+    /// Files from shared locations (runtime pack, NuGet cache) that need Framework
+    /// SourceType materialization to get unique per-project Identity.
+    /// When <see cref="IsEnabled"/> is true, this is non-DLL items without
+    /// WasmNativeBuildOutput metadata (DLLs are converted to webcil, making them
+    /// per-project already). When <see cref="IsEnabled"/> is false, DLLs are also
+    /// included since they retain their shared paths without conversion.
+    /// Items with WasmNativeBuildOutput metadata are always excluded — they're
+    /// already unique per project.
     /// </summary>
     [Output]
     public ITaskItem[] PassThroughCandidates { get; set; }
@@ -51,10 +53,21 @@ public class ConvertDllsToWebcil : Task
         if (!IsEnabled)
         {
             // When webcil is disabled, no conversion occurs. All candidates pass
-            // through unchanged. All are also pass-through candidates since none
-            // were converted to webcil.
+            // through unchanged as WebcilCandidates (backward compat for publish).
+            // All candidates (DLLs and non-DLLs) without WasmNativeBuildOutput
+            // metadata are also pass-through candidates for Framework materialization.
+            // Unlike the enabled path (where DLLs are converted to webcil and become
+            // per-project), disabled DLLs retain their shared NuGet cache paths and
+            // need materialization to get unique per-project Identity.
             WebcilCandidates = Candidates;
-            PassThroughCandidates = Candidates;
+            foreach (var candidate in Candidates)
+            {
+                if (string.IsNullOrEmpty(candidate.GetMetadata("WasmNativeBuildOutput")))
+                {
+                    passThroughCandidates.Add(candidate);
+                }
+            }
+            PassThroughCandidates = passThroughCandidates.ToArray();
             return true;
         }
 

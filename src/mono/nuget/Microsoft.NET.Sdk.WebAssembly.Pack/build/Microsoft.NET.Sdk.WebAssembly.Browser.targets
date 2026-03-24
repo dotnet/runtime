@@ -414,9 +414,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="Assets" ItemName="_WasmFrameworkAssets" />
     </DefineStaticWebAssets>
 
-    <!-- Let the SDK task handle materialization: copies to obj/fx/{SourceId}/, transforms
-         metadata (SourceType→Discovered, SourceId→PackageId, AssetMode→CurrentProject),
-         and remaps any existing endpoints to the new materialized paths. -->
+    <!-- Let the SDK task handle materialization: copies assets to obj/fx/{SourceId}/, updates
+         metadata (e.g., setting SourceType to Discovered and defaulting AssetMode to CurrentProject),
+         and remaps any existing endpoints/paths to the new materialized asset Identity. -->
     <UpdatePackageStaticWebAssets
       Assets="@(_WasmFrameworkAssets)"
       IntermediateOutputPath="$(IntermediateOutputPath)"
@@ -428,10 +428,13 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Materialized framework assets must be visible to referencing projects (e.g. Blazor WASM
          hosted scenarios where the server project serves the client's framework files).
-         UpdatePackageStaticWebAssets defaults AssetMode to CurrentProject, but WASM framework
-         files need to flow through project references for publish and serving. -->
+         UpdatePackageStaticWebAssets defaults AssetMode to CurrentProject and CopyToOutputDirectory
+         to Never. Override both: AssetMode=All so assets flow through project references, and
+         CopyToOutputDirectory=PreserveNewest so they are copied from the intermediate materialized
+         path (obj/fx/{SourceId}/) to bin/wwwroot/_framework/ at build time. -->
     <ItemGroup>
-      <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)" AssetMode="All" />
+      <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)"
+        AssetMode="All" CopyToOutputDirectory="PreserveNewest" />
       <WasmStaticWebAsset Include="@(_WasmMaterializedFrameworkAssets)" />
     </ItemGroup>
 
