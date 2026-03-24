@@ -421,7 +421,7 @@ private:
     static void DestroyMarshInfo(UMThunkMarshInfo *pMarshInfo)
     {
         WRAPPER_NO_CONTRACT;
-        pMarshInfo->~UMThunkMarshInfo();
+        pMarshInfo->UMThunkMarshInfo::~UMThunkMarshInfo();
     }
 
     SHash<ThunkSHashTraits> m_hash;
