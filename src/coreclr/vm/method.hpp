@@ -1718,13 +1718,19 @@ public:
                                                         BOOL allowCreate = TRUE,
                                                         ClassLoadLevel level = CLASS_LOADED)
     {
+        // If this assert fires, we may just need to add a lookup that matches AsyncMethodFlags::ReturnDroppingThunk
+        // It does not look like there is a scenario for directly calling ReturnDroppingThunk right now.
+        _ASSERTE(!pPrimaryMD->IsReturnDroppingThunk());
+        // by default async lookup matches the primaryMD
+        AsyncVariantLookup variantLookup = pPrimaryMD->IsAsyncVariantMethod() ? AsyncVariantLookup::Async : AsyncVariantLookup::Ordinary;
+
         return FindOrCreateAssociatedMethodDesc(
             pPrimaryMD,
             pExactMT,
             forceBoxedEntryPoint,
             methodInst,
             allowInstParam,
-            pPrimaryMD->IsAsyncVariantMethod() ? AsyncVariantLookup::Async : AsyncVariantLookup::Ordinary,
+            variantLookup,
             forceRemotableMethod,
             allowCreate,
             level);
