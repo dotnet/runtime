@@ -58,6 +58,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return new ObjectData(reader.ReadBytes(size), Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
         }
 
+        internal static byte[] ReadBodyBytes(EcmaMethod method)
+        {
+            method = (EcmaMethod)method.GetTypicalMethodDefinition();
+            int rva = method.MetadataReader.GetMethodDefinition(method.Handle).RelativeVirtualAddress;
+            if (rva == 0)
+                return Array.Empty<byte>();
+            BlobReader reader = method.Module.PEReader.GetSectionData(rva).GetReader();
+            int size = MethodBodyBlock.Create(reader).Size;
+            return reader.ReadBytes(size);
+        }
+
         public override int ClassCode => 541651465;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
