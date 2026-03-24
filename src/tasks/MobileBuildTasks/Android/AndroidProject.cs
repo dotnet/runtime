@@ -20,6 +20,7 @@ namespace Microsoft.Android.Build
         private TaskLoggingHelper logger;
 
         private string abi;
+        private string androidNdkPath;
         private string androidToolchainPath;
         private string projectName;
         private string targetArchitecture;
@@ -33,6 +34,7 @@ namespace Microsoft.Android.Build
 
         public AndroidProject(string projectName, string runtimeIdentifier, string androidNdkPath, TaskLoggingHelper logger)
         {
+            this.androidNdkPath = androidNdkPath;
             androidToolchainPath = Path.Combine(androidNdkPath, "build", "cmake", "android.toolchain.cmake").Replace('\\', '/');
             abi = DetermineAbi(runtimeIdentifier);
             targetArchitecture = GetTargetArchitecture(runtimeIdentifier);
@@ -77,11 +79,16 @@ namespace Microsoft.Android.Build
             return Path.Combine(workingDir, projectName);
         }
 
-        public void StripBinaryInPlace(string filePath, string apiLevel = DefaultMinApiLevel)
+        public void StripBinaryInPlace(string filePath)
         {
-            NdkTools tools = new NdkTools(targetArchitecture, GetHostOS(), apiLevel);
-            string execExt = Utils.IsWindows() ? ".exe" : "";
-            string llvmStripPath = Path.Combine(tools.ToolPrefixPath, $"llvm-strip{execExt}");
+            string hostTag = GetHostOS() switch
+            {
+                "windows" => "windows-x86_64",
+                "osx" => "darwin-x86_64",
+                _ => "linux-x86_64"
+            };
+            string execExt = Utils.IsWindows() ? ".exe" : string.Empty;
+            string llvmStripPath = Path.Combine(androidNdkPath, "toolchains", "llvm", "prebuilt", hostTag, "bin", $"llvm-strip{execExt}");
             logger.LogMessage(MessageImportance.High, $"Stripping debug symbols from {filePath}");
             Utils.RunProcess(logger, llvmStripPath, args: $"--strip-debug \"{filePath}\"");
         }
