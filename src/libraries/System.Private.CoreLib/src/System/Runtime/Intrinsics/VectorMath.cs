@@ -3101,50 +3101,50 @@ namespace System.Runtime.Intrinsics
             TVectorDouble s = TVectorDouble.Sqrt(r);
 
             // Evaluate numerator polynomial: C1 + r*(C2 + r*(C3 + r*(C4 + r*(C5 + r*C6))))
-            TVectorDouble poly_num = TVectorDouble.Create(C6);
-            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C5));
-            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C4));
-            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C3));
-            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C2));
-            poly_num = TVectorDouble.MultiplyAddEstimate(poly_num, r, TVectorDouble.Create(C1));
+            TVectorDouble polyNum = TVectorDouble.Create(C6);
+            polyNum = TVectorDouble.MultiplyAddEstimate(polyNum, r, TVectorDouble.Create(C5));
+            polyNum = TVectorDouble.MultiplyAddEstimate(polyNum, r, TVectorDouble.Create(C4));
+            polyNum = TVectorDouble.MultiplyAddEstimate(polyNum, r, TVectorDouble.Create(C3));
+            polyNum = TVectorDouble.MultiplyAddEstimate(polyNum, r, TVectorDouble.Create(C2));
+            polyNum = TVectorDouble.MultiplyAddEstimate(polyNum, r, TVectorDouble.Create(C1));
 
             // Evaluate denominator polynomial: D1 + r*(D2 + r*(D3 + r*(D4 + r*D5)))
-            TVectorDouble poly_deno = TVectorDouble.Create(D5);
-            poly_deno = TVectorDouble.MultiplyAddEstimate(poly_deno, r, TVectorDouble.Create(D4));
-            poly_deno = TVectorDouble.MultiplyAddEstimate(poly_deno, r, TVectorDouble.Create(D3));
-            poly_deno = TVectorDouble.MultiplyAddEstimate(poly_deno, r, TVectorDouble.Create(D2));
-            poly_deno = TVectorDouble.MultiplyAddEstimate(poly_deno, r, TVectorDouble.Create(D1));
+            TVectorDouble polyDen = TVectorDouble.Create(D5);
+            polyDen = TVectorDouble.MultiplyAddEstimate(polyDen, r, TVectorDouble.Create(D4));
+            polyDen = TVectorDouble.MultiplyAddEstimate(polyDen, r, TVectorDouble.Create(D3));
+            polyDen = TVectorDouble.MultiplyAddEstimate(polyDen, r, TVectorDouble.Create(D2));
+            polyDen = TVectorDouble.MultiplyAddEstimate(polyDen, r, TVectorDouble.Create(D1));
 
-            // u = r * poly_num / poly_deno
-            TVectorDouble u = r * poly_num / poly_deno;
+            // u = r * polyNum / polyDen
+            TVectorDouble u = r * polyNum / polyDen;
 
             // For transform region: reconstruct using high-low precision arithmetic
             // s1 = high part of s (clear low 32 bits)
             // c = (r - s1*s1) / (s + s1)
             // p = 2*s*u - (PIBY2_TAIL - 2*c)
             // q = HPIBY2_HEAD - 2*s1
-            // v_transform = HPIBY2_HEAD - (p - q)
+            // vTransform = HPIBY2_HEAD - (p - q)
             TVectorDouble s1 = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(s) & TVectorUInt64.Create(0xFFFFFFFF00000000));
             TVectorDouble c = (r - s1 * s1) / (s + s1);
             TVectorDouble p = TVectorDouble.Create(2.0) * s * u - (TVectorDouble.Create(PIBY2_TAIL) - TVectorDouble.Create(2.0) * c);
             TVectorDouble q = TVectorDouble.Create(HPIBY2_HEAD) - TVectorDouble.Create(2.0) * s1;
-            TVectorDouble v_transform = TVectorDouble.Create(HPIBY2_HEAD) - (p - q);
+            TVectorDouble vTransform = TVectorDouble.Create(HPIBY2_HEAD) - (p - q);
 
             // For normal region: v = ax + ax*u
-            TVectorDouble v_normal = ax + ax * u;
+            TVectorDouble vNormal = ax + ax * u;
 
             // Select result based on transform
-            TVectorDouble v = TVectorDouble.ConditionalSelect(transformMask, v_transform, v_normal);
+            TVectorDouble v = TVectorDouble.ConditionalSelect(transformMask, vTransform, vNormal);
 
             // Toggle sign (XOR preserves sign inversion from original AMD AOCL)
             v ^= sign;
 
             // Handle x = ±1 exactly: asin(±1) = ±π/2
-            TVectorDouble absXEqualsOne = TVectorDouble.Equals(TVectorDouble.Abs(x), TVectorDouble.One);
+            TVectorDouble absXEqualsOne = TVectorDouble.Equals(ax, TVectorDouble.One);
             v = TVectorDouble.ConditionalSelect(absXEqualsOne, TVectorDouble.Create(PIBY2) ^ sign, v);
 
             // Handle |x| > 1: returns NaN
-            TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(TVectorDouble.Abs(x), TVectorDouble.One);
+            TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(ax, TVectorDouble.One);
             v = TVectorDouble.ConditionalSelect(absXGreaterThanOne, TVectorDouble.Create(double.NaN), v);
 
             return v;
