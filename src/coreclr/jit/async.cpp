@@ -1650,7 +1650,7 @@ PhaseStatus AsyncTransformation::Run()
     DefaultValueAnalysis defaultValues(m_compiler);
     defaultValues.Run();
     PreservedValueAnalysis preservedValues(m_compiler);
-    preservedValues.Run(worklist);
+    preservedValues.Run(blocksWithNormalAwaits);
     AsyncLiveness liveness(m_compiler, defaultValues, preservedValues);
 
     // Now walk the IR for all the blocks that contain async calls. Keep track
