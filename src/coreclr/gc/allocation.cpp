@@ -5554,6 +5554,16 @@ uint8_t* gc_heap::allocate_in_condemned_generations (generation* gen,
 
 #ifdef SHORT_PLUGS
     int pad_in_front = ((old_loc != 0) && (to_gen_number != max_generation)) ? USE_PADDING_FRONT : 0;
+
+    // A near-region-sized plug can't fit with front padding even in an empty region, so skip the padding.
+    // This is safe because front padding only exists to protect short plugs (shorter than sizeof(plug_and_gap))
+    // from being overwritten by the plug_and_gap header during compaction — a plug this large is in no such danger.
+    if ((pad_in_front & USE_PADDING_FRONT) &&
+        (size + Align (min_obj_size) >
+        ((size_t)1 << min_segment_size_shr) - sizeof (aligned_plug_and_gap)))
+    {
+        pad_in_front = 0;
+    }
 #else //SHORT_PLUGS
     int pad_in_front = 0;
 #endif //SHORT_PLUGS
