@@ -74,7 +74,8 @@ internal partial class MockDescriptors
         /// <param name="hasInteropInfo">When false, the InteropInfo pointer in the SyncBlock is left null.</param>
         /// <returns>The address of the newly allocated SyncBlock.</returns>
         internal TargetPointer AddSyncBlockToCleanupList(
-            TargetPointer rcw, TargetPointer ccw, TargetPointer ccf, bool hasInteropInfo = true)
+            TargetPointer rcw, TargetPointer ccw, TargetPointer ccf,
+            bool hasInteropInfo = true, TargetPointer taggedMemory = default)
         {
             TargetTestHelpers helpers = Builder.TargetTestHelpers;
             Target.TypeInfo syncBlockTypeInfo = Types[DataType.SyncBlock];
@@ -95,6 +96,7 @@ internal partial class MockDescriptors
                 helpers.WritePointer(interopData.Slice(interopTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.RCW)].Offset), rcw);
                 helpers.WritePointer(interopData.Slice(interopTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.CCW)].Offset), ccw);
                 helpers.WritePointer(interopData.Slice(interopTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.CCF)].Offset), ccf);
+                helpers.WritePointer(interopData.Slice(interopTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.TaggedMemory)].Offset), taggedMemory);
                 helpers.WritePointer(syncBlockData.Slice(syncBlockTypeInfo.Fields[nameof(Data.SyncBlock.InteropInfo)].Offset), interopAddr);
             }
 

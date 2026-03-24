@@ -5665,40 +5665,47 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface11.IsTrackedType(ClrDataAddress objAddr, Interop.BOOL* isTrackedType, Interop.BOOL* hasTaggedMemory)
     {
         int hr = HResults.S_OK;
-        if (objAddr == 0 || isTrackedType == null || hasTaggedMemory == null)
+        try
         {
-            hr = HResults.E_INVALIDARG;
-        }
-        else
-        {
-            try
+            if (objAddr == 0 || isTrackedType == null || hasTaggedMemory == null)
             {
+                throw new ArgumentException();
+            }
+            else
+            {
+
                 *isTrackedType = Interop.BOOL.FALSE;
                 *hasTaggedMemory = Interop.BOOL.FALSE;
                 IObject objectContract = _target.Contracts.Object;
-                IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-                IObjectiveCMarshal objcContract = _target.Contracts.ObjectiveCMarshal;
                 TargetPointer objPtr = objAddr.ToTargetPointer(_target);
                 TargetPointer mt = objectContract.GetMethodTableAddress(objPtr);
+                IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+                TypeHandle mtHandle = rtsContract.GetTypeHandle(mt);
                 if (mt == TargetPointer.Null)
                 {
-                    hr = HResults.E_INVALIDARG;
+                    throw new ArgumentException();
                 }
                 else
                 {
-                    TypeHandle mtHandle = rtsContract.GetTypeHandle(mt);
                     if (rtsContract.IsTrackedReferenceWithFinalizer(mtHandle))
                         *isTrackedType = Interop.BOOL.TRUE;
                     hr = (*isTrackedType == Interop.BOOL.TRUE) ? HResults.S_OK : HResults.S_FALSE;
-                    TargetPointer taggedMemoryPtr = objcContract.GetTaggedMemory(objPtr, out TargetNUInt _);
-                    if (taggedMemoryPtr != TargetPointer.Null)
-                        *hasTaggedMemory = Interop.BOOL.TRUE;
+                    try
+                    {
+                        IObjectiveCMarshal objcContract = _target.Contracts.ObjectiveCMarshal;
+                        if (objcContract.TryGetTaggedMemory(objPtr, out _, out _))
+                            *hasTaggedMemory = Interop.BOOL.TRUE;
+                    }
+                    catch (NotImplementedException)
+                    {
+                        // TryGetTaggedMemory may not be implemented if ObjectiveCMarshal contract is not present
+                    }
                 }
             }
-            catch (System.Exception ex)
-            {
-                hr = ex.HResult;
-            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl11 is not null)
@@ -5706,7 +5713,7 @@ public sealed unsafe partial class SOSDacImpl
             Interop.BOOL isTrackedTypeLocal;
             Interop.BOOL hasTaggedMemoryLocal;
             int hrLocal = _legacyImpl11.IsTrackedType(objAddr, &isTrackedTypeLocal, &hasTaggedMemoryLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK || hr == HResults.S_FALSE)
             {
                 Debug.Assert(*isTrackedType == isTrackedTypeLocal);
@@ -5720,33 +5727,42 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface11.GetTaggedMemory(ClrDataAddress objAddr, ClrDataAddress* taggedMemory, nuint* taggedMemorySizeInBytes)
     {
         int hr = HResults.S_OK;
-        if (objAddr == 0 || taggedMemory == null || taggedMemorySizeInBytes == null)
+        try
         {
-            hr = HResults.E_INVALIDARG;
-        }
-        else
-        {
-            *taggedMemory = 0;
-            *taggedMemorySizeInBytes = 0;
-            try
+            if (objAddr == 0 || taggedMemory == null || taggedMemorySizeInBytes == null)
             {
-                IObjectiveCMarshal objcContract = _target.Contracts.ObjectiveCMarshal;
+                throw new ArgumentException();
+            }
+            else
+            {
+                *taggedMemory = 0;
+                *taggedMemorySizeInBytes = 0;
+
                 TargetPointer objPtr = objAddr.ToTargetPointer(_target);
-                TargetPointer taggedMemoryPtr = objcContract.GetTaggedMemory(objPtr, out TargetNUInt taggedMemorySizeNUInt);
-                if (taggedMemoryPtr != TargetPointer.Null)
+                try
                 {
-                    *taggedMemory = taggedMemoryPtr.ToClrDataAddress(_target);
-                    *taggedMemorySizeInBytes = (nuint)taggedMemorySizeNUInt.Value;
+                    IObjectiveCMarshal objcContract = _target.Contracts.ObjectiveCMarshal;
+                    if (objcContract.TryGetTaggedMemory(objPtr, out TargetNUInt taggedMemorySizeNUInt, out TargetPointer taggedMemoryPtr))
+                    {
+                        *taggedMemory = taggedMemoryPtr.ToClrDataAddress(_target);
+                        *taggedMemorySizeInBytes = (nuint)taggedMemorySizeNUInt.Value;
+                    }
+                    else
+                    {
+                        hr = HResults.S_FALSE;
+                    }
                 }
-                else
+                catch (NotImplementedException)
                 {
+                    // TryGetTaggedMemory may not be implemented if ObjectiveCMarshal contract is not present
                     hr = HResults.S_FALSE;
                 }
             }
-            catch (System.Exception ex)
-            {
-                hr = ex.HResult;
-            }
+        }
+
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl11 is not null)
@@ -5754,7 +5770,7 @@ public sealed unsafe partial class SOSDacImpl
             ClrDataAddress taggedMemoryLocal;
             nuint taggedMemorySizeInBytesLocal;
             int hrLocal = _legacyImpl11.GetTaggedMemory(objAddr, &taggedMemoryLocal, &taggedMemorySizeInBytesLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK || hr == HResults.S_FALSE)
             {
                 Debug.Assert(*taggedMemory == taggedMemoryLocal);

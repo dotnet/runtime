@@ -7,14 +7,12 @@ public sealed class ObjectiveCMarshalFactory : IContractFactory<IObjectiveCMarsh
 {
     IObjectiveCMarshal IContractFactory<IObjectiveCMarshal>.CreateContract(Target target, int version)
     {
-        TargetPointer syncTableEntries = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.SyncTableEntries));
         uint syncBlockIsHashOrSyncBlockIndex = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex);
         uint syncBlockIsHashCode = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashCode);
         uint syncBlockIndexMask = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIndexMask);
         return version switch
         {
-            1 => new ObjectiveCMarshal_1(target, syncTableEntries, syncBlockIsHashOrSyncBlockIndex, syncBlockIsHashCode, syncBlockIndexMask),
+            1 => new ObjectiveCMarshal_1(target, syncBlockIsHashOrSyncBlockIndex, syncBlockIsHashCode, syncBlockIndexMask),
             _ => default(ObjectiveCMarshal),
         };
     }

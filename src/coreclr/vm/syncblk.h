@@ -369,6 +369,7 @@ private:
     // should be updated as well.
     // See the TAGGED_MEMORY_SIZE_IN_POINTERS constant in
     // ObjectiveCMarshal.NativeAot.cs
+    // [cDAC] [ObjectiveCMarshal] : Contract depends on this size.
     BYTE m_taggedAlloc[2 * sizeof(void*)];
 #endif // FEATURE_OBJCMARSHAL
 
