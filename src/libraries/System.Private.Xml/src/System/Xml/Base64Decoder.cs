@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Diagnostics;
 
 namespace System.Xml
@@ -101,12 +102,22 @@ namespace System.Xml
 
         private void Decode(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsDecoded, out int bytesDecoded)
         {
-            // walk hex digits pairing them up and shoving the value of each pair into a byte
             int iByte = 0;
             int iChar = 0;
             int b = _bits;
             int bFilled = _bitsFilled;
 
+            // Fast path: bulk decode via BCL when no partial group is pending and output is large enough.
+            if (bFilled == 0 && bytes.Length >= 3)
+            {
+                Base64.DecodeFromChars(chars, bytes, out iChar, out iByte, isFinalBlock: false);
+                if (iChar == chars.Length || iByte == bytes.Length)
+                {
+                    goto Return;
+                }
+            }
+
+            // Slow path: walk chars one at a time, accumulating bits and emitting bytes.
             const byte Invalid = 255;
             ReadOnlySpan<byte> mapBase64 = // 123
             [
