@@ -859,7 +859,7 @@ namespace System.Text.Json.SourceGeneration
                     if (defaultCheckType != SerializedValueCheckType.None)
                     {
                         // Use temporary variable to evaluate property value only once
-                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode.TrimStart('@')}";
+                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode.TrimStart('@').Replace('.', '_')}";
                         writer.WriteLine($"{propertyGenSpec.PropertyType.FullyQualifiedName} {localVariableName} = {objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode};");
                         propValueExpr = localVariableName;
                     }
@@ -944,6 +944,11 @@ namespace System.Text.Json.SourceGeneration
 
             private static string GetParameterizedCtorInvocationFunc(TypeGenerationSpec typeGenerationSpec)
             {
+                if (typeGenerationSpec.HasNestedTupleElements)
+                {
+                    return GetTupleCtorInvocationFunc(typeGenerationSpec);
+                }
+
                 ImmutableEquatableArray<ParameterGenerationSpec> parameters = typeGenerationSpec.CtorParamGenSpecs;
                 ImmutableEquatableArray<PropertyInitializerGenerationSpec> propertyInitializers = typeGenerationSpec.PropertyInitializerSpecs;
 
@@ -1017,6 +1022,107 @@ namespace System.Text.Json.SourceGeneration
                         _ => $"({param.ParameterType.FullyQualifiedName}){argsVarName}[{param.ArgsIndex}]", // None or In (in doesn't require keyword at call site)
                     };
                 }
+            }
+
+            /// <summary>
+            /// Generates nested constructor invocation for tuple types.
+            /// For a 10-element tuple, generates:
+            /// static args => new ValueTuple&lt;...&gt;((T)args[0], ..., new ValueTuple&lt;...&gt;((T)args[7], ...))
+            /// </summary>
+            private static string GetTupleCtorInvocationFunc(TypeGenerationSpec typeGenerationSpec)
+            {
+                ImmutableEquatableArray<ParameterGenerationSpec> parameters = typeGenerationSpec.CtorParamGenSpecs;
+                const string ArgsVarName = "args";
+
+                StringBuilder sb = new($"static {ArgsVarName} => ");
+                AppendNestedTupleConstructor(sb, typeGenerationSpec, parameters, 0, ArgsVarName);
+                return sb.ToString();
+            }
+
+            /// <summary>
+            /// Recursively appends nested tuple constructor expressions.
+            /// Groups every 7 elements and wraps the remainder in a nested ValueTuple/Tuple constructor.
+            /// </summary>
+            private static void AppendNestedTupleConstructor(
+                StringBuilder sb,
+                TypeGenerationSpec typeSpec,
+                ImmutableEquatableArray<ParameterGenerationSpec> parameters,
+                int startIndex,
+                string argsVarName)
+            {
+                int remaining = parameters.Count - startIndex;
+                int directArgs = remaining > 7 ? 7 : remaining;
+
+                // Build the constructor type name from the parameter types at this nesting level.
+                // We must use the CLR type name (e.g. global::System.ValueTuple<int, int, ...>)
+                // rather than the C# tuple syntax (int, int, ...) because `new` doesn't work with tuple syntax.
+                string tuplePrefix = typeSpec.IsValueTuple ? "global::System.ValueTuple" : "global::System.Tuple";
+
+                sb.Append($"new {tuplePrefix}<");
+                for (int i = 0; i < directArgs; i++)
+                {
+                    sb.Append(parameters[startIndex + i].ParameterType.FullyQualifiedName);
+                    sb.Append(", ");
+                }
+
+                if (remaining > 7)
+                {
+                    // The last type argument is the nested tuple type — build it recursively.
+                    AppendNestedTupleTypeName(sb, typeSpec, parameters, startIndex + 7);
+                }
+                else
+                {
+                    sb.Length -= 2; // remove last ", "
+                }
+
+                sb.Append(">(");
+
+                for (int i = 0; i < directArgs; i++)
+                {
+                    ParameterGenerationSpec param = parameters[startIndex + i];
+                    sb.Append($"({param.ParameterType.FullyQualifiedName}){argsVarName}[{param.ArgsIndex}]");
+
+                    if (i < directArgs - 1 || remaining > 7)
+                    {
+                        sb.Append(", ");
+                    }
+                }
+
+                if (remaining > 7)
+                {
+                    AppendNestedTupleConstructor(sb, typeSpec, parameters, startIndex + 7, argsVarName);
+                }
+
+                sb.Append(')');
+            }
+
+            private static void AppendNestedTupleTypeName(
+                StringBuilder sb,
+                TypeGenerationSpec typeSpec,
+                ImmutableEquatableArray<ParameterGenerationSpec> parameters,
+                int startIndex)
+            {
+                int remaining = parameters.Count - startIndex;
+                int directArgs = remaining > 7 ? 7 : remaining;
+                string tuplePrefix = typeSpec.IsValueTuple ? "global::System.ValueTuple" : "global::System.Tuple";
+
+                sb.Append($"{tuplePrefix}<");
+                for (int i = 0; i < directArgs; i++)
+                {
+                    sb.Append(parameters[startIndex + i].ParameterType.FullyQualifiedName);
+                    sb.Append(", ");
+                }
+
+                if (remaining > 7)
+                {
+                    AppendNestedTupleTypeName(sb, typeSpec, parameters, startIndex + 7);
+                }
+                else
+                {
+                    sb.Length -= 2;
+                }
+
+                sb.Append('>');
             }
 
             private static string? GetPrimitiveWriterMethod(TypeGenerationSpec type)

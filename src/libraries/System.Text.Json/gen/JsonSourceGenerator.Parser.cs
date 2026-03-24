@@ -692,9 +692,36 @@ namespace System.Text.Json.SourceGeneration
                     implementsIJsonOnSerializing = _knownSymbols.IJsonOnSerializingType.IsAssignableFrom(type);
                     implementsIJsonOnSerialized = _knownSymbols.IJsonOnSerializedType.IsAssignableFrom(type);
 
-                    ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
-                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeIgnoreCondition, options, typeNamingPolicy, out hasExtensionDataProperty, out fastPathPropertyIndices);
-                    propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
+                    bool isTupleType = type.IsTupleType || IsReferenceTupleType(type);
+
+                    if (isTupleType)
+                    {
+                        propertySpecs = ParseTuplePropertyGenerationSpecs(contextType, typeToGenerate, options, out fastPathPropertyIndices);
+                        hasExtensionDataProperty = false;
+
+                        bool hasRestNesting = type is INamedTypeSymbol { Arity: 8 } namedTuple &&
+                            (namedTuple.TypeArguments[7].IsTupleType || IsReferenceTupleType(namedTuple.TypeArguments[7]));
+                        if (hasRestNesting)
+                        {
+                            // >7 element tuples need flattened constructor params and nested ctor invocation
+                            ctorParamSpecs = ParseTupleConstructorParameters(typeToGenerate, type);
+                            constructionStrategy = ObjectConstructionStrategy.ParameterizedConstructor;
+                            constructorSetsRequiredMembers = false;
+                            propertyInitializerSpecs = null;
+                        }
+                        else
+                        {
+                            // ≤7 element tuples use the standard constructor discovery
+                            ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
+                            propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
+                        }
+                    }
+                    else
+                    {
+                        ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
+                        propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeIgnoreCondition, options, typeNamingPolicy, out hasExtensionDataProperty, out fastPathPropertyIndices);
+                        propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
+                    }
                 }
 
                 var typeRef = new TypeRef(type);
@@ -736,6 +763,10 @@ namespace System.Text.Json.SourceGeneration
                     NullableUnderlyingType = nullableUnderlyingType,
                     RuntimeTypeRef = runtimeTypeRef,
                     IsValueTuple = type.IsTupleType,
+                    IsReferenceTuple = IsReferenceTupleType(type),
+                    HasNestedTupleElements = (type.IsTupleType || IsReferenceTupleType(type)) &&
+                        type is INamedTypeSymbol { Arity: 8 } nt2 &&
+                        (nt2.TypeArguments[7].IsTupleType || IsReferenceTupleType(nt2.TypeArguments[7])),
                     HasExtensionDataPropertyType = hasExtensionDataProperty,
                     ConverterType = customConverterType,
                     ImplementsIJsonOnSerialized = implementsIJsonOnSerialized,
@@ -2166,6 +2197,210 @@ namespace System.Text.Json.SourceGeneration
                         builtInSupportTypes.Add(type);
                     }
                 }
+            }
+
+            /// <summary>
+            /// Parses flattened property specs for tuple types (ValueTuple and System.Tuple).
+            /// Instead of emitting Item1-Item7 + Rest, emits Item1-ItemN with flattened accessors.
+            /// </summary>
+            private List<PropertyGenerationSpec> ParseTuplePropertyGenerationSpecs(
+                INamedTypeSymbol _,
+                in TypeToGenerate typeToGenerate,
+                SourceGenerationOptionsSpec? __,
+                out List<int>? fastPathPropertyIndices)
+            {
+                ITypeSymbol type = typeToGenerate.Type;
+                var properties = new List<PropertyGenerationSpec>();
+                var declaringTypeRef = new TypeRef(type);
+                fastPathPropertyIndices = new List<int>();
+
+                List<(ITypeSymbol ElementType, string AccessorPath)> flattenedElements = new();
+
+                if (type.IsTupleType && type is INamedTypeSymbol valueTupleType)
+                {
+                    // Roslyn provides flattened elements via TupleElements for ValueTuples
+                    ImmutableArray<IFieldSymbol> tupleElements = valueTupleType.TupleElements;
+                    for (int i = 0; i < tupleElements.Length; i++)
+                    {
+                        string accessorPath = GetTupleAccessorPathForIndex(i);
+                        flattenedElements.Add((tupleElements[i].Type, accessorPath));
+                    }
+                }
+                else if (IsReferenceTupleType(type))
+                {
+                    // For System.Tuple, manually walk the Rest chain
+                    FlattenReferenceTupleElements(type, "", flattenedElements);
+                }
+
+                for (int i = 0; i < flattenedElements.Count; i++)
+                {
+                    (ITypeSymbol elementType, string accessorPath) = flattenedElements[i];
+                    string itemName = $"Item{i + 1}";
+                    string propertyNameFieldName = $"PropName_{itemName}";
+
+                    TypeRef propertyTypeRef = EnqueueType(elementType, typeToGenerate.Mode);
+
+                    var propertySpec = new PropertyGenerationSpec
+                    {
+                        NameSpecifiedInSourceCode = accessorPath,
+                        MemberName = itemName,
+                        IsProperty = !type.IsTupleType, // System.Tuple uses properties; ValueTuple uses fields
+                        IsPublic = true,
+                        IsVirtual = false,
+                        JsonPropertyName = null,
+                        EffectiveJsonPropertyName = itemName,
+                        PropertyNameFieldName = propertyNameFieldName,
+                        IsReadOnly = true,
+                        IsRequired = false,
+                        HasJsonRequiredAttribute = false,
+                        IsInitOnlySetter = false,
+                        CanUseGetter = true,
+                        CanUseSetter = type.IsTupleType, // ValueTuples have mutable fields; reference Tuples are read-only
+                        DefaultIgnoreCondition = null,
+                        NumberHandling = null,
+                        ObjectCreationHandling = null,
+                        Order = 0,
+                        HasJsonInclude = false,
+                        IsTupleElement = true,
+                        IsExtensionData = false,
+                        PropertyType = propertyTypeRef,
+                        DeclaringType = declaringTypeRef,
+                        ConverterType = null,
+                        IsGetterNonNullableAnnotation = false,
+                        IsSetterNonNullableAnnotation = false,
+                    };
+
+                    properties.Add(propertySpec);
+                    fastPathPropertyIndices.Add(i);
+                }
+
+                return properties;
+            }
+
+            /// <summary>
+            /// Gets the accessor path for a tuple element at the given 0-based index.
+            /// </summary>
+            private static string GetTupleAccessorPathForIndex(int index)
+            {
+                int depth = index / 7;
+                int position = (index % 7) + 1;
+                string prefix = string.Concat(Enumerable.Repeat("Rest.", depth));
+                return $"{prefix}Item{position}";
+            }
+
+            /// <summary>
+            /// Flattens System.Tuple elements by walking the Rest type argument chain.
+            /// </summary>
+            private static void FlattenReferenceTupleElements(ITypeSymbol type, string prefix, List<(ITypeSymbol, string)> elements)
+            {
+                if (type is not INamedTypeSymbol { IsGenericType: true } namedType)
+                {
+                    return;
+                }
+
+                ImmutableArray<ITypeSymbol> typeArgs = namedType.TypeArguments;
+                int maxDirect = namedType.Arity == 8 ? 7 : namedType.Arity;
+
+                for (int i = 0; i < maxDirect; i++)
+                {
+                    elements.Add((typeArgs[i], $"{prefix}Item{i + 1}"));
+                }
+
+                // If 8-arity, the last type argument is the Rest tuple
+                if (namedType.Arity == 8)
+                {
+                    if (IsReferenceTupleType(typeArgs[7]))
+                    {
+                        FlattenReferenceTupleElements(typeArgs[7], $"{prefix}Rest.", elements);
+                    }
+                    else
+                    {
+                        // TRest is not a Tuple type; add it as a direct element
+                        elements.Add((typeArgs[7], $"{prefix}Rest"));
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Creates constructor parameters for tuple types with flattened element types.
+            /// </summary>
+            private ParameterGenerationSpec[] ParseTupleConstructorParameters(
+                in TypeToGenerate typeToGenerate,
+                ITypeSymbol type)
+            {
+                var flattenedTypes = new List<ITypeSymbol>();
+                if (type.IsTupleType && type is INamedTypeSymbol valueTupleType)
+                {
+                    foreach (IFieldSymbol element in valueTupleType.TupleElements)
+                    {
+                        flattenedTypes.Add(element.Type);
+                    }
+                }
+                else if (IsReferenceTupleType(type))
+                {
+                    FlattenReferenceTupleTypes(type, flattenedTypes);
+                }
+
+                var parameters = new ParameterGenerationSpec[flattenedTypes.Count];
+                for (int i = 0; i < flattenedTypes.Count; i++)
+                {
+                    TypeRef paramTypeRef = EnqueueType(flattenedTypes[i], typeToGenerate.Mode);
+                    parameters[i] = new ParameterGenerationSpec
+                    {
+                        ParameterType = paramTypeRef,
+                        Name = $"Item{i + 1}",
+                        HasDefaultValue = false,
+                        DefaultValue = null,
+                        ParameterIndex = i,
+                        ArgsIndex = i,
+                        IsNullable = !flattenedTypes[i].IsValueType || flattenedTypes[i].IsNullableType(),
+                        RefKind = RefKind.None,
+                    };
+                }
+
+                return parameters;
+            }
+
+            private static void FlattenReferenceTupleTypes(ITypeSymbol type, List<ITypeSymbol> types)
+            {
+                if (type is not INamedTypeSymbol { IsGenericType: true } namedType)
+                {
+                    return;
+                }
+
+                ImmutableArray<ITypeSymbol> typeArgs = namedType.TypeArguments;
+                int maxDirect = namedType.Arity == 8 ? 7 : namedType.Arity;
+
+                for (int i = 0; i < maxDirect; i++)
+                {
+                    types.Add(typeArgs[i]);
+                }
+
+                if (namedType.Arity == 8)
+                {
+                    if (IsReferenceTupleType(typeArgs[7]))
+                    {
+                        FlattenReferenceTupleTypes(typeArgs[7], types);
+                    }
+                    else
+                    {
+                        // TRest is not a Tuple type; add it as a direct element
+                        types.Add(typeArgs[7]);
+                    }
+                }
+            }
+
+            private static bool IsReferenceTupleType(ITypeSymbol type)
+            {
+                if (type is not INamedTypeSymbol { IsGenericType: true } namedType)
+                {
+                    return false;
+                }
+
+                INamedTypeSymbol def = namedType.ConstructedFrom;
+                return def.ContainingNamespace?.ToDisplayString() == "System" &&
+                       def.Name == "Tuple" &&
+                       def.Arity >= 1 && def.Arity <= 8;
             }
 
             private readonly struct TypeToGenerate

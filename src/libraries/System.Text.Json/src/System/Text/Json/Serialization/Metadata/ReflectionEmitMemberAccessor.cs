@@ -492,6 +492,119 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
+        public override Func<object, TProperty> CreateTupleElementGetter<TProperty>(MemberInfo[] memberChain) =>
+            CreateDelegate<Func<object, TProperty>>(CreateTupleElementGetter(memberChain, typeof(TProperty)));
+
+        private static DynamicMethod CreateTupleElementGetter(MemberInfo[] memberChain, Type runtimePropertyType)
+        {
+            Debug.Assert(memberChain.Length > 0);
+
+            MemberInfo lastMember = memberChain[memberChain.Length - 1];
+            Type declaredElementType = lastMember is FieldInfo lastField ? lastField.FieldType : ((PropertyInfo)lastMember).PropertyType;
+
+            DynamicMethod dynamicMethod = CreateGetterMethod("TupleElement_" + lastMember.Name, runtimePropertyType);
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+
+            generator.Emit(OpCodes.Ldarg_0);
+
+            Type currentType = memberChain[0].DeclaringType!;
+            generator.Emit(currentType.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, currentType);
+
+            for (int i = 0; i < memberChain.Length; i++)
+            {
+                MemberInfo member = memberChain[i];
+                bool isLast = i == memberChain.Length - 1;
+
+                if (member is FieldInfo field)
+                {
+                    if (!isLast && field.FieldType.IsValueType)
+                    {
+                        generator.Emit(OpCodes.Ldflda, field);
+                    }
+                    else
+                    {
+                        generator.Emit(OpCodes.Ldfld, field);
+                    }
+                }
+                else
+                {
+                    PropertyInfo property = (PropertyInfo)member;
+                    MethodInfo getMethod = property.GetMethod!;
+                    generator.Emit(currentType.IsValueType ? OpCodes.Call : OpCodes.Callvirt, getMethod);
+                }
+
+                currentType = member is FieldInfo fi ? fi.FieldType : ((PropertyInfo)member).PropertyType;
+            }
+
+            if (declaredElementType.IsValueType && declaredElementType != runtimePropertyType)
+            {
+                generator.Emit(OpCodes.Box, declaredElementType);
+            }
+
+            generator.Emit(OpCodes.Ret);
+
+            return dynamicMethod;
+        }
+
+        public override Action<object, TProperty> CreateTupleElementSetter<TProperty>(MemberInfo[] memberChain) =>
+            CreateDelegate<Action<object, TProperty>>(CreateTupleElementSetter(memberChain, typeof(TProperty)));
+
+        private static DynamicMethod CreateTupleElementSetter(MemberInfo[] memberChain, Type runtimePropertyType)
+        {
+            Debug.Assert(memberChain.Length > 0);
+
+            MemberInfo lastMember = memberChain[memberChain.Length - 1];
+            Type declaredElementType = lastMember is FieldInfo lastField ? lastField.FieldType : ((PropertyInfo)lastMember).PropertyType;
+
+            DynamicMethod dynamicMethod = CreateSetterMethod("TupleElement_" + lastMember.Name, runtimePropertyType);
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+
+            generator.Emit(OpCodes.Ldarg_0);
+
+            Type currentType = memberChain[0].DeclaringType!;
+            generator.Emit(currentType.IsValueType ? OpCodes.Unbox : OpCodes.Castclass, currentType);
+
+            for (int i = 0; i < memberChain.Length - 1; i++)
+            {
+                MemberInfo member = memberChain[i];
+
+                if (member is FieldInfo field)
+                {
+                    generator.Emit(field.FieldType.IsValueType ? OpCodes.Ldflda : OpCodes.Ldfld, field);
+                }
+                else
+                {
+                    PropertyInfo property = (PropertyInfo)member;
+                    MethodInfo getMethod = property.GetMethod!;
+                    generator.Emit(currentType.IsValueType ? OpCodes.Call : OpCodes.Callvirt, getMethod);
+                }
+
+                currentType = member is FieldInfo fi ? fi.FieldType : ((PropertyInfo)member).PropertyType;
+            }
+
+            generator.Emit(OpCodes.Ldarg_1);
+
+            if (declaredElementType != runtimePropertyType && declaredElementType.IsValueType)
+            {
+                generator.Emit(OpCodes.Unbox_Any, declaredElementType);
+            }
+
+            if (lastMember is FieldInfo lastFieldInfo)
+            {
+                generator.Emit(OpCodes.Stfld, lastFieldInfo);
+            }
+            else
+            {
+                PropertyInfo lastProperty = (PropertyInfo)lastMember;
+                MethodInfo setMethod = lastProperty.SetMethod!;
+                generator.Emit(currentType.IsValueType ? OpCodes.Call : OpCodes.Callvirt, setMethod);
+            }
+
+            generator.Emit(OpCodes.Ret);
+
+            return dynamicMethod;
+        }
+
         private static DynamicMethod CreateGetterMethod(string memberName, Type memberType) =>
             new DynamicMethod(
                 memberName + "Getter",
