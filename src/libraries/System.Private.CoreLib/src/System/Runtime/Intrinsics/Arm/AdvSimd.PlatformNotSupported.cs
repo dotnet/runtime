@@ -1550,519 +1550,688 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<ulong> InsertSelectedScalar(Vector128<ulong> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte valueIndex) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.16B, Vn+1.16B }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) LoadAndInsertScalar((Vector128<byte>, Vector128<byte>) values, [ConstantExpected(Max = (byte)(15))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.16B, Vn+1.16B }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2) LoadAndInsertScalar((Vector128<sbyte>, Vector128<sbyte>) values, [ConstantExpected(Max = (byte)(15))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.8H, Vn+1.8H }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2) LoadAndInsertScalar((Vector128<short>, Vector128<short>) values, [ConstantExpected(Max = (byte)(7))] byte index, short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.8H, Vn+1.8H }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2) LoadAndInsertScalar((Vector128<ushort>, Vector128<ushort>) values, [ConstantExpected(Max = (byte)(7))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.4S, Vn+1.4S }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2) LoadAndInsertScalar((Vector128<int>, Vector128<int>) values, [ConstantExpected(Max = (byte)(3))] byte index, int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.4S, Vn+1.4S }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2) LoadAndInsertScalar((Vector128<uint>, Vector128<uint>) values, [ConstantExpected(Max = (byte)(3))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.2D, Vn+1.2D }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2) LoadAndInsertScalar((Vector128<long>, Vector128<long>) values, [ConstantExpected(Max = (byte)(1))] byte index, long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.2D, Vn+1.2D }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) LoadAndInsertScalar((Vector128<ulong>, Vector128<ulong>) values, [ConstantExpected(Max = (byte)(1))] byte index, ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.4S, Vn+1.4S }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2) LoadAndInsertScalar((Vector128<float>, Vector128<float>) values, [ConstantExpected(Max = (byte)(3))] byte index, float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.2D, Vn+1.2D }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2) LoadAndInsertScalar((Vector128<double>, Vector128<double>) values, [ConstantExpected(Max = (byte)(1))] byte index, double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.16B, Vn+1.16B, Vn+2.16B }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3) LoadAndInsertScalar((Vector128<byte>, Vector128<byte>, Vector128<byte>) values, [ConstantExpected(Max = (byte)(15))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.16B, Vn+1.16B, Vn+2.16B }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3) LoadAndInsertScalar((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) values, [ConstantExpected(Max = (byte)(15))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.8H, Vn+1.8H, Vn+2.8H }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3) LoadAndInsertScalar((Vector128<short>, Vector128<short>, Vector128<short>) values, [ConstantExpected(Max = (byte)(7))] byte index, short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.8H, Vn+1.8H, Vn+2.8H }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3) LoadAndInsertScalar((Vector128<ushort>, Vector128<ushort>, Vector128<ushort>) values, [ConstantExpected(Max = (byte)(7))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3) LoadAndInsertScalar((Vector128<int>, Vector128<int>, Vector128<int>) values, [ConstantExpected(Max = (byte)(3))] byte index, int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3) LoadAndInsertScalar((Vector128<uint>, Vector128<uint>, Vector128<uint>) values, [ConstantExpected(Max = (byte)(3))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3) LoadAndInsertScalar((Vector128<long>, Vector128<long>, Vector128<long>) values, [ConstantExpected(Max = (byte)(1))] byte index, long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3) LoadAndInsertScalar((Vector128<ulong>, Vector128<ulong>, Vector128<ulong>) values, [ConstantExpected(Max = (byte)(1))] byte index, ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3) LoadAndInsertScalar((Vector128<float>, Vector128<float>, Vector128<float>) values, [ConstantExpected(Max = (byte)(3))] byte index, float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3) LoadAndInsertScalar((Vector128<double>, Vector128<double>, Vector128<double>) values, [ConstantExpected(Max = (byte)(1))] byte index, double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3, Vector128<byte> Value4) LoadAndInsertScalar((Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) values, [ConstantExpected(Max = (byte)(15))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3, Vector128<sbyte> Value4) LoadAndInsertScalar((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) values, [ConstantExpected(Max = (byte)(15))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3, Vector128<short> Value4) LoadAndInsertScalar((Vector128<short>, Vector128<short>, Vector128<short>, Vector128<short>) values, [ConstantExpected(Max = (byte)(7))] byte index, short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3, Vector128<ushort> Value4) LoadAndInsertScalar((Vector128<ushort>, Vector128<ushort>, Vector128<ushort>, Vector128<ushort>) values, [ConstantExpected(Max = (byte)(7))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3, Vector128<int> Value4) LoadAndInsertScalar((Vector128<int>, Vector128<int>, Vector128<int>, Vector128<int>) values, [ConstantExpected(Max = (byte)(3))] byte index, int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3, Vector128<uint> Value4) LoadAndInsertScalar((Vector128<uint>, Vector128<uint>, Vector128<uint>, Vector128<uint>) values, [ConstantExpected(Max = (byte)(3))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3, Vector128<long> Value4) LoadAndInsertScalar((Vector128<long>, Vector128<long>, Vector128<long>, Vector128<long>) values, [ConstantExpected(Max = (byte)(1))] byte index, long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3, Vector128<ulong> Value4) LoadAndInsertScalar((Vector128<ulong>, Vector128<ulong>, Vector128<ulong>, Vector128<ulong>) values, [ConstantExpected(Max = (byte)(1))] byte index, ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3, Vector128<float> Value4) LoadAndInsertScalar((Vector128<float>, Vector128<float>, Vector128<float>, Vector128<float>) values, [ConstantExpected(Max = (byte)(3))] byte index, float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }[Vm], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) LoadAndInsertScalar((Vector128<double>, Vector128<double>, Vector128<double>, Vector128<double>) values, [ConstantExpected(Max = (byte)(1))] byte index, double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>float64x2_t vld1q_dup_f64 (float64_t const * ptr)</para>
             ///   <para>  A64: LD1R { Vt.2D }, [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe Vector128<double> LoadAndReplicateToVector128(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>int64x2_t vld1q_dup_s64 (int64_t const * ptr)</para>
             ///   <para>  A64: LD1R { Vt.2D }, [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe Vector128<long> LoadAndReplicateToVector128(long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>uint64x2_t vld1q_dup_u64 (uint64_t const * ptr)</para>
             ///   <para>  A64: LD1R { Vt.2D }, [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe Vector128<ulong> LoadAndReplicateToVector128(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2R { Vn.16B, Vn+1.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) LoadAndReplicateToVector128x2(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2R { Vn.16B, Vn+1.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2) LoadAndReplicateToVector128x2(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2R { Vn.8H, Vn+1.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2) LoadAndReplicateToVector128x2(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2R { Vn.8H, Vn+1.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2) LoadAndReplicateToVector128x2(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2R { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2) LoadAndReplicateToVector128x2(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2R { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2) LoadAndReplicateToVector128x2(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2R { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2) LoadAndReplicateToVector128x2(long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2R { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) LoadAndReplicateToVector128x2(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2R { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2) LoadAndReplicateToVector128x2(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2R { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2) LoadAndReplicateToVector128x2(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3R { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3) LoadAndReplicateToVector128x3(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3R { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3) LoadAndReplicateToVector128x3(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3R { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3) LoadAndReplicateToVector128x3(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3R { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3) LoadAndReplicateToVector128x3(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3R { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3) LoadAndReplicateToVector128x3(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3R { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3) LoadAndReplicateToVector128x3(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3R { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3) LoadAndReplicateToVector128x3(long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3R { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3) LoadAndReplicateToVector128x3(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3R { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3) LoadAndReplicateToVector128x3(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3R { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3) LoadAndReplicateToVector128x3(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4R { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3, Vector128<byte> Value4) LoadAndReplicateToVector128x4(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4R { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3, Vector128<sbyte> Value4) LoadAndReplicateToVector128x4(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4R { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3, Vector128<short> Value4) LoadAndReplicateToVector128x4(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4R { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3, Vector128<ushort> Value4) LoadAndReplicateToVector128x4(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4R { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3, Vector128<int> Value4) LoadAndReplicateToVector128x4(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4R { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3, Vector128<uint> Value4) LoadAndReplicateToVector128x4(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4R { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3, Vector128<long> Value4) LoadAndReplicateToVector128x4(long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4R { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3, Vector128<ulong> Value4) LoadAndReplicateToVector128x4(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4R { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3, Vector128<float> Value4) LoadAndReplicateToVector128x4(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4R { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) LoadAndReplicateToVector128x4(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2) LoadPairVector64(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<double> Value1, Vector64<double> Value2) LoadPairVector64(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<short> Value1, Vector64<short> Value2) LoadPairVector64(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<int> Value1, Vector64<int> Value2) LoadPairVector64(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<long> Value1, Vector64<long> Value2) LoadPairVector64(long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2) LoadPairVector64(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<float> Value1, Vector64<float> Value2) LoadPairVector64(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2) LoadPairVector64(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2) LoadPairVector64(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<ulong> Value1, Vector64<ulong> Value2) LoadPairVector64(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP St1, St2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<int> Value1, Vector64<int> Value2) LoadPairScalarVector64(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP St1, St2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<float> Value1, Vector64<float> Value2) LoadPairScalarVector64(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP St1, St2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2) LoadPairScalarVector64(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) LoadPairVector128(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2) LoadPairVector128(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2) LoadPairVector128(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2) LoadPairVector128(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2) LoadPairVector128(long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2) LoadPairVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2) LoadPairVector128(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2) LoadPairVector128(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2) LoadPairVector128(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) LoadPairVector128(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2) LoadPairVector64NonTemporal(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<double> Value1, Vector64<double> Value2) LoadPairVector64NonTemporal(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<short> Value1, Vector64<short> Value2) LoadPairVector64NonTemporal(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<int> Value1, Vector64<int> Value2) LoadPairVector64NonTemporal(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<long> Value1, Vector64<long> Value2) LoadPairVector64NonTemporal(long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2) LoadPairVector64NonTemporal(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<float> Value1, Vector64<float> Value2) LoadPairVector64NonTemporal(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2) LoadPairVector64NonTemporal(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2) LoadPairVector64NonTemporal(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<ulong> Value1, Vector64<ulong> Value2) LoadPairVector64NonTemporal(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP St1, St2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<int> Value1, Vector64<int> Value2) LoadPairScalarVector64NonTemporal(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP St1, St2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<float> Value1, Vector64<float> Value2) LoadPairScalarVector64NonTemporal(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP St1, St2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2) LoadPairScalarVector64NonTemporal(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) LoadPairVector128NonTemporal(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2) LoadPairVector128NonTemporal(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2) LoadPairVector128NonTemporal(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2) LoadPairVector128NonTemporal(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2) LoadPairVector128NonTemporal(long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2) LoadPairVector128NonTemporal(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2) LoadPairVector128NonTemporal(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2) LoadPairVector128NonTemporal(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2) LoadPairVector128NonTemporal(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LDNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) LoadPairVector128NonTemporal(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) Load2xVector128AndUnzip(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2) Load2xVector128AndUnzip(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.8H, Vn+1.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2) Load2xVector128AndUnzip(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.8H, Vn+1.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2) Load2xVector128AndUnzip(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2) Load2xVector128AndUnzip(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2) Load2xVector128AndUnzip(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2) Load2xVector128AndUnzip(long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) Load2xVector128AndUnzip(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2) Load2xVector128AndUnzip(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD2 { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2) Load2xVector128AndUnzip(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3) Load3xVector128AndUnzip(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3) Load3xVector128AndUnzip(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3) Load3xVector128AndUnzip(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3) Load3xVector128AndUnzip(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3) Load3xVector128AndUnzip(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3) Load3xVector128AndUnzip(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3) Load3xVector128AndUnzip(long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3) Load3xVector128AndUnzip(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3) Load3xVector128AndUnzip(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3) Load3xVector128AndUnzip(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3, Vector128<byte> Value4) Load4xVector128AndUnzip(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3, Vector128<sbyte> Value4) Load4xVector128AndUnzip(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3, Vector128<short> Value4) Load4xVector128AndUnzip(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3, Vector128<ushort> Value4) Load4xVector128AndUnzip(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3, Vector128<int> Value4) Load4xVector128AndUnzip(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3, Vector128<uint> Value4) Load4xVector128AndUnzip(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3, Vector128<long> Value4) Load4xVector128AndUnzip(long* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3, Vector128<ulong> Value4) Load4xVector128AndUnzip(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3, Vector128<float> Value4) Load4xVector128AndUnzip(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) Load4xVector128AndUnzip(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.16B, Vn+1.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) Load2xVector128(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.16B, Vn+1.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2) Load2xVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.8H, Vn+1.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2) Load2xVector128(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.8H, Vn+1.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2) Load2xVector128(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2) Load2xVector128(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2) Load2xVector128(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2) Load2xVector128(long* address)  { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) Load2xVector128(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2) Load2xVector128(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2) Load2xVector128(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3) Load3xVector128(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3) Load3xVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3) Load3xVector128(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3) Load3xVector128(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3) Load3xVector128(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3) Load3xVector128(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3) Load3xVector128(long* address)  { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3) Load3xVector128(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3) Load3xVector128(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3) Load3xVector128(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3, Vector128<byte> Value4) Load4xVector128(byte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3, Vector128<sbyte> Value4) Load4xVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3, Vector128<short> Value4) Load4xVector128(short* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3, Vector128<ushort> Value4) Load4xVector128(ushort* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3, Vector128<int> Value4) Load4xVector128(int* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3, Vector128<uint> Value4) Load4xVector128(uint* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3, Vector128<long> Value4) Load4xVector128(long* address)  { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D}, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3, Vector128<ulong> Value4) Load4xVector128(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3, Vector128<float> Value4) Load4xVector128(float* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) Load4xVector128(double* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
@@ -3217,474 +3386,610 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<float> Sqrt(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(byte* address, Vector64<byte> value1, Vector64<byte> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(double* address, Vector64<double> value1, Vector64<double> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(short* address, Vector64<short> value1, Vector64<short> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(int* address, Vector64<int> value1, Vector64<int> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(long* address, Vector64<long> value1, Vector64<long> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(sbyte* address, Vector64<sbyte> value1, Vector64<sbyte> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(float* address, Vector64<float> value1, Vector64<float> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(ushort* address, Vector64<ushort> value1, Vector64<ushort> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(ulong* address, Vector64<ulong> value1, Vector64<ulong> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(byte* address, Vector128<byte> value1, Vector128<byte> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(double* address, Vector128<double> value1, Vector128<double> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(short* address, Vector128<short> value1, Vector128<short> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(int* address, Vector128<int> value1, Vector128<int> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(long* address, Vector128<long> value1, Vector128<long> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(sbyte* address, Vector128<sbyte> value1, Vector128<sbyte> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(float* address, Vector128<float> value1, Vector128<float> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(ushort* address, Vector128<ushort> value1, Vector128<ushort> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(uint* address, Vector128<uint> value1, Vector128<uint> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePair(ulong* address, Vector128<ulong> value1, Vector128<ulong> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(byte* address, Vector64<byte> value1, Vector64<byte> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(double* address, Vector64<double> value1, Vector64<double> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(short* address, Vector64<short> value1, Vector64<short> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(int* address, Vector64<int> value1, Vector64<int> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(long* address, Vector64<long> value1, Vector64<long> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(sbyte* address, Vector64<sbyte> value1, Vector64<sbyte> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(float* address, Vector64<float> value1, Vector64<float> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(ushort* address, Vector64<ushort> value1, Vector64<ushort> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Dt1, Dt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(ulong* address, Vector64<ulong> value1, Vector64<ulong> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(byte* address, Vector128<byte> value1, Vector128<byte> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(double* address, Vector128<double> value1, Vector128<double> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(short* address, Vector128<short> value1, Vector128<short> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(int* address, Vector128<int> value1, Vector128<int> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(long* address, Vector128<long> value1, Vector128<long> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(sbyte* address, Vector128<sbyte> value1, Vector128<sbyte> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(float* address, Vector128<float> value1, Vector128<float> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(ushort* address, Vector128<ushort> value1, Vector128<ushort> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(uint* address, Vector128<uint> value1, Vector128<uint> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP Qt1, Qt2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairNonTemporal(ulong* address, Vector128<ulong> value1, Vector128<ulong> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP St1, St2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairScalar(int* address, Vector64<int> value1, Vector64<int> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP St1, St2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairScalar(float* address, Vector64<float> value1, Vector64<float> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STP St1, St2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairScalar(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP St1, St2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairScalarNonTemporal(int* address, Vector64<int> value1, Vector64<int> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP St1, St2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairScalarNonTemporal(float* address, Vector64<float> value1, Vector64<float> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: STNP St1, St2, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StorePairScalarNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst2_lane_s8 (int8_t * ptr, int8x16x2_t val, const int lane)</para>
             ///   <para>  A64: ST2 { Vt.16B, Vt+1.16B }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(byte* address, (Vector128<byte> value1, Vector128<byte> value2) value, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst2_lane_s8 (int8_t * ptr, int8x16x2_t val, const int lane)</para>
             ///   <para>  A64: ST2 { Vt.16B, Vt+1.16B }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(sbyte* address, (Vector128<sbyte> value1, Vector128<sbyte> value2) value, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst2_lane_s16 (int16_t * ptr, int16x8x2_t val, const int lane)</para>
             ///   <para>  A64: ST2 { Vt.8H, Vt+1.8H }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(short* address, (Vector128<short> value1, Vector128<short> value2) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst2_lane_s16 (int16_t * ptr, int16x8x2_t val, const int lane)</para>
             ///   <para>  A64: ST2 { Vt.8H, Vt+1.8H }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(ushort* address, (Vector128<ushort> value1, Vector128<ushort> value2) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst2_lane_s32 (int32_t * ptr, int32x4x2_t val, const int lane)</para>
             ///   <para>  A64: ST2 { Vt.4S, Vt+1.4S }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(int* address, (Vector128<int> value1, Vector128<int> value2) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst2_lane_s32 (int32_t * ptr, int32x4x2_t val, const int lane)</para>
             ///   <para>  A64: ST2 { Vt.4S, Vt+1.4S }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(uint* address, (Vector128<uint> value1, Vector128<uint> value2) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vt.2D, Vt+1.2D }[index], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(long* address, (Vector128<long> value1, Vector128<long> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vt.2D, Vt+1.2D }[index], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(ulong* address, (Vector128<ulong> value1, Vector128<ulong> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst2_lane_f32 (float32_t * ptr, float32x2x2_t val, const int lane)</para>
             ///   <para>  A64: ST2 { Vt.4S, Vt+1.4S }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(float* address, (Vector128<float> value1, Vector128<float> value2) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vt.2D, Vt+1.2D }[index], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(double* address, (Vector128<double> value1, Vector128<double> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst3_lane_s8 (int8_t * ptr, int8x16x3_t val, const int lane)</para>
             ///   <para>  A64: ST3 { Vt.16B, Vt+1.16B, Vt+2.16B }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(byte* address, (Vector128<byte> value1, Vector128<byte> value2, Vector128<byte> value3) value, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst3_lane_s8 (int8_t * ptr, int8x16x3_t val, const int lane)</para>
             ///   <para>  A64: ST3 { Vt.16B, Vt+1.16B, Vt+2.16B }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(sbyte* address, (Vector128<sbyte> value1, Vector128<sbyte> value2, Vector128<sbyte> value3) value, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst3_lane_s16 (int16_t * ptr, int16x8x3_t val, const int lane)</para>
             ///   <para>  A64: ST3 { Vt.8H, Vt+1.8H, Vt+2.8H }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(short* address, (Vector128<short> value1, Vector128<short> value2, Vector128<short> value3) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst3_lane_s16 (int16_t * ptr, int16x8x3_t val, const int lane)</para>
             ///   <para>  A64: ST3 { Vt.8H, Vt+1.8H, Vt+2.8H }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(ushort* address, (Vector128<ushort> value1, Vector128<ushort> value2, Vector128<ushort> value3) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst3_lane_s32 (int32_t * ptr, int32x4x3_t val, const int lane)</para>
             ///   <para>  A64: ST3 { Vt.4S, Vt+1.4S, Vt+2.4S }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(int* address, (Vector128<int> value1, Vector128<int> value2, Vector128<int> value3) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst3_lane_s32 (int32_t * ptr, int32x4x3_t val, const int lane)</para>
             ///   <para>  A64: ST3 { Vt.4S, Vt+1.4S, Vt+2.4S }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(uint* address, (Vector128<uint> value1, Vector128<uint> value2, Vector128<uint> value3) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vt.2D, Vt+1.2D, Vt+2.2D }[index], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(long* address, (Vector128<long> value1, Vector128<long> value2, Vector128<long> value3) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vt.2D, Vt+1.2D, Vt+2.2D }[index], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(ulong* address, (Vector128<ulong> value1, Vector128<ulong> value2, Vector128<ulong> value3) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst3_lane_f32 (float32_t * ptr, float32x2x3_t val, const int lane)</para>
             ///   <para>  A64: ST3 { Vt.4S, Vt+1.4S, Vt+2.4S }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(float* address, (Vector128<float> value1, Vector128<float> value2, Vector128<float> value3) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vt.2D, Vt+1.2D, Vt+2.2D }[index], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(double* address, (Vector128<double> value1, Vector128<double> value2, Vector128<double> value3) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst4_lane_s8 (int8_t * ptr, int8x16x4_t val, const int lane)</para>
             ///   <para>  A64: ST4 { Vt.16B, Vt+1.16B, Vt+2.16B, Vt+3.16B }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(byte* address, (Vector128<byte> value1, Vector128<byte> value2, Vector128<byte> value3, Vector128<byte> value4) value, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst4_lane_s8 (int8_t * ptr, int8x16x4_t val, const int lane)</para>
             ///   <para>  A64: ST4 { Vt.16B, Vt+1.16B, Vt+2.16B, Vt+3.16B }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(sbyte* address, (Vector128<sbyte> value1, Vector128<sbyte> value2, Vector128<sbyte> value3, Vector128<sbyte> value4) value, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst4_lane_s16 (int16_t * ptr, int16x8x4_t val, const int lane)</para>
             ///   <para>  A64: ST4 { Vt.8H, Vt+1.8H, Vt+2.8H, Vt+3.8H }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(short* address, (Vector128<short> value1, Vector128<short> value2, Vector128<short> value3, Vector128<short> value4) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
-           /// <summary>
+            /// <summary>
             ///   <para>void vst4_lane_s16 (int16_t * ptr, int16x8x4_t val, const int lane)</para>
             ///   <para>  A64: ST4 { Vt.8H, Vt+1.8H, Vt+2.8H, Vt+3.8H }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(ushort* address, (Vector128<ushort> value1, Vector128<ushort> value2, Vector128<ushort> value3, Vector128<ushort> value4) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst4_lane_s32 (int32_t * ptr, int32x4x4_t val, const int lane)</para>
             ///   <para>  A64: ST4 { Vt.4S, Vt+1.4S, Vt+2.4S, Vt+3.4S }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(int* address, (Vector128<int> value1, Vector128<int> value2, Vector128<int> value3, Vector128<int> value4) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst4_lane_s32 (int32_t * ptr, int32x4x4_t val, const int lane)</para>
             ///   <para>  A64: ST4 { Vt.4S, Vt+1.4S, Vt+2.4S, Vt+3.4S }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(uint* address, (Vector128<uint> value1, Vector128<uint> value2, Vector128<uint> value3, Vector128<uint> value4) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vt.2D, Vt+1.2D, Vt+2.2D, Vt+3.2D }[index], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(long* address, (Vector128<long> value1, Vector128<long> value2, Vector128<long> value3, Vector128<long> value4) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vt.2D, Vt+1.2D, Vt+2.2D, Vt+3.2D }[index], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(ulong* address, (Vector128<ulong> value1, Vector128<ulong> value2, Vector128<ulong> value3, Vector128<ulong> value4) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>void vst4_lane_f32 (float32_t * ptr, float32x2x4_t val, const int lane)</para>
             ///   <para>  A64: ST4 { Vt.4S, Vt+1.4S, Vt+2.4S, Vt+3.4S }[index], [Xn]</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(float* address, (Vector128<float> value1, Vector128<float> value2, Vector128<float> value3, Vector128<float> value4) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vt.2D, Vt+1.2D, Vt+2.2D, Vt+3.2D }[index], [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreSelectedScalar(double* address, (Vector128<double> value1, Vector128<double> value2, Vector128<double> value3, Vector128<double> value4) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vn.16B, Vn+1.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vn.16B, Vn+1.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(sbyte* address, (Vector128<sbyte> Value1, Vector128<sbyte> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vn.8H, Vn+1.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(short* address, (Vector128<short> Value1, Vector128<short> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vn.8H, Vn+1.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(ushort* address, (Vector128<ushort> Value1, Vector128<ushort> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(int* address, (Vector128<int> Value1, Vector128<int> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(uint* address, (Vector128<uint> Value1, Vector128<uint> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(long* address, (Vector128<long> Value1, Vector128<long> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(ulong* address, (Vector128<ulong> Value1, Vector128<ulong> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(float* address, (Vector128<float> Value1, Vector128<float> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST2 { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(double* address, (Vector128<double> Value1, Vector128<double> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(sbyte* address, (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(short* address, (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(ushort* address, (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(int* address, (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(uint* address, (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(long* address, (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(ulong* address, (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(float* address, (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(double* address, (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3, Vector128<byte> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(sbyte* address, (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3, Vector128<sbyte> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(short* address, (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3, Vector128<short> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(ushort* address, (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3, Vector128<ushort> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(int* address, (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3, Vector128<int> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(uint* address, (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3, Vector128<uint> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(long* address, (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3, Vector128<long> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(ulong* address, (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3, Vector128<ulong> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(float* address, (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3, Vector128<float> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void StoreVectorAndZip(double* address, (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.16B, Vn+1.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.16B, Vn+1.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(sbyte* address, (Vector128<sbyte> Value1, Vector128<sbyte> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.8H, Vn+1.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(short* address, (Vector128<short> Value1, Vector128<short> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.8H, Vn+1.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(ushort* address, (Vector128<ushort> Value1, Vector128<ushort> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(int* address, (Vector128<int> Value1, Vector128<int> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(uint* address, (Vector128<uint> Value1, Vector128<uint> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(long* address, (Vector128<long> Value1, Vector128<long> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(ulong* address, (Vector128<ulong> Value1, Vector128<ulong> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.4S, Vn+1.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(float* address, (Vector128<float> Value1, Vector128<float> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.2D, Vn+1.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(double* address, (Vector128<double> Value1, Vector128<double> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(sbyte* address, (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(short* address, (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(ushort* address, (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(int* address, (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(uint* address, (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(long* address, (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(ulong* address, (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(float* address, (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(double* address, (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3, Vector128<byte> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(sbyte* address, (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3, Vector128<sbyte> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(short* address, (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3, Vector128<short> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(ushort* address, (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3, Vector128<ushort> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(int* address, (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3, Vector128<int> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(uint* address, (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3, Vector128<uint> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(long* address, (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3, Vector128<long> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(ulong* address, (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3, Vector128<ulong> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(float* address, (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3, Vector128<float> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>  A64: ST1 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]</summary>
+            [RequiresUnsafe]
             public static unsafe void Store(double* address, (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
@@ -8485,6 +8790,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.8 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.B }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<byte> LoadAndInsertScalar(Vector64<byte> value, [ConstantExpected(Max = (byte)(7))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8492,6 +8798,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.16 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.H }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<short> LoadAndInsertScalar(Vector64<short> value, [ConstantExpected(Max = (byte)(3))] byte index, short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8499,6 +8806,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.S }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<int> LoadAndInsertScalar(Vector64<int> value, [ConstantExpected(Max = (byte)(1))] byte index, int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8506,6 +8814,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.8 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.B }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<sbyte> LoadAndInsertScalar(Vector64<sbyte> value, [ConstantExpected(Max = (byte)(7))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8513,6 +8822,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.S }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<float> LoadAndInsertScalar(Vector64<float> value, [ConstantExpected(Max = (byte)(1))] byte index, float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8520,6 +8830,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.16 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.H }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<ushort> LoadAndInsertScalar(Vector64<ushort> value, [ConstantExpected(Max = (byte)(3))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8527,6 +8838,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.S }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<uint> LoadAndInsertScalar(Vector64<uint> value, [ConstantExpected(Max = (byte)(1))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8534,6 +8846,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.8 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.B }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<byte> LoadAndInsertScalar(Vector128<byte> value, [ConstantExpected(Max = (byte)(15))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8541,6 +8854,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLDR.64 Dd, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.D }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> LoadAndInsertScalar(Vector128<double> value, [ConstantExpected(Max = (byte)(1))] byte index, double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8548,6 +8862,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.16 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.H }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<short> LoadAndInsertScalar(Vector128<short> value, [ConstantExpected(Max = (byte)(7))] byte index, short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8555,6 +8870,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.S }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> LoadAndInsertScalar(Vector128<int> value, [ConstantExpected(Max = (byte)(3))] byte index, int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8562,6 +8878,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLDR.64 Dd, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.D }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> LoadAndInsertScalar(Vector128<long> value, [ConstantExpected(Max = (byte)(1))] byte index, long* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8569,6 +8886,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.8 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.B }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<sbyte> LoadAndInsertScalar(Vector128<sbyte> value, [ConstantExpected(Max = (byte)(15))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8576,6 +8894,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.S }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<float> LoadAndInsertScalar(Vector128<float> value, [ConstantExpected(Max = (byte)(3))] byte index, float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8583,6 +8902,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.16 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.H }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ushort> LoadAndInsertScalar(Vector128<ushort> value, [ConstantExpected(Max = (byte)(7))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8590,6 +8910,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.S }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> LoadAndInsertScalar(Vector128<uint> value, [ConstantExpected(Max = (byte)(3))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8597,69 +8918,91 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLDR.64 Dd, [Rn]</para>
         ///   <para>  A64: LD1 { Vt.D }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> LoadAndInsertScalar(Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index, ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.8B, Vn+1.8B }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2) LoadAndInsertScalar((Vector64<byte>, Vector64<byte>) values, [ConstantExpected(Max = (byte)(7))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.8B, Vn+1.8B }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2) LoadAndInsertScalar((Vector64<sbyte>, Vector64<sbyte>) values, [ConstantExpected(Max = (byte)(7))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.4H, Vn+1.4H }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2) LoadAndInsertScalar((Vector64<short>, Vector64<short>) values, [ConstantExpected(Max = (byte)(3))] byte index, short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.4H, Vn+1.4H }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2) LoadAndInsertScalar((Vector64<ushort>, Vector64<ushort>) values, [ConstantExpected(Max = (byte)(3))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.2S, Vn+1.2S }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<int> Value1, Vector64<int> Value2) LoadAndInsertScalar((Vector64<int>, Vector64<int>) values, [ConstantExpected(Max = (byte)(1))] byte index, int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.2S, Vn+1.2S }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2) LoadAndInsertScalar((Vector64<uint>, Vector64<uint>) values, [ConstantExpected(Max = (byte)(1))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.2S, Vn+1.2S }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2) LoadAndInsertScalar((Vector64<float>, Vector64<float>) values, [ConstantExpected(Max = (byte)(1))] byte index, float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.8B, Vn+1.8B, Vn+2.8B }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3) LoadAndInsertScalar((Vector64<byte>, Vector64<byte>, Vector64<byte>) values, [ConstantExpected(Max = (byte)(7))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.8B, Vn+1.8B, Vn+2.8B }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3) LoadAndInsertScalar((Vector64<sbyte>, Vector64<sbyte>, Vector64<sbyte>) values, [ConstantExpected(Max = (byte)(7))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.4H, Vn+1.4H, Vn+2.4H }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3) LoadAndInsertScalar((Vector64<short>, Vector64<short>, Vector64<short>) values, [ConstantExpected(Max = (byte)(3))] byte index, short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.4H, Vn+1.4H, Vn+2.4H }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3) LoadAndInsertScalar((Vector64<ushort>, Vector64<ushort>, Vector64<ushort>) values, [ConstantExpected(Max = (byte)(3))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.2S, Vn+1.2S, Vn+2.2S }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3) LoadAndInsertScalar((Vector64<int>, Vector64<int>, Vector64<int>) values, [ConstantExpected(Max = (byte)(1))] byte index, int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.2S, Vn+1.2S, Vn+2.2S }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3) LoadAndInsertScalar((Vector64<uint>, Vector64<uint>, Vector64<uint>) values, [ConstantExpected(Max = (byte)(1))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.2S, Vn+1.2S, Vn+2.2S }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3) LoadAndInsertScalar((Vector64<float>, Vector64<float>, Vector64<float>) values, [ConstantExpected(Max = (byte)(1))] byte index, float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3, Vector64<byte> Value4) LoadAndInsertScalar((Vector64<byte>, Vector64<byte>, Vector64<byte>, Vector64<byte>) values, [ConstantExpected(Max = (byte)(7))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3, Vector64<sbyte> Value4) LoadAndInsertScalar((Vector64<sbyte>, Vector64<sbyte>, Vector64<sbyte>, Vector64<sbyte>) values, [ConstantExpected(Max = (byte)(7))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3, Vector64<short> Value4) LoadAndInsertScalar((Vector64<short>, Vector64<short>, Vector64<short>, Vector64<short>) values, [ConstantExpected(Max = (byte)(3))] byte index, short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3, Vector64<ushort> Value4) LoadAndInsertScalar((Vector64<ushort>, Vector64<ushort>, Vector64<ushort>, Vector64<ushort>) values, [ConstantExpected(Max = (byte)(3))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3, Vector64<int> Value4) LoadAndInsertScalar((Vector64<int>, Vector64<int>, Vector64<int>, Vector64<int>) values, [ConstantExpected(Max = (byte)(1))] byte index, int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3, Vector64<uint> Value4) LoadAndInsertScalar((Vector64<uint>, Vector64<uint>, Vector64<uint>, Vector64<uint>) values, [ConstantExpected(Max = (byte)(1))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }[Vm], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) LoadAndInsertScalar((Vector64<float>, Vector64<float>, Vector64<float>, Vector64<float>) values, [ConstantExpected(Max = (byte)(1))] byte index, float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8667,6 +9010,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.8 { Dd[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.8B }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<byte> LoadAndReplicateToVector64(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8674,6 +9018,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.16 { Dd[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.4H }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<short> LoadAndReplicateToVector64(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8681,6 +9026,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 { Dd[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.2S }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<int> LoadAndReplicateToVector64(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8688,6 +9034,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.8 { Dd[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.8B }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<sbyte> LoadAndReplicateToVector64(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8695,6 +9042,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 { Dd[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.2S }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<float> LoadAndReplicateToVector64(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8702,6 +9050,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.16 { Dd[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.4H }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<ushort> LoadAndReplicateToVector64(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8709,6 +9058,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 { Dd[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.2S }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<uint> LoadAndReplicateToVector64(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8716,6 +9066,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.8 { Dd[], Dd+1[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.16B }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<byte> LoadAndReplicateToVector128(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8723,6 +9074,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.16 { Dd[], Dd+1[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.8H }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<short> LoadAndReplicateToVector128(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8730,6 +9082,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 { Dd[], Dd+1[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.4S }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> LoadAndReplicateToVector128(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8737,6 +9090,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.8 { Dd[], Dd+1[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.16B }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<sbyte> LoadAndReplicateToVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8744,6 +9098,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 { Dd[], Dd+1[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.4S }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<float> LoadAndReplicateToVector128(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8751,6 +9106,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.16 { Dd[], Dd+1[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.8H }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ushort> LoadAndReplicateToVector128(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8758,69 +9114,91 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 { Dd[], Dd+1[] }, [Rn]</para>
         ///   <para>  A64: LD1R { Vt.4S }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> LoadAndReplicateToVector128(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2R { Vn.8B, Vn+1.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2) LoadAndReplicateToVector64x2(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2R { Vn.8B, Vn+1.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2) LoadAndReplicateToVector64x2(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2R { Vn.4H, Vn+1.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2) LoadAndReplicateToVector64x2(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2R { Vn.4H, Vn+1.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2) LoadAndReplicateToVector64x2(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2R { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<int> Value1, Vector64<int> Value2) LoadAndReplicateToVector64x2(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2R { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2) LoadAndReplicateToVector64x2(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2R { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2) LoadAndReplicateToVector64x2(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3R { Vn.8B, Vn+1.8B, Vn+2.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3) LoadAndReplicateToVector64x3(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3R { Vn.8B, Vn+1.8B, Vn+2.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3) LoadAndReplicateToVector64x3(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3R { Vn.4H, Vn+1.4H, Vn+2.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3) LoadAndReplicateToVector64x3(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3R { Vn.4H, Vn+1.4H, Vn+2.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3) LoadAndReplicateToVector64x3(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3R { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3) LoadAndReplicateToVector64x3(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3R { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3) LoadAndReplicateToVector64x3(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3R { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3) LoadAndReplicateToVector64x3(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4R { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3, Vector64<byte> Value4) LoadAndReplicateToVector64x4(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4R { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3, Vector64<sbyte> Value4) LoadAndReplicateToVector64x4(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4R { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3, Vector64<short> Value4) LoadAndReplicateToVector64x4(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4R { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3, Vector64<ushort> Value4) LoadAndReplicateToVector64x4(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4R { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3, Vector64<int> Value4) LoadAndReplicateToVector64x4(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4R { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3, Vector64<uint> Value4) LoadAndReplicateToVector64x4(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4R { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) LoadAndReplicateToVector64x4(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8828,6 +9206,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.8 Dd, [Rn]</para>
         ///   <para>  A64: LD1 Vt.8B, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<byte> LoadVector64(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8835,6 +9214,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.64 Dd, [Rn]</para>
         ///   <para>  A64: LD1 Vt.1D, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<double> LoadVector64(double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8842,6 +9222,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.16 Dd, [Rn]</para>
         ///   <para>  A64: LD1 Vt.4H, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<short> LoadVector64(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8849,6 +9230,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 Dd, [Rn]</para>
         ///   <para>  A64: LD1 Vt.2S, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<int> LoadVector64(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8856,6 +9238,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.64 Dd, [Rn]</para>
         ///   <para>  A64: LD1 Vt.1D, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<long> LoadVector64(long* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8863,6 +9246,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.8 Dd, [Rn]</para>
         ///   <para>  A64: LD1 Vt.8B, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<sbyte> LoadVector64(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8870,6 +9254,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 Dd, [Rn]</para>
         ///   <para>  A64: LD1 Vt.2S, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<float> LoadVector64(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8877,6 +9262,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.16 Dd, [Rn]</para>
         ///   <para>  A64: LD1 Vt.4H, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<ushort> LoadVector64(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8884,6 +9270,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 Dd, [Rn]</para>
         ///   <para>  A64: LD1 Vt.2S, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<uint> LoadVector64(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8891,6 +9278,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.64 Dd, [Rn]</para>
         ///   <para>  A64: LD1 Vt.1D, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector64<ulong> LoadVector64(ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8898,6 +9286,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.8 Dd, Dd+1, [Rn]</para>
         ///   <para>  A64: LD1 Vt.16B, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<byte> LoadVector128(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8905,6 +9294,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.64 Dd, Dd+1, [Rn]</para>
         ///   <para>  A64: LD1 Vt.2D, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> LoadVector128(double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8912,6 +9302,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.16 Dd, Dd+1, [Rn]</para>
         ///   <para>  A64: LD1 Vt.8H, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<short> LoadVector128(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8919,6 +9310,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 Dd, Dd+1, [Rn]</para>
         ///   <para>  A64: LD1 Vt.4S, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> LoadVector128(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8926,6 +9318,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.64 Dd, Dd+1, [Rn]</para>
         ///   <para>  A64: LD1 Vt.2D, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> LoadVector128(long* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8933,6 +9326,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.8 Dd, Dd+1, [Rn]</para>
         ///   <para>  A64: LD1 Vt.16B, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<sbyte> LoadVector128(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8940,6 +9334,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 Dd, Dd+1, [Rn]</para>
         ///   <para>  A64: LD1 Vt.4S, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<float> LoadVector128(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8947,6 +9342,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.16 Dd, Dd+1, [Rn]</para>
         ///   <para>  A64: LD1 Vt.8H, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ushort> LoadVector128(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8954,6 +9350,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.32 Dd, Dd+1, [Rn]</para>
         ///   <para>  A64: LD1 Vt.4S, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> LoadVector128(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -8961,132 +9358,175 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VLD1.64 Dd, Dd+1, [Rn]</para>
         ///   <para>  A64: LD1 Vt.2D, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> LoadVector128(ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.8B, Vn+1.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2) Load2xVector64AndUnzip(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.8B, Vn+1.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2) Load2xVector64AndUnzip(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.4H, Vn+1.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2) Load2xVector64AndUnzip(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.4H, Vn+1.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2) Load2xVector64AndUnzip(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<int> Value1, Vector64<int> Value2) Load2xVector64AndUnzip(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2) Load2xVector64AndUnzip(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD2 { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2) Load2xVector64AndUnzip(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.8B, Vn+1.8B, Vn+2.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3) Load3xVector64AndUnzip(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.8B, Vn+1.8B, Vn+2.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3) Load3xVector64AndUnzip(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.4H, Vn+1.4H, Vn+2.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3) Load3xVector64AndUnzip(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.4H, Vn+1.4H, Vn+2.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3) Load3xVector64AndUnzip(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3) Load3xVector64AndUnzip(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3) Load3xVector64AndUnzip(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD3 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3) Load3xVector64AndUnzip(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3, Vector64<byte> Value4) Load4xVector64AndUnzip(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3, Vector64<sbyte> Value4) Load4xVector64AndUnzip(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3, Vector64<short> Value4) Load4xVector64AndUnzip(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3, Vector64<ushort> Value4) Load4xVector64AndUnzip(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3, Vector64<int> Value4) Load4xVector64AndUnzip(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3, Vector64<uint> Value4) Load4xVector64AndUnzip(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) Load4xVector64AndUnzip(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.8B, Vn+1.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2) Load2xVector64(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.8B, Vn+1.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2) Load2xVector64(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.4H, Vn+1.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2) Load2xVector64(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.4H, Vn+1.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2) Load2xVector64(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<int> Value1, Vector64<int> Value2) Load2xVector64(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2) Load2xVector64(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2) Load2xVector64(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.8B, Vn+1.8B, Vn+2.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3) Load3xVector64(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.8B, Vn+1.8B, Vn+2.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3) Load3xVector64(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.4H, Vn+1.4H, Vn+2.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3) Load3xVector64(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.4H, Vn+1.4H, Vn+2.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3) Load3xVector64(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3) Load3xVector64(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3) Load3xVector64(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3) Load3xVector64(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3, Vector64<byte> Value4) Load4xVector64(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3, Vector64<sbyte> Value4) Load4xVector64(sbyte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3, Vector64<short> Value4) Load4xVector64(short* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3, Vector64<ushort> Value4) Load4xVector64(ushort* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3, Vector64<int> Value4) Load4xVector64(int* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3, Vector64<uint> Value4) Load4xVector64(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: LD1 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) Load4xVector64(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -14951,6 +15391,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.8 { Dd }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.8B }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(byte* address, Vector64<byte> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -14958,6 +15399,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.64 { Dd }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.1D }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(double* address, Vector64<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -14965,6 +15407,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.16 { Dd }, [Rn]</para>
         ///   <para>  A64: ST1 {Vt.4H }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(short* address, Vector64<short> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -14972,6 +15415,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.32 { Dd }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.2S }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(int* address, Vector64<int> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -14979,6 +15423,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.64 { Dd }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.1D }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(long* address, Vector64<long> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -14986,6 +15431,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.8 { Dd }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.8B }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(sbyte* address, Vector64<sbyte> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -14993,6 +15439,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.32 { Dd }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.2S }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(float* address, Vector64<float> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15000,6 +15447,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.16 { Dd }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.4H }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(ushort* address, Vector64<ushort> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15007,6 +15455,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.32 { Dd }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.2S }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(uint* address, Vector64<uint> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15014,6 +15463,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.64 { Dd }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.1D }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(ulong* address, Vector64<ulong> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15021,6 +15471,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.8 { Dd, Dd+1 }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.16B }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(byte* address, Vector128<byte> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15028,6 +15479,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.64 { Dd, Dd+1 }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.2D }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(double* address, Vector128<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15035,6 +15487,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.16 { Dd, Dd+1 }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.8H }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(short* address, Vector128<short> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15042,6 +15495,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.32 { Dd, Dd+1 }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.4S }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(int* address, Vector128<int> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15049,6 +15503,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.64 { Dd, Dd+1 }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.2D }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(long* address, Vector128<long> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15056,6 +15511,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.8 { Dd, Dd+1 }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.16B }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(sbyte* address, Vector128<sbyte> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15063,6 +15519,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.32 { Dd, Dd+1 }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.4S }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(float* address, Vector128<float> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15070,6 +15527,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.16 { Dd, Dd+1 }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.8H }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(ushort* address, Vector128<ushort> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15077,6 +15535,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.32 { Dd, Dd+1 }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.4S }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(uint* address, Vector128<uint> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15084,6 +15543,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.64 { Dd, Dd+1 }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.2D }, [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Store(ulong* address, Vector128<ulong> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15091,6 +15551,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.8 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.B }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(byte* address, Vector64<byte> value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15098,6 +15559,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.16 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.H }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(short* address, Vector64<short> value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15105,6 +15567,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.32 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.S }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(int* address, Vector64<int> value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15112,6 +15575,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.8 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.B }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(sbyte* address, Vector64<sbyte> value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15119,6 +15583,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.32 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.S }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(float* address, Vector64<float> value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15126,6 +15591,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.16 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.H }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(ushort* address, Vector64<ushort> value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15133,6 +15599,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.32 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.S }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(uint* address, Vector64<uint> value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15140,6 +15607,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.8 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.B }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(byte* address, Vector128<byte> value, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15147,6 +15615,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VSTR.64 Dd, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.D }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(double* address, Vector128<double> value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15154,6 +15623,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.16 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.H }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(short* address, Vector128<short> value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15161,6 +15631,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.32 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.S }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(int* address, Vector128<int> value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15168,6 +15639,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VSTR.64 Dd, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.D }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(long* address, Vector128<long> value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15175,6 +15647,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.8 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.B }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(sbyte* address, Vector128<sbyte> value, [ConstantExpected(Max = (byte)(15))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15182,6 +15655,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.32 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.S }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(float* address, Vector128<float> value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15189,6 +15663,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.16 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.H }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(ushort* address, Vector128<ushort> value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15196,6 +15671,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VST1.32 { Dd[index] }, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.S }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(uint* address, Vector128<uint> value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -15203,195 +15679,259 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  A32: VSTR.64 Dd, [Rn]</para>
         ///   <para>  A64: ST1 { Vt.D }[index], [Xn]</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(ulong* address, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vt.8B, Vt+1.8B }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(byte* address, (Vector64<byte> value1, Vector64<byte> value2) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vt.8B, Vt+1.8B }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(sbyte* address, (Vector64<sbyte> value1, Vector64<sbyte> value2) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vt.4H, Vt+1.4H }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(short* address, (Vector64<short> value1, Vector64<short> value2) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vt.4H, Vt+1.4H }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(ushort* address, (Vector64<ushort> value1, Vector64<ushort> value2) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vt.2S, Vt+1.2S }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(int* address, (Vector64<int> value1, Vector64<int> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vt.2S, Vt+1.2S }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(uint* address, (Vector64<uint> value1, Vector64<uint> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vt.2S, Vt+1.2S }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(float* address, (Vector64<float> value1, Vector64<float> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vt.8B, Vt+1.8B, Vt+2.8B }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(byte* address, (Vector64<byte> value1, Vector64<byte> value2, Vector64<byte> value3) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vt.8B, Vt+1.8B, Vt+2.8B }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(sbyte* address, (Vector64<sbyte> value1, Vector64<sbyte> value2, Vector64<sbyte> value3) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vt.4H, Vt+1.4H, Vt+2.4H }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(short* address, (Vector64<short> value1, Vector64<short> value2, Vector64<short> value3) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vt.4H, Vt+1.4H, Vt+2.4H }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(ushort* address, (Vector64<ushort> value1, Vector64<ushort> value2,  Vector64<ushort> value3) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vt.2S, Vt+1.2S, Vt+2.2S }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(int* address, (Vector64<int> value1, Vector64<int> value2, Vector64<int> value3) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vt.2S, Vt+1.2S, Vt+2.2S }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(uint* address, (Vector64<uint> value1, Vector64<uint> value2, Vector64<uint> value3) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vt.2S, Vt+1.2S, Vt+2.2S }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(float* address, (Vector64<float> value1, Vector64<float> value2, Vector64<float> value3) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vt.8B, Vt+1.8B, Vt+2.8B, Vt+3.8B }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(byte* address, (Vector64<byte> value1, Vector64<byte> value2, Vector64<byte> value3, Vector64<byte> value4) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vt.8B, Vt+1.8B, Vt+2.8B, Vt+3.8B }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(sbyte* address, (Vector64<sbyte> value1, Vector64<sbyte> value2, Vector64<sbyte> value3, Vector64<sbyte> value4) value, [ConstantExpected(Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vt.4H, Vt+1.4H, Vt+2.4H, Vt+3.4H }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(short* address, (Vector64<short> value1, Vector64<short> value2, Vector64<short> value3, Vector64<short> value4) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vt.4H, Vt+1.4H, Vt+2.4H, Vt+3.4H }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(ushort* address, (Vector64<ushort> value1, Vector64<ushort> value2, Vector64<ushort> value3, Vector64<ushort> value4) value, [ConstantExpected(Max = (byte)(3))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vt.2S, Vt+1.2S, Vt+2.2S, Vt+3.2S }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(int* address, (Vector64<int> value1, Vector64<int> value2, Vector64<int> value3, Vector64<int> value4) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vt.2S, Vt+1.2S, Vt+2.2S, Vt+3.2S }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(uint* address, (Vector64<uint> value1, Vector64<uint> value2, Vector64<uint> value3, Vector64<uint> value4) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vt.2S, Vt+1.2S, Vt+2.2S, Vt+3.2S }[index], [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreSelectedScalar(float* address, (Vector64<float> value1, Vector64<float> value2, Vector64<float> value3, Vector64<float> value4) value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vn.8B, Vn+1.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(byte* address, (Vector64<byte> Value1, Vector64<byte> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vn.8B, Vn+1.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(sbyte* address, (Vector64<sbyte> Value1, Vector64<sbyte> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vn.4H, Vn+1.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(short* address, (Vector64<short> Value1, Vector64<short> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vn.4H, Vn+1.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(ushort* address, (Vector64<ushort> Value1, Vector64<ushort> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(int* address, (Vector64<int> Value1, Vector64<int> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(uint* address, (Vector64<uint> Value1, Vector64<uint> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST2 { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(float* address, (Vector64<float> Value1, Vector64<float> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vn.8B, Vn+1.8B, Vn+2.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(byte* address, (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vn.8B, Vn+1.8B, Vn+2.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(sbyte* address, (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vn.4H, Vn+1.4H, Vn+2.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(short* address, (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vn.4H, Vn+1.4H, Vn+2.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(ushort* address, (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(int* address, (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(uint* address, (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST3 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(float* address, (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(byte* address, (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3, Vector64<byte> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(sbyte* address, (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3, Vector64<sbyte> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(short* address, (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3, Vector64<short> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(ushort* address, (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3, Vector64<ushort> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(int* address, (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3, Vector64<int> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(uint* address, (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3, Vector64<uint> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void StoreVectorAndZip(float* address, (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.8B, Vn+1.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(byte* address, (Vector64<byte> Value1, Vector64<byte> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.8B, Vn+1.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(sbyte* address, (Vector64<sbyte> Value1, Vector64<sbyte> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.4H, Vn+1.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(short* address, (Vector64<short> Value1, Vector64<short> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.4H, Vn+1.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(ushort* address, (Vector64<ushort> Value1, Vector64<ushort> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(int* address, (Vector64<int> Value1, Vector64<int> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(uint* address, (Vector64<uint> Value1, Vector64<uint> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.2S, Vn+1.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(float* address, (Vector64<float> Value1, Vector64<float> Value2) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.8B, Vn+1.8B, Vn+2.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(byte* address, (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.8B, Vn+1.8B, Vn+2.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(sbyte* address, (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.4H, Vn+1.4H, Vn+2.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(short* address, (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.4H, Vn+1.4H, Vn+2.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(ushort* address, (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(int* address, (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(uint* address, (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.2S, Vn+1.2S, Vn+2.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(float* address, (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(byte* address, (Vector64<byte> Value1, Vector64<byte> Value2, Vector64<byte> Value3, Vector64<byte> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(sbyte* address, (Vector64<sbyte> Value1, Vector64<sbyte> Value2, Vector64<sbyte> Value3, Vector64<sbyte> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(short* address, (Vector64<short> Value1, Vector64<short> Value2, Vector64<short> Value3, Vector64<short> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(ushort* address, (Vector64<ushort> Value1, Vector64<ushort> Value2, Vector64<ushort> Value3, Vector64<ushort> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(int* address, (Vector64<int> Value1, Vector64<int> Value2, Vector64<int> Value3, Vector64<int> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(uint* address, (Vector64<uint> Value1, Vector64<uint> Value2, Vector64<uint> Value3, Vector64<uint> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  A64: ST1 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]</summary>
+        [RequiresUnsafe]
         public static unsafe void Store(float* address, (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>

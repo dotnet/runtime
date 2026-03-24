@@ -43,7 +43,7 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
             {
                 MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
                 TargetCodePointer nativeCode = rts.GetNativeCode(mdHandle);
-                CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(nativeCode);
+                CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(new TargetCodePointer(nativeCode.Value + 1UL)); // add 1 to test method-start-finding
                 Assert.NotNull(handle);
 
                 return handle.Value;
@@ -93,17 +93,19 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
         Assert.Contains(clauses, c => c.ClauseType == ExceptionClauseInfo.ExceptionClauseFlags.Typed);
     }
 
+    // The JIT may optimize a finally into a fault. See Compiler::fgCloneFinally().
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "EH clause enumeration was added after net10.0")]
-    public void GetExceptionClauses_ContainsFinallyClause(TestConfiguration config)
+    public void GetExceptionClauses_ContainsFinallyOrFaultClause(TestConfiguration config)
     {
         InitializeDumpTest(config);
 
         CodeBlockHandle codeBlock = FindCrashMethodCodeBlock();
         List<ExceptionClauseInfo> clauses = Target.Contracts.ExecutionManager.GetExceptionClauses(codeBlock);
 
-        Assert.Contains(clauses, c => c.ClauseType == ExceptionClauseInfo.ExceptionClauseFlags.Finally);
+        Assert.Contains(clauses, c => c.ClauseType == ExceptionClauseInfo.ExceptionClauseFlags.Finally ||
+                                      c.ClauseType == ExceptionClauseInfo.ExceptionClauseFlags.Fault);
     }
 
     [ConditionalTheory]
