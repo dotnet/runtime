@@ -187,6 +187,24 @@ namespace System.Collections.Frozen
             // Use long to avoid integer overflow when uniqueCodesCount is large (> ~1 billion).
             long minNumBuckets = (long)uniqueCodesCount * 2;
 
+            // EXPERIMENTAL: env-var switches for benchmarking prime-tuning value.
+            // These are read uncached during construction (cold path only, not on lookup hot path).
+            // DOTNET_FROZEN_SKIP_TUNING=1: skip collision-counting loop, just use GetPrime(2*N).
+            // DOTNET_FROZEN_TUNING_THRESHOLD=N: skip tuning when uniqueCodesCount > N.
+            if (Environment.GetEnvironmentVariable("DOTNET_FROZEN_SKIP_TUNING") == "1")
+            {
+                int targetBuckets = (int)Math.Min(minNumBuckets, int.MaxValue);
+                return HashHelpers.GetPrime(targetBuckets);
+            }
+
+            if (Environment.GetEnvironmentVariable("DOTNET_FROZEN_TUNING_THRESHOLD") is string thresholdStr
+                && int.TryParse(thresholdStr, out int maxTuningSize)
+                && uniqueCodesCount > maxTuningSize)
+            {
+                int targetBuckets = (int)Math.Min(minNumBuckets, int.MaxValue);
+                return HashHelpers.GetPrime(targetBuckets);
+            }
+
             // If the minimum bucket count combined with hash codes exceeds array length limits,
             // skip the expensive collision-counting loop below — any bucket count it finds
             // would cause Create to fail. Fall back to a prime that maintains ~0.5 load factor.
