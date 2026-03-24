@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.DependencyInjection
         // until the MethodInfo is actually needed.
         private static class MethodInfoHolder
         {
-            internal static readonly MethodInfo GetServiceInfo =
+            private static readonly MethodInfo GetServiceInfo =
                 new Func<IServiceProvider, Type, Type, bool, object?, object?>(GetService).Method;
         }
 
@@ -421,7 +421,7 @@ namespace Microsoft.Extensions.DependencyInjection
                         Expression.Constant(constructor.DeclaringType, typeof(Type)),
                         Expression.Constant(hasDefaultValue),
                         Expression.Constant(keyAttribute?.Key, typeof(object)) };
-                    constructorArguments[i] = Expression.Call(MethodInfoHolder.GetServiceInfo, parameterTypeExpression);
+                    constructorArguments[i] = Expression.Call(MethodInfoHolder.s_getServiceInfo, parameterTypeExpression);
                 }
 
                 // Support optional constructor arguments by passing in the default value
