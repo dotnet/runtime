@@ -507,15 +507,32 @@ unsigned Compiler::eeGetArgSizeAlignment(var_types type, bool isFloatHfa)
     }
 }
 
-/*****************************************************************************/
-
-GenTree* Compiler::eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig)
+//------------------------------------------------------------------------
+// eeConvertToLookup: Convert a tuple of "{ value, pValue }" to "CORINFO_CONST_LOOKUP".
+//
+// Arguments:
+//    value  - The direct value (IAT_VALUE)
+//    pValue - The indirect value (IAT_PVALUE)
+//
+// Return Value:
+//    The lookup.
+//
+CORINFO_CONST_LOOKUP Compiler::eeConvertToLookup(void* value, void* pValue)
 {
-    void *cookie, *pCookie;
-    cookie = info.compCompHnd->GetCookieForPInvokeCalliSig(szMetaSig, &pCookie);
-    assert((cookie == nullptr) != (pCookie == nullptr));
-
-    return gtNewIconEmbHndNode(cookie, pCookie, GTF_ICON_PINVKI_HDL, szMetaSig);
+    CORINFO_CONST_LOOKUP lookup;
+    if (value != nullptr)
+    {
+        assert(pValue == nullptr);
+        lookup.accessType = IAT_VALUE;
+        lookup.addr       = value;
+    }
+    else
+    {
+        assert(pValue != nullptr);
+        lookup.accessType = IAT_PVALUE;
+        lookup.addr       = pValue;
+    }
+    return lookup;
 }
 
 //------------------------------------------------------------------------

@@ -16,6 +16,8 @@ internal sealed class RealCodeHeader : IData<RealCodeHeader>
         GCInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(GCInfo)].Offset);
         NumUnwindInfos = target.Read<uint>(address + (ulong)type.Fields[nameof(NumUnwindInfos)].Offset);
         UnwindInfos = address + (ulong)type.Fields[nameof(UnwindInfos)].Offset;
+        TargetPointer jitEHInfoAddr = target.ReadPointer(address + (ulong)type.Fields[nameof(JitEHInfo)].Offset);
+        JitEHInfo = jitEHInfoAddr != TargetPointer.Null ? target.ProcessedData.GetOrAdd<EEILException>(jitEHInfoAddr) : null;
     }
 
     public TargetPointer MethodDesc { get; init; }
@@ -23,4 +25,5 @@ internal sealed class RealCodeHeader : IData<RealCodeHeader>
     public TargetPointer GCInfo { get; init; }
     public uint NumUnwindInfos { get; init; }
     public TargetPointer UnwindInfos { get; init; }
+    public EEILException? JitEHInfo { get; init; }
 }

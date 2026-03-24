@@ -1,10 +1,13 @@
 # System.IO.Compression
-Contains the source and tests of assembly System.IO.Compression, that includes types widely used on the compression space, as well as types for zip manipulation, and implementations of the Deflate and Gzip algorithms.
+Contains the source and tests of assembly System.IO.Compression, that includes types widely used on the compression space, as well as types for zip manipulation, and implementations of the Deflate, Gzip, and Zstandard algorithms.
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.io.compression.
 
 ## System.IO.Compression.Native source
 [../../native/libs/System.IO.Compression.Native](../../native/libs/System.IO.Compression.Native) contains the PAL (Platform Abstraction Layer) of the zlib library used by System.IO.Compression.
+
+## Zstandard support
+Zstandard (zstd) compression and decompression is supported on all platforms except browser and WASI. The Zstandard source files are located in the `Zstandard` subdirectory.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
@@ -18,4 +21,3 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3A
 ## See also
  - [`System.IO.Compression.Brotli`](../System.IO.Compression.Brotli#readme)
  - [`System.IO.Compression.ZipFile`](../System.IO.Compression.ZipFile#readme)
- - [`System.IO.Compression.Zstandard`](../System.IO.Compression.Zstandard#readme)

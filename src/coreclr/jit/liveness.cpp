@@ -2214,7 +2214,7 @@ bool Liveness<TLiveness>::RemoveDeadStore(GenTree**           pTree,
         {
             JITDUMP("removing stmt with no side effects\n");
 
-            // No side effects - remove the whole statement from the block->bbStmtList.
+            // No side effects - remove the whole statement from the block's statement list.
             m_compiler->fgRemoveStmt(m_compiler->compCurBB, m_compiler->compCurStmt);
 
             // Since we removed it do not process the rest (i.e. "data") of the statement
@@ -2552,6 +2552,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_KEEPALIVE:
             case GT_SWIFT_ERROR_RET:
             case GT_GCPOLL:
+            case GT_WASM_JEXCEPT:
                 // Never remove these nodes, as they are always side-effecting.
                 //
                 // NOTE: the only side-effect of some of these nodes (GT_CMP, GT_SUB_HI) is a write to the flags

@@ -1160,3 +1160,66 @@ namespace System.Numerics
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
     }
 }
+namespace System.Numerics.Colors
+{
+    public static partial class Argb
+    {
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Colors.Argb<byte> CreateBigEndian(uint color) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Colors.Argb<byte> CreateLittleEndian(uint color) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint ToUInt32BigEndian(this System.Numerics.Colors.Argb<byte> color) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint ToUInt32LittleEndian(this System.Numerics.Colors.Argb<byte> color) { throw null; }
+    }
+    public readonly partial struct Argb<T> : System.IEquatable<System.Numerics.Colors.Argb<T>> where T : struct
+    {
+        private readonly T _A_k__BackingField;
+        private readonly T _R_k__BackingField;
+        private readonly T _G_k__BackingField;
+        private readonly T _B_k__BackingField;
+        public Argb(System.ReadOnlySpan<T> values) { throw null; }
+        public Argb(T a, T r, T g, T b) { throw null; }
+        public T A { get { throw null; } init { throw null; } }
+        public T B { get { throw null; } init { throw null; } }
+        public T G { get { throw null; } init { throw null; } }
+        public T R { get { throw null; } init { throw null; } }
+        public void CopyTo(System.Span<T> destination) { }
+        public bool Equals(System.Numerics.Colors.Argb<T> other) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public System.Numerics.Colors.Rgba<T> ToRgba() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public static partial class Rgba
+    {
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Colors.Rgba<byte> CreateBigEndian(uint color) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Colors.Rgba<byte> CreateLittleEndian(uint color) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint ToUInt32BigEndian(this System.Numerics.Colors.Rgba<byte> color) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint ToUInt32LittleEndian(this System.Numerics.Colors.Rgba<byte> color) { throw null; }
+    }
+    public readonly partial struct Rgba<T> : System.IEquatable<System.Numerics.Colors.Rgba<T>> where T : struct
+    {
+        private readonly T _R_k__BackingField;
+        private readonly T _G_k__BackingField;
+        private readonly T _B_k__BackingField;
+        private readonly T _A_k__BackingField;
+        public Rgba(System.ReadOnlySpan<T> values) { throw null; }
+        public Rgba(T r, T g, T b, T a) { throw null; }
+        public T A { get { throw null; } init { throw null; } }
+        public T B { get { throw null; } init { throw null; } }
+        public T G { get { throw null; } init { throw null; } }
+        public T R { get { throw null; } init { throw null; } }
+        public void CopyTo(System.Span<T> destination) { }
+        public bool Equals(System.Numerics.Colors.Rgba<T> other) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public System.Numerics.Colors.Argb<T> ToArgb() { throw null; }
+        public override string ToString() { throw null; }
+    }
+}

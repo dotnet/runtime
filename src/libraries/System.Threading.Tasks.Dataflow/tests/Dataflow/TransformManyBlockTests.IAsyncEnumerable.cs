@@ -304,7 +304,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 0, actual: tb.OutputCount);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestInputCountAsyncEnumerable()
         {
             using Barrier barrier1 = new Barrier(2), barrier2 = new Barrier(2);
@@ -330,7 +330,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop] // spins waiting for a condition to be true, though it should happen very quickly
         public async Task TestCountAsyncEnumerable()
         {
@@ -339,7 +339,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 0, actual: tb.OutputCount);
 
             tb.PostRange(1, 11);
-            await Task.Run(() => SpinWait.SpinUntil(() => tb.OutputCount == 10));
+            Assert.True(await Task.Run(() => SpinWait.SpinUntil(() => tb.OutputCount == 10, DataflowTestHelpers.SpinTimeoutMs)));
             for (int i = 10; i > 0; i--)
             {
                 Assert.True(tb.TryReceive(out int item));
@@ -630,7 +630,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await tb.Completion;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task TestOrdering_Sync_OrderedDisabledAsyncEnumerable(bool trustedEnumeration)
@@ -658,7 +658,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await tb.Completion;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task TestOrdering_Sync_BlockingEnumeration_NoDeadlockAsyncEnumerable(bool ensureOrdered)

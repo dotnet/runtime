@@ -116,7 +116,7 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [ConditionalFact(nameof(IsBindMountSupportedAndPrivilegedProcess))]
+        [ConditionalFact(typeof(File_Delete), nameof(IsBindMountSupportedAndPrivilegedProcess))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void Unix_NonExistentPath_ReadOnlyVolume()
@@ -127,7 +127,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(IsBindMountSupportedAndPrivilegedProcess))]
+        [ConditionalFact(typeof(File_Delete), nameof(IsBindMountSupportedAndPrivilegedProcess))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void Unix_ExistingDirectory_ReadOnlyVolume()

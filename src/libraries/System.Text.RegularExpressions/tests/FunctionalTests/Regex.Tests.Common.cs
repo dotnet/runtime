@@ -16,8 +16,6 @@ namespace System.Text.RegularExpressions.Tests
     {
         public const string DefaultMatchTimeout_ConfigKeyName = "REGEX_DEFAULT_MATCH_TIMEOUT";
 
-        public const int StressTestNestingDepth = 1000;
-
         /// <summary>RegexOptions.NonBacktracking.</summary>
         /// <remarks>Defined here to be able to reference the value by name even on .NET Framework test builds.</remarks>
         public const RegexOptions RegexOptionNonBacktracking = (RegexOptions)0x400;
@@ -26,11 +24,16 @@ namespace System.Text.RegularExpressions.Tests
         /// <remarks>Defined here to be able to reference the value even in release builds.</remarks>
         public const RegexOptions RegexOptionDebug = (RegexOptions)0x80;
 
+        /// <summary>RegexOptions.AnyNewLine.</summary>
+        /// <remarks>Defined here to be able to reference the value by name even on .NET Framework test builds.</remarks>
+        public const RegexOptions RegexOptionAnyNewLine = (RegexOptions)0x0800;
+
         static RegexHelpers()
         {
             if (PlatformDetection.IsNetCore)
             {
                 Assert.Equal(RegexOptionNonBacktracking, Enum.Parse(typeof(RegexOptions), "NonBacktracking"));
+                Assert.Equal(RegexOptionAnyNewLine, Enum.Parse(typeof(RegexOptions), "AnyNewLine"));
             }
         }
 

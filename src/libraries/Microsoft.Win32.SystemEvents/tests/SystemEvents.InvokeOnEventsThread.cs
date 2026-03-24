@@ -54,7 +54,7 @@ namespace Microsoft.Win32.SystemEventsTests
 
         public static bool NotNanoNorServerCoreAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsNanoNorServerCore && RemoteExecutor.IsSupported;
 
-        [ConditionalFact(nameof(NotNanoNorServerCoreAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(InvokeOnEventsThreadTests), nameof(NotNanoNorServerCoreAndRemoteExecutorSupported))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34360", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void RegisterFromSTAThreadThatGoesAway_MessageStillDelivered()
