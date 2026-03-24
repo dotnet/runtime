@@ -2916,6 +2916,15 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         destReg = GetMultiUseOperandReg(dest);
     }
 
+    if (nullCheckDest)
+    {
+        genEmitNullCheck(destReg);
+    }
+    if (nullCheckSrc)
+    {
+        genEmitNullCheck(srcReg);
+    }
+
     emitter* emit = GetEmitter();
 
     if (isNativeOp)
