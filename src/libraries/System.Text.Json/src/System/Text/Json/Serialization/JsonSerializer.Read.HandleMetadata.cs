@@ -17,8 +17,8 @@ namespace System.Text.Json
         internal const string TypePropertyName = "$type";
         internal const string ValuesPropertyName = "$values";
 
-        internal static readonly byte[] s_idPropertyName = "$id"u8.ToArray();
-        internal static readonly byte[] s_refPropertyName = "$ref"u8.ToArray();
+        private static readonly byte[] s_idPropertyName = "$id"u8.ToArray();
+        private static readonly byte[] s_refPropertyName = "$ref"u8.ToArray();
         private static readonly byte[] s_typePropertyName = "$type"u8.ToArray();
         private static readonly byte[] s_valuesPropertyName = "$values"u8.ToArray();
 

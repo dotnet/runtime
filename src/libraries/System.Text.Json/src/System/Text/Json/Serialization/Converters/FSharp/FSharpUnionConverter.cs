@@ -221,16 +221,20 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException();
                 }
 
-                if (preserveReferences && reader.ValueTextEquals(JsonSerializer.s_refPropertyName))
+                if (preserveReferences)
                 {
-                    reader.Read();
-                    if (reader.TokenType != JsonTokenType.String)
+                    MetadataPropertyName metadata = JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null);
+                    if (metadata is MetadataPropertyName.Ref)
                     {
-                        ThrowHelper.ThrowJsonException();
-                    }
+                        reader.Read();
+                        if (reader.TokenType != JsonTokenType.String)
+                        {
+                            ThrowHelper.ThrowJsonException();
+                        }
 
-                    refId = reader.GetString();
-                    break;
+                        refId = reader.GetString();
+                        break;
+                    }
                 }
 
                 bool isDiscriminator = reader.ValueTextEquals(_typeDiscriminatorPropertyName);
@@ -290,7 +294,8 @@ namespace System.Text.Json.Serialization.Converters
 
                             discriminatorSeen = true;
                         }
-                        else if (preserveReferences && reader.ValueTextEquals(JsonSerializer.s_idPropertyName))
+                        else if (preserveReferences &&
+                            JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null) is MetadataPropertyName.Id)
                         {
                             reader.Read();
                             if (reader.TokenType != JsonTokenType.String)
@@ -353,7 +358,8 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Capture $id metadata for reference registration.
-                if (preserveReferences && reader.ValueTextEquals(JsonSerializer.s_idPropertyName))
+                if (preserveReferences &&
+                    JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null) is MetadataPropertyName.Id)
                 {
                     reader.Read();
                     if (reader.TokenType != JsonTokenType.String)
