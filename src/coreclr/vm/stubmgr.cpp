@@ -2293,6 +2293,15 @@ BOOL AsyncThunkStubManager::TraceManager(Thread *thread,
         MethodDesc* pOtherMD = pMD->GetOrdinaryVariant();
         _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk has no non-thunk variant to step through to");
 
+        // An orinary variant may be a thunk in a rare case when we start from ReturnDroppingThunk.
+        // In such case the regular async variant must be not be a thunk.
+        if (pOtherMD->IsAsyncThunkMethod)
+        {
+            _ASSERTE(pMD->IsReturnDroppingThunk());
+            MethodDesc* pOtherMD = pMD->GetAsyncVariant();
+            _ASSERTE(!pOtherMD->IsAsyncThunkMethod());
+        }
+
         LOG((LF_CORDB, LL_INFO1000, "ATSM::TraceManager: Step through async thunk to target - %p\n", pOtherMD));
         PCODE target = GetStubTarget(pOtherMD);
         if (target == (PCODE)NULL)
