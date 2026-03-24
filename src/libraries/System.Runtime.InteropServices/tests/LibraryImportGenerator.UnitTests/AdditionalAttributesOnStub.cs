@@ -115,6 +115,54 @@ namespace LibraryImportGenerator.UnitTests
             await VerifySourceGeneratorAsync(source, "C", "Method", typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName, attributeAdded: false);
         }
 
+        [Fact]
+        public async Task RequiresUnsafeAdded()
+        {
+            string source = """
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                [assembly:DisableRuntimeMarshalling]
+                partial class C
+                {
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial S Method();
+                }
+
+                [NativeMarshalling(typeof(Marshaller))]
+                struct S
+                {
+                }
+
+                struct Native
+                {
+                }
+
+                [CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+                static class Marshaller
+                {
+                    public static Native ConvertToUnmanaged(S s) => default;
+
+                    public static S ConvertToManaged(Native n) => default;
+                }
+                """;
+            await VerifySourceGeneratorAsync(source, "C", "Method", "System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute", attributeAdded: true);
+        }
+
+        [Fact]
+        public async Task RequiresUnsafeAddedOnForwardingStub()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class C
+                {
+                    [LibraryImportAttribute("DoesNotExist")]
+                    public static partial void Method();
+                }
+                """;
+            await VerifySourceGeneratorAsync(source, "C", "Method", "System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute", attributeAdded: true);
+        }
+
         public static IEnumerable<object[]> GetDownlevelTargetFrameworks()
         {
             yield return new object[] { TestTargetFramework.Standard2_0, false };

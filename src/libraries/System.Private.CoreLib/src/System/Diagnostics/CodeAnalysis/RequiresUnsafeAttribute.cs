@@ -13,7 +13,7 @@ namespace System.Diagnostics.CodeAnalysis
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
     [Conditional("DEBUG")]
-    internal sealed class RequiresUnsafeAttribute : Attribute
+    public sealed class RequiresUnsafeAttribute : Attribute
     {
     }
 }
