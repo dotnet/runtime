@@ -16,11 +16,6 @@ public readonly struct ModuleHandle
     public TargetPointer Address { get; }
 }
 
-public enum LoaderHeapKind
-{
-    Normal = 0,
-    ExplicitControl = 1,
-}
 
 [Flags]
 public enum ModuleFlags
@@ -103,7 +98,7 @@ public interface ILoader : IContract
 
     // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
     // Throws NotImplementedException for unknown kind values.
-    TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap, LoaderHeapKind kind) => throw new NotImplementedException();
+    TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap) => throw new NotImplementedException();
     TargetNUInt GetLoaderHeapBlockSize(TargetPointer block) => throw new NotImplementedException();
     TargetPointer GetLoaderHeapBlockAddress(TargetPointer block) => throw new NotImplementedException();
     // Returns the next block in the loader heap linked list, or TargetPointer.Null if there are no more blocks

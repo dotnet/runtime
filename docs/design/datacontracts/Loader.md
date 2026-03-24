@@ -86,17 +86,9 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
-
-// Loader heap traversal
-enum LoaderHeapKind
-{
-    Normal = 0,          // UnlockedLoaderHeap / LoaderHeap
-    ExplicitControl = 1, // ExplicitControlLoaderHeap
-}
-
 // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
 // Throws NotImplementedException for unknown kind values.
-TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap, LoaderHeapKind kind);
+TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap);
 // Returns the size of the reserved virtual memory region for the given loader heap block
 TargetNUInt GetLoaderHeapBlockSize(TargetPointer block);
 // Returns the start address of the reserved virtual memory for the given loader heap block
@@ -893,22 +885,10 @@ class InstMethodHashTable
 
 #### GetFirstLoaderHeapBlock, GetLoaderHeapBlockAddress, GetLoaderHeapBlockSize, GetNextLoaderHeapBlock
 
-Both `UnlockedLoaderHeap`/`LoaderHeap` (normal) and `ExplicitControlLoaderHeap` (explicit-control) inherit from
-`UnlockedLoaderHeapBaseTraversable`, which holds `m_pFirstBlock`. Each kind maps to a separate cDAC type
-(`LoaderHeap` and `ExplicitControlLoaderHeap` respectively) so callers are explicit about which type they are
-traversing. The `LoaderHeapKind` enum encodes the choice, and an unknown kind throws `NotImplementedException`.
-
 ```csharp
-TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap, LoaderHeapKind kind)
+TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
 {
-    return kind switch
-    {
-        LoaderHeapKind.Normal =>
-            target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */),
-        LoaderHeapKind.ExplicitControl =>
-            target.ReadPointer(loaderHeap + /* ExplicitControlLoaderHeap::FirstBlock offset */),
-        _ => throw new NotImplementedException($"Unknown loader heap kind: {kind}"),
-    };
+    return target.ReadPointer(loaderHeap + /* ExplicitControlLoaderHeap::FirstBlock offset */);
 }
 
 TargetPointer ILoader.GetLoaderHeapBlockAddress(TargetPointer block)

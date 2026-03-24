@@ -4335,7 +4335,7 @@ public sealed unsafe partial class SOSDacImpl
 
             Contracts.ILoader loader = _target.Contracts.Loader;
             TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
-            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr, Contracts.LoaderHeapKind.Normal);
+            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
             TargetPointer firstBlock = block;
             int i = 0;
             while (block != TargetPointer.Null && i++ < iterationMax)
@@ -4372,11 +4372,14 @@ public sealed unsafe partial class SOSDacImpl
             int cdacCount = DebugTraverseLoaderHeapBlocks.Count;
             delegate* unmanaged<ulong, nuint, Interop.BOOL, void> debugCallbackPtr = &TraverseLoaderHeapDebugCallback;
             int hrLocal = _legacyImpl.TraverseLoaderHeap(loaderHeapAddr, debugCallbackPtr);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            Debug.Assert(DebugTraverseLoaderHeapBlocks.Count == 0,
-                $"cDAC found {cdacCount} blocks, DAC matched {_debugTraverseLoaderDebugCount}, {DebugTraverseLoaderHeapBlocks.Count} unmatched");
-            Debug.Assert(_debugTraverseLoaderDebugCount == (uint)cdacCount,
-                $"cDAC: {cdacCount} blocks, DAC: {_debugTraverseLoaderDebugCount} blocks");
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(DebugTraverseLoaderHeapBlocks.Count == 0,
+                    $"cDAC found {cdacCount} blocks, DAC matched {_debugTraverseLoaderDebugCount}, {DebugTraverseLoaderHeapBlocks.Count} unmatched");
+                Debug.Assert(_debugTraverseLoaderDebugCount == (uint)cdacCount,
+                    $"cDAC: {cdacCount} blocks, DAC: {_debugTraverseLoaderDebugCount} blocks");
+            }
         }
 #endif
         return hr;
@@ -5662,7 +5665,7 @@ public sealed unsafe partial class SOSDacImpl
 
             Contracts.ILoader loader = _target.Contracts.Loader;
             TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
-            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr, (Contracts.LoaderHeapKind)kind);
+            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
             TargetPointer firstBlock = block;
             int i = 0;
             while (block != TargetPointer.Null && i++ < iterationMax)

@@ -46,7 +46,6 @@ public enum DataType
     Assembly,
     LoaderAllocator,
     LoaderHeap,
-    ExplicitControlLoaderHeap,
     LoaderHeapBlock,
     PEAssembly,
     AssemblyBinder,

@@ -175,8 +175,13 @@ enum class LoaderHeapImplementationKind
     Interleaved
 };
 
+typedef DPTR(class UnlockedLoaderHeapBaseTraversable) PTR_UnlockedLoaderHeapBaseTraversable;
 class UnlockedLoaderHeapBaseTraversable
 {
+    friend struct cdac_data<UnlockedLoaderHeapBaseTraversable>;
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
+#endif
 protected:
 #ifdef DACCESS_COMPILE
     UnlockedLoaderHeapBaseTraversable() {}
@@ -189,6 +194,8 @@ protected:
 #endif
 
 public:
+    // DO NOT REMOVE : This is needed for layout stability.
+    virtual ~UnlockedLoaderHeapBaseTraversable() {}
 #ifdef DACCESS_COMPILE
 public:
     void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
@@ -202,6 +209,12 @@ protected:
     PTR_LoaderHeapBlock m_pFirstBlock;
 };
 
+template<>
+struct cdac_data<UnlockedLoaderHeapBaseTraversable>
+{
+    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBaseTraversable, m_pFirstBlock);
+};
+
 //===============================================================================
 // This is the base class for LoaderHeap and InterleavedLoaderHeap. It holds the
 // common handling for LoaderHeap events, and the data structures used for bump
@@ -210,7 +223,6 @@ protected:
 typedef DPTR(class UnlockedLoaderHeapBase) PTR_UnlockedLoaderHeapBase;
 class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable, public ILoaderHeapBackout
 {
-    friend struct cdac_data<UnlockedLoaderHeapBase>;
 #ifdef _DEBUG
     friend class LoaderHeapSniffer;
 #endif
@@ -281,12 +293,6 @@ public:
     size_t              m_dwDebugWastedBytes;
     static DWORD        s_dwNumInstancesOfLoaderHeaps;
 #endif
-};
-
-template<>
-struct cdac_data<UnlockedLoaderHeapBase>
-{
-    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBase, m_pFirstBlock);
 };
 
 //===============================================================================
@@ -607,10 +613,6 @@ protected:
 typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
 class ExplicitControlLoaderHeap : public UnlockedLoaderHeapBaseTraversable
 {
-    friend struct cdac_data<ExplicitControlLoaderHeap>;
-#ifdef DACCESS_COMPILE
-    friend class ClrDataAccess;
-#endif
 
 private:
     // Allocation pointer in current block
@@ -702,11 +704,6 @@ public:
     void SetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory);
 };
 
-template<>
-struct cdac_data<ExplicitControlLoaderHeap>
-{
-    static constexpr size_t FirstBlock = offsetof(ExplicitControlLoaderHeap, m_pFirstBlock);
-};
 
 //===============================================================================
 // Create the LoaderHeap lock. It's the same lock for several different Heaps.
