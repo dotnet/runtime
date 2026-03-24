@@ -18,7 +18,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasOneSerialPort))]
         public void ReadBufferSize_Default()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -49,45 +49,45 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasNullModem))]
         public void ReadBufferSize_AfterOpen()
         {
             VerifyException(1024, null, typeof(InvalidOperationException));
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasNullModem))]
         public void ReadBufferSize_NEG1()
         {
             VerifyException(-1, typeof(ArgumentOutOfRangeException), typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasNullModem))]
         public void ReadBufferSize_Int32MinValue()
         {
             VerifyException(int.MinValue, typeof(ArgumentOutOfRangeException), typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasNullModem))]
         public void ReadBufferSize_0()
         {
             VerifyException(0, typeof(ArgumentOutOfRangeException), typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasNullModem))]
         public void ReadBufferSize_1()
         {
             Debug.WriteLine("Verifying setting ReadBufferSize=1");
             VerifyException(1, typeof(IOException), typeof(InvalidOperationException), true);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasNullModem))]
         public void ReadBufferSize_2()
         {
             Debug.WriteLine("Verifying setting ReadBufferSize=");
             VerifyReadBufferSize(2);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasNullModem))]
         public void ReadBufferSize_Smaller()
         {
             using (var com = new SerialPort())
@@ -101,13 +101,13 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasNullModem))]
         public void ReadBufferSize_Larger()
         {
             VerifyReadBufferSize(((new SerialPort()).ReadBufferSize) * 2);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasNullModem))]
         public void ReadBufferSize_Odd()
         {
             Debug.WriteLine("Verifying setting ReadBufferSize=Odd");
@@ -115,14 +115,14 @@ namespace System.IO.Ports.Tests
             VerifyException(((new SerialPort()).ReadBufferSize) * 2 + 1, typeof(IOException), typeof(InvalidOperationException), true);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasNullModem))]
         public void ReadBufferSize_Even()
         {
             Debug.WriteLine("Verifying setting ReadBufferSize=Even");
             VerifyReadBufferSize(((new SerialPort()).ReadBufferSize) * 2);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasNullModem))]
         public void ReadBufferSize_Rnd()
         {
             Random rndGen = new Random(-55);
@@ -134,7 +134,7 @@ namespace System.IO.Ports.Tests
             VerifyReadBufferSize(11620);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadBufferSize_Property), nameof(HasNullModem))]
         public void ReadBufferSize_Large()
         {
             VerifyReadBufferSize(LARGE_BUFFER_SIZE);

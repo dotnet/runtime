@@ -127,10 +127,9 @@ walk_managed_stack_for_threads (
 
 		// Walk the stack and write it out as an event.
 		if (ep_rt_coreclr_walk_managed_stack_for_thread (target_thread, current_stack_contents) && !ep_stack_contents_is_empty (current_stack_contents)) {
-			// Set the payload.  If the GC mode on suspension > 0, then the thread was in cooperative mode.
-			// Even though there are some cases where this is not managed code, we assume it is managed code here.
-			// If the GC mode on suspension == 0 then the thread was in preemptive mode, which we qualify as external here.
-			uint32_t payload_data = target_thread->GetGCModeOnSuspension () ? EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED : EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+			// Set the payload. If the thread is trapped for suspension, it was in cooperative mode (managed code).
+			// Otherwise, it was in preemptive mode (external code).
+			uint32_t payload_data = target_thread->HasThreadState (Thread::TS_SuspensionTrapped) ? EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED : EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
 
 			// Write the sample.
 			ep_write_sample_profile_event (
@@ -141,9 +140,6 @@ walk_managed_stack_for_threads (
 				(uint8_t *)&payload_data,
 				sizeof (payload_data));
 		}
-
-		// Reset the GC mode.
-		target_thread->ClearGCModeOnSuspension ();
 	}
 
 	ep_stack_contents_fini (current_stack_contents);

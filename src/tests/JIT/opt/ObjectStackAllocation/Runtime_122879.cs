@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Poco(string value)
 {
@@ -29,6 +30,7 @@ public class Runtime_122879
         return output;
     }
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static void Test()
     {

@@ -523,6 +523,31 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void LastIndexOfMultipleMatches()
+        {
+            ImmutableList<string> list = ImmutableList.Create("NonMatch", "Match", "Match", "NonMatch");
+            Assert.Equal(2, list.LastIndexOf("Match", index: 3, count: 4, equalityComparer: null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.LastIndexOf("Match", index: 4, count: 4, equalityComparer: null));
+        }
+
+        [Fact]
+        public void LastIndexOfConsistentWithImmutableArray()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1, 2, 3);
+            ImmutableArray<int> array = ImmutableArray.Create(1, 2, 3);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.LastIndexOf(1, list.Count, 1, equalityComparer: null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => array.LastIndexOf(1, array.Length, 1, equalityComparer: null));
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                int listResult = list.LastIndexOf(list[i], list.Count - 1, list.Count, equalityComparer: null);
+                int arrayResult = array.LastIndexOf(array[i], array.Length - 1, array.Length, equalityComparer: null);
+                Assert.Equal(arrayResult, listResult);
+            }
+        }
+
+        [Fact]
         public void ReplaceTest()
         {
             // Verify replace at beginning, middle, and end.

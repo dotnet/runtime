@@ -344,6 +344,11 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, Math.Max(0, array.Length - 1), 2, i => i));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 0, -1, i => i));
 
+            if (array.Length > 0)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 1, int.MaxValue, i => i));
+            }
+
             Assert.Throws<NullReferenceException>(() => ImmutableArray.CreateRange(s_emptyDefault, 0, 0, i => i));
         }
 
@@ -386,6 +391,11 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, array.Length, 1, (i, j) => i + j, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, Math.Max(0, array.Length - 1), 2, (i, j) => i + j, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 0, -1, (i, j) => i + j, 0));
+
+            if (array.Length > 0)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.CreateRange(array, 1, int.MaxValue, (i, j) => i + j, 0));
+            }
 
             Assert.Throws<NullReferenceException>(() => ImmutableArray.CreateRange(s_emptyDefault, 0, 0, (x, y) => 0, 0));
         }
@@ -432,6 +442,7 @@ namespace System.Collections.Immutable.Tests
             if (array.Length > 0)
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 1, array.Length));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 1, int.MaxValue));
             }
         }
 
@@ -478,6 +489,7 @@ namespace System.Collections.Immutable.Tests
             if (array.Length > 0)
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 1, array.Length));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => ImmutableArray.Create(array, 1, int.MaxValue));
             }
         }
 
@@ -497,6 +509,7 @@ namespace System.Collections.Immutable.Tests
             if (array.Length > 0)
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.Slice(1, array.Length));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => array.Slice(1, int.MaxValue));
             }
         }
 
@@ -2508,7 +2521,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new[] { "1" }, s_twoElementRefTypeWithNull.OfType<string>());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddThreadSafety()
         {
             // Note the point of this thread-safety test is *not* to test the thread-safety of the test itself.

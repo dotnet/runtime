@@ -24,6 +24,8 @@
              Link="Common\System\CharArrayHelpers.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
              Link="Common\System\Collections\Generic\ArrayBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.cs"
+             Link="Common\System\Collections\Generic\ValueListBuilder.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
     <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs"
@@ -86,6 +88,7 @@
     <Compile Include="Tests\System\Text\SimpleRegexTests.cs" />
     <Compile Include="Tests\System\Text\ValueStringBuilderTests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
+    <Compile Include="Tests\System\Collections\Generic\ValueListBuilderTests.cs" />
     <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
     <Compile Include="Tests\System\Net\ArrayBufferTests.cs" />
     <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />
@@ -125,8 +128,6 @@
              Link="System\PasteArguments.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Unix.Tests.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
              Link="System\IO\PathInternal.Unix.cs" />
@@ -161,7 +162,6 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
   </ItemGroup>

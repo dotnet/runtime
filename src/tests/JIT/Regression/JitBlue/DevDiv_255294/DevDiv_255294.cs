@@ -4,12 +4,14 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Test_DevDiv_255294
 {
     static bool f;
 
     [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/44341 The test causes OutOfMemory exception in crossgen mode.", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
     [Fact]
     public static int TestEntryPoint()
     {

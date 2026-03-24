@@ -841,7 +841,9 @@ namespace System.Reflection.Tests
         public void AssemblyLoadFromBytesNeg()
         {
             Assert.Throws<ArgumentNullException>(() => Assembly.Load((byte[])null));
-            Assert.Throws<BadImageFormatException>(() => Assembly.Load(new byte[0]));
+            
+            BadImageFormatException ex = Assert.Throws<BadImageFormatException>(() => Assembly.Load(new byte[0]));
+            Assert.Contains("empty", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.HasAssemblyFiles))]

@@ -23,6 +23,7 @@ LEAF_ENTRY FixupPrecodeCode
     jr t1
 LEAF_END_MARKED FixupPrecodeCode
 
+#ifdef FEATURE_TIERED_COMPILATION
 LEAF_ENTRY CallCountingStubCode
     auipc t2, 0x4
     ld t3, (CallCountingStubData__RemainingCallCountCell)(t2)
@@ -36,3 +37,4 @@ LOCAL_LABEL(CountReachedZero):
     ld t1, (CallCountingStubData__TargetForThresholdReached)(t2)
     jr t1
 LEAF_END_MARKED CallCountingStubCode
+#endif // FEATURE_TIERED_COMPILATION

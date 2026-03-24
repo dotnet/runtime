@@ -1886,7 +1886,7 @@ namespace System
                 }
             }
 
-            return Array.Empty<string>();
+            return [];
         }
 
         private string[] SplitInternal(string separator, int count, StringSplitOptions options)
@@ -2662,6 +2662,7 @@ namespace System
             return CreateTrimmedString(start, end);
         }
 
+        [RequiresUnsafe]
         private unsafe string TrimHelper(char* trimChars, int trimCharsLength, TrimType trimType)
         {
             Debug.Assert(trimChars != null);

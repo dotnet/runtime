@@ -10,6 +10,8 @@ using System.Runtime.InteropServices;
 [assembly: TypeMapAssociation<MultipleTypeMapAssemblies>(typeof(object), typeof(string))]
 [assembly: TypeMapAssociation<MultipleTypeMapAssemblies>(typeof(string), typeof(object))]
 
+[assembly: TypeMap<DuplicateTypeMapEntriesAcrossAssemblies>("1", typeof(string))]
+
 [assembly: TypeMapAssemblyTarget<MultipleTypeMapAssemblies>("TypeMapLib3")] // Recursive check
 [assembly: TypeMapAssemblyTarget<MultipleTypeMapAssemblies>("TypeMapLib4")]
 [assembly: TypeMapAssemblyTarget<MultipleTypeMapAssemblies>("TypeMapApp")] // Circular check

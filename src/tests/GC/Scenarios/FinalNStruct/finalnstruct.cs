@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using TestLibrary;
 //***************************************************************************/
 //* Test:   FinalNStruct
 //* Coverage:   1. check if GC can collect NStruct memeory (externally_allocated
@@ -39,6 +40,7 @@ namespace NStruct {
             return ( FinalizeCount.icFinal == FinalizeCount.icCreat );
         }
 
+        [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint(){
             int iObj = 100;

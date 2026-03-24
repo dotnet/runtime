@@ -25,11 +25,17 @@ namespace ILLink.RoslynAnalyzer
         public const string FullyQualifiedDynamicallyAccessedMembersAttribute = "System.Diagnostics.CodeAnalysis." + DynamicallyAccessedMembersAttribute;
         public const string FullyQualifiedFeatureGuardAttribute = "System.Diagnostics.CodeAnalysis.FeatureGuardAttribute";
         public static Lazy<ImmutableArray<RequiresAnalyzerBase>> RequiresAnalyzers { get; } = new Lazy<ImmutableArray<RequiresAnalyzerBase>>(GetRequiresAnalyzers);
-        private static ImmutableArray<RequiresAnalyzerBase> GetRequiresAnalyzers() =>
-            ImmutableArray.Create<RequiresAnalyzerBase>(
-                new RequiresAssemblyFilesAnalyzer(),
-                new RequiresUnreferencedCodeAnalyzer(),
-                new RequiresDynamicCodeAnalyzer());
+        private static ImmutableArray<RequiresAnalyzerBase> GetRequiresAnalyzers()
+        {
+            var builder = ImmutableArray.CreateBuilder<RequiresAnalyzerBase>();
+            builder.Add(new RequiresAssemblyFilesAnalyzer());
+            builder.Add(new RequiresUnreferencedCodeAnalyzer());
+            builder.Add(new RequiresDynamicCodeAnalyzer());
+#if DEBUG
+            builder.Add(new RequiresUnsafeAnalyzer());
+#endif
+            return builder.ToImmutable();
+        }
 
         public static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics()
         {

@@ -17,6 +17,7 @@ namespace System
 
         public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         public static bool IsOpenSUSE => IsDistroAndVersion("opensuse");
+        public static bool IsOpenSUSE16 => IsDistroAndVersion("opensuse", 16) || IsDistroAndVersion("opensuse-leap", 16);
         public static bool IsUbuntu => IsDistroAndVersion("ubuntu");
         public static bool IsUbuntu26 => IsDistroAndVersion("ubuntu", 26);
         public static bool IsUbuntu24 => IsDistroAndVersion("ubuntu", 24);

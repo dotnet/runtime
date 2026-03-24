@@ -598,7 +598,7 @@ mono_find_jit_info (MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev
 	if (ji == (gpointer)-1)
 		return ji;
 
-	if (ji && !ji->is_trampoline)
+	if (ji && !ji->is_trampoline && !ji->async)
 		method = jinfo_get_method (ji);
 
 	if (managed2 || (method && method->wrapper_type)) {
@@ -2909,7 +2909,7 @@ print_stack_frame_signal_safe (StackFrameInfo *frame, MonoContext *ctx, gpointer
 {
 	MonoMethod *method = NULL;
 
-	if (frame->ji && frame->type != FRAME_TYPE_TRAMPOLINE)
+	if (frame->ji && frame->type != FRAME_TYPE_TRAMPOLINE && !frame->ji->async)
 		method = jinfo_get_method (frame->ji);
 
 	if (method) {

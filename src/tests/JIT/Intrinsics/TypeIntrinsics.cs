@@ -8,11 +8,14 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using Xunit;
+using TestLibrary;
 
 public partial class Program
 {
     private static int _errors = 0;
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/54867", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
     [Fact]
     public static int TestEntryPoint()
     {

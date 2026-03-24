@@ -507,11 +507,6 @@
         <target state="translated">Atributy „[In]“ a „[Out]“ jsou podporovány pouze u parametrů pole. Zvažte použití klíčového slova „ref“ k nastavení měnitelného parametru.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">atributy [In] a [Out]</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
         <target state="translated">Objekty zařazené z VARIANT jako parametry in ve voláních nespravovaných na spravované nebudou šířit zpět aktualizovaný výsledek, a to ani v případě, že VARIANT je varianta VT_BYREF. K šíření aktualizované hodnoty zpět k volajícímu použijte místo parametru in parametr ref.</target>

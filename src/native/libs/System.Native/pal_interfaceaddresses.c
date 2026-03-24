@@ -46,6 +46,13 @@
 #include "ios/net/if_media.h"
 #endif
 
+// SunOS defines both AF_LINK and AF_PACKET but AF_LINK is preferred.
+// Using AF_PACKET on SunOS requires access to system-private headers.
+// Use undef to keep all the changes here.
+#if defined(TARGET_SUNOS)
+#undef AF_PACKET
+#endif
+
 #if defined(AF_PACKET)
 #include <sys/ioctl.h>
 #if HAVE_NETPACKET_PACKET_H
@@ -304,6 +311,9 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 #endif
 }
 
+// See entriesCount, calloc() below.
+c_static_assert(sizeof(NetworkInterfaceInfo) >= sizeof(IpAddressInfo));
+
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
 #ifdef ANDROID_GETIFADDRS_WORKAROUND
@@ -352,16 +362,13 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     // Allocate estimated space. It can be little bit more than we need.
     // To save allocation need for separate free() we will allocate one memory chunk
     // where we first write out NetworkInterfaceInfo entries immediately followed by
-    // IpAddressInfo list.
-#ifdef TARGET_ANDROID
-    // Since Android API 30, getifaddrs returns only AF_INET and AF_INET6 addresses and we do not
-    // get any AF_PACKET addresses and so count == ip4count + ip6count. We need to make sure that
-    // the memoryBlock is large enough to hold all interfaces (up to `count` entries) and all
-    // addresses (ip4count + ip6count) without any overlap between interfaceList and addressList.
+    // IpAddressInfo list.   Make sure we get enough space for both the list of
+    // NetworkInterfaceInfo[count] and IpAddressInfo[ip4count + ip6count]
+    // Make no assumptions about how many ip4count + ip6count there may be.
+    // This does assume sizeof(NetworkInterfaceInfo) >= sizeof(IpAddressInfo)
+    // which is checked in an assert above this function.
+
     int entriesCount = count + ip4count + ip6count;
-#else
-    int entriesCount = count;
-#endif
     void * memoryBlock = calloc((size_t)entriesCount, sizeof(NetworkInterfaceInfo));
     if (memoryBlock == NULL)
     {
@@ -373,7 +380,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     ifaddrsEntry = head;
     *interfaceList = nii = (NetworkInterfaceInfo*)memoryBlock;
     // address of first IpAddressInfo after all NetworkInterfaceInfo entries.
-    *addressList = ai = (IpAddressInfo*)(nii + (entriesCount - ip4count - ip6count));
+    *addressList = ai = (IpAddressInfo*)(nii + count);
 
     while (ifaddrsEntry != NULL)
     {
@@ -448,6 +455,24 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
             nii->HardwareType = MapHardwareType(sadl->sdl_type);
             nii->NumAddressBytes =  sadl->sdl_alen;
             memcpy_s(&nii->AddressBytes, sizeof_member(NetworkInterfaceInfo, AddressBytes), (uint8_t*)LLADDR(sadl), sadl->sdl_alen);
+
+#if defined(SIOCGIFMTU)
+            struct ifreq ifr;
+            strncpy(ifr.ifr_name, nii->Name, sizeof(ifr.ifr_name));
+            ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
+            if (socketfd == -1)
+            {
+                socketfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+            }
+
+            if (socketfd > -1)
+            {
+                if (ioctl(socketfd, SIOCGIFMTU, &ifr) == 0)
+                {
+                    nii->Mtu = ifr.ifr_mtu;
+                }
+            }
+#endif // SIOCGIFMTU
         }
 #endif
 #if defined(AF_PACKET)

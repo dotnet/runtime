@@ -12,6 +12,8 @@ namespace Tests
     {
         [OuterLoop]
         [Fact]
+        // This needs a CoreCLR TypeLoadException emulator
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         public static int TestEntryPoint()
         {
             if ((TestManyFields() == 100)

@@ -563,8 +563,8 @@ namespace System.Security.Cryptography.Tests
         {
             RSAParameters parameters = default;
 
-            AsnValueReader reader = new AsnValueReader(key, AsnEncodingRules.BER);
-            AsnValueReader sequenceReader = reader.ReadSequence(Asn1Tag.Sequence);
+            ValueAsnReader reader = new ValueAsnReader(key, AsnEncodingRules.BER);
+            ValueAsnReader sequenceReader = reader.ReadSequence(Asn1Tag.Sequence);
 
             if (!sequenceReader.TryReadInt32(out int version))
             {

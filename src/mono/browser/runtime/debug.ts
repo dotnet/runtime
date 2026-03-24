@@ -34,9 +34,10 @@ export function mono_wasm_runtime_ready (): void {
 }
 
 export function mono_wasm_fire_debugger_agent_message_with_data_to_pause (base64String: string): void {
-    //keep this console.assert, otherwise optimization will remove the assignments
+    // Terser 5.39+ removes console.assert(true, ...) as "unnecessary".
+    // !!Date.now() is always true at runtime, but Terser can't evaluate it statically.
     // eslint-disable-next-line no-console
-    console.assert(true, `mono_wasm_fire_debugger_agent_message_with_data ${base64String}`);
+    console.assert(!!Date.now(), `mono_wasm_fire_debugger_agent_message_with_data ${base64String}`);
     // eslint-disable-next-line no-debugger
     debugger;
 }
@@ -163,9 +164,10 @@ export function mono_wasm_set_entrypoint_breakpoint (entrypoint_method_token: nu
     //keep these assignments, these values are used by BrowserDebugProxy
     _assembly_name_str = loaderHelpers.config.mainAssemblyName + ".dll";
     _entrypoint_method_token = entrypoint_method_token;
-    //keep this console.assert, otherwise optimization will remove the assignments
+    // Terser 5.39+ removes console.assert(true, ...) as "unnecessary".
+    // !!Date.now() is always true at runtime, but Terser can't evaluate it statically.
     // eslint-disable-next-line no-console
-    console.assert(true, `Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
+    console.assert(!!Date.now(), `Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
     // eslint-disable-next-line no-debugger
     debugger;
 

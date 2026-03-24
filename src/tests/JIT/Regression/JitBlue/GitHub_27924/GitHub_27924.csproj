@@ -21,4 +21,7 @@
     -->
     <CLRTestBatchEnvironmentVariable Include="DOTNET_GCStress" Value="0xc" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

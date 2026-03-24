@@ -25,6 +25,7 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="Interop.cs" />
     <Compile Include="ProcessCollectionTests.cs" />
+    <Compile Include="ProcessExitStatusTests.cs" />
     <Compile Include="ProcessModuleTests.cs" />
     <Compile Include="ProcessStandardConsoleTests.cs" />
     <Compile Include="ProcessStartInfoTests.cs" />
@@ -77,6 +78,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\src\System.ServiceProcess.ServiceController.csproj" />
     <ProjectReference Include="LongPath\LongPath.csproj" Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>

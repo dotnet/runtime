@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
+    <MonoAotIncompatible>true</MonoAotIncompatible>  <!-- https://github.com/dotnet/runtime/issues/90427  -->
     <!-- Testing TypeLoad/MissingMethod exceptions in situations that are expensive to detect -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>

@@ -98,10 +98,10 @@ This is what is used in non-async functions when calling an async function. Gene
 ```
 (result, continuation) = call func(NULL /\* Continuation argument \*/, args)
 place result onto IL evaluation stack
-Place continuation into a local for access using the StubHelpers.AsyncCallContinuation() helper function.
+Place continuation into a local for access using the AsyncHelpers.AsyncCallContinuation() helper function.
 ```
 
-Implement an intrinsic for StubHelpers.AsyncCallContinuation() which will load the most recent value stored into the continuation local.
+Implement an intrinsic for AsyncHelpers.AsyncCallContinuation() which will load the most recent value stored into the continuation local.
 
 # Behavior of ContinuationContextHandling
 

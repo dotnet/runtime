@@ -12,6 +12,7 @@ namespace ManagedCallingNative
 {
     public class ManagedCallingNative
     {
+        [ActiveIssue("C++/CLI, IJW not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

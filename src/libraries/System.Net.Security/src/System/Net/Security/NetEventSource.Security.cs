@@ -65,7 +65,7 @@ namespace System.Net
             SslStreamCtor(IdOf(sslStream), localId, remoteId);
         }
 
-        [Event(SslStreamCtorId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(SslStreamCtorId, Level = EventLevel.Informational)]
         private void SslStreamCtor(string thisOrContextObject, string? localId, string? remoteId) =>
               WriteEvent(SslStreamCtorId, thisOrContextObject, localId, remoteId);
 
@@ -73,7 +73,7 @@ namespace System.Net
         public void LocatingPrivateKey(X509Certificate x509Certificate, object instance) =>
             LocatingPrivateKey(x509Certificate.ToString(fVerbose: true), GetHashCode(instance));
 
-        [Event(LocatingPrivateKeyId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(LocatingPrivateKeyId, Level = EventLevel.Informational)]
         private void LocatingPrivateKey(string x509Certificate, int sslStreamHash) =>
             WriteEvent(LocatingPrivateKeyId, x509Certificate, sslStreamHash);
 
@@ -81,7 +81,7 @@ namespace System.Net
         public void CertIsType2(object instance) =>
             CertIsType2(GetHashCode(instance));
 
-        [Event(CertIsType2Id, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(CertIsType2Id, Level = EventLevel.Informational)]
         private void CertIsType2(int sslStreamHash) =>
             WriteEvent(CertIsType2Id, sslStreamHash);
 
@@ -89,7 +89,7 @@ namespace System.Net
         public void FoundCertInStore(bool serverMode, object instance) =>
             FoundCertInStore(serverMode ? "LocalMachine" : "CurrentUser", GetHashCode(instance));
 
-        [Event(FoundCertInStoreId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(FoundCertInStoreId, Level = EventLevel.Informational)]
         private void FoundCertInStore(string store, int sslStreamHash) =>
             WriteEvent(FoundCertInStoreId, store, sslStreamHash);
 
@@ -97,7 +97,7 @@ namespace System.Net
         public void NotFoundCertInStore(object instance) =>
             NotFoundCertInStore(GetHashCode(instance));
 
-        [Event(NotFoundCertInStoreId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(NotFoundCertInStoreId, Level = EventLevel.Informational)]
         private void NotFoundCertInStore(int sslStreamHash) =>
             WriteEvent(NotFoundCertInStoreId, sslStreamHash);
 
@@ -105,7 +105,7 @@ namespace System.Net
         public void RemoteCertificate(X509Certificate? remoteCertificate) =>
             RemoteCertificate(remoteCertificate?.ToString(fVerbose: true));
 
-        [Event(RemoteCertificateId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(RemoteCertificateId, Level = EventLevel.Informational)]
         private void RemoteCertificate(string? remoteCertificate) =>
             WriteEvent(RemoteCertificateId, remoteCertificate);
 
@@ -113,7 +113,7 @@ namespace System.Net
         public void CertificateFromDelegate(SslStream SslStream) =>
             CertificateFromDelegate(GetHashCode(SslStream));
 
-        [Event(CertificateFromDelegateId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(CertificateFromDelegateId, Level = EventLevel.Informational)]
         private void CertificateFromDelegate(int sslStreamHash) =>
             WriteEvent(CertificateFromDelegateId, sslStreamHash);
 
@@ -121,7 +121,7 @@ namespace System.Net
         public void NoDelegateNoClientCert(SslStream SslStream) =>
             NoDelegateNoClientCert(GetHashCode(SslStream));
 
-        [Event(NoDelegateNoClientCertId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(NoDelegateNoClientCertId, Level = EventLevel.Informational)]
         private void NoDelegateNoClientCert(int sslStreamHash) =>
             WriteEvent(NoDelegateNoClientCertId, sslStreamHash);
 
@@ -129,7 +129,7 @@ namespace System.Net
         public void NoDelegateButClientCert(SslStream SslStream) =>
             NoDelegateButClientCert(GetHashCode(SslStream));
 
-        [Event(NoDelegateButClientCertId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(NoDelegateButClientCertId, Level = EventLevel.Informational)]
         private void NoDelegateButClientCert(int sslStreamHash) =>
             WriteEvent(NoDelegateButClientCertId, sslStreamHash);
 
@@ -137,7 +137,7 @@ namespace System.Net
         public void AttemptingRestartUsingCert(X509Certificate? clientCertificate, SslStream SslStream) =>
             AttemptingRestartUsingCert(clientCertificate?.ToString(fVerbose: true), GetHashCode(SslStream));
 
-        [Event(AttemptingRestartUsingCertId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(AttemptingRestartUsingCertId, Level = EventLevel.Informational)]
         private void AttemptingRestartUsingCert(string? clientCertificate, int sslStreamHash) =>
             WriteEvent(AttemptingRestartUsingCertId, clientCertificate, sslStreamHash);
 
@@ -145,7 +145,7 @@ namespace System.Net
         public void NoIssuersTryAllCerts(SslStream SslStream) =>
             NoIssuersTryAllCerts(GetHashCode(SslStream));
 
-        [Event(NoIssuersTryAllCertsId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(NoIssuersTryAllCertsId, Level = EventLevel.Informational)]
         private void NoIssuersTryAllCerts(int sslStreamHash) =>
             WriteEvent(NoIssuersTryAllCertsId, sslStreamHash);
 
@@ -153,7 +153,7 @@ namespace System.Net
         public void LookForMatchingCerts(int issuersCount, SslStream SslStream) =>
             LookForMatchingCerts(issuersCount, GetHashCode(SslStream));
 
-        [Event(LookForMatchingCertsId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(LookForMatchingCertsId, Level = EventLevel.Informational)]
         private void LookForMatchingCerts(int issuersCount, int sslStreamHash) =>
             WriteEvent(LookForMatchingCertsId, issuersCount, sslStreamHash);
 
@@ -161,7 +161,7 @@ namespace System.Net
         public void SelectedCert(X509Certificate clientCertificate, SslStream SslStream) =>
             SelectedCert(clientCertificate?.ToString(fVerbose: true), GetHashCode(SslStream));
 
-        [Event(SelectedCertId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(SelectedCertId, Level = EventLevel.Informational)]
         private void SelectedCert(string? clientCertificate, int sslStreamHash) =>
             WriteEvent(SelectedCertId, clientCertificate, sslStreamHash);
 
@@ -169,7 +169,7 @@ namespace System.Net
         public void CertsAfterFiltering(int filteredCertsCount, SslStream SslStream) =>
             CertsAfterFiltering(filteredCertsCount, GetHashCode(SslStream));
 
-        [Event(CertsAfterFilteringId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(CertsAfterFilteringId, Level = EventLevel.Informational)]
         private void CertsAfterFiltering(int filteredCertsCount, int sslStreamHash) =>
             WriteEvent(CertsAfterFilteringId, filteredCertsCount, sslStreamHash);
 
@@ -177,7 +177,7 @@ namespace System.Net
         public void FindingMatchingCerts(SslStream SslStream) =>
             FindingMatchingCerts(GetHashCode(SslStream));
 
-        [Event(FindingMatchingCertsId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(FindingMatchingCertsId, Level = EventLevel.Informational)]
         private void FindingMatchingCerts(int sslStreamHash) =>
             WriteEvent(FindingMatchingCertsId, sslStreamHash);
 
@@ -185,12 +185,12 @@ namespace System.Net
         public void UsingCachedCredential(SslStream SslStream) =>
             UsingCachedCredential(GetHashCode(SslStream));
 
-        [Event(UsingCachedCredentialId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(UsingCachedCredentialId, Level = EventLevel.Informational)]
         private void UsingCachedCredential(int sslStreamHash) =>
             WriteEvent(UsingCachedCredentialId, sslStreamHash);
 
 #pragma warning disable SYSLIB0058 // Use NegotiatedCipherSuite.
-        [Event(SspiSelectedCipherSuitId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(SspiSelectedCipherSuitId, Level = EventLevel.Informational)]
         public void SspiSelectedCipherSuite(
             string process,
             SslProtocols sslProtocol,
@@ -211,7 +211,7 @@ namespace System.Net
         public void RemoteCertificateError(SslStream SslStream, string message) =>
             RemoteCertificateError(GetHashCode(SslStream), message);
 
-        [Event(RemoteCertificateErrorId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
+        [Event(RemoteCertificateErrorId, Level = EventLevel.Verbose)]
         private void RemoteCertificateError(int sslStreamHash, string message) =>
             WriteEvent(RemoteCertificateErrorId, sslStreamHash, message);
 
@@ -219,7 +219,7 @@ namespace System.Net
         public void RemoteCertDeclaredValid(SslStream SslStream) =>
             RemoteCertDeclaredValid(GetHashCode(SslStream));
 
-        [Event(RemoteVertificateValidId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
+        [Event(RemoteVertificateValidId, Level = EventLevel.Verbose)]
         private void RemoteCertDeclaredValid(int sslStreamHash) =>
             WriteEvent(RemoteVertificateValidId, sslStreamHash);
 
@@ -227,7 +227,7 @@ namespace System.Net
         public void RemoteCertHasNoErrors(SslStream SslStream) =>
             RemoteCertHasNoErrors(GetHashCode(SslStream));
 
-        [Event(RemoteCertificateSuccessId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
+        [Event(RemoteCertificateSuccessId, Level = EventLevel.Verbose)]
         private void RemoteCertHasNoErrors(int sslStreamHash) =>
             WriteEvent(RemoteCertificateSuccessId, sslStreamHash);
 
@@ -235,7 +235,7 @@ namespace System.Net
         public void RemoteCertUserDeclaredInvalid(SslStream SslStream) =>
             RemoteCertUserDeclaredInvalid(GetHashCode(SslStream));
 
-        [Event(RemoteCertificateInvalidId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
+        [Event(RemoteCertificateInvalidId, Level = EventLevel.Verbose)]
         private void RemoteCertUserDeclaredInvalid(int sslStreamHash) =>
             WriteEvent(RemoteCertificateInvalidId, sslStreamHash);
 
@@ -247,7 +247,7 @@ namespace System.Net
             SentFrame(IdOf(sslStream), info.ToString(), isComplete ? 1 : 0);
         }
 
-        [Event(SentFrameId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
+        [Event(SentFrameId, Level = EventLevel.Verbose)]
         private void SentFrame(string sslStream, string tlsFrame, int isComplete) =>
             WriteEvent(SentFrameId, sslStream, tlsFrame, isComplete);
 
@@ -263,7 +263,7 @@ namespace System.Net
             ReceivedFrame(IdOf(sslStream), info.ToString(), isComplete ? 1 : 0);
         }
 
-        [Event(ReceivedFrameId, Keywords = Keywords.Default, Level = EventLevel.Verbose)]
+        [Event(ReceivedFrameId, Level = EventLevel.Verbose)]
         private void ReceivedFrame(string sslStream, string tlsFrame, int isComplete) =>
             WriteEvent(ReceivedFrameId, sslStream, tlsFrame, isComplete);
 
@@ -271,7 +271,7 @@ namespace System.Net
         public void CertificateFromCertContext(SslStream sslStream) =>
             CertificateFromCertContext(GetHashCode(sslStream));
 
-        [Event(CertificateFromCertContextId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
+        [Event(CertificateFromCertContextId, Level = EventLevel.Informational)]
         public void CertificateFromCertContext(int sslStreamHash) =>
             WriteEvent(CertificateFromCertContextId, sslStreamHash);
 

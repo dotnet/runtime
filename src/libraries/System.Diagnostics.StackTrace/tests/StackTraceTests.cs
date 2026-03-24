@@ -9,8 +9,10 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Diagnostics
@@ -30,7 +32,183 @@ namespace System.Diagnostics
             }
         }
     }
+
+    public static class V1Methods
+    {
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+#line 1 "Test0.cs"
+        public static async Task Test0(Func<int, Task> method)
+        {
+            await Test1(method);
+            await Task.Yield();
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+#line 1 "Test1.cs"
+        public static async Task Test1(Func<int, Task> method)
+        {
+            try
+            {
+                await method(3);
+            }
+            catch (Exception ex) when (ex.Message.Contains("404"))
+            {
+                Console.WriteLine($"Caught exception in Test1 with: {ex}");
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+#line 1 "Test2.cs"
+        public static async Task Test2(int i)
+        {
+            throw new NullReferenceException("Exception from Test2");
+        }
+    }
+
+    public class V2Methods
+    {
+        // v2 -> v1 -> v2 -> v1
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "Foo.cs"
+        public static async Task Foo()
+        {
+            await Task.Yield();
+            try
+            {
+                await V1Methods.Test0(Foo1);
+            }
+            catch (NotImplementedException)
+            {
+                throw;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "Foo1.cs"
+        private static async Task<int> Foo1(int i)
+        {
+            await Task.Yield();
+            try
+            {
+                await Foo2(i);
+                return i * 2;
+            }
+            catch (NotImplementedException)
+            {
+                throw;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "Foo2.cs"
+        private static async Task<int> Foo2(int i)
+        {
+            try
+            {
+                await Task.Yield();
+                await V1Methods.Test2(i);
+            }
+            finally
+            {
+                throw new NotImplementedException("Exception from Foo2");
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "Bar.cs"
+        public static async Task Bar(int i)
+        {
+            if (i == 0)
+                throw new Exception("Exception from Bar");
+            await Bar(i - 1);
+        }
+
+        // also v2 v1 chaining but this time we don't have finally
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "Quux.cs"
+        public static async Task Quux()
+        {
+            await Task.Yield();
+            try
+            {
+                await V1Methods.Test0(Quux1);
+            }
+            catch (NotImplementedException)
+            {
+                throw;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "Quux1.cs"
+        private static async Task<int> Quux1(int i)
+        {
+            try
+            {
+                await Task.Delay(10);
+                throw new NotImplementedException("Exception from Quux1");
+            }
+            catch (NotImplementedException)
+            {
+                throw;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "Quuux.cs"
+        public static async Task<int> Quuux()
+        {
+            var task = Quuux2();
+            await Task.Yield();
+            return await task;
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "Quuux2.cs"
+        private static async Task<int> Quuux2()
+        {
+            await Task.Yield();
+            throw new Exception("Exception from Quuux2");
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "Bux.cs"
+        public static async Task Bux()
+        {
+            await Task.Yield();
+            try
+            {
+                Baz().Wait();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "Baz.cs"
+        public static async Task Baz()
+        {
+            if (Random.Shared.Next(1) == 100) await Task.Yield();
+            throw new Exception("Exception from Baz method.");
+        }
+    }
 }
+#line default
 
 namespace System.Diagnostics.Tests
 {
@@ -364,24 +542,7 @@ namespace System.Diagnostics.Tests
                 }
             }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
 
-            // Assembly.Load(Byte[]) case
-            RemoteExecutor.Invoke((asmPath, asmName, p) =>
-            {
-                AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
-                var inMemBlob = File.ReadAllBytes(asmPath);
-                var asm2 = Assembly.Load(inMemBlob);
-                try
-                {
-                    asm2.GetType("Program").GetMethod("Foo").Invoke(null, null);
-                }
-                catch (Exception e)
-                {
-                    Assert.Contains(asmName, e.InnerException.StackTrace);
-                    Assert.Matches(p, e.InnerException.StackTrace);
-                }
-            }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
-
-            // AssmblyBuilder.DefineDynamicAssembly() case
+            // AssemblyBuilder.DefineDynamicAssembly() case
             RemoteExecutor.Invoke((p) =>
             {
                 AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
@@ -404,6 +565,117 @@ namespace System.Diagnostics.Tests
                     Assert.Matches(p, e.InnerException.StackTrace);
                 }
             }, regPattern).Dispose();
+        }
+
+        // Assembly.Load(byte[]) triggers an AMSI (Antimalware Scan Interface) scan via Windows Defender.
+        // On some Windows x86 CI machines the AMSI RPC call hangs indefinitely,
+        // so we retry with a shorter timeout to work around the transient OS issue.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ToString_ShowILOffset_ByteArrayLoad()
+        {
+            string AssemblyName = "ExceptionTestAssembly.dll";
+            string SourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, AssemblyName);
+            string regPattern = @":token 0x([a-f0-9]*)\+0x([a-f0-9]*)";
+
+            const int maxAttempts = 3;
+            for (int attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    var options = new RemoteInvokeOptions { TimeOut = 30_000 };
+                    RemoteExecutor.Invoke((asmPath, asmName, p) =>
+                    {
+                        AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
+                        var inMemBlob = File.ReadAllBytes(asmPath);
+                        var asm = Assembly.Load(inMemBlob);
+                        TargetInvocationException ex = Assert.Throws<TargetInvocationException>(
+                            () => asm.GetType("Program").GetMethod("Foo").Invoke(null, null));
+                        Assert.Contains(asmName, ex.InnerException.StackTrace);
+                        Assert.Matches(p, ex.InnerException.StackTrace);
+                    }, SourceTestAssemblyPath, AssemblyName, regPattern, options).Dispose();
+                    break;
+                }
+                catch (RemoteExecutionException ex) when (OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X86 && attempt < maxAttempts && ex.Message.Contains("Timed out"))
+                {
+                    // AMSI hang: on some Windows x86 CI machines, Assembly.Load(byte[]) triggers an AMSI scan
+                    // whose RPC call hangs indefinitely. Retry with a fresh process.
+                }
+            }
+        }
+
+        // On Android, stack traces do not include file names and line numbers
+        // Tracking issue: https://github.com/dotnet/runtime/issues/124087
+        private static string FileInfoPattern(string fileLinePattern) =>
+            PlatformDetection.IsAndroid ? "" : fileLinePattern;
+
+        public static Dictionary<string, string[]> MethodExceptionStrings = new()
+        {
+            { "Foo", new[] {
+                @"Exception from Foo2",
+                @"V2Methods\.Foo2\(Int32" + FileInfoPattern(@".*Foo2.*\.cs:line 10"),
+                @"V2Methods\.Foo1\(Int32" + FileInfoPattern(@".*Foo1.*\.cs:line 6"),
+                @"V1Methods.*Test1",
+                @"V1Methods.*Test0",
+                @"V2Methods\.Foo\(\)" + FileInfoPattern(@".*Foo.*\.cs:line 6")
+            }},
+            { "Bar", new[] {
+                @"Exception from Bar",
+                @"V2Methods\.Bar\(Int32" + FileInfoPattern(@".*Bar.*\.cs:line 4"),
+                @"V2Methods\.Bar\(Int32" + FileInfoPattern(@".*Bar.*\.cs:line 5")
+            }},
+            {"Quux", new[] {
+                @"Exception from Quux1",
+                @"V2Methods\.Quux1\(Int32" + FileInfoPattern(@".*Quux1.*\.cs:line 6"),
+                @"V1Methods.*Test1",
+                @"V1Methods.*Test0",
+                @"V2Methods\.Quux\(\)" + FileInfoPattern(@".*Quux.*\.cs:line 6")
+            }},
+            { "Quuux", new[] {
+                @"Exception from Quuux2",
+                @"V2Methods\.Quuux2\(\)" + FileInfoPattern(@".*Quuux2.*\.cs:line 4"),
+                @"V2Methods\.Quuux\(\)" + FileInfoPattern(@".*Quuux.*\.cs:line [35]") // if yield finishes before Task is awaited, line 3 else line 5. Either is ok.
+            }},
+            {"Bux", new[] {
+                @"Exception from Baz method.",
+                @"V2Methods\.Baz\(\)" + FileInfoPattern(@".*Baz.*\.cs:line 4"),
+                @"V2Methods\.Bux\(\)" + FileInfoPattern(@".*Bux.*\.cs:line 6")
+            }},
+        };
+
+        public static IEnumerable<object[]> Ctor_Async_TestData()
+        {
+            yield return new object[] { () => V2Methods.Foo(), MethodExceptionStrings["Foo"] };
+            yield return new object[] { () => V2Methods.Bar(3), MethodExceptionStrings["Bar"] };
+            yield return new object[] { () => V2Methods.Quux(), MethodExceptionStrings["Quux"] };
+            yield return new object[] { () => V2Methods.Quuux(), MethodExceptionStrings["Quuux"] };
+            yield return new object[] { () => V2Methods.Bux(), MethodExceptionStrings["Bux"] };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [MemberData(nameof(Ctor_Async_TestData))]
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        public async Task ToString_Async(Func<Task> asyncMethod, string[] expectedPatterns)
+        {
+            Exception? caughtException = null;
+            try
+            {
+                await asyncMethod();
+            }
+            catch (Exception ex)
+            {
+                caughtException = ex;
+            }
+
+            Assert.NotNull(caughtException);
+            string exceptionText = caughtException.ToString();
+            int startIndex = 0;
+            foreach (string pattern in expectedPatterns)
+            {
+                Regex regex = new(pattern, RegexOptions.None, TimeSpan.FromSeconds(10));
+                Match match = regex.Match(exceptionText, startIndex);
+                Assert.True(match.Success, $"Could not find expected pattern '{pattern}' in exception text:\n{exceptionText} starting at index {startIndex}.");
+                startIndex = match.Index + match.Length;
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

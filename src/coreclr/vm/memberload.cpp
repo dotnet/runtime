@@ -1103,6 +1103,9 @@ MemberLoader::FindMethod(
     // For value classes, if it's a value class method, we want to return the duplicated MethodDesc, not the one in the vtable
     // section.  We'll find the one in the duplicate section before the one in the vtable section, so we're ok.
 
+    // Since we search backwards, we may find an async variant before the other variant. We simply skip over.
+    // This API is not supposed to return async variants. (add flags to FM_Flags, if such behavior is desired)
+
     // Search non-vtable portion of this class first
 
     MethodTable::MethodIterator it(pMT);
@@ -1116,6 +1119,11 @@ MemberLoader::FindMethod(
     for (; it.IsValid(); it.Prev())
     {
         MethodDesc *pCurDeclMD = it.GetDeclMethodDesc();
+
+        if (pCurDeclMD->IsAsyncVariantMethod())
+        {
+            continue;
+        }
 
         LOG((LF_LOADER, LL_INFO100000, "ML::FM Considering %s::%s, pMD:%p\n",
             pCurDeclMD->m_pszDebugClassName, pCurDeclMD->m_pszDebugMethodName, pCurDeclMD));
@@ -1180,6 +1188,11 @@ MemberLoader::FindMethod(
         for (; itMethods.IsValid(); itMethods.Next())
         {
             MethodDesc* pCurDeclMD = itMethods.GetMethodDesc();
+
+            if (pCurDeclMD->IsAsyncVariantMethod())
+            {
+                continue;
+            }
 
 #ifdef _DEBUG
             MethodTable *pCurDeclMT = pCurDeclMD->GetMethodTable();
@@ -1303,41 +1316,45 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
         {
             MethodDesc *pCurMD = it.GetDeclMethodDesc();
 
-            if (pCurMD != NULL)
+            // Since we search backwards, we may find an async variant before the other variant. We simply skip over.
+            // This API is not supposed to return async variants. (add flags to FM_Flags, if such behavior is desired)
+            if (pCurMD->IsAsyncVariantMethod())
             {
-                // If we're working from the end of the vtable, we'll cover all the non-virtuals
-                // first, and so if we're supposed to ignore virtuals (see setting of the flag
-                // below) then we can just break out of the loop and go to the parent.
-                if ((flags & FM_ExcludeVirtual) && pCurMD->IsVirtual())
+                continue;
+            }
+
+            // If we're working from the end of the vtable, we'll cover all the non-virtuals
+            // first, and so if we're supposed to ignore virtuals (see setting of the flag
+            // below) then we can just break out of the loop and go to the parent.
+            if ((flags & FM_ExcludeVirtual) && pCurMD->IsVirtual())
+            {
+                break;
+            }
+
+            if (FM_PossibleToSkipMethod(flags) && FM_ShouldSkipMethod(pCurMD->GetAttrs(), flags))
+            {
+                continue;
+            }
+
+            if (StrCompFunc(pszName, pCurMD->GetNameOnNonArrayClass()) == 0)
+            {
+                if (pRetMD != NULL)
                 {
-                    break;
+                    _ASSERTE(flags & FM_Unique);
+
+                    // Found another method of this name but FM_Unique was given.
+                    return NULL;
                 }
 
-                if (FM_PossibleToSkipMethod(flags) && FM_ShouldSkipMethod(pCurMD->GetAttrs(), flags))
-                {
-                    continue;
-                }
+                pRetMD = it.GetMethodDesc();
+                pRetMD->CheckRestore();
 
-                if (StrCompFunc(pszName, pCurMD->GetNameOnNonArrayClass()) == 0)
-                {
-                    if (pRetMD != NULL)
-                    {
-                        _ASSERTE(flags & FM_Unique);
-
-                        // Found another method of this name but FM_Unique was given.
-                        return NULL;
-                    }
-
-                    pRetMD = it.GetMethodDesc();
-                    pRetMD->CheckRestore();
-
-                    // Let's always finish iterating through this MT for FM_Unique to reveal overloads, i.e.
-                    // methods with the same name. Returning the first/last method of the given name
-                    // may in some cases work but it depends on the vtable order which is something we
-                    // do not want. It can be easily broken by a seemingly unrelated change.
-                    if (!(flags & FM_Unique))
-                        return pRetMD;
-                }
+                // Let's always finish iterating through this MT for FM_Unique to reveal overloads, i.e.
+                // methods with the same name. Returning the first/last method of the given name
+                // may in some cases work but it depends on the vtable order which is something we
+                // do not want. It can be easily broken by a seemingly unrelated change.
+                if (!(flags & FM_Unique))
+                    return pRetMD;
             }
         }
 

@@ -9,14 +9,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct DistributionPointNameAsn
-    {
-        internal System.Security.Cryptography.Asn1.GeneralNameAsn[]? FullName;
-        internal ReadOnlyMemory<byte>? NameRelativeToCRLIssuer;
-
 #if DEBUG
-        static DistributionPointNameAsn()
+    file static class ValidateDistributionPointNameAsn
+    {
+        static ValidateDistributionPointNameAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -31,6 +27,25 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 0), "FullName");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 1), "NameRelativeToCRLIssuer");
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct DistributionPointNameAsn
+    {
+        internal System.Security.Cryptography.Asn1.GeneralNameAsn[]? FullName;
+        internal ReadOnlyMemory<byte>? NameRelativeToCRLIssuer;
+
+#if DEBUG
+        static DistributionPointNameAsn()
+        {
+            ValidateDistributionPointNameAsn.Validate();
         }
 #endif
 
@@ -89,7 +104,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, encoded, out DistributionPointNameAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -101,7 +116,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out DistributionPointNameAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out DistributionPointNameAsn decoded)
         {
             try
             {
@@ -113,11 +128,11 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out DistributionPointNameAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out DistributionPointNameAsn decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-            AsnValueReader collectionReader;
+            ValueAsnReader collectionReader;
             ReadOnlySpan<byte> rebindSpan = rebind.Span;
             int offset;
             ReadOnlySpan<byte> tmpSpan;

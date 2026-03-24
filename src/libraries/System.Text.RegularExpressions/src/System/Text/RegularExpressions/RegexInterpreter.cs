@@ -209,44 +209,27 @@ namespace System.Text.RegularExpressions
 
         private bool MatchString(string str, ReadOnlySpan<char> inputSpan)
         {
-            int c = str.Length;
-            int pos;
-
             if (!_rightToLeft)
             {
-                if (inputSpan.Length - runtextpos < c)
+                if (runtextpos > inputSpan.Length ||
+                    !inputSpan.Slice(runtextpos).StartsWith(str.AsSpan()))
                 {
                     return false;
                 }
 
-                pos = runtextpos + c;
+                runtextpos += str.Length;
+                return true;
             }
             else
             {
-                if (runtextpos < c)
+                if (!inputSpan.Slice(0, runtextpos).EndsWith(str.AsSpan()))
                 {
                     return false;
                 }
 
-                pos = runtextpos;
+                runtextpos -= str.Length;
+                return true;
             }
-
-            while (c != 0)
-            {
-                if (str[--c] != inputSpan[--pos])
-                {
-                    return false;
-                }
-            }
-
-            if (!_rightToLeft)
-            {
-                pos += str.Length;
-            }
-
-            runtextpos = pos;
-
-            return true;
         }
 
         private bool MatchRef(int index, int length, ReadOnlySpan<char> inputSpan, bool caseInsensitive)
@@ -299,7 +282,7 @@ namespace System.Text.RegularExpressions
                         // and if so, we need to fetch the case equivalences from our casing tables.
                         Debug.Assert(_culture != null, "If the pattern has backreferences and is IgnoreCase, then _culture must not be null.");
                         if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences) ||
-                            equivalences.IndexOf(inputSpan[pos]) < 0)
+                            !equivalences.Contains(inputSpan[pos]))
                         {
                             // The backreference character doesn't participate in case conversions, or it does but the input character
                             // doesn't match any of its equivalents.  Either way, we fail to match.

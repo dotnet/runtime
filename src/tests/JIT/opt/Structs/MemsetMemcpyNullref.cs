@@ -10,6 +10,7 @@ public unsafe class MemsetMemcpyNullref
 {
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/98628", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/98628", TestRuntimes.Mono)]
     public static void MemsetMemcpyThrowNullRefonNull()
     {
         Assert.Throws<NullReferenceException>(() => MemoryInit(null));

@@ -1811,9 +1811,8 @@ void Thread::InitializationForManagedThreadInNative(_In_ Thread* pThread)
 #ifdef FEATURE_OBJCMARSHAL
     {
         GCX_COOP_THREAD_EXISTS(pThread);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__AUTORELEASEPOOL__CREATEAUTORELEASEPOOL);
-        DECLARE_ARGHOLDER_ARRAY(args, 0);
-        CALL_MANAGED_METHOD_NORET(args);
+        UnmanagedCallersOnlyCaller createAutoreleasePool(METHOD__AUTORELEASEPOOL__CREATEAUTORELEASEPOOL);
+        createAutoreleasePool.InvokeThrowing();
     }
 #endif // FEATURE_OBJCMARSHAL
 }
@@ -1832,9 +1831,8 @@ void Thread::CleanUpForManagedThreadInNative(_In_ Thread* pThread)
 #ifdef FEATURE_OBJCMARSHAL
     {
         GCX_COOP_THREAD_EXISTS(pThread);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__AUTORELEASEPOOL__DRAINAUTORELEASEPOOL);
-        DECLARE_ARGHOLDER_ARRAY(args, 0);
-        CALL_MANAGED_METHOD_NORET(args);
+        UnmanagedCallersOnlyCaller drainAutoreleasePool(METHOD__AUTORELEASEPOOL__DRAINAUTORELEASEPOOL);
+        drainAutoreleasePool.InvokeThrowing();
     }
 #endif // FEATURE_OBJCMARSHAL
 }
@@ -2466,10 +2464,11 @@ void Thread::CleanupDetachedThreads()
         // Instead, run that clean up here when the Thread is detached,
         // which is definitely after the thread has exited.
         PTR_Thread pThread = (PTR_Thread)iter.GetElement();
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__ON_THREAD_EXITING);
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(pThread->GetExposedObject());
-        CALL_MANAGED_METHOD_NORET(args);
+        OBJECTREF exposedObj = pThread->GetExposedObject();
+        GCPROTECT_BEGIN(exposedObj);
+        UnmanagedCallersOnlyCaller onThreadExiting(METHOD__THREAD__ON_THREAD_EXITING);
+        onThreadExiting.InvokeThrowing(&exposedObj);
+        GCPROTECT_END();
 
         pThread->DecExternalCount(FALSE);
     }
@@ -6202,49 +6201,6 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     return pFrame;
 }
 
-OBJECTREF Thread::GetCulture(BOOL bUICulture)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // This is the case when we're building CoreLib and haven't yet created
-    // the system assembly.
-    if (SystemDomain::System()->SystemAssembly()==NULL) {
-        return NULL;
-    }
-
-    OBJECTREF pCurrentCulture;
-    MethodDescCallSite propGet(bUICulture ? METHOD__CULTURE_INFO__GET_CURRENT_UI_CULTURE : METHOD__CULTURE_INFO__GET_CURRENT_CULTURE);
-    ARG_SLOT retVal = propGet.Call_RetArgSlot(NULL);
-    pCurrentCulture = ArgSlotToObj(retVal);
-    return pCurrentCulture;
-}
-
-void Thread::SetCulture(OBJECTREF *CultureObj, BOOL bUICulture)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    MethodDescCallSite propSet(bUICulture
-        ? METHOD__CULTURE_INFO__SET_CURRENT_UI_CULTURE
-        : METHOD__CULTURE_INFO__SET_CURRENT_CULTURE);
-
-    // Set up the Stack.
-    ARG_SLOT pNewArgs[] = {
-        ObjToArgSlot(*CultureObj)
-    };
-
-    // Make the actual call.
-    propSet.Call_RetArgSlot(pNewArgs);
-}
 
 BOOL ThreadStore::HoldingThreadStore(Thread *pThread)
 {

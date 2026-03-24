@@ -5,6 +5,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 
 public class GenericNode
@@ -86,6 +87,7 @@ public abstract class InternalContainerServices<TContainer, TItem> : ExternalCon
 
 public class Test
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

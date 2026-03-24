@@ -11,4 +11,7 @@
     <Compile Include="Program.Aes.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>
