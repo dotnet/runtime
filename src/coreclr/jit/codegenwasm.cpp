@@ -2858,7 +2858,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     assert(isNativeOp || blkOp->GetLayout()->HasGCPtr());
 #endif // DEBUG
 
-    bool      nullCheckDest = false;
+    bool      nullCheckDest = ((blkOp->gtFlags & GTF_IND_NONFAULTING) == 0) && !dstOnStack;
     bool      nullCheckSrc  = false;
     GenTree*  dest          = blkOp->Addr();
     GenTree*  src           = blkOp->Data();
@@ -2894,9 +2894,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         srcOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
         assert(fpBased);
     }
-
-    // FIXME: Is this right?
-    nullCheckDest = ((dest->gtFlags & GTF_IND_NONFAULTING) == 0) && !dstOnStack;
 
     if (dest->OperIs(GT_LCL_ADDR))
     {
