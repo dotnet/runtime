@@ -8,7 +8,7 @@
       <Type Name="Xunit.Assert" Dynamic="Required All" />
     </Assembly>
 
-    <Assembly Name="Microsoft.DotNet.XUnitAssert">
+    <Assembly Name="xunit.assert">
       <Type Name="Xunit.Assert" Dynamic="Required All" />
     </Assembly>
 

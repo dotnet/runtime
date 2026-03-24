@@ -82,7 +82,8 @@ public class SingleFileTestRunner : XunitTestFramework
         Dictionary<string, List<string>> noTraits = new Dictionary<string, List<string>>();
         for (int i = 0; i < args.Length; i++)
         {
-            if (args[i].Equals("-notrait", StringComparison.OrdinalIgnoreCase))
+            if (args[i].Equals("-notrait", StringComparison.OrdinalIgnoreCase) ||
+                args[i].Equals("-trait-", StringComparison.OrdinalIgnoreCase))
             {
                 var traitKeyValue = args[i + 1].Split("=", StringSplitOptions.TrimEntries);
 

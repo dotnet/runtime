@@ -3,6 +3,6 @@
   <assembly fullname="xunit.v3.mtp-v1" />
   <assembly fullname="Microsoft.DotNet.XUnitV3Extensions" />
   <assembly fullname="xunit.v3.assert" />
-  <assembly fullname="Microsoft.DotNet.XUnitAssert" />
+  <assembly fullname="xunit.assert" />
   <assembly fullname="xunit.v3.runner.common" />
 </linker>

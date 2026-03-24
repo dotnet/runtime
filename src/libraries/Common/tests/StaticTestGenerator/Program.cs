@@ -1016,11 +1016,11 @@ namespace StaticTestGenerator
         /// <summary>Default options to use when constructing xunit options if no additional options are provided.</summary>
         private static readonly string[] s_defaultXunitOptions = new string[]
         {
-            "-notrait", "category=nonnetcoreapptests",
-            "-notrait", "category=nonwindowstests",
-            "-notrait", "category=IgnoreForCI",
-            "-notrait", "category=failing",
-            "-notrait", "category=OuterLoop"
+            "-trait-", "category=nonnetcoreapptests",
+            "-trait-", "category=nonwindowstests",
+            "-trait-", "category=IgnoreForCI",
+            "-trait-", "category=failing",
+            "-trait-", "category=OuterLoop"
         };
 
         /// <summary>The code to write out to the output file before all of the test cases.</summary>
