@@ -13,7 +13,7 @@ public class IndirectCallAnnotation
     static int Caller(IndirectCallAnnotation obj)
     {
         // Verify that the indirect call target is annotated with the method name.
-        // ARM64: blr {{.*}}VirtualCallee
+        // ARM64: blr {{.*}}VirtualCallee()
         return obj.VirtualCallee();
     }
 
