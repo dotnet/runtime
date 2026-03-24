@@ -199,19 +199,11 @@ namespace System.Collections.Frozen
                 return HashHelpers.GetPrime(uniqueCodesCount);
             }
 
-            // In our precomputed primes table, find the index of the smallest prime that's at least as large as our number of
-            // hash codes. If there are more codes than in our precomputed primes table, which accommodates millions of values,
-            // give up and just use the next prime.
-            ReadOnlySpan<int> primes = HashHelpers.Primes;
-            int minPrimeIndexInclusive = 0;
-            while ((uint)minPrimeIndexInclusive < (uint)primes.Length && minNumBuckets > primes[minPrimeIndexInclusive])
+            // Beyond the precomputed prime table, GetPrime falls back to trial division,
+            // so skip the collision-tuning loop and just pick the first prime >= minNumBuckets.
+            if (minNumBuckets > HashHelpers.MaxPrecomputedPrime)
             {
-                minPrimeIndexInclusive++;
-            }
-
-            if (minPrimeIndexInclusive >= primes.Length)
-            {
-                return HashHelpers.GetPrime(uniqueCodesCount);
+                return HashHelpers.GetPrime((int)minNumBuckets);
             }
 
             // Determine the largest number of buckets we're willing to use, based on a multiple of the number of inputs.
@@ -220,19 +212,6 @@ namespace System.Collections.Frozen
                 uniqueCodesCount *
                 (uniqueCodesCount >= LargeInputSizeThreshold ? MaxLargeBucketTableMultiplier : MaxSmallBucketTableMultiplier);
 
-            // Find the index of the smallest prime that accommodates our max buckets.
-            int maxPrimeIndexExclusive = minPrimeIndexInclusive;
-            while ((uint)maxPrimeIndexExclusive < (uint)primes.Length && maxNumBuckets > primes[maxPrimeIndexExclusive])
-            {
-                maxPrimeIndexExclusive++;
-            }
-
-            if (maxPrimeIndexExclusive < primes.Length)
-            {
-                Debug.Assert(maxPrimeIndexExclusive != 0);
-                maxNumBuckets = primes[maxPrimeIndexExclusive - 1];
-            }
-
             const int BitsPerInt32 = 32;
             int[] seenBuckets = ArrayPool<int>.Shared.Rent((maxNumBuckets / BitsPerInt32) + 1);
 
@@ -240,12 +219,11 @@ namespace System.Collections.Frozen
             int bestNumCollisions = uniqueCodesCount;
             int numBuckets = 0, numCollisions = 0;
 
-            // Iterate through each available prime between the min and max discovered. For each, compute
-            // the collision ratio.
-            for (int primeIndex = minPrimeIndexInclusive; primeIndex < maxPrimeIndexExclusive; primeIndex++)
+            // Iterate through each prime between minNumBuckets and maxNumBuckets, computing the collision ratio for each.
+            for (numBuckets = HashHelpers.GetPrime((int)minNumBuckets);
+                 numBuckets <= maxNumBuckets;
+                 numBuckets = HashHelpers.GetPrime(numBuckets + 1))
             {
-                // Get the number of buckets to try, and clear our seen bucket bitmap.
-                numBuckets = primes[primeIndex];
                 Array.Clear(seenBuckets, 0, Math.Min(numBuckets, seenBuckets.Length));
 
                 // Determine the bucket for each hash code and mark it as seen. If it was already seen,

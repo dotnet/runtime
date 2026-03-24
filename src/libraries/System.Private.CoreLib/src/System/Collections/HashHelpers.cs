@@ -28,7 +28,7 @@ namespace System.Collections
         // h1(key) + i*h2(key), 0 <= i < size.  h2 and the size must be relatively prime.
         // We prefer the low computation costs of higher prime numbers over the increased
         // memory allocation of a fixed prime number i.e. when right sizing a HashSet.
-        internal static ReadOnlySpan<int> Primes =>
+        private static ReadOnlySpan<int> Primes =>
         [
             3, 7, 11, 17, 23, 29, 37, 47, 59, 71, 89, 107, 131, 163, 197, 239, 293, 353, 431, 521, 631, 761, 919,
             1103, 1327, 1597, 1931, 2333, 2801, 3371, 4049, 4861, 5839, 7013, 8419, 10103, 12143, 14591,
@@ -37,6 +37,11 @@ namespace System.Collections
             1674319, 2009191, 2411033, 2893249, 3471899, 4166287, 4999559, 5999471, 7199369
         ];
 
+        /// <summary>The largest prime in the precomputed <see cref="Primes"/> table.</summary>
+        /// <remarks><see cref="GetPrime"/> uses trial division for values beyond this threshold.</remarks>
+        internal static int MaxPrecomputedPrime => Primes[^1];
+
+        /// <summary>Checks whether <paramref name="candidate"/> is prime, using trial division up to sqrt(candidate).</summary>
         public static bool IsPrime(int candidate)
         {
             if ((candidate & 1) != 0)
@@ -52,6 +57,8 @@ namespace System.Collections
             return candidate == 2;
         }
 
+        /// <summary>Returns the smallest prime greater than or equal to <paramref name="min"/>.</summary>
+        /// <remarks>Uses a precomputed table for small values; falls back to trial division for larger values. Very fast for all realistic hash table sizes.</remarks>
         public static int GetPrime(int min)
         {
             if (min < 0)
@@ -72,7 +79,8 @@ namespace System.Collections
             return min;
         }
 
-        // Returns size of hashtable to grow to.
+        /// <summary>Returns the next prime to grow a hash table to, currently using a 2x growth policy.</summary>
+        /// <remarks>Caps at <see cref="MaxPrimeArrayLength"/> to stay within array length limits.</remarks>
         public static int ExpandPrime(int oldSize)
         {
             int newSize = 2 * oldSize;

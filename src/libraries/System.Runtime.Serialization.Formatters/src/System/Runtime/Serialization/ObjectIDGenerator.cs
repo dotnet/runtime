@@ -20,7 +20,7 @@ namespace System.Runtime.Serialization
         public ObjectIDGenerator()
         {
             _currentCount = 1;
-            _currentSize = 3; // HashHelpers.Primes[0]
+            _currentSize = 3; // Smallest prime > 1
             _ids = new long[_currentSize * NumBins];
             _objs = new object[_currentSize * NumBins];
         }
