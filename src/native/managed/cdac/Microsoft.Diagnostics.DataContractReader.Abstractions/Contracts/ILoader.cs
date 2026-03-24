@@ -16,7 +16,6 @@ public readonly struct ModuleHandle
     public TargetPointer Address { get; }
 }
 
-
 [Flags]
 public enum ModuleFlags
 {
@@ -97,7 +96,6 @@ public interface ILoader : IContract
     TargetPointer GetDynamicIL(ModuleHandle handle, uint token) => throw new NotImplementedException();
 
     // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
-    // Throws NotImplementedException for unknown kind values.
     TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap) => throw new NotImplementedException();
     TargetNUInt GetLoaderHeapBlockSize(TargetPointer block) => throw new NotImplementedException();
     TargetPointer GetLoaderHeapBlockAddress(TargetPointer block) => throw new NotImplementedException();

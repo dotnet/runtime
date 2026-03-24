@@ -220,7 +220,6 @@ struct cdac_data<UnlockedLoaderHeapBaseTraversable>
 // common handling for LoaderHeap events, and the data structures used for bump
 // pointer allocation (although not the actual allocation routines).
 //===============================================================================
-typedef DPTR(class UnlockedLoaderHeapBase) PTR_UnlockedLoaderHeapBase;
 class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable, public ILoaderHeapBackout
 {
 #ifdef _DEBUG
@@ -703,7 +702,6 @@ public:
 
     void SetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory);
 };
-
 
 //===============================================================================
 // Create the LoaderHeap lock. It's the same lock for several different Heaps.

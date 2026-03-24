@@ -178,8 +178,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
 | `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
 | `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
-| `LoaderHeap` | `FirstBlock` | Pointer to the first `LoaderHeapBlock` in the linked list (normal heaps: `UnlockedLoaderHeap`/`LoaderHeap`) |
-| `ExplicitControlLoaderHeap` | `FirstBlock` | Pointer to the first `LoaderHeapBlock` in the linked list |
+| `LoaderHeap` | `FirstBlock` | Pointer to the first `LoaderHeapBlock` in the linked list |
 | `LoaderHeapBlock` | `Next` | Pointer to the next `LoaderHeapBlock` in the linked list |
 | `LoaderHeapBlock` | `VirtualAddress` | Pointer to the start of the reserved virtual memory |
 | `LoaderHeapBlock` | `VirtualSize` | Size in bytes of the reserved virtual memory region |
@@ -888,7 +887,7 @@ class InstMethodHashTable
 ```csharp
 TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
 {
-    return target.ReadPointer(loaderHeap + /* ExplicitControlLoaderHeap::FirstBlock offset */);
+    return target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */);
 }
 
 TargetPointer ILoader.GetLoaderHeapBlockAddress(TargetPointer block)
