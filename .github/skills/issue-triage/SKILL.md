@@ -521,5 +521,6 @@ depending on the outcome:
 |-----------|-------|-----------------|
 | API proposal recommended as KEEP | **api-proposal** | Offer to draft a formal API proposal with working prototype |
 | Bug report with root cause identified | **jit-regression-test** | If the bug is JIT-related, offer to create a regression test |
-| Performance regression confirmed | **performance-investigation** | Offer to investigate the regression (benchmarking, bisection, JIT diffs) |
+| Performance regression confirmed | **performance-investigation** | Offer to investigate the regression locally (CoreRun builds, bisection) |
+| Performance regression confirmed | **performance-benchmark** | Offer to validate the regression with ad hoc benchmarks via @EgorBot |
 | Fix PR linked to the issue | **code-review** | Offer to review the fix PR for correctness and consistency |

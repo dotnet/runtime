@@ -3,42 +3,15 @@
   "evals": [
     {
       "id": 1,
-      "name": "pr-benchmark-request",
-      "prompt": "Can you benchmark PR https://github.com/dotnet/runtime/pull/121223 to check for performance impact?",
-      "expected_output": "Should follow Workflow 1 (PR Benchmark Validation). Should write a BenchmarkDotNet benchmark targeting the changed code and invoke @EgorBot to run it on the PR.",
-      "assertions": [
-        {
-          "name": "uses-workflow-1",
-          "description": "Follows the PR benchmark validation workflow",
-          "type": "contains_any",
-          "check": ["Workflow 1", "PR Benchmark", "benchmark"]
-        },
-        {
-          "name": "writes-benchmark",
-          "description": "Creates or references a BenchmarkDotNet benchmark",
-          "type": "contains_any",
-          "check": ["[Benchmark]", "BenchmarkDotNet", "BenchmarkSwitcher"]
-        },
-        {
-          "name": "invokes-bot",
-          "description": "Invokes EgorBot or MihuBot to run the benchmark",
-          "type": "contains_any",
-          "check": ["@EgorBot", "@MihuBot"]
-        }
-      ],
-      "files": []
-    },
-    {
-      "id": 2,
       "name": "perf-regression-autobot",
       "prompt": "Investigate this performance regression: https://github.com/dotnet/runtime/issues/114625",
-      "expected_output": "Should follow Workflow 2 (Regression Investigation). Should identify baseline/compare commits from the performanceautofiler report, assess severity from the Test/Base ratio, and attempt validation or bisection.",
+      "expected_output": "Should follow the regression investigation workflow. Should identify baseline/compare commits from the performanceautofiler report, assess severity from the Test/Base ratio, and plan validation or bisection using local builds.",
       "assertions": [
         {
-          "name": "uses-workflow-2",
-          "description": "Follows the regression investigation workflow",
+          "name": "identifies-regression",
+          "description": "Recognizes and follows the regression investigation workflow",
           "type": "contains_any",
-          "check": ["Workflow 2", "Regression", "regression", "investigate"]
+          "check": ["regression", "investigate", "Regression"]
         },
         {
           "name": "identifies-commits",
@@ -56,28 +29,7 @@
       "files": []
     },
     {
-      "id": 3,
-      "name": "jit-diff-request",
-      "prompt": "Can you generate JIT diffs for my PR that changes the JIT compiler?",
-      "expected_output": "Should follow Workflow 3 (JIT Diff Analysis). Should invoke @MihuBot to generate JIT diffs and explain how to interpret the results.",
-      "assertions": [
-        {
-          "name": "uses-mihubot",
-          "description": "Invokes MihuBot for JIT diffs",
-          "type": "contains",
-          "check": "@MihuBot"
-        },
-        {
-          "name": "mentions-jit-diffs",
-          "description": "References JIT diff generation",
-          "type": "contains_any",
-          "check": ["JIT diff", "jit-diff", "codegen", "code size"]
-        }
-      ],
-      "files": []
-    },
-    {
-      "id": 4,
+      "id": 2,
       "name": "benchmark-with-corerun",
       "prompt": "How do I benchmark my local runtime changes against the main branch?",
       "expected_output": "Should explain how to build dotnet/runtime, obtain CoreRun from the testhost folder, and run BenchmarkDotNet with the --coreRun argument to compare private builds.",
@@ -104,31 +56,10 @@
       "files": []
     },
     {
-      "id": 5,
-      "name": "existing-benchmarks-request",
-      "prompt": "Run the existing Regex benchmarks from dotnet/performance against PR https://github.com/dotnet/runtime/pull/124628",
-      "expected_output": "Should use @MihuBot benchmark command to run existing benchmarks from the dotnet/performance repo rather than writing custom benchmark code.",
-      "assertions": [
-        {
-          "name": "uses-mihubot-benchmark",
-          "description": "Uses MihuBot's benchmark command for existing benchmarks",
-          "type": "contains",
-          "check": "@MihuBot benchmark"
-        },
-        {
-          "name": "references-perf-repo",
-          "description": "References the dotnet/performance repository",
-          "type": "contains_any",
-          "check": ["dotnet/performance", "performance repo"]
-        }
-      ],
-      "files": []
-    },
-    {
-      "id": 6,
+      "id": 3,
       "name": "cross-release-regression",
       "prompt": "A user reports that string.IndexOf is 2x slower in .NET 10 compared to .NET 9. How should we investigate?",
-      "expected_output": "Should explain how to identify the bisect range for cross-release regressions using git merge-base, create a standalone benchmark, and validate the regression. Should reference both local investigation and bot-based approaches.",
+      "expected_output": "Should explain how to identify the bisect range for cross-release regressions using git merge-base, create a standalone benchmark, and validate the regression locally using CoreRun builds.",
       "assertions": [
         {
           "name": "mentions-merge-base",
@@ -152,28 +83,28 @@
       "files": []
     },
     {
-      "id": 7,
-      "name": "compare-specific-commits",
-      "prompt": "Compare the performance of commits abc1234 and def5678 for the System.Text.Json benchmarks",
-      "expected_output": "Should invoke @EgorBot with -commits to compare the two specific commits, or use @MihuBot benchmark with a compare URL.",
+      "id": 4,
+      "name": "compare-commits-locally",
+      "prompt": "Compare the performance of two specific commits locally for System.Text.Json serialization",
+      "expected_output": "Should explain how to build dotnet/runtime at both commits, save testhost/CoreRun artifacts, and run BenchmarkDotNet with --coreRun pointing to both builds for a side-by-side comparison.",
       "assertions": [
         {
-          "name": "uses-commits-flag",
-          "description": "Uses the -commits option or compare URL to specify the commits",
+          "name": "mentions-corerun",
+          "description": "References CoreRun or testhost for running against private builds",
           "type": "contains_any",
-          "check": ["-commits", "compare", "abc1234", "def5678"]
+          "check": ["CoreRun", "coreRun", "--coreRun", "testhost"]
         },
         {
-          "name": "invokes-bot",
-          "description": "Invokes EgorBot or MihuBot to run the comparison",
+          "name": "mentions-both-builds",
+          "description": "Explains building at both commits for comparison",
           "type": "contains_any",
-          "check": ["@EgorBot", "@MihuBot"]
+          "check": ["both commits", "good", "bad", "baseline", "two builds", "each commit"]
         }
       ],
       "files": []
     },
     {
-      "id": 8,
+      "id": 5,
       "name": "not-applicable-bug-issue",
       "prompt": "Can you check the performance impact of https://github.com/dotnet/runtime/issues/46088",
       "expected_output": "Should recognize this is a functional bug (System.Text.Json does not support constructors with byref parameters), not a performance issue. Should indicate that performance benchmarking is not applicable here.",
@@ -188,7 +119,7 @@
       "files": []
     },
     {
-      "id": 9,
+      "id": 6,
       "name": "not-applicable-doc-pr",
       "prompt": "Benchmark the changes in PR https://github.com/dotnet/runtime/pull/124592 to validate performance",
       "expected_output": "Should recognize this is a documentation-only PR (adding XML docs to DI extension methods) and that benchmarking is not applicable or meaningful for documentation changes.",
