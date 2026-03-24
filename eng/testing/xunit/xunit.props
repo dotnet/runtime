@@ -23,6 +23,14 @@
 
     <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <!--
+      Deploy xunit.v3.assert as a runtime-only dependency for .NETCoreApp test projects.
+      This is needed because netstandard2.0 support libraries (e.g. ModuleCore) compile
+      against xunit.v3.assert and need it at runtime, even though test projects compile
+      against Microsoft.DotNet.XUnitAssert (which has a different assembly name).
+      ExcludeAssets="compile" prevents CS0433 ambiguity with Microsoft.DotNet.XUnitAssert.
+    -->
+    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" Publish="true" ExcludeAssets="compile" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
 
     <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" Condition="'$(IncludeRemoteExecutor)' == 'true'" />
