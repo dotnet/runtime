@@ -112,16 +112,14 @@ BOOL bgc_heap_walk_for_etw_p = FALSE;
 #define num_partial_refs 32
 #endif //SERVER_GC
 
+#define demotion_plug_len_th (6*1024*1024)
+
 #ifdef USE_REGIONS
-// If the pinned survived is 1+% of the region size, we don't demote.
-#define demotion_pinned_ratio_th (1)
 // If the survived / region_size is 90+%, we don't compact this region.
 #define sip_surv_ratio_th (90)
 // If the survived due to cards from old generations / region_size is 90+%,
 // we don't compact this region, also we immediately promote it to gen2.
 #define sip_old_card_surv_ratio_th (90)
-#else
-#define demotion_plug_len_th (6*1024*1024)
 #endif //USE_REGIONS
 
 #ifdef HOST_64BIT
@@ -2316,6 +2314,8 @@ BOOL        gc_heap::last_gc_before_oom = FALSE;
 
 BOOL        gc_heap::sufficient_gen0_space_p = FALSE;
 
+BOOL        gc_heap::decide_promote_gen1_pins_p = TRUE;
+
 #ifdef BACKGROUND_GC
 uint8_t*    gc_heap::background_saved_lowest_address = 0;
 uint8_t*    gc_heap::background_saved_highest_address = 0;
@@ -2366,8 +2366,6 @@ uint8_t*    gc_heap::gc_high = 0;
 uint8_t*    gc_heap::demotion_low;
 
 uint8_t*    gc_heap::demotion_high;
-
-BOOL        gc_heap::demote_gen1_p = TRUE;
 
 uint8_t*    gc_heap::last_gen1_pin_end;
 #endif //!USE_REGIONS
