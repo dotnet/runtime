@@ -626,7 +626,7 @@ namespace System.Diagnostics
                 return;
             }
 
-            // When we now for sure that the handle is inheritable, we don't need to duplicate.
+            // When we know for sure that the handle is inheritable, we don't need to duplicate.
             // When GetHandleInformation fails, we still attempt to call DuplicateHandle,
             // just to keep throwing the same exception (backward compatibility).
             if (Interop.Kernel32.GetHandleInformation(sourceHandle, out Interop.Kernel32.HandleFlags flags)

@@ -20,26 +20,26 @@ internal static partial class Interop
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
 
-            bool ignore = false;
+            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
             try
             {
                 int stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
 
                 if (stdinFd is not null)
                 {
-                    stdinFd.DangerousAddRef(ref ignore);
+                    stdinFd.DangerousAddRef(ref stdinRefAdded);
                     stdinRawFd = stdinFd.DangerousGetHandle().ToInt32();
                 }
 
                 if (stdoutFd is not null)
                 {
-                    stdoutFd.DangerousAddRef(ref ignore);
+                    stdoutFd.DangerousAddRef(ref stdoutRefAdded);
                     stdoutRawFd = stdoutFd.DangerousGetHandle().ToInt32();
                 }
 
                 if (stderrFd is not null)
                 {
-                    stderrFd.DangerousAddRef(ref ignore);
+                    stderrFd.DangerousAddRef(ref stderrRefAdded);
                     stderrRawFd = stderrFd.DangerousGetHandle().ToInt32();
                 }
 
@@ -59,12 +59,12 @@ internal static partial class Interop
                 FreeArray(envpPtr, envp.Length);
                 FreeArray(argvPtr, argv.Length);
 
-                if (stdinFd is not null)
-                    stdinFd.DangerousRelease();
-                if (stdoutFd is not null)
-                    stdoutFd.DangerousRelease();
-                if (stderrFd is not null)
-                    stderrFd.DangerousRelease();
+                if (stdinRefAdded)
+                    stdinFd!.DangerousRelease();
+                if (stdoutRefAdded)
+                    stdoutFd!.DangerousRelease();
+                if (stderrRefAdded)
+                    stderrFd!.DangerousRelease();
             }
         }
 
