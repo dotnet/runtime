@@ -57,10 +57,17 @@ namespace System.IO.Tests
         {
             get
             {
-                foreach (string path in PathToTargetData.Union(PathToTargetUncData))
+                foreach (string path in PathToTargetData)
                 {
                     yield return new object[] { path, false };
                     yield return new object[] { path, true };
+                }
+                // UNC paths are excluded from the returnFinalTarget=true case since
+                // they throw "The specified network name is no longer available" in
+                // various Windows versions. https://github.com/dotnet/runtime/issues/120380
+                foreach (string path in PathToTargetUncData)
+                {
+                    yield return new object[] { path, false };
                 }
             }
         }
