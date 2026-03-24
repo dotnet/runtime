@@ -1447,11 +1447,11 @@ namespace System.Diagnostics
         {
             if (handle is not null)
             {
-                ObjectDisposedException.ThrowIf(handle.IsClosed, paramName);
                 if (handle.IsInvalid)
                 {
                     throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
                 }
+                ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
             }
         }
 

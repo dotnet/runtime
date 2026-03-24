@@ -128,9 +128,9 @@ namespace System.Diagnostics
         /// </para>
         /// <para>
         /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
-        /// <see cref="IO.File.OpenHandle"/> to open a file handle,
-        /// <see cref="IO.File.OpenNullHandle"/> to provide an empty input,
-        /// or <see cref="Console.OpenStandardInputHandle"/> to inherit the parent's standard input
+        /// <see cref="System.IO.File.OpenHandle"/> to open a file handle,
+        /// <see cref="System.IO.File.OpenNullHandle"/> to provide an empty input,
+        /// or <see cref="System.Console.OpenStandardInputHandle"/> to inherit the parent's standard input
         /// (the default behavior when this property is <see langword="null"/>).
         /// </para>
         /// <para>
@@ -154,9 +154,9 @@ namespace System.Diagnostics
         /// </para>
         /// <para>
         /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
-        /// <see cref="IO.File.OpenHandle"/> to open a file handle,
-        /// <see cref="IO.File.OpenNullHandle"/> to discard output,
-        /// or <see cref="Console.OpenStandardOutputHandle"/> to inherit the parent's standard output
+        /// <see cref="System.IO.File.OpenHandle"/> to open a file handle,
+        /// <see cref="System.IO.File.OpenNullHandle"/> to discard output,
+        /// or <see cref="System.Console.OpenStandardOutputHandle"/> to inherit the parent's standard output
         /// (the default behavior when this property is <see langword="null"/>).
         /// </para>
         /// <para>
@@ -180,9 +180,9 @@ namespace System.Diagnostics
         /// </para>
         /// <para>
         /// Use <see cref="SafeFileHandle.CreateAnonymousPipe"/> to create a pair of connected pipe handles,
-        /// <see cref="IO.File.OpenHandle"/> to open a file handle,
-        /// <see cref="IO.File.OpenNullHandle"/> to discard error output,
-        /// or <see cref="Console.OpenStandardErrorHandle"/> to inherit the parent's standard error
+        /// <see cref="System.IO.File.OpenHandle"/> to open a file handle,
+        /// <see cref="System.IO.File.OpenNullHandle"/> to discard error output,
+        /// or <see cref="System.Console.OpenStandardErrorHandle"/> to inherit the parent's standard error
         /// (the default behavior when this property is <see langword="null"/>).
         /// </para>
         /// <para>
