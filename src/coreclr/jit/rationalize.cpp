@@ -638,7 +638,8 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
         return;
     }
 
-    GenTree* op2 = node->Op(2);
+    GenTree*  op2 = node->Op(2);
+    GenTree*& op3 = node->Op(3);
 
     // We're in the post-order visit and are traversing in execution order, so
     // everything between op2 and node will have already been rewritten to LIR
@@ -655,19 +656,24 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
 
         if (op2->isEmbeddedMaskingCompatible(m_compiler, tgtMaskSize, tgtSimdBaseType))
         {
-            // We are going to utilize the embedded mask, so we don't need to rewrite. However,
-            // we want to fixup the simdBaseType here since it simplifies lowering and allows
-            // both embedded broadcast and the mask to be live simultaneously.
+            // Make sure we had a mask to begin with. We don't want to create a mask
+            // solely for the purpose of embedding it.
 
-            if (tgtSimdBaseType != TYP_UNDEF)
+            if (!op3->OperIsHWIntrinsic() ||
+                (op3->AsHWIntrinsic()->GetHWIntrinsicId() != NI_AVX512_ConvertVectorToMask))
             {
-                op2->AsHWIntrinsic()->SetSimdBaseType(tgtSimdBaseType);
+                // We are going to utilize the embedded mask, so we don't need to rewrite. However,
+                // we want to fixup the simdBaseType here since it simplifies lowering and allows
+                // both embedded broadcast and the mask to be live simultaneously.
+
+                if (tgtSimdBaseType != TYP_UNDEF)
+                {
+                    op2->AsHWIntrinsic()->SetSimdBaseType(tgtSimdBaseType);
+                }
+                return;
             }
-            return;
         }
     }
-
-    GenTree*& op3 = node->Op(3);
 
     if (!ShouldRewriteToNonMaskHWIntrinsic(op3))
     {
