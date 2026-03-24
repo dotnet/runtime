@@ -322,11 +322,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     _tcs.SetResult(true);
                 }
 
-                Task completed = await Task.WhenAny(_tcs.Task, Task.Delay(TimeSpan.FromSeconds(30)));
-                if (completed != _tcs.Task)
-                {
-                    throw new TimeoutException("ServiceBarrier timed out waiting for all participants.");
-                }
+                await _tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
             }
         }
 
