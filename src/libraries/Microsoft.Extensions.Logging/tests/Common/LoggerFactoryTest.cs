@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Logging.Test
 {
     public class LoggerFactoryTest
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void AddProvider_ThrowsAfterDisposed()
         {
             var factory = new LoggerFactory();
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void Dispose_ProvidersAreDisposed()
         {
             // Arrange
@@ -85,7 +85,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void Dispose_ThrowException_SwallowsException()
         {
             // Arrange
@@ -537,7 +537,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void CreateDisposeDisposesInnerServiceProvider()
         {
             var disposed = false;
@@ -551,7 +551,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void TestCreateLoggers_NullLoggerIsIgnoredWhenReturnedByProvider()
         {
             // We test this via checking if Scope optimisaion (ie not return scope wrapper but the

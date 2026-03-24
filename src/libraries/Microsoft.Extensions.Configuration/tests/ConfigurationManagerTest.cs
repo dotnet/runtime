@@ -259,7 +259,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void DisposesChangeTokenRegistrationsOnDispose()
         {
             var changeToken = new TestChangeToken();
@@ -278,7 +278,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void DisposesChangeTokenRegistrationsOnRemoval()
         {
             var changeToken = new TestChangeToken();

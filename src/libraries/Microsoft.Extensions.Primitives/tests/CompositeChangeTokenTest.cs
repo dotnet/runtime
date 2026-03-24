@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void HasChanged_IsTrue_IfAnyTokenHasChanged()
         {
             // Arrange
@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void HasChanged_IsFalse_IfNoTokenHasChanged()
         {
             // Arrange
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void ActiveChangeCallbacks_IsTrue_IfAnyTokenHasActiveChangeCallbacks()
         {
             // Arrange
@@ -93,7 +93,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void ActiveChangeCallbacks_IsFalse_IfNoTokenHasActiveChangeCallbacks()
         {
             // Arrange
