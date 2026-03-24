@@ -11,7 +11,8 @@
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
-    #define INST(id, nm, info, fmt, opcode) info,
+    #define INST(id, nm, info, fmt, opcode         ) info,
+    #define INST2(id, nm, info, fmt, prefix, opcode) info,
     #include "instrs.h"
 };
 // clang-format on
@@ -366,7 +367,8 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     static_assert(IF_COUNT < 255);
 
     const static uint8_t insFormats[] = {
-#define INST(id, nm, info, fmt, opcode) fmt,
+#define INST(id, nm, info, fmt, opcode)          fmt,
+#define INST2(id, nm, info, fmt, prefix, opcode) fmt,
 #include "instrs.h"
     };
 
@@ -378,7 +380,8 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 static unsigned GetInsOpcode(instruction ins)
 {
     static const uint16_t insOpcodes[] = {
-#define INST(id, nm, info, fmt, opcode) static_cast<uint16_t>(opcode),
+#define INST(id, nm, info, fmt, opcode)          static_cast<uint16_t>(opcode),
+#define INST2(id, nm, info, fmt, prefix, opcode) static_cast<uint16_t>(opcode),
 #include "instrs.h"
     };
 
@@ -386,17 +389,21 @@ static unsigned GetInsOpcode(instruction ins)
     return insOpcodes[ins];
 }
 
-static bool HasOpcodePrefix(instruction ins)
+static uint8_t GetOpcodePrefix(instruction ins)
 {
-    static const bool hasPrefix[] = {
-#define INST(id, nm, info, fmt, opcode)                                                                                \
-    (static_cast<uint8_t>(opcode) == 0xFB || static_cast<uint8_t>(opcode) == 0xFC ||                                   \
-     static_cast<uint8_t>(opcode) == 0xFD),
+    static const uint8_t prefix[] = {
+#define INST(id, nm, info, fmt, opcode)          0,
+#define INST2(id, nm, info, fmt, prefix, opcode) static_cast<uint8_t>(prefix),
 #include "instrs.h"
     };
 
-    assert(ins < ArrLen(hasPrefix));
-    return hasPrefix[ins];
+    assert(ins < ArrLen(prefix));
+    return prefix[ins];
+}
+
+static bool HasOpcodePrefix(instruction ins)
+{
+    return GetOpcodePrefix(ins) != 0;
 }
 
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
@@ -479,9 +486,7 @@ unsigned emitter::instrDesc::idCodeSize() const
 {
     unsigned int opcode = GetInsOpcode(idIns());
 
-    // Currently, all our instructions have 1 or 2 byte opcodes.
-    assert(FitsIn<uint8_t>(opcode) || FitsIn<uint16_t>(opcode));
-    unsigned size = HasOpcodePrefix(idIns()) ? 2 : 1;
+    unsigned size = HasOpcodePrefix(idIns()) ? 1 + SizeOfULEB128(opcode) : 1;
     switch (idInsFmt())
     {
         case IF_OPCODE:
@@ -616,18 +621,21 @@ size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
 {
     size_t   sz     = 0;
     unsigned opcode = GetInsOpcode(ins);
+    uint8_t  prefix = GetOpcodePrefix(ins);
 
-    assert(FitsIn<uint16_t>(opcode));
-    if (!HasOpcodePrefix(ins))
+    if (prefix == 0)
     {
+        noway_assert(FitsIn<uint8_t>(opcode));
         emitOutputByte(dst, opcode);
         sz += 1;
     }
-    else if (FitsIn<uint16_t>(opcode))
+    else
     {
-        dst += emitOutputByte(dst, opcode & 0xFF);
-        emitOutputByte(dst, opcode >> 8);
-        sz += 2;
+        // Output prefix byte
+        emitOutputByte(dst, prefix);
+        sz += 1;
+        // Output the rest of the opcode as a ULEB128
+        sz += emitOutputULEB128(dst + sz, opcode);
     }
     return sz;
 }
@@ -684,7 +692,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     size_t      sz     = emitSizeOfInsDsc(id);
     instruction ins    = id->idIns();
     insFormat   insFmt = id->idInsFmt();
-    unsigned    opcode = GetInsOpcode(ins);
 
     switch (insFmt)
     {
@@ -733,7 +740,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_CALL_INDIRECT:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_TYPE_INDEX_LEB);
             dst += emitOutputULEB128(dst, 0);
             break;
