@@ -316,6 +316,42 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Resets the <see cref="Utf8JsonWriter"/> internal state so that it can be re-used with the new instance of <see cref="Stream" />
+        /// and the specified <see cref="JsonWriterOptions"/>.
+        /// </summary>
+        /// <param name="utf8Json">An instance of <see cref="Stream" /> used as a destination for writing JSON text into.</param>
+        /// <param name="options">Defines the customized behavior of the <see cref="Utf8JsonWriter"/>.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when the instance of <see cref="Stream" /> that is passed in is null.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The instance of <see cref="Utf8JsonWriter"/> has been disposed.
+        /// </exception>
+        public void Reset(Stream utf8Json, JsonWriterOptions options)
+        {
+            CheckNotDisposed();
+
+            if (utf8Json == null)
+                throw new ArgumentNullException(nameof(utf8Json));
+            if (!utf8Json.CanWrite)
+                throw new ArgumentException(SR.StreamNotWritable);
+
+            _stream = utf8Json;
+            if (_arrayBufferWriter == null)
+            {
+                _arrayBufferWriter = new ArrayBufferWriter<byte>();
+            }
+            else
+            {
+                _arrayBufferWriter.Clear();
+            }
+            _output = null;
+
+            SetOptions(options);
+            ResetHelper();
+        }
+
+        /// <summary>
         /// Resets the <see cref="Utf8JsonWriter"/> internal state so that it can be re-used with the new instance of <see cref="IBufferWriter{Byte}" />.
         /// </summary>
         /// <param name="bufferWriter">An instance of <see cref="IBufferWriter{Byte}" /> used as a destination for writing JSON text into.</param>
@@ -340,6 +376,30 @@ namespace System.Text.Json
             ResetHelper();
         }
 
+        /// <summary>
+        /// Resets the <see cref="Utf8JsonWriter"/> internal state so that it can be re-used with the new instance of <see cref="IBufferWriter{Byte}" />
+        /// and the specified <see cref="JsonWriterOptions"/>.
+        /// </summary>
+        /// <param name="bufferWriter">An instance of <see cref="IBufferWriter{Byte}" /> used as a destination for writing JSON text into.</param>
+        /// <param name="options">Defines the customized behavior of the <see cref="Utf8JsonWriter"/>.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when the instance of <see cref="IBufferWriter{Byte}" /> that is passed in is null.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The instance of <see cref="Utf8JsonWriter"/> has been disposed.
+        /// </exception>
+        public void Reset(IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
+        {
+            CheckNotDisposed();
+
+            _output = bufferWriter ?? throw new ArgumentNullException(nameof(bufferWriter));
+            _stream = null;
+            _arrayBufferWriter = null;
+
+            SetOptions(options);
+            ResetHelper();
+        }
+
         internal void ResetAllStateForCacheReuse()
         {
             ResetHelper();
@@ -349,7 +409,7 @@ namespace System.Text.Json
             _output = null;
         }
 
-        internal void Reset(IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
+        internal void ConfigureForCacheReuse(IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
         {
             Debug.Assert(_output is null && _stream is null && _arrayBufferWriter is null);
 
