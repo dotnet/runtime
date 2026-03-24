@@ -2723,6 +2723,11 @@ namespace System.Text.RegularExpressions.Tests
                 throw new SkipTestException("Deep nesting with NonBacktracking hits threading APIs not supported on single-threaded WASM.");
             }
 
+            if (!Environment.Is64BitProcess)
+            {
+                throw new SkipTestException("Deep nesting exhausts address space on 32-bit processes.");
+            }
+
             // Build a pattern with deeply nested character class subtractions: [a-[a-[a-[...[a]...]]]]
             // This previously caused a StackOverflowException due to unbounded recursion in the parser.
             // Use a reduced depth for SourceGenerated to avoid overwhelming Roslyn compilation.
