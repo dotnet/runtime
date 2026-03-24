@@ -31,9 +31,6 @@ class Module;
 struct VASigCookie;
 class ComCallMethodDesc;
 
-#define COMMETHOD_CALL_PRESTUB_SIZE             6    // 32-bit indirect relative call
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   -10  // the offset of the call target address inside the prestub
-
 #define STACK_ALIGN_SIZE                        16
 
 #define JUMP_ALLOCATE_SIZE                      12   // # bytes to allocate for a 64-bit jump instruction

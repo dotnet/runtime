@@ -31,11 +31,6 @@ class ComCallMethodDesc;
 
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
-#ifdef FEATURE_COMINTEROP
-#define COMMETHOD_CALL_PRESTUB_SIZE             5   // x86: CALL(E8) xx xx xx xx
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   1   // the offset of the call target address inside the prestub
-#endif // FEATURE_COMINTEROP
-
 #define STACK_ALIGN_SIZE                        4
 
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction

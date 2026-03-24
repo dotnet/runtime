@@ -251,7 +251,7 @@ bool IsStrictlyUnboxed(MethodDesc *pMD)
     return true;
 }
 
-void FillInComVtableSlot(SLOT* pComVtable,
+static void FillInComVtableSlot(SLOT* pComVtable,
                          UINT  uComSlot,
                          SLOT  entry)
 {
@@ -265,25 +265,6 @@ void FillInComVtableSlot(SLOT* pComVtable,
     CONTRACTL_END;
     pComVtable[uComSlot] = entry;
 }
-
-void FillInComVtableSlot(SLOT* pComVtable,          // must point to the first slot after the "extra slots" (e.g. IUnknown/IDispatch slots)
-                         UINT  uComSlot,            // must be relative to pComVtable
-                         ComCallMethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pComVtable));
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END;
-
-    pComVtable[uComSlot] = (SLOT)(((BYTE*)pMD - COMMETHOD_CALL_PRESTUB_SIZE)ARM_ONLY(+THUMB_CODE));
-}
-
-
 
 ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
 {
@@ -305,11 +286,6 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
     ComCallUMThunkMarshInfo* pMarshInfo = (ComCallUMThunkMarshInfo*)pUMEntryThunk->GetData()->GetUMThunkMarshInfo();
 
     RETURN pMarshInfo->GetComCallMethodDesc();
-
-// NOTE: make sure to keep this in sync with FillInComVtableSlot
-    pCMD = (ComCallMethodDesc*)(((BYTE *)rgVtable[i]) + COMMETHOD_CALL_PRESTUB_SIZE ARM_ONLY(-THUMB_CODE));
-
-    RETURN pCMD;
 }
 
 #ifdef FEATURE_INTERPRETER
