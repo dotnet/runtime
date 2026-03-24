@@ -224,6 +224,11 @@ namespace System.Text.Json.Serialization.Converters
                 if (preserveReferences && reader.ValueTextEquals(JsonSerializer.s_refPropertyName))
                 {
                     reader.Read();
+                    if (reader.TokenType != JsonTokenType.String)
+                    {
+                        ThrowHelper.ThrowJsonException();
+                    }
+
                     refId = reader.GetString();
                     break;
                 }
@@ -288,6 +293,11 @@ namespace System.Text.Json.Serialization.Converters
                         else if (preserveReferences && reader.ValueTextEquals(JsonSerializer.s_idPropertyName))
                         {
                             reader.Read();
+                            if (reader.TokenType != JsonTokenType.String)
+                            {
+                                ThrowHelper.ThrowJsonException();
+                            }
+
                             referenceId = reader.GetString();
                             continue;
                         }
@@ -346,6 +356,11 @@ namespace System.Text.Json.Serialization.Converters
                 if (preserveReferences && reader.ValueTextEquals(JsonSerializer.s_idPropertyName))
                 {
                     reader.Read();
+                    if (reader.TokenType != JsonTokenType.String)
+                    {
+                        ThrowHelper.ThrowJsonException();
+                    }
+
                     referenceId = reader.GetString();
                     continue;
                 }
