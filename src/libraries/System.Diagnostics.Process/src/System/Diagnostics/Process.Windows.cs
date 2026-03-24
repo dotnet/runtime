@@ -455,16 +455,13 @@ namespace System.Diagnostics
                 {
                     Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null, "All or none of the standard handles must be provided.");
 
-                    // The user can't specify invalid handle via ProcessStartInfo.Standar*Handle APIs.
-                    // However, Console.OpenStandard*Handle() can return INVALID_HANDLE_VALUE for a process
-                    // that was started with INVALID_HANDLE_VALUE as given standard handle.
-                    inheritableStdinHandle = !stdinHandle.IsInvalid && !stdinHandle.IsInheritable() ? DuplicateAsInheritable(stdinHandle) : stdinHandle;
-                    inheritableStdoutHandle = !stdoutHandle.IsInvalid && !stdoutHandle.IsInheritable() ? DuplicateAsInheritable(stdoutHandle) : stdoutHandle;
-                    inheritableStderrHandle = !stderrHandle.IsInvalid && !stderrHandle.IsInheritable() ? DuplicateAsInheritable(stderrHandle) : stderrHandle;
+                    DuplicateAsInheritableIfNeeded(stdinHandle, out inheritableStdinHandle);
+                    DuplicateAsInheritableIfNeeded(stdoutHandle, out inheritableStdoutHandle);
+                    DuplicateAsInheritableIfNeeded(stderrHandle, out inheritableStderrHandle);
 
-                    startupInfo.hStdInput = inheritableStdinHandle.DangerousGetHandle();
-                    startupInfo.hStdOutput = inheritableStdoutHandle.DangerousGetHandle();
-                    startupInfo.hStdError = inheritableStderrHandle.DangerousGetHandle();
+                    startupInfo.hStdInput = (inheritableStdinHandle ?? stdinHandle).DangerousGetHandle();
+                    startupInfo.hStdOutput = (inheritableStdoutHandle ?? stdoutHandle).DangerousGetHandle();
+                    startupInfo.hStdError = (inheritableStderrHandle ?? stderrHandle).DangerousGetHandle();
 
                     // If STARTF_USESTDHANDLES is not set, the new process will inherit the standard handles.
                     startupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
@@ -598,12 +595,9 @@ namespace System.Diagnostics
             {
                 // Only dispose duplicated handles, not the original handles passed by the caller.
                 // When the handle was invalid or already inheritable, no duplication was needed.
-                if (!ReferenceEquals(inheritableStdinHandle, stdinHandle))
-                    inheritableStdinHandle?.Dispose();
-                if (!ReferenceEquals(inheritableStdoutHandle, stdoutHandle))
-                    inheritableStdoutHandle?.Dispose();
-                if (!ReferenceEquals(inheritableStderrHandle, stderrHandle))
-                    inheritableStderrHandle?.Dispose();
+                inheritableStdinHandle?.Dispose();
+                inheritableStdoutHandle?.Dispose();
+                inheritableStderrHandle?.Dispose();
 
                 ProcessUtils.s_processStartLock.ExitWriteLock();
 
@@ -621,21 +615,29 @@ namespace System.Diagnostics
             return true;
         }
 
-        /// <summary>Duplicates a handle as inheritable so the child process can use it.</summary>
-        private static SafeFileHandle DuplicateAsInheritable(SafeFileHandle sourceHandle)
+        /// <summary>Duplicates a handle as inheritable if it's valid and not inheritable.</summary>
+        private static void DuplicateAsInheritableIfNeeded(SafeFileHandle sourceHandle, out SafeFileHandle? duplicatedHandle)
         {
+            // The user can't specify invalid handle via ProcessStartInfo.Standar*Handle APIs.
+            // However, Console.OpenStandard*Handle() can return INVALID_HANDLE_VALUE for a process
+            // that was started with INVALID_HANDLE_VALUE as given standard handle.
+            if (sourceHandle.IsInvalid || sourceHandle.IsInheritable())
+            {
+                duplicatedHandle = null;
+                return;
+            }
+
             IntPtr currentProcHandle = Interop.Kernel32.GetCurrentProcess();
             if (!Interop.Kernel32.DuplicateHandle(currentProcHandle,
                 sourceHandle,
                 currentProcHandle,
-                out SafeFileHandle duplicatedHandle,
+                out duplicatedHandle,
                 0,
                 bInheritHandle: true,
                 Interop.Kernel32.HandleOptions.DUPLICATE_SAME_ACCESS))
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
-            return duplicatedHandle;
         }
 
         private static ConsoleEncoding GetEncoding(int codePage)
