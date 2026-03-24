@@ -60,5 +60,28 @@ namespace Microsoft.Win32.SafeHandles
                 return (System.IO.FileHandleType)cachedType;
             }
         }
+
+        /// <summary>
+        /// Gets a value indicating whether the handle is inheritable by child processes.
+        /// </summary>
+        /// <returns>
+        /// <see langword="true"/> if the handle is inheritable by child processes; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">The handle is closed.</exception>
+        /// <remarks>
+        /// <para>
+        /// On Windows, this method calls the <c>GetHandleInformation</c> system call and checks for the <c>HANDLE_FLAG_INHERIT</c> flag.
+        /// </para>
+        /// <para>
+        /// On Unix, this method calls <c>fcntl</c> with <c>F_GETFD</c> and checks for the absence of the <c>FD_CLOEXEC</c> flag.
+        /// A file descriptor without the <c>FD_CLOEXEC</c> flag set is inheritable by child processes.
+        /// </para>
+        /// </remarks>
+        public bool IsInheritable()
+        {
+            ObjectDisposedException.ThrowIf(IsClosed, this);
+
+            return IsInheritableCore();
+        }
     }
 }

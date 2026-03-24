@@ -590,5 +590,19 @@ namespace Microsoft.Win32.SafeHandles
             FileStreamHelpers.CheckFileCall(result, Path);
             return status.Size;
         }
+
+        internal bool IsInheritableCore()
+        {
+            int flags = Interop.Sys.Fcntl.GetFD(this);
+            if (flags == -1)
+            {
+                throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), Path);
+            }
+
+            // FD_CLOEXEC means close-on-exec, i.e., NOT inheritable.
+            // If the flag is absent, the handle IS inheritable.
+            const int FD_CLOEXEC = 1;
+            return (flags & FD_CLOEXEC) == 0;
+        }
     }
 }

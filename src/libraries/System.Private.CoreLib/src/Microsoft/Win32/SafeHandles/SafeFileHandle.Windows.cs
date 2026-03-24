@@ -461,5 +461,15 @@ namespace Microsoft.Win32.SafeHandles
                 return storageReadCapacity.DiskLength;
             }
         }
+
+        internal bool IsInheritableCore()
+        {
+            if (!Interop.Kernel32.GetHandleInformation(this, out Interop.Kernel32.HandleFlags flags))
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error(Path);
+            }
+
+            return (flags & Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT) != 0;
+        }
     }
 }

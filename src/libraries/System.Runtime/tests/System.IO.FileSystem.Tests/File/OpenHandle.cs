@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO.Pipes;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -159,6 +160,57 @@ namespace System.IO.Tests
                 // Accept both results since we cannot assume the cluster size of testing volume
                 Assert.True(ex.HResult is ERROR_INVALID_PARAMETER or ERROR_DISK_FULL);
             }
+        }
+
+        [Theory]
+        [InlineData(FileShare.None)]
+        [InlineData(FileShare.Inheritable)]
+        public void SafeFileHandle_IsInheritable_ReturnsCorrectInformation(FileShare share)
+        {
+            using SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, share);
+            Assert.Equal((share & FileShare.Inheritable) != 0, handle.IsInheritable());
+        }
+
+        [Theory]
+        [InlineData(FileShare.None)]
+        [InlineData(FileShare.Inheritable)]
+        public void SafeFileHandle_IsInheritable_ReturnsCorrectInformation_FromIntPtr(FileShare share)
+        {
+            using SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, share);
+            using SafeFileHandle createdFromIntPtr = new SafeFileHandle(handle.DangerousGetHandle(), ownsHandle: false);
+            Assert.Equal((share & FileShare.Inheritable) != 0, createdFromIntPtr.IsInheritable());
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Pipes are not supported on browser")]
+        public void SafeFileHandle_IsInheritable_InheritablePipe()
+        {
+            using var pipeServer = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable);
+            string clientHandleStr = pipeServer.GetClientHandleAsString();
+            using SafeFileHandle handle = new SafeFileHandle(new IntPtr(long.Parse(clientHandleStr)), ownsHandle: false);
+            Assert.True(handle.IsInheritable());
+            pipeServer.DisposeLocalCopyOfClientHandle();
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Pipes are not supported on browser")]
+        public void SafeFileHandle_IsInheritable_NonInheritablePipe()
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
+            using (readHandle)
+            using (writeHandle)
+            {
+                Assert.False(readHandle.IsInheritable());
+                Assert.False(writeHandle.IsInheritable());
+            }
+        }
+
+        [Fact]
+        public void SafeFileHandle_IsInheritable_ThrowsOnDisposedHandle()
+        {
+            SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write);
+            handle.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => handle.IsInheritable());
         }
     }
 }

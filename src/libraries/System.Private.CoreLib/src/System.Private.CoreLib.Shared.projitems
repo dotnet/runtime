@@ -1812,6 +1812,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.PipeOptions.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.PipeOptions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleInformation.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.HandleInformation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreatePipe_SafeFileHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreatePipe_SafeFileHandle.cs</Link>
     </Compile>
