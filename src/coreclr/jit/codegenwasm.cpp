@@ -2862,8 +2862,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     bool nullCheckSrc   = false;
     GenTree* dest       = blkOp->Addr();
     GenTree* src        = blkOp->Data();
-    regNumber destReg   = REG_NA;
-    regNumber srcReg    = REG_NA;
+    regNumber destReg   = genConsumeReg(dest);
+    regNumber srcReg    = genConsumeReg(src);
     unsigned destOffset = 0;
     unsigned srcOffset  = 0;
 
@@ -2884,7 +2884,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         }
         assert(!src->isContained());
         assert(!isCopyBlk);
-        srcReg = genConsumeReg(src);
     }
     else
     {
@@ -2898,9 +2897,24 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     // FIXME: Is this right?
     nullCheckDest = ((dest->gtFlags & GTF_IND_NONFAULTING) == 0) && !dstOnStack;
-    destReg       = GetMultiUseOperandReg(dest);
 
-    genConsumeOperands(blkOp);
+    if (dest->OperIs(GT_LCL_ADDR))
+    {
+        GenTreeLclVarCommon* lclVar = dest->AsLclVarCommon();
+        bool                 fpBased;
+        destReg    = GetFramePointerReg();
+        destOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
+        assert(fpBased);
+    }
+    else if (!isCopyBlk)
+    {
+        // Lowering does not contain dest or flag it as multiple-use for initblk
+        ;
+    }
+    else
+    {
+        destReg = GetMultiUseOperandReg(dest);
+    }
 
     emitter* emit = GetEmitter();
 
