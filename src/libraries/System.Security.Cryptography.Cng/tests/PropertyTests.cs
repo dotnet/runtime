@@ -162,6 +162,17 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [Fact]
+        public static void NullArrayAndNullSpanDiffer()
+        {
+            CngProperty fromNullArray = new CngProperty("test", (byte[]?)null, CngPropertyOptions.CustomProperty);
+            CngProperty fromNullSpan = new CngProperty("test", (ReadOnlySpan<byte>)(byte[]?)null, CngPropertyOptions.CustomProperty);
+
+            Assert.Null(fromNullArray.GetValue());
+            Assert.Empty(fromNullSpan.GetValue());
+            Assert.NotEqual(fromNullArray, fromNullSpan);
+        }
+
+        [Fact]
         public static void SpanCtorDefaultAndEmptyAreEquivalent()
         {
             CngProperty fromDefault = new CngProperty("test", default(ReadOnlySpan<byte>), CngPropertyOptions.CustomProperty);
