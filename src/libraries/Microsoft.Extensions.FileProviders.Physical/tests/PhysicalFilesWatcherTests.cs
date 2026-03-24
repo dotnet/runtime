@@ -347,6 +347,52 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
                 "Main FileSystemWatcher should not be enabled when parent directories are missing");
         }
 
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task GetOrAddFilePathChangeToken_RootDeletedAndRecreated_TokenFiresWhenFileCreated()
+        {
+            string rootPath = Path.Combine(Path.GetTempPath(), $"pfw_root_del_{Guid.NewGuid():N}");
+            Directory.CreateDirectory(rootPath);
+            try
+            {
+                using var physicalFilesWatcher = new PhysicalFilesWatcher(
+                    rootPath,
+                    new FileSystemWatcher(rootPath),
+                    pollForChanges: false);
+
+                IChangeToken token = physicalFilesWatcher.GetOrAddFilePathChangeToken("file.txt");
+                Assert.False(token.HasChanged);
+
+                // Delete the root directory — the token should fire
+                Directory.Delete(rootPath, recursive: true);
+                await Task.Delay(WaitTimeForTokenToFire);
+                Assert.True(token.HasChanged, "Token should fire when the root directory is deleted");
+
+                // Re-watch the same file — root is now missing, so this goes through PendingCreationWatcher
+                IChangeToken token2 = physicalFilesWatcher.GetOrAddFilePathChangeToken("file.txt");
+
+                var tcs = new TaskCompletionSource<bool>();
+                token2.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+
+                // Recreate the root — token must not fire yet
+                Directory.CreateDirectory(rootPath);
+                await Task.Delay(WaitTimeForTokenToFire);
+                Assert.False(tcs.Task.IsCompleted, "Token must not fire when only the root directory is recreated");
+
+                // Create the target file — now the token must fire
+                File.WriteAllText(Path.Combine(rootPath, "file.txt"), string.Empty);
+
+                await tcs.Task.WaitAsync(TimeSpan.FromSeconds(15));
+            }
+            finally
+            {
+                if (Directory.Exists(rootPath))
+                {
+                    Directory.Delete(rootPath, recursive: true);
+                }
+            }
+        }
+
         private class TestPollingChangeToken : IPollingChangeToken
         {
             public int Id { get; set; }
