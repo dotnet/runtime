@@ -18,6 +18,9 @@ ComCallPreStub_STACK_FRAME_SIZE = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES
 ComCallPreStub_XMM_SAVE_OFFSET = ComCallPreStub_STACK_FRAME_SIZE
 ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + SIZEOF_MAX_FP_ARG_SPILL
 
+ComCallPreStub_NONVOL_REG_SAVE_OFFSET = ComCallPreStub_STACK_FRAME_SIZE
+ComCallPreStub_STACK_FRAME_SIZE = ComCallPreStub_STACK_FRAME_SIZE + 8 ; for one non-volatile register to preserve the secret argument
+
 ; Ensure that the new rsp will be 16-byte aligned.  Note that the caller has
 ; already pushed the return address.
 if ((ComCallPreStub_STACK_FRAME_SIZE + 8) MOD 16) ne 0
@@ -36,13 +39,19 @@ endif
         save_xmm128_postrsp xmm2, ComCallPreStub_XMM_SAVE_OFFSET + 20h
         save_xmm128_postrsp xmm3, ComCallPreStub_XMM_SAVE_OFFSET + 30h
 
+        save_reg_postrsp    r12, ComCallPreStub_NONVOL_REG_SAVE_OFFSET
+
         END_PROLOGUE
 
         ;
         ; Do prestub-specific stuff
         ;
         mov             rcx, METHODDESC_REGISTER
+        mov             r12, METHODDESC_REGISTER
         call            ComPreStubWorker
+
+        ; Restore the secret argument
+        mov             METHODDESC_REGISTER, r12
 
         ;
         ; we're going to tail call to the exec stub that we just setup
@@ -58,6 +67,8 @@ endif
         movdqa          xmm1, xmmword ptr [rsp + ComCallPreStub_XMM_SAVE_OFFSET + 10h]
         movdqa          xmm2, xmmword ptr [rsp + ComCallPreStub_XMM_SAVE_OFFSET + 20h]
         movdqa          xmm3, xmmword ptr [rsp + ComCallPreStub_XMM_SAVE_OFFSET + 30h]
+
+        mov             r12, [rsp + ComCallPreStub_NONVOL_REG_SAVE_OFFSET]
 
         ;
         ; epilogue

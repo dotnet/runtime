@@ -916,10 +916,6 @@ _GenericCLRToCOMCallStub@0 proc public
 _GenericCLRToCOMCallStub@0 endp
 
 _ComCallPreStub@0 proc public
-    ; push argument registers
-    push        ecx
-    push        edx
-
     PUSH_CLR_EXCEPTION_HANDLER _UMEntryPrestubUnwindFrameChainHandler
 
     push    eax     ; UMEntryThunkData*
@@ -927,12 +923,11 @@ _ComCallPreStub@0 proc public
 
     POP_CLR_EXCEPTION_HANDLER
 
-    ; pop argument registers
-    pop         edx
-    pop         ecx
+    mov edx, eax ; preserve the PCODE returned from the worker in edx
+    pop eax ; restore the secret arg into eax
 
-    ; eax = PCODE
-    jmp     eax     ; Tail Jmp
+    ; edx = PCODE
+    jmp     edx     ; Tail Jmp
 _ComCallPreStub@0 endp
 
 _ComStubReturnHResult@0 proc public

@@ -46,13 +46,11 @@ public:
     // It can safely be called multiple times and by concurrent
     // threads.
     //----------------------------------------------------------
-    virtual void RunTimeInit() = 0;
+    virtual PCODE RunTimeInit(bool* pCanSkipPreStub) = 0;
 
     //----------------------------------------------------------
     // Accessor functions
     //----------------------------------------------------------
-
-    PCODE GetExecStubEntryPoint();
 
     virtual PCODE GetPreStubEntryPoint() = 0;
 
@@ -75,10 +73,17 @@ protected:
         LIMITED_METHOD_CONTRACT;
     }
 
-    void SetILStubEntry(PCODE pILStub)
+    PCODE SetILStubEntry(PCODE pILStub)
     {
         // Must be the last thing we set!
         InterlockedCompareExchangeT<PCODE>(&m_pILStub, pILStub, (PCODE)1);
+        return m_pILStub;
+    }
+
+    PCODE GetILStubEntry()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pILStub;
     }
 
 private:
@@ -94,7 +99,7 @@ public:
 
     static MethodDesc* GetILStubMethodDesc(MethodDesc* pInvokeMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwStubFlags);
 
-    void RunTimeInit() override;
+    PCODE RunTimeInit(bool* pCanSkipPreStub) override;
 
     PCODE GetPreStubEntryPoint() override
     {
@@ -228,7 +233,7 @@ public:
     }
 #endif
 
-    void RunTimeInit()
+    PCODE RunTimeInit(bool* pTargetIsPrecode)
     {
         STANDARD_VM_CONTRACT;
 
@@ -238,15 +243,13 @@ public:
             m_pMD->EnsureActive();
         }
 
-        m_pUMThunkMarshInfo->RunTimeInit();
+        bool setTarget;
+        PCODE entryPoint = m_pUMThunkMarshInfo->RunTimeInit(&setTarget);
 
         // Ensure that we have either the managed target or the delegate.
         if (m_pObjectHandle == NULL && m_pManagedTarget == (TADDR)0 && m_pMD != NULL)
             m_pManagedTarget = m_pMD->GetMultiCallableAddrOfCode();
 
-        PCODE entryPoint = m_pUMThunkMarshInfo->GetExecStubEntryPoint();
-
-        bool setTarget = true;
 #if defined(FEATURE_INTERPRETER)
         // For interpreted stubs we need to ensure that TheUMEntryPrestubWorker runs for every
         // unmanaged-to-managed invocation in order to populate the TLS variable every time.
@@ -270,6 +273,16 @@ public:
 #ifdef _DEBUG
         m_state = kRunTimeInited;
 #endif // _DEBUG
+
+        // If we set the target in the precode,
+        // then we are going to re-execute the call via the precode.
+        // Otherwise, we're going to tail-call directly to the entry point
+        // and the calling code needs to ensure that the secret argument is set up correctly.
+        *pTargetIsPrecode = setTarget;
+
+        // If we set the target in the thunk, then we can re-execute the call directly.
+        // Otherwise we're going to tail-call to the prestub which will then call back into us to get the right target.
+        return setTarget ? GetCode() : entryPoint;
     }
 
     PCODE GetManagedTarget() const

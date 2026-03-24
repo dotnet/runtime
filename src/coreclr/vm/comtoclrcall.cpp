@@ -502,17 +502,160 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
     RETURN JitILStub(pStubMD);
 }
 
-void ComCallUMThunkMarshInfo::RunTimeInit()
+PLATFORM_THREAD_LOCAL HRESULT t_ComPreStubLastHResult;
+
+#ifdef TARGET_X86
+PLATFORM_THREAD_LOCAL UINT t_ComPreStubLastStackBytes;
+
+extern "C" HRESULT __stdcall ComPreStubGetLastHResult()
 {
-    STANDARD_VM_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
+    return t_ComPreStubLastHResult;
+}
 
-    PCODE             pTempILStub  = NULL;
-    DWORD             dwStubFlags;
+extern "C" UINT __stdcall ComPreStubGetLastStackBytes()
+{
+    LIMITED_METHOD_CONTRACT;
+    return t_ComPreStubLastStackBytes;
+}
 
-    PopulateComCallMethodDesc(m_pCMD, &dwStubFlags);
+extern "C" int ComStubReturnHResult();
 
-    MethodDesc *pStubMD;
-    pTempILStub = m_pCMD->CreateCOMToCLRStub(dwStubFlags, &pStubMD);
+extern "C" BOOL ComStubReturnBool();
 
-    SetILStubEntry(pTempILStub);
+extern "C" float ComStubReturnR4NaN();
+
+extern "C" double ComStubReturnR8NaN();
+
+extern "C" void ComStubReturnVoid();
+#else
+namespace
+{
+    int ComStubReturnHResult()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return t_ComPreStubLastHResult;
+    }
+
+    BOOL ComStubReturnBool()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return FALSE;
+    }
+
+    float ComStubReturnR4NaN()
+    {
+        int tmp = CLR_NAN_32;
+        return *(float*)&tmp;
+    }
+
+    double ComStubReturnR8NaN()
+    {
+        INT64 tmp = CLR_NAN_64;
+        return *(double*)&tmp;
+    }
+
+    void ComStubReturnVoid()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return;
+    }
+}
+#endif
+
+PCODE ComCallUMThunkMarshInfo::GetHResultReturnStub(HRESULT hr)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    t_ComPreStubLastHResult = hr;
+    return (PCODE)&ComStubReturnHResult;
+}
+
+PCODE ComCallUMThunkMarshInfo::RunTimeInit(bool* pCanSkipPreStub)
+{
+    CONTRACTL;
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // We can't skip the prestub as we need to ensure that we always
+    // return E_OUTOFMEMORY if we are called on a new thread and can't set up
+    // the managed thread object.
+    *pCanSkipPreStub = FALSE;
+
+    if (IsCompletelyInited())
+    {
+        // The stub is already set up, so we can just return.
+        return GetILStubEntry();
+    }
+
+    PCODE pStub = NULL;
+
+    // Transition to cooperative GC mode before we start setting up the stub.
+    GCX_COOP();
+
+    OBJECTREF pThrowable = NULL;
+    GCPROTECT_BEGIN(pThrowable)
+    {
+        EX_TRY
+        {
+            GCX_PREEMP();
+
+            DWORD             dwStubFlags;
+
+            PopulateComCallMethodDesc(m_pCMD, &dwStubFlags);
+
+            MethodDesc *pStubMD;
+            pStub = SetILStubEntry(m_pCMD->CreateCOMToCLRStub(dwStubFlags, &pStubMD));
+        }
+        EX_CATCH
+        {
+            pThrowable = GET_THROWABLE();
+        }
+        EX_END_CATCH
+
+        if (pThrowable != NULL)
+        {
+            // Transform the exception into an HRESULT. This also sets up
+            // an IErrorInfo on the current thread for the exception.
+            t_ComPreStubLastHResult = SetupErrorInfo(pThrowable);
+            pThrowable = NULL;
+
+            // We failed to set up the stub so we need to report an error to the caller.
+            //
+            // IMPORTANT: No floating point operations can occur after this point!
+            //
+        #ifdef TARGET_X86
+            // Number of bytes to pop is upper half of the return value on x86
+            t_ComPreStubLastStackBytes = m_pCMD->GetNumStackBytes();
+        #endif
+
+            if (m_pCMD->IsNativeHResultRetVal())
+            {
+                return (PCODE)&ComStubReturnHResult;
+            }
+            else if (m_pCMD->IsNativeBoolRetVal())
+            {
+                return (PCODE)&ComStubReturnBool;
+            }
+            else if (m_pCMD->IsNativeR4RetVal())
+            {
+                return (PCODE)&ComStubReturnR4NaN;
+            }
+            else if (m_pCMD->IsNativeR8RetVal())
+            {
+                return (PCODE)&ComStubReturnR8NaN;
+            }
+            else
+            {
+                return (PCODE)&ComStubReturnVoid;
+            }
+        }
+    }
+    GCPROTECT_END();
+
+    return pStub;
 }

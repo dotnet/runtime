@@ -258,23 +258,29 @@ NoFloatingPointRetVal
     NESTED_ENTRY ComCallPreStub,,UMEntryPrestubUnwindFrameChainHandler
 
     ; Save arguments and return address
-    PROLOG_SAVE_REG_PAIR           fp, lr, #-224!
+    PROLOG_SAVE_REG_PAIR           fp, lr, #-232!
     SAVE_ARGUMENT_REGISTERS        sp, 16
     SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96
+    str                            x19, [sp, #300] ; save x19 which we will use to store the secret argument
+
 
     mov x0, x12
+    mov x19, x12 ; preserve the secret argument in x19 since x12 is volatile
     bl  ComPreStubWorker
 
-    ; save real target address in x12.
-    mov x12, x0
+    ; save real target address in x16.
+    mov x16, x0
+    ; put the secret argument back in x12 since we need to pass it to the real method
+    mov x12, x19
 
     ; pop the stack and restore original register state
+    mov                               x19, [sp, #300] ; restore x19's original value
     RESTORE_ARGUMENT_REGISTERS        sp, 16
     RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, 96
-    EPILOG_RESTORE_REG_PAIR           fp, lr, #224!
+    EPILOG_RESTORE_REG_PAIR           fp, lr, #232!
 
     ; and tailcall to the actual method
-    EPILOG_BRANCH_REG x12
+    EPILOG_BRANCH_REG x16
 
     NESTED_END
 #endif ; FEATURE_COMINTEROP

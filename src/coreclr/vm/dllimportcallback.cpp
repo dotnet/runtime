@@ -96,13 +96,6 @@ private:
 
 static UMEntryThunkFreeList s_thunkFreeList(DEFAULT_THUNK_FREE_LIST_THRESHOLD);
 
-PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_pILStub;
-}
-
 UMEntryThunkCache::UMEntryThunkCache(AppDomain *pDomain) :
     m_crst(CrstUMEntryThunkCache),
     m_pDomain(pDomain)
@@ -244,18 +237,27 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData* pUMEntryThunkData)
     if (pUMEntryThunkData->IsCollectedDelegate())
         CallbackOnCollectedDelegate(pUMEntryThunkData);
 
+    PCODE entryPoint = NULL;
+
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this method is called by stubs which are called by managed code,
     // so we need an unwind and continue handler so that our internal
     // exceptions don't leak out into managed code.
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-    pUMEntryThunkData->RunTimeInit();
+    bool targetIsPrecode;
+    entryPoint = pUMEntryThunkData->RunTimeInit(&targetIsPrecode);
+
+#ifdef FEATURE_INTERPRETER
+    _ASSERTE(targetIsPrecode || pUMEntryThunkData->GetInterpreterTarget() != (PCODE)0);
+#else
+    _ASSERTE(targetIsPrecode);
+#endif
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
-    return (PCODE)pUMEntryThunkData->GetCode();
+    return entryPoint;
 }
 
 UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
@@ -428,13 +430,16 @@ DelegateUMThunkMarshInfo::DelegateUMThunkMarshInfo(Signature sig, Module * pModu
 // It can safely be called multiple times and by concurrent
 // threads.
 //----------------------------------------------------------
-void DelegateUMThunkMarshInfo::RunTimeInit()
+PCODE DelegateUMThunkMarshInfo::RunTimeInit(bool *pCanSkipPreStub)
 {
     STANDARD_VM_CONTRACT;
 
+    // If we successfully complete, we can always skip the prestub worker.
+    *pCanSkipPreStub = TRUE;
+
     // Nothing to do if already inited
     if (IsCompletelyInited())
-        return;
+        return GetILStubEntry();
 
     MethodDesc * pMD = m_pMD;
 
@@ -453,6 +458,6 @@ void DelegateUMThunkMarshInfo::RunTimeInit()
     MethodDesc* pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
     PCODE pFinalILStub = JitILStub(pStubMD);
 
-    SetILStubEntry(pFinalILStub);
+    return SetILStubEntry(pFinalILStub);
 }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS

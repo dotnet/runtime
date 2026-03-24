@@ -316,68 +316,6 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
 extern PLATFORM_THREAD_LOCAL UMEntryThunkData * t_MostRecentUMEntryThunkData;
 #endif
 
-PLATFORM_THREAD_LOCAL HRESULT t_ComPreStubLastHResult;
-
-#ifdef TARGET_X86
-PLATFORM_THREAD_LOCAL UINT t_ComPreStubLastStackBytes;
-
-extern "C" HRESULT __stdcall ComPreStubGetLastHResult()
-{
-    LIMITED_METHOD_CONTRACT;
-    return t_ComPreStubLastHResult;
-}
-
-extern "C" UINT __stdcall ComPreStubGetLastStackBytes()
-{
-    LIMITED_METHOD_CONTRACT;
-    return t_ComPreStubLastStackBytes;
-}
-
-extern "C" int ComStubReturnHResult();
-
-extern "C" BOOL ComStubReturnBool();
-
-extern "C" float ComStubReturnR4NaN();
-
-extern "C" double ComStubReturnR8NaN();
-
-extern "C" void ComStubReturnVoid();
-#else
-namespace
-{
-    int ComStubReturnHResult()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return t_ComPreStubLastHResult;
-    }
-
-    BOOL ComStubReturnBool()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return FALSE;
-    }
-
-    float ComStubReturnR4NaN()
-    {
-        int tmp = CLR_NAN_32;
-        return *(float*)&tmp;
-    }
-
-    double ComStubReturnR8NaN()
-    {
-        INT64 tmp = CLR_NAN_64;
-        return *(double*)&tmp;
-    }
-
-    void ComStubReturnVoid()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return;
-    }
-}
-#endif
-
-
 //--------------------------------------------------------------------------
 // This routine is called anytime a com method is invoked for the first time.
 // It is responsible for generating the real stub.
@@ -388,112 +326,42 @@ extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
-    HRESULT hr = S_OK;
-    PCODE retAddr = NULL;
-
     PCODE pStub = NULL;
 
     ComCallUMThunkMarshInfo* pMarshalInfo = (ComCallUMThunkMarshInfo*)pEntryThunk->GetUMThunkMarshInfo();
 
-    ComCallMethodDesc *pCMD = pMarshalInfo->GetComCallMethodDesc();
-
     Thread* pThread = SetupThreadNoThrow();
     if (pThread == NULL)
     {
-        hr = E_OUTOFMEMORY;
+        return pMarshalInfo->GetHResultReturnStub(E_OUTOFMEMORY);
     }
-    else
-    {
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-        // this method is called by stubs which are called by managed code,
-        // so we need an unwind and continue handler so that our internal
-        // exceptions don't leak out into managed code.
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
 #ifdef FEATURE_INTERPRETER
-        PCODE pInterpreterTarget = pEntryThunk->GetInterpreterTarget();
-        if (pInterpreterTarget != (PCODE)0)
-        {
-            t_MostRecentUMEntryThunkData = pEntryThunk;
-            return pInterpreterTarget;
-        }
+    PCODE pInterpreterTarget = pEntryThunk->GetInterpreterTarget();
+    if (pInterpreterTarget != (PCODE)0)
+    {
+        t_MostRecentUMEntryThunkData = pEntryThunk;
+        return pInterpreterTarget;
+    }
 #endif // FEATURE_INTERPRETER
 
-        if (pThread->PreemptiveGCDisabled())
-        {
-            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
-                COR_E_EXECUTIONENGINE,
-                W("Invalid Program: attempted to call a COM method from managed code."));
-        }
-
-
-        // Transition to cooperative GC mode before we start setting up the stub.
-        GCX_COOP();
-
-        OBJECTREF pThrowable = NULL;
-        GCPROTECT_BEGIN(pThrowable)
-        {
-            EX_TRY
-            {
-                GCX_PREEMP();
-                pEntryThunk->RunTimeInit();
-                pStub = (PCODE)pEntryThunk->GetCode();
-            }
-            EX_CATCH
-            {
-                pThrowable = GET_THROWABLE();
-            }
-            EX_END_CATCH
-
-            if (pThrowable != NULL)
-            {
-                // Transform the exception into an HRESULT. This also sets up
-                // an IErrorInfo on the current thread for the exception.
-                hr = SetupErrorInfo(pThrowable);
-                pThrowable = NULL;
-            }
-        }
-        GCPROTECT_END();
-
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-
-        if (pStub != NULL)
-        {
-            return pStub;
-        }
-    }
-
-    // We failed to set up the stub so we need to report an error to the caller.
-    //
-    // IMPORTANT: No floating point operations can occur after this point!
-    //
-#ifdef TARGET_X86
-    // Number of bytes to pop is upper half of the return value on x86
-    t_ComPreStubLastStackBytes = pCMD->GetNumStackBytes();
-#endif
-
-    if (pCMD->IsNativeHResultRetVal())
+    if (pThread->PreemptiveGCDisabled())
     {
-        t_ComPreStubLastHResult = hr;
-        return (PCODE)&ComStubReturnHResult;
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+            COR_E_EXECUTIONENGINE,
+            W("Invalid Program: attempted to call a COM method from managed code."));
     }
-    else if (pCMD->IsNativeBoolRetVal())
-    {
-        return (PCODE)&ComStubReturnBool;
-    }
-    else if (pCMD->IsNativeR4RetVal())
-    {
-        return (PCODE)&ComStubReturnR4NaN;
-    }
-    else if (pCMD->IsNativeR8RetVal())
-    {
-        return (PCODE)&ComStubReturnR8NaN;
-    }
-    else
-    {
-        return (PCODE)&ComStubReturnVoid;
-    }
+
+    bool targetIsPrecode;
+    pStub = pEntryThunk->RunTimeInit(&targetIsPrecode);
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    return pStub;
 }
 
 FORCEINLINE void CPListRelease(CQuickArray<ConnectionPoint*>* value)
