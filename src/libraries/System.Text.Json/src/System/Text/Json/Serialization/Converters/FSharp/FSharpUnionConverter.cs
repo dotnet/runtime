@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 #if !NET
@@ -380,32 +379,19 @@ namespace System.Text.Json.Serialization.Converters
 
         private static void ThrowForMissingRequiredFields(CaseInfo caseInfo, BitArray populatedFields)
         {
-            const int CutOffLength = 60;
-            var builder = new System.Text.StringBuilder();
-            bool first = true;
+            StringBuilder builder = new();
             for (int i = 0; i < caseInfo.Fields!.Length; i++)
             {
                 if (!populatedFields[i])
                 {
-                    if (!first)
-                    {
-                        builder.Append(CultureInfo.CurrentUICulture.TextInfo.ListSeparator);
-                        builder.Append(' ');
-                    }
-
-                    builder.Append('\'');
-                    builder.Append(caseInfo.Fields[i].FieldName);
-                    builder.Append('\'');
-                    first = false;
-
-                    if (builder.Length >= CutOffLength)
+                    if (!ThrowHelper.AppendMissingProperty(builder, caseInfo.Fields[i].FieldName))
                     {
                         break;
                     }
                 }
             }
 
-            throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, caseInfo.DeclaringType, builder.ToString()));
+            ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(caseInfo.DeclaringType, builder.ToString());
         }
 
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
