@@ -13,6 +13,7 @@ namespace JIT.HardwareIntrinsics.X86._AvxVnni
 {
     public static partial class Program
     {
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void MultiplyWideningAndAddSaturateByte()
         {

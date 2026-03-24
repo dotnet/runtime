@@ -6,7 +6,6 @@
     <!-- We skip the ReadyToRun tests when sanitized due to build complexity -->
     <DisableProjectBuild Condition="'$(EnableNativeSanitizers)' != ''">true</DisableProjectBuild>
     <!-- Running Crossgen2 under GCStress takes too long -->
-    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This is an explicit crossgen test -->
     <CrossGenTest>false</CrossGenTest>
   </PropertyGroup>

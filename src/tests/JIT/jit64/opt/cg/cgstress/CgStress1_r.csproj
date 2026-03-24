@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'x86'">true</GCStressIncompatible>
   </PropertyGroup>
   <PropertyGroup>

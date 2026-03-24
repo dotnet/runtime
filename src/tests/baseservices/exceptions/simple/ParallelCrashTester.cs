@@ -10,6 +10,7 @@ using TestLibrary;
 
 public class ParallelCrashTester
 {
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/80356", typeof(Utilities), nameof(Utilities.IsMacOSX), nameof(Utilities.IsX64))]
     public static void ParallelCrashMainThread()
@@ -17,12 +18,14 @@ public class ParallelCrashTester
         RunParallelCrash(1);
     }
 
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void ParallelCrashWorkerThreads()
     {
         RunParallelCrash(2);
     }
 
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void ParallelCrashMainThreadAndWorkerThreads()
     {

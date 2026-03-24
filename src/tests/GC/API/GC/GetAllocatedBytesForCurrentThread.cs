@@ -102,6 +102,7 @@ public class Test_GetAllocatedBytesForCurrentThread
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     [SkipOnCoreClr("This test is not compatible with HeapVerify.", RuntimeTestModes.HeapVerify)]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint() 
     {

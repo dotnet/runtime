@@ -38,6 +38,7 @@ namespace R2RDumpTests
         }
 
         [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         [SkipOnMono("Ready-To-Run is a CoreCLR-only feature", TestPlatforms.Any)]
         public static void DumpCoreLib()

@@ -27,6 +27,7 @@ namespace Tracing.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/92727", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsNotWindows))]
         [ActiveIssue("WASM doesn't support diagnostics tracing", TestPlatforms.Browser)]
         [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestEntryPoint()
         {

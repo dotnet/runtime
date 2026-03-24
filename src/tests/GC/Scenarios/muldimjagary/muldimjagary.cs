@@ -15,6 +15,7 @@ using Xunit;
 
     public class MulDimJagAry
     {
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestEntryPoint()
         {

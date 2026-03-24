@@ -5,7 +5,6 @@
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Usage.cs" />

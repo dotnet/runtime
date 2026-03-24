@@ -5,7 +5,6 @@
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Tracing tests routinely time out with jitstress and gcstress -->
-    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- The test launches a secondary process and process launch creates
     an infinite event loop in the SocketAsyncEngine on Linux. Since
     runincontext loads even framework assemblies into the unloadable

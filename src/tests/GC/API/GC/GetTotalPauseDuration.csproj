@@ -9,7 +9,6 @@
         This test requires the test case to perform exactly 1 GC right at the spot, so it won't run
         correctly under GCStress.
      -->
-    <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>

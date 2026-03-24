@@ -7,7 +7,6 @@
     <CLRTestPriority>1</CLRTestPriority>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- Tracing tests routinely time out with jitstress and gcstress -->
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="SampleProfilerSampleType.cs" />

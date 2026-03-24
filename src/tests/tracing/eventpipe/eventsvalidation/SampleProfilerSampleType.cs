@@ -23,6 +23,7 @@ namespace Tracing.Tests.SampleProfilerSampleType
         private const uint SampleTypeManaged = 2;
 
         [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

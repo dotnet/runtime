@@ -11,6 +11,7 @@ using Xunit;
 
 public class LargeArrayTest {
 
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint() {
 

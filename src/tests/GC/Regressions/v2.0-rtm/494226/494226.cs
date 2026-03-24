@@ -12,6 +12,7 @@ public class Test_494226
     [System.Security.SecuritySafeCritical]
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     [SkipOnCoreClr("This test is not compatible with HeapVerify.", RuntimeTestModes.HeapVerify)]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void TestEntryPoint()
     {
