@@ -5,16 +5,18 @@ This contract is for reading debugger state from the target process, including i
 ## APIs of contract
 
 ```csharp
-bool IsLeftSideInitialized();
-uint GetDefinesBitField();
-uint GetMDStructuresVersion();
+record struct DebuggerData(uint DefinesBitField, uint MDStructuresVersion);
+```
+
+```csharp
+bool TryGetDebuggerData(out DebuggerData data);
 int GetAttachStateFlags();
 bool MetadataUpdatesApplied();
 ```
 
 ## Version 1
 
-### Globals
+The contract depends on the following globals
 
 | Global Name | Type | Description |
 | --- | --- | --- |
@@ -22,7 +24,7 @@ bool MetadataUpdatesApplied();
 | `CLRJitAttachState` | TargetPointer | Pointer to the CLR JIT attach state flags |
 | `MetadataUpdatesApplied` | TargetPointer | Pointer to the g_metadataUpdatesApplied flag |
 
-### Data Descriptors
+The contract additionally depends on these data descriptors
 
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
@@ -30,41 +32,26 @@ bool MetadataUpdatesApplied();
 | `Debugger` | `Defines` | Bitfield of compile-time debugger feature defines |
 | `Debugger` | `MDStructuresVersion` | Version of metadata data structures |
 
-### Algorithm
-
 ```csharp
-bool IsLeftSideInitialized()
+bool TryGetDebuggerData(out DebuggerData data)
 {
+    data = default;
     TargetPointer debuggerPtr = target.ReadGlobalPointer("Debugger");
     if (debuggerPtr == TargetPointer.Null)
         return false;
-    Data.Debugger debugger = target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
-    return debugger.LeftSideInitialized != 0;
-}
-
-uint GetDefinesBitField()
-{
-    TargetPointer debuggerPtr = target.ReadGlobalPointer("Debugger");
-    if (debuggerPtr == TargetPointer.Null)
-        throw COMException(CORDBG_E_NOTREADY);
-    Data.Debugger debugger = target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
-    return debugger.Defines;
-}
-
-uint GetMDStructuresVersion()
-{
-    TargetPointer debuggerPtr = target.ReadGlobalPointer("Debugger");
-    if (debuggerPtr == TargetPointer.Null)
-        throw COMException(CORDBG_E_NOTREADY);
-    Data.Debugger debugger = target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
-    return debugger.MDStructuresVersion;
+    int leftSideInitialized = target.Read<int>(debuggerPtr + /* Debugger::LeftSideInitialized offset */);
+    if (leftSideInitialized == 0)
+        return false;
+    data = new DebuggerData(
+        DefinesBitField: target.Read<uint>(debuggerPtr + /* Debugger::Defines offset */),
+        MDStructuresVersion: target.Read<uint>(debuggerPtr + /* Debugger::MDStructuresVersion offset */));
+    return true;
 }
 
 int GetAttachStateFlags()
 {
-    if (target.TryReadGlobalPointer("CLRJitAttachState", out TargetPointer addr))
-        return (int)target.Read<uint>(addr);
-    return 0;
+    TargetPointer addr = target.ReadGlobalPointer("CLRJitAttachState");
+    return (int)target.Read<uint>(addr);
 }
 
 bool MetadataUpdatesApplied()

@@ -97,7 +97,7 @@ internal static class Entrypoints
     {
         if (obj == null)
             return HResults.E_INVALIDARG;
-        if (handle == IntPtr.Zero || legacyImplPtr == IntPtr.Zero)
+        if (handle == IntPtr.Zero)
         {
             *obj = IntPtr.Zero;
             return HResults.E_NOTIMPL;
@@ -111,11 +111,15 @@ internal static class Entrypoints
         }
 
         ComWrappers cw = new StrategyBasedComWrappers();
-        object legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
-        if (legacyObj is not Legacy.IDacDbiInterface)
+        object? legacyObj = null;
+        if (legacyImplPtr != IntPtr.Zero)
         {
-            *obj = IntPtr.Zero;
-            return HResults.COR_E_INVALIDCAST; // E_NOINTERFACE
+            legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
+            if (legacyObj is not Legacy.IDacDbiInterface)
+            {
+                *obj = IntPtr.Zero;
+                return HResults.COR_E_INVALIDCAST; // E_NOINTERFACE
+            }
         }
 
         Legacy.DacDbiImpl impl = new(target, legacyObj);

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
+
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Debugger_1 : IDebugger
@@ -12,43 +14,25 @@ internal readonly struct Debugger_1 : IDebugger
         _target = target;
     }
 
-    bool IDebugger.IsLeftSideInitialized()
+    bool IDebugger.TryGetDebuggerData(out DebuggerData data)
     {
+        data = default;
         TargetPointer debuggerPtr = _target.ReadGlobalPointer(Constants.Globals.Debugger);
         if (debuggerPtr == TargetPointer.Null)
             return false;
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
-        return debugger.LeftSideInitialized != 0;
-    }
+        if (debugger.LeftSideInitialized == 0)
+            return false;
 
-    uint IDebugger.GetDefinesBitField()
-    {
-        TargetPointer debuggerPtr = _target.ReadGlobalPointer(Constants.Globals.Debugger);
-        if (debuggerPtr == TargetPointer.Null)
-            throw new System.Runtime.InteropServices.COMException(null, CorDbgHResults.CORDBG_E_NOTREADY);
-
-        Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
-        return debugger.Defines;
-    }
-
-    uint IDebugger.GetMDStructuresVersion()
-    {
-        TargetPointer debuggerPtr = _target.ReadGlobalPointer(Constants.Globals.Debugger);
-        if (debuggerPtr == TargetPointer.Null)
-            throw new System.Runtime.InteropServices.COMException(null, CorDbgHResults.CORDBG_E_NOTREADY);
-
-        Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
-        return debugger.MDStructuresVersion;
+        data = new DebuggerData(debugger.Defines, debugger.MDStructuresVersion);
+        return true;
     }
 
     int IDebugger.GetAttachStateFlags()
     {
-        if (_target.TryReadGlobalPointer(Constants.Globals.CLRJitAttachState, out TargetPointer? addr))
-        {
-            return (int)_target.Read<uint>(addr.Value.Value);
-        }
-        return 0;
+        TargetPointer addr = _target.ReadGlobalPointer(Constants.Globals.CLRJitAttachState);
+        return (int)_target.Read<uint>(addr.Value);
     }
 
     bool IDebugger.MetadataUpdatesApplied()

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Xunit;
 
@@ -79,74 +78,34 @@ public class DebuggerTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsLeftSideInitialized_ReturnsTrue_WhenInitialized(MockTarget.Architecture arch)
+    public void TryGetDebuggerData_ReturnsTrue_WhenInitialized(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0);
+        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0xDEADBEEF, mdStructuresVersion: 42);
         IDebugger debugger = target.Contracts.Debugger;
 
-        Assert.True(debugger.IsLeftSideInitialized());
+        Assert.True(debugger.TryGetDebuggerData(out DebuggerData data));
+        Assert.Equal(0xDEADBEEFu, data.DefinesBitField);
+        Assert.Equal(42u, data.MDStructuresVersion);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsLeftSideInitialized_ReturnsFalse_WhenNotInitialized(MockTarget.Architecture arch)
+    public void TryGetDebuggerData_ReturnsFalse_WhenNotInitialized(MockTarget.Architecture arch)
     {
         Target target = BuildTarget(arch, leftSideInitialized: 0, defines: 0, mdStructuresVersion: 0);
         IDebugger debugger = target.Contracts.Debugger;
 
-        Assert.False(debugger.IsLeftSideInitialized());
+        Assert.False(debugger.TryGetDebuggerData(out _));
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsLeftSideInitialized_ReturnsFalse_WhenDebuggerNull(MockTarget.Architecture arch)
+    public void TryGetDebuggerData_ReturnsFalse_WhenDebuggerNull(MockTarget.Architecture arch)
     {
         Target target = BuildNullDebuggerTarget(arch);
         IDebugger debugger = target.Contracts.Debugger;
 
-        Assert.False(debugger.IsLeftSideInitialized());
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetDefinesBitField_ReturnsValue(MockTarget.Architecture arch)
-    {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0xDEADBEEF, mdStructuresVersion: 0);
-        IDebugger debugger = target.Contracts.Debugger;
-
-        Assert.Equal(0xDEADBEEFu, debugger.GetDefinesBitField());
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetDefinesBitField_ThrowsCOMException_WhenDebuggerNull(MockTarget.Architecture arch)
-    {
-        Target target = BuildNullDebuggerTarget(arch);
-        IDebugger debugger = target.Contracts.Debugger;
-
-        COMException ex = Assert.Throws<COMException>(() => debugger.GetDefinesBitField());
-        Assert.Equal(CorDbgHResults.CORDBG_E_NOTREADY, ex.HResult);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetMDStructuresVersion_ReturnsValue(MockTarget.Architecture arch)
-    {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 42);
-        IDebugger debugger = target.Contracts.Debugger;
-
-        Assert.Equal(42u, debugger.GetMDStructuresVersion());
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetMDStructuresVersion_ThrowsCOMException_WhenDebuggerNull(MockTarget.Architecture arch)
-    {
-        Target target = BuildNullDebuggerTarget(arch);
-        IDebugger debugger = target.Contracts.Debugger;
-
-        COMException ex = Assert.Throws<COMException>(() => debugger.GetMDStructuresVersion());
-        Assert.Equal(CorDbgHResults.CORDBG_E_NOTREADY, ex.HResult);
+        Assert.False(debugger.TryGetDebuggerData(out _));
     }
 
     [Theory]
@@ -161,9 +120,9 @@ public class DebuggerTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetAttachStateFlags_ReturnsZero_WhenGlobalMissing(MockTarget.Architecture arch)
+    public void GetAttachStateFlags_ReturnsZero_WhenValueIsZero(MockTarget.Architecture arch)
     {
-        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0);
+        Target target = BuildTarget(arch, leftSideInitialized: 1, defines: 0, mdStructuresVersion: 0, attachStateFlags: 0);
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.Equal(0, debugger.GetAttachStateFlags());

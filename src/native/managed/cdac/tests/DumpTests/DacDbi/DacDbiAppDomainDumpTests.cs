@@ -134,10 +134,10 @@ public class DacDbiAppDomainDumpTests : DumpTestBase
         foreach (ModuleHandle module in modules)
         {
             TargetPointer moduleAddr = loader.GetModule(module);
-            int result;
+            Interop.BOOL result;
             int hr = dbi.IsAssemblyFullyTrusted(moduleAddr, &result);
             Assert.Equal(System.HResults.S_OK, hr);
-            Assert.Equal(1, result);
+            Assert.Equal(Interop.BOOL.TRUE, result);
             break;
         }
     }
@@ -190,10 +190,10 @@ public class DacDbiAppDomainDumpTests : DumpTestBase
         foreach (ModuleHandle module in modules)
         {
             TargetPointer moduleAddr = loader.GetModule(module);
-            int isWinRT;
+            Interop.BOOL isWinRT;
             int hr = dbi.IsWinRTModule(moduleAddr, &isWinRT);
             Assert.Equal(System.HResults.S_OK, hr);
-            Assert.Equal(0, isWinRT);
+            Assert.Equal(Interop.BOOL.FALSE, isWinRT);
             break;
         }
     }

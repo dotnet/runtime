@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
 
@@ -23,10 +24,10 @@ public class DacDbiDebuggerDumpTests : DumpTestBase
         InitializeDumpTest(config);
         DacDbiImpl dbi = CreateDacDbi();
 
-        int result;
+        Interop.BOOL result;
         int hr = dbi.IsLeftSideInitialized(&result);
         Assert.Equal(System.HResults.S_OK, hr);
-        Assert.NotEqual(0, result);
+        Assert.NotEqual(Interop.BOOL.FALSE, result);
     }
 
     [ConditionalTheory]
@@ -85,12 +86,12 @@ public class DacDbiDebuggerDumpTests : DumpTestBase
         InitializeDumpTest(config);
         DacDbiImpl dbi = CreateDacDbi();
 
-        int dbiResult;
+        Interop.BOOL dbiResult;
         int hr = dbi.IsLeftSideInitialized(&dbiResult);
         Assert.Equal(System.HResults.S_OK, hr);
 
-        bool contractResult = Target.Contracts.Debugger.IsLeftSideInitialized();
-        Assert.Equal(contractResult, dbiResult != 0);
+        bool contractResult = Target.Contracts.Debugger.TryGetDebuggerData(out _);
+        Assert.Equal(contractResult, dbiResult != Interop.BOOL.FALSE);
     }
 
     [ConditionalTheory]
@@ -104,8 +105,8 @@ public class DacDbiDebuggerDumpTests : DumpTestBase
         int hr = dbi.GetDefinesBitField(&dbiResult);
         Assert.Equal(System.HResults.S_OK, hr);
 
-        uint contractResult = Target.Contracts.Debugger.GetDefinesBitField();
-        Assert.Equal(contractResult, dbiResult);
+        Assert.True(Target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data));
+        Assert.Equal(data.DefinesBitField, dbiResult);
     }
 
     [ConditionalTheory]
@@ -119,7 +120,7 @@ public class DacDbiDebuggerDumpTests : DumpTestBase
         int hr = dbi.GetMDStructuresVersion(&dbiResult);
         Assert.Equal(System.HResults.S_OK, hr);
 
-        uint contractResult = Target.Contracts.Debugger.GetMDStructuresVersion();
-        Assert.Equal(contractResult, dbiResult);
+        Assert.True(Target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data));
+        Assert.Equal(data.MDStructuresVersion, dbiResult);
     }
 }

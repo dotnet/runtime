@@ -5,13 +5,13 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+public record struct DebuggerData(uint DefinesBitField, uint MDStructuresVersion);
+
 public interface IDebugger : IContract
 {
     static string IContract.Name { get; } = nameof(Debugger);
 
-    bool IsLeftSideInitialized() => throw new NotImplementedException();
-    uint GetDefinesBitField() => throw new NotImplementedException();
-    uint GetMDStructuresVersion() => throw new NotImplementedException();
+    bool TryGetDebuggerData(out DebuggerData data) => throw new NotImplementedException();
     int GetAttachStateFlags() => throw new NotImplementedException();
     bool MetadataUpdatesApplied() => throw new NotImplementedException();
 }

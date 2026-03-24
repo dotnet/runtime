@@ -56,7 +56,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            *pResult = _target.Contracts.Debugger.IsLeftSideInitialized() ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            *pResult = _target.Contracts.Debugger.TryGetDebuggerData(out _) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
@@ -200,7 +200,28 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetModuleSimpleName(ulong vmModule, nint pStrFilename)
-        => _legacy is not null ? _legacy.GetModuleSimpleName(vmModule, pStrFilename) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+            string fileName = loader.GetFileName(handle);
+            hr = StringHolderAssignCopy(pStrFilename, fileName);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int hrLocal = _legacy.GetModuleSimpleName(vmModule, pStrFilename);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int GetAssemblyPath(ulong vmAssembly, nint pStrFilename, Interop.BOOL* pResult)
     {
@@ -370,7 +391,21 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData)
-        => _legacy is not null ? _legacy.EnumerateModulesInAssembly(vmAssembly, fpCallback, pUserData) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            // In modern .NET each assembly has a single module, and vmAssembly is the
+            // VMPTR_DomainAssembly, which is equivalent to the module pointer.
+            var callback = (delegate* unmanaged<ulong, nint, void>)fpCallback;
+            callback(vmAssembly, pUserData);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        return hr;
+    }
 
     public int RequestSyncAtEvent()
         => _legacy is not null ? _legacy.RequestSyncAtEvent() : HResults.E_NOTIMPL;
@@ -551,7 +586,30 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetCurrentException(ulong vmThread, ulong* pRetVal)
-        => _legacy is not null ? _legacy.GetCurrentException(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    {
+        *pRetVal = 0;
+        int hr = HResults.S_OK;
+        try
+        {
+            TargetPointer throwable = _target.Contracts.Thread.GetThrowableObject(new TargetPointer(vmThread));
+            *pRetVal = throwable.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong retValLocal;
+            int hrLocal = _legacy.GetCurrentException(vmThread, &retValLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
+        }
+#endif
+        return hr;
+    }
 
     public int GetObjectForCCW(ulong ccwPtr, ulong* pRetVal)
         => _legacy is not null ? _legacy.GetObjectForCCW(ccwPtr, pRetVal) : HResults.E_NOTIMPL;
@@ -1170,7 +1228,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            *pDefines = _target.Contracts.Debugger.GetDefinesBitField();
+            if (!_target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data))
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_NOTREADY)!;
+            *pDefines = data.DefinesBitField;
         }
         catch (System.Exception ex)
         {
@@ -1197,7 +1257,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            *pMDStructuresVersion = _target.Contracts.Debugger.GetMDStructuresVersion();
+            if (!_target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data))
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_NOTREADY)!;
+            *pMDStructuresVersion = data.MDStructuresVersion;
         }
         catch (System.Exception ex)
         {

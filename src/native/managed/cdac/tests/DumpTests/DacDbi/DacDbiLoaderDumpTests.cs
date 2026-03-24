@@ -30,8 +30,8 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         TargetPointer appDomainPtr = Target.ReadGlobalPointer(Constants.Globals.AppDomain);
         ulong appDomain = Target.ReadPointer(appDomainPtr);
 
-        var holder = new TestStringHolder();
-        int hr = dbi.GetAppDomainFullName(appDomain, holder);
+        using var holder = new NativeStringHolder();
+        int hr = dbi.GetAppDomainFullName(appDomain, holder.Ptr);
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.False(string.IsNullOrEmpty(holder.Value), "AppDomain name should not be empty");
     }
@@ -54,8 +54,8 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         foreach (ModuleHandle module in modules)
         {
             TargetPointer moduleAddr = loader.GetModule(module);
-            var holder = new TestStringHolder();
-            int hr = dbi.GetModuleSimpleName(moduleAddr, holder);
+            using var holder = new NativeStringHolder();
+            int hr = dbi.GetModuleSimpleName(moduleAddr, holder.Ptr);
             Assert.Equal(System.HResults.S_OK, hr);
             Assert.False(string.IsNullOrEmpty(holder.Value), $"Module name should not be empty for module at {moduleAddr}");
             checkedCount++;
@@ -77,6 +77,7 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         IEnumerable<ModuleHandle> modules = loader.GetModuleHandles(new TargetPointer(appDomain),
             AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
 
+        int checkedCount = 0;
         foreach (ModuleHandle module in modules)
         {
             TargetPointer moduleAddr = loader.GetModule(module);
@@ -86,8 +87,10 @@ public class DacDbiLoaderDumpTests : DumpTestBase
             int hr = dbi.GetAssemblyFromDomainAssembly(moduleAddr, &assembly);
             Assert.Equal(System.HResults.S_OK, hr);
             Assert.Equal(expectedAssembly.Value, assembly);
+            checkedCount++;
             break;
         }
+        Assert.True(checkedCount > 0, "Should have checked at least one module");
     }
 
     [ConditionalTheory]
@@ -104,6 +107,7 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         IEnumerable<ModuleHandle> modules = loader.GetModuleHandles(new TargetPointer(appDomain),
             AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
 
+        int checkedCount = 0;
         foreach (ModuleHandle module in modules)
         {
             TargetPointer expectedModule = loader.GetModule(module);
@@ -112,8 +116,10 @@ public class DacDbiLoaderDumpTests : DumpTestBase
             int hr = dbi.GetModuleForDomainAssembly(expectedModule, &result);
             Assert.Equal(System.HResults.S_OK, hr);
             Assert.Equal(expectedModule.Value, result);
+            checkedCount++;
             break;
         }
+        Assert.True(checkedCount > 0, "Should have checked at least one module");
     }
 
     [ConditionalTheory]
@@ -130,6 +136,7 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         IEnumerable<ModuleHandle> modules = loader.GetModuleHandles(new TargetPointer(appDomain),
             AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
 
+        int checkedCount = 0;
         foreach (ModuleHandle module in modules)
         {
             TargetPointer moduleAddr = loader.GetModule(module);
@@ -138,8 +145,10 @@ public class DacDbiLoaderDumpTests : DumpTestBase
             int hr = dbi.GetDomainAssemblyFromModule(moduleAddr, &domainAssembly);
             Assert.Equal(System.HResults.S_OK, hr);
             Assert.Equal(moduleAddr.Value, domainAssembly);
+            checkedCount++;
             break;
         }
+        Assert.True(checkedCount > 0, "Should have checked at least one module");
     }
 
     [ConditionalTheory]
@@ -174,6 +183,7 @@ public class DacDbiLoaderDumpTests : DumpTestBase
         IEnumerable<ModuleHandle> modules = loader.GetModuleHandles(new TargetPointer(appDomain),
             AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
 
+        int checkedCount = 0;
         foreach (ModuleHandle module in modules)
         {
             TargetPointer assemblyAddr = loader.GetAssembly(module);
@@ -182,30 +192,15 @@ public class DacDbiLoaderDumpTests : DumpTestBase
             int hr = dbi.EnumerateModulesInAssembly(assemblyAddr, (nint)callback, (nint)(&count));
             Assert.Equal(System.HResults.S_OK, hr);
             Assert.Equal(1, count);
+            checkedCount++;
             break;
         }
+        Assert.True(checkedCount > 0, "Should have checked at least one module");
     }
 
     [UnmanagedCallersOnly]
     private static unsafe void CountCallback(ulong addr, nint userData)
     {
         (*(int*)userData)++;
-    }
-
-    /// <summary>
-    /// Managed implementation of <see cref="IStringHolder"/> for testing string-returning
-    /// DacDbiImpl methods. Works because DacDbiImpl is called directly (not via COM interop),
-    /// so the interface parameter is a regular managed interface reference.
-    /// </summary>
-    private class TestStringHolder : IStringHolder
-    {
-        public string? Value { get; private set; }
-
-        public int AssignCopy(string psz)
-        {
-            Value = psz;
-
-            return System.HResults.S_OK;
-        }
     }
 }

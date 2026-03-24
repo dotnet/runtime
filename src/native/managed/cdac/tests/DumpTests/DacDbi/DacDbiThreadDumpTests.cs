@@ -34,7 +34,22 @@ public class DacDbiThreadDumpTests : DumpTestBase
         int hr = dbi.EnumerateThreads((nint)callback, (nint)(&dbiCount));
         Assert.Equal(System.HResults.S_OK, hr);
 
-        Assert.Equal(storeData.ThreadCount, dbiCount);
+        int expectedCount = 0;
+        TargetPointer current = storeData.FirstThread;
+        while (current != TargetPointer.Null)
+        {
+            ThreadData data = threadContract.GetThreadData(current);
+            bool isDead = (data.State & ThreadState.Dead) != 0;
+            bool isUnstarted = (data.State & ThreadState.Unstarted) != 0;
+            if (!isDead && !isUnstarted)
+            {
+                expectedCount++;
+            }
+
+            current = data.NextThread;
+        }
+
+        Assert.Equal(expectedCount, dbiCount);
     }
 
     [ConditionalTheory]
