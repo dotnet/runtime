@@ -30,9 +30,8 @@ public static class SingleFileTestRunner
         Environment.SetEnvironmentVariable("TEST_READY_TO_RUN_MODE", "1");
 #endif
 
-        // Environment.ProcessPath works in NativeAOT (returns native exe path),
-        // unlike Assembly.Location which returns empty string.
-        var processPath = Environment.ProcessPath ?? "test";
+        // Use Assembly.Location which now returns Environment.ProcessPath in NativeAOT
+        var processPath = testAssembly.Location;
 
         string? xmlResultFileName = null;
         var excludedTraits = new Dictionary<string, HashSet<string>>();

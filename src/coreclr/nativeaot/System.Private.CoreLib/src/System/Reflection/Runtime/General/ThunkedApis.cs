@@ -63,7 +63,10 @@ namespace System.Reflection.Runtime.Assemblies
         {
             get
             {
-                return string.Empty;
+                // In NativeAOT, all assemblies are compiled into a single native executable.
+                // Return the process path so that frameworks relying on Assembly.Location
+                // (e.g., xunit v3 test runners) can function correctly.
+                return Environment.ProcessPath ?? string.Empty;
             }
         }
 
