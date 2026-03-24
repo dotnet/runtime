@@ -96,6 +96,19 @@
     </ItemGroup>
   </Target>
 
+  <!-- For NativeAOT library tests, add the test runner as an ILC input to provide the managed
+       entrypoint required by splitinit, and add all published DLLs as ILC references so that
+       non-framework dependencies (xunit, test utilities, etc.) can be resolved. -->
+  <Target Name="_SetupNativeAOTLibraryTestInputs"
+          AfterTargets="ComputeIlcCompileInputs"
+          Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' == 'true'">
+    <ItemGroup>
+      <IlcCompileInput Include="$(OriginalPublishDir)AppleTestRunner.dll" />
+      <IlcReference Include="$(OriginalPublishDir)*.dll"
+                    Exclude="$(OriginalPublishDir)AppleTestRunner.dll;$(OriginalPublishDir)$(AssemblyName).dll" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="_RunR2RCompilationOnHelix"
           Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'"
           DependsOnTargets="_PrepareR2RItemsOnHelix;CreateReadyToRunImages;_AddR2RFilesToAppleBundle" />
