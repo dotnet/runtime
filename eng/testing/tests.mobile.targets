@@ -45,6 +45,14 @@
     <_DesignerHostSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DesignerHostSupport>
   </PropertyGroup>
 
+  <!-- Apple mobile CoreCLR (R2R composite + interpreter fallback) supports dynamic code.
+       Override the iOS SDK default (DynamicCodeSupport=false) so the trimmer does not
+       substitute IsDynamicCodeSupported to false, which would cause
+       RuntimeFeature.IsSupported("IsDynamicCodeSupported") to diverge from the property. -->
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(TargetsAppleMobile)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
+    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">true</DynamicCodeSupport>
+  </PropertyGroup>
+
   <!-- When trimming non-exe projects, root the whole intermediate assembly.
        The SDK settings root only the entry point by default. These targets are used not only for standard
        console apps, but also for test projects without an entry point. -->
