@@ -390,22 +390,12 @@ static void CollectRuntimeRefsPromoteFunc(PTR_PTR_Object ppObj, ScanContext* sc,
 
     StackRef& ref = ctx->refs[ctx->count++];
 
-    // Detect whether ppObj is a register save slot (in REGDISPLAY/CONTEXT on the native
-    // C stack) or a real managed stack slot. The cDAC reports register refs as (Address=0,
-    // Object=value), so we normalize the runtime's output to match.
-    // REGDISPLAY slots live below stack_limit; managed stack slots are at or above it.
-    bool isRegisterRef = reinterpret_cast<uintptr_t>(ppObj) < sc->stack_limit;
-
-    if (isRegisterRef)
-    {
-        ref.Address = 0;
-        ref.Object = reinterpret_cast<CLRDATA_ADDRESS>(*ppObj);
-    }
-    else
-    {
-        ref.Address = reinterpret_cast<CLRDATA_ADDRESS>(ppObj);
-        ref.Object = reinterpret_cast<CLRDATA_ADDRESS>(*ppObj);
-    }
+    // Always report the real ppObj address. For register-based refs, ppObj points
+    // into the REGDISPLAY/CONTEXT on the native stack — we can't reliably distinguish
+    // these from managed stack slots on the runtime side. The comparison logic handles
+    // this by matching register refs (cDAC Address=0) by (Object, Flags) only.
+    ref.Address = reinterpret_cast<CLRDATA_ADDRESS>(ppObj);
+    ref.Object = reinterpret_cast<CLRDATA_ADDRESS>(*ppObj);
 
     ref.Flags = 0;
     if (flags & GC_CALL_INTERIOR)
@@ -662,46 +652,64 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     bool pass = (cdacCount == runtimeCount);
     if (pass && cdacCount > 0)
     {
-        // Counts match — verify that the same (Address, Object, Flags) tuples are reported.
-        // Both sides normalize register refs to Address=0 and stack refs to the actual
-        // stack slot address, so all three fields should match.
+        // Counts match — verify that the same GC refs are reported by both sides.
+        //
+        // The cDAC reports register-based refs with Address=0 (the value lives in a
+        // register, not a stack slot). The runtime always reports the real ppObj address,
+        // which for register refs points into the REGDISPLAY/CONTEXT on the native stack.
+        // We can't reliably normalize the runtime side, so we use a two-phase matching:
+        //   Phase 1: Match stack refs (cDAC Address != 0) by exact (Address, Object, Flags)
+        //   Phase 2: Match register refs (cDAC Address == 0) by (Object, Flags) only
         StackRef* cdacBuf = cdacRefs.OpenRawBuffer();
+        bool matched_rt[MAX_COLLECTED_REFS] = {};
 
-        // Build sorted (Address, Object, Flags) arrays for both sets
-        struct RefTuple { CLRDATA_ADDRESS Address; CLRDATA_ADDRESS Object; unsigned int Flags; };
-        auto compareRefTuple = [](const void* a, const void* b) -> int {
-            const RefTuple* ra = static_cast<const RefTuple*>(a);
-            const RefTuple* rb = static_cast<const RefTuple*>(b);
-            if (ra->Address != rb->Address)
-                return (ra->Address < rb->Address) ? -1 : 1;
-            if (ra->Object != rb->Object)
-                return (ra->Object < rb->Object) ? -1 : 1;
-            if (ra->Flags != rb->Flags)
-                return (ra->Flags < rb->Flags) ? -1 : 1;
-            return 0;
-        };
-
-        // Use stack buffers — counts are bounded by MAX_COLLECTED_REFS
-        RefTuple cdacRT[MAX_COLLECTED_REFS];
-        RefTuple rtRT[MAX_COLLECTED_REFS];
-        for (int i = 0; i < cdacCount; i++)
+        // Phase 1: Match cDAC stack refs (Address != 0) to RT refs by exact (Address, Object, Flags)
+        for (int i = 0; i < cdacCount && pass; i++)
         {
-            cdacRT[i] = { cdacBuf[i].Address, cdacBuf[i].Object, cdacBuf[i].Flags };
-            rtRT[i] = { runtimeRefsBuf[i].Address, runtimeRefsBuf[i].Object, runtimeRefsBuf[i].Flags };
-        }
-        qsort(cdacRT, cdacCount, sizeof(RefTuple), compareRefTuple);
-        qsort(rtRT, cdacCount, sizeof(RefTuple), compareRefTuple);
+            if (cdacBuf[i].Address == 0)
+                continue; // register ref — handled in phase 2
 
-        for (int i = 0; i < cdacCount; i++)
-        {
-            if (cdacRT[i].Address != rtRT[i].Address ||
-                cdacRT[i].Object != rtRT[i].Object ||
-                cdacRT[i].Flags != rtRT[i].Flags)
+            bool found = false;
+            for (int j = 0; j < cdacCount; j++)
             {
-                pass = false;
-                break;
+                if (matched_rt[j])
+                    continue;
+                if (cdacBuf[i].Address == runtimeRefsBuf[j].Address &&
+                    cdacBuf[i].Object == runtimeRefsBuf[j].Object &&
+                    cdacBuf[i].Flags == runtimeRefsBuf[j].Flags)
+                {
+                    matched_rt[j] = true;
+                    found = true;
+                    break;
+                }
             }
+            if (!found)
+                pass = false;
         }
+
+        // Phase 2: Match cDAC register refs (Address == 0) to remaining RT refs by (Object, Flags)
+        for (int i = 0; i < cdacCount && pass; i++)
+        {
+            if (cdacBuf[i].Address != 0)
+                continue; // stack ref — already matched in phase 1
+
+            bool found = false;
+            for (int j = 0; j < cdacCount; j++)
+            {
+                if (matched_rt[j])
+                    continue;
+                if (cdacBuf[i].Object == runtimeRefsBuf[j].Object &&
+                    cdacBuf[i].Flags == runtimeRefsBuf[j].Flags)
+                {
+                    matched_rt[j] = true;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                pass = false;
+        }
+
         cdacRefs.CloseRawBuffer();
     }
     if (!pass && isDynamicMethod)
