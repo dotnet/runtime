@@ -2858,14 +2858,14 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     assert(isNativeOp || blkOp->GetLayout()->HasGCPtr());
 #endif // DEBUG
 
-    bool nullCheckDest  = false;
-    bool nullCheckSrc   = false;
-    GenTree* dest       = blkOp->Addr();
-    GenTree* src        = blkOp->Data();
-    regNumber destReg   = genConsumeReg(dest);
-    regNumber srcReg    = genConsumeReg(src);
-    unsigned destOffset = 0;
-    unsigned srcOffset  = 0;
+    bool      nullCheckDest = false;
+    bool      nullCheckSrc  = false;
+    GenTree*  dest          = blkOp->Addr();
+    GenTree*  src           = blkOp->Data();
+    regNumber destReg       = genConsumeReg(dest);
+    regNumber srcReg        = genConsumeReg(src);
+    unsigned  destOffset    = 0;
+    unsigned  srcOffset     = 0;
 
     // If the source is a byref or pointer it will be a GT_IND that we need to unwrap to extract the
     //  actual address we're loading from. Note that this does not apply to the destination.
