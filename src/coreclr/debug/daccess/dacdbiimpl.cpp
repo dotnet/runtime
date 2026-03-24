@@ -1282,7 +1282,7 @@ HRESULT DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainAssembly vmDomainAsse
         MethodDesc* pMethodDesc = FindLoadedMethodRefOrDef(pModule, functionToken);
         if (pMethodDesc != NULL && pMethodDesc->IsAsyncThunkMethod())
         {
-            MethodDesc* pAsyncVariant = pMethodDesc->GetAsyncOtherVariantNoCreate();
+            MethodDesc* pAsyncVariant = pMethodDesc->GetOrdinaryVariantNoCreate();
             if (pAsyncVariant != NULL)
             {
                 pMethodDesc = pAsyncVariant;

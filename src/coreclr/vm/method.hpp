@@ -1737,19 +1737,18 @@ public:
 
     MethodDesc* GetOrdinaryVariant(BOOL allowInstParam = TRUE)
     {
-        _ASSERT(IsAsyncVariantMethod());
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Ordinary, FALSE, TRUE);
     }
 
-    MethodDesc* GetAsyncOtherVariantNoCreate(BOOL allowInstParam = TRUE)
+    // same as above, but with allowCreate = FALSE
+    // for rare cases where we cannot allow GC, but we know that the other variant is already created.
+    MethodDesc* GetOrdinaryVariantNoCreate(BOOL allowInstParam = TRUE)
     {
-        _ASSERTE(HasAsyncOtherVariant());
-        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, FALSE, AsyncVariantLookup::AsyncOtherVariant);
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Ordinary, FALSE, FALSE);
     }
 
     MethodDesc* GetAsyncVariant(BOOL allowInstParam = TRUE)
     {
-        _ASSERT(!IsAsyncVariantMethod() || IsReturnDroppingThunk());
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Async, FALSE, TRUE);
     }
 
@@ -1757,7 +1756,6 @@ public:
     // for rare cases where we cannot allow GC, but we know that the other variant is already created.
     MethodDesc* GetAsyncVariantNoCreate(BOOL allowInstParam = TRUE)
     {
-        _ASSERT(!IsAsyncVariantMethod());
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Async, FALSE, FALSE);
     }
 
