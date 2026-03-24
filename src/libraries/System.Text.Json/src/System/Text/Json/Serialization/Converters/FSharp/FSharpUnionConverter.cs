@@ -215,15 +215,21 @@ namespace System.Text.Json.Serialization.Converters
             string? caseName = null;
             string? referenceId = null;
             string? refId = null;
+            bool hasNonMetadataProperties = false;
             while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
             {
                 Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
                 if (preserveReferences)
                 {
-                    MetadataPropertyName metadata = JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null);
+                    MetadataPropertyName metadata = JsonSerializer.GetMetadataPropertyName(reader.GetUnescapedSpan(), resolver: null);
                     if (metadata is MetadataPropertyName.Ref)
                     {
+                        if (hasNonMetadataProperties || referenceId is not null)
+                        {
+                            ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
+                        }
+
                         reader.Read();
                         if (reader.TokenType != JsonTokenType.String)
                         {
@@ -236,6 +242,11 @@ namespace System.Text.Json.Serialization.Converters
 
                     if (metadata is MetadataPropertyName.Id)
                     {
+                        if (referenceId is not null)
+                        {
+                            ThrowHelper.ThrowJsonException();
+                        }
+
                         reader.Read();
                         if (reader.TokenType != JsonTokenType.String)
                         {
@@ -247,6 +258,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                 }
 
+                hasNonMetadataProperties = true;
                 bool isDiscriminator = reader.ValueTextEquals(_typeDiscriminatorPropertyName);
                 reader.Read();
 
@@ -267,7 +279,7 @@ namespace System.Text.Json.Serialization.Converters
             // Handle $ref: resolve to a previously registered object.
             if (refId is not null)
             {
-                // Validate that no other properties are present (matching metadata pipeline behavior).
+                // Validate that no other properties follow $ref.
                 while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
                 {
                     ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
@@ -304,7 +316,7 @@ namespace System.Text.Json.Serialization.Converters
                             discriminatorSeen = true;
                         }
                         else if (_effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow
-                            && !(preserveReferences && JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null) is not MetadataPropertyName.None))
+                            && !(preserveReferences && JsonSerializer.GetMetadataPropertyName(reader.GetUnescapedSpan(), resolver: null) is not MetadataPropertyName.None))
                         {
                             ThrowHelper.ThrowJsonException_UnmappedJsonProperty(typeof(T), reader.GetString()!);
                         }
@@ -356,7 +368,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 if (preserveReferences &&
-                    JsonSerializer.GetMetadataPropertyName(reader.ValueSpan, resolver: null) is not MetadataPropertyName.None)
+                    JsonSerializer.GetMetadataPropertyName(reader.GetUnescapedSpan(), resolver: null) is not MetadataPropertyName.None)
                 {
                     reader.Read();
                     reader.TrySkip();
