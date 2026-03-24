@@ -17,6 +17,7 @@
 //  public:
 //      void StartMerge(BasicBlock* block);
 //      void Merge(BasicBlock* block, BasicBlock* pred, unsigned dupCount);
+//      void MergeHandler(BasicBlock* block, BasicBlock* tryBeg, BasicBlock* tryLast);
 //      bool EndMerge(BasicBlock* block);
 //  };
 #pragma once

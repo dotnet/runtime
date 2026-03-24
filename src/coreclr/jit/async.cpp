@@ -875,7 +875,7 @@ void AsyncTransformation::Transform(BasicBlock*               block,
 //   block         - The block containing the async call
 //   call          - The async call
 //   defs          - Current live LIR edges
-//   analyses      - Liveness information about live locals
+//   analyses      - Async analyses state, including liveness and default-value info for locals
 //   layoutBuilder - Layout being built
 //
 void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                     block,
