@@ -248,16 +248,21 @@ namespace System.Diagnostics.Tests
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerStartedMessage, WaitInMS);
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerDisposedMessage, WaitInMS);
 
-                SendSignal(signal, remoteHandle.Process.Id);
-
                 // https://github.com/dotnet/runtime/issues/125733
+                // Mono prints running threads stack trace listings and does not quit on receiving SIGQUIT
                 if (PlatformDetection.IsMonoRuntime && signal == PosixSignal.SIGQUIT && !PlatformDetection.IsWindows)
                 {
+                    // Terminate process using SIGTERM instead.
                     SendSignal(PosixSignal.SIGTERM, remoteHandle.Process.Id);
+                }
+                else
+                {
+                    SendSignal(signal, remoteHandle.Process.Id);
                 }
 
                 Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
                 Assert.True(remoteHandle.Process.StandardOutput.EndOfStream);
+
                 if (OperatingSystem.IsWindows())
                 {
                     Assert.Equal(unchecked((int)0xC000013A), remoteHandle.Process.ExitCode); // STATUS_CONTROL_C_EXIT
