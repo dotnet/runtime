@@ -53,7 +53,11 @@ namespace Microsoft.Extensions.Hosting.Systemd
             {
                 if (int.TryParse(systemdExecPid, NumberStyles.None, CultureInfo.InvariantCulture, out int execPid))
                 {
-                    return execPid == processId;
+                    if (execPid == processId)
+                    {
+                        return true;
+                    }
+                    // Mismatch: fall through to PID 1 / legacy checks
                 }
                 // Malformed value: don't trust it, fall through to legacy detection.
             }
