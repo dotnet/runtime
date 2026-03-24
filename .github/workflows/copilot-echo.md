@@ -19,7 +19,7 @@ on:
         type: string
 
 # ###############################################################
-# Override the GITHUB_COPILOT_TOKEN secret usage for the workflow
+# Override the COPILOT_GITHUB_TOKEN secret usage for the workflow
 # with a randomly-selected token from a pool of secrets.
 #
 # As soon as organization-level billing is offered for Agentic

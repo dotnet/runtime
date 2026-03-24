@@ -24,7 +24,7 @@ The **Token Name** _does not_ need to match the secret name and is only visible 
 
 Team members providing PATs for workflows should set weekly recurring reminders to regenerate and update their PATs in the repository secrets. With an 8-day expiration, renewal can be done on the same day each week.
 
-PATs are added to repositories through the **Settings > Secrets and variables > Actions** UI, saved as **Repository secrets** and matching the `<pool_name>_<0-9>` naming convention. This can be also be done using the GitHub CLI.
+PATs are added to repositories through the **Settings > Secrets and variables > Actions** UI, saved as **Repository secrets** and matching the `<pool_name>_<0-9>` naming convention. This can also be done using the GitHub CLI.
 
 ```sh
 gh aw secrets set "<pool_name>_<0-9>" --value "<your-github-pat>" --repo dotnet/<repo>
