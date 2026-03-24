@@ -183,8 +183,6 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<object[]> TwoSpanInSpanOutData()
         {
             yield return Create<float>(TensorPrimitives.Add, Tensor.Add);
-            yield return Create<float>(TensorPrimitives.Atan2, Tensor.Atan2);
-            yield return Create<float>(TensorPrimitives.Atan2Pi, Tensor.Atan2Pi);
             yield return Create<float>(TensorPrimitives.CopySign, Tensor.CopySign);
             yield return Create<float>(TensorPrimitives.Divide, Tensor.Divide);
             yield return Create<float>(TensorPrimitives.Hypot, Tensor.Hypot);
@@ -195,6 +193,12 @@ namespace System.Numerics.Tensors.Tests
 
             static object[] Create<T>(PerformCalculationTwoSpanInSpanOut<T> tensorPrimitivesMethod, PerformTwoSpanInSpanOut<T> tensorOperation)
                 => new object[] { tensorPrimitivesMethod, tensorOperation };
+        }
+
+        public static IEnumerable<object[]> TwoSpanInSpanOutDataWithTolerance()
+        {
+            yield return new object[] { (PerformCalculationTwoSpanInSpanOut<float>)TensorPrimitives.Atan2, (PerformTwoSpanInSpanOut<float>)Tensor.Atan2, 1e-6f };
+            yield return new object[] { (PerformCalculationTwoSpanInSpanOut<float>)TensorPrimitives.Atan2Pi, (PerformTwoSpanInSpanOut<float>)Tensor.Atan2Pi, 1e-6f };
         }
 
         [Theory, MemberData(nameof(TwoSpanInSpanOutData))]
@@ -222,6 +226,34 @@ namespace System.Numerics.Tensors.Tests
                 for (int i = 0; i < data1.Length; i++)
                 {
                     Assert.Equal(expectedOutput[i], span[i]);
+                }
+            });
+        }
+
+        [Theory, MemberData(nameof(TwoSpanInSpanOutDataWithTolerance))]
+        public void TensorExtensionsTwoSpanInSpanOutWithTolerance(PerformCalculationTwoSpanInSpanOut<float> tensorPrimitivesOperation, PerformTwoSpanInSpanOut<float> tensorOperation, float tolerance)
+        {
+            Assert.All(Helpers.TensorShapes, tensorLength =>
+            {
+                nint length = CalculateTotalLength(tensorLength);
+                float[] data1 = new float[length];
+                float[] data2 = new float[length];
+                float[] expectedOutput = new float[length];
+
+                FillTensor<float>(data1);
+                FillTensor<float>(data2);
+                Tensor<float> x = Tensor.Create<float>(data1, tensorLength, []);
+                Tensor<float> y = Tensor.Create<float>(data2, tensorLength, []);
+                tensorPrimitivesOperation((ReadOnlySpan<float>)data1, data2, expectedOutput);
+                Tensor<float> results = tensorOperation(x, y);
+
+                Assert.Equal(tensorLength, results.Lengths);
+                nint[] startingIndex = new nint[tensorLength.Length];
+                ReadOnlySpan<float> span = MemoryMarshal.CreateSpan(ref results[startingIndex], (int)length);
+
+                for (int i = 0; i < data1.Length; i++)
+                {
+                    Assert.True(Helpers.IsEqualWithTolerance(expectedOutput[i], span[i], tolerance), $"Expected: {expectedOutput[i]}, Actual: {span[i]}");
                 }
             });
         }

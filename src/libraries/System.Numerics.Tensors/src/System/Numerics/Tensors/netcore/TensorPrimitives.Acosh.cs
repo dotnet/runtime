@@ -1,6 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
@@ -26,14 +27,68 @@ namespace System.Numerics.Tensors
             InvokeSpanIntoSpan<T, AcoshOperator<T>>(x, destination);
 
         /// <summary>T.Acosh(x)</summary>
-        private readonly struct AcoshOperator<T> : IUnaryOperator<T, T>
+        internal readonly struct AcoshOperator<T> : IUnaryOperator<T, T>
             where T : IHyperbolicFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+#if NET11_0_OR_GREATER
+            public static bool Vectorizable => (typeof(T) == typeof(float))
+                                            || (typeof(T) == typeof(double));
+#else
+            public static bool Vectorizable => false;
+#endif
+
             public static T Invoke(T x) => T.Acosh(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+#if NET11_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Acosh(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.Acosh(x.AsSingle()).As<float, T>();
+                }
+#else
+                throw new NotSupportedException();
+#endif
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+#if NET11_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Acosh(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.Acosh(x.AsSingle()).As<float, T>();
+                }
+#else
+                throw new NotSupportedException();
+#endif
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+#if NET11_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Acosh(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.Acosh(x.AsSingle()).As<float, T>();
+                }
+#else
+                throw new NotSupportedException();
+#endif
+            }
         }
     }
 }
