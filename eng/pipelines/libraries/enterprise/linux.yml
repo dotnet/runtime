@@ -43,14 +43,14 @@ extends:
         steps:
         - bash: |
             cd $(enterpriseTestsSetup)
-            docker-compose build
+            docker compose build
           displayName: Build test machine images
           env:
             DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
 
         - bash: |
             cd $(enterpriseTestsSetup)
-            docker-compose up -d
+            docker compose up -d
           displayName: Start test network and machines
           env:
             DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
@@ -73,7 +73,7 @@ extends:
 
         - bash: |
             cd $(enterpriseTestsSetup)
-            docker-compose down
+            docker compose down
           displayName: Stop test network and machines
           env:
             DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
