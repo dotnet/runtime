@@ -458,10 +458,9 @@ namespace System.Diagnostics
                     // The user can't specify invalid handle via ProcessStartInfo.Standar*Handle APIs.
                     // However, Console.OpenStandard*Handle() can return INVALID_HANDLE_VALUE for a process
                     // that was started with INVALID_HANDLE_VALUE as given standard handle.
-                    // As soon as SafeFileHandle.IsInheritabe() is added, we can use it here to avoid unnecessary duplication.
-                    inheritableStdinHandle = !stdinHandle.IsInvalid ? DuplicateAsInheritable(stdinHandle) : stdinHandle;
-                    inheritableStdoutHandle = !stdoutHandle.IsInvalid ? DuplicateAsInheritable(stdoutHandle) : stdoutHandle;
-                    inheritableStderrHandle = !stderrHandle.IsInvalid ? DuplicateAsInheritable(stderrHandle) : stderrHandle;
+                    inheritableStdinHandle = !stdinHandle.IsInvalid && !stdinHandle.IsInheritable() ? DuplicateAsInheritable(stdinHandle) : stdinHandle;
+                    inheritableStdoutHandle = !stdoutHandle.IsInvalid && !stdoutHandle.IsInheritable() ? DuplicateAsInheritable(stdoutHandle) : stdoutHandle;
+                    inheritableStderrHandle = !stderrHandle.IsInvalid && !stderrHandle.IsInheritable() ? DuplicateAsInheritable(stderrHandle) : stderrHandle;
 
                     startupInfo.hStdInput = inheritableStdinHandle.DangerousGetHandle();
                     startupInfo.hStdOutput = inheritableStdoutHandle.DangerousGetHandle();
@@ -597,9 +596,14 @@ namespace System.Diagnostics
             }
             finally
             {
-                inheritableStdinHandle?.Dispose();
-                inheritableStdoutHandle?.Dispose();
-                inheritableStderrHandle?.Dispose();
+                // Only dispose duplicated handles, not the original handles passed by the caller.
+                // When the handle was invalid or already inheritable, no duplication was needed.
+                if (!ReferenceEquals(inheritableStdinHandle, stdinHandle))
+                    inheritableStdinHandle?.Dispose();
+                if (!ReferenceEquals(inheritableStdoutHandle, stdoutHandle))
+                    inheritableStdoutHandle?.Dispose();
+                if (!ReferenceEquals(inheritableStderrHandle, stderrHandle))
+                    inheritableStderrHandle?.Dispose();
 
                 ProcessUtils.s_processStartLock.ExitWriteLock();
 
