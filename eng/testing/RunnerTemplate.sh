@@ -222,6 +222,18 @@ if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
   # For abrupt failures, in Helix, dump some of the kernel log, in case there is a hint
   if [[ $test_exitcode -ne 1 ]]; then
     dmesg | tail -50
+
+    # If dmesg was denied (CAP_SYSLOG not available), check cgroup v2 memory.events
+    # as a fallback to confirm whether the OOM killer fired.
+    if [[ $test_exitcode -eq 137 ]]; then
+      for memevents in /sys/fs/cgroup/memory.events /sys/fs/cgroup/$(cat /proc/self/cgroup 2>/dev/null | grep -oP '0::\K.*' 2>/dev/null | sed 's:^/::')/memory.events; do
+        if [[ -f "$memevents" ]]; then
+          echo "cgroup memory.events ($memevents):"
+          cat "$memevents"
+          break
+        fi
+      done
+    fi
   fi
 
 fi
