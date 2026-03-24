@@ -10,6 +10,7 @@ internal static partial class Interop
         private static volatile bool s_loadedLegacy;
         private static readonly object s_legacyLoadLock = new object();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial void CryptoNative_RegisterLegacyAlgorithms();
 

@@ -9,15 +9,19 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_NewX509Stack")]
         internal static partial SafeX509StackHandle NewX509Stack();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RecursiveFreeX509Stack")]
         internal static partial void RecursiveFreeX509Stack(IntPtr stack);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackFieldCount")]
         internal static partial int GetX509StackFieldCount(SafeX509StackHandle stack);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackFieldCount")]
         internal static partial int GetX509StackFieldCount(SafeSharedX509StackHandle stack);
 
@@ -25,6 +29,7 @@ internal static partial class Interop
         /// Gets a pointer to a certificate within a STACK_OF(X509). This pointer will later
         /// be freed, so it should be cloned via new X509Certificate2(IntPtr)
         /// </summary>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackField")]
         internal static partial IntPtr GetX509StackField(SafeX509StackHandle stack, int loc);
 
@@ -32,9 +37,11 @@ internal static partial class Interop
         /// Gets a pointer to a certificate within a STACK_OF(X509). This pointer will later
         /// be freed, so it should be cloned via new X509Certificate2(IntPtr)
         /// </summary>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509StackField")]
         internal static partial IntPtr GetX509StackField(SafeSharedX509StackHandle stack, int loc);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial int CryptoNative_X509StackAddDirectoryStore(SafeX509StackHandle stack, string storePath);
 
@@ -46,6 +53,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_X509StackAddMultiple(SafeX509StackHandle dest, SafeX509StackHandle src);
 

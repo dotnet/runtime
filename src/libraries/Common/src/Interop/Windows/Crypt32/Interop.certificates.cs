@@ -10,10 +10,12 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertFreeCertificateContext(IntPtr pCertContext);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertVerifyCertificateChainPolicy(

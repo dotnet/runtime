@@ -19,6 +19,7 @@ internal static partial class Interop
         internal static partial class Tls
         {
             // Initialize internal shim for NetworkFramework integration
+            [RequiresUnsafe]
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_Init")]
             [return: MarshalAs(UnmanagedType.I4)]
             internal static unsafe partial bool Init(
@@ -27,30 +28,37 @@ internal static partial class Interop
                 delegate* unmanaged<IntPtr, IntPtr, IntPtr> challengeCallback);
 
             // Create a new connection context
+            [RequiresUnsafe]
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionCreate", StringMarshalling = StringMarshalling.Utf8)]
             internal static unsafe partial SafeNwHandle NwConnectionCreate([MarshalAs(UnmanagedType.I4)] bool isServer, IntPtr context, string targetName, byte* alpnBuffer, int alpnLength, SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol, uint* cipherSuites, int cipherSuitesLength);
 
             // Start the TLS handshake, notifications are received via the status callback (potentially from a different thread).
+            [RequiresUnsafe]
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionStart")]
             internal static partial int NwConnectionStart(SafeNwHandle connection, IntPtr context);
 
             // takes encrypted input from underlying stream and feed it to the connection.
+            [RequiresUnsafe]
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwFramerDeliverInput")]
             internal static unsafe partial int NwFramerDeliverInput(SafeNwHandle framer, IntPtr context, byte* buffer, int bufferLength, delegate* unmanaged<IntPtr, NetworkFrameworkError*, void> completionCallback);
 
             // sends plaintext data to the connection.
+            [RequiresUnsafe]
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionSend")]
             internal static unsafe partial void NwConnectionSend(SafeNwHandle connection, IntPtr context, void* buffer, int bufferLength, delegate* unmanaged<IntPtr, NetworkFrameworkError*, void> completionCallback);
 
             // read plaintext data from the connection.
+            [RequiresUnsafe]
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionReceive")]
             internal static unsafe partial void NwConnectionReceive(SafeNwHandle connection, IntPtr context, int length, delegate* unmanaged<IntPtr, NetworkFrameworkError*, byte*, int, void> readCompletionCallback);
 
             // starts connection cleanup
+            [RequiresUnsafe]
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionCancel")]
             internal static partial void NwConnectionCancel(SafeNwHandle connection);
 
             // gets TLS connection information
+            [RequiresUnsafe]
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_GetConnectionInfo")]
             internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, IntPtr context, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, byte* negotiatedAlpn, ref int negotiatedAlpnLength);
         }

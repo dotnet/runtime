@@ -39,6 +39,7 @@ internal static partial class Interop
                 out pOSStatus);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509ImportCertificate(
             ref byte pbKeyBlob,
@@ -51,6 +52,7 @@ internal static partial class Interop
             out SafeSecIdentityHandle pPrivateKeyOut,
             out int pOSStatus);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509ImportCollection(
             ref byte pbKeyBlob,
@@ -62,6 +64,7 @@ internal static partial class Interop
             out SafeCFArrayHandle pCollectionOut,
             out int pOSStatus);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509ExportData(
             SafeCreateHandle data,
@@ -70,6 +73,7 @@ internal static partial class Interop
             out SafeCFDataHandle pExportOut,
             out int pOSStatus);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509CopyWithPrivateKey(
             SafeSecCertificateHandle certHandle,
@@ -78,6 +82,7 @@ internal static partial class Interop
             out SafeSecIdentityHandle pIdentityHandleOut,
             out int pOSStatus);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509MoveToKeychain(
             SafeSecCertificateHandle certHandle,

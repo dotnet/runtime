@@ -15,6 +15,7 @@ internal static partial class Interop
             return CryptoNative_GetRandomBytes(pbBuffer, count) != 0;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial int CryptoNative_GetRandomBytes(byte* buf, int num);
     }

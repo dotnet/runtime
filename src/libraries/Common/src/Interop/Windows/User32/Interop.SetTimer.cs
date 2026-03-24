@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.User32)]
         public static partial IntPtr SetTimer(IntPtr hWnd, IntPtr nIDEvent, int uElapse, IntPtr lpTimerProc);
     }

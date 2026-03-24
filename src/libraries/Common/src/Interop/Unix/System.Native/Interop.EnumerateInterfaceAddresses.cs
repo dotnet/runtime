@@ -43,6 +43,7 @@ internal static partial class Interop
             private InlineArray3<byte> __padding;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateInterfaceAddresses")]
         public static unsafe partial int EnumerateInterfaceAddresses(
             void* context,
@@ -50,9 +51,11 @@ internal static partial class Interop
             delegate* unmanaged<void*, byte*, IpAddressInfo*, uint*, void> ipv6Found,
             delegate* unmanaged<void*, byte*, LinkLayerAddressInfo*, void> linkLayerFound);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_EnumerateGatewayAddressesForInterface")]
         public static unsafe partial int EnumerateGatewayAddressesForInterface(void* context, uint interfaceIndex, delegate* unmanaged<void*, IpAddressInfo*, void> onGatewayFound);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNetworkInterfaces", SetLastError = true)]
         public static unsafe partial int GetNetworkInterfaces(int* count, NetworkInterfaceInfo** addrs, int* addressCount, IpAddressInfo** aa);
 

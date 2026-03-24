@@ -14,6 +14,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Sysctl", SetLastError = true)]
         private static unsafe partial int Sysctl(int* name, uint namelen, void* value, nuint* len);
 

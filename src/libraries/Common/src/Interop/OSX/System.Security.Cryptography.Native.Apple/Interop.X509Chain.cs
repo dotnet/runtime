@@ -11,12 +11,15 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509ChainCreateDefaultPolicy")]
         internal static partial SafeCreateHandle X509ChainCreateDefaultPolicy();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509ChainCreateRevocationPolicy")]
         internal static partial SafeCreateHandle X509ChainCreateRevocationPolicy();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         internal static partial int AppleCryptoNative_X509ChainCreate(
             SafeCreateHandle certs,
@@ -24,6 +27,7 @@ internal static partial class Interop
             out SafeX509ChainHandle pTrustOut,
             out int pOSStatus);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         internal static partial int AppleCryptoNative_X509ChainEvaluate(
             SafeX509ChainHandle chain,
@@ -31,21 +35,27 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.Bool)] bool allowNetwork,
             out int pOSStatus);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509ChainGetChainSize")]
         internal static partial long X509ChainGetChainSize(SafeX509ChainHandle chain);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509ChainGetCertificateAtIndex")]
         internal static partial IntPtr X509ChainGetCertificateAtIndex(SafeX509ChainHandle chain, long index);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509ChainGetTrustResults")]
         internal static partial SafeCreateHandle X509ChainGetTrustResults(SafeX509ChainHandle chain);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509ChainGetStatusAtIndex")]
         internal static partial int X509ChainGetStatusAtIndex(SafeCreateHandle trustResults, long index, out int pdwStatus);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_GetOSStatusForChainStatus")]
         internal static partial int GetOSStatusForChainStatus(X509ChainStatusFlags flag);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509ChainSetTrustAnchorCertificates")]
         internal static partial int X509ChainSetTrustAnchorCertificates(SafeX509ChainHandle chain, SafeCreateHandle anchorCertificates);
     }

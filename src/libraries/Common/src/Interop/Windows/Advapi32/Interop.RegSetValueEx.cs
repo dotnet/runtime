@@ -12,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegSetValueEx(
             SafeRegistryHandle hKey,
@@ -21,6 +22,7 @@ internal static partial class Interop
             byte[]? lpData,
             int cbData);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegSetValueEx(
             SafeRegistryHandle hKey,
@@ -30,6 +32,7 @@ internal static partial class Interop
             char[]? lpData,
             int cbData);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegSetValueEx(
             SafeRegistryHandle hKey,
@@ -39,6 +42,7 @@ internal static partial class Interop
             ref int lpData,
             int cbData);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegSetValueEx(
             SafeRegistryHandle hKey,
@@ -48,6 +52,7 @@ internal static partial class Interop
             ref long lpData,
             int cbData);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegSetValueEx(
             SafeRegistryHandle hKey,

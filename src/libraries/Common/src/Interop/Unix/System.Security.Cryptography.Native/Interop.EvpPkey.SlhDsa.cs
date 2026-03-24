@@ -12,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_SlhDsaGenerateKey(string keyType);
 
@@ -48,6 +49,7 @@ internal static partial class Interop
             SlhDsaShake256f = 12,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SlhDsaGetPalId")]
         private static partial int CryptoNative_SlhDsaGetPalId(
             SafeEvpPKeyHandle slhDsa,
@@ -73,6 +75,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_SlhDsaSignPure(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
@@ -98,6 +101,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_SlhDsaVerifyPure(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
@@ -131,6 +135,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_SlhDsaSignPreEncoded(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
@@ -153,6 +158,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_SlhDsaVerifyPreEncoded(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
@@ -183,9 +189,11 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_SlhDsaExportSecretKey(SafeEvpPKeyHandle pkey, Span<byte> destination, int destinationLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_SlhDsaExportPublicKey(SafeEvpPKeyHandle pkey, Span<byte> destination, int destinationLength);
 

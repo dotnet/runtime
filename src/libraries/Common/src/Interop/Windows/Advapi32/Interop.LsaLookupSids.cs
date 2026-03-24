@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "LsaLookupSids", SetLastError = true)]
         internal static partial uint LsaLookupSids(
             SafeLsaPolicyHandle handle,

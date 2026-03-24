@@ -183,24 +183,30 @@ internal static partial class Interop
             return Utf8StringMarshaller.ConvertToManaged(message)!;
         }
 
+[RequiresUnsafe]
 #if SERIAL_PORTS
         [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPlatformToPal")]
         internal static partial Error ConvertErrorPlatformToPal(int platformErrno);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPalToPlatform")]
         internal static partial int ConvertErrorPalToPlatform(Error error);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_StrErrorR")]
         private static unsafe partial byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
+[RequiresUnsafe]
 #else
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConvertErrorPlatformToPal")]
         [SuppressGCTransition]
         internal static partial Error ConvertErrorPlatformToPal(int platformErrno);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConvertErrorPalToPlatform")]
         [SuppressGCTransition]
         internal static partial int ConvertErrorPalToPlatform(Error error);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_StrErrorR")]
         private static unsafe partial byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
 #endif

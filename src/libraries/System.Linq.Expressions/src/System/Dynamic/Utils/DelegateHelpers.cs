@@ -29,6 +29,7 @@ namespace System.Dynamic.Utils
             {
                 return CreateObjectArrayDelegate(null, delegateType, handler);
 
+                [RequiresUnsafe]
                 [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "CreateObjectArrayDelegate")]
                 [MethodImpl(MethodImplOptions.NoInlining)]
                 static extern Delegate CreateObjectArrayDelegate(
@@ -195,6 +196,7 @@ namespace System.Dynamic.Utils
                             // CanEmitObjectArrayDelegate will be flipped to 'false', and this method won't be invoked.
                             return ForceAllowDynamicCode(null);
 
+                            [RequiresUnsafe]
                             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name="ForceAllowDynamicCode")]
                             static extern IDisposable ForceAllowDynamicCode(AssemblyBuilder? _);
                         }

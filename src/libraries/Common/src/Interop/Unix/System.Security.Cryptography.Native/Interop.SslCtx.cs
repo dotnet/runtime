@@ -18,30 +18,39 @@ internal static partial class Interop
 {
     internal static partial class Ssl
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxCreate")]
         internal static partial SafeSslContextHandle SslCtxCreate(IntPtr method);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxDestroy")]
         internal static partial void SslCtxDestroy(IntPtr ctx);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxGetData")]
         internal static partial IntPtr SslCtxGetData(IntPtr ctx);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetData")]
         internal static partial int SslCtxSetData(SafeSslContextHandle ctx, IntPtr data);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetData")]
         internal static partial int SslCtxSetData(IntPtr ctx, IntPtr data);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetAlpnSelectCb")]
         internal static unsafe partial void SslCtxSetAlpnSelectCb(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, byte**, byte*, byte*, uint, IntPtr, int> callback, IntPtr arg);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetKeylogCallback")]
         internal static unsafe partial void SslCtxSetKeylogCallback(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, char*, void> callback);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCaching")]
         internal static unsafe partial int SslCtxSetCaching(SafeSslContextHandle ctx, int mode, int cacheSize, int contextIdLength, Span<byte> contextId, delegate* unmanaged<IntPtr, IntPtr, int> neewSessionCallback, delegate* unmanaged<IntPtr, IntPtr, void> removeSessionCallback);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxRemoveSession")]
         internal static unsafe partial void SslCtxRemoveSession(SafeSslContextHandle ctx, IntPtr session);
 

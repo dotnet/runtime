@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError setsockopt(
             IntPtr handle,
@@ -17,6 +18,7 @@ internal static partial class Interop
             ref Linger linger,
             int optionLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError setsockopt(
             SafeSocketHandle socketHandle,
@@ -25,6 +27,7 @@ internal static partial class Interop
             ref int optionValue,
             int optionLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static unsafe partial SocketError setsockopt(
             SafeSocketHandle socketHandle,
@@ -33,6 +36,7 @@ internal static partial class Interop
             byte* optionValue,
             int optionLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError setsockopt(
             SafeSocketHandle socketHandle,
@@ -41,6 +45,7 @@ internal static partial class Interop
             ref IntPtr pointer,
             int optionLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError setsockopt(
             SafeSocketHandle socketHandle,
@@ -49,6 +54,7 @@ internal static partial class Interop
             ref Linger linger,
             int optionLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError setsockopt(
             SafeSocketHandle socketHandle,
@@ -57,6 +63,7 @@ internal static partial class Interop
             ref IPMulticastRequest mreq,
             int optionLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError setsockopt(
             SafeSocketHandle socketHandle,

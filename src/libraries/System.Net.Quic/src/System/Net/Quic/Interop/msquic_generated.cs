@@ -3113,10 +3113,12 @@ namespace Microsoft.Quic
 
     internal static unsafe partial class MsQuic
     {
+        [RequiresUnsafe]
         [DllImport("msquic", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: NativeTypeName("HRESULT")]
         internal static extern int MsQuicOpenVersion([NativeTypeName("uint32_t")] uint Version, [NativeTypeName("const void **")] void** QuicApi);
 
+        [RequiresUnsafe]
         [DllImport("msquic", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern void MsQuicClose([NativeTypeName("const void *")] void* QuicApi);
 

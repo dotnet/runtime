@@ -10,9 +10,11 @@ internal static partial class Interop
 {
     internal static partial class Ssl
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetProtocolOptions")]
         internal static partial void SslCtxSetProtocolOptions(IntPtr ctx, SslProtocols protocols);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetProtocolOptions")]
         internal static partial void SslCtxSetProtocolOptions(SafeSslContextHandle ctx, SslProtocols protocols);
     }

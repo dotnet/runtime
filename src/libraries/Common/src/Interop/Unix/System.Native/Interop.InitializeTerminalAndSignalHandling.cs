@@ -8,13 +8,16 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_InitializeTerminalAndSignalHandling", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool InitializeTerminalAndSignalHandling();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetKeypadXmit", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial void SetKeypadXmit(SafeFileHandle terminalHandle, string terminfoString);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_UninitializeTerminal")]
         internal static partial void UninitializeTerminal();
     }

@@ -15,6 +15,7 @@ internal static partial class Interop
             return CryptoNative_GetRandomBytes(pbBuffer, count);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool CryptoNative_GetRandomBytes(byte* buf, int num);

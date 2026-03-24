@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetBootTimeTicks")]
         [SuppressGCTransition]
         internal static partial long GetBootTimeTicks();

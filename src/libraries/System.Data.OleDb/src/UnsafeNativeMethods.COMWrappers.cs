@@ -13,6 +13,7 @@ namespace System.Data.Common
         // Oleaut32
         //
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.OleAut32)]
         internal static unsafe partial OleDbHResult GetErrorInfo(
             int dwReserved,

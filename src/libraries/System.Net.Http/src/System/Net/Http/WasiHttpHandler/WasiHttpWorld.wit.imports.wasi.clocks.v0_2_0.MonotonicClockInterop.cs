@@ -17,6 +17,7 @@ namespace WasiHttpWorld.wit.imports.wasi.clocks.v0_2_0
 
         internal static class NowWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:clocks/monotonic-clock@0.2.0", EntryPoint = "now"), WasmImportLinkage]
             internal static extern long wasmImportNow();
 
@@ -32,6 +33,7 @@ namespace WasiHttpWorld.wit.imports.wasi.clocks.v0_2_0
 
         internal static class ResolutionWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:clocks/monotonic-clock@0.2.0", EntryPoint = "resolution"), WasmImportLinkage]
             internal static extern long wasmImportResolution();
 
@@ -47,6 +49,7 @@ namespace WasiHttpWorld.wit.imports.wasi.clocks.v0_2_0
 
         internal static class SubscribeInstantWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:clocks/monotonic-clock@0.2.0", EntryPoint = "subscribe-instant"), WasmImportLinkage]
             internal static extern int wasmImportSubscribeInstant(long p0);
 
@@ -63,6 +66,7 @@ namespace WasiHttpWorld.wit.imports.wasi.clocks.v0_2_0
 
         internal static class SubscribeDurationWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:clocks/monotonic-clock@0.2.0", EntryPoint = "subscribe-duration"), WasmImportLinkage]
             internal static extern int wasmImportSubscribeDuration(long p0);
 

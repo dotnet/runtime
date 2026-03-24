@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static unsafe partial class JsGlobalization
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemBrowserNative, EntryPoint = "SystemJS_GetLocaleInfo")]
         public static unsafe partial nint GetLocaleInfo(char* locale, int localeLength, char* culture, int cultureLength, char* buffer, int bufferLength, out int resultLength);
     }

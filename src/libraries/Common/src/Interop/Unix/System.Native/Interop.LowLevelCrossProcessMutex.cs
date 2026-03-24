@@ -7,35 +7,44 @@ internal static partial class Interop
 {
     internal static unsafe partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelCrossProcessMutex_Init", SetLastError = true)]
         internal static partial int LowLevelCrossProcessMutex_Init(void* mutex);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelCrossProcessMutex_Acquire", SetLastError = true)]
         internal static partial int LowLevelCrossProcessMutex_Acquire(void* mutex, int timeoutMilliseconds);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelCrossProcessMutex_Release", SetLastError = true)]
         internal static partial int LowLevelCrossProcessMutex_Release(void* mutex);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelCrossProcessMutex_Destroy", SetLastError = true)]
         internal static partial int LowLevelCrossProcessMutex_Destroy(void* mutex);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelCrossProcessMutex_Size")]
         [SuppressGCTransition]
         internal static partial int LowLevelCrossProcessMutex_Size();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId", SetLastError = true)]
         [SuppressGCTransition]
         internal static partial void LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(void* mutex, out uint processId, out uint threadId);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId", SetLastError = true)]
         [SuppressGCTransition]
         internal static partial void LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(void* mutex, uint processId, uint threadId);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelCrossProcessMutex_IsAbandoned", SetLastError = true)]
         [SuppressGCTransition]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool LowLevelCrossProcessMutex_IsAbandoned(void* mutex);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelCrossProcessMutex_SetAbandoned", SetLastError = true)]
         [SuppressGCTransition]
         internal static partial void LowLevelCrossProcessMutex_SetAbandoned(void* mutex, [MarshalAs(UnmanagedType.U1)] bool abandoned);

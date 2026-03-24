@@ -11,9 +11,11 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetAsn1IntegerDerSize")]
         private static partial int GetAsn1IntegerDerSize(SafeSharedAsn1IntegerHandle i);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeAsn1Integer")]
         private static partial int EncodeAsn1Integer(SafeSharedAsn1IntegerHandle i, byte[] buf);
 

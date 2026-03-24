@@ -27,6 +27,7 @@ internal static partial class Interop
             POLICY_NOTIFICATION = 0x00001000,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "LsaOpenPolicy", SetLastError = true)]
         private static partial uint LsaOpenPolicy(
             ref UNICODE_STRING SystemName,

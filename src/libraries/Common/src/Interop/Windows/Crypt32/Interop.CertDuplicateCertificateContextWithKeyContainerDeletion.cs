@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, EntryPoint = "CertDuplicateCertificateContext", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial SafeCertContextHandleWithKeyContainerDeletion CertDuplicateCertificateContextWithKeyContainerDeletion(IntPtr pCertContext);
     }

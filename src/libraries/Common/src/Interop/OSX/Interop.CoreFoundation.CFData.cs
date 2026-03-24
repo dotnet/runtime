@@ -13,9 +13,11 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary)]
         private static unsafe partial byte* CFDataGetBytePtr(SafeCFDataHandle cfData);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary)]
         private static partial CFIndex CFDataGetLength(SafeCFDataHandle cfData);
 

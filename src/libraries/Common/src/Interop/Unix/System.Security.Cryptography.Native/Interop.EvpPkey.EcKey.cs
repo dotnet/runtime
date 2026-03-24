@@ -9,9 +9,11 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyGetEcKey")]
         internal static partial SafeEcKeyHandle EvpPkeyGetEcKey(SafeEvpPKeyHandle pkey);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool CryptoNative_EvpPkeySetEcKey(SafeEvpPKeyHandle pkey, SafeEcKeyHandle key);

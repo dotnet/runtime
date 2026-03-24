@@ -11,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class WebSocket
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.WebSocket)]
         internal static partial int WebSocketEndServerHandshake(SafeHandle webSocketHandle);
     }

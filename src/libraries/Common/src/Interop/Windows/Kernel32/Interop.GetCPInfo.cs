@@ -17,6 +17,7 @@ internal static partial class Interop
             internal InlineArray12<byte> LeadByte;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial BOOL GetCPInfo(uint codePage, CPINFO* lpCpInfo);
     }

@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_InterfaceNameToIndex", SetLastError = true)]
         public static partial uint InterfaceNameToIndex(ReadOnlySpan<byte> utf8NullTerminatedName);
     }

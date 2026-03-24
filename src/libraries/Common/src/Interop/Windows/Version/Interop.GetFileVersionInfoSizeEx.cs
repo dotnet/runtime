@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Version
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Version, EntryPoint = "GetFileVersionInfoSizeExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial uint GetFileVersionInfoSizeEx(uint dwFlags, string lpwstrFilename, out uint lpdwHandle);
     }

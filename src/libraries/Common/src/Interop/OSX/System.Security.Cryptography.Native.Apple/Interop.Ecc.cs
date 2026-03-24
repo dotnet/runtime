@@ -11,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_EccGenerateKey(
             int keySizeInBits,
@@ -18,6 +19,7 @@ internal static partial class Interop
             out SafeSecKeyRefHandle pPrivateKey,
             out SafeCFErrorHandle pErrorOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_EccGetKeySizeInBits")]
         internal static partial int EccGetKeySizeInBits(SafeSecKeyRefHandle publicKey);
 

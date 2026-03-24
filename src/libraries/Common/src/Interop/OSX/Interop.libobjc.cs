@@ -16,10 +16,13 @@ internal static partial class Interop
             public nint patchVersion;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.libobjc, StringMarshalling = StringMarshalling.Utf8)]
         private static partial IntPtr objc_getClass(string className);
+        [RequiresUnsafe]
         [LibraryImport(Libraries.libobjc, StringMarshalling = StringMarshalling.Utf8)]
         private static partial IntPtr sel_getUid(string selector);
+        [RequiresUnsafe]
         [LibraryImport(Libraries.libobjc, EntryPoint = "objc_msgSend")]
         private static partial IntPtr intptr_objc_msgSend(IntPtr basePtr, IntPtr selector);
 
@@ -61,9 +64,11 @@ internal static partial class Interop
             return new Version(major, minor, patch);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.libobjc, EntryPoint = "objc_msgSend")]
         private static partial NSOperatingSystemVersion NSOperatingSystemVersion_objc_msgSend(IntPtr basePtr, IntPtr selector);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.libobjc, EntryPoint = "objc_msgSend_stret")]
         private static partial void NSOperatingSystemVersion_objc_msgSend_stret(out NSOperatingSystemVersion osVersion, IntPtr basePtr, IntPtr selector);
     }

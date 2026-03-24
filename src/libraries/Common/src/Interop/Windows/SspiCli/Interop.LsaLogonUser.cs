@@ -10,6 +10,7 @@ internal static partial class Interop
 {
     internal static partial class SspiCli
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SspiCli)]
         internal static partial int LsaLogonUser(
             SafeLsaHandle LsaHandle,

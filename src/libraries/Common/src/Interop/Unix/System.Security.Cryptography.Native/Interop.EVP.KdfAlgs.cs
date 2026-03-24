@@ -29,6 +29,7 @@ internal static partial class Interop
                 Hkdf = EvpKdfFetch(HkdfAlgorithmName);
             }
 
+            [RequiresUnsafe]
             [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKdfFetch", StringMarshalling = StringMarshalling.Utf8)]
             private static partial SafeEvpKdfHandle CryptoNative_EvpKdfFetch(string algorithm, out int haveFeature);
 

@@ -14,8 +14,8 @@ namespace ILLink.RoslynAnalyzer
     public sealed class UnsafeMethodMissingRequiresUnsafeAnalyzer : DiagnosticAnalyzer
     {
         private static readonly DiagnosticDescriptor s_pointerRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnsafeMethodMissingRequiresUnsafe, diagnosticSeverity: DiagnosticSeverity.Info);
-        private static readonly DiagnosticDescriptor s_externRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.ExternMethodMissingRequiresUnsafe, diagnosticSeverity: DiagnosticSeverity.Info);
-        private static readonly DiagnosticDescriptor s_libraryImportRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.LibraryImportMethodMissingRequiresUnsafe, diagnosticSeverity: DiagnosticSeverity.Info);
+        private static readonly DiagnosticDescriptor s_externRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.ExternMethodMissingRequiresUnsafe, diagnosticSeverity: DiagnosticSeverity.Warning);
+        private static readonly DiagnosticDescriptor s_libraryImportRule = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.LibraryImportMethodMissingRequiresUnsafe, diagnosticSeverity: DiagnosticSeverity.Warning);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [s_pointerRule, s_externRule, s_libraryImportRule];
 

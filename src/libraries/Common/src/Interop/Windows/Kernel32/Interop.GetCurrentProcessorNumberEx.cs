@@ -16,6 +16,7 @@ internal static partial class Interop
             public byte Reserved;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         [SuppressGCTransition]
         internal static partial uint GetCurrentProcessorNumberEx(out PROCESSOR_NUMBER ProcNumber);

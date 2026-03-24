@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Netapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Netapi32, EntryPoint = "DsGetDcOpenW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DsGetDcOpen(
             string? dnsName,

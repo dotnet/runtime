@@ -16,6 +16,9 @@
       '$(EnableSingleFileAnalyzer)' == '' and
       '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
       '$(IsSourceProject)' == 'true'">true</EnableSingleFileAnalyzer>
+    <EnableUnsafeAnalyzer Condition="
+      '$(EnableUnsafeAnalyzer)' == '' and
+      '$(IsSourceProject)' == 'true'">true</EnableUnsafeAnalyzer>
   </PropertyGroup>
   <ItemGroup Condition="'$(RunAnalyzers)' != 'false'">
     <EditorConfigFiles Include="$(MSBuildThisFileDirectory)CodeAnalysis.src.globalconfig" />

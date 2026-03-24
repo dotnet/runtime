@@ -35,6 +35,7 @@ internal static partial class Interop
             MLKem1024 = 3,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemDecapsulate")]
         private static partial int CryptoNative_EvpKemDecapsulate(
             SafeEvpPKeyHandle kem,
@@ -44,6 +45,7 @@ internal static partial class Interop
             Span<byte> sharedSecret,
             int sharedSecretLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGetPalId")]
         private static partial int CryptoNative_EvpKemGetPalId(
             SafeEvpPKeyHandle kem,
@@ -51,30 +53,35 @@ internal static partial class Interop
             out int hasSeed,
             out int hasDecapsulationKey);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemGeneratePkey", StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_EvpKemGeneratePkey(
             string kemName,
             ReadOnlySpan<byte> seed,
             int seedLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemExportPrivateSeed")]
         private static partial int CryptoNative_EvpKemExportPrivateSeed(
             SafeEvpPKeyHandle key,
             Span<byte> destination,
             int destinationLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemExportDecapsulationKey")]
         private static partial int CryptoNative_EvpKemExportDecapsulationKey(
             SafeEvpPKeyHandle key,
             Span<byte> destination,
             int destinationLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemExportEncapsulationKey")]
         private static partial int CryptoNative_EvpKemExportEncapsulationKey(
             SafeEvpPKeyHandle key,
             Span<byte> destination,
             int destinationLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemEncapsulate")]
         private static partial int CryptoNative_EvpKemEncapsulate(
             SafeEvpPKeyHandle kem,

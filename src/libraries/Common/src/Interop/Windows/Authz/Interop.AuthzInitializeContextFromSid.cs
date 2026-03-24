@@ -12,6 +12,7 @@ internal static partial class Interop
         internal const int AUTHZ_RM_FLAG_INITIALIZE_UNDER_IMPERSONATION = 0x2;
         internal const int AUTHZ_VALID_RM_INIT_FLAGS = (AUTHZ_RM_FLAG_NO_AUDIT | AUTHZ_RM_FLAG_INITIALIZE_UNDER_IMPERSONATION);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Authz, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool AuthzInitializeContextFromSid(
@@ -23,6 +24,7 @@ internal static partial class Interop
             IntPtr DynamicGroupArgs,
             out IntPtr pAuthzClientContext);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Authz)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool AuthzFreeContext(IntPtr AuthzClientContext);

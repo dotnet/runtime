@@ -17,6 +17,7 @@ namespace WasiHttpWorld.wit.imports.wasi.io.v0_2_0
 
         internal static class PollWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/poll@0.2.0", EntryPoint = "poll"), WasmImportLinkage]
             internal static extern void wasmImportPoll(nint p0, int p1, nint p2);
 

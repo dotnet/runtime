@@ -39,9 +39,11 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Ws2_32)]
         private static unsafe partial SocketError WSAStartup(short wVersionRequested, WSAData* lpWSAData);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Ws2_32)]
         private static partial SocketError WSACleanup();
 

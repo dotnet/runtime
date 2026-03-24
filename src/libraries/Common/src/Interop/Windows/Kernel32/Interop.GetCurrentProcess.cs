@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static partial IntPtr GetCurrentProcess();
     }

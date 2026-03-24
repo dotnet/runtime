@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.User32, StringMarshalling = StringMarshalling.Utf16)]
         public static partial int RegisterWindowMessageW(string msg);
     }

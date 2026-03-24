@@ -16,9 +16,11 @@ internal static partial class Interop
             PRIO_USER       = 2,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPriority", SetLastError = true)]
         private static partial int GetPriority(PriorityWhich which, int who);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetPriority", SetLastError = true)]
         internal static partial int SetPriority(PriorityWhich which, int who, int nice);
 

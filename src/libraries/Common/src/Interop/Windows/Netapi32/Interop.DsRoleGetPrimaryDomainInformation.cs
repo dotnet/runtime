@@ -16,6 +16,7 @@ internal static partial class Interop
             DsRolePrimaryDomainInfoBasicEx = 4
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Netapi32, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DsRoleGetPrimaryDomainInformation(
             string? lpServer,

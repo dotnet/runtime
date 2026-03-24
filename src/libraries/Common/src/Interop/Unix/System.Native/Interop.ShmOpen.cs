@@ -8,9 +8,11 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ShmOpen", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial SafeFileHandle ShmOpen(string name, OpenFlags flags, int mode);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ShmUnlink", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial int ShmUnlink(string name);
     }

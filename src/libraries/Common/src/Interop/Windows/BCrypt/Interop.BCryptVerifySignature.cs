@@ -19,6 +19,7 @@ internal static partial class Interop
             BCRYPT_PAD_PQDSA = 32,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptVerifySignature(
             SafeBCryptKeyHandle hKey,

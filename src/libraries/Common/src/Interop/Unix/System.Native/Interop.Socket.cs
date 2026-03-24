@@ -10,6 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Socket")]
         internal static unsafe partial Error Socket(int addressFamily, int socketType, int protocolType, IntPtr* socket);
     }

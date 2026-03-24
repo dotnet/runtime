@@ -9,15 +9,18 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionCreateByObj")]
         internal static partial SafeX509ExtensionHandle X509ExtensionCreateByObj(
             SafeAsn1ObjectHandle oid,
             [MarshalAs(UnmanagedType.Bool)] bool isCritical,
             SafeAsn1OctetStringHandle data);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionDestroy")]
         internal static partial int X509ExtensionDestroy(IntPtr x);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509V3ExtPrint")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool X509V3ExtPrint(SafeBioHandle buf, SafeX509ExtensionHandle ext);

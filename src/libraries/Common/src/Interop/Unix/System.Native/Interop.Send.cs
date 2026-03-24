@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Send")]
         internal static unsafe partial Error Send(SafeHandle socket, byte* buffer, int bufferLen, SocketFlags flags, int* sent);
     }

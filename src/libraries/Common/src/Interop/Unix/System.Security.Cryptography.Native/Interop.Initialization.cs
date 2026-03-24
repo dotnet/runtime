@@ -48,6 +48,7 @@ internal static partial class Interop
             // No-op that exists to provide a hook for other static constructors.
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureOpenSslInitialized")]
         private static partial int EnsureOpenSslInitialized();
     }

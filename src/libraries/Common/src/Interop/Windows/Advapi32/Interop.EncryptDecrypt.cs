@@ -11,6 +11,7 @@ internal static partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use EncryptFile.
         /// </summary>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "EncryptFileW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EncryptFilePrivate(string lpFileName);
@@ -24,6 +25,7 @@ internal static partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use DecryptFile.
         /// </summary>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "DecryptFileW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool DecryptFileFilePrivate(

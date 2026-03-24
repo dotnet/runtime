@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static partial IntPtr GetProcessHeap();
 
@@ -21,9 +22,11 @@ internal static partial class Interop
             HEAP_GENERATE_EXCEPTIONS = 0x00000004,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static partial SafeHeapAllocHandle HeapAlloc(IntPtr hHeap, HeapAllocFlags dwFlags, nint dwBytes);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool HeapFree(IntPtr hHeap, HeapAllocFlags dwFlags, IntPtr lpMem);

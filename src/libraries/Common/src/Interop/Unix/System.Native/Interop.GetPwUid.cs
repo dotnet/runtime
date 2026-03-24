@@ -94,9 +94,11 @@ internal static partial class Interop
             throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwUidR", SetLastError = false)]
         internal static unsafe partial int GetPwUidR(uint uid, out Passwd pwd, byte* buf, int bufLen);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwNamR", StringMarshalling = StringMarshalling.Utf8, SetLastError = false)]
         internal static unsafe partial int GetPwNamR(string name, out Passwd pwd, byte* buf, int bufLen);
     }

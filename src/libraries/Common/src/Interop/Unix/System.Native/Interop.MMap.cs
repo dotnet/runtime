@@ -28,6 +28,7 @@ internal static partial class Interop
         }
 
         // NOTE: Shim returns null pointer on failure, not non-null MAP_FAILED sentinel.
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MMap", SetLastError = true)]
         internal static partial IntPtr MMap(
             IntPtr addr, ulong len,
@@ -35,6 +36,7 @@ internal static partial class Interop
             SafeFileHandle fd, long offset);
 
         // NOTE: Shim returns null pointer on failure, not non-null MAP_FAILED sentinel.
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MMap", SetLastError = true)]
         internal static partial IntPtr MMap(
             IntPtr addr, ulong len,

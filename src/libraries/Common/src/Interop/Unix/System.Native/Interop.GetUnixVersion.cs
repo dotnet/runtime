@@ -11,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUnixVersion", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static partial int GetUnixVersion(byte[] version, ref int capacity);
 

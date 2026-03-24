@@ -233,11 +233,13 @@ internal static partial class Interop
 #endif
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.CryptUI, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CryptUIDlgViewCertificateW(
             in CRYPTUI_VIEWCERTIFICATE_STRUCTW ViewInfo, IntPtr pfPropertiesChanged);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.CryptUI, SetLastError = true)]
         internal static partial SafeCertContextHandle CryptUIDlgSelectCertificateW(ref CRYPTUI_SELECTCERTIFICATE_STRUCTW csc);
     }

@@ -15,6 +15,7 @@ internal static partial class Interop
         // We take a long* (rather than a out long) to avoid the pinning overhead.
         // We don't set last error since we don't need the extended error info.
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         [SuppressGCTransition]
         internal static unsafe partial BOOL QueryPerformanceCounter(long* lpPerformanceCount);

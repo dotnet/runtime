@@ -19,6 +19,7 @@ namespace System.Runtime.Serialization
         {
             ThrowIfDeserializationInProgress(null, switchSuffix, ref cachedValue);
 
+            [RequiresUnsafe]
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ThrowIfDeserializationInProgress")]
             static extern void ThrowIfDeserializationInProgress(SerializationInfo? thisPtr, string switchSuffix, ref int cachedValue);
         }

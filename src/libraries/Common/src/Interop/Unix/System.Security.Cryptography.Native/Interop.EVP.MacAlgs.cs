@@ -26,6 +26,7 @@ internal static partial class Interop
                 Kmac256 = EvpMacFetch(HashAlgorithmNames.KMAC256);
             }
 
+            [RequiresUnsafe]
             [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacFetch", StringMarshalling = StringMarshalling.Utf8)]
             private static partial SafeEvpMacHandle CryptoNative_EvpMacFetch(string algorithm, out int haveFeature);
 

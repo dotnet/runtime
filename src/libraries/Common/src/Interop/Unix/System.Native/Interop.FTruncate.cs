@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FTruncate", SetLastError = true)]
         internal static partial int FTruncate(SafeFileHandle fd, long length);
     }

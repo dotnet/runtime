@@ -20,6 +20,7 @@ internal static partial class Interop
             internal ulong TotalSize;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSpaceInfoForMountPoint", SetLastError = true)]
         internal static partial int GetSpaceInfoForMountPoint([MarshalAs(UnmanagedType.LPUTF8Str)] string name, out MountPointInformation mpi);
 
@@ -66,6 +67,7 @@ internal static partial class Interop
             return error;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFileSystemTypeNameForMountPoint", SetLastError = true)]
         private static unsafe partial int GetFileSystemTypeNameForMountPoint(
             [MarshalAs(UnmanagedType.LPUTF8Str)] string name,

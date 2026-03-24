@@ -8,9 +8,11 @@ internal static partial class Interop
 {
     internal static partial class OleAut32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OleAut32, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial IntPtr SysAllocStringLen(IntPtr src, uint len);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OleAut32, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial IntPtr SysAllocStringLen(string src, uint len);
     }

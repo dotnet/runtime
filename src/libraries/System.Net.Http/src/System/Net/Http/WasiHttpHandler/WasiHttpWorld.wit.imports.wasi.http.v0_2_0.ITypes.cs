@@ -607,6 +607,7 @@ internal interface ITypes {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:http/types@0.2.0", EntryPoint = "[resource-drop]fields"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -619,6 +620,7 @@ internal interface ITypes {
 
         internal static class ConstructorWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[constructor]fields"), WasmImportLinkage]
             internal static extern int wasmImportConstructor();
 
@@ -634,6 +636,7 @@ internal interface ITypes {
 
         internal static class FromListWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[static]fields.from-list"), WasmImportLinkage]
             internal static extern void wasmImportFromList(nint p0, int p1, nint p2);
 
@@ -721,6 +724,7 @@ internal interface ITypes {
 
         internal static class GetWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]fields.get"), WasmImportLinkage]
             internal static extern void wasmImportGet(int p0, nint p1, int p2, nint p3);
 
@@ -756,6 +760,7 @@ internal interface ITypes {
 
         internal static class HasWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]fields.has"), WasmImportLinkage]
             internal static extern int wasmImportHas(int p0, nint p1, int p2);
 
@@ -775,6 +780,7 @@ internal interface ITypes {
 
         internal static class SetWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]fields.set"), WasmImportLinkage]
             internal static extern void wasmImportSet(int p0, nint p1, int p2, nint p3, int p4, nint p5);
 
@@ -860,6 +866,7 @@ internal interface ITypes {
 
         internal static class DeleteWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]fields.delete"), WasmImportLinkage]
             internal static extern void wasmImportDelete(int p0, nint p1, int p2, nint p3);
 
@@ -929,6 +936,7 @@ internal interface ITypes {
 
         internal static class AppendWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]fields.append"), WasmImportLinkage]
             internal static extern void wasmImportAppend(int p0, nint p1, int p2, nint p3, int p4, nint p5);
 
@@ -1001,6 +1009,7 @@ internal interface ITypes {
 
         internal static class EntriesWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]fields.entries"), WasmImportLinkage]
             internal static extern void wasmImportEntries(int p0, nint p1);
 
@@ -1034,6 +1043,7 @@ internal interface ITypes {
 
         internal static class CloneWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]fields.clone"), WasmImportLinkage]
             internal static extern int wasmImportClone(int p0);
 
@@ -1068,6 +1078,7 @@ internal interface ITypes {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:http/types@0.2.0", EntryPoint = "[resource-drop]incoming-request"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -1080,6 +1091,7 @@ internal interface ITypes {
 
         internal static class MethodWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]incoming-request.method"), WasmImportLinkage]
             internal static extern void wasmImportMethod(int p0, nint p1);
 
@@ -1159,6 +1171,7 @@ internal interface ITypes {
 
         internal static class PathWithQueryWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]incoming-request.path-with-query"), WasmImportLinkage]
             internal static extern void wasmImportPathWithQuery(int p0, nint p1);
 
@@ -1198,6 +1211,7 @@ internal interface ITypes {
 
         internal static class SchemeWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]incoming-request.scheme"), WasmImportLinkage]
             internal static extern void wasmImportScheme(int p0, nint p1);
 
@@ -1259,6 +1273,7 @@ internal interface ITypes {
 
         internal static class AuthorityWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]incoming-request.authority"), WasmImportLinkage]
             internal static extern void wasmImportAuthority(int p0, nint p1);
 
@@ -1298,6 +1313,7 @@ internal interface ITypes {
 
         internal static class HeadersWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]incoming-request.headers"), WasmImportLinkage]
             internal static extern int wasmImportHeaders(int p0);
 
@@ -1315,6 +1331,7 @@ internal interface ITypes {
 
         internal static class ConsumeWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]incoming-request.consume"), WasmImportLinkage]
             internal static extern void wasmImportConsume(int p0, nint p1);
 
@@ -1377,6 +1394,7 @@ internal interface ITypes {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:http/types@0.2.0", EntryPoint = "[resource-drop]outgoing-request"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -1389,6 +1407,7 @@ internal interface ITypes {
 
         internal static class ConstructorWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[constructor]outgoing-request"), WasmImportLinkage]
             internal static extern int wasmImportConstructor(int p0);
 
@@ -1406,6 +1425,7 @@ internal interface ITypes {
 
         internal static class BodyWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-request.body"), WasmImportLinkage]
             internal static extern void wasmImportBody(int p0, nint p1);
 
@@ -1451,6 +1471,7 @@ internal interface ITypes {
 
         internal static class MethodWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-request.method"), WasmImportLinkage]
             internal static extern void wasmImportMethod(int p0, nint p1);
 
@@ -1530,6 +1551,7 @@ internal interface ITypes {
 
         internal static class SetMethodWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-request.set-method"), WasmImportLinkage]
             internal static extern int wasmImportSetMethod(int p0, int p1, nint p2, int p3);
 
@@ -1661,6 +1683,7 @@ internal interface ITypes {
 
         internal static class PathWithQueryWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-request.path-with-query"), WasmImportLinkage]
             internal static extern void wasmImportPathWithQuery(int p0, nint p1);
 
@@ -1700,6 +1723,7 @@ internal interface ITypes {
 
         internal static class SetPathWithQueryWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-request.set-path-with-query"), WasmImportLinkage]
             internal static extern int wasmImportSetPathWithQuery(int p0, int p1, nint p2, int p3);
 
@@ -1760,6 +1784,7 @@ internal interface ITypes {
 
         internal static class SchemeWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-request.scheme"), WasmImportLinkage]
             internal static extern void wasmImportScheme(int p0, nint p1);
 
@@ -1821,6 +1846,7 @@ internal interface ITypes {
 
         internal static class SetSchemeWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-request.set-scheme"), WasmImportLinkage]
             internal static extern int wasmImportSetScheme(int p0, int p1, int p2, nint p3, int p4);
 
@@ -1918,6 +1944,7 @@ internal interface ITypes {
 
         internal static class AuthorityWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-request.authority"), WasmImportLinkage]
             internal static extern void wasmImportAuthority(int p0, nint p1);
 
@@ -1957,6 +1984,7 @@ internal interface ITypes {
 
         internal static class SetAuthorityWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-request.set-authority"), WasmImportLinkage]
             internal static extern int wasmImportSetAuthority(int p0, int p1, nint p2, int p3);
 
@@ -2017,6 +2045,7 @@ internal interface ITypes {
 
         internal static class HeadersWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-request.headers"), WasmImportLinkage]
             internal static extern int wasmImportHeaders(int p0);
 
@@ -2056,6 +2085,7 @@ internal interface ITypes {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:http/types@0.2.0", EntryPoint = "[resource-drop]request-options"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -2068,6 +2098,7 @@ internal interface ITypes {
 
         internal static class ConstructorWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[constructor]request-options"), WasmImportLinkage]
             internal static extern int wasmImportConstructor();
 
@@ -2083,6 +2114,7 @@ internal interface ITypes {
 
         internal static class ConnectTimeoutWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]request-options.connect-timeout"), WasmImportLinkage]
             internal static extern void wasmImportConnectTimeout(int p0, nint p1);
 
@@ -2122,6 +2154,7 @@ internal interface ITypes {
 
         internal static class SetConnectTimeoutWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]request-options.set-connect-timeout"), WasmImportLinkage]
             internal static extern int wasmImportSetConnectTimeout(int p0, int p1, long p2);
 
@@ -2176,6 +2209,7 @@ internal interface ITypes {
 
         internal static class FirstByteTimeoutWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]request-options.first-byte-timeout"), WasmImportLinkage]
             internal static extern void wasmImportFirstByteTimeout(int p0, nint p1);
 
@@ -2215,6 +2249,7 @@ internal interface ITypes {
 
         internal static class SetFirstByteTimeoutWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]request-options.set-first-byte-timeout"), WasmImportLinkage]
             internal static extern int wasmImportSetFirstByteTimeout(int p0, int p1, long p2);
 
@@ -2269,6 +2304,7 @@ internal interface ITypes {
 
         internal static class BetweenBytesTimeoutWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]request-options.between-bytes-timeout"), WasmImportLinkage]
             internal static extern void wasmImportBetweenBytesTimeout(int p0, nint p1);
 
@@ -2308,6 +2344,7 @@ internal interface ITypes {
 
         internal static class SetBetweenBytesTimeoutWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]request-options.set-between-bytes-timeout"), WasmImportLinkage]
             internal static extern int wasmImportSetBetweenBytesTimeout(int p0, int p1, long p2);
 
@@ -2383,6 +2420,7 @@ internal interface ITypes {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:http/types@0.2.0", EntryPoint = "[resource-drop]response-outparam"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -2395,6 +2433,7 @@ internal interface ITypes {
 
         internal static class SetWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[static]response-outparam.set"), WasmImportLinkage]
             internal static extern void wasmImportSet(int p0, int p1, int p2, int p3, long p4, nint p5, nint p6, int p7, int p8);
 
@@ -3386,6 +3425,7 @@ internal interface ITypes {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:http/types@0.2.0", EntryPoint = "[resource-drop]incoming-response"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -3398,6 +3438,7 @@ internal interface ITypes {
 
         internal static class StatusWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]incoming-response.status"), WasmImportLinkage]
             internal static extern int wasmImportStatus(int p0);
 
@@ -3414,6 +3455,7 @@ internal interface ITypes {
 
         internal static class HeadersWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]incoming-response.headers"), WasmImportLinkage]
             internal static extern int wasmImportHeaders(int p0);
 
@@ -3431,6 +3473,7 @@ internal interface ITypes {
 
         internal static class ConsumeWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]incoming-response.consume"), WasmImportLinkage]
             internal static extern void wasmImportConsume(int p0, nint p1);
 
@@ -3500,6 +3543,7 @@ internal interface ITypes {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:http/types@0.2.0", EntryPoint = "[resource-drop]incoming-body"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -3512,6 +3556,7 @@ internal interface ITypes {
 
         internal static class StreamWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]incoming-body.stream"), WasmImportLinkage]
             internal static extern void wasmImportStream(int p0, nint p1);
 
@@ -3557,6 +3602,7 @@ internal interface ITypes {
 
         internal static class FinishWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[static]incoming-body.finish"), WasmImportLinkage]
             internal static extern int wasmImportFinish(int p0);
 
@@ -3596,6 +3642,7 @@ internal interface ITypes {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:http/types@0.2.0", EntryPoint = "[resource-drop]future-trailers"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -3608,6 +3655,7 @@ internal interface ITypes {
 
         internal static class SubscribeWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]future-trailers.subscribe"), WasmImportLinkage]
             internal static extern int wasmImportSubscribe(int p0);
 
@@ -3625,6 +3673,7 @@ internal interface ITypes {
 
         internal static class GetWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]future-trailers.get"), WasmImportLinkage]
             internal static extern void wasmImportGet(int p0, nint p1);
 
@@ -4315,6 +4364,7 @@ internal interface ITypes {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:http/types@0.2.0", EntryPoint = "[resource-drop]outgoing-response"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -4327,6 +4377,7 @@ internal interface ITypes {
 
         internal static class ConstructorWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[constructor]outgoing-response"), WasmImportLinkage]
             internal static extern int wasmImportConstructor(int p0);
 
@@ -4344,6 +4395,7 @@ internal interface ITypes {
 
         internal static class StatusCodeWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-response.status-code"), WasmImportLinkage]
             internal static extern int wasmImportStatusCode(int p0);
 
@@ -4360,6 +4412,7 @@ internal interface ITypes {
 
         internal static class SetStatusCodeWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-response.set-status-code"), WasmImportLinkage]
             internal static extern int wasmImportSetStatusCode(int p0, int p1);
 
@@ -4398,6 +4451,7 @@ internal interface ITypes {
 
         internal static class HeadersWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-response.headers"), WasmImportLinkage]
             internal static extern int wasmImportHeaders(int p0);
 
@@ -4415,6 +4469,7 @@ internal interface ITypes {
 
         internal static class BodyWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-response.body"), WasmImportLinkage]
             internal static extern void wasmImportBody(int p0, nint p1);
 
@@ -4492,6 +4547,7 @@ internal interface ITypes {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:http/types@0.2.0", EntryPoint = "[resource-drop]outgoing-body"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -4504,6 +4560,7 @@ internal interface ITypes {
 
         internal static class WriteWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]outgoing-body.write"), WasmImportLinkage]
             internal static extern void wasmImportWrite(int p0, nint p1);
 
@@ -4549,6 +4606,7 @@ internal interface ITypes {
 
         internal static class FinishWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[static]outgoing-body.finish"), WasmImportLinkage]
             internal static extern void wasmImportFinish(int p0, int p1, int p2, nint p3);
 
@@ -5215,6 +5273,7 @@ internal interface ITypes {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:http/types@0.2.0", EntryPoint = "[resource-drop]future-incoming-response"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -5227,6 +5286,7 @@ internal interface ITypes {
 
         internal static class SubscribeWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]future-incoming-response.subscribe"), WasmImportLinkage]
             internal static extern int wasmImportSubscribe(int p0);
 
@@ -5244,6 +5304,7 @@ internal interface ITypes {
 
         internal static class GetWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "[method]future-incoming-response.get"), WasmImportLinkage]
             internal static extern void wasmImportGet(int p0, nint p1);
 

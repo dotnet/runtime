@@ -9,12 +9,15 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacFree")]
         internal static partial void HmacFree(IntPtr handle);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacCreate")]
         internal static partial SafeHmacHandle HmacCreate(PAL_HashAlgorithm algorithm, ref int cbDigest);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacInit")]
         private static unsafe partial int HmacInit(SafeHmacHandle ctx, byte* pbKey, int cbKey);
 
@@ -29,21 +32,25 @@ internal static partial class Interop
         internal static int HmacUpdate(SafeHmacHandle ctx, ReadOnlySpan<byte> data) =>
             HmacUpdate(ctx, ref MemoryMarshal.GetReference(data), data.Length);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacUpdate")]
         private static partial int HmacUpdate(SafeHmacHandle ctx, ref byte pbData, int cbData);
 
         internal static int HmacFinal(SafeHmacHandle ctx, ReadOnlySpan<byte> output) =>
             HmacFinal(ctx, ref MemoryMarshal.GetReference(output), output.Length);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacFinal")]
         private static partial int HmacFinal(SafeHmacHandle ctx, ref byte pbOutput, int cbOutput);
 
         internal static int HmacCurrent(SafeHmacHandle ctx, ReadOnlySpan<byte> output) =>
             HmacCurrent(ctx, ref MemoryMarshal.GetReference(output), output.Length);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacCurrent")]
         private static partial int HmacCurrent(SafeHmacHandle ctx, ref byte pbOutput, int cbOutput);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacOneShot")]
         internal static unsafe partial int HmacOneShot(
             PAL_HashAlgorithm algorithm,
@@ -55,6 +62,7 @@ internal static partial class Interop
             int cbOutput,
             int* cbDigest);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacClone")]
         internal static partial SafeHmacHandle HmacClone(SafeHmacHandle ctx);
     }

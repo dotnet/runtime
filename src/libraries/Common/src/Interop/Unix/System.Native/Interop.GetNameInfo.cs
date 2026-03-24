@@ -15,6 +15,7 @@ internal static partial class Interop
             NI_NUMERICHOST  = 0x2,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNameInfo")]
         internal static unsafe partial int GetNameInfo(
             byte* address,

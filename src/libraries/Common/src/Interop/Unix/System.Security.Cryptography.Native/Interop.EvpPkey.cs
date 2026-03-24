@@ -10,12 +10,15 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyCreate")]
         internal static partial SafeEvpPKeyHandle EvpPkeyCreate();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
         internal static partial void EvpPkeyDestroy(IntPtr pkey, IntPtr extraHandle);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyBits")]
         internal static partial int EvpPKeyBits(SafeEvpPKeyHandle pkey);
 
@@ -36,6 +39,7 @@ internal static partial class Interop
             return (keySizeBits + 7) / 8;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
         private static partial int UpRefEvpPkey(SafeEvpPKeyHandle handle, IntPtr extraHandle);
 
@@ -44,18 +48,22 @@ internal static partial class Interop
             return UpRefEvpPkey(handle, handle.ExtraHandle);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyType")]
         internal static partial EvpAlgorithmId EvpPKeyType(SafeEvpPKeyHandle handle);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyFamily")]
         internal static partial EvpAlgorithmFamilyId EvpPKeyFamily(SafeEvpPKeyHandle handle);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial SafeEvpPKeyHandle CryptoNative_DecodeSubjectPublicKeyInfo(
             byte* buf,
             int len,
             int algId);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial SafeEvpPKeyHandle CryptoNative_DecodePkcs8PrivateKey(
             byte* buf,
@@ -108,6 +116,7 @@ internal static partial class Interop
             return handle;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_GetPkcs8PrivateKeySize(IntPtr pkey, out int p8size);
 
@@ -133,6 +142,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial int CryptoNative_EncodePkcs8PrivateKey(IntPtr pkey, byte* buf);
 
@@ -169,6 +179,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_GetSubjectPublicKeyInfoSize(IntPtr pkey);
 
@@ -184,6 +195,7 @@ internal static partial class Interop
             return ret;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial int CryptoNative_EncodeSubjectPublicKeyInfo(IntPtr pkey, byte* buf);
 
@@ -220,6 +232,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_LoadPrivateKeyFromEngine(
             string engineName,
@@ -250,6 +263,7 @@ internal static partial class Interop
             return pkey;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_LoadPublicKeyFromEngine(
             string engineName,
@@ -280,6 +294,7 @@ internal static partial class Interop
             return pkey;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial IntPtr CryptoNative_LoadKeyFromProvider(
             string providerName,

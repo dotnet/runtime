@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         internal static unsafe partial NTSTATUS BCryptGenerateSymmetricKey(
             SafeBCryptAlgorithmHandle hAlgorithm,
@@ -19,6 +20,7 @@ internal static partial class Interop
             int cbSecret,
             uint dwFlags);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         internal static unsafe partial NTSTATUS BCryptGenerateSymmetricKey(
             nuint hAlgorithm,

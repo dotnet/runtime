@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Netapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Netapi32, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int I_NetLogonControl2(string serverName, int FunctionCode, int QueryLevel, IntPtr data, out IntPtr buffer);
     }

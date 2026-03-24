@@ -12,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_EcdhKeyAgree(
             SafeSecKeyRefHandle privateKey,

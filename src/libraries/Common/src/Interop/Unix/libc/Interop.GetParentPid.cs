@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class @libc
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.libc, EntryPoint = "getppid")]
         internal static partial int GetParentPid();
     }

@@ -16,15 +16,18 @@ internal static partial class Interop
 
         internal const int SECURITY_DESCRIPTOR_REVISION = 1;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool InitializeSecurityDescriptor(nint pSecurityDescriptor, int dwRevision);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetSecurityDescriptorOwner(
             nint pSecurityDescriptor,
             nint pOwner,
+            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.Bool)] bool bOwnerDefaulted);
 
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
@@ -32,6 +35,7 @@ internal static partial class Interop
         internal static partial bool SetSecurityDescriptorGroup(
             nint pSecurityDescriptor,
             nint pGroup,
+            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.Bool)] bool bGroupDefaulted);
 
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
@@ -40,6 +44,7 @@ internal static partial class Interop
             nint pSecurityDescriptor,
             [MarshalAs(UnmanagedType.Bool)] bool bDaclPresent,
             nint pDacl,
+            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.Bool)] bool bDaclDefaulted);
 
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]

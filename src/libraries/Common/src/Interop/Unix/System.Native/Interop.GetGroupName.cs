@@ -26,6 +26,7 @@ internal static partial class Interop
             return groupName != null;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetGroupName", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static unsafe partial string? GetGroupName(uint uid);
     }

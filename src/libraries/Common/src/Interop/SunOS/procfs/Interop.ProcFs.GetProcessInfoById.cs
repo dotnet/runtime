@@ -32,6 +32,7 @@ internal static partial class Interop
             internal int NiceVal;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadProcessInfo", SetLastError = true)]
         private static unsafe partial int ReadProcessInfo(int pid, ProcessInfo* processInfo, byte* argBuf, int argBufSize);
 

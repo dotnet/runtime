@@ -19,6 +19,7 @@ internal static partial class Interop
             Error = 0x10
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetWasiSocketDescriptor")]
         internal static unsafe partial Error GetWasiSocketDescriptor(IntPtr socket, IntPtr* entry);
     }

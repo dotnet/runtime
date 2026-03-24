@@ -10,6 +10,7 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByKeyParameters", StringMarshalling = StringMarshalling.Utf8)]
         private static partial int EcKeyCreateByKeyParameters(
             out SafeEcKeyHandle key,
@@ -35,6 +36,7 @@ internal static partial class Interop
             return key;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByExplicitParameters")]
         internal static partial SafeEcKeyHandle EcKeyCreateByExplicitParameters(
             ECCurve.ECCurveType curveType,
@@ -90,6 +92,7 @@ internal static partial class Interop
         }
 
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative)]
         private static partial int AndroidCryptoNative_GetECKeyParameters(
             SafeEcKeyHandle key,
@@ -148,6 +151,7 @@ internal static partial class Interop
             return parameters;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative)]
         private static partial int AndroidCryptoNative_GetECCurveParameters(
             SafeEcKeyHandle key,

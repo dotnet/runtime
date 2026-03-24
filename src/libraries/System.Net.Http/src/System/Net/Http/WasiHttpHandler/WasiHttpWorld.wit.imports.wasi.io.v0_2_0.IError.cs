@@ -50,6 +50,7 @@ internal interface IError {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:io/error@0.2.0", EntryPoint = "[resource-drop]error"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -62,6 +63,7 @@ internal interface IError {
 
         internal static class ToDebugStringWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/error@0.2.0", EntryPoint = "[method]error.to-debug-string"), WasmImportLinkage]
             internal static extern void wasmImportToDebugString(int p0, nint p1);
 

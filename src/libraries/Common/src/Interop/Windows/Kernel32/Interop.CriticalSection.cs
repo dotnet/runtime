@@ -19,15 +19,19 @@ internal static partial class Interop
             private UIntPtr SpinCount;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial void InitializeCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial void EnterCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial void LeaveCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial void DeleteCriticalSection(CRITICAL_SECTION* lpCriticalSection);
     }

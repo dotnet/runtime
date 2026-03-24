@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Secur32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Secur32)]
         internal static partial uint LsaFreeReturnBuffer(IntPtr buffer);
     }

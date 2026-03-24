@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SearchPath", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial string? SearchPath(NSSearchPathDirectory folderId);
 

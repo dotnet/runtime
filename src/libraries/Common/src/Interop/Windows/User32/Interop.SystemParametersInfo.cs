@@ -15,6 +15,7 @@ internal static partial class Interop
             SPI_GETHIGHCONTRAST = 0x42
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.User32)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static unsafe partial bool SystemParametersInfoW(SystemParametersAction uiAction, uint uiParam, void* pvParam, uint fWinIni);

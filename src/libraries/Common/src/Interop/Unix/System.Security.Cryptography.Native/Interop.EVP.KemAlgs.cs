@@ -28,6 +28,7 @@ internal static partial class Interop
                 MlKem1024 = EvpKemAvailable(MLKemAlgorithm.MLKem1024.Name);
             }
 
+            [RequiresUnsafe]
             [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemAvailable", StringMarshalling = StringMarshalling.Utf8)]
             private static partial int CryptoNative_EvpKemAvailable(string algorithm);
 

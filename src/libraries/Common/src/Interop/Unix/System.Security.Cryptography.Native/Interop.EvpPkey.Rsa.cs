@@ -11,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial SafeEvpPKeyHandle CryptoNative_EvpPKeyCreateRsa(IntPtr rsa);
 
@@ -29,6 +30,7 @@ internal static partial class Interop
             return pkey;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial SafeEvpPKeyHandle CryptoNative_RsaGenerateKey(int keySize);
 
@@ -45,6 +47,7 @@ internal static partial class Interop
             return pkey;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaDecrypt(
             SafeEvpPKeyHandle pkey,
@@ -82,6 +85,7 @@ internal static partial class Interop
             return written;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaEncrypt(
             SafeEvpPKeyHandle pkey,
@@ -119,6 +123,7 @@ internal static partial class Interop
             return written;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaSignHash(
             SafeEvpPKeyHandle pkey,
@@ -160,6 +165,7 @@ internal static partial class Interop
             return written;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaVerifyHash(
             SafeEvpPKeyHandle pkey,

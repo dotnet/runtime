@@ -16,6 +16,7 @@ internal static partial class Interop
             kCFNumberIntType = 9,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary)]
         private static unsafe partial int CFNumberGetValue(IntPtr handle, CFNumberType type, int* value);
     }

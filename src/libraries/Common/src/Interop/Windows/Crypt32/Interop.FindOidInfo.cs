@@ -124,6 +124,7 @@ internal static partial class Interop
                    group == OidGroup.KeyDerivationFunction;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Crypt32)]
         private static unsafe partial CRYPT_OID_INFO* CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, IntPtr pvKey, OidGroup group);
     }

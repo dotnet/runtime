@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "StartServiceW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool StartService(SafeServiceHandle serviceHandle, int argNum, IntPtr argPtrs);

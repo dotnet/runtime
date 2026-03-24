@@ -18,12 +18,15 @@ internal static partial class Interop
         /// <returns>
         /// Returns the number of bytes written on success; otherwise, returns -1 and sets errno
         /// </returns>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Write", SetLastError = true)]
         internal static unsafe partial int Write(SafeHandle fd, byte* buffer, int bufferSize);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Write", SetLastError = true)]
         internal static unsafe partial int Write(IntPtr fd, byte* buffer, int bufferSize);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WriteToNonblocking", SetLastError = true)]
         internal static unsafe partial int WriteToNonblocking(SafeHandle fd, byte* buffer, int bufferSize);
     }

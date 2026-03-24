@@ -15,6 +15,7 @@ internal static partial class Interop
             None = 0,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CryptCreateHash(

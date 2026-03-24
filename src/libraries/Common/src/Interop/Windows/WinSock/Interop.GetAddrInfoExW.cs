@@ -17,6 +17,7 @@ internal static partial class Interop
 
         internal const int NS_ALL = 0;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Ws2_32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int GetAddrInfoExW(
             string pName,
@@ -30,9 +31,11 @@ internal static partial class Interop
             delegate* unmanaged<int, int, NativeOverlapped*, void> lpCompletionRoutine,
             IntPtr* lpNameHandle);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Ws2_32)]
         internal static unsafe partial int GetAddrInfoExCancel(IntPtr* lpHandle);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Ws2_32)]
         internal static unsafe partial void FreeAddrInfoExW(AddressInfoEx* pAddrInfo);
 

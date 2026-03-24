@@ -26,6 +26,7 @@ internal static partial class Interop
         /// success; if the return value is equal to the size then the result may have been truncated.
         /// On failure, returns a negative value.
         /// </returns>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SNPrintF_1S", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static unsafe partial int SNPrintF(byte* str, int size, string format, string arg1);
 
@@ -47,6 +48,7 @@ internal static partial class Interop
         /// success; if the return value is equal to the size then the result may have been truncated.
         /// On failure, returns a negative value.
         /// </returns>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SNPrintF_1I", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static unsafe partial int SNPrintF(byte* str, int size, string format, int arg1);
     }

@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class OleAut32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OleAut32)]
         internal static unsafe partial int VariantChangeTypeEx(void* pVarRes, void* pVarSrc, int lcid, short wFlags, ushort vt);
     }

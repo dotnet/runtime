@@ -147,6 +147,7 @@ namespace System.Net.Sockets
         {
             CallRegisterWasiPollHook((Thread)null!, state, beforePollHook, onResolveCallback, cancellationToken);
 
+            [RequiresUnsafe]
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "RegisterWasiPollHook")]
             static extern void CallRegisterWasiPollHook(Thread t, object? state, Func<object?, IList<int>> beforePollHook, Action<object?> onResolveCallback, CancellationToken cancellationToken);
         }

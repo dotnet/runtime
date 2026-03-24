@@ -11,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_EcDsaSignHash(
             SafeEvpPKeyHandle pkey,
@@ -42,6 +43,7 @@ internal static partial class Interop
             return written;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_EcDsaVerifyHash(
             SafeEvpPKeyHandle pkey,

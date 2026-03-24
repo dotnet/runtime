@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptQueryObject(
@@ -25,6 +26,7 @@ internal static partial class Interop
             out SafeCertContextHandle ppvContext
             );
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptQueryObject(
@@ -41,6 +43,7 @@ internal static partial class Interop
             IntPtr ppvContext
             );
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptQueryObject(
@@ -57,6 +60,7 @@ internal static partial class Interop
             IntPtr ppvContext
             );
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptQueryObject(

@@ -11,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificate", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool X509StoreAddCertificate(
@@ -18,6 +19,7 @@ internal static partial class Interop
             SafeX509Handle cert,
             string hashString);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreAddCertificateWithPrivateKey", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool X509StoreAddCertificateWithPrivateKey(
@@ -27,6 +29,7 @@ internal static partial class Interop
             PAL_KeyAlgorithm algorithm,
             string hashString);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreContainsCertificate", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool X509StoreContainsCertificate(
@@ -34,6 +37,7 @@ internal static partial class Interop
             SafeX509Handle cert,
             string hashString);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateCertificates")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool X509StoreEnumerateCertificates(
@@ -41,6 +45,7 @@ internal static partial class Interop
             delegate* unmanaged<void*, void*, Interop.AndroidCrypto.PAL_KeyAlgorithm, void*, void> callback,
             void *callbackContext);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreEnumerateTrustedCertificates")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool X509StoreEnumerateTrustedCertificates(
@@ -48,9 +53,11 @@ internal static partial class Interop
             delegate* unmanaged<void*, void*, void> callback,
             void *callbackContext);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreOpenDefault")]
         internal static unsafe partial SafeX509StoreHandle X509StoreOpenDefault();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreRemoveCertificate", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool X509StoreRemoveCertificate(
@@ -58,8 +65,10 @@ internal static partial class Interop
             SafeX509Handle cert,
             string hashString);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreGetPrivateKeyEntry", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial IntPtr X509StoreGetPrivateKeyEntry(IntPtr store, string hashString);
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509StoreDeleteEntry", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool X509StoreDeleteEntry(IntPtr store, string hashString);

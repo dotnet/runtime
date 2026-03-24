@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "ConvertSidToStringSidW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial BOOL ConvertSidToStringSid(IntPtr sid, out string stringSid);
     }

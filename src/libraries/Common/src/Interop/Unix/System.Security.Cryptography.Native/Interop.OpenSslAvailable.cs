@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class OpenSslNoInit
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OpenSslAvailable")]
         private static partial int OpenSslAvailable();
 

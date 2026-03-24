@@ -9,15 +9,19 @@ internal static partial class Interop
 {
     internal static partial class Globalization
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetCalendarsNative", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int GetCalendarsNative(string localeName, CalendarId[] calendars, int calendarsCapacity);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetCalendarInfoNative", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial string GetCalendarInfoNative(string localeName, CalendarId calendarId, CalendarDataType calendarDataType);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLatestJapaneseEraNative")]
         internal static partial int GetLatestJapaneseEraNative();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetJapaneseEraStartDateNative", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetJapaneseEraStartDateNative(int era, out int startYear, out int startMonth, out int startDay);

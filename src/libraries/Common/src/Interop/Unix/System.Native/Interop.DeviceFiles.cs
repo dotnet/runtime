@@ -19,9 +19,11 @@ internal static partial class Interop
             return MkNod(pathName, mode | FileTypes.S_IFCHR, major, minor);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MkNod", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static partial int MkNod(string pathName, uint mode, uint major, uint minor);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetDeviceIdentifiers", SetLastError = true)]
         internal static unsafe partial void GetDeviceIdentifiers(ulong dev, uint* majorNumber, uint* minorNumber);
     }

@@ -15,6 +15,7 @@ internal static partial class Interop
         /// <param name="interfaceName">The NULL-terminated Unicode string containing the network interface name.</param>
         /// <param name="interfaceLuid">A pointer to the NET_LUID for this interface.</param>
         /// <returns></returns>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.IpHlpApi, StringMarshalling = StringMarshalling.Utf16, EntryPoint = "ConvertInterfaceNameToLuidW")]
         internal static unsafe partial uint ConvertInterfaceNameToLuid(ReadOnlySpan<char> interfaceName, ref ulong interfaceLuid);
     }

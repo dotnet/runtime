@@ -89,20 +89,25 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal static partial SafeCloseIcmpHandle IcmpCreateFile();
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal static partial SafeCloseIcmpHandle Icmp6CreateFile();
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IcmpCloseHandle(IntPtr handle);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal static partial uint IcmpSendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
             uint ipAddress, SafeLocalAllocHandle data, ushort dataSize, ref IP_OPTION_INFORMATION options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal static unsafe partial uint Icmp6SendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
             Span<byte> sourceSocketAddress, Span<byte> destSocketAddress, SafeLocalAllocHandle data, ushort dataSize, ref IP_OPTION_INFORMATION options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);

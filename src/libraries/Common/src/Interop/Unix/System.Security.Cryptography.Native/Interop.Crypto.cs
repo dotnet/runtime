@@ -18,6 +18,7 @@ internal static partial class Interop
     {
         internal delegate int NegativeSizeReadMethod<in THandle>(THandle handle, byte[]? buf, int cBuf);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioTell")]
         internal static partial int CryptoNative_BioTell(SafeBioHandle bio);
 
@@ -32,37 +33,48 @@ internal static partial class Interop
             return ret;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioSeek")]
         internal static partial int BioSeek(SafeBioHandle bio, int pos);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509Thumbprint")]
         private static partial int GetX509Thumbprint(SafeX509Handle x509, byte[]? buf, int cBuf);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
         private static partial int GetX509NameRawBytes(IntPtr x509Name, byte[]? buf, int cBuf);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ReadX509AsDerFromBio")]
         internal static partial SafeX509Handle ReadX509AsDerFromBio(SafeBioHandle bio);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509CrlNextUpdate")]
         internal static partial IntPtr GetX509CrlNextUpdate(SafeX509CrlHandle crl);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509Version")]
         internal static partial int GetX509Version(SafeX509Handle x509);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyParameterBytes")]
         private static partial int GetX509PublicKeyParameterBytes(SafeX509Handle x509, byte[]? buf, int cBuf);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameInfo")]
         internal static partial SafeBioHandle GetX509NameInfo(SafeX509Handle x509, int nameType, [MarshalAs(UnmanagedType.Bool)] bool forIssuer);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetAsn1StringBytes")]
         private static partial int GetAsn1StringBytes(IntPtr asn1, byte[]? buf, int cBuf);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PushX509StackField")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool PushX509StackField(SafeX509StackHandle stack, SafeX509Handle x509);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PushX509StackField")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool PushX509StackField(SafeSharedX509StackHandle stack, SafeX509Handle x509);
@@ -81,12 +93,15 @@ internal static partial class Interop
             return Utf8StringMarshaller.ConvertToManaged(GetX509RootStoreFile_private(&unused));
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
         private static unsafe partial byte* GetX509RootStorePath_private(byte* defaultPath);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStoreFile")]
         private static unsafe partial byte* GetX509RootStoreFile_private(byte* defaultPath);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_X509StoreSetVerifyTime(
             SafeX509StoreHandle ctx,
@@ -96,14 +111,17 @@ internal static partial class Interop
             int hour,
             int minute,
             int second,
+            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.Bool)] bool isDst);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509IpAddress", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int CheckX509IpAddress(SafeX509Handle x509, byte[] addressBytes, int addressLen, string hostname, int cchHostname);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509Hostname", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int CheckX509Hostname(SafeX509Handle x509, string hostname, int cchHostname);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial int CryptoNative_IsSignatureAlgorithmAvailable(string algorithm);
 
@@ -221,6 +239,7 @@ internal static partial class Interop
             return bytes;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMemoryUse")]
         private static partial void GetMemoryUse(ref long memoryUse, ref long allocationCount);
 
@@ -240,9 +259,11 @@ internal static partial class Interop
             return count;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnableMemoryTracking")]
         internal static unsafe partial void EnableMemoryTracking(int enable);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ForEachTrackedAllocation")]
         private static unsafe partial void ForEachTrackedAllocation(delegate* unmanaged<IntPtr, ulong, char*, int, IntPtr, void> callback, IntPtr ctx);
 

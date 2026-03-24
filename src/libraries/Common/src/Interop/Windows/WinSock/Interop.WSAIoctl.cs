@@ -10,6 +10,7 @@ internal static partial class Interop
     internal static partial class Winsock
     {
         // Used with SIOGETEXTENSIONFUNCTIONPOINTER - we're assuming that will never block.
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static partial SocketError WSAIoctl(
             SafeSocketHandle socketHandle,
@@ -22,6 +23,7 @@ internal static partial class Interop
             IntPtr shouldBeNull,
             IntPtr shouldBeNull2);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Ws2_32, EntryPoint = "WSAIoctl", SetLastError = true)]
         internal static partial SocketError WSAIoctl_Blocking(
             SafeSocketHandle socketHandle,

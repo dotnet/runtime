@@ -13,9 +13,11 @@ internal static partial class Interop
         private const int INSUFFICIENT_BUFFER = -1;
         private const int SUCCESS = 1;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509Decode")]
         internal static partial SafeX509Handle X509Decode(ref byte buf, int len);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509Encode")]
         private static partial int X509Encode(SafeX509Handle x, byte[]? buf, ref int len);
         internal static byte[] X509Encode(SafeX509Handle x)
@@ -32,9 +34,11 @@ internal static partial class Interop
 
             return encoded;
         }
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509IsKeyStorePrivateKeyEntry")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IsKeyStorePrivateKeyEntry(IntPtr handle);
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509GetCertificateForPrivateKeyEntry")]
         private static partial IntPtr GetPrivateKeyEntryCertificate(IntPtr privatKeyEntryHandle);
         internal static SafeX509Handle GetPrivateKeyEntryCertificate(SafeHandle privatKeyEntryHandle)
@@ -58,6 +62,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509DecodeCollection")]
         private static partial int X509DecodeCollection(ref byte buf, int bufLen, IntPtr[]? ptrs, ref int handlesLen);
         internal static SafeX509Handle[] X509DecodeCollection(ReadOnlySpan<byte> data)
@@ -97,6 +102,7 @@ internal static partial class Interop
             return handles;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ExportPkcs7")]
         private static partial int X509ExportPkcs7(IntPtr[] certs, int certsLen, byte[]? buf, ref int len);
         internal static byte[] X509ExportPkcs7(IntPtr[] certHandles)
@@ -114,6 +120,7 @@ internal static partial class Interop
             return encoded;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509GetContentType")]
         private static partial X509ContentType X509GetContentType(ref byte buf, int len);
         internal static X509ContentType X509GetContentType(ReadOnlySpan<byte> data)
@@ -129,6 +136,7 @@ internal static partial class Interop
             UnknownAlgorithm = -1,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509PublicKey")]
         internal static partial IntPtr X509GetPublicKey(SafeX509Handle x, PAL_KeyAlgorithm algorithm);
     }

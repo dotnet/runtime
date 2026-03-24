@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "EqualDomainSid", SetLastError = true)]
         internal static partial int IsEqualDomainSid(
             byte[] sid1,

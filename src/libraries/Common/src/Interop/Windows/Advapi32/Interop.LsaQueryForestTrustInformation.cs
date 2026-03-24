@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32)]
         internal static partial uint LsaQueryForestTrustInformation(SafeLsaPolicyHandle handle, in UNICODE_STRING target, ref IntPtr ForestTrustInfo);
     }

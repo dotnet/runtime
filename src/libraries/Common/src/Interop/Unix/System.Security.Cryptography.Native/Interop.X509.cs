@@ -13,51 +13,65 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NotBefore")]
         internal static partial IntPtr GetX509NotBefore(SafeX509Handle x509);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NotAfter")]
         internal static partial IntPtr GetX509NotAfter(SafeX509Handle x509);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509SignatureAlgorithm")]
         internal static partial IntPtr GetX509SignatureAlgorithm(SafeX509Handle x509);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyAlgorithm")]
         internal static partial IntPtr GetX509PublicKeyAlgorithm(SafeX509Handle x509);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyBytes")]
         internal static partial IntPtr GetX509PublicKeyBytes(SafeX509Handle x509);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509EvpPublicKey")]
         internal static partial SafeEvpPKeyHandle GetX509EvpPublicKey(SafeX509Handle x509);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509Crl")]
         internal static partial SafeX509CrlHandle DecodeX509Crl(byte[] buf, int len);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
         internal static partial SafeX509Handle DecodeX509(ref byte buf, int len);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
         internal static partial SafeX509Handle DecodeX509(IntPtr buf, int len);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509DerSize")]
         internal static partial int GetX509DerSize(SafeX509Handle x);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeX509")]
         internal static partial int EncodeX509(SafeX509Handle x, byte[] buf);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Destroy")]
         internal static partial void X509Destroy(IntPtr a);
 
         /// <summary>
         /// Clone the input certificate into a new object.
         /// </summary>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Duplicate")]
         internal static partial SafeX509Handle X509Duplicate(IntPtr handle);
 
         /// <summary>
         /// Clone the input certificate into a new object.
         /// </summary>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Duplicate")]
         internal static partial SafeX509Handle X509Duplicate(SafeX509Handle handle);
 
@@ -65,6 +79,7 @@ internal static partial class Interop
         /// Increment the native reference count of the certificate to protect against
         /// a free from another pointer-holder.
         /// </summary>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509UpRef")]
         internal static partial SafeX509Handle X509UpRef(IntPtr handle);
 
@@ -72,15 +87,19 @@ internal static partial class Interop
         /// Increment the native reference count of the certificate to protect against
         /// a free from another pointer-holder.
         /// </summary>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509UpRef")]
         internal static partial SafeX509Handle X509UpRef(SafeX509Handle handle);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemReadX509FromBio")]
         internal static partial SafeX509Handle PemReadX509FromBio(SafeBioHandle bio);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemReadX509FromBioAux")]
         internal static partial SafeX509Handle PemReadX509FromBioAux(SafeBioHandle bio);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial SafeSharedAsn1IntegerHandle CryptoNative_X509GetSerialNumber(SafeX509Handle x);
 
@@ -93,19 +112,24 @@ internal static partial class Interop
                 x);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509GetIssuerName")]
         internal static partial IntPtr X509GetIssuerName(SafeX509Handle x);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509GetSubjectName")]
         internal static partial IntPtr X509GetSubjectName(SafeX509Handle x);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509CheckPurpose")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool X509CheckPurpose(SafeX509Handle x, int id, int ca);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509IssuerNameHash")]
         internal static partial ulong X509IssuerNameHash(SafeX509Handle x);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial SafeSharedAsn1OctetStringHandle CryptoNative_X509FindExtensionData(
             SafeX509Handle x,
@@ -121,26 +145,32 @@ internal static partial class Interop
                 extensionNid);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509GetExtCount")]
         internal static partial int X509GetExtCount(SafeX509Handle x);
 
         // Returns a pointer already being tracked by the SafeX509Handle, shouldn't be SafeHandle tracked/freed.
         // Bounds checking is in place for "loc", IntPtr.Zero is returned on violations.
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509GetExt")]
         internal static partial IntPtr X509GetExt(SafeX509Handle x, int loc);
 
         // Returns a pointer already being tracked by a SafeX509Handle, shouldn't be SafeHandle tracked/freed.
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionGetOid")]
         internal static partial IntPtr X509ExtensionGetOid(IntPtr ex);
 
         // Returns a pointer already being tracked by a SafeX509Handle, shouldn't be SafeHandle tracked/freed.
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionGetData")]
         internal static partial IntPtr X509ExtensionGetData(IntPtr ex);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionGetCritical")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool X509ExtensionGetCritical(IntPtr ex);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial SafeX509StoreHandle CryptoNative_X509ChainNew(SafeX509StackHandle systemTrust, SafeX509StackHandle userTrust);
 
@@ -158,13 +188,16 @@ internal static partial class Interop
             return store;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreDestroy")]
         internal static partial void X509StoreDestroy(IntPtr v);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreAddCrl")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool X509StoreAddCrl(SafeX509StoreHandle ctx, SafeX509CrlHandle x);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool CryptoNative_X509StoreSetRevocationFlag(SafeX509StoreHandle ctx, X509RevocationFlag revocationFlag);
@@ -177,6 +210,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxInit")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool X509StoreCtxInit(
@@ -185,6 +219,7 @@ internal static partial class Interop
             SafeX509Handle x509,
             SafeX509StackHandle extraCerts);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_X509VerifyCert(SafeX509StoreCtxHandle ctx);
 
@@ -200,6 +235,7 @@ internal static partial class Interop
             return result != 0;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         internal static partial int CryptoNative_X509StoreCtxGetError(SafeX509StoreCtxHandle ctx);
 
@@ -208,6 +244,7 @@ internal static partial class Interop
             return (X509VerifyStatusCode)CryptoNative_X509StoreCtxGetError(ctx);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_X509StoreCtxReset(SafeX509StoreCtxHandle ctx);
 
@@ -219,6 +256,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_X509StoreCtxRebuildChain(SafeX509StoreCtxHandle ctx);
 
@@ -234,9 +272,11 @@ internal static partial class Interop
             return result != 0;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetErrorDepth")]
         internal static partial int X509StoreCtxGetErrorDepth(SafeX509StoreCtxHandle ctx);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial int CryptoNative_X509StoreCtxSetVerifyCallback(SafeX509StoreCtxHandle ctx, delegate* unmanaged<int, IntPtr, int> callback, void* appData);
 
@@ -248,6 +288,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetAppData")]
         internal static unsafe partial void* X509StoreCtxGetAppData(SafeX509StoreCtxHandle ctx);
 
@@ -256,21 +297,27 @@ internal static partial class Interop
             return Utf8StringMarshaller.ConvertToManaged(CryptoNative_X509VerifyCertErrorString(n))!;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial byte* CryptoNative_X509VerifyCertErrorString(int n);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509CrlDestroy")]
         internal static partial void X509CrlDestroy(IntPtr a);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemWriteBioX509Crl")]
         internal static partial int PemWriteBioX509Crl(SafeBioHandle bio, SafeX509CrlHandle crl);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemReadBioX509Crl")]
         internal static partial SafeX509CrlHandle PemReadBioX509Crl(SafeBioHandle bio);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509SubjectPublicKeyInfoDerSize")]
         internal static partial int GetX509SubjectPublicKeyInfoDerSize(SafeX509Handle x509);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeX509SubjectPublicKeyInfo")]
         internal static partial int EncodeX509SubjectPublicKeyInfo(SafeX509Handle x509, byte[] buf);
 

@@ -11,17 +11,21 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaUpRef")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DsaUpRef(IntPtr dsa);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaDestroy")]
         internal static partial void DsaDestroy(IntPtr dsa);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaGenerateKey")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DsaGenerateKey(out SafeDsaHandle dsa, int bits);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeSignature")]
         private static partial int DsaSizeSignature(SafeDsaHandle dsa);
 
@@ -34,6 +38,7 @@ internal static partial class Interop
             return size;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeQ")]
         private static partial int DsaSizeQ(SafeDsaHandle dsa);
 
@@ -47,6 +52,7 @@ internal static partial class Interop
             return size;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeP")]
         private static partial int DsaSizeP(SafeDsaHandle dsa);
 
@@ -65,6 +71,7 @@ internal static partial class Interop
         internal static bool DsaSign(SafeDsaHandle dsa, ReadOnlySpan<byte> hash, Span<byte> refSignature, out int outSignatureLength) =>
             DsaSign(dsa, ref MemoryMarshal.GetReference(hash), hash.Length, ref MemoryMarshal.GetReference(refSignature), out outSignatureLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool DsaSign(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte refSignature, out int outSignatureLength);
@@ -83,6 +90,7 @@ internal static partial class Interop
             return ret;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaVerify")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool DsaVerify(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte signature, int signatureLength);
@@ -144,6 +152,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetDsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetDsaParameters(
@@ -154,6 +163,7 @@ internal static partial class Interop
             out IntPtr y, out int y_cb,
             out IntPtr x, out int x_cb);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaKeyCreateByExplicitParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DsaKeyCreateByExplicitParameters(

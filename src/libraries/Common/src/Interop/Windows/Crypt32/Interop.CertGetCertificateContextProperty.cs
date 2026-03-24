@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertGetCertificateContextProperty(
@@ -17,6 +18,7 @@ internal static partial class Interop
             byte[]? pvData,
             ref int pcbData);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, SetLastError = true, EntryPoint = "CertGetCertificateContextProperty")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CertGetCertificateContextPropertyPtr(
@@ -25,6 +27,7 @@ internal static partial class Interop
             byte* pvData,
             ref int pcbData);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertGetCertificateContextProperty(
@@ -33,6 +36,7 @@ internal static partial class Interop
             out IntPtr pvData,
             ref int pcbData);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CertGetCertificateContextProperty(

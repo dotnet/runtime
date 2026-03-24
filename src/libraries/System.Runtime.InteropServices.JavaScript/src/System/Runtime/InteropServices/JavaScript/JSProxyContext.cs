@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -55,6 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return ManagedTID == Environment.CurrentManagedThreadId && !IsMainThread;
         }
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "thread_id")]
         private static extern ref long GetThreadNativeThreadId(Thread @this);
 

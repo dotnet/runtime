@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Netapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Netapi32)]
         internal static partial int NetApiBufferFree(IntPtr buffer);
     }

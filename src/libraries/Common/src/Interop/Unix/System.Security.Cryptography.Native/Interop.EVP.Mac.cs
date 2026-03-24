@@ -10,15 +10,19 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacFree")]
         internal static partial void EvpMacFree(IntPtr mac);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacCtxFree")]
         internal static partial void EvpMacCtxFree(IntPtr ctx);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacCtxNew")]
         private static partial SafeEvpMacCtxHandle CryptoNative_EvpMacCtxNew(SafeEvpMacHandle mac);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacInit")]
         private static partial int CryptoNative_EvpMacInit(
             SafeEvpMacCtxHandle ctx,
@@ -26,23 +30,29 @@ internal static partial class Interop
             int keyLength,
             ReadOnlySpan<byte> customizationString,
             int customizationStringLength,
+            [RequiresUnsafe]
             [MarshalAs(UnmanagedType.Bool)] bool xof);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacUpdate")]
         private static partial int CryptoNative_EvpMacUpdate(SafeEvpMacCtxHandle ctx, ReadOnlySpan<byte> data, int dataLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacFinal")]
         private static partial int CryptoNative_EvpMacFinal(SafeEvpMacCtxHandle ctx, Span<byte> mac, int macLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacReset")]
         private static partial int CryptoNative_EvpMacReset(SafeEvpMacCtxHandle ctx);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacCurrent")]
         private static partial int CryptoNative_EvpMacCurrent(SafeEvpMacCtxHandle ctx, Span<byte> mac, int macLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacCtxDup")]
         private static partial SafeEvpMacCtxHandle CryptoNative_EvpMacCtxDup(SafeEvpMacCtxHandle ctx);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacOneShot", StringMarshalling = StringMarshalling.Utf8)]
         private static partial int CryptoNative_EvpMacOneShot(
             SafeEvpMacHandle mac,

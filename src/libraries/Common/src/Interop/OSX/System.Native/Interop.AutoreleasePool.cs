@@ -9,9 +9,11 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateAutoreleasePool")]
         internal static partial IntPtr CreateAutoreleasePool();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_DrainAutoreleasePool")]
         internal static partial void DrainAutoreleasePool(IntPtr ptr);
     }

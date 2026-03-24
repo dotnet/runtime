@@ -10,13 +10,16 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameStackFieldCount")]
         internal static partial int GetX509NameStackFieldCount(SafeSharedX509NameStackHandle sk);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameStackField")]
         private static partial SafeSharedX509NameHandle GetX509NameStackField_private(SafeSharedX509NameStackHandle sk,
             int loc);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
         private static partial int GetX509NameRawBytes(SafeSharedX509NameHandle x509Name, byte[]? buf, int cBuf);
 

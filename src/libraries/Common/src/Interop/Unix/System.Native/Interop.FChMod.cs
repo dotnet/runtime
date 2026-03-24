@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FChMod", SetLastError = true)]
         internal static partial int FChMod(SafeFileHandle fd, int mode);
     }

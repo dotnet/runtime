@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal unsafe partial class Sys
     {
+        [RequiresUnsafe]
         [DoesNotReturn]
         [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_Exit")]
         internal static partial void Exit(int exitCode);

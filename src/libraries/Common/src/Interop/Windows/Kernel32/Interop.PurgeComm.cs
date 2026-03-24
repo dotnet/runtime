@@ -16,6 +16,7 @@ internal static partial class Interop
             internal const uint PURGE_RXCLEAR = 0x0008;  // Kill the typeahead buffer if there.
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool PurgeComm(

@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetTimeZoneData", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial IntPtr GetTimeZoneData(string fileName, out int length);
     }

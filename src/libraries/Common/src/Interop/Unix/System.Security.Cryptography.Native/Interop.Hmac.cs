@@ -10,27 +10,35 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCreate")]
         internal static partial SafeHmacCtxHandle HmacCreate(ref byte key, int keyLen, IntPtr md);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacDestroy")]
         internal static partial void HmacDestroy(IntPtr ctx);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacReset")]
         internal static partial int HmacReset(SafeHmacCtxHandle ctx);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacUpdate")]
         internal static partial int HmacUpdate(SafeHmacCtxHandle ctx, ReadOnlySpan<byte> data, int len);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacFinal")]
         internal static partial int HmacFinal(SafeHmacCtxHandle ctx, ref byte data, ref int len);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCurrent")]
         internal static partial int HmacCurrent(SafeHmacCtxHandle ctx, ref byte data, ref int len);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacOneShot")]
         private static unsafe partial int HmacOneShot(IntPtr type, byte* key, int keySize, byte* source, int sourceSize, byte* md, int* mdSize);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCopy")]
         internal static partial SafeHmacCtxHandle HmacCopy(SafeHmacCtxHandle ctx);
 

@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateFileMappingW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial SafeMemoryMappedFileHandle CreateFileMapping(
             SafeFileHandle hFile,
@@ -18,6 +19,7 @@ internal static partial class Interop
             int dwMaximumSizeLow,
             string? lpName);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateFileMappingW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial SafeMemoryMappedFileHandle CreateFileMapping(
             IntPtr hFile,

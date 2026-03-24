@@ -11,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyDeriveSecretAgreement")]
         private static partial int EvpPKeyDeriveSecretAgreement(
             SafeEvpPKeyHandle pkey,

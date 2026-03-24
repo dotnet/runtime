@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class WinMM
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.WinMM)]
         internal static partial int mmioClose(IntPtr hMIO, int flags);
     }

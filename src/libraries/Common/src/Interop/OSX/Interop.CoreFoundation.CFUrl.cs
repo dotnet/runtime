@@ -11,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary)]
         private static partial SafeCreateHandle CFURLCreateWithString(
             IntPtr allocator,

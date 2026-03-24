@@ -26,6 +26,7 @@ internal static partial class Interop
             internal char StatusCode;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadThreadInfo", SetLastError = true)]
         private static unsafe partial int ReadThreadInfo(int pid, int tid, ThreadInfo* threadInfo);
 

@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FileSystemSupportsLocking")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool FileSystemSupportsLocking(SafeFileHandle fd, LockOperations lockOperation, [MarshalAs(UnmanagedType.Bool)] bool accessWrite);

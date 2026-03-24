@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MProtect", SetLastError = true)]
         internal static partial int MProtect(IntPtr addr, ulong len, MemoryMappedProtections prot);
     }

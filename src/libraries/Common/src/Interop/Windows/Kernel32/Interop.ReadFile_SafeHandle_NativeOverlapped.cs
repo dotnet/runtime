@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static unsafe partial int ReadFile(
             SafeHandle handle,
@@ -17,6 +18,7 @@ internal static partial class Interop
             IntPtr numBytesRead_mustBeZero,
             NativeOverlapped* overlapped);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static unsafe partial int ReadFile(
             SafeHandle handle,

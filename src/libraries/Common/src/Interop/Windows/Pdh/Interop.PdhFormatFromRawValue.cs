@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Pdh
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Pdh)]
         public static partial int PdhFormatFromRawValue(
             uint dwCounterType,

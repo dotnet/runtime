@@ -266,26 +266,32 @@ namespace System.Security.Cryptography
 
                 private const string XNameTypeName = "System.Xml.Linq.XName" + XmlLinqAssemblyString;
 
+                [RequiresUnsafe]
                 [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "Parse")]
                 [return: UnsafeAccessorType(XDocumentTypeName)]
                 private static extern object XDocument_Parse(
+                [RequiresUnsafe]
                 [UnsafeAccessorType(XDocumentTypeName)] object?_, string xmlString);
 
                 [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Root")]
                 [return: UnsafeAccessorType(XElementTypeName)]
                 private static extern object? XDocument_GetRoot([UnsafeAccessorType(XDocumentTypeName)] object xDocument);
 
+                [RequiresUnsafe]
                 [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Elements")]
                 [return: UnsafeAccessorType(IEnumerableOfXElementTypeName)]
                 private static extern object XContainer_Elements([UnsafeAccessorType(XContainerTypeName)] object xElement);
 
+                [RequiresUnsafe]
                 [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Name")]
                 [return: UnsafeAccessorType(XNameTypeName)]
                 private static extern object XElement_GetName([UnsafeAccessorType(XElementTypeName)] object xElement);
 
+                [RequiresUnsafe]
                 [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Value")]
                 private static extern string? XElement_GetValue([UnsafeAccessorType(XElementTypeName)] object xElement);
 
+                [RequiresUnsafe]
                 [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_LocalName")]
                 private static extern string? XName_GetLocalName([UnsafeAccessorType(XNameTypeName)] object xName);
 

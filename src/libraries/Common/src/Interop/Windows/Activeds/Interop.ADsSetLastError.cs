@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Activeds
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Activeds, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int ADsSetLastError(int error, string? errorString, string? provider);
     }

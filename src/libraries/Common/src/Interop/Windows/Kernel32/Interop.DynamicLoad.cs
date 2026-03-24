@@ -10,9 +10,11 @@ internal static partial class Interop
 {
     internal static unsafe partial class Kernel32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static partial IntPtr GetProcAddress(IntPtr hModule, byte* lpProcName);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, StringMarshalling = StringMarshalling.Utf8)]
         internal static partial IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
     }

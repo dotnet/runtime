@@ -512,6 +512,7 @@ internal static partial class Interop
             internal readonly IPEndPoint LocalEndPoint => new(new IPAddress(LocalAddr, LocalScopeId), BinaryPrimitives.ReverseEndianness((ushort)LocalPort));
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetAdaptersAddresses(
             AddressFamily family,
@@ -520,44 +521,57 @@ internal static partial class Interop
             IntPtr adapterAddresses,
             uint* outBufLen);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetBestInterfaceEx(ReadOnlySpan<byte> ipAddress, int* index);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial uint GetIfEntry2(ref MibIfRow2 pIfRow);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetIpStatisticsEx(MibIpStats* statistics, AddressFamily family);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetTcpStatisticsEx(MibTcpStats* statistics, AddressFamily family);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetUdpStatisticsEx(MibUdpStats* statistics, AddressFamily family);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetIcmpStatistics(MibIcmpInfo* statistics);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial uint GetIcmpStatisticsEx(out MibIcmpInfoEx statistics, AddressFamily family);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetExtendedTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order,
                                                         uint IPVersion, TcpTableClass tableClass, uint reserved);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetExtendedUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order,
                                                         uint IPVersion, UdpTableClass tableClass, uint reserved);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetPerAdapterInfo(uint IfIndex, IntPtr pPerAdapterInfo, uint* pOutBufLen);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial void FreeMibTable(IntPtr handle);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial uint CancelMibChangeNotify2(IntPtr notificationHandle);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint NotifyStableUnicastIpAddressTable(
             AddressFamily addressFamily,

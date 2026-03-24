@@ -23,6 +23,7 @@ internal static partial class Interop
             return newHash;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         private static partial NTSTATUS BCryptDuplicateHash(
             SafeBCryptHashHandle hHash,

@@ -9,9 +9,11 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Shutdown")]
         internal static partial Error Shutdown(SafeHandle socket, SocketShutdown how);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Shutdown")]
         internal static partial Error Shutdown(IntPtr socket, SocketShutdown how);
     }

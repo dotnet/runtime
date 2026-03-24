@@ -15,6 +15,7 @@ internal static partial class Interop
         // https://learn.microsoft.com/windows-hardware/drivers/ddi/ntddstor/ni-ntddstor-ioctl_storage_read_capacity
         internal const int IOCTL_STORAGE_READ_CAPACITY = 0x002D5140;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "DeviceIoControl", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool DeviceIoControl(

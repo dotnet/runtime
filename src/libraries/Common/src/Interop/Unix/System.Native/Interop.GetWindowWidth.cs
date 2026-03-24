@@ -18,6 +18,7 @@ internal static partial class Interop
             internal ushort YPixel;
         };
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetWindowSize", SetLastError = true)]
         internal static partial int GetWindowSize(SafeFileHandle terminalHandle, out WinSize winSize);
     }

@@ -48,6 +48,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static unsafe partial int AppleCryptoNative_Pbkdf2(
             PAL_HashAlgorithm prfAlgorithm,

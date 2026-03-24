@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial IntPtr WSASocketW(
             AddressFamily addressFamily,

@@ -14,20 +14,24 @@ internal static partial class Interop
             UF_HIDDEN = 0x8000
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LChflags", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial int LChflags(string path, uint flags);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FChflags", SetLastError = true)]
         internal static partial int FChflags(SafeHandle fd, uint flags);
 
         internal static readonly bool CanSetHiddenFlag = (LChflagsCanSetHiddenFlag() != 0);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LChflagsCanSetHiddenFlag")]
         [SuppressGCTransition]
         private static partial int LChflagsCanSetHiddenFlag();
 
         internal static readonly bool SupportsHiddenFlag = (CanGetHiddenFlag() != 0);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_CanGetHiddenFlag")]
         [SuppressGCTransition]
         private static partial int CanGetHiddenFlag();

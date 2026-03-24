@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class ZLib
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_DeflateInit2_")]
         internal static unsafe partial ZLibNative.ErrorCode DeflateInit2_(
             ZLibNative.ZStream* stream,
@@ -17,24 +18,31 @@ internal static partial class Interop
             int memLevel,
             ZLibNative.CompressionStrategy strategy);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Deflate")]
         internal static unsafe partial ZLibNative.ErrorCode Deflate(ZLibNative.ZStream* stream, ZLibNative.FlushCode flush);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_DeflateEnd")]
         internal static unsafe partial ZLibNative.ErrorCode DeflateEnd(ZLibNative.ZStream* stream);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateInit2_")]
         internal static unsafe partial ZLibNative.ErrorCode InflateInit2_(ZLibNative.ZStream* stream, int windowBits);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateReset2_")]
         internal static unsafe partial ZLibNative.ErrorCode InflateReset2_(ZLibNative.ZStream* stream, int windowBits);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Inflate")]
         internal static unsafe partial ZLibNative.ErrorCode Inflate(ZLibNative.ZStream* stream, ZLibNative.FlushCode flush);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateEnd")]
         internal static unsafe partial ZLibNative.ErrorCode InflateEnd(ZLibNative.ZStream* stream);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Crc32")]
         internal static unsafe partial uint crc32(uint crc, byte* buffer, int len);
     }

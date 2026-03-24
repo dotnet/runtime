@@ -15,6 +15,7 @@ internal static partial class Interop
             SIGSTOP = 19
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Kill", SetLastError = true)]
         internal static partial int Kill(int pid, Signals signal);
     }

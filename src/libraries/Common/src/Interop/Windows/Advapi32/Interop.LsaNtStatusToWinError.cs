@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Advapi32, SetLastError = false)]
         internal static partial uint LsaNtStatusToWinError(uint status);
     }

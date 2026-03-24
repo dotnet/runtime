@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, EntryPoint = "CertGetNameStringW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int CertGetNameString(SafeCertContextHandle pCertContext, CertNameType dwType, CertNameFlags dwFlags, in CertNameStringType pvTypePara, char* pszNameString, int cchNameString);
     }

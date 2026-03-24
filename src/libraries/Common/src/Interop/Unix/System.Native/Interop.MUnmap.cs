@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MUnmap", SetLastError = true)]
         internal static partial int MUnmap(IntPtr addr, ulong len);
     }

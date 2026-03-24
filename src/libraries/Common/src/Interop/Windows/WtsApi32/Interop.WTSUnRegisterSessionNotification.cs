@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Wtsapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Wtsapi32)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WTSUnRegisterSessionNotification(IntPtr hWnd);

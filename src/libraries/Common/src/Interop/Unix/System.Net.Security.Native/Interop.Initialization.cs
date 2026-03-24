@@ -11,6 +11,7 @@ internal static partial class Interop
 
     internal static partial class Ssl
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureLibSslInitialized")]
         internal static partial void EnsureLibSslInitialized();
 
