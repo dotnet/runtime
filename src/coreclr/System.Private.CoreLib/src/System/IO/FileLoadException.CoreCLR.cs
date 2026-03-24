@@ -8,7 +8,6 @@ namespace System.IO
 {
     public partial class FileLoadException
     {
-        // Do not delete: this is invoked from native code.
         private FileLoadException(string? fileName, int hResult)
             : base(null)
         {
@@ -36,5 +35,19 @@ namespace System.IO
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FileLoadException_GetMessageForHR")]
         private static partial void GetMessageForHR(int hresult, StringHandleOnStack retString);
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void Create(char* pFileName, int hresult, object* pThrowable, Exception* pException)
+        {
+            try
+            {
+                string? fileName = pFileName is not null ? new string(pFileName) : null;
+                *pThrowable = new FileLoadException(fileName, hresult);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

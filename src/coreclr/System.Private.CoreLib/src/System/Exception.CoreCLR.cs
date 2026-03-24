@@ -396,5 +396,26 @@ namespace System
                 *pException = ex;
             }
         }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateArgumentException(Exception* pEx, bool isArgumentException, delegate*<object, string?, string?, void> pCtor, char* pResourceName, char* pParamName, Exception* pException)
+        {
+            try
+            {
+                string? message = pResourceName is not null ? SR.GetResourceString(new string(pResourceName)) : null;
+                string? paramName = pParamName is not null ? new string(pParamName) : null;
+
+                // Note that ArgumentException takes arguments to its constructor in a different order,
+                // for usability reasons.  However it is inconsistent with our other exceptions.
+                if (isArgumentException)
+                    pCtor(*pEx, message, paramName);
+                else
+                    pCtor(*pEx, paramName, message);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

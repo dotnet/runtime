@@ -1295,14 +1295,9 @@ OBJECTREF EEArgumentException::CreateThrowable()
     struct
     {
         OBJECTREF pThrowable;
-        STRINGREF s1;
-        OBJECTREF pTmpThrowable;
     } gc;
     gc.pThrowable = NULL;
-    gc.s1 = NULL;
-    gc.pTmpThrowable = NULL;
     GCPROTECT_BEGIN(gc);
-    ResMgrGetString(m_resourceName, &gc.s1);
 
     MethodTable *pMT = CoreLibBinder::GetException(m_kind);
     gc.pThrowable = AllocateObject(pMT);
@@ -1316,32 +1311,15 @@ OBJECTREF EEArgumentException::CreateThrowable()
         COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
     }
 
-    MethodDescCallSite exceptionCtor(pMD);
+    UnmanagedCallersOnlyCaller createArgException(METHOD__EXCEPTION__CREATE_ARGUMENT_EXCEPTION);
+    createArgException.InvokeThrowing(
+        &gc.pThrowable,
+        m_kind == kArgumentException,
+        pMD->GetSingleCallableAddrOfCode(),
+        m_resourceName.GetUnicode(),
+        m_argumentName.GetUnicode());
 
-    STRINGREF argName = StringObject::NewString(m_argumentName);
-
-    // Note that ArgumentException takes arguments to its constructor in a different order,
-    // for usability reasons.  However it is inconsistent with our other exceptions.
-    if (m_kind == kArgumentException)
-    {
-        ARG_SLOT args1[] = {
-            ObjToArgSlot(gc.pThrowable),
-            ObjToArgSlot(gc.s1),
-            ObjToArgSlot(argName),
-        };
-        exceptionCtor.Call(args1);
-    }
-    else
-    {
-        ARG_SLOT args1[] = {
-            ObjToArgSlot(gc.pThrowable),
-            ObjToArgSlot(argName),
-            ObjToArgSlot(gc.s1),
-        };
-        exceptionCtor.Call(args1);
-    }
-
-    GCPROTECT_END(); //Prot
+    GCPROTECT_END();
 
     return gc.pThrowable;
 }
@@ -1422,54 +1400,19 @@ OBJECTREF EETypeLoadException::CreateThrowable()
     }
     CONTRACTL_END;
 
-    MethodTable *pMT = CoreLibBinder::GetException(kTypeLoadException);
+    OBJECTREF throwable = NULL;
+    GCPROTECT_BEGIN(throwable);
 
-    struct {
-        OBJECTREF pNewException;
-        STRINGREF pNewAssemblyString;
-        STRINGREF pNewClassString;
-        STRINGREF pNewMessageArgString;
-    } gc;
-    gc.pNewException = NULL;
-    gc.pNewAssemblyString = NULL;
-    gc.pNewClassString = NULL;
-    gc.pNewMessageArgString = NULL;
-    GCPROTECT_BEGIN(gc);
+    LPCWSTR pClassName = m_fullName.GetUnicode();
+    LPCWSTR pAssemblyName = m_pAssemblyName.IsEmpty() ? NULL : m_pAssemblyName.GetUnicode();
+    LPCWSTR pMessageArg = m_pMessageArg.IsEmpty() ? NULL : m_pMessageArg.GetUnicode();
 
-    gc.pNewClassString = StringObject::NewString(m_fullName);
-
-    if (!m_pMessageArg.IsEmpty())
-        gc.pNewMessageArgString = StringObject::NewString(m_pMessageArg);
-
-    if (!m_pAssemblyName.IsEmpty())
-        gc.pNewAssemblyString = StringObject::NewString(m_pAssemblyName);
-
-    gc.pNewException = AllocateObject(pMT);
-
-    MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
-                            COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_Str_Int_RetVoid);
-
-    if (!pMD)
-    {
-        MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
-    }
-
-    MethodDescCallSite exceptionCtor(pMD);
-
-    ARG_SLOT args[] = {
-        ObjToArgSlot(gc.pNewException),
-        ObjToArgSlot(gc.pNewClassString),
-        ObjToArgSlot(gc.pNewAssemblyString),
-        ObjToArgSlot(gc.pNewMessageArgString),
-        (ARG_SLOT)m_resIDWhy,
-    };
-
-    exceptionCtor.Call(args);
+    UnmanagedCallersOnlyCaller createTypeLoadEx(METHOD__TYPE_LOAD_EXCEPTION__CREATE);
+    createTypeLoadEx.InvokeThrowing(pClassName, pAssemblyName, pMessageArg, (int)m_resIDWhy, &throwable);
 
     GCPROTECT_END();
 
-    return gc.pNewException;
+    return throwable;
 }
 
 // ---------------------------------------------------------------------------
@@ -1605,33 +1548,15 @@ OBJECTREF EEFileLoadException::CreateThrowable()
 
     struct {
         OBJECTREF pNewException;
-        STRINGREF pNewFileString;
     } gc;
     gc.pNewException = NULL;
-    gc.pNewFileString = NULL;
     GCPROTECT_BEGIN(gc);
 
-    gc.pNewFileString = StringObject::NewString(m_name);
-    gc.pNewException = AllocateObject(CoreLibBinder::GetException(m_kind));
 
-    MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
-                            COR_CTOR_METHOD_NAME, &gsig_IM_Str_Int_RetVoid);
-
-    if (!pMD)
-    {
-        MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
-    }
-
-    MethodDescCallSite  exceptionCtor(pMD);
-
-    ARG_SLOT args[] = {
-        ObjToArgSlot(gc.pNewException),
-        ObjToArgSlot(gc.pNewFileString),
-        (ARG_SLOT) m_hr
-    };
-
-    exceptionCtor.Call(args);
+    LPCWSTR pFileName = m_name.GetUnicode();
+    UnmanagedCallersOnlyCaller createFileLoadEx(METHOD__FILE_LOAD_EXCEPTION__CREATE);
+    createFileLoadEx.InvokeThrowing(pFileName, (int)m_hr, &gc.pNewException);
+    _ASSERTE(gc.pNewException->GetMethodTable() == CoreLibBinder::GetException(m_kind));
 
     GCPROTECT_END();
 
