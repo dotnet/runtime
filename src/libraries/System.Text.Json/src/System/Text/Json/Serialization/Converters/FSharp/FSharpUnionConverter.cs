@@ -472,7 +472,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (!caseInfo.IsFieldless)
             {
-                object[] fieldValues = caseInfo.FieldReader(value);
+                object[] fieldValues = caseInfo.FieldReader(value!);
                 Debug.Assert(fieldValues.Length == caseInfo.Fields!.Length);
 
                 for (int i = 0; i < caseInfo.Fields.Length; i++)
