@@ -31,6 +31,7 @@
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
+#include <spawn.h>
 #endif
 
 #ifdef __FreeBSD__
@@ -219,6 +220,103 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t stdoutFd,
                                       int32_t stderrFd)
 {
+#if defined(__APPLE__) && !defined(TARGET_MACCATALYST) && !defined(TARGET_TVOS)
+    // Use posix_spawn on macOS when credentials don't need to be set,
+    // since macOS does not support setuid/setgid with posix_spawn.
+    if (!setCredentials)
+    {
+        assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
+                "null argument.");
+
+        // Make sure we can find and access the executable.
+        if (access(filename, X_OK) != 0)
+        {
+            return -1;
+        }
+
+        pid_t spawnedPid;
+        posix_spawn_file_actions_t file_actions;
+        posix_spawnattr_t attr;
+        int result;
+
+        if ((result = posix_spawnattr_init(&attr)) != 0)
+        {
+            errno = result;
+            return -1;
+        }
+
+        // POSIX_SPAWN_SETSIGDEF to reset signal handlers to default
+        short flags = POSIX_SPAWN_SETSIGDEF;
+        if ((result = posix_spawnattr_setflags(&attr, flags)) != 0)
+        {
+            int saved_errno = result;
+            posix_spawnattr_destroy(&attr);
+            errno = saved_errno;
+            return -1;
+        }
+
+        // Reset all signal handlers to default
+        sigset_t all_signals;
+        sigfillset(&all_signals);
+        if ((result = posix_spawnattr_setsigdefault(&attr, &all_signals)) != 0)
+        {
+            int saved_errno = result;
+            posix_spawnattr_destroy(&attr);
+            errno = saved_errno;
+            return -1;
+        }
+
+        if ((result = posix_spawn_file_actions_init(&file_actions)) != 0)
+        {
+            int saved_errno = result;
+            posix_spawnattr_destroy(&attr);
+            errno = saved_errno;
+            return -1;
+        }
+
+        // Redirect stdin/stdout/stderr
+        if ((stdinFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdinFd, STDIN_FILENO)) != 0)
+            || (stdoutFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdoutFd, STDOUT_FILENO)) != 0)
+            || (stderrFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stderrFd, STDERR_FILENO)) != 0))
+        {
+            int saved_errno = result;
+            posix_spawn_file_actions_destroy(&file_actions);
+            posix_spawnattr_destroy(&attr);
+            errno = saved_errno;
+            return -1;
+        }
+
+        // Change working directory if specified
+        if (cwd != NULL)
+        {
+            if ((result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0)
+            {
+                int saved_errno = result;
+                posix_spawn_file_actions_destroy(&file_actions);
+                posix_spawnattr_destroy(&attr);
+                errno = saved_errno;
+                return -1;
+            }
+        }
+
+        // Spawn the process
+        result = posix_spawn(&spawnedPid, filename, &file_actions, &attr, argv, envp);
+
+        posix_spawn_file_actions_destroy(&file_actions);
+        posix_spawnattr_destroy(&attr);
+
+        if (result != 0)
+        {
+            errno = result;
+            *childPid = -1;
+            return -1;
+        }
+
+        *childPid = spawnedPid;
+        return 0;
+    }
+#endif
+
 #if HAVE_FORK
     bool success = true;
     int waitForChildToExecPipe[2] = {-1, -1};
