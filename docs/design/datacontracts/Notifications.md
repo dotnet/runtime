@@ -9,17 +9,9 @@ This contract is for debugger notifications.
 // The argument is a bitmask where the i-th bit set represents the i-th generation.
 void SetGcNotification(int condemnedGeneration);
 
-// Returns the notification type encoded in the first element of the exception information array.
-NotificationType GetNotificationType(ReadOnlySpan<TargetPointer> exceptionInformation);
-
-// Parse methods extract fields from the exception information array.
-// The caller must verify the notification type with GetNotificationType before calling these.
-void ParseModuleLoadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress);
-void ParseModuleUnloadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress);
-void ParseJITNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress);
-void ParseExceptionNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer threadAddress);
-bool ParseGCNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out GcEventData eventData);
-void ParseExceptionCatcherEnterNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out uint nativeOffset);
+// Parses the exception information array into a typed notification object.
+// Returns false if the notification type is unknown. Pattern match on the result to access notification-specific fields.
+bool TryParseNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out NotificationData? notification);
 ```
 
 ## Version 1
@@ -52,6 +44,14 @@ public enum NotificationType
     ExceptionCatcherEnter,
 }
 
+public abstract record NotificationData(NotificationType Type);
+public record ModuleLoadNotificationData(TargetPointer ModuleAddress) : NotificationData(NotificationType.ModuleLoad);
+public record ModuleUnloadNotificationData(TargetPointer ModuleAddress) : NotificationData(NotificationType.ModuleUnload);
+public record JitNotificationData(TargetPointer MethodDescAddress, TargetPointer NativeCodeAddress) : NotificationData(NotificationType.Jit2);
+public record ExceptionNotificationData(TargetPointer ThreadAddress) : NotificationData(NotificationType.Exception);
+public record GcNotificationData(GcEventData EventData, bool IsSupportedEvent) : NotificationData(NotificationType.Gc);
+public record ExceptionCatcherEnterNotificationData(TargetPointer MethodDescAddress, uint NativeOffset) : NotificationData(NotificationType.ExceptionCatcherEnter);
+
 void SetGcNotification(int condemnedGeneration)
 {
     TargetPointer pGcNotificationFlags = _target.ReadGlobalPointer("GcNotificationFlags");
@@ -64,44 +64,35 @@ void SetGcNotification(int condemnedGeneration)
     }
 }
 
-NotificationType GetNotificationType(ReadOnlySpan<TargetPointer> exceptionInformation)
+private enum NativeNotificationType : uint
+{
+    ModuleLoad = 1,
+    ModuleUnload = 2,
+    Exception = 5,
+    Gc = 6,
+    ExceptionCatcherEnter = 7,
+    Jit2 = 8,
+}
+
+bool TryParseNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out NotificationData? notification)
 {
     if (exceptionInformation.IsEmpty)
-        return NotificationType.Unknown;
-    // switch based on exceptionInformation[0].Value
-}
+    {
+        notification = null;
+        return false;
+    }
 
-void ParseModuleLoadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress)
-{
-    moduleAddress = exceptionInformation[1];
-}
+    notification = (NativeNotificationType)(uint)exceptionInformation[0].Value switch
+    {
+        NativeNotificationType.ModuleLoad => new ModuleLoadNotificationData(exceptionInformation[1]),
+        NativeNotificationType.ModuleUnload => new ModuleUnloadNotificationData(exceptionInformation[1]),
+        NativeNotificationType.Jit2 => new JitNotificationData(exceptionInformation[1], exceptionInformation[2]),
+        NativeNotificationType.Exception => new ExceptionNotificationData(exceptionInformation[1]),
+        NativeNotificationType.Gc => ParseGcNotification(exceptionInformation),
+        NativeNotificationType.ExceptionCatcherEnter => new ExceptionCatcherEnterNotificationData(exceptionInformation[1], (uint)exceptionInformation[2].Value),
+        _ => null,
+    };
 
-void ParseModuleUnloadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress)
-{
-    moduleAddress = exceptionInformation[1];
-}
-
-void ParseJITNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress)
-{
-    methodDescAddress = exceptionInformation[1];
-    nativeCodeAddress = exceptionInformation[2];
-}
-
-void ParseExceptionNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer threadAddress)
-{
-    threadAddress = exceptionInformation[1];
-}
-
-bool ParseGCNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out GcEventData eventData)
-{
-    GcEventType eventType = (GcEventType)(uint)exceptionInformation[1].Value;
-    eventData = new GcEventData(eventType, (int)(uint)exceptionInformation[2].Value);
-    return eventType == GcEventType.MarkEnd;
-}
-
-void ParseExceptionCatcherEnterNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out uint nativeOffset)
-{
-    methodDescAddress = exceptionInformation[1];
-    nativeOffset = (uint)exceptionInformation[2].Value;
+    return notification is not null;
 }
 ```

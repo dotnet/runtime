@@ -29,8 +29,6 @@ public struct DacpGetModuleData
     public ulong InMemoryPdbSize;
 }
 
-#pragma warning disable CS0169
-#pragma warning disable CA1823
 public unsafe struct EXCEPTION_RECORD64
 {
     public const int ExceptionMaximumParameters = 15;
@@ -40,11 +38,9 @@ public unsafe struct EXCEPTION_RECORD64
     public ulong ExceptionRecord;
     public ulong ExceptionAddress;
     public uint NumberParameters;
-    private uint _unusedAlignment;
+    public uint _unusedAlignment;
     public fixed ulong ExceptionInformation[ExceptionMaximumParameters];
 }
-#pragma warning restore CA1823
-#pragma warning restore CS0169
 
 [GeneratedComInterface]
 [Guid("88E32849-0A0A-4cb0-9022-7CD2E9E139E2")]

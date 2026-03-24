@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -36,54 +37,31 @@ internal readonly struct Notifications_1 : INotifications
         }
     }
 
-    NotificationType INotifications.GetNotificationType(ReadOnlySpan<TargetPointer> exceptionInformation)
+    bool INotifications.TryParseNotification(ReadOnlySpan<TargetPointer> exceptionInformation, [NotNullWhen(true)] out NotificationData? notification)
     {
+        notification = null;
+
         if (exceptionInformation.IsEmpty)
-            return NotificationType.Unknown;
+            return false;
 
-        return (NotificationType_1)(uint)exceptionInformation[0].Value switch
+        notification = (NotificationType_1)(uint)exceptionInformation[0].Value switch
         {
-            NotificationType_1.ModuleLoad => NotificationType.ModuleLoad,
-            NotificationType_1.ModuleUnload => NotificationType.ModuleUnload,
-            NotificationType_1.Jit2 => NotificationType.Jit2,
-            NotificationType_1.Exception => NotificationType.Exception,
-            NotificationType_1.Gc => NotificationType.Gc,
-            NotificationType_1.ExceptionCatcherEnter => NotificationType.ExceptionCatcherEnter,
-            _ => NotificationType.Unknown,
+            NotificationType_1.ModuleLoad => new ModuleLoadNotificationData(exceptionInformation[1]),
+            NotificationType_1.ModuleUnload => new ModuleUnloadNotificationData(exceptionInformation[1]),
+            NotificationType_1.Jit2 => new JitNotificationData(exceptionInformation[1], exceptionInformation[2]),
+            NotificationType_1.Exception => new ExceptionNotificationData(exceptionInformation[1]),
+            NotificationType_1.Gc => ParseGcNotification(exceptionInformation),
+            NotificationType_1.ExceptionCatcherEnter => new ExceptionCatcherEnterNotificationData(exceptionInformation[1], (uint)exceptionInformation[2].Value),
+            _ => null,
         };
+
+        return notification is not null;
     }
 
-    void INotifications.ParseModuleLoadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress)
-    {
-        moduleAddress = exceptionInformation[1];
-    }
-
-    void INotifications.ParseModuleUnloadNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer moduleAddress)
-    {
-        moduleAddress = exceptionInformation[1];
-    }
-
-    void INotifications.ParseJITNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress)
-    {
-        methodDescAddress = exceptionInformation[1];
-        nativeCodeAddress = exceptionInformation[2];
-    }
-
-    void INotifications.ParseExceptionNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer threadAddress)
-    {
-        threadAddress = exceptionInformation[1];
-    }
-
-    bool INotifications.ParseGCNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out GcEventData eventData)
+    private static GcNotificationData ParseGcNotification(ReadOnlySpan<TargetPointer> exceptionInformation)
     {
         GcEventType eventType = (GcEventType)(uint)exceptionInformation[1].Value;
-        eventData = new GcEventData(eventType, (int)(uint)exceptionInformation[2].Value);
-        return eventType == GcEventType.MarkEnd;
-    }
-
-    void INotifications.ParseExceptionCatcherEnterNotification(ReadOnlySpan<TargetPointer> exceptionInformation, out TargetPointer methodDescAddress, out uint nativeOffset)
-    {
-        methodDescAddress = exceptionInformation[1];
-        nativeOffset = (uint)exceptionInformation[2].Value;
+        GcEventData eventData = new(eventType, (int)(uint)exceptionInformation[2].Value);
+        return new GcNotificationData(eventData, IsSupportedEvent: eventType == GcEventType.MarkEnd);
     }
 }

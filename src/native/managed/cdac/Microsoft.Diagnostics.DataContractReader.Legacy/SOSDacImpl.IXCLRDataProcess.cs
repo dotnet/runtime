@@ -483,9 +483,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
     int IXCLRDataProcess.TranslateExceptionRecordToNotification(EXCEPTION_RECORD64* record, [MarshalUsing(typeof(UniqueComInterfaceMarshaller<IXCLRDataExceptionNotification>))] IXCLRDataExceptionNotification notify)
     {
-        // Note: there is intentionally no DEBUG block calling the legacy implementation here.
-        // TranslateExceptionRecordToNotification fires callbacks on the provided notify object;
-        // calling both the cDAC and legacy implementations would double-fire every callback.
+        // notify must be unique so that we can cast it to ComObject, call FinalRelease on it, and deterministically release.
+        // This is required because notify is a stack allocated object created by the caller.
+        // If the object goes out of scope before we dispose and finalize it, we can crash during GC.
         ComObject comObj = (ComObject)(object)notify;
 
         int hr = HResults.S_OK;
@@ -496,75 +496,66 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 exInfo[i] = new TargetPointer(record->ExceptionInformation[i]);
 
             INotifications notifications = _target.Contracts.Notifications;
-            NotificationType notifyType = notifications.GetNotificationType(exInfo);
-
-            if (notifyType == NotificationType.Unknown)
+            if (!notifications.TryParseNotification(exInfo, out NotificationData? notification))
                 return HResults.E_INVALIDARG;
 
-            switch (notifyType)
+            switch (notification)
             {
-                case NotificationType.ModuleLoad:
+                case ModuleLoadNotificationData moduleLoad:
                 {
-                    notifications.ParseModuleLoadNotification(exInfo, out TargetPointer moduleAddress);
-
                     IXCLRDataModule? legacyModule = null;
                     if (_legacyImpl is not null)
                     {
                         DacComNullableByRef<IXCLRDataModule> legacyModuleOut = new(isNullRef: false);
-                        _legacyImpl.GetModule(moduleAddress.ToClrDataAddress(_target), legacyModuleOut);
+                        _legacyImpl.GetModule(moduleLoad.ModuleAddress.ToClrDataAddress(_target), legacyModuleOut);
                         legacyModule = legacyModuleOut.Interface;
                     }
 
-                    notify.OnModuleLoaded(new ClrDataModule(moduleAddress, _target, legacyModule));
+                    notify.OnModuleLoaded(new ClrDataModule(moduleLoad.ModuleAddress, _target, legacyModule));
                     break;
                 }
 
-                case NotificationType.ModuleUnload:
+                case ModuleUnloadNotificationData moduleUnload:
                 {
-                    notifications.ParseModuleUnloadNotification(exInfo, out TargetPointer moduleAddress);
-
                     IXCLRDataModule? legacyModule = null;
                     if (_legacyImpl is not null)
                     {
                         DacComNullableByRef<IXCLRDataModule> legacyModuleOut = new(isNullRef: false);
-                        _legacyImpl.GetModule(moduleAddress.ToClrDataAddress(_target), legacyModuleOut);
+                        _legacyImpl.GetModule(moduleUnload.ModuleAddress.ToClrDataAddress(_target), legacyModuleOut);
                         legacyModule = legacyModuleOut.Interface;
                     }
 
-                    notify.OnModuleUnloaded(new ClrDataModule(moduleAddress, _target, legacyModule));
+                    notify.OnModuleUnloaded(new ClrDataModule(moduleUnload.ModuleAddress, _target, legacyModule));
                     break;
                 }
 
-                case NotificationType.Jit2:
+                case JitNotificationData jit:
                 {
-                    notifications.ParseJITNotification(exInfo, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress);
-
                     TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
                     TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
 
                     IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                    MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescAddress);
+                    MethodDescHandle methodDesc = rts.GetMethodDescHandle(jit.MethodDescAddress);
 
                     ClrDataMethodInstance methodInst = new(_target, methodDesc, appDomain, null);
                     notify.OnCodeGenerated(methodInst);
                     if (notify is IXCLRDataExceptionNotification5 notify5)
                     {
-                        notify5.OnCodeGenerated2(methodInst, nativeCodeAddress.ToClrDataAddress(_target));
+                        notify5.OnCodeGenerated2(methodInst, jit.NativeCodeAddress.ToClrDataAddress(_target));
                     }
                     break;
                 }
 
-                case NotificationType.Exception:
+                case ExceptionNotificationData exception:
                 {
                     if (notify is IXCLRDataExceptionNotification2 notify2)
                     {
-                        notifications.ParseExceptionNotification(exInfo, out TargetPointer threadAddress);
                         IThread thread = _target.Contracts.Thread;
-                        Contracts.ThreadData threadData = thread.GetThreadData(threadAddress);
-                        TargetPointer thrownObjectHandle = thread.GetCurrentExceptionHandle(threadAddress);
+                        Contracts.ThreadData threadData = thread.GetThreadData(exception.ThreadAddress);
+                        TargetPointer thrownObjectHandle = thread.GetCurrentExceptionHandle(exception.ThreadAddress);
                         notify2.OnException(new ClrDataExceptionState(
                             _target,
-                            threadAddress,
+                            exception.ThreadAddress,
                             (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
                             thrownObjectHandle,
                             threadData.FirstNestedException,
@@ -575,20 +566,20 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                     break;
                 }
 
-                case NotificationType.Gc:
+                case GcNotificationData gc:
                 {
-                    if (notifications.ParseGCNotification(exInfo, out GcEventData gcEventData))
+                    if (gc.IsSupportedEvent)
                     {
                         if (notify is IXCLRDataExceptionNotification3 notify3)
                         {
                             notify3.OnGcEvent(new GcEvtArgs
                             {
-                                type = gcEventData.EventType switch
+                                type = gc.EventData.EventType switch
                                 {
                                     GcEventType.MarkEnd => GcEvtArgs.GcEvt_t.GC_MARK_END,
                                     _ => GcEvtArgs.GcEvt_t.GC_EVENT_TYPE_MAX,
                                 },
-                                condemnedGeneration = gcEventData.CondemnedGeneration,
+                                condemnedGeneration = gc.EventData.CondemnedGeneration,
                             });
                         }
                         hr = HResults.S_OK;
@@ -598,17 +589,15 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                     break;
                 }
 
-                case NotificationType.ExceptionCatcherEnter:
+                case ExceptionCatcherEnterNotificationData exceptionCatcherEnter:
                 {
-                    notifications.ParseExceptionCatcherEnterNotification(exInfo, out TargetPointer methodDescAddress, out uint nativeOffset);
-
                     if (notify is IXCLRDataExceptionNotification4 notify4)
                     {
                         TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
                         TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
                         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                        MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescAddress);
-                        notify4.ExceptionCatcherEnter(new ClrDataMethodInstance(_target, methodDesc, appDomain, null), nativeOffset);
+                        MethodDescHandle methodDesc = rts.GetMethodDescHandle(exceptionCatcherEnter.MethodDescAddress);
+                        notify4.ExceptionCatcherEnter(new ClrDataMethodInstance(_target, methodDesc, appDomain, null), exceptionCatcherEnter.NativeOffset);
                     }
                     break;
                 }

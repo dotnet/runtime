@@ -31,118 +31,127 @@ public class NotificationsTests
     }
 
     [Theory]
-    [InlineData(ModuleLoad, NotificationType.ModuleLoad)]
-    [InlineData(ModuleUnload, NotificationType.ModuleUnload)]
-    [InlineData(Jit2, NotificationType.Jit2)]
-    [InlineData(Exception, NotificationType.Exception)]
-    [InlineData(Gc, NotificationType.Gc)]
-    [InlineData(ExceptionCatcherEnter, NotificationType.ExceptionCatcherEnter)]
-    [InlineData(0ul, NotificationType.Unknown)]
-    [InlineData(3ul, NotificationType.Unknown)] // JIT_NOTIFICATION (legacy, not handled)
-    [InlineData(99ul, NotificationType.Unknown)]
-    public void GetNotificationType_ReturnsExpectedType(ulong rawType, NotificationType expected)
+    [InlineData(0ul)]
+    [InlineData(3ul)] // JIT_NOTIFICATION (legacy, not handled)
+    [InlineData(99ul)]
+    public void TryParseNotification_UnknownType_ReturnsFalse(ulong rawType)
     {
         INotifications contract = CreateContract();
         ReadOnlySpan<TargetPointer> exInfo = MakeExInfo(rawType);
-        Assert.Equal(expected, contract.GetNotificationType(exInfo));
+        Assert.False(contract.TryParseNotification(exInfo, out NotificationData? notification));
+        Assert.Null(notification);
     }
 
     [Fact]
-    public void GetNotificationType_EmptySpan_ReturnsUnknown()
+    public void TryParseNotification_EmptySpan_ReturnsFalse()
     {
         INotifications contract = CreateContract();
-        Assert.Equal(NotificationType.Unknown, contract.GetNotificationType(ReadOnlySpan<TargetPointer>.Empty));
+        Assert.False(contract.TryParseNotification(ReadOnlySpan<TargetPointer>.Empty, out NotificationData? notification));
+        Assert.Null(notification);
     }
 
     [Fact]
-    public void ParseModuleLoadNotification_ReturnsModuleAddress()
+    public void TryParseNotification_ModuleLoad_ReturnsModuleLoadData()
     {
         INotifications contract = CreateContract();
         ulong expectedModule = 0x1234_5678_9ABC_DEF0ul;
         ReadOnlySpan<TargetPointer> exInfo = MakeExInfo(ModuleLoad, expectedModule);
 
-        contract.ParseModuleLoadNotification(exInfo, out TargetPointer moduleAddress);
+        Assert.True(contract.TryParseNotification(exInfo, out NotificationData? notification));
 
-        Assert.Equal(expectedModule, moduleAddress.Value);
+        ModuleLoadNotificationData moduleLoad = Assert.IsType<ModuleLoadNotificationData>(notification);
+        Assert.Equal(NotificationType.ModuleLoad, moduleLoad.Type);
+        Assert.Equal(expectedModule, moduleLoad.ModuleAddress.Value);
     }
 
     [Fact]
-    public void ParseModuleUnloadNotification_ReturnsModuleAddress()
+    public void TryParseNotification_ModuleUnload_ReturnsModuleUnloadData()
     {
         INotifications contract = CreateContract();
         ulong expectedModule = 0xDEAD_BEEF_0000_0001ul;
         ReadOnlySpan<TargetPointer> exInfo = MakeExInfo(ModuleUnload, expectedModule);
 
-        contract.ParseModuleUnloadNotification(exInfo, out TargetPointer moduleAddress);
+        Assert.True(contract.TryParseNotification(exInfo, out NotificationData? notification));
 
-        Assert.Equal(expectedModule, moduleAddress.Value);
+        ModuleUnloadNotificationData moduleUnload = Assert.IsType<ModuleUnloadNotificationData>(notification);
+        Assert.Equal(NotificationType.ModuleUnload, moduleUnload.Type);
+        Assert.Equal(expectedModule, moduleUnload.ModuleAddress.Value);
     }
 
     [Fact]
-    public void ParseJITNotification_ReturnsAddresses()
+    public void TryParseNotification_Jit_ReturnsJitData()
     {
         INotifications contract = CreateContract();
         ulong expectedMethodDesc = 0x0000_1111_2222_3333ul;
         ulong expectedNativeCode = 0x0000_4444_5555_6666ul;
         ReadOnlySpan<TargetPointer> exInfo = MakeExInfo(Jit2, expectedMethodDesc, expectedNativeCode);
 
-        contract.ParseJITNotification(exInfo, out TargetPointer methodDescAddress, out TargetPointer nativeCodeAddress);
+        Assert.True(contract.TryParseNotification(exInfo, out NotificationData? notification));
 
-        Assert.Equal(expectedMethodDesc, methodDescAddress.Value);
-        Assert.Equal(expectedNativeCode, nativeCodeAddress.Value);
+        JitNotificationData jit = Assert.IsType<JitNotificationData>(notification);
+        Assert.Equal(NotificationType.Jit2, jit.Type);
+        Assert.Equal(expectedMethodDesc, jit.MethodDescAddress.Value);
+        Assert.Equal(expectedNativeCode, jit.NativeCodeAddress.Value);
     }
 
     [Fact]
-    public void ParseExceptionNotification_ReturnsThreadAddress()
+    public void TryParseNotification_Exception_ReturnsExceptionData()
     {
         INotifications contract = CreateContract();
         ulong expectedThread = 0x0000_CAFE_BABE_0000ul;
         ReadOnlySpan<TargetPointer> exInfo = MakeExInfo(Exception, expectedThread);
 
-        contract.ParseExceptionNotification(exInfo, out TargetPointer threadAddress);
+        Assert.True(contract.TryParseNotification(exInfo, out NotificationData? notification));
 
-        Assert.Equal(expectedThread, threadAddress.Value);
+        ExceptionNotificationData exception = Assert.IsType<ExceptionNotificationData>(notification);
+        Assert.Equal(NotificationType.Exception, exception.Type);
+        Assert.Equal(expectedThread, exception.ThreadAddress.Value);
     }
 
     [Fact]
-    public void ParseGCNotification_ReturnsEventData()
+    public void TryParseNotification_Gc_SupportedEvent_ReturnsGcData()
     {
         INotifications contract = CreateContract();
         ulong gcMarkEndType = (ulong)GcEventType.MarkEnd;
         int condemnedGeneration = 2;
         ReadOnlySpan<TargetPointer> exInfo = MakeExInfo(Gc, gcMarkEndType, (ulong)condemnedGeneration);
 
-        bool result = contract.ParseGCNotification(exInfo, out GcEventData eventData);
+        Assert.True(contract.TryParseNotification(exInfo, out NotificationData? notification));
 
-        Assert.True(result);
-        Assert.Equal(GcEventType.MarkEnd, eventData.EventType);
-        Assert.Equal(condemnedGeneration, eventData.CondemnedGeneration);
+        GcNotificationData gc = Assert.IsType<GcNotificationData>(notification);
+        Assert.Equal(NotificationType.Gc, gc.Type);
+        Assert.True(gc.IsSupportedEvent);
+        Assert.Equal(GcEventType.MarkEnd, gc.EventData.EventType);
+        Assert.Equal(condemnedGeneration, gc.EventData.CondemnedGeneration);
     }
 
     [Fact]
-    public void ParseGCNotification_ReturnsFalseForUnsupportedEventType()
+    public void TryParseNotification_Gc_UnsupportedEvent_ReturnsGcDataWithFalseSupported()
     {
         INotifications contract = CreateContract();
         ulong unsupportedGcEventType = (ulong)GcEventType.MarkEnd + 1;
         ReadOnlySpan<TargetPointer> exInfo = MakeExInfo(Gc, unsupportedGcEventType, 0);
 
-        bool result = contract.ParseGCNotification(exInfo, out GcEventData eventData);
+        Assert.True(contract.TryParseNotification(exInfo, out NotificationData? notification));
 
-        Assert.False(result);
+        GcNotificationData gc = Assert.IsType<GcNotificationData>(notification);
+        Assert.False(gc.IsSupportedEvent);
     }
 
     [Fact]
-    public void ParseExceptionCatcherEnterNotification_ReturnsAddressAndOffset()
+    public void TryParseNotification_ExceptionCatcherEnter_ReturnsData()
     {
         INotifications contract = CreateContract();
         ulong expectedMethodDesc = 0x0000_AAAA_BBBB_CCCCul;
         uint expectedOffset = 0x42;
         ReadOnlySpan<TargetPointer> exInfo = MakeExInfo(ExceptionCatcherEnter, expectedMethodDesc, expectedOffset);
 
-        contract.ParseExceptionCatcherEnterNotification(exInfo, out TargetPointer methodDescAddress, out uint nativeOffset);
+        Assert.True(contract.TryParseNotification(exInfo, out NotificationData? notification));
 
-        Assert.Equal(expectedMethodDesc, methodDescAddress.Value);
-        Assert.Equal(expectedOffset, nativeOffset);
+        ExceptionCatcherEnterNotificationData catcherEnter = Assert.IsType<ExceptionCatcherEnterNotificationData>(notification);
+        Assert.Equal(NotificationType.ExceptionCatcherEnter, catcherEnter.Type);
+        Assert.Equal(expectedMethodDesc, catcherEnter.MethodDescAddress.Value);
+        Assert.Equal(expectedOffset, catcherEnter.NativeOffset);
     }
 }
 
