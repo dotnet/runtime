@@ -88,6 +88,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 throw new ArgumentNullException(nameof(fileSystemWatcher), SR.Error_FileSystemWatcherRequiredWithoutPolling);
             }
 
+            if (root == null)
+            {
+                throw new ArgumentNullException(nameof(root));
+            }
+
             _root = root;
 
             if (fileSystemWatcher != null)

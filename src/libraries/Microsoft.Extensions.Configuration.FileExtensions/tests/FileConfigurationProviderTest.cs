@@ -142,7 +142,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
                 source.ResolveFileProvider();
 
                 Assert.NotNull(source.FileProvider);
-                var physicalProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
+                using var physicalProvider = Assert.IsType<PhysicalFileProvider>(source.FileProvider);
                 Assert.Equal(missingSubDir + Path.DirectorySeparatorChar, physicalProvider.Root);
 
                 // The configuration Path is reduced to the file name relative to the provider root.
