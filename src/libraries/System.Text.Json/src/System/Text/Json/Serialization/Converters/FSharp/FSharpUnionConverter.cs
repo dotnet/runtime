@@ -274,7 +274,13 @@ namespace System.Text.Json.Serialization.Converters
                     }
 
                     caseName = reader.GetString();
-                    break;
+
+                    if (!preserveReferences)
+                    {
+                        break;
+                    }
+
+                    continue;
                 }
 
                 reader.TrySkip();
@@ -340,7 +346,8 @@ namespace System.Text.Json.Serialization.Converters
                     CaseFieldInfo field = caseInfo.Fields![fieldIndex];
                     state.Current.JsonPropertyInfo = field.PropertyInfoForTypeInfo;
                     state.Current.NumberHandling = field.NumberHandling;
-                    field.Converter.TryReadAsObject(ref reader, field.FieldType, options, ref state, out object? fieldValue);
+                    bool success = field.Converter.TryReadAsObject(ref reader, field.FieldType, options, ref state, out object? fieldValue);
+                    Debug.Assert(success, "Nested converter should not suspend since the union payload is fully buffered.");
                     fieldValues[fieldIndex] = fieldValue!;
                 }
                 else
@@ -455,7 +462,8 @@ namespace System.Text.Json.Serialization.Converters
                     writer.WritePropertyName(field.EncodedFieldName);
                     state.Current.JsonPropertyInfo = field.PropertyInfoForTypeInfo;
                     state.Current.NumberHandling = field.NumberHandling;
-                    field.Converter.TryWriteAsObject(writer, fieldValues[i], options, ref state);
+                    bool success = field.Converter.TryWriteAsObject(writer, fieldValues[i], options, ref state);
+                    Debug.Assert(success, "Nested converter should not suspend since the union payload is fully buffered.");
                 }
             }
 

@@ -130,11 +130,11 @@ namespace System.Text.Json.Serialization.Metadata
 
             _getUnionCases = fsharpType?.GetMethod("GetUnionCases", BindingFlags.Public | BindingFlags.Static);
             _preComputeUnionTagReader = fsharpValue?.GetMethod("PreComputeUnionTagReader", BindingFlags.Public | BindingFlags.Static);
-            _preComputeUnionReader = fsharpValue?.GetMethod("PreComputeUnionReader", BindingFlags.Public | BindingFlags.Static);
-            _preComputeUnionConstructor = fsharpValue?.GetMethod("PreComputeUnionConstructor", BindingFlags.Public | BindingFlags.Static);
 
             if (unionCaseInfoType is not null)
             {
+                _preComputeUnionReader = fsharpValue?.GetMethod("PreComputeUnionReader", BindingFlags.Public | BindingFlags.Static);
+                _preComputeUnionConstructor = fsharpValue?.GetMethod("PreComputeUnionConstructor", BindingFlags.Public | BindingFlags.Static);
                 _unionCaseInfoNameGetter = unionCaseInfoType.GetMethod("get_Name", BindingFlags.Public | BindingFlags.Instance);
                 _unionCaseInfoTagGetter = unionCaseInfoType.GetMethod("get_Tag", BindingFlags.Public | BindingFlags.Instance);
                 _unionCaseInfoGetFields = unionCaseInfoType.GetMethod("GetFields", BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
