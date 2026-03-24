@@ -1949,7 +1949,6 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
     return (int32_t)count;
 }
 
-#if (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
 static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
 {
 #if defined(IOV_MAX)
@@ -1994,7 +1993,45 @@ static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
 
     return allowedCount;
 }
-#endif // (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
+
+int64_t SystemNative_ReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int fileDescriptor = ToFileDescriptor(fd);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
+
+    while (1)
+    {
+        int64_t count;
+        while ((count = readv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
+
+        if (count != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
+        {
+            assert(count >= -1);
+            return count;
+        }
+
+        // The fd is non-blocking and no data is available yet.
+        // Block (on a thread pool thread) until data arrives or the pipe/socket is closed.
+        PollEvent pollEvent = { .FileDescriptor = fileDescriptor, .Events = PAL_POLLIN, .TriggeredEvents = 0 };
+        uint32_t triggered = 0;
+        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
+        if (pollResult != Error_SUCCESS)
+        {
+            errno = ConvertErrorPalToPlatform(pollResult);
+            return -1;
+        }
+
+        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
+            (pollEvent.TriggeredEvents & PAL_POLLIN) == 0)
+        {
+            // The pipe/socket was closed with no data available (EOF).
+            return 0;
+        }
+    }
+}
 
 int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
 {
@@ -2035,6 +2072,46 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
 
     assert(count >= -1);
     return count;
+}
+
+int64_t SystemNative_WriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int fileDescriptor = ToFileDescriptor(fd);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
+
+    while (1)
+    {
+        int64_t count;
+        while ((count = writev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
+
+        if (count != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
+        {
+            assert(count >= -1);
+            return count;
+        }
+
+        // The fd is non-blocking and the write buffer is full.
+        // Block (on a thread pool thread) until space is available or the pipe/socket is closed.
+        PollEvent pollEvent = { .FileDescriptor = fileDescriptor, .Events = PAL_POLLOUT, .TriggeredEvents = 0 };
+        uint32_t triggered = 0;
+        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
+        if (pollResult != Error_SUCCESS)
+        {
+            errno = ConvertErrorPalToPlatform(pollResult);
+            return -1;
+        }
+
+        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
+            (pollEvent.TriggeredEvents & PAL_POLLOUT) == 0)
+        {
+            // The pipe/socket was closed.
+            errno = EPIPE;
+            return -1;
+        }
+    }
 }
 
 int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)

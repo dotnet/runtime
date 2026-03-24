@@ -507,11 +507,6 @@
         <target state="translated">“[In]”和“[Out]”属性仅在数组参数上受支持。请考虑使用“ref”关键字使参数可变。</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">[In] 和 [Out] 属性</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
         <target state="translated">在非托管到托管调用中从 VARIANT 封送为“in”参数的对象不会传回更新后的结果，即使 VARIANT 是 VT_BYREF 变量也是如此。使用 "ref "参数代替 "in "参数，将更新后的值传回调用方。</target>

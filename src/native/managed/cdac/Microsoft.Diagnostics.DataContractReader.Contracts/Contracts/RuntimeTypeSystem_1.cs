@@ -185,6 +185,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         TokenMask = 0xffffff,
         IsStatic = 0x1000000,
         IsThreadStatic = 0x2000000,
+        IsRVA = 0x4000000,
     }
 
     internal enum FieldDescFlags2 : uint
@@ -1679,6 +1680,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsThreadStatic) != 0;
     }
 
+    private bool IsFieldDescRVA(TargetPointer fieldDescPointer)
+    {
+        Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
+        return (fieldDesc.DWord1 & (uint)FieldDescFlags1.IsRVA) != 0;
+    }
+
     bool IRuntimeTypeSystem.IsFieldDescStatic(TargetPointer fieldDescPointer)
     {
         Data.FieldDesc fieldDesc = _target.ProcessedData.GetOrAdd<Data.FieldDesc>(fieldDescPointer);
@@ -1740,5 +1747,69 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         return TargetPointer.Null;
+    }
+
+    private TargetPointer GetStaticAddressHandle(TargetPointer @base, uint offset, bool isRVA, TargetPointer fieldDescPointer, ModuleHandle moduleHandle)
+    {
+        if (isRVA)
+        {
+            ILoader loader = _target.Contracts.Loader;
+            if (offset == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetDynamicRVA))
+            {
+                return loader.GetDynamicIL(moduleHandle, ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer));
+            }
+            TargetPointer peAssembly = loader.GetPEAssembly(moduleHandle);
+            return loader.GetFieldAddressFromRva(peAssembly, (int)offset);
+        }
+        return new TargetPointer(@base + offset);
+    }
+
+    TargetPointer IRuntimeTypeSystem.GetFieldDescStaticAddress(TargetPointer fieldDescPointer)
+    {
+        TargetPointer enclosingMT = ((IRuntimeTypeSystem)this).GetMTOfEnclosingClass(fieldDescPointer);
+        TypeHandle ctx = GetTypeHandle(enclosingMT);
+        TargetPointer modulePtr = GetModule(ctx);
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+        CorElementType type = ((IRuntimeTypeSystem)this).GetFieldDescType(fieldDescPointer);
+        TargetPointer @base;
+        if (type == CorElementType.Class || type == CorElementType.ValueType)
+        {
+            @base = GetGCStaticsBasePointer(ctx);
+        }
+        else
+        {
+            @base = GetNonGCStaticsBasePointer(ctx);
+        }
+
+        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+        uint token = ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer);
+        FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
+        FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
+
+        uint offset = ((IRuntimeTypeSystem)this).GetFieldDescOffset(fieldDescPointer, fieldDef);
+        bool isRVA = IsFieldDescRVA(fieldDescPointer);
+        TargetPointer handleAddr = GetStaticAddressHandle(@base, offset, isRVA, fieldDescPointer, moduleHandle);
+        if (type == CorElementType.ValueType && !isRVA)
+        {
+            Data.ObjectHandle objectHandle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(handleAddr);
+            Data.Object obj = _target.ProcessedData.GetOrAdd<Data.Object>(objectHandle.Object);
+            return obj.Data;
+        }
+        return handleAddr;
+    }
+
+    void IRuntimeTypeSystem.GetCoreLibFieldDescAndDef(string @namespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef)
+    {
+        ILoader loader = _target.Contracts.Loader;
+        TargetPointer systemAssembly = loader.GetSystemAssembly();
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
+        IRuntimeTypeSystem rts = (IRuntimeTypeSystem)this;
+        TypeHandle th = rts.GetTypeByNameAndModule(typeName, @namespace, moduleHandle);
+        fieldDescAddr = rts.GetFieldDescByName(th, fieldName);
+        uint token = rts.GetFieldDescMemberDef(fieldDescAddr);
+        FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
+        MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+        fieldDef = mdReader.GetFieldDefinition(fieldHandle);
     }
 }
