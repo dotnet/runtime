@@ -5718,32 +5718,21 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             {
                 assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX));
 
-                // We will be constructing the following parts:
-                //   idx  =    CNS_INT       int    0xFF
-                //          /--*  op1  simd16
-                //          +--*  op2  simd16
-                //          +--*  idx  int
-                //   tmp1 = *  HWINTRINSIC   simd32 T DotProduct
-                //          /--*  tmp1 simd32
-                //          *  STORE_LCL_VAR simd32
-                //   tmp1 =    LCL_VAR       simd32
-                //   tmp2 =    LCL_VAR       simd32
-                //   tmp3 =    LCL_VAR       simd32
-                //          /--*  tmp2 simd32
-                //          +--*  tmp3 simd32
-                //          +--*  CNS_INT    int    0x01
-                //   tmp2 = *  HWINTRINSIC   simd32 T Permute
-                //          /--*  tmp1 simd32
-                //          +--*  tmp2 simd32
-                //   node = *  HWINTRINSIC   simd32 T Add
-
                 // This is roughly the following managed code:
-                //   var tmp1 = Avx.DotProduct(op1, op2, 0xFF);
-                //   var tmp2 = Avx.Permute2x128(tmp1, tmp1, 0x4E);
-                //   return Avx.Add(tmp1, tmp2);
+                //   var tmp1 = op1 * op2;
+                //   var tmp3 = tmp1;
+                //   var tmp2 = Avx.Permute(tmp1, 0xB1);
+                //   tmp1 = tmp2 + tmp3;
+                //   tmp3 = tmp1;
+                //   tmp2 = Avx.Permute(tmp1, 0x4E);
+                //   tmp1 = tmp2 + tmp3;
+                //   tmp3 = tmp2 = tmp1;
+                //   tmp2 = Avx.Permute2x128(tmp2, tmp3, 0x1);
+                //   tmp1 = tmp1 + tmp2;
+                //   return tmp1;
 
                 tmp1 = m_compiler->gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
-                BlockRange().InsertAfter(node, tmp1);
+                BlockRange().InsertBefore(node, tmp1);
                 LowerNode(tmp1);
 
                 node->Op(1) = tmp1;
@@ -5784,6 +5773,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 tmp1 = m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, tmp3, tmp2, simdBaseType, simdSize);
                 BlockRange().InsertAfter(tmp2, tmp1);
+                LowerNode(tmp1);
 
                 node->Op(1) = tmp1;
                 LIR::Use tmp1Use3(BlockRange(), &node->Op(1), node);
@@ -5827,6 +5817,16 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             {
                 assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX));
 
+                // This is roughly the following managed code:
+                //   var tmp1 = op1 * op2;
+                //   var tmp2 = tmp1;
+                //   var tmp3 = Avx.Permute(tmp1, 0x5);
+                //   tmp1 = tmp2 + tmp3;
+                //   tmp3 = tmp2 = tmp1;
+                //   tmp2 = Avx.Permute2x128(tmp2, tmp3, 0x1);
+                //   tmp1 = tmp1 + tmp2;
+                //   return tmp1;
+
                 idx = m_compiler->gtNewIconNode(0x5, TYP_INT);
                 BlockRange().InsertBefore(node, idx);
 
@@ -5849,6 +5849,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 tmp1 = m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, tmp3, tmp2, simdBaseType, simdSize);
                 BlockRange().InsertAfter(tmp3, tmp1);
+                LowerNode(tmp1);
 
                 node->Op(1) = tmp1;
                 LIR::Use tmp1Use3(BlockRange(), &node->Op(1), node);
@@ -5881,7 +5882,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                     LowerNode(tmp1);
 
-                    tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, NI_Vector256_ToScalar, simdBaseType,
+                    tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(node->gtType, tmp1, NI_Vector256_ToScalar, simdBaseType,
                                                                 simdSize);
                     BlockRange().InsertAfter(tmp1, tmp2);
                     tmp1 = tmp2;
@@ -5949,8 +5950,18 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                     assert(simdSize == 16);
                     if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
                     {
+                        // This is roughly the following managed code:
+                        //   var tmp1 = op1 * op2;
+                        //   var tmp3 = tmp1;
+                        //   var tmp2 = Avx.Permute(tmp1, 0xB1);
+                        //   tmp1 = tmp2 + tmp3;
+                        //   tmp3 = tmp1;
+                        //   tmp2 = Avx.Permute(tmp1, 0x4E);
+                        //   tmp1 = tmp2 + tmp3;
+                        //   return tmp1;
+
                         tmp1 = m_compiler->gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
-                        BlockRange().InsertAfter(node, tmp1);
+                        BlockRange().InsertBefore(node, tmp1);
                         LowerNode(tmp1);
 
                         node->Op(1) = tmp1;
@@ -6001,7 +6012,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                             LowerNode(tmp1);
 
-                            tmp3 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, NI_Vector128_ToScalar,
+                            tmp3 = m_compiler->gtNewSimdHWIntrinsicNode(node->gtType, tmp1, NI_Vector128_ToScalar,
                                                                         simdBaseType, simdSize);
                             BlockRange().InsertAfter(tmp1, tmp3);
                             tmp1 = tmp3;
@@ -6066,6 +6077,13 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
                 {
+                    // This is roughly the following managed code:
+                    //   var tmp1 = op1 * op2;
+                    //   var tmp2 = tmp1;
+                    //   tmp1 = Avx.Permute(tmp1, 0x5);
+                    //   var tmp3 = tmp1 + tmp2;
+                    //   return tmp3;
+
                     idx = m_compiler->gtNewIconNode(0x1, TYP_INT);
                     BlockRange().InsertBefore(node, idx);
 
@@ -6098,8 +6116,8 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                         LowerNode(tmp3);
 
-                        tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp3, NI_Vector128_ToScalar, simdBaseType,
-                                                                    simdSize);
+                        tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(node->gtType, tmp3, NI_Vector128_ToScalar,
+                                                                    simdBaseType, simdSize);
                         BlockRange().InsertAfter(tmp3, tmp2);
                         tmp3 = tmp2;
                     }
