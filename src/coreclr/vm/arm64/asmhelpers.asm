@@ -261,7 +261,7 @@ NoFloatingPointRetVal
     PROLOG_SAVE_REG_PAIR           fp, lr, #-232!
     SAVE_ARGUMENT_REGISTERS        sp, 16
     SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96
-    str                            x19, [sp, #300] ; save x19 which we will use to store the secret argument
+    PROLOG_SAVE_REG                x19, #224 ; save x19 which we will use to store the secret argument
 
 
     mov x0, x12
@@ -274,7 +274,7 @@ NoFloatingPointRetVal
     mov x12, x19
 
     ; pop the stack and restore original register state
-    mov                               x19, [sp, #300] ; restore x19's original value
+    EPILOG_RESTORE_REG                x19, #224 ; restore x19's original value
     RESTORE_ARGUMENT_REGISTERS        sp, 16
     RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, 96
     EPILOG_RESTORE_REG_PAIR           fp, lr, #232!

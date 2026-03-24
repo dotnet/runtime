@@ -571,7 +571,7 @@ PCODE ComCallUMThunkMarshInfo::GetHResultReturnStub(HRESULT hr)
 
 PCODE ComCallUMThunkMarshInfo::RunTimeInit(bool* pCanSkipPreStub)
 {
-    CONTRACTL;
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
