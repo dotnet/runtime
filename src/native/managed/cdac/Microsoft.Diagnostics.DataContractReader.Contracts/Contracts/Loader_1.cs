@@ -382,7 +382,7 @@ internal readonly struct Loader_1 : ILoader
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         if (module.SimpleName != TargetPointer.Null)
         {
-            simpleName = _target.ReadUtf8String(module.SimpleName);
+            simpleName = _target.ReadUtf8String(module.SimpleName, strict: true);
             return true;
         }
         else
