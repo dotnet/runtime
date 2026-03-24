@@ -340,13 +340,13 @@ namespace System.Numerics.Tests
 
             Assert.Equal((maxBitLength + (bitsPerElement - 1)) / bitsPerElement, bigInt._bits.Length);
 
-            nuint i = 0;
-            for (; i < (nuint)(bigInt._bits.Length - 1); i++)
+            int i = 0;
+            for (; i < bigInt._bits.Length - 1; i++)
             {
-                Assert.Equal((nuint)0, bigInt._bits[(int)i]);
+                Assert.Equal((nuint)0, bigInt._bits[i]);
             }
 
-            Assert.Equal((nuint)1 << (bitsPerElement - 1), bigInt._bits[(int)i]);
+            Assert.Equal((nuint)1 << (bitsPerElement - 1), bigInt._bits[i]);
 
             // Right shift the BigInteger
             BigInteger shiftedBigInt = bigInt >> 1;
@@ -363,12 +363,12 @@ namespace System.Numerics.Tests
             Assert.Equal(((maxBitLength - 1) + (bitsPerElement - 1)) / bitsPerElement, shiftedBigInt._bits.Length);
 
             i = 0;
-            for (; i < (nuint)(shiftedBigInt._bits.Length - 1); i++)
+            for (; i < shiftedBigInt._bits.Length - 1; i++)
             {
-                Assert.Equal((nuint)0, shiftedBigInt._bits[(int)i]);
+                Assert.Equal((nuint)0, shiftedBigInt._bits[i]);
             }
 
-            Assert.Equal((nuint)1 << (bitsPerElement - 2), shiftedBigInt._bits[(int)i]);
+            Assert.Equal((nuint)1 << (bitsPerElement - 2), shiftedBigInt._bits[i]);
         }
     }
 
