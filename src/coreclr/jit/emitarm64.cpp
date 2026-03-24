@@ -13562,8 +13562,8 @@ void emitter::emitDispInsHelp(
 
             if (id->idDebugOnlyInfo()->idMemCookie != 0)
             {
-                const char* methodName =
-                    m_compiler->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
+                methodName = m_compiler->eeGetMethodFullName(
+                    (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
                 printf("      // %s", methodName);
             }
             break;
