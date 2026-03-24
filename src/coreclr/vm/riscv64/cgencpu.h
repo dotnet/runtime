@@ -416,6 +416,11 @@ struct HijackArgs
     };
     union
     {
+        DWORD64 A2;
+        size_t AsyncRet;
+    };
+    union
+    {
         struct {
              DWORD64 FA0;
              DWORD64 FA1;
