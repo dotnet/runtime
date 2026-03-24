@@ -60,9 +60,32 @@ After creating the issue, please email a link to it to
 [.NET Breaking Change Notifications](mailto:dotnetbcn@microsoft.com).
 "@
 
+# GitHub comment body limit is 65536 characters. If the comment exceeds this,
+# replace the inline draft with a short summary pointing at the file.
+$maxCommentLength = 65000
+if ($comment.Length -gt $maxCommentLength) {
+    Write-Warning "Comment body ($($comment.Length) chars) exceeds GitHub limit. Truncating inline draft."
+    $comment = @"
+## Breaking Change Documentation
+
+The full draft is too large to display inline. See ``issue-draft.md`` in the
+workflow artifacts for the complete content.
+
+---
+
+> [!NOTE]
+> This documentation was generated with AI assistance from Copilot.
+
+:point_right: **[Click here to create the issue in dotnet/docs]($issueUrl)**
+
+After creating the issue, please email a link to it to
+[.NET Breaking Change Notifications](mailto:dotnetbcn@microsoft.com).
+"@
+}
+
 $comment | Out-File -FilePath $OutputPath -Encoding UTF8 -NoNewline
 
-Write-Host "Wrote PR comment to $OutputPath"
+Write-Host "Wrote PR comment to $OutputPath ($($comment.Length) characters)"
 Write-Host "Issue URL length: $($issueUrl.Length) characters"
 if ($issueUrl.Length -gt 8192) {
     Write-Warning "URL exceeds 8192 characters. Some browsers may truncate it. Consider shortening the issue body."

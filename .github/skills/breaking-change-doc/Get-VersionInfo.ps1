@@ -139,7 +139,14 @@ function Find-ClosestTagByDistance {
 try {
     Push-Location $RepoRoot
 
-    git fetch --tags 2>$null | Out-Null
+    # Unshallow if needed (GitHub Actions default is fetch-depth=1)
+    $isShallow = git rev-parse --is-shallow-repository 2>$null
+    if ($isShallow -eq "true") {
+        Write-Host "Shallow clone detected — fetching full history for tag/ancestry operations"
+        git fetch --unshallow --tags 2>$null | Out-Null
+    } else {
+        git fetch --tags 2>$null | Out-Null
+    }
 
     # Get merge commit and base ref from GitHub CLI
     $prJson = gh pr view $PrNumber --repo $SourceRepo --json mergeCommit,mergedAt,baseRefName 2>$null

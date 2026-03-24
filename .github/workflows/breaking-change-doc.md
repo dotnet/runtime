@@ -7,7 +7,6 @@ description: >
 on:
   pull_request:
     types: [closed, labeled]
-    names: [needs-breaking-change-doc-created]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -20,22 +19,46 @@ on:
         type: boolean
         default: false
   steps:
-    - name: Check merge status
+    - name: Check label and merge status
       id: merge_check
       env:
         PR_MERGED: ${{ github.event.pull_request.merged }}
+        PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         EVENT_NAME: ${{ github.event_name }}
+        EVENT_ACTION: ${{ github.event.action }}
+        LABELED_NAME: ${{ github.event.label.name }}
       run: |
         if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-          echo "Manual dispatch — skipping merge check"
+          echo "Manual dispatch — skipping label/merge check"
           exit 0
         fi
-        if [ "$PR_MERGED" != "true" ]; then
-          echo "PR is not merged — skipping"
-          exit 1
+
+        # For 'labeled' events, the triggering label must be the one we care about
+        if [ "$EVENT_ACTION" = "labeled" ]; then
+          if [ "$LABELED_NAME" != "needs-breaking-change-doc-created" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Label '$LABELED_NAME' is not relevant — skipping"
+            exit 0
+          fi
         fi
 
-if: needs.pre_activation.outputs.merge_check_result == 'success'
+        # For 'closed' events, the label must already be on the PR
+        if [ "$EVENT_ACTION" = "closed" ]; then
+          if [[ ",$PR_LABELS," != *",needs-breaking-change-doc-created,"* ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "PR does not have needs-breaking-change-doc-created label — skipping"
+            exit 0
+          fi
+        fi
+
+        # PR must be merged
+        if [ "$PR_MERGED" != "true" ]; then
+          echo "skip=true" >> "$GITHUB_OUTPUT"
+          echo "PR is not merged — skipping"
+          exit 0
+        fi
+
+if: needs.pre_activation.outputs.merge_check_result == 'success' && needs.pre_activation.outputs.merge_check_skip != 'true'
 
 permissions:
   contents: read
