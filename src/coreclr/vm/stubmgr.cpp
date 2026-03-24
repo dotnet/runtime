@@ -2293,12 +2293,12 @@ BOOL AsyncThunkStubManager::TraceManager(Thread *thread,
         MethodDesc* pOtherMD = pMD->GetOrdinaryVariant();
         _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk has no non-thunk variant to step through to");
 
-        // An orinary variant may be a thunk in a rare case when we start from ReturnDroppingThunk.
-        // In such case the regular async variant must be not be a thunk.
-        if (pOtherMD->IsAsyncThunkMethod)
+        // An ordinary variant may be a thunk in a rare case when we start from ReturnDroppingThunk.
+        // In such case the regular async variant must not be a thunk.
+        if (pOtherMD->IsAsyncThunkMethod())
         {
             _ASSERTE(pMD->IsReturnDroppingThunk());
-            MethodDesc* pOtherMD = pMD->GetAsyncVariant();
+            pOtherMD = pMD->GetAsyncVariant();
             _ASSERTE(!pOtherMD->IsAsyncThunkMethod());
         }
 

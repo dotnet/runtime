@@ -6052,7 +6052,7 @@ MethodTableBuilder::ProcessMethodImpls()
                             {
                                 // There are two scenarios when an async variant may not find a base to override:
                                 // 
-                                // 1. We have a Task-returning method than is a Task-returning due to generic substitution of the return type.
+                                // 1. We have a Task-returning method that is Task-returning due to generic substitution of the return type.
                                 //    The base method is T-returning and thus does not have an async variant that we can override.
                                 // 
                                 // 2. We may have added a void-returning async thunk in anticipation of covariant Task -> Task<T> override.
