@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.DependencyInjection
         // until the MethodInfo is actually needed.
         private static class MethodInfoHolder
         {
-            private static readonly MethodInfo s_getServiceInfo =
+            internal static readonly MethodInfo s_getServiceInfo =
                 new Func<IServiceProvider, Type, Type, bool, object?, object?>(GetService).Method;
         }
 
