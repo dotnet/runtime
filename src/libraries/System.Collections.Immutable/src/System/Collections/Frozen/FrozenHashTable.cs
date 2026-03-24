@@ -200,20 +200,23 @@ namespace System.Collections.Frozen
                 return HashHelpers.GetPrime(targetBuckets);
             }
 
-            // In our precomputed primes table, find the index of the smallest prime that's at least as large as our number of
-            // hash codes. If there are more codes than in our precomputed primes table, which accommodates millions of values,
-            // give up and just use the next prime.
-            ReadOnlySpan<int> primes = HashHelpers.Primes;
-            int minPrimeIndexInclusive = 0;
-            while ((uint)minPrimeIndexInclusive < (uint)primes.Length && minNumBuckets > primes[minPrimeIndexInclusive])
-            {
-                minPrimeIndexInclusive++;
-            }
-
-            if (minPrimeIndexInclusive >= primes.Length)
+            // The precomputed primes table (HashHelpers.Primes) tops out at this value.
+            // If we need more buckets than this, skip the collision-counting loop and use
+            // a simple prime at ~0.5 load factor. GetPrime handles arbitrary values.
+            const int LargestPrecomputedPrime = 7_199_369; // HashHelpers.Primes[^1]
+            if (minNumBuckets > LargestPrecomputedPrime)
             {
                 int targetBuckets = (int)Math.Min(minNumBuckets, int.MaxValue);
                 return HashHelpers.GetPrime(targetBuckets);
+            }
+
+            // Find the index of the smallest precomputed prime >= minNumBuckets.
+            // We've already verified minNumBuckets is within the table's range.
+            ReadOnlySpan<int> primes = HashHelpers.Primes;
+            int minPrimeIndexInclusive = 0;
+            while (minNumBuckets > primes[minPrimeIndexInclusive])
+            {
+                minPrimeIndexInclusive++;
             }
 
             // Determine the largest number of buckets we're willing to use, based on a multiple of the number of inputs.
