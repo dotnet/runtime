@@ -212,22 +212,6 @@ inline INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDe
     return (INT32)(target - baseAddr);
 }
 
-#ifdef FEATURE_COMINTEROP
-inline void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    WRAPPER_NO_CONTRACT;
-
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    pBufferRW[0] = X86_INSTR_CALL_REL32; //CALLNEAR32
-    *((LPVOID*)(1+pBufferRW)) = (LPVOID) (((LPBYTE)target) - (pBufferRX+5));
-
-    _ASSERTE(IS_ALIGNED(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
-        *((SSIZE_T*)(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == ((LPBYTE)target - (LPBYTE)pCOMMethodRX));
-}
-#endif // FEATURE_COMINTEROP
-
 //------------------------------------------------------------------------
 WORD GetUnpatchedCodeData(LPCBYTE pAddr);
 

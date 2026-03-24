@@ -338,10 +338,6 @@ inline NEON128 GetSimdMem(PCODE ip)
     return mem;
 }
 
-#ifdef FEATURE_COMINTEROP
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
-#endif // FEATURE_COMINTEROP
-
 inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
     return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
