@@ -946,6 +946,14 @@ namespace SerializationTypes
     {
     }
 
+    public class TypeWithFieldBackedSpecifiedMember
+    {
+        public string Foo { get; set; }
+
+        [System.Xml.Serialization.XmlIgnore]
+        public bool FooSpecified;
+    }
+
     public class KnownTypesThroughConstructorWithArrayProperties
     {
         public object StringArrayValue;
