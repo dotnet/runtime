@@ -42,6 +42,7 @@ private:
 template <typename TCallback>
 void DataFlow::ForwardAnalysis(TCallback& callback)
 {
+    assert(m_compiler->fgTrysContiguous());
     if (m_compiler->m_dfsTree == nullptr)
     {
         m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
