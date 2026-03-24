@@ -19,6 +19,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
     public class RuntimeEventValidation
     {
         [ActiveIssue("https://github.com/dotnet/runtime/issues/88499", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [Fact]
         public static int TestEntryPoint()
         {

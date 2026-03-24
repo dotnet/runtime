@@ -13,6 +13,7 @@ using Xunit;
 
 public class InterpreterTester
 {
+    [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
     [Fact]
     public static void RunTests()
     {

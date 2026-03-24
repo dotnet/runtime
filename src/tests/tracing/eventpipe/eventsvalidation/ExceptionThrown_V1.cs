@@ -12,6 +12,7 @@ namespace Tracing.Tests.ExceptionThrown_V1
 {
     public class ProviderValidation
     {
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [Fact]
         public static int TestEntryPoint()
         {

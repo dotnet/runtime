@@ -80,6 +80,7 @@ namespace gh53564Tests
     {
         [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
         [ActiveIssue("Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient", TestPlatforms.Browser)]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [Fact]
         public static int TestEntryPoint()
         {

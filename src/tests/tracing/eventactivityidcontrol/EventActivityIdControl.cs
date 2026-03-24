@@ -33,6 +33,7 @@ namespace Tracing.Tests
 
         [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMAOT))]
         [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [Fact]
         public static int TestEntryPoint()
         {

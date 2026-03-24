@@ -320,6 +320,7 @@ namespace FPBehaviorApp
         }
 
         [ActiveIssue("Mono does not define out of range fp to int conversions", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [Fact]
         public static int TestEntryPoint()
         {

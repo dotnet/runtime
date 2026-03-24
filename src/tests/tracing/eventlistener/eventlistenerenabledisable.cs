@@ -73,6 +73,7 @@ namespace Tracing.Tests
 
     public class EventListenerEnableDisableTest
     {
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [Fact]
         public static int TestEntryPoint()
         {

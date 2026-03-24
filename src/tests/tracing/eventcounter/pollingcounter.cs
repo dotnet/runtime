@@ -150,6 +150,7 @@ namespace BasicEventSourceTests
 
         [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
         [ActiveIssue("System.Threading.Thread.UnsafeStart not supported", TestPlatforms.Browser)]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [Fact]
         public static int TestEntryPoint()
         {
