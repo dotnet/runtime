@@ -13,9 +13,14 @@ class MemoryMappedFile final
     void* m_address;
     
     MemoryMappedFile() = default;
+    static MemoryMappedFile* OpenImpl(const WCHAR* path, bool readWrite, uint32_t desiredSize, void* desiredAddress);
 
 public:
-    static MemoryMappedFile* Open(const WCHAR* path);
+    static MemoryMappedFile* Open(const WCHAR* path) { return OpenImpl(path, false, 0, nullptr); }
+    static MemoryMappedFile* OpenRW(const WCHAR* path, uint32_t desiredSize, void* desiredAddress)
+    {
+        return OpenImpl(path, true, desiredSize, desiredAddress);
+    }
     ~MemoryMappedFile();
     
     MemoryMappedFile(const MemoryMappedFile&) = delete;

@@ -5,12 +5,18 @@
 #include <dn-memmap.h>
 #include <minipal/utils.h>
 
-MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
+MemoryMappedFile* MemoryMappedFile::OpenImpl(const WCHAR* path, bool readWrite, uint32_t desiredSize, void* desiredAddress)
 {
     HANDLE hFile = INVALID_HANDLE_VALUE;
     HANDLE hFileMapping = NULL;
 
-    hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    hFile = CreateFileW(path,
+        readWrite ? (GENERIC_READ | GENERIC_WRITE) : GENERIC_READ,
+        FILE_SHARE_READ,
+        NULL,
+        readWrite ? CREATE_ALWAYS : OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+        NULL);
     if (hFile == INVALID_HANDLE_VALUE)
         goto Fail;
 
@@ -21,11 +27,21 @@ MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
 
     uint32_t size = li.LowPart;
 
-    hFileMapping = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    hFileMapping = CreateFileMappingW(hFile,
+        NULL,
+        readWrite ? PAGE_READWRITE : PAGE_READONLY,
+        0,
+        desiredSize,
+        NULL);
     if (hFileMapping == NULL)
         goto Fail;
 
-    void* address = MapViewOfFile(hFileMapping, FILE_MAP_READ, 0, 0, 0);
+    void* address = MapViewOfFileEx(hFileMapping,
+        readWrite ? FILE_MAP_ALL_ACCESS : FILE_MAP_READ,
+        0,
+        0,
+        0,
+        desiredAddress);
     if (address == nullptr)
         goto Fail;
     

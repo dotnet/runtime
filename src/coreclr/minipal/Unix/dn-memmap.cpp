@@ -12,7 +12,7 @@ typedef char16_t WCHAR;
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
+MemoryMappedFile* MemoryMappedFile::OpenImpl(const WCHAR* path, bool readWrite, uint32_t desiredSize, void* desiredAddress)
 {
     size_t pathLen = u16_strlen(path);
     size_t pathU8Len = minipal_get_length_utf16_to_utf8((CHAR16_T*)path, pathLen, 0);
@@ -23,7 +23,7 @@ MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
     void* address = nullptr;
     MemoryMappedFile* result = nullptr;
 
-    int fd = open(pathU8, O_RDONLY);
+    int fd = open(pathU8, readWrite ? (O_RDWR | O_CREAT) : O_RDONLY);
     delete[] pathU8;
 
     if (fd == -1)
@@ -37,7 +37,15 @@ MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
     if (st.st_size > UINT32_MAX)
         goto Fail;
 
-    address = mmap(nullptr, (size_t)st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+    if (st.st_size < desiredSize)
+    {
+        if (ftruncate(fd, desiredSize) != 0)
+            goto Fail;
+        if (fstat(fd, &st) != 0 || st.st_size != desiredSize)
+            goto Fail;
+    }
+
+    address = mmap(desiredAddress, (size_t)st.st_size, readWrite ? (PROT_WRITE | PROT_READ) : PROT_READ , MAP_SHARED, fd, 0);
     if (address == MAP_FAILED)
         goto Fail;
     
