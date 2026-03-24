@@ -5777,8 +5777,8 @@ GenTree* Lowering::LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node)
     if (simdSize == 32)
     {
         node->Op(1) = tmp1;
-        LIR::Use tmp1Use3(BlockRange(), &node->Op(1), node);
-        ReplaceWithLclVar(tmp1Use3);
+        LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
+        ReplaceWithLclVar(tmp1Use);
         tmp1 = node->Op(1);
 
         tmp2 = m_compiler->gtClone(tmp1);
