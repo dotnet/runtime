@@ -361,7 +361,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
                 emi.LegacyHandle = handleLocal;
 
-                GCHandle gcHandle = GCHandle.Alloc(emi);
                 *handle = (ulong)((IEnum<MethodDescHandle>)emi).GetHandle();
                 hr = emi.Start();
             }
