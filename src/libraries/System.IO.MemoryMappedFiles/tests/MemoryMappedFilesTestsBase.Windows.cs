@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.MemoryMappedFiles.Tests
@@ -19,12 +20,6 @@ namespace System.IO.MemoryMappedFiles.Tests
             Assert.InRange(pageSize, 1, int.MaxValue);
             return pageSize;
         });
-
-        [LibraryImport("kernel32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool GetHandleInformation(IntPtr hObject, out uint lpdwFlags);
-
-        private const uint HANDLE_FLAG_INHERIT = 0x00000001;
 
         [LibraryImport("kernel32.dll")]
         private static partial void GetSystemInfo(out SYSTEM_INFO input);
@@ -53,9 +48,8 @@ namespace System.IO.MemoryMappedFiles.Tests
         {
             if (OperatingSystem.IsWindows())
             {
-                uint flags;
-                Assert.True(GetHandleInformation(handle.DangerousGetHandle(), out flags));
-                Assert.Equal(inheritability == HandleInheritability.Inheritable, (flags & HANDLE_FLAG_INHERIT) != 0);
+                using SafeFileHandle fileHandle = new(handle.DangerousGetHandle(), ownsHandle: false);
+                Assert.Equal(inheritability == HandleInheritability.Inheritable, fileHandle.IsInheritable());
             }
         }
     }

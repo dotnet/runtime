@@ -81,7 +81,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             ObjectDisposedException.ThrowIf(IsClosed, this);
 
-            return !IsInvalid && IsInheritableCore();
+            return IsInheritableCore();
         }
     }
 }

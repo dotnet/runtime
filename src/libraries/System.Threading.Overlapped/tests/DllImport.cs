@@ -20,9 +20,6 @@ internal static class DllImport
     [DllImport("kernel32.dll", SetLastError = true)]
     internal static extern bool CloseHandle(IntPtr handle);
 
-    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
-    internal static extern bool GetHandleInformation(IntPtr handle, out int flags);
-
     internal const int ERROR_IO_PENDING = 0x000003E5;
 
     [Flags]
