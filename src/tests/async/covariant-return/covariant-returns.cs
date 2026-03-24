@@ -9,9 +9,27 @@ using Xunit;
 public class CovariantReturns
 {
     [Fact]
+    public static void Test0EntryPoint()
+    {
+        Test0().Wait();
+    }
+
+    [Fact]
     public static void Test1EntryPoint()
     {
         Test1().Wait();
+    }
+
+    [Fact]
+    public static void Test2EntryPoint()
+    {
+        Test2().Wait();
+    }
+
+    [Fact]
+    public static void Test2AEntryPoint()
+    {
+        Test2A().Wait();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -25,9 +43,10 @@ public class CovariantReturns
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task Test1()
     {
+        // check year to not be concerned with devirtualization.
         Base b = DateTime.Now.Year > 0 ? new Derived() : new Base();
         await b.M1();
-        Assert.Equal("Derived.M1;", b.Trace);
+        Assert.Equal("Derived.M1;Base.M1;", b.Trace);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -35,7 +54,15 @@ public class CovariantReturns
     {
         Base b = DateTime.Now.Year > 0 ? new Derived2() : new Base();
         await b.M1();
-        Assert.Equal("Derived2.M1;Derived.M1;", b.Trace);
+        Assert.Equal("Derived2.M1;Derived.M1;Base.M1;", b.Trace);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task Test2A()
+    {
+        Base b = DateTime.Now.Year > 0 ? new Derived2A() : new Base();
+        await b.M1();
+        Assert.Equal("Derived2A.M1;DerivedA.M1;Base.M1;", b.Trace);
     }
 
     struct S1
@@ -65,6 +92,7 @@ public class CovariantReturns
         public override Task<S1> M1()
         {
             Trace += "Derived.M1;";
+            base.M1().GetAwaiter().GetResult();
             return Task.FromResult(new S1(42));
         }
     }
@@ -74,6 +102,27 @@ public class CovariantReturns
         public override async Task<S1> M1()
         {
             Trace += "Derived2.M1;";
+            await Task.Delay(1);
+            await base.M1();
+            return new S1(4242);
+        }
+    }
+
+    class DerivedA : Base
+    {
+        public async override Task<S1> M1()
+        {
+            Trace += "DerivedA.M1;";
+            await base.M1();
+            return new S1(42);
+        }
+    }
+
+    class Derived2A : DerivedA
+    {
+        public override async Task<S1> M1()
+        {
+            Trace += "Derived2A.M1;";
             await Task.Delay(1);
             await base.M1();
             return new S1(4242);
