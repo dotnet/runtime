@@ -20,6 +20,7 @@ namespace Tracing.Tests
 {
     public class AllocationSamplingValidation
     {
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [Fact]
         public static int TestEntryPoint()
         {
