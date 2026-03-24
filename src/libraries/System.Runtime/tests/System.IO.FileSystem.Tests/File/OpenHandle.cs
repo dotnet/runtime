@@ -186,8 +186,7 @@ namespace System.IO.Tests
         public void SafeFileHandle_IsInheritable_InheritablePipe()
         {
             using var pipeServer = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable);
-            string clientHandleStr = pipeServer.GetClientHandleAsString();
-            using SafeFileHandle handle = new SafeFileHandle(new IntPtr(long.Parse(clientHandleStr)), ownsHandle: false);
+            using SafeFileHandle handle = new SafeFileHandle(pipeServer.ClientSafePipeHandle.DangerousGetHandle(), ownsHandle: false);
             Assert.True(handle.IsInheritable());
             pipeServer.DisposeLocalCopyOfClientHandle();
         }
