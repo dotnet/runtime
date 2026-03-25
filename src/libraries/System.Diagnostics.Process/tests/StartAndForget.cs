@@ -33,11 +33,11 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Fact]
         public void StartAndForget_WithNullArguments_StartsProcess()
         {
-            Process template = CreateProcess(() => RemoteExecutor.SuccessExitCode);
-            int pid = Process.StartAndForget(template.StartInfo.FileName, template.StartInfo.ArgumentList);
+            // hostname is available on all platforms and requires no arguments
+            int pid = Process.StartAndForget("hostname", null);
 
             Assert.True(pid > 0);
         }
