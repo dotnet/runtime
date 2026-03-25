@@ -224,6 +224,9 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* dstAddr = blkNode->Addr();
     GenTree* src     = blkNode->Data();
 
+    // TODO-WASM-CQ: Identify the specific cases where we can skip doing this and still generate valid code
+    // in codegen, i.e. non-faulting destination combined with native opcode. Right now this adds some code
+    // bloat due to creating a temporary for a destination that may only get used once.
     SetMultiplyUsed(dstAddr);
 
     if (blkNode->OperIsInitBlkOp())
@@ -287,6 +290,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (src->OperIs(GT_IND))
         {
+            // TODO-WASM-CQ: Skip doing this if the indirection is nonfaulting and the src is only used once.
             SetMultiplyUsed(src->gtGetOp1());
         }
     }
