@@ -9,49 +9,35 @@ namespace System.Diagnostics.Tests
 {
     public class StartAndForgetTests : ProcessTestBase
     {
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void StartAndForget_WithProcessStartInfo_StartsProcessAndReturnsValidPid()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void StartAndForget_StartsProcessAndReturnsValidPid(bool useProcessStartInfo)
         {
             Process template = CreateProcessLong();
-            ProcessStartInfo startInfo = template.StartInfo;
-
-            int pid = Process.StartAndForget(startInfo);
-
-            Assert.True(pid > 0);
-
-            // Verify the process is actually running by retrieving it, then clean up.
-            using Process launched = Process.GetProcessById(pid);
-            AddProcessForDispose(launched);
-            Assert.False(launched.HasExited);
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void StartAndForget_WithFileNameAndArguments_StartsProcessAndReturnsValidPid()
-        {
-            Process template = CreateProcessLong();
-            string fileName = template.StartInfo.FileName;
-            IList<string> arguments = template.StartInfo.ArgumentList;
-
-            int pid = Process.StartAndForget(fileName, arguments);
+            int pid = useProcessStartInfo
+                ? Process.StartAndForget(template.StartInfo)
+                : Process.StartAndForget(template.StartInfo.FileName, template.StartInfo.ArgumentList);
 
             Assert.True(pid > 0);
 
             using Process launched = Process.GetProcessById(pid);
-            AddProcessForDispose(launched);
-            Assert.False(launched.HasExited);
+            try
+            {
+                Assert.False(launched.HasExited);
+            }
+            finally
+            {
+                launched.Kill();
+                launched.WaitForExit();
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StartAndForget_WithNullArguments_StartsProcess()
         {
-            // A quick process: use CreateProcess with a simple exit-immediately function
             Process template = CreateProcess(() => RemoteExecutor.SuccessExitCode);
-            string fileName = template.StartInfo.FileName;
-            IList<string> arguments = template.StartInfo.ArgumentList;
-
-            // Passing null arguments is valid (no extra arguments beyond what fileName needs)
-            // Use the explicit argument list so it actually works
-            int pid = Process.StartAndForget(fileName, arguments);
+            int pid = Process.StartAndForget(template.StartInfo.FileName, template.StartInfo.ArgumentList);
 
             Assert.True(pid > 0);
         }
@@ -59,13 +45,13 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StartAndForget_WithStartInfo_NullStartInfo_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => Process.StartAndForget((ProcessStartInfo)null!));
+            AssertExtensions.Throws<ArgumentNullException>("startInfo", () => Process.StartAndForget((ProcessStartInfo)null!));
         }
 
         [Fact]
         public void StartAndForget_WithFileName_NullFileName_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => Process.StartAndForget((string)null!));
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => Process.StartAndForget((string)null!));
         }
 
         [Theory]
