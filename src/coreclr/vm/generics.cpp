@@ -494,6 +494,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     RETURN(TypeHandle(pMT));
 } // ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation
 
+#endif // !DACCESS_COMPILE
+
 namespace Generics
 {
 
@@ -531,6 +533,13 @@ BOOL CheckInstantiation(Instantiation inst)
     }
     return TRUE;
 }
+
+} // namespace Generics
+
+#ifndef DACCESS_COMPILE
+
+namespace Generics
+{
 
 // Just records the owner and links to the previous graph.
 RecursionGraph::RecursionGraph(RecursionGraph *pPrev, TypeHandle thOwner)
