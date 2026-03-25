@@ -229,7 +229,7 @@ namespace System.Threading.Tasks
         {
             return Volatile.Read(ref s_runtimeAsyncTaskTimestamps) ??
                 Interlocked.CompareExchange(ref s_runtimeAsyncTaskTimestamps, new Dictionary<int, long>(), null) ??
-                s_runtimeAsyncTaskTimestamps;
+                s_runtimeAsyncTaskTimestamps!;
         }
 
         internal static void ReplaceOrAddRuntimeAsyncContinuationTimestamp(Continuation curContinuation, Continuation newContinuation)
