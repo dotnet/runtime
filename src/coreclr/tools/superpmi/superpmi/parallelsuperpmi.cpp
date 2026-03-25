@@ -11,13 +11,23 @@
 #include "fileio.h"
 #include <minipal/random.h>
 
+#ifdef TARGET_UNIX
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <minipal/getexepath.h>
+#endif // TARGET_UNIX
+
 // Forward declare the conversion method. Including spmiutil.h pulls in other headers
 // that cause build breaks.
 std::string ConvertToUtf8(const WCHAR* str);
 
 #define MAX_LOG_LINE_SIZE 0x1000 // 4 KB
 
-bool closeRequested = false; // global variable to communicate CTRL+C between threads.
+volatile bool closeRequested = false; // global variable to communicate CTRL+C between threads.
+
+#ifndef TARGET_UNIX
 
 bool StartProcess(char* commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE* hProcess)
 {
@@ -35,18 +45,9 @@ bool StartProcess(char* commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE
 
     ZeroMemory(&pi, sizeof(pi));
 
-#if TARGET_UNIX
-    const unsigned cmdLen = (unsigned)strlen(commandLine) + 1;
-    WCHAR* cmdLineW = new WCHAR[cmdLen];
-    MultiByteToWideChar(CP_UTF8, 0, commandLine, cmdLen, cmdLineW, cmdLen);
-#endif
     // Start the child process.
     if (!CreateProcess(NULL,        // No module name (use command line)
-#if TARGET_UNIX
-                       cmdLineW,    // Command line
-#else
                        commandLine, // Command line
-#endif
                        NULL,        // Process handle not inheritable
                        NULL,        // Thread handle not inheritable
                        TRUE,        // Set handle inheritance to TRUE (required to use STARTF_USESTDHANDLES)
@@ -58,19 +59,118 @@ bool StartProcess(char* commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE
     {
         LogError("CreateProcess failed (%d). CommandLine: %s", GetLastError(), commandLine);
         *hProcess = INVALID_HANDLE_VALUE;
-#if TARGET_UNIX
-        delete[] cmdLineW;
-#endif
         return false;
     }
 
     *hProcess = pi.hProcess;
-
-#if TARGET_UNIX
-    delete[] cmdLineW;
-#endif
     return true;
 }
+
+#else // TARGET_UNIX
+
+// Parse a command line string into an argv array for execv. The returned array
+// and its strings are heap-allocated and must be freed by the caller.
+static char** ParseCommandLineToArgv(char* commandLine, int* argc)
+{
+    // Count tokens
+    int   count = 0;
+    char* p     = commandLine;
+    bool  inArg = false;
+    while (*p)
+    {
+        if (*p == ' ' || *p == '\t')
+        {
+            inArg = false;
+        }
+        else if (!inArg)
+        {
+            inArg = true;
+            count++;
+        }
+        p++;
+    }
+
+    char** argv = new char*[count + 1];
+    *argc       = count;
+    int idx     = 0;
+    p           = commandLine;
+    while (*p)
+    {
+        while (*p == ' ' || *p == '\t')
+            p++;
+        if (*p == '\0')
+            break;
+        char*  start = p;
+        while (*p && *p != ' ' && *p != '\t')
+            p++;
+        size_t len   = (size_t)(p - start);
+        argv[idx]    = new char[len + 1];
+        memcpy(argv[idx], start, len);
+        argv[idx][len] = '\0';
+        idx++;
+    }
+    argv[idx] = nullptr;
+    return argv;
+}
+
+bool StartProcess(char* commandLine, int hStdOutput, int hStdError, pid_t* pid)
+{
+    LogDebug("StartProcess commandLine=%s", commandLine);
+
+    int    argc;
+    char** argv = ParseCommandLineToArgv(commandLine, &argc);
+    if (argc == 0)
+    {
+        LogError("StartProcess: empty command line");
+        delete[] argv;
+        return false;
+    }
+
+    *pid = fork();
+    if (*pid == -1)
+    {
+        LogError("fork() failed: %s", strerror(errno));
+        for (int i = 0; i < argc; i++)
+            delete[] argv[i];
+        delete[] argv;
+        return false;
+    }
+
+    if (*pid == 0)
+    {
+        // Child process: redirect stdout and stderr then exec.
+        if (dup2(hStdOutput, STDOUT_FILENO) == -1)
+        {
+            fprintf(stderr, "dup2(stdout) failed: %s\n", strerror(errno));
+            _exit(1);
+        }
+        if (dup2(hStdError, STDERR_FILENO) == -1)
+        {
+            fprintf(stderr, "dup2(stderr) failed: %s\n", strerror(errno));
+            _exit(1);
+        }
+
+        // Close the original fds now that they are duplicated to STDOUT/STDERR.
+        // The O_CLOEXEC on the parent's open() handles the sibling worker fds.
+        if (hStdOutput != STDOUT_FILENO)
+            close(hStdOutput);
+        if (hStdError != STDERR_FILENO)
+            close(hStdError);
+
+        execv(argv[0], argv);
+        // If execv returns, it failed.
+        fprintf(stderr, "execv(%s) failed: %s\n", argv[0], strerror(errno));
+        _exit(1);
+    }
+
+    // Parent process: free argv and return.
+    for (int i = 0; i < argc; i++)
+        delete[] argv[i];
+    delete[] argv;
+    return true;
+}
+
+#endif // TARGET_UNIX
 
 void ReadMCLToArray(char* mclFilename, int** arr, int* count)
 {
@@ -284,7 +384,7 @@ Cleanup:
     }
 }
 
-#ifndef TARGET_UNIX // TODO-Porting: handle Ctrl-C signals gracefully on Unix
+#ifndef TARGET_UNIX
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
 {
     // Since the child SuperPMI.exe processes share the same console
@@ -293,7 +393,12 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
     closeRequested = true; // set a flag to indicate we need to quit
     return TRUE;
 }
-#endif // !TARGET_UNIX
+#else // TARGET_UNIX
+static void PosixCtrlHandler(int signum)
+{
+    closeRequested = true;
+}
+#endif // TARGET_UNIX
 
 int __cdecl compareInt(const void* arg1, const void* arg2)
 {
@@ -302,8 +407,13 @@ int __cdecl compareInt(const void* arg1, const void* arg2)
 
 struct PerWorkerData
 {
+#ifdef TARGET_UNIX
+    int hStdOutput = -1;
+    int hStdError  = -1;
+#else
     HANDLE hStdOutput = INVALID_HANDLE_VALUE;
-    HANDLE hStdError = INVALID_HANDLE_VALUE;
+    HANDLE hStdError  = INVALID_HANDLE_VALUE;
+#endif
 
     char* failingMCListPath = nullptr;
     char* detailsPath = nullptr;
@@ -506,25 +616,41 @@ int doParallelSuperPMI(CommandLine::Options& o)
     SimpleTimer st;
     st.Start();
 
-#ifndef TARGET_UNIX // TODO-Porting: handle Ctrl-C signals gracefully on Unix
+#ifdef TARGET_UNIX
+    // Register a SIGINT handler so Ctrl-C sets closeRequested gracefully.
+    signal(SIGINT, PosixCtrlHandler);
+#else
     // Register a ConsoleCtrlHandler
     if (!SetConsoleCtrlHandler(CtrlHandler, TRUE))
     {
         LogError("Failed to set control handler.");
         return 1;
     }
-#endif // !TARGET_UNIX
+#endif // TARGET_UNIX
 
     char tempPath[MAX_PATH];
+#ifdef TARGET_UNIX
+    {
+        const char* tmpDir = getenv("TMPDIR");
+        if (tmpDir == nullptr)
+            tmpDir = "/tmp";
+        snprintf(tempPath, MAX_PATH, "%s/", tmpDir);
+    }
+#else
     if (!GetTempPath(MAX_PATH, tempPath))
     {
         LogError("Failed to get path to temp folder.");
         return 1;
     }
+#endif // TARGET_UNIX
 
     if (o.workerCount <= 0)
     {
         // Use the default value which is the number of processors on the machine.
+#ifdef TARGET_UNIX
+        long nprocs   = sysconf(_SC_NPROCESSORS_ONLN);
+        o.workerCount = (nprocs > 0) ? (int)nprocs : 1;
+#else
         SYSTEM_INFO sysinfo;
         GetSystemInfo(&sysinfo);
 
@@ -534,15 +660,30 @@ int doParallelSuperPMI(CommandLine::Options& o)
         // we still can't spawn more than the max supported by WaitForMultipleObjects()
         if (o.workerCount > MAXIMUM_WAIT_OBJECTS)
             o.workerCount = MAXIMUM_WAIT_OBJECTS;
+#endif // TARGET_UNIX
     }
 
-    // Obtain the folder path of the current executable, which we will use to spawn ourself.
+    // Obtain the path of the current executable, which we will use to spawn ourself.
     char* spmiFilename = new char[MAX_PATH];
+#ifdef TARGET_UNIX
+    {
+        char* exePath = minipal_getexepath();
+        if (exePath == nullptr)
+        {
+            LogError("Failed to get current exe path.");
+            return 1;
+        }
+        strncpy(spmiFilename, exePath, MAX_PATH - 1);
+        spmiFilename[MAX_PATH - 1] = '\0';
+        free(exePath);
+    }
+#else
     if (!GetModuleFileName(NULL, spmiFilename, MAX_PATH))
     {
         LogError("Failed to get current exe path.");
         return 1;
     }
+#endif // TARGET_UNIX
 
     char* spmiArgs = ConstructChildProcessArgs(o);
 
@@ -586,7 +727,12 @@ int doParallelSuperPMI(CommandLine::Options& o)
     cmdLine[0] = '\0';
     int bytesWritten;
 
+#ifdef TARGET_UNIX
+    pid_t* hProcesses = new pid_t[o.workerCount];
+#else
     HANDLE* hProcesses = new HANDLE[o.workerCount];
+#endif // TARGET_UNIX
+
     for (int i = 0; i < o.workerCount; i++)
     {
         bytesWritten = sprintf_s(cmdLine, MAX_CMDLINE_SIZE, "%s -stride %d %d", spmiFilename, i + 1, o.workerCount);
@@ -607,6 +753,23 @@ int doParallelSuperPMI(CommandLine::Options& o)
 
         bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -v ewmin %s", spmiArgs);
 
+#ifdef TARGET_UNIX
+        LogDebug("stdout %i=%s", i, wd.stdOutputPath);
+        wd.hStdOutput = open(wd.stdOutputPath, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
+        if (wd.hStdOutput == -1)
+        {
+            LogError("Unable to open '%s'. errno=%d", wd.stdOutputPath, errno);
+            return -1;
+        }
+
+        LogDebug("stderr %i=%s", i, wd.stdErrorPath);
+        wd.hStdError = open(wd.stdErrorPath, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
+        if (wd.hStdError == -1)
+        {
+            LogError("Unable to open '%s'. errno=%d", wd.stdErrorPath, errno);
+            return -1;
+        }
+#else
         SECURITY_ATTRIBUTES sa;
         sa.nLength              = sizeof(sa);
         sa.lpSecurityDescriptor = NULL;
@@ -629,6 +792,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
             LogError("Unable to open '%s'. GetLastError()=%u", wd.stdErrorPath, GetLastError());
             return -1;
         }
+#endif // TARGET_UNIX
 
         // Create a SuperPMI worker process and redirect its output to file
         if (!StartProcess(cmdLine, wd.hStdOutput, wd.hStdError, &hProcesses[i]))
@@ -637,13 +801,41 @@ int doParallelSuperPMI(CommandLine::Options& o)
         }
     }
 
+#ifdef TARGET_UNIX
+    // Wait for all child processes and collect their exit codes.
+    int* exitCodes = new int[o.workerCount];
+    for (int i = 0; i < o.workerCount; i++)
+    {
+        int status;
+        if (waitpid(hProcesses[i], &status, 0) == -1)
+        {
+            LogError("waitpid failed for child %d: %s", i, strerror(errno));
+            exitCodes[i] = -1;
+        }
+        else if (WIFEXITED(status))
+        {
+            exitCodes[i] = WEXITSTATUS(status);
+        }
+        else
+        {
+            // Terminated by a signal (e.g., OOM killer).
+            exitCodes[i] = -1;
+        }
+    }
+#else
     WaitForMultipleObjects(o.workerCount, hProcesses, true, INFINITE);
+#endif // TARGET_UNIX
 
     // Close stdout/stderr
     for (int i = 0; i < o.workerCount; i++)
     {
+#ifdef TARGET_UNIX
+        close(perWorkerData[i].hStdOutput);
+        close(perWorkerData[i].hStdError);
+#else
         CloseHandle(perWorkerData[i].hStdOutput);
         CloseHandle(perWorkerData[i].hStdError);
+#endif // TARGET_UNIX
     }
 
     SpmiResult result = SpmiResult::Success;
@@ -654,8 +846,13 @@ int doParallelSuperPMI(CommandLine::Options& o)
         // Mainly, if any child returns non-zero, we want to return non-zero, to indicate failure.
         for (int i = 0; i < o.workerCount; i++)
         {
-            DWORD      exitCodeTmp;
-            BOOL       ok          = GetExitCodeProcess(hProcesses[i], &exitCodeTmp);
+#ifdef TARGET_UNIX
+            int  exitCodeTmp = exitCodes[i];
+            bool ok          = (exitCodeTmp != -1);
+#else
+            DWORD exitCodeTmp;
+            bool  ok = GetExitCodeProcess(hProcesses[i], &exitCodeTmp) != FALSE;
+#endif // TARGET_UNIX
             if (ok)
             {
                 SpmiResult childResult = (SpmiResult)exitCodeTmp;
@@ -671,7 +868,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
 
                 default:
                     // We may get here for OOM-killed, for example.
-                    LogError("Child process %d exited with code %u", i, exitCodeTmp);
+                    LogError("Child process %d exited with code %u", i, (unsigned)exitCodeTmp);
                     childResult = SpmiResult::GeneralFailure;
                     break;
                 }
@@ -754,6 +951,10 @@ int doParallelSuperPMI(CommandLine::Options& o)
         st.Stop();
         LogVerbose("Total time: %fms", st.GetMilliseconds());
     }
+
+#ifdef TARGET_UNIX
+    delete[] exitCodes;
+#endif // TARGET_UNIX
 
     if (!o.skipCleanup)
     {
