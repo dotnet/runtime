@@ -2084,9 +2084,10 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
     //
     // Note that the register allocator ensures that the registers ON THE NODES will not interfere
     // with one another if consumed (i.e. reloaded or moved to their ASSIGNED reg) in execution order.
-    // Further, it ensures that they will not interfere with one another if they are then copied
-    // to the REQUIRED register (if a fixed register requirement) in execution order.  This requires,
-    // then, that we first consume all the operands, then do any necessary moves.
+    // However, it does NOT guarantee conflict-freedom when copying to fixed-register requirements:
+    // e.g. LSRA may legitimately assign the source address to dstReg, causing genCopyRegIfNeeded
+    // to clobber the source if the destination is moved first.  We therefore consume all operands
+    // first, then resolve any register conflicts explicitly before emitting the required moves.
 
     GenTree* const dstAddr = blkNode->Addr();
 
@@ -2099,8 +2100,35 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
     genConsumeBlockSrc(blkNode);
 
     // Next, perform any necessary moves.
-    genCopyRegIfNeeded(dstAddr, dstReg);
-    genSetBlockSrc(blkNode, srcReg);
+    // We must be careful about the ordering: if the source address is currently in dstReg,
+    // we must move the source to srcReg first before overwriting dstReg with the destination.
+    // Otherwise, copying dst to dstReg would clobber the source address value.
+    // Note: this is only relevant for CopyBlk with a GT_IND source; for local sources
+    // genSetBlockSrc emits a LEA (no conflict), and for init blocks the fill value is
+    // a scalar that cannot collide with dstReg under LSRA's allocation invariants.
+    regNumber srcCurReg = REG_NA;
+    if (srcReg != REG_NA && blkNode->OperIsCopyBlkOp())
+    {
+        GenTree* src = blkNode->Data();
+        if (src->OperIs(GT_IND))
+        {
+            srcCurReg = src->AsOp()->gtOp1->GetRegNum();
+        }
+    }
+
+    if (srcCurReg == dstReg && srcCurReg != REG_NA)
+    {
+        // The source is in the register that the destination needs. Move source first.
+        // A circular dependency (dstAddr also in srcReg) is not expected to be produced by LSRA.
+        assert(dstAddr->GetRegNum() != srcReg);
+        genSetBlockSrc(blkNode, srcReg);
+        genCopyRegIfNeeded(dstAddr, dstReg);
+    }
+    else
+    {
+        genCopyRegIfNeeded(dstAddr, dstReg);
+        genSetBlockSrc(blkNode, srcReg);
+    }
     genSetBlockSize(blkNode, sizeReg);
 }
 
