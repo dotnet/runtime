@@ -197,8 +197,10 @@ namespace System.Tests
         {
             Assert.Equal((long)0x0000000000000000, BinaryIntegerHelper<long>.Log10((long)0x0000000000000000));
             Assert.Equal((long)0x0000000000000000, BinaryIntegerHelper<long>.Log10((long)0x0000000000000001));
+            Assert.Equal((long)0x0000000000000000, BinaryIntegerHelper<long>.Log10((long)0x0000000000000009));
             Assert.Equal((long)0x0000000000000001, BinaryIntegerHelper<long>.Log10((long)0x000000000000000A));
             Assert.Equal((long)0x0000000000000002, BinaryIntegerHelper<long>.Log10((long)0x0000000000000064));
+            Assert.Equal((long)0x0000000000000011, BinaryIntegerHelper<long>.Log10((long)0x0DE0B6B3A763FFFF));
             Assert.Equal((long)0x0000000000000012, BinaryIntegerHelper<long>.Log10((long)0x7FFFFFFFFFFFFFFF));
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<long>.Log10(unchecked((long)0x8000000000000000)));
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<long>.Log10(unchecked((long)0xFFFFFFFFFFFFFFFF)));

@@ -235,6 +235,7 @@ namespace System.Tests
         {
             Assert.Equal(0x00U, BinaryIntegerHelper<UInt128>.Log10(Zero));
             Assert.Equal(0x00U, BinaryIntegerHelper<UInt128>.Log10(One));
+            Assert.Equal(0x00U, BinaryIntegerHelper<UInt128>.Log10((UInt128)9));
             Assert.Equal(0x26U, BinaryIntegerHelper<UInt128>.Log10(Int128MaxValue));
             Assert.Equal(0x26U, BinaryIntegerHelper<UInt128>.Log10(Int128MaxValuePlusOne));
             Assert.Equal(0x26U, BinaryIntegerHelper<UInt128>.Log10(MaxValue));

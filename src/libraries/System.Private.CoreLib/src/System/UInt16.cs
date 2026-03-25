@@ -278,6 +278,9 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static ushort LeadingZeroCount(ushort value) => (ushort)(BitOperations.LeadingZeroCount(value) - 16);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        public static ushort Log10(ushort value) => (ushort)uint.Log10(value);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         public static ushort PopCount(ushort value) => (ushort)BitOperations.PopCount(value);
 
@@ -429,9 +432,6 @@ namespace System
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(ushort value) => BitOperations.IsPow2((uint)value);
-
-        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
-        public static ushort Log10(ushort value) => (ushort)uint.Log10(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
         public static ushort Log2(ushort value) => (ushort)BitOperations.Log2(value);

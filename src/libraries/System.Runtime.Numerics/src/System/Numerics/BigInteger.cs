@@ -3181,6 +3181,50 @@ namespace System.Numerics
         // IBinaryInteger
         //
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        static BigInteger IBinaryInteger<BigInteger>.Log10(BigInteger value)
+        {
+            value.AssertValid();
+
+            if (IsNegative(value))
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+
+            if (value._sign == 0)
+            {
+                return Zero;
+            }
+
+            // For small values that fit in a uint, use the fast path
+            if (value._bits is null)
+            {
+                return ulong.Log10((ulong)(uint)value._sign);
+            }
+
+            // For large values, use Log2-based estimation and correction
+            BigInteger log2Value = Log2(value);
+            // log10(x) ≈ log2(x) * log10(2) ≈ log2(x) * 1233 / 4096
+            BigInteger approx = (log2Value * 1233) >> 12;
+
+            // No upper size limit, so instead of a lookup table (like with uint's)
+            // correct by checking against 10^approx
+            BigInteger power = Pow(10, (int)approx);
+
+            if (value < power)
+            {
+                return approx - One;
+            }
+
+            // Check if we need to go one higher
+            if (value >= power * 10)
+            {
+                return approx + One;
+            }
+
+            return approx;
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
         public static (BigInteger Quotient, BigInteger Remainder) DivRem(BigInteger left, BigInteger right)
         {

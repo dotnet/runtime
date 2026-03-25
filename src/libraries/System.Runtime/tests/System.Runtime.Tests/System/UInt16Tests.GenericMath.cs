@@ -185,8 +185,11 @@ namespace System.Tests
         {
             Assert.Equal((ushort)0x0000, BinaryIntegerHelper<ushort>.Log10((ushort)0x0000));
             Assert.Equal((ushort)0x0000, BinaryIntegerHelper<ushort>.Log10((ushort)0x0001));
+            Assert.Equal((ushort)0x0000, BinaryIntegerHelper<ushort>.Log10((ushort)0x0009));
             Assert.Equal((ushort)0x0001, BinaryIntegerHelper<ushort>.Log10((ushort)0x000A));
             Assert.Equal((ushort)0x0002, BinaryIntegerHelper<ushort>.Log10((ushort)0x0064));
+            Assert.Equal((ushort)0x0002, BinaryIntegerHelper<ushort>.Log10((ushort)0x03E7));
+            Assert.Equal((ushort)0x0003, BinaryIntegerHelper<ushort>.Log10((ushort)0x270F));
             Assert.Equal((ushort)0x0004, BinaryIntegerHelper<ushort>.Log10((ushort)0x7FFF));
             Assert.Equal((ushort)0x0004, BinaryIntegerHelper<ushort>.Log10((ushort)0x8000));
             Assert.Equal((ushort)0x0004, BinaryIntegerHelper<ushort>.Log10((ushort)0xFFFF));

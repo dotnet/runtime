@@ -297,6 +297,17 @@ namespace System
         [Intrinsic]
         public static long LeadingZeroCount(long value) => BitOperations.LeadingZeroCount((ulong)value);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long Log10(long value)
+        {
+            if (value < 0)
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+            return (long)ulong.Log10((ulong)value);
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         [Intrinsic]
         public static long PopCount(long value) => BitOperations.PopCount((ulong)value);
@@ -533,17 +544,6 @@ namespace System
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(long value) => BitOperations.IsPow2(value);
-
-        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static long Log10(long value)
-        {
-            if (value < 0)
-            {
-                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
-            }
-            return (long)ulong.Log10((ulong)value);
-        }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
         [Intrinsic]

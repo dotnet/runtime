@@ -320,6 +320,21 @@ namespace System
         [Intrinsic]
         public static nint LeadingZeroCount(nint value) => BitOperations.LeadingZeroCount((nuint)value);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        public static nint Log10(nint value)
+        {
+            if (value < 0)
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+
+            if (Environment.Is64BitProcess)
+            {
+                return (nint)ulong.Log10((ulong)value);
+            }
+            return (nint)uint.Log10((uint)value);
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         [Intrinsic]
         public static nint PopCount(nint value) => BitOperations.PopCount((nuint)value);
@@ -556,21 +571,6 @@ namespace System
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(nint value) => BitOperations.IsPow2(value);
-
-        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
-        public static nint Log10(nint value)
-        {
-            if (value < 0)
-            {
-                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
-            }
-
-            if (Environment.Is64BitProcess)
-            {
-                return (nint)ulong.Log10((ulong)value);
-            }
-            return (nint)uint.Log10((uint)value);
-        }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
         [Intrinsic]

@@ -284,6 +284,16 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static short LeadingZeroCount(short value) => (short)(BitOperations.LeadingZeroCount((ushort)value) - 16);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        public static short Log10(short value)
+        {
+            if (value < 0)
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+            return (short)uint.Log10((uint)value);
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         public static short PopCount(short value) => (short)BitOperations.PopCount((ushort)value);
 
@@ -497,16 +507,6 @@ namespace System
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(short value) => BitOperations.IsPow2(value);
-
-        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
-        public static short Log10(short value)
-        {
-            if (value < 0)
-            {
-                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
-            }
-            return (short)uint.Log10((uint)value);
-        }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
         public static short Log2(short value)

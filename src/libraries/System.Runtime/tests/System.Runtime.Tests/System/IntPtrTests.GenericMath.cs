@@ -350,6 +350,7 @@ namespace System.Tests
             {
                 Assert.Equal(unchecked((nint)0x0000000000000000), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x0000000000000000)));
                 Assert.Equal(unchecked((nint)0x0000000000000000), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x0000000000000001)));
+                Assert.Equal(unchecked((nint)0x0000000000000000), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x0000000000000009)));
                 Assert.Equal(unchecked((nint)0x0000000000000001), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x000000000000000A)));
                 Assert.Equal(unchecked((nint)0x0000000000000002), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x0000000000000064)));
                 Assert.Equal(unchecked((nint)0x0000000000000012), BinaryIntegerHelper<nint>.Log10(unchecked((nint)0x7FFFFFFFFFFFFFFF)));
@@ -360,6 +361,7 @@ namespace System.Tests
             {
                 Assert.Equal((nint)0x00000000, BinaryIntegerHelper<nint>.Log10((nint)0x00000000));
                 Assert.Equal((nint)0x00000000, BinaryIntegerHelper<nint>.Log10((nint)0x00000001));
+                Assert.Equal((nint)0x00000000, BinaryIntegerHelper<nint>.Log10((nint)0x00000009));
                 Assert.Equal((nint)0x00000001, BinaryIntegerHelper<nint>.Log10((nint)0x0000000A));
                 Assert.Equal((nint)0x00000002, BinaryIntegerHelper<nint>.Log10((nint)0x00000064));
                 Assert.Equal((nint)0x00000009, BinaryIntegerHelper<nint>.Log10((nint)0x7FFFFFFF));

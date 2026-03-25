@@ -197,7 +197,9 @@ namespace System.Tests
         {
             Assert.Equal((sbyte)0x00, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x00));
             Assert.Equal((sbyte)0x00, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x01));
+            Assert.Equal((sbyte)0x00, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x09));
             Assert.Equal((sbyte)0x01, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x0A));
+            Assert.Equal((sbyte)0x01, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x63));
             Assert.Equal((sbyte)0x02, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x64));
             Assert.Equal((sbyte)0x02, BinaryIntegerHelper<sbyte>.Log10((sbyte)0x7F));
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<sbyte>.Log10(unchecked((sbyte)0x80)));

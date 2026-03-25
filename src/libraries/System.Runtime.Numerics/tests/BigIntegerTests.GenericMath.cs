@@ -207,6 +207,30 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.Log10(Zero));
+            Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.Log10(One));
+            Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.Log10((BigInteger)9));
+            Assert.Equal((BigInteger)1, BinaryIntegerHelper<BigInteger>.Log10((BigInteger)10));
+            Assert.Equal((BigInteger)2, BinaryIntegerHelper<BigInteger>.Log10((BigInteger)99));
+            Assert.Equal((BigInteger)2, BinaryIntegerHelper<BigInteger>.Log10((BigInteger)100));
+            Assert.Equal((BigInteger)2, BinaryIntegerHelper<BigInteger>.Log10((BigInteger)999));
+            Assert.Equal((BigInteger)18, BinaryIntegerHelper<BigInteger>.Log10(Int64MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<BigInteger>.Log10(Int64MinValue));
+        }
+
+        [Fact]
+        public static void Log10Test_LargeValues()
+        {
+            // 2^430000 has ~130K decimal digits. The approximation (Log2 * 1233) >> 12
+            // accumulates enough error (~2) that the ±1 correction is insufficient.
+            // true log10(2^430000) = floor(430000 * log10(2)) = 129442
+            BigInteger largeValue = BigInteger.Pow(2, 430000);
+            Assert.Equal((BigInteger)129442, BinaryIntegerHelper<BigInteger>.Log10(largeValue));
+        }
+
+        [Fact]
         public static void LeadingZeroCountTest()
         {
             Assert.Equal((BigInteger)32, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Zero));

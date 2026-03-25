@@ -185,7 +185,9 @@ namespace System.Tests
         {
             Assert.Equal((byte)0x00, BinaryIntegerHelper<byte>.Log10((byte)0x00));
             Assert.Equal((byte)0x00, BinaryIntegerHelper<byte>.Log10((byte)0x01));
+            Assert.Equal((byte)0x00, BinaryIntegerHelper<byte>.Log10((byte)0x09));
             Assert.Equal((byte)0x01, BinaryIntegerHelper<byte>.Log10((byte)0x0A));
+            Assert.Equal((byte)0x01, BinaryIntegerHelper<byte>.Log10((byte)0x63));
             Assert.Equal((byte)0x02, BinaryIntegerHelper<byte>.Log10((byte)0x64));
             Assert.Equal((byte)0x02, BinaryIntegerHelper<byte>.Log10((byte)0x7F));
             Assert.Equal((byte)0x02, BinaryIntegerHelper<byte>.Log10((byte)0x80));
