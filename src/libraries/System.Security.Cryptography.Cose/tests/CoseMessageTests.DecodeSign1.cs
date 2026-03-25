@@ -237,5 +237,16 @@ namespace System.Security.Cryptography.Cose.Tests
             CryptographicException ex = Assert.Throws<CryptographicException>(() => CoseMessage.DecodeSign1(data));
             Assert.IsType<OverflowException>(ex.InnerException);
         }
+
+        [Fact]
+        public void DecodeSign1_ThrowsCryptographicExceptionForOversizedCritHeaderLabel()
+        {
+            // COSE_Sign1 with protected headers {1: -7, 2: [-5000000000]}
+            // The crit header array contains a negative integer that overflows Int32.
+            byte[] data = ByteUtils.HexToByteArray(
+                "d2844ea2012602813b000000012a05f1ffa04301020343040506");
+
+            Assert.Throws<CryptographicException>(() => CoseMessage.DecodeSign1(data));
+        }
     }
 }
