@@ -59,6 +59,13 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    /**
+     * @deprecated This method is no longer supported and will be removed in a future version.
+     */
+    withConfigSrc (_configSrc: string): DotnetHostBuilder {
+        return this;
+    }
+
     withVirtualWorkingDirectory (vfsPath: string): DotnetHostBuilder {
         try {
             mono_assert(vfsPath && typeof vfsPath === "string", "must be directory path");
