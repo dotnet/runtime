@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Composition;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -21,7 +22,7 @@ namespace Microsoft.Interop.Analyzers
 
         protected override string BaseEquivalenceKey => nameof(AddGeneratedComClassFixer);
 
-        private static Task AddGeneratedComClassAsync(DocumentEditor editor, SyntaxNode node)
+        private static async Task AddGeneratedComClassAsync(DocumentEditor editor, SyntaxNode node, CancellationToken ct)
         {
             editor.ReplaceNode(node, (node, gen) =>
             {
@@ -37,12 +38,29 @@ namespace Microsoft.Interop.Analyzers
 
             MakeNodeParentsPartial(editor, node);
 
-            return Task.CompletedTask;
+            var declaringType = editor.SemanticModel.GetDeclaredSymbol(node, ct) as INamedTypeSymbol;
+            if (declaringType is not null)
+            {
+                var comVisibleAttributeType = editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.System_Runtime_InteropServices_ComVisibleAttribute);
+                if (comVisibleAttributeType is not null)
+                {
+                    var comVisibleAttr = declaringType.GetAttributes().FirstOrDefault(attr =>
+                        SymbolEqualityComparer.Default.Equals(attr.AttributeClass, comVisibleAttributeType)
+                        && attr.ConstructorArguments.Length == 1
+                        && attr.ConstructorArguments[0].Value is true);
+
+                    if (comVisibleAttr?.ApplicationSyntaxReference is { } syntaxRef)
+                    {
+                        var comVisibleAttrSyntax = await syntaxRef.GetSyntaxAsync(ct).ConfigureAwait(false);
+                        editor.RemoveNode(comVisibleAttrSyntax);
+                    }
+                }
+            }
         }
 
         protected override Func<DocumentEditor, CancellationToken, Task> CreateFixForSelectedOptions(SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
         {
-            return (editor, _) => AddGeneratedComClassAsync(editor, node);
+            return (editor, ct) => AddGeneratedComClassAsync(editor, node, ct);
         }
 
         protected override string GetDiagnosticTitle(ImmutableDictionary<string, Option> selectedOptions)
