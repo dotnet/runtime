@@ -4365,7 +4365,7 @@ static void CreatePInvokeStubAccessMetadata(
 
     (*pNumArgs) = msig.NumFixedArgs();
 
-    IMDInternalImport* pInternalImport = pSigDesc->m_pModule->GetMDImport();
+    IMDInternalImport* pInternalImport = pSigDesc->m_pMetadataModule->GetMDImport();
 
     _ASSERTE(!SF_IsHRESULTSwapping(*pdwStubFlags));
 
