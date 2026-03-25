@@ -26,14 +26,15 @@ namespace Microsoft.Extensions.Hosting
         }
 
         [ConditionalFact(typeof(SystemdHelpersTests), nameof(IsRemoteExecutorSupportedOnLinux))]
-        public void IsSystemdServiceFallsBackToLegacyDetectionWhenSystemdExecPidDoesNotMatch()
+        public void IsSystemdServiceReturnsFalseWhenSystemdExecPidDoesNotMatchOutsideSystemdSession()
         {
             using var _ = RemoteExecutor.Invoke(static () =>
             {
                 // When SYSTEMD_EXEC_PID is set but doesn't match the current PID, the code
-                // falls through to legacy detection instead of returning false immediately.
-                // Outside a real systemd session (not PID 1, parent is not named "systemd"),
-                // the legacy path returns false — but the important guarantee is that it runs.
+                // falls through to legacy detection. Outside a real systemd session
+                // (not PID 1, parent is not named "systemd"), the legacy path returns false.
+                // Note: the fall-through itself cannot be directly observed in a unit test
+                // without being PID 1 or having a parent named "systemd".
                 int nonMatchingPid = int.MaxValue; // No real process will ever have this PID.
                 Environment.SetEnvironmentVariable("SYSTEMD_EXEC_PID", nonMatchingPid.ToString(CultureInfo.InvariantCulture));
                 Environment.SetEnvironmentVariable("NOTIFY_SOCKET", null);
