@@ -191,7 +191,7 @@ namespace System.Threading.Tasks.Tests
 
                 Assert.True(seenTimestamp, "Timed out waiting for task timestamp");
 
-                // Simulate debugger detach — the flag sync should detect the mismatch
+                // Simulate debugger detach â€” the flag sync should detect the mismatch
                 // and disable the Debugger flags without crashing.
                 // Timestamps are not cleared (matches existing behavior).
                 AsyncDebuggingEnabledField.SetValue(null, false);
@@ -199,7 +199,7 @@ namespace System.Threading.Tasks.Tests
                 // Run one task to trigger the flag sync that detects the mismatch
                 await Func();
 
-                // Now start a new in-flight task after detach — it should NOT be tracked
+                // Now start a new in-flight task after detach - it should NOT be tracked
                 var tcsPost = new TaskCompletionSource();
                 Task postDetach = FuncThatWaitsTwice(tcsPost, new TaskCompletionSource());
 
@@ -293,7 +293,7 @@ namespace System.Threading.Tasks.Tests
                 var tcs2 = new TaskCompletionSource();
                 Task inflight = FuncThatWaitsTwice(tcs1, tcs2);
 
-                // Task is suspended on tcs1 — should be in active tasks
+                // Task is suspended on tcs1 â€” should be in active tasks
                 var activeTasks = (Dictionary<int, Task>)ActiveTasksField.GetValue(null);
 
                 lock (activeTasks)
@@ -301,7 +301,7 @@ namespace System.Threading.Tasks.Tests
                     Assert.True(activeTasks.ContainsKey(inflight.Id), "Expected suspended task to be in s_currentActiveTasks");
                 }
 
-                // Resume from first suspension — this triggers DispatchContinuations which sets timestamps
+                // Resume from first suspension â€” this triggers DispatchContinuations which sets timestamps
                 tcs1.SetResult();
 
                 // Poll until the dispatch loop has resumed and re-suspended on tcs2,
