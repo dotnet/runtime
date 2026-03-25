@@ -6,7 +6,4 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
-  <ItemGroup>
-    <CMakeProjectReference Include="../../CMakeLists.txt" />
-  </ItemGroup>
 </Project>
