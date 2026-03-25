@@ -77,14 +77,29 @@ namespace System.Globalization
         /// Indicates that the <see cref="AllowLeadingWhite"/>, <see cref="AllowTrailingWhite"/>,
         /// <see cref="AllowLeadingSign"/>, <see cref="AllowHexSpecifier"/>, and <see cref="AllowDecimalPoint"/>
         /// styles are used. This is a composite number style used for parsing hexadecimal floating-point values
-        /// based on the syntax defined in IEEE 754:2008 §5.12.3. The parsed string must include a "0x" or "0X"
-        /// prefix, followed by a hexadecimal significand with an optional decimal point, and a binary exponent
-        /// introduced by 'p' or 'P'. Integer-only hexadecimal values must also include the 'p'/'P' exponent.
+        /// based on the syntax defined in IEEE 754:2008 §5.12.3:
+        /// <code>
+        ///   [sign] 0x hexSignificand pExponent
+        /// </code>
+        /// where <c>sign</c> is an optional <c>+</c> or <c>-</c>,
+        /// <c>0x</c> (or <c>0X</c>) is a required hexadecimal indicator,
+        /// <c>hexSignificand</c> is one of <c>hh</c>, <c>hh.</c>, <c>hh.hh</c>, or <c>.hh</c>
+        /// (where <c>hh</c> represents one or more hexadecimal digits), and
+        /// <c>pExponent</c> is a required <c>p</c> (or <c>P</c>) followed by an optional sign and one or
+        /// more decimal digits representing a power-of-2 exponent.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Note that unlike <see cref="HexNumber"/> for integer types (which rejects a "0x"/"0X" prefix),
         /// <see cref="HexFloat"/> requires the prefix. This difference exists because the
         /// IEEE 754 hex float grammar (e.g., <c>0x1.921fb54442d18p+1</c>) naturally includes the prefix.
+        /// </para>
+        /// <para>
+        /// <see cref="AllowExponent"/> is intentionally not included in <see cref="HexFloat"/>.
+        /// The <c>p</c>/<c>P</c> exponent in the hex float grammar is handled directly by the
+        /// hex float parser and is distinct from the <c>e</c>/<c>E</c> decimal exponent
+        /// controlled by <see cref="AllowExponent"/>.
+        /// </para>
         /// </remarks>
         HexFloat = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowHexSpecifier | AllowDecimalPoint,
 

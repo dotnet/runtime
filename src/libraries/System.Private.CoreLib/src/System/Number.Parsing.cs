@@ -1139,7 +1139,7 @@ namespace System
                 return false;
             }
 
-            // Parse binary exponent (p or P)
+            // Parse the power-of-2 exponent (p or P followed by decimal digits)
             int binaryExponent = 0;
             if (index < value.Length && ((TChar.CastToUInt32(value[index]) | 0x20) == 'p'))
             {
@@ -1151,15 +1151,16 @@ namespace System
                 }
 
                 bool exponentIsNegative = false;
-                uint ch = TChar.CastToUInt32(value[index]);
-                if (ch == '-')
+                ReadOnlySpan<TChar> negSign = info.NegativeSignTChar<TChar>();
+                ReadOnlySpan<TChar> posSign = info.PositiveSignTChar<TChar>();
+                if (value.Slice(index).StartsWith(negSign))
                 {
                     exponentIsNegative = true;
-                    index++;
+                    index += negSign.Length;
                 }
-                else if (ch == '+')
+                else if (!posSign.IsEmpty && value.Slice(index).StartsWith(posSign))
                 {
-                    index++;
+                    index += posSign.Length;
                 }
 
                 if (index >= value.Length)
@@ -1178,6 +1179,9 @@ namespace System
 
                     int digit = (int)(ech - '0');
 
+                    // Saturate at int.MaxValue on overflow. Unlike the significand (which tracks
+                    // overflow digits and sticky bits for rounding), the exponent just needs to be
+                    // large enough to guarantee the result resolves to infinity or zero.
                     binaryExponent = binaryExponent <= (int.MaxValue - digit) / 10 ?
                         binaryExponent * 10 + digit :
                         int.MaxValue;
@@ -1197,7 +1201,7 @@ namespace System
             }
             else
             {
-                // Binary exponent is required
+                // Power-of-2 exponent is required
                 return false;
             }
 
@@ -1210,7 +1214,8 @@ namespace System
                 }
             }
 
-            if (index != value.Length)
+            // For compatibility, allow trailing null characters (same as other number parsers).
+            if (index != value.Length && !TrailingZeros(value, index))
             {
                 return false;
             }

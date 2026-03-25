@@ -34,13 +34,15 @@ namespace System.Globalization.Tests
         [InlineData(NumberStyles.None, true)]
         public void ValidateParseStyle_Float(NumberStyles style, bool valid)
         {
+            // Use a value that's valid for hex float styles (which require "0x" prefix and "p" exponent).
+            string value = (style & NumberStyles.AllowHexSpecifier) != 0 ? "0x0p0" : "0";
             if (!valid)
             {
-                AssertExtensions.Throws<ArgumentException>("style", () => float.Parse("0", style));
+                AssertExtensions.Throws<ArgumentException>("style", () => float.Parse(value, style));
             }
             else
             {
-                float.Parse("0", style); // Should not throw
+                float.Parse(value, style); // Should not throw
             }
         }
     }

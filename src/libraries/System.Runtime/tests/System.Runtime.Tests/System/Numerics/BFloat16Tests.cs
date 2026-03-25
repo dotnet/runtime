@@ -779,6 +779,7 @@ namespace System.Numerics.Tests
             yield return new object[] { "0xFFp0", NumberStyles.HexFloat, invariantFormat, 255.0f };
             yield return new object[] { " 0x1p0 ", NumberStyles.HexFloat, invariantFormat, 1.0f };
             yield return new object[] { "0x.1p4", NumberStyles.HexFloat, invariantFormat, 1.0f };
+            yield return new object[] { "0x1.p4", NumberStyles.HexFloat, invariantFormat, 16.0f };
             // Overflow to infinity
             yield return new object[] { "0x1p128", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
             yield return new object[] { "-0x1p128", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };

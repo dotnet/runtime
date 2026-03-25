@@ -568,12 +568,10 @@ namespace System
                 if (precision > 0)
                 {
                     vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
-                    for (int i = 0; i < precision; i++)
-                    {
-                        vlb.Append(TChar.CastFrom('0'));
-                    }
+                    vlb.AppendSpan(precision).Fill(TChar.CastFrom('0'));
                 }
 
+                // Exponent sign is always emitted ('+' or '-'), consistent with the 'E' format.
                 vlb.Append(TChar.CastFrom(fmt == 'X' ? 'P' : 'p'));
                 vlb.Append(TChar.CastFrom('+'));
                 vlb.Append(TChar.CastFrom('0'));
@@ -581,7 +579,7 @@ namespace System
                 return;
             }
 
-            // ExtractFractionAndBiasedExponent returns:
+            // ExtractFractionAndBiasedExponent returns (note: despite the name, the exponent is unbiased):
             //   For normal:   fraction = (1 << DenormalMantissaBits) | mantissa, exponent = biasedExp - ExponentBias - DenormalMantissaBits
             //   For denormal: fraction = mantissa, exponent = MinBinaryExponent - DenormalMantissaBits
             //
@@ -689,9 +687,10 @@ namespace System
                 }
 
                 // Emit padding zeros (when precision > defaultHexDigits)
-                for (int i = realDigits; i < precision; i++)
+                int padCount = precision - realDigits;
+                if (padCount > 0)
                 {
-                    vlb.Append(TChar.CastFrom('0'));
+                    vlb.AppendSpan(padCount).Fill(TChar.CastFrom('0'));
                 }
             }
             else if (precision < 0)
