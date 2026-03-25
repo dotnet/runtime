@@ -27,6 +27,7 @@
       <ResolvedFileToPublish Remove="@(_IlcManagedInputAssemblies)" />
       <!-- dotnet CLI produces managed debug symbols, which we will replace with native symbols instead -->
       <ResolvedFileToPublish Remove="@(_DebugSymbolsIntermediatePath)" />
+      <ResolvedFileToPublish Remove="@(IntermediateSatelliteAssembliesWithTargetPath)" />
       <!-- replace apphost with binary we generated during native compilation -->
       <ResolvedFileToPublish Include="$(NativeBinary)">
         <RelativePath>$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</RelativePath>

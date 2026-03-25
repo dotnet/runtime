@@ -1001,18 +1001,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     // pbeWithSHA1And3-KeyTripleDES-CBC
                     Assert.Equal("1.2.840.113549.1.12.1.3", algorithmIdentifier.Algorithm);
-                    PBEParameter pbeParameter = PBEParameter.Decode(algorithmIdentifier.Parameters.Value, AsnEncodingRules.BER);
+                    ValuePBEParameter.Decode(
+                        algorithmIdentifier.Parameters.Value.Span,
+                        AsnEncodingRules.BER,
+                        out ValuePBEParameter pbeParameter);
 
                     Assert.Equal(expectedIterations, pbeParameter.IterationCount);
                 }
                 else
                 {
                     Assert.Equal("1.2.840.113549.1.5.13", algorithmIdentifier.Algorithm); // PBES2
-                    PBES2Params pbes2Params = PBES2Params.Decode(algorithmIdentifier.Parameters.Value, AsnEncodingRules.BER);
+                    ValuePBES2Params.Decode(
+                        algorithmIdentifier.Parameters.Value.Span,
+                        AsnEncodingRules.BER,
+                        out ValuePBES2Params pbes2Params);
                     Assert.Equal("1.2.840.113549.1.5.12", pbes2Params.KeyDerivationFunc.Algorithm); // PBKDF2
-                    Pbkdf2Params pbkdf2Params = Pbkdf2Params.Decode(
-                        pbes2Params.KeyDerivationFunc.Parameters.Value,
-                        AsnEncodingRules.BER);
+                    ValuePbkdf2Params.Decode(
+                        pbes2Params.KeyDerivationFunc.Parameters,
+                        AsnEncodingRules.BER,
+                        out ValuePbkdf2Params pbkdf2Params);
                     string expectedEncryptionOid = expectedEncryptionAlgorithm switch
                     {
                         PbeEncryptionAlgorithm.Aes128Cbc => "2.16.840.1.101.3.4.1.2",
@@ -1028,7 +1035,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        private static HashAlgorithmName GetHashAlgorithmFromPbkdf2Params(Pbkdf2Params pbkdf2Params)
+        private static HashAlgorithmName GetHashAlgorithmFromPbkdf2Params(in ValuePbkdf2Params pbkdf2Params)
         {
             return pbkdf2Params.Prf.Algorithm switch
             {
