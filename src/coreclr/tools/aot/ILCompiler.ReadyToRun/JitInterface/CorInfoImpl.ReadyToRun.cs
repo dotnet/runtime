@@ -573,6 +573,7 @@ namespace Internal.JitInterface
             // version bubble the stubs are not wrapped with ManifestModuleWrappedMethodIL, so
             // token resolution for InstantiatedType / ParameterizedType falls through to a path
             // that cannot handle them. Skip compilation and let the runtime JIT these stubs.
+            // https://github.com/dotnet/runtime/issues/125337
             if (methodNeedingCode.IsCompilerGeneratedILBodyForAsync() && compilation != null && compilation.NodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
             {
                 return true;
@@ -1291,17 +1292,25 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.InitInstClass;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
+                    id = ReadyToRunHelper.ThrowArgument;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
+                    id = ReadyToRunHelper.ThrowArgumentOutOfRange;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
+                    id = ReadyToRunHelper.ThrowPlatformNotSupported;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
+                    id = ReadyToRunHelper.ThrowNotImplemented;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
                 case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_RARE:
-                // For Vector256.Create and similar cases
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
                 // For x86 tailcall where helper is required we need runtime JIT.
                 case CorInfoHelpFunc.CORINFO_HELP_TAILCALL:
                 // DirectOnThreadLocalData helper is used at runtime during R2R fixup resolution, not during R2R compilation

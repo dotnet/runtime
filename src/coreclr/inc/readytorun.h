@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 18
-#define READYTORUN_MINOR_VERSION 0x0003
+#define READYTORUN_MINOR_VERSION 0x0004
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 18
 
@@ -54,6 +54,7 @@
 // R2R Version 18 updates fields layout algorithm
 // R2R Version 18.2 adds InitClass and InitInstClass helpers
 // R2R Version 18.3 adds the ExternalTypeMaps, ProxyTypeMaps, TypeMapAssemblyTargets sections
+// R2R Version 18.4 adds ThrowArgument, ThrowArgumentOutOfRange, ThrowPlatformNotSupported, and ThrowNotImplemented helpers
 
 struct READYTORUN_CORE_HEADER
 {
@@ -346,6 +347,10 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_ThrowNullRef              = 0x25,
     READYTORUN_HELPER_ThrowDivZero              = 0x26,
     READYTORUN_HELPER_ThrowExact                = 0x27,
+    READYTORUN_HELPER_ThrowArgument             = 0x28,
+    READYTORUN_HELPER_ThrowArgumentOutOfRange   = 0x29,
+    READYTORUN_HELPER_ThrowPlatformNotSupported = 0x2A,
+    READYTORUN_HELPER_ThrowNotImplemented       = 0x2B,
 
     // Write barriers
     READYTORUN_HELPER_WriteBarrier              = 0x30,

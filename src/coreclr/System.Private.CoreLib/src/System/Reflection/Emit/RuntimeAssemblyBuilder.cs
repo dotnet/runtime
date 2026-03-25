@@ -113,6 +113,7 @@ namespace System.Reflection.Emit
         #region DefineDynamicAssembly
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
+        [RequiresUnsafe]
         private static unsafe partial void CreateDynamicAssembly(ObjectHandleOnStack assemblyLoadContext,
                                                                  NativeAssemblyNameParts* pAssemblyName,
                                                                  AssemblyHashAlgorithm hashAlgId,
