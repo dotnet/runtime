@@ -91,14 +91,14 @@ namespace Microsoft.Interop.Analyzers
 
             if (stubContext.VtableIndexData.Direction is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
             {
-                var (_, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(stubContext, VtableIndexStubGeneratorHelpers.GetGeneratorResolver);
+                var (_, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(stubContext, static (env, dir) => new ByValueContentsMarshalKindValidator(VtableIndexStubGeneratorHelpers.GetGeneratorResolver(env, dir)));
                 foreach (DiagnosticInfo diag in diagnostics)
                     context.ReportDiagnostic(diag.ToDiagnostic());
             }
 
             if (stubContext.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
             {
-                var (_, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(stubContext, VtableIndexStubGeneratorHelpers.GetGeneratorResolver);
+                var (_, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(stubContext, static (env, dir) => new ByValueContentsMarshalKindValidator(VtableIndexStubGeneratorHelpers.GetGeneratorResolver(env, dir)));
                 foreach (DiagnosticInfo diag in diagnostics)
                     context.ReportDiagnostic(diag.ToDiagnostic());
             }

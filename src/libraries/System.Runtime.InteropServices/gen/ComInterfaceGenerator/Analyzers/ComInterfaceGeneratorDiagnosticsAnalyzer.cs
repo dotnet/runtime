@@ -185,11 +185,11 @@ namespace Microsoft.Interop.Analyzers
 
                 if (srcCtx.VtableIndexData.Direction is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                 {
-                    (_, managedToNativeDiags) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(srcCtx, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
+                    (_, managedToNativeDiags) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(srcCtx, static (env, dir) => new ByValueContentsMarshalKindValidator(ComInterfaceGeneratorHelpers.GetGeneratorResolver(env, dir)));
                 }
                 if (srcCtx.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                 {
-                    (_, nativeToManagedDiags) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(srcCtx, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
+                    (_, nativeToManagedDiags) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(srcCtx, static (env, dir) => new ByValueContentsMarshalKindValidator(ComInterfaceGeneratorHelpers.GetGeneratorResolver(env, dir)));
                 }
 
                 // Deduplicate diagnostics reported for both directions (matching original generator behavior)

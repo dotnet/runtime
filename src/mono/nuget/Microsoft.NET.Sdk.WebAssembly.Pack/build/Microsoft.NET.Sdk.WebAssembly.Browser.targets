@@ -307,7 +307,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmProjectAssemblyBuild Include="@(WasmAssembliesFinal)" Condition="$(_WasmIntermediateAssemblyFileNames.Contains(';%(FileName)%(Extension);'))" />
       <_WasmProjectAssemblyBuild Include="@(IntermediateAssembly)" Condition="@(_WasmProjectAssemblyBuild->Count()) == 0" />
       <_WasmBuildAssetCandidates Include="@(ReferenceCopyLocalPaths)" />
-      <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" />
+      <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" WasmNativeBuildOutput="true" />
       <_WasmBuildAssetCandidates Include="@(WasmAssembliesFinal)" />
       <_WasmBuildAssetCandidates Remove="@(_WasmProjectAssemblyBuild)" />
 
@@ -357,12 +357,21 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="WebcilCandidates" ItemName="_WebcilAssetsCandidates" />
+      <Output TaskParameter="PassThroughCandidates" ItemName="_WasmFrameworkCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebcil>
+
+    <!-- Remove pass-throughs from webcil candidates so each file is classified exactly once:
+         webcil-converted files → Computed (per-project in obj/webcil/)
+         pass-through files → Framework (materialized per-project by UpdatePackageStaticWebAssets) -->
+    <ItemGroup>
+      <_WebcilAssetsCandidates Remove="@(_WasmFrameworkCandidates)" />
+    </ItemGroup>
 
     <ItemGroup>
       <!-- Set per-item ContentRoot so each asset's Identity matches its actual file on disk -->
       <_WebcilAssetsCandidates Update="@(_WebcilAssetsCandidates)" ContentRoot="%(RootDir)%(Directory)" />
+      <_WasmFrameworkCandidates Update="@(_WasmFrameworkCandidates)" ContentRoot="%(RootDir)%(Directory)" />
       <_WasmFingerprintPatterns Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DllFiles" Pattern="*.dll" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DatFiles" Pattern="*.dat" Expression="#[.{fingerprint}]!" />
@@ -370,6 +379,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintPatterns Include="Symbols" Pattern="*.js.symbols" Expression="#[.{fingerprint}]!" />
     </ItemGroup>
 
+    <!-- Webcil-converted assets are per-project (Computed) — no materialization needed. -->
     <DefineStaticWebAssets
       CandidateAssets="@(_WebcilAssetsCandidates)"
       SourceId="$(PackageId)"
@@ -384,6 +394,49 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="Assets" ItemName="WasmStaticWebAsset" />
     </DefineStaticWebAssets>
+
+    <!-- Pass-through files are Framework assets: they originate from the runtime pack but
+         need to be adopted by each consuming project. DefineStaticWebAssets registers them
+         with SourceType="Framework", then UpdatePackageStaticWebAssets materializes them to
+         a per-project obj/fx/{SourceId}/ directory, giving each project a unique Identity. -->
+    <DefineStaticWebAssets
+      CandidateAssets="@(_WasmFrameworkCandidates)"
+      SourceId="$(PackageId)"
+      SourceType="Framework"
+      AssetKind="Build"
+      AssetRole="Primary"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="Never"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
+      FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
+      BasePath="$(StaticWebAssetBasePath)"
+    >
+      <Output TaskParameter="Assets" ItemName="_WasmFrameworkAssets" />
+    </DefineStaticWebAssets>
+
+    <!-- Let the SDK task handle materialization: copies assets to obj/fx/{SourceId}/, updates
+         metadata (e.g., setting SourceType to Discovered and defaulting AssetMode to CurrentProject),
+         and remaps any existing endpoints/paths to the new materialized asset Identity. -->
+    <UpdatePackageStaticWebAssets
+      Assets="@(_WasmFrameworkAssets)"
+      IntermediateOutputPath="$(IntermediateOutputPath)"
+      ProjectPackageId="$(PackageId)"
+      ProjectBasePath="$(StaticWebAssetBasePath)"
+    >
+      <Output TaskParameter="UpdatedAssets" ItemName="_WasmMaterializedFrameworkAssets" />
+    </UpdatePackageStaticWebAssets>
+
+    <!-- Materialized framework assets must be visible to referencing projects (e.g. Blazor WASM
+         hosted scenarios where the server project serves the client's framework files).
+         UpdatePackageStaticWebAssets defaults AssetMode to CurrentProject and CopyToOutputDirectory
+         to Never. Override both: AssetMode=All so assets flow through project references, and
+         CopyToOutputDirectory=PreserveNewest so they are copied from the intermediate materialized
+         path (obj/fx/{SourceId}/) to bin/wwwroot/_framework/ at build time. -->
+    <ItemGroup>
+      <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)"
+        AssetMode="All" CopyToOutputDirectory="PreserveNewest" />
+      <WasmStaticWebAsset Include="@(_WasmMaterializedFrameworkAssets)" />
+    </ItemGroup>
 
     <DefineStaticWebAssets
       CandidateAssets="@(_WasmDiscoveredFileCandidates)"
