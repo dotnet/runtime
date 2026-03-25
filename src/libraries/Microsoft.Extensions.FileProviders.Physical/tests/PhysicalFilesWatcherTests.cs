@@ -307,6 +307,40 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task GetOrAddFilePathChangeToken_FiresAfterSubdirectoryDeletedAndRecreated()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            string dir = Path.Combine(root.Path, "dir");
+
+            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling: false);
+
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("dir/file.txt");
+
+            var tcs = new TaskCompletionSource<bool>();
+            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+
+            // Create the directory — token must NOT fire
+            Directory.CreateDirectory(dir);
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(tcs.Task.IsCompleted, "Token must not fire when dir is created");
+
+            // Delete the directory
+            Directory.Delete(dir);
+            await Task.Delay(WaitTimeForTokenToFire);
+
+            // Recreate the directory — token must NOT fire
+            Directory.CreateDirectory(dir);
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(tcs.Task.IsCompleted, "Token must not fire when dir is recreated without the file");
+
+            // Create the target file — now the token must fire
+            File.WriteAllText(Path.Combine(dir, "file.txt"), string.Empty);
+
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task GetOrAddFilePathChangeToken_RootDeletedAndRecreated_TokenFiresWhenFileCreated()
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -366,6 +400,34 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             // Create a matching file — now the token must fire
             File.WriteAllText(Path.Combine(rootPath, "config.json"), "{}");
+
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task WildcardToken_FiresWhenFileCreatedInMissingPrefixDirectory()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            string missingDir = Path.Combine(root.Path, "subdir");
+
+            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling: false);
+
+            // Watch a wildcard pattern whose non-wildcard prefix directory doesn't exist
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("subdir/**/*.json");
+            Assert.NotNull(token);
+            Assert.False(token.HasChanged);
+
+            var tcs = new TaskCompletionSource<bool>();
+            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+
+            // Create the missing directory - token must not fire yet
+            Directory.CreateDirectory(missingDir);
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(tcs.Task.IsCompleted, "Token must not fire when only the prefix directory is created");
+
+            // Create a matching file — now the token must fire
+            File.WriteAllText(Path.Combine(missingDir, "app.json"), "{}");
 
             await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
         }
