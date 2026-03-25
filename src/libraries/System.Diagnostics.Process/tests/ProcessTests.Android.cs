@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -13,7 +14,7 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Android)]
         public void Process_Start_SimpleCommand_ExitsSuccessfully()
         {
-            using (Process process = Process.Start("ls", "/"))
+            using (Process process = Process.Start("ls", Path.GetTempPath()))
             {
                 Assert.NotNull(process);
                 Assert.True(process.WaitForExit(WaitInMS));
@@ -27,7 +28,7 @@ namespace System.Diagnostics.Tests
         public void Process_Start_WithArgumentList_ExitsSuccessfully()
         {
             ProcessStartInfo psi = new("ls");
-            psi.ArgumentList.Add("/");
+            psi.ArgumentList.Add(Path.GetTempPath());
             using (Process process = Process.Start(psi))
             {
                 Assert.NotNull(process);
@@ -41,7 +42,7 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Android)]
         public void Process_Start_CaptureStdout_ReadsOutput()
         {
-            ProcessStartInfo psi = new("ls", "/")
+            ProcessStartInfo psi = new("ls", Path.GetTempPath())
             {
                 RedirectStandardOutput = true
             };
