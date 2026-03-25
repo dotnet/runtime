@@ -1778,8 +1778,7 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
             }
             // Allow preceding statements if they have no globally visible side effects
             // (e.g., dead local stores left over from inlining).
-            for (Statement* stmt = block->firstStmt(); stmt != block->lastStmt();
-                 stmt          = stmt->GetNextStmt())
+            for (Statement* const stmt : block->Statements())
             {
                 if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(stmt->GetRootNode()->gtFlags))
                 {
