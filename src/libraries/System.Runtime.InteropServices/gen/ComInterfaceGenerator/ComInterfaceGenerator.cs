@@ -150,11 +150,7 @@ namespace Microsoft.Interop
                     GenerateImplementationInterface(x, ct).NormalizeWhitespace(),
                     GenerateInterfaceImplementationVtable(x, ct).NormalizeWhitespace(),
                     GenerateImplementationVTableMethods(x, ct).NormalizeWhitespace(),
-                    x.Interface.Info.TypeDefinitionContext.WrapMemberInContainingSyntaxWithUnsafeModifier(TypeDeclaration(x.Interface.Info.ContainingSyntax.TypeKind, x.Interface.Info.ContainingSyntax.Identifier)
-                        .WithModifiers(x.Interface.Info.ContainingSyntax.Modifiers)
-                        .WithTypeParameterList(x.Interface.Info.ContainingSyntax.TypeParameters)
-                        .WithMembers(List<MemberDeclarationSyntax>(x.ShadowingMethods.Select(m => m.Shadow))))
-                        .NormalizeWhitespace(),
+                    GenerateShadowingMethodsInterface(x),
                     GenerateImplementationVTable(x, ct).NormalizeWhitespace(),
                     GenerateInterfaceInformation(x.Interface.Info, ct).NormalizeWhitespace(),
                     GenerateIUnknownDerivedAttributeApplication(x.Interface.Info, ct).NormalizeWhitespace()
@@ -230,6 +226,23 @@ namespace Microsoft.Interop
                     .WithModifiers(context.ContainingSyntax.Modifiers)
                     .WithTypeParameterList(context.ContainingSyntax.TypeParameters)
                     .AddAttributeLists(AttributeList(SingletonSeparatedList(s_iUnknownDerivedAttributeTemplate))));
+
+        private static MemberDeclarationSyntax GenerateShadowingMethodsInterface(ComInterfaceAndMethodsContext interfaceMethods)
+        {
+            var shadowingMethods = interfaceMethods.ShadowingMethods.Select(m => m.Shadow).ToImmutableArray();
+            bool needsUnsafe = shadowingMethods.Any(
+                static m => m.DescendantNodes().OfType<PointerTypeSyntax>().Any()
+                         || m.DescendantNodes().OfType<FunctionPointerTypeSyntax>().Any());
+            var containingSyntax = interfaceMethods.Interface.Info.ContainingSyntax;
+            return interfaceMethods.Interface.Info.TypeDefinitionContext.WrapMemberInContainingSyntaxWithUnsafeModifier(
+                TypeDeclaration(containingSyntax.TypeKind, containingSyntax.Identifier)
+                    .WithModifiers(needsUnsafe
+                        ? containingSyntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword)
+                        : containingSyntax.Modifiers)
+                    .WithTypeParameterList(containingSyntax.TypeParameters)
+                    .WithMembers(List<MemberDeclarationSyntax>(shadowingMethods)))
+                    .NormalizeWhitespace();
+        }
 
         private static bool IsHResultLikeType(ManagedTypeInfo type)
         {
