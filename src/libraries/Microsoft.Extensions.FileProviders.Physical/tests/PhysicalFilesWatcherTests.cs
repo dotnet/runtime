@@ -305,14 +305,14 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
-        public async Task GetOrAddFilePathChangeToken_FiresAfterSubdirectoryDeletedAndRecreated()
+        [Theory]
+        [MemberData(nameof(WatcherModeData))]
+        public async Task GetOrAddFilePathChangeToken_FiresAfterSubdirectoryDeletedAndRecreated(bool useActivePolling)
         {
             using var root = new TempDirectory(GetTestFilePath());
             string dir = Path.Combine(root.Path, "dir");
 
-            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling: false);
+            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling);
 
             IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("dir/file.txt");
 
@@ -404,14 +404,14 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
-        public async Task WildcardToken_FiresWhenFileCreatedInMissingPrefixDirectory()
+        [Theory]
+        [MemberData(nameof(WatcherModeData))]
+        public async Task WildcardToken_FiresWhenFileCreatedInMissingPrefixDirectory(bool useActivePolling)
         {
             using var root = new TempDirectory(GetTestFilePath());
             string missingDir = Path.Combine(root.Path, "subdir");
 
-            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling: false);
+            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling);
 
             // Watch a wildcard pattern whose non-wildcard prefix directory doesn't exist
             IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("subdir/**/*.json");
