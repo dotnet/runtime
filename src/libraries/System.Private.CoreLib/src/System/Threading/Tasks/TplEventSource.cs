@@ -34,6 +34,10 @@ namespace System.Threading.Tasks
 
             Debug = IsEnabled(EventLevel.Informational, Keywords.Debug);
             DebugActivityId = IsEnabled(EventLevel.Informational, Keywords.DebugActivityId);
+
+#if CORECLR || NATIVEAOT
+            AsyncHelpers.RuntimeAsyncTaskInstrumentation.UpdateTplFlags(this);
+#endif
         }
 
         /// <summary>
