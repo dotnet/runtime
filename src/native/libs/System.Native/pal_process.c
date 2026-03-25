@@ -31,7 +31,6 @@
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
-#include <spawn.h>
 #endif
 
 #ifdef __FreeBSD__
@@ -220,13 +219,15 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t stdoutFd,
                                       int32_t stderrFd)
 {
-#if defined(__APPLE__) && !defined(TARGET_MACCATALYST) && !defined(TARGET_TVOS)
+#if defined(TARGET_OSX)
     // Use posix_spawn on macOS when credentials don't need to be set,
     // since macOS does not support setuid/setgid with posix_spawn.
     if (!setCredentials)
     {
         assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
                 "null argument.");
+
+        *childPid = -1;
 
         // Make sure we can find and access the executable.
         if (access(filename, X_OK) != 0)
@@ -267,10 +268,14 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             return -1;
         }
 
-        // Set the child's signal mask to empty (unblock all signals)
-        sigset_t no_signals;
-        sigemptyset(&no_signals);
-        if ((result = posix_spawnattr_setsigmask(&attr, &no_signals)) != 0)
+        // Set the child's signal mask to match the parent's current mask
+        sigset_t current_mask;
+        if (pthread_sigmask(SIG_SETMASK, NULL, &current_mask) != 0)
+        {
+            posix_spawnattr_destroy(&attr);
+            return -1;
+        }
+        if ((result = posix_spawnattr_setsigmask(&attr, &current_mask)) != 0)
         {
             int saved_errno = result;
             posix_spawnattr_destroy(&attr);
@@ -320,7 +325,6 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         if (result != 0)
         {
             errno = result;
-            *childPid = -1;
             return -1;
         }
 

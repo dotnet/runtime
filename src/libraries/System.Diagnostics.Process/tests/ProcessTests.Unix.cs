@@ -1060,5 +1060,53 @@ namespace System.Diagnostics.Tests
         }
 
         private static unsafe void ReEnableCtrlCHandlerIfNeeded(PosixSignal signal) { }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ChildProcess_InheritsParentSignalMask_CanReceiveSignals()
+        {
+            // This test verifies that a child process started from a parent that has
+            // registered signal handlers can still receive signals correctly.
+            // This exercises the posix_spawn path on macOS where the child must
+            // inherit the parent's signal mask via posix_spawnattr_setsigmask.
+            const string SignalReceivedMessage = "Signal received";
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
+            {
+                // Register a signal handler in the parent process to modify signal state
+                using PosixSignalRegistration parentHandler = PosixSignalRegistration.Create(PosixSignal.SIGCONT, (ctx) =>
+                {
+                    ctx.Cancel = true;
+                });
+
+                // Now start a child process from this parent (which has signal handlers registered)
+                // and verify the child can receive signals properly
+                const string ChildReadyMessage = "Child ready";
+
+                var childOptions = new RemoteInvokeOptions { CheckExitCode = false };
+                childOptions.StartInfo.RedirectStandardOutput = true;
+
+                using RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(() =>
+                {
+                    using ManualResetEvent signalEvent = new ManualResetEvent(false);
+                    using PosixSignalRegistration childHandler = PosixSignalRegistration.Create(PosixSignal.SIGCONT, (ctx) =>
+                    {
+                        Console.WriteLine(SignalReceivedMessage);
+                        signalEvent.Set();
+                        ctx.Cancel = true;
+                    });
+
+                    Console.WriteLine(ChildReadyMessage);
+                    Assert.True(signalEvent.WaitOne(WaitInMS));
+                }, childOptions);
+
+                AssertRemoteProcessStandardOutputLine(childHandle, ChildReadyMessage, WaitInMS);
+
+                // Send SIGCONT to the child process
+                SendSignal(PosixSignal.SIGCONT, childHandle.Process.Id);
+
+                Assert.True(childHandle.Process.WaitForExit(WaitInMS));
+                Assert.Equal(0, childHandle.Process.ExitCode);
+            });
+        }
     }
 }
