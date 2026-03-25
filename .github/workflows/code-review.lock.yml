@@ -22,7 +22,7 @@
 #
 # Review pull request changes for correctness, performance, and consistency with project conventions
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"8009eddefdfa562d4fe3f0c388e1c08fed999c7c1d1fa32d1a8d0ec78e6630cc","compiler_version":"v0.63.1","strict":true,"agent_id":"copilot","agent_model":"claude-opus-4.6"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"5b123b69c3a6e841ba33a0a86bb06e6712dc6ddd45b6b88b450a32e817fa6f77","compiler_version":"v0.63.1","strict":true,"agent_id":"copilot","agent_model":"claude-opus-4.6"}
 
 name: "Code Review"
 "on":
@@ -196,7 +196,7 @@ jobs:
           - **workflow-run-id**: __GH_AW_GITHUB_RUN_ID__
           {{/if}}
           - **checkouts**: The following repositories have been checked out and are available in the workspace:
-            - `$GITHUB_WORKSPACE` → `__GH_AW_GITHUB_REPOSITORY__` (cwd) [full history, all branches available as remote-tracking refs]
+            - `$GITHUB_WORKSPACE` → `__GH_AW_GITHUB_REPOSITORY__` (cwd) [shallow clone, fetch-depth=50]
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
@@ -313,7 +313,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-          fetch-depth: 0
+          fetch-depth: 50
       - name: Create gh-aw temp directory
         run: bash ${RUNNER_TEMP}/gh-aw/actions/create_gh_aw_tmp_dir.sh
       - name: Configure gh CLI for GitHub Enterprise

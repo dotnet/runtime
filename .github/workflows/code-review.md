@@ -16,7 +16,7 @@ tools:
     toolsets: [default, search]
 
 checkout:
-  fetch-depth: 0
+  fetch-depth: 50
 
 safe-outputs:
   add-comment:
