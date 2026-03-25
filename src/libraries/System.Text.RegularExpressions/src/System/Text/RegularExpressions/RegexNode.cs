@@ -1385,8 +1385,10 @@ namespace System.Text.RegularExpressions
 
                 // To keep things relatively simple, we currently only handle:
                 // - Left to right (e.g. we don't process alternations in lookbehinds)
-                // - Branches that are one or multi nodes, or that are concatenations beginning with one or multi nodes.
-                // - All branches having the same options.
+                // - Consecutive runs of branches that are one or multi nodes, or concatenations beginning with
+                //   one or multi nodes. Non-text branches (e.g. sets, loops) are skipped but don't prevent
+                //   later consecutive text branches from being factored.
+                // - All branches in a factored run having the same options.
 
                 // Only extract left-to-right prefixes.
                 if ((alternation.Options & RegexOptions.RightToLeft) != 0)
