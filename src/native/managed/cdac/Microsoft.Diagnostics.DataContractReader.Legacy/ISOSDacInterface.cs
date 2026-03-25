@@ -691,7 +691,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetJitManagerList(uint count, DacpJitManagerInfo* managers, uint* pNeeded);
     [PreserveSig]
-    int GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded);
+    int GetJitHelperFunctionName(ClrDataAddress ip, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] byte[]? name, uint* pNeeded);
     [PreserveSig]
     int GetJumpThunkTarget(/*T_CONTEXT*/void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD);
 

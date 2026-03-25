@@ -81,6 +81,8 @@
 // Hence, we add them here.
 GARY_IMPL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
 GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
+GARY_IMPL(VMINTERESTINGJITHELPDEF, hlpInterestingJitHelpTable, MAX_INTERESTING_JIT_HELPERS);
+GVAL_IMPL_INIT(int, g_interestingJitHelpCount, 0);
 
 #else // DACCESS_COMPILE
 
