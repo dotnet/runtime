@@ -13,8 +13,6 @@ namespace Microsoft.Extensions.Hosting.Systemd
     [UnsupportedOSPlatform("browser")]
     public class SystemdNotifier : ISystemdNotifier
     {
-        private const string NOTIFY_SOCKET = "NOTIFY_SOCKET";
-
         private readonly string? _socketPath;
 
         /// <summary>
@@ -60,12 +58,14 @@ namespace Microsoft.Extensions.Hosting.Systemd
 
         private static string? GetNotifySocketPath()
         {
-            string? socketPath = Environment.GetEnvironmentVariable(NOTIFY_SOCKET);
+            string? socketPath = Environment.GetEnvironmentVariable(SystemdConstants.NotifySocket);
 
             if (string.IsNullOrEmpty(socketPath))
             {
                 return null;
             }
+            // Don't let child processes inherit the socket path, as that would cause them to interfere with the service manager notifications.
+            Environment.SetEnvironmentVariable(SystemdConstants.NotifySocket, null);
 
             // Support abstract socket paths.
             if (socketPath[0] == '@')

@@ -38,6 +38,14 @@ namespace Microsoft.Extensions.Hosting
             {
                 hostBuilder.ConfigureServices((hostContext, services) =>
                 {
+                    AddSystemdLogger(services);
+                });
+            }
+
+            if (SystemdHelpers.IsSystemdNotify())
+            {
+                hostBuilder.ConfigureServices((hostContext, services) =>
+                {
                     AddSystemdLifetime(services);
                 });
             }
@@ -71,19 +79,28 @@ namespace Microsoft.Extensions.Hosting
 
             if (SystemdHelpers.IsSystemdService())
             {
+                AddSystemdLogger(services);
+            }
+
+            if (SystemdHelpers.IsSystemdNotify())
+            {
                 AddSystemdLifetime(services);
             }
+
             return services;
         }
 
-        private static void AddSystemdLifetime(IServiceCollection services)
+        private static void AddSystemdLogger(IServiceCollection services)
         {
             services.Configure<ConsoleLoggerOptions>(options =>
             {
                 options.FormatterName = ConsoleFormatterNames.Systemd;
             });
+        }
 
-            // IsSystemdService() will never return true for android/browser/iOS/tvOS
+        private static void AddSystemdLifetime(IServiceCollection services)
+        {
+            // IsSystemdNotify() will never return true for android/browser/iOS/tvOS
 #pragma warning disable CA1416 // Validate platform compatibility
             services.AddSingleton<ISystemdNotifier, SystemdNotifier>();
             services.AddSingleton<IHostLifetime, SystemdLifetime>();
