@@ -514,9 +514,15 @@ namespace System.Formats.Tar
                                 Directory.CreateDirectory(filePath);
                             }
                         }
-                        else
+                        else if (File.Exists(linkFullTargetPath))
                         {
                             File.Copy(linkFullTargetPath, filePath);
+                        }
+                        else
+                        {
+                            // The target does not exist yet (e.g. symlink before target in archive) or is missing.
+                            // Write an empty file to satisfy the destination path requirement.
+                            File.Create(filePath).Dispose();
                         }
                         break;
                     }
