@@ -502,7 +502,7 @@ namespace Internal.JitInterface
         {
             if (_asyncResumptionStub is null)
             {
-                _asyncResumptionStub = new AsyncResumptionStub(MethodBeingCompiled, MethodBeingCompiled.OwningType);
+                _asyncResumptionStub = ((CompilerTypeSystemContext)MethodBeingCompiled.Context).GetAsyncResumptionStub(MethodBeingCompiled, MethodBeingCompiled.OwningType);
                 AddResumptionStubFixup(_compilation.NodeFactory.CompiledMethodNode(_asyncResumptionStub));
             }
 
