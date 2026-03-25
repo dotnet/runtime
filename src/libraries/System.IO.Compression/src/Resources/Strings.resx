@@ -380,4 +380,7 @@
   <data name="UnexpectedStreamLength" xml:space="preserve">
     <value>The decompressed data length does not match the expected value from the archive.</value>
   </data>
+  <data name="ZipStreamEncryptedDataDescriptorNotSupported" xml:space="preserve">
+    <value>Encrypted entries with data descriptors cannot be read in forward-only mode because the compressed size is unknown.</value>
+  </data>
 </root>

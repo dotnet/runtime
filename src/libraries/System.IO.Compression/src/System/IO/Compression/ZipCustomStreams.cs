@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -209,17 +208,12 @@ namespace System.IO.Compression
         public override void Flush()
         {
             ThrowIfDisposed();
-            ThrowIfCantWrite();
-
-            _baseStream.Flush();
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            ThrowIfCantWrite();
-
-            return _baseStream.FlushAsync(cancellationToken);
+            return Task.CompletedTask;
         }
 
         protected override void Dispose(bool disposing)
@@ -713,6 +707,96 @@ namespace System.IO.Compression
         }
     }
 
+    /// <summary>
+    /// A read-only, forward-only stream that limits the number of bytes
+    /// that can be read from an underlying stream without closing it.
+    /// Used by <see cref="ZipStreamReader"/> to bound compressed entry data.
+    /// </summary>
+    internal sealed class BoundedReadOnlyStream : Stream
+    {
+        private readonly Stream _baseStream;
+        private long _remaining;
+        private bool _isDisposed;
+
+        public BoundedReadOnlyStream(Stream baseStream, long length)
+        {
+            _baseStream = baseStream;
+            _remaining = length;
+        }
+
+        public override bool CanRead => !_isDisposed;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+            => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            if (_remaining <= 0)
+            {
+                return 0;
+            }
+
+            if (buffer.Length > _remaining)
+            {
+                buffer = buffer.Slice(0, (int)_remaining);
+            }
+
+            int bytesRead = _baseStream.Read(buffer);
+            _remaining -= bytesRead;
+
+            return bytesRead;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (_remaining <= 0)
+            {
+                return 0;
+            }
+
+            if (buffer.Length > _remaining)
+            {
+                buffer = buffer.Slice(0, (int)_remaining);
+            }
+
+            int bytesRead = await _baseStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            _remaining -= bytesRead;
+
+            return bytesRead;
+        }
+
+        public override void Flush() { }
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            _isDisposed = true;
+            base.Dispose(disposing);
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            _isDisposed = true;
+
+            return base.DisposeAsync();
+        }
+    }
+
     internal sealed class CrcValidatingReadStream : Stream
     {
         private readonly Stream _baseStream;
@@ -734,6 +818,9 @@ namespace System.IO.Compression
             _expectedLength = expectedLength;
             _runningCrc = 0;
         }
+
+        internal uint RunningCrc => _runningCrc;
+        internal long TotalBytesRead => _totalBytesRead;
 
         public override bool CanRead => !_isDisposed && _baseStream.CanRead;
         public override bool CanSeek => !_isDisposed && _baseStream.CanSeek;
@@ -895,13 +982,12 @@ namespace System.IO.Compression
         public override void Flush()
         {
             ThrowIfDisposed();
-            throw new NotSupportedException(SR.WritingNotSupported);
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            throw new NotSupportedException(SR.WritingNotSupported);
+            return Task.CompletedTask;
         }
 
         public override long Seek(long offset, SeekOrigin origin)

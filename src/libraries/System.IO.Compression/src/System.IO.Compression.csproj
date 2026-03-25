@@ -53,7 +53,7 @@
     <Compile Include="System\IO\Compression\ZLibStream.cs" />
     <Compile Include="System\IO\Compression\ZipCompressionMethod.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
-    <Compile Include="System\IO\Compression\ZipStreamEntry.cs" />
+    <Compile Include="System\IO\Compression\ZipForwardReadEntry.cs" />
     <Compile Include="System\IO\Compression\ZipStreamReader.cs" />
   </ItemGroup>
 
@@ -68,9 +68,6 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="System\IO\Compression\ZipArchiveEntry.Unix.cs" />
     <Compile Include="$(CommonPath)System\IO\Compression\ZipArchiveEntryConstants.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs" Link="Common\Interop\Unix\System.Native\Interop.PathConf.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs" Link="Common\Interop\Unix\System.Native\Interop.PathConf.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
