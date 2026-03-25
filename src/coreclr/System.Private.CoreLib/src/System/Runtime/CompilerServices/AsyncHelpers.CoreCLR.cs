@@ -718,13 +718,12 @@ namespace System.Runtime.CompilerServices
                             AddToActiveTasks(task);
                         }
 
-                        HandleSuspended(task, flags);
-
                         if (RuntimeAsyncTaskInstrumentation.IsEnabled.Tpl(flags))
                         {
                             TplEventSource.Log.TraceOperationBegin(task.Id, "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask", 0);
                         }
 
+                        HandleSuspended(task, flags);
                         return;
                     }
 
