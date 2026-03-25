@@ -8,7 +8,6 @@ namespace System
 {
     public partial class TypeLoadException : SystemException
     {
-        // This is called from inside the EE.
         private TypeLoadException(string? className,
             string? assemblyName,
             string? messageArg,

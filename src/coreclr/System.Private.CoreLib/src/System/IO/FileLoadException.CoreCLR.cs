@@ -36,13 +36,29 @@ namespace System.IO
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FileLoadException_GetMessageForHR")]
         private static partial void GetMessageForHR(int hresult, StringHandleOnStack retString);
 
+        // See clrex.cpp for native version.
+        internal enum FileLoadExceptionKind
+        {
+            FileLoad,
+            BadImageFormat,
+            FileNotFound,
+            OutOfMemory
+        }
+
         [UnmanagedCallersOnly]
-        internal static unsafe void Create(char* pFileName, int hresult, object* pThrowable, Exception* pException)
+        internal static unsafe void Create(FileLoadExceptionKind kind, char* pFileName, int hresult, object* pThrowable, Exception* pException)
         {
             try
             {
                 string? fileName = pFileName is not null ? new string(pFileName) : null;
-                *pThrowable = new FileLoadException(fileName, hresult);
+                *pThrowable = kind switch
+                {
+                    FileLoadExceptionKind.BadImageFormat => new BadImageFormatException(fileName, hresult),
+                    FileLoadExceptionKind.FileNotFound => new FileNotFoundException(fileName, hresult),
+                    FileLoadExceptionKind.OutOfMemory => throw new OutOfMemoryException(),
+                    FileLoadExceptionKind.FileLoad => new FileLoadException(fileName, hresult),
+                    _ => throw new InvalidOperationException()
+                };
             }
             catch (Exception ex)
             {

@@ -1279,6 +1279,30 @@ BOOL EETypeAccessException::GetThrowableMessage(SString &result)
 // EEArgumentException is an EE exception subclass representing a bad argument
 // ---------------------------------------------------------------------------
 
+// See Exception.CoreCLR.cs for managed mapping.
+enum class ArgumentExceptionKind : int32_t
+{
+    Argument,
+    ArgumentNull,
+    ArgumentOutOfRange
+};
+
+static ArgumentExceptionKind GetArgumentExceptionKind(RuntimeExceptionKind reKind)
+{
+    LIMITED_METHOD_CONTRACT;
+    switch (reKind)
+    {
+    case kArgumentException:
+        return ArgumentExceptionKind::Argument;
+    case kArgumentNullException:
+        return ArgumentExceptionKind::ArgumentNull;
+    case kArgumentOutOfRangeException:
+        return ArgumentExceptionKind::ArgumentOutOfRange;
+    default:
+        UNREACHABLE();
+    }
+}
+
 OBJECTREF EEArgumentException::CreateThrowable()
 {
 
@@ -1299,25 +1323,13 @@ OBJECTREF EEArgumentException::CreateThrowable()
     gc.pThrowable = NULL;
     GCPROTECT_BEGIN(gc);
 
-    MethodTable *pMT = CoreLibBinder::GetException(m_kind);
-    gc.pThrowable = AllocateObject(pMT);
-
-    MethodDesc* pMD = MemberLoader::FindMethod(gc.pThrowable->GetMethodTable(),
-                            COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_RetVoid);
-
-    if (!pMD)
-    {
-        MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
-    }
-
     UnmanagedCallersOnlyCaller createArgException(METHOD__EXCEPTION__CREATE_ARGUMENT_EXCEPTION);
+    ArgumentExceptionKind kind = GetArgumentExceptionKind(m_kind);
     createArgException.InvokeThrowing(
-        &gc.pThrowable,
-        m_kind == kArgumentException,
-        pMD->GetSingleCallableAddrOfCode(),
-        m_resourceName.GetUnicode(),
-        m_argumentName.GetUnicode());
+        kind,
+        m_resourceName.IsEmpty() ? NULL : m_resourceName.GetUnicode(),
+        m_argumentName.IsEmpty() ? NULL : m_argumentName.GetUnicode(),
+        &gc.pThrowable);
 
     GCPROTECT_END();
 
@@ -1505,33 +1517,61 @@ RuntimeExceptionKind EEFileLoadException::GetFileLoadKind(HRESULT hr)
 
     if (Assembly::FileNotFound(hr))
         return kFileNotFoundException;
-    else
+
+    // Make sure this matches the list in rexcep.h
+    switch (hr)
     {
-        // Make sure this matches the list in rexcep.h
-        if ((hr == COR_E_BADIMAGEFORMAT) ||
-            (hr == CLDB_E_FILE_OLDVER)   ||
-            (hr == CLDB_E_INDEX_NOTFOUND)   ||
-            (hr == CLDB_E_FILE_CORRUPT)   ||
-            (hr == COR_E_NEWER_RUNTIME)   ||
-            (hr == COR_E_ASSEMBLYEXPECTED)   ||
-            (hr == HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT)) ||
-            (hr == HRESULT_FROM_WIN32(ERROR_EXE_MARKED_INVALID)) ||
-            (hr == CORSEC_E_INVALID_IMAGE_FORMAT) ||
-            (hr == HRESULT_FROM_WIN32(ERROR_NOACCESS)) ||
-            (hr == HRESULT_FROM_WIN32(ERROR_INVALID_ORDINAL))   ||
-            (hr == HRESULT_FROM_WIN32(ERROR_INVALID_DLL)) ||
-            (hr == HRESULT_FROM_WIN32(ERROR_FILE_CORRUPT)) ||
-            (hr == (HRESULT) IDS_CLASSLOAD_32BITCLRLOADING64BITASSEMBLY) ||
-            (hr == COR_E_LOADING_REFERENCE_ASSEMBLY) ||
-            (hr == META_E_BAD_SIGNATURE))
-            return kBadImageFormatException;
-        else
-        {
-            if ((hr == E_OUTOFMEMORY) || (hr == NTE_NO_MEMORY))
-                return kOutOfMemoryException;
-            else
-                return kFileLoadException;
-        }
+    case COR_E_BADIMAGEFORMAT:
+    case CLDB_E_FILE_OLDVER:
+    case CLDB_E_INDEX_NOTFOUND:
+    case CLDB_E_FILE_CORRUPT:
+    case COR_E_NEWER_RUNTIME:
+    case COR_E_ASSEMBLYEXPECTED:
+    case HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT):
+    case HRESULT_FROM_WIN32(ERROR_EXE_MARKED_INVALID):
+    case CORSEC_E_INVALID_IMAGE_FORMAT:
+    case HRESULT_FROM_WIN32(ERROR_NOACCESS):
+    case HRESULT_FROM_WIN32(ERROR_INVALID_ORDINAL):
+    case HRESULT_FROM_WIN32(ERROR_INVALID_DLL):
+    case HRESULT_FROM_WIN32(ERROR_FILE_CORRUPT):
+    case (HRESULT)IDS_CLASSLOAD_32BITCLRLOADING64BITASSEMBLY:
+    case COR_E_LOADING_REFERENCE_ASSEMBLY:
+    case META_E_BAD_SIGNATURE:
+        return kBadImageFormatException;
+
+    case E_OUTOFMEMORY:
+    case NTE_NO_MEMORY:
+        return kOutOfMemoryException;
+
+    default:
+        return kFileLoadException;
+    }
+}
+
+// See FileLoadException.CoreCLR.cs for managed mapping.
+enum class FileLoadExceptionKind : int32_t
+{
+    FileLoad,
+    BadImageFormat,
+    FileNotFound,
+    OutOfMemory
+};
+
+static FileLoadExceptionKind GetFileLoadExceptionKind(HRESULT hr)
+{
+    RuntimeExceptionKind kind = EEFileLoadException::GetFileLoadKind(hr);
+    switch (kind)
+    {
+    case kBadImageFormatException:
+        return FileLoadExceptionKind::BadImageFormat;
+    case kFileNotFoundException:
+        return FileLoadExceptionKind::FileNotFound;
+    case kOutOfMemoryException:
+        return FileLoadExceptionKind::OutOfMemory;
+    case kFileLoadException:
+        return FileLoadExceptionKind::FileLoad;
+    default:
+        UNREACHABLE();
     }
 }
 
@@ -1546,16 +1586,18 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     }
     CONTRACTL_END;
 
-    struct {
+    struct
+    {
         OBJECTREF pNewException;
     } gc;
     gc.pNewException = NULL;
     GCPROTECT_BEGIN(gc);
 
-
     LPCWSTR pFileName = m_name.GetUnicode();
     UnmanagedCallersOnlyCaller createFileLoadEx(METHOD__FILE_LOAD_EXCEPTION__CREATE);
-    createFileLoadEx.InvokeThrowing(pFileName, (int)m_hr, &gc.pNewException);
+
+    FileLoadExceptionKind kind = GetFileLoadExceptionKind(m_hr);
+    createFileLoadEx.InvokeThrowing(kind, pFileName, (int)m_hr, &gc.pNewException);
     _ASSERTE(gc.pNewException->GetMethodTable() == CoreLibBinder::GetException(m_kind));
 
     GCPROTECT_END();

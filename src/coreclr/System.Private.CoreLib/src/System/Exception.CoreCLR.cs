@@ -397,8 +397,16 @@ namespace System
             }
         }
 
+        // See clrex.cpp for native version.
+        internal enum ArgumentExceptionKind
+        {
+            Argument,
+            ArgumentNull,
+            ArgumentOutOfRange
+        };
+
         [UnmanagedCallersOnly]
-        internal static unsafe void CreateArgumentException(Exception* pEx, bool isArgumentException, delegate*<object, string?, string?, void> pCtor, char* pResourceName, char* pParamName, Exception* pException)
+        internal static unsafe void CreateArgumentException(ArgumentExceptionKind kind, char* pResourceName, char* pParamName, Exception* pThrowable, Exception* pException)
         {
             try
             {
@@ -407,10 +415,13 @@ namespace System
 
                 // Note that ArgumentException takes arguments to its constructor in a different order,
                 // for usability reasons.  However it is inconsistent with our other exceptions.
-                if (isArgumentException)
-                    pCtor(*pEx, message, paramName);
-                else
-                    pCtor(*pEx, paramName, message);
+                *pThrowable = kind switch
+                {
+                    ArgumentExceptionKind.Argument => new ArgumentException(message, paramName),
+                    ArgumentExceptionKind.ArgumentNull => new ArgumentNullException(paramName, message),
+                    ArgumentExceptionKind.ArgumentOutOfRange => new ArgumentOutOfRangeException(paramName, message),
+                    _ => throw new InvalidOperationException()
+                };
             }
             catch (Exception ex)
             {
