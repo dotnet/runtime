@@ -949,6 +949,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <!-- Hook WASM publish telemetry into the workload telemetry pipeline -->
+  <!-- The properties collected here need to be synchronized with the SDK telemetry documentation at: -->
+  <!-- https://github.com/dotnet/sdk/blob/main/documentation/project-docs/telemetry.md -->
   <PropertyGroup>
     <WorkloadTelemetryDependsOn>$(WorkloadTelemetryDependsOn);_GatherWasmPublishTelemetry</WorkloadTelemetryDependsOn>
   </PropertyGroup>
