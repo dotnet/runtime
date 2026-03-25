@@ -459,11 +459,18 @@ void ContinuationLayoutBuilder::AddReturn(const ReturnTypeInfo& info)
 {
     for (const ReturnTypeInfo& ret : m_returns)
     {
-        if ((ret.ReturnType == info.ReturnType) && (ret.ReturnLayout == info.ReturnLayout))
+        if (ret.ReturnType != info.ReturnType)
         {
-            // This return type is already in the layout, no need to add another slot for it.
-            return;
+            continue;
         }
+
+        if ((ret.ReturnType == TYP_STRUCT) && !ClassLayout::AreCompatible(ret.ReturnLayout, info.ReturnLayout))
+        {
+            continue;
+        }
+
+        // This return type is already in the layout, no need to add another slot for it.
+        return;
     }
 
     m_returns.push_back(info);
@@ -611,8 +618,8 @@ void DefaultValueAnalysis::Run()
 
         return;
     }
-
 #endif
+
     ComputePerBlockMutatedVars();
     ComputeInterBlockDefaultValues();
 }
@@ -649,6 +656,36 @@ const VARSET_TP& DefaultValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
 static bool IsDefaultValue(GenTree* node)
 {
     return node->IsIntegralConst(0) || node->IsFloatPositiveZero() || node->IsVectorZero();
+}
+
+//------------------------------------------------------------------------
+// MarkMutatedVarDsc:
+//   Mark a VarDsc (or its promoted fields) in the specified varset.
+//
+// Parameters:
+//   compiler - The compiler instance.
+//   varDsc   - The var.
+//   mutated  - [in/out] The set to update.
+//
+static void MarkMutatedVarDsc(Compiler* compiler, LclVarDsc* varDsc, VARSET_TP& mutated)
+{
+    if (varDsc->lvTracked)
+    {
+        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
+        return;
+    }
+
+    if (varDsc->lvPromoted)
+    {
+        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
+        {
+            LclVarDsc* fieldDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+            if (fieldDsc->lvTracked)
+            {
+                VarSetOps::AddElemD(compiler, mutated, fieldDsc->lvVarIndex);
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -689,28 +726,32 @@ static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mut
     }
 
     LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVarCommon());
-
-    if (varDsc->lvTracked)
-    {
-        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
-        return;
-    }
-
-    // For promoted structs the parent may not be tracked but the field locals
-    // are. When the parent is mutated, all tracked fields must be marked as
-    // mutated as well.
-    if (varDsc->lvPromoted)
-    {
-        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-            if (fieldDsc->lvTracked)
-            {
-                VarSetOps::AddElemD(compiler, mutated, fieldDsc->lvVarIndex);
-            }
-        }
-    }
+    MarkMutatedVarDsc(compiler, varDsc, mutated);
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// PrintVarSet:
+//   Print a varset as a space-separated list of locals.
+//
+// Parameters:
+//   comp - Compiler instance
+//   set  - The varset to print.
+//
+static void PrintVarSet(Compiler* comp, VARSET_VALARG_TP set)
+{
+    VarSetOps::Iter iter(comp, set);
+    unsigned        varIndex = 0;
+    const char*     sep      = "";
+    while (iter.NextElem(&varIndex))
+    {
+        unsigned lclNum = comp->lvaTrackedToVarNum[varIndex];
+        printf("%sV%02u", sep, lclNum);
+        sep = " ";
+    }
+    printf("\n");
+}
+#endif
 
 //------------------------------------------------------------------------
 // DefaultValueAnalysis::ComputePerBlockMutatedVars:
@@ -744,7 +785,7 @@ void DefaultValueAnalysis::ComputePerBlockMutatedVars()
     }
 
     JITDUMP("Default value analysis: per-block mutated vars\n");
-    DBEXEC(m_compiler->verbose, DumpMutatedVars());
+    JITDUMPEXEC(DumpMutatedVars());
 }
 
 //------------------------------------------------------------------------
@@ -783,7 +824,7 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
     flow.ForwardAnalysis(callback);
 
     JITDUMP("Default value analysis: per-block mutated vars on entry\n");
-    DBEXEC(m_compiler->verbose, DumpMutatedVarsIn());
+    JITDUMPEXEC(DumpMutatedVarsIn());
 }
 
 #ifdef DEBUG
@@ -800,16 +841,7 @@ void DefaultValueAnalysis::DumpMutatedVars()
         if (!VarSetOps::IsEmpty(m_compiler, m_mutatedVars[block->bbNum]))
         {
             printf("  " FMT_BB " mutated: ", block->bbNum);
-            VarSetOps::Iter iter(m_compiler, m_mutatedVars[block->bbNum]);
-            unsigned        varIndex = 0;
-            const char*     sep      = "";
-            while (iter.NextElem(&varIndex))
-            {
-                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
-                printf("%sV%02u", sep, lclNum);
-                sep = " ";
-            }
-            printf("\n");
+            PrintVarSet(m_compiler, m_mutatedVars[block->bbNum]);
         }
     }
 }
@@ -828,40 +860,470 @@ void DefaultValueAnalysis::DumpMutatedVarsIn()
 
         if (VarSetOps::IsEmpty(m_compiler, m_mutatedVarsIn[block->bbNum]))
         {
-            printf("<none>");
+            printf("<none>\n");
         }
         else
         {
-            VarSetOps::Iter iter(m_compiler, m_mutatedVarsIn[block->bbNum]);
-            unsigned        varIndex = 0;
-            const char*     sep      = "";
-            while (iter.NextElem(&varIndex))
+            PrintVarSet(m_compiler, m_mutatedVarsIn[block->bbNum]);
+        }
+    }
+}
+#endif
+
+//------------------------------------------------------------------------
+// MarkMutatedLocal:
+//   If the given node is a local store or LCL_ADDR, and the local is tracked,
+//   mark it as mutated in the provided set. Unlike UpdateMutatedLocal, all
+//   stores count as mutations (including stores of default values).
+//
+// Parameters:
+//   compiler - The compiler instance.
+//   node     - The IR node to check.
+//   mutated  - [in/out] The set to update.
+//
+static void MarkMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
+{
+    if (node->IsCall())
+    {
+        auto visitDef = [&](GenTreeLclVarCommon* lcl) {
+            MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(lcl), mutated);
+            return GenTree::VisitResult::Continue;
+        };
+        node->VisitLocalDefNodes(compiler, visitDef);
+    }
+    else if (node->OperIsLocalStore() || node->OperIs(GT_LCL_ADDR))
+    {
+        MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(node->AsLclVarCommon()), mutated);
+    }
+    else if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+             compiler->lvaIsImplicitByRefLocal(node->AsLclVarCommon()->GetLclNum()))
+    {
+        MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(node->AsLclVarCommon()), mutated);
+    }
+    else
+    {
+        return;
+    }
+}
+
+//------------------------------------------------------------------------
+// PreservedValueAnalysis:
+//   Computes which tracked locals may have been mutated since the previous
+//   resumption point. A local that has not been mutated since the last
+//   resumption does not need to be stored into a reused continuation, because
+//   the continuation already holds the correct value.
+//
+//   The analysis proceeds in several steps:
+//
+//   0. Identify blocks that contain awaits and compute which blocks are
+//      reachable after resumption.
+//
+//   1. Per-block: compute which tracked locals are mutated (assigned any
+//      value or have their address taken) in each block. Only mutations
+//      reachable after resumption need to be taken into account.
+//
+//   2. Inter-block: forward dataflow to compute for each block the set of
+//      tracked locals that have been mutated since the previous resumption.
+//      At merge points the sets are unioned (a local is mutated if it is
+//      mutated on any incoming path).
+//
+class PreservedValueAnalysis
+{
+    Compiler* m_compiler;
+
+    BitVecTraits m_blockTraits;
+
+    // Blocks that have awaits in them.
+    BitVec m_awaitBlocks;
+
+    // Blocks that may be entered after we resumed.
+    BitVec m_resumeReachableBlocks;
+
+    // Per-block set of locals that may be mutated by each block after a resumption.
+    VARSET_TP* m_mutatedVars;
+
+    // Per-block incoming set of locals possibly mutated since previous resumption.
+    VARSET_TP* m_mutatedVarsIn;
+
+    // DataFlow::ForwardAnalysis callback used in Phase 2.
+    class DataFlowCallback
+    {
+        PreservedValueAnalysis& m_analysis;
+        Compiler*               m_compiler;
+        VARSET_TP               m_preMergeIn;
+
+    public:
+        DataFlowCallback(PreservedValueAnalysis& analysis, Compiler* compiler)
+            : m_analysis(analysis)
+            , m_compiler(compiler)
+            , m_preMergeIn(VarSetOps::UninitVal())
+        {
+        }
+
+        void StartMerge(BasicBlock* block)
+        {
+            VarSetOps::Assign(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
+        }
+
+        void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
+        {
+            // Normal predecessor: mutatedOut = mutatedIn | mutated.
+            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                              m_analysis.m_mutatedVarsIn[predBlock->bbNum]);
+            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                              m_analysis.m_mutatedVars[predBlock->bbNum]);
+        }
+
+        void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
+        {
+            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
             {
-                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
-                printf("%sV%02u", sep, lclNum);
-                sep = " ";
+                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                                  m_analysis.m_mutatedVarsIn[tryBlock->bbNum]);
+                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                                  m_analysis.m_mutatedVars[tryBlock->bbNum]);
             }
         }
-        printf("\n");
+
+        bool EndMerge(BasicBlock* block)
+        {
+            return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
+        }
+    };
+
+public:
+    PreservedValueAnalysis(Compiler* compiler)
+        : m_compiler(compiler)
+        , m_blockTraits(compiler->fgBBNumMax + 1, compiler)
+        , m_awaitBlocks(BitVecOps::UninitVal())
+        , m_resumeReachableBlocks(BitVecOps::UninitVal())
+        , m_mutatedVars(nullptr)
+        , m_mutatedVarsIn(nullptr)
+    {
+    }
+
+    void             Run(ArrayStack<BasicBlock*>& awaitBlocks);
+    const VARSET_TP& GetMutatedVarsIn(BasicBlock* block) const;
+    bool             IsResumeReachable(BasicBlock* block);
+
+private:
+    void ComputeResumeReachableBlocks(ArrayStack<BasicBlock*>& awaitBlocks);
+    void ComputePerBlockMutatedVars();
+    void ComputeInterBlockMutatedVars();
+
+#ifdef DEBUG
+    void DumpAwaitBlocks();
+    void DumpResumeReachableBlocks();
+    void DumpMutatedVars();
+    void DumpMutatedVarsIn();
+#endif
+};
+
+//------------------------------------------------------------------------
+// PreservedValueAnalysis::Run:
+//   Run the preserved value analysis: identify await blocks, compute
+//   resume-reachable blocks, then compute per-block and inter-block
+//   mutation sets relative to resumption points.
+//
+// Parameters:
+//   awaitblocks - Blocks containing async calls
+//
+void PreservedValueAnalysis::Run(ArrayStack<BasicBlock*>& awaitBlocks)
+{
+#ifdef DEBUG
+    static ConfigMethodRange s_range;
+    s_range.EnsureInit(JitConfig.JitAsyncPreservedValueAnalysisRange());
+
+    if (!s_range.Contains(m_compiler->info.compMethodHash()))
+    {
+        JITDUMP("Preserved value analysis disabled because of method range\n");
+        m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+        m_mutatedVars   = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+        for (BasicBlock* block : m_compiler->Blocks())
+        {
+            VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[block->bbNum], VarSetOps::MakeFull(m_compiler));
+            VarSetOps::AssignNoCopy(m_compiler, m_mutatedVars[block->bbNum], VarSetOps::MakeFull(m_compiler));
+        }
+
+        m_resumeReachableBlocks = BitVecOps::MakeFull(&m_blockTraits);
+        m_awaitBlocks           = BitVecOps::MakeFull(&m_blockTraits);
+
+        return;
+    }
+#endif
+
+    ComputeResumeReachableBlocks(awaitBlocks);
+    ComputePerBlockMutatedVars();
+    ComputeInterBlockMutatedVars();
+}
+
+//------------------------------------------------------------------------
+// PreservedValueAnalysis::GetMutatedVarsIn:
+//   Get the set of tracked locals that may have been mutated since the
+//   previous resumption on entry to the specified block.
+//
+// Parameters:
+//   block - The basic block.
+//
+// Returns:
+//   The VARSET_TP of tracked locals that may have been mutated since last
+//   resumption. A tracked local NOT in this set has a preserved value in the
+//   continuation and does not need to be re-stored when reusing it.
+//
+const VARSET_TP& PreservedValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
+{
+    assert(m_mutatedVarsIn != nullptr);
+    return m_mutatedVarsIn[block->bbNum];
+}
+
+//------------------------------------------------------------------------
+// PreservedValueAnalysis::IsResumeReachable:
+//   Check if the specified basic block is reachable after a previous resumption.
+//
+// Parameters:
+//   block - The basic block.
+//
+// Returns:
+//   True if so. Blocks that are not resume-reachable will never be able to
+//   reuse a continuation. Also, mutations of locals that are not
+//   resume-reachable do not need to be considered for preserved value
+//   analysis.
+//
+bool PreservedValueAnalysis::IsResumeReachable(BasicBlock* block)
+{
+    return BitVecOps::IsMember(&m_blockTraits, m_resumeReachableBlocks, block->bbNum);
+}
+
+//------------------------------------------------------------------------
+// PreservedValueAnalysis::ComputeResumeReachableBlocks:
+//   Phase 0: Identify blocks containing awaits, then compute the set of
+//   blocks reachable after any resumption via a DFS starting from await blocks.
+//
+void PreservedValueAnalysis::ComputeResumeReachableBlocks(ArrayStack<BasicBlock*>& awaitBlocks)
+{
+    m_awaitBlocks           = BitVecOps::MakeEmpty(&m_blockTraits);
+    m_resumeReachableBlocks = BitVecOps::MakeEmpty(&m_blockTraits);
+
+    ArrayStack<BasicBlock*> worklist(m_compiler->getAllocator(CMK_Async));
+    // Find all blocks that contain awaits.
+    for (BasicBlock* awaitBlock : awaitBlocks.BottomUpOrder())
+    {
+        BitVecOps::AddElemD(&m_blockTraits, m_awaitBlocks, awaitBlock->bbNum);
+        worklist.Push(awaitBlock);
+    }
+
+    JITDUMP("Preserved value analysis: blocks containing awaits\n");
+    JITDUMPEXEC(DumpAwaitBlocks());
+
+    // DFS from those blocks.
+    while (!worklist.Empty())
+    {
+        BasicBlock* block = worklist.Pop();
+
+        block->VisitAllSuccs(m_compiler, [&](BasicBlock* succ) {
+            if (BitVecOps::TryAddElemD(&m_blockTraits, m_resumeReachableBlocks, succ->bbNum))
+            {
+                worklist.Push(succ);
+            }
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    JITDUMP("Preserved value analysis: blocks reachable after resuming\n");
+    JITDUMPEXEC(DumpResumeReachableBlocks());
+}
+
+//------------------------------------------------------------------------
+// PreservedValueAnalysis::ComputePerBlockMutatedVars:
+//   Phase 1: For each reachable basic block compute the set of tracked locals
+//   that are mutated.
+//
+//   For blocks that are reachable after resumption the full set of mutations
+//   in the block is recorded.
+//
+//   For blocks that are NOT reachable after resumption but contain an await,
+//   only mutations that occur after the first suspension point are recorded,
+//   because mutations before the first suspension are not relevant to
+//   preserved values (the continuation did not exist yet or was not being
+//   reused at that point).
+//
+void PreservedValueAnalysis::ComputePerBlockMutatedVars()
+{
+    m_mutatedVars = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+
+    for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
+    {
+        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVars[i], VarSetOps::MakeEmpty(m_compiler));
+    }
+
+    for (BasicBlock* block : m_compiler->Blocks())
+    {
+        VARSET_TP& mutated = m_mutatedVars[block->bbNum];
+
+        bool isAwaitBlock      = BitVecOps::IsMember(&m_blockTraits, m_awaitBlocks, block->bbNum);
+        bool isResumeReachable = BitVecOps::IsMember(&m_blockTraits, m_resumeReachableBlocks, block->bbNum);
+
+        if (!isResumeReachable && !isAwaitBlock)
+        {
+            continue;
+        }
+
+        GenTree* node = block->GetFirstLIRNode();
+
+        if (!isResumeReachable)
+        {
+            while (!node->IsCall() || !node->AsCall()->IsAsync())
+            {
+                node = node->gtNext;
+                assert(node != nullptr);
+            }
+        }
+
+        while (node != nullptr)
+        {
+            MarkMutatedLocal(m_compiler, node, mutated);
+            node = node->gtNext;
+        }
+    }
+
+    JITDUMP("Preserved value analysis: per-block mutated vars after resumption\n");
+    JITDUMPEXEC(DumpMutatedVars());
+}
+
+//------------------------------------------------------------------------
+// PreservedValueAnalysis::ComputeInterBlockMutatedVars:
+//   Phase 2: Forward dataflow to compute for each block the set of tracked
+//   locals that have been mutated since the previous resumption on entry.
+//
+//   Transfer function: mutatedOut[B] = mutatedIn[B] | mutated[B]
+//   Merge: mutatedIn[B] = union of mutatedOut[pred] for all preds
+//
+//   At method entry no locals are considered mutated (not reachable from a resumption).
+//
+void PreservedValueAnalysis::ComputeInterBlockMutatedVars()
+{
+    m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+
+    for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
+    {
+        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[i], VarSetOps::MakeEmpty(m_compiler));
+    }
+
+    DataFlowCallback callback(*this, m_compiler);
+    DataFlow         flow(m_compiler);
+    flow.ForwardAnalysis(callback);
+
+    JITDUMP("Preserved value analysis: per-block mutated vars on entry\n");
+    JITDUMPEXEC(DumpMutatedVarsIn());
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// PreservedValueAnalysis::DumpAwaitBlocks:
+//   Debug helper to print the set of blocks containing awaits.
+//
+void PreservedValueAnalysis::DumpAwaitBlocks()
+{
+    printf("  Await blocks:");
+    const char* sep = " ";
+    for (BasicBlock* block : m_compiler->Blocks())
+    {
+        if (BitVecOps::IsMember(&m_blockTraits, m_awaitBlocks, block->bbNum))
+        {
+            printf("%s" FMT_BB, sep, block->bbNum);
+            sep = ", ";
+        }
+    }
+    printf("\n");
+}
+
+//------------------------------------------------------------------------
+// PreservedValueAnalysis::DumpResumeReachableBlocks:
+//   Debug helper to print the set of resume-reachable blocks.
+//
+void PreservedValueAnalysis::DumpResumeReachableBlocks()
+{
+    printf("  Resume-reachable blocks:");
+    const char* sep = " ";
+    for (BasicBlock* block : m_compiler->Blocks())
+    {
+        if (BitVecOps::IsMember(&m_blockTraits, m_resumeReachableBlocks, block->bbNum))
+        {
+            printf("%s" FMT_BB, sep, block->bbNum);
+            sep = ", ";
+        }
+    }
+    printf("\n");
+}
+
+//------------------------------------------------------------------------
+// PreservedValueAnalysis::DumpMutatedVars:
+//   Debug helper to print the per-block mutated variable sets.
+//
+void PreservedValueAnalysis::DumpMutatedVars()
+{
+    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* block = dfsTree->GetPostOrder(i);
+        if (!VarSetOps::IsEmpty(m_compiler, m_mutatedVars[block->bbNum]))
+        {
+            printf("  " FMT_BB " mutated: ", block->bbNum);
+            PrintVarSet(m_compiler, m_mutatedVars[block->bbNum]);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// PreservedValueAnalysis::DumpMutatedVarsIn:
+//   Debug helper to print the per-block mutated-on-entry variable sets.
+//
+void PreservedValueAnalysis::DumpMutatedVarsIn()
+{
+    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    for (unsigned i = dfsTree->GetPostOrderCount(); i > 0; i--)
+    {
+        BasicBlock* block = dfsTree->GetPostOrder(i - 1);
+        printf("  " FMT_BB " mutated since resumption on entry: ", block->bbNum);
+
+        if (VarSetOps::IsEmpty(m_compiler, m_mutatedVarsIn[block->bbNum]))
+        {
+            printf("<none>\n");
+        }
+        else if (VarSetOps::Equal(m_compiler, m_mutatedVarsIn[block->bbNum], VarSetOps::MakeFull(m_compiler)))
+        {
+            printf("<all>\n");
+        }
+        else
+        {
+            PrintVarSet(m_compiler, m_mutatedVarsIn[block->bbNum]);
+        }
     }
 }
 #endif
 
 class AsyncLiveness
 {
-    Compiler*              m_compiler;
-    TreeLifeUpdater<false> m_updater;
-    unsigned               m_numVars;
-    DefaultValueAnalysis&  m_defaultValueAnalysis;
-    VARSET_TP              m_mutatedValues;
+    Compiler*               m_compiler;
+    TreeLifeUpdater<false>  m_updater;
+    unsigned                m_numVars;
+    DefaultValueAnalysis&   m_defaultValueAnalysis;
+    PreservedValueAnalysis& m_preservedValueAnalysis;
+    VARSET_TP               m_mutatedValues;
+    bool                    m_resumeReachable = false;
+    VARSET_TP               m_mutatedSinceResumption;
 
 public:
-    AsyncLiveness(Compiler* comp, DefaultValueAnalysis& defaultValueAnalysis)
+    AsyncLiveness(Compiler*               comp,
+                  DefaultValueAnalysis&   defaultValueAnalysis,
+                  PreservedValueAnalysis& preservedValueAnalysis)
         : m_compiler(comp)
         , m_updater(comp)
         , m_numVars(comp->lvaCount)
         , m_defaultValueAnalysis(defaultValueAnalysis)
+        , m_preservedValueAnalysis(preservedValueAnalysis)
         , m_mutatedValues(VarSetOps::MakeEmpty(comp))
+        , m_mutatedSinceResumption(VarSetOps::MakeEmpty(comp))
     {
     }
 
@@ -871,6 +1333,15 @@ public:
     template <typename Functor>
     void GetLiveLocals(ContinuationLayoutBuilder* layoutBuilder, Functor includeLocal);
 
+    bool IsResumeReachable() const
+    {
+        return m_resumeReachable;
+    }
+
+    VARSET_TP GetMutatedSinceResumption() const
+    {
+        return m_mutatedSinceResumption;
+    }
 private:
     bool IsLocalCaptureUnnecessary(unsigned lclNum);
 };
@@ -878,7 +1349,7 @@ private:
 //------------------------------------------------------------------------
 // AsyncLiveness::StartBlock:
 //   Indicate that we are now starting a new block, and do relevant liveness
-//   updates for it.
+//   and other analysis updates for it.
 //
 // Parameters:
 //   block - The block that we are starting.
@@ -887,6 +1358,8 @@ void AsyncLiveness::StartBlock(BasicBlock* block)
 {
     VarSetOps::Assign(m_compiler, m_compiler->compCurLife, block->bbLiveIn);
     VarSetOps::Assign(m_compiler, m_mutatedValues, m_defaultValueAnalysis.GetMutatedVarsIn(block));
+    VarSetOps::Assign(m_compiler, m_mutatedSinceResumption, m_preservedValueAnalysis.GetMutatedVarsIn(block));
+    m_resumeReachable = m_preservedValueAnalysis.IsResumeReachable(block);
 }
 
 //------------------------------------------------------------------------
@@ -901,6 +1374,14 @@ void AsyncLiveness::Update(GenTree* node)
 {
     m_updater.UpdateLife<true>(node);
     UpdateMutatedLocal(m_compiler, node, m_mutatedValues);
+
+    // If this is an async call then we can reach defs after resumption now.
+    // Make sure defs happening as part of the call are included as mutated since resumption.
+    m_resumeReachable |= node->IsCall() && node->AsCall()->IsAsync();
+    if (m_resumeReachable)
+    {
+        MarkMutatedLocal(m_compiler, node, m_mutatedSinceResumption);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1175,7 +1656,9 @@ PhaseStatus AsyncTransformation::Run()
 
     DefaultValueAnalysis defaultValues(m_compiler);
     defaultValues.Run();
-    AsyncLiveness liveness(m_compiler, defaultValues);
+    PreservedValueAnalysis preservedValues(m_compiler);
+    preservedValues.Run(worklist);
+    AsyncLiveness liveness(m_compiler, defaultValues, preservedValues);
 
     // Now walk the IR for all the blocks that contain async calls. Keep track
     // of liveness and outstanding LIR edges as we go; the LIR edges that cross
@@ -1235,6 +1718,23 @@ PhaseStatus AsyncTransformation::Run()
                 }
             }
         } while (any);
+    }
+
+    if (ReuseContinuations())
+    {
+        // Set up the local containing the continuation we can reuse. For OSR
+        // things are special: we can transition to the OSR method after having
+        // resumed in the tier0 method. In that case we end up with the tier0
+        // continuation in the OSR method, but we cannot reuse it.
+        if (m_compiler->opts.IsOSR())
+        {
+            m_reuseContinuationVar = m_compiler->lvaGrabTemp(false DEBUGARG("OSR reusable continuation"));
+            m_compiler->lvaGetDesc(m_reuseContinuationVar)->lvType = TYP_REF;
+        }
+        else
+        {
+            m_reuseContinuationVar = m_compiler->lvaAsyncContinuationArg;
+        }
     }
 
     CreateResumptionsAndSuspensions();
@@ -1374,6 +1874,16 @@ void AsyncTransformation::Transform(
     }
 #endif
 
+    bool      resumeReachable = life.IsResumeReachable();
+    VARSET_TP mutatedSinceResumption(VarSetOps::MakeCopy(m_compiler, life.GetMutatedSinceResumption()));
+
+    JITDUMP("  This suspension point is%s resume-reachable\n", resumeReachable ? "" : " NOT");
+    if (resumeReachable)
+    {
+        JITDUMP("  Locals mutated since previous resumption: ");
+        JITDUMPEXEC(PrintVarSet(m_compiler, mutatedSinceResumption));
+    }
+
     ContinuationLayoutBuilder* layoutBuilder = new (m_compiler, CMK_Async) ContinuationLayoutBuilder(m_compiler);
 
     CreateLiveSetForSuspension(block, call, defs, life, layoutBuilder);
@@ -1391,7 +1901,8 @@ void AsyncTransformation::Transform(
 
     BasicBlock* resumeBB = CreateResumptionBlock(*remainder, stateNum);
 
-    m_states.push_back(AsyncState(stateNum, layoutBuilder, block, call, callDefInfo, suspendBB, resumeBB));
+    m_states.push_back(AsyncState(stateNum, layoutBuilder, block, call, callDefInfo, suspendBB, resumeBB,
+                                  resumeReachable, mutatedSinceResumption));
 
     JITDUMP("\n");
 }
@@ -1745,17 +2256,19 @@ void ContinuationLayout::Dump(int indent)
 //   Find the return info entry matching the specified call's return type.
 //
 // Parameters:
+//   comp - Compiler instance to use for looking up struct return layouts.
 //   call - The async call whose return type to look up.
 //
 // Returns:
 //   Pointer to the matching ReturnInfo entry.
 //
-const ReturnInfo* ContinuationLayout::FindReturn(GenTreeCall* call) const
+const ReturnInfo* ContinuationLayout::FindReturn(Compiler* comp, GenTreeCall* call) const
 {
+    ClassLayout* layout = call->gtReturnType == TYP_STRUCT ? comp->typGetObjLayout(call->gtRetClsHnd) : nullptr;
     for (const ReturnInfo& ret : Returns)
     {
         if ((ret.Type.ReturnType == call->gtReturnType) &&
-            ((call->gtReturnType != TYP_STRUCT) || (ret.Type.ReturnLayout->GetClassHandle() == call->gtRetClsHnd)))
+            ((call->gtReturnType != TYP_STRUCT) || ClassLayout::AreCompatible(ret.Type.ReturnLayout, layout)))
         {
             return &ret;
         }
@@ -1878,10 +2391,12 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
         layout->ContinuationContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
-    // Now allocate all  returns
+    // Now allocate all returns
     for (ReturnInfo& ret : layout->Returns)
     {
-        ret.Offset = allocLayout(ret.HeapAlignment(), ret.Size);
+        // All returns must be pointer aligned because of the offset encoding in Continuation::Flags.
+        layout->Size = roundUp(layout->Size, TARGET_POINTER_SIZE);
+        ret.Offset   = allocLayout(ret.HeapAlignment(), ret.Size);
     }
 
     if (m_needsKeepAlive)
@@ -2125,13 +2640,18 @@ BasicBlock* AsyncTransformation::CreateSuspensionBlock(BasicBlock* block, unsign
 //   stateNum  - State number assigned to this suspension point.
 //   layout    - Layout information for the continuation object.
 //   subLayout - Per-call layout builder indicating which fields are needed.
+//   resumeReachable - Whether or not this suspension point is reachable from a previous resumption
+//   mutatedSinceResumption - If this suspension point is reachable from a previous resumption
+//                            then this indicates the set of tracked variables that may have been mutated since then.
 //
 void AsyncTransformation::CreateSuspension(BasicBlock*                      callBlock,
                                            GenTreeCall*                     call,
                                            BasicBlock*                      suspendBB,
                                            unsigned                         stateNum,
                                            const ContinuationLayout&        layout,
-                                           const ContinuationLayoutBuilder& subLayout)
+                                           const ContinuationLayoutBuilder& subLayout,
+                                           bool                             resumeReachable,
+                                           VARSET_VALARG_TP                 mutatedSinceResumption)
 {
     GenTreeILOffset* ilOffsetNode =
         m_compiler->gtNewILOffsetNode(call->GetAsyncInfo().CallAsyncDebugInfo DEBUGARG(BAD_IL_OFFSET));
@@ -2153,11 +2673,64 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
 
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, allocContinuation));
 
-    GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(GetNewContinuationVar(), allocContinuation);
+    unsigned newContinuationVar   = GetNewContinuationVar();
+    GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(newContinuationVar, allocContinuation);
     LIR::AsRange(suspendBB).InsertAtEnd(storeNewContinuation);
 
+    SaveSet tailSaveSet = SaveSet::All;
+    if (ReuseContinuations() && resumeReachable)
+    {
+        // Split suspendBB into suspendBB -> [reuse continuation with Next store] -> [allocNewBlock with allocation
+        // call] -> suspendBBTail [empty]
+        BasicBlock* allocNewBB          = m_compiler->fgSplitBlockAfterNode(suspendBB, recordOffset);
+        BasicBlock* reuseContinuationBB = m_compiler->fgSplitBlockAtEnd(suspendBB);
+        BasicBlock* suspendTailBB       = m_compiler->fgSplitBlockAtEnd(allocNewBB);
+
+        m_compiler->fgRemoveRefPred(reuseContinuationBB->GetTargetEdge());
+        FlowEdge* toSuspendTail = m_compiler->fgAddRefPred(suspendTailBB, reuseContinuationBB);
+        reuseContinuationBB->SetTargetEdge(toSuspendTail);
+
+        FlowEdge* toAllocNew = m_compiler->fgAddRefPred(allocNewBB, suspendBB);
+        suspendBB->SetCond(suspendBB->GetTargetEdge(), toAllocNew);
+        suspendBB->GetTrueEdge()->setLikelihood(1.0);
+        suspendBB->GetFalseEdge()->setLikelihood(0.0);
+
+        JITDUMP("Continuation reuse is active. Split suspendBB into suspendBB " FMT_BB
+                " -> reuseContinuationBlock " FMT_BB " -> allocNewBlock " FMT_BB " -> suspendBBTail " FMT_BB "\n",
+                suspendBB->bbNum, reuseContinuationBB->bbNum, allocNewBB->bbNum, suspendTailBB->bbNum);
+
+        // Store newContinuationVar = reusableContinuation in suspendBB
+        GenTree* reusableContinuation   = m_compiler->gtNewLclvNode(m_reuseContinuationVar, TYP_REF);
+        GenTree* storeContinuationParam = m_compiler->gtNewStoreLclVarNode(newContinuationVar, reusableContinuation);
+        LIR::AsRange(suspendBB).InsertAtEnd(reusableContinuation, storeContinuationParam);
+
+        // Check if newContinuationVar != null, jump to reuseContinuationBlock
+        GenTree* reusedContinuation = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
+        GenTree* null               = m_compiler->gtNewNull();
+        GenTree* neNull             = m_compiler->gtNewOperNode(GT_NE, TYP_INT, reusedContinuation, null);
+        GenTree* jtrue              = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
+        LIR::AsRange(suspendBB).InsertAtEnd(reusedContinuation, null, neNull, jtrue);
+
+        // Fill in 'Next' in reuseContinuationBB
+        GenTree* newContinuation = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
+        unsigned nextOffset      = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationNextFldHnd);
+        returnedContinuation     = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
+        GenTree* storeNext       = StoreAtOffset(returnedContinuation, nextOffset, newContinuation, TYP_REF);
+        LIR::AsRange(reuseContinuationBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeNext));
+
+        // In the path where we allocated a new continuation we save only locals that we know to be unmutated since the
+        // last resumption.
+        FillInDataOnSuspension(call, layout, subLayout, allocNewBB, mutatedSinceResumption, SaveSet::UnmutatedLocals);
+
+        // We can skip saving unmutated locals in the shared path -- we only need to save locals that may have been
+        // mutated since the last resumption.
+        tailSaveSet = SaveSet::MutatedLocals;
+
+        suspendBB = suspendTailBB;
+    }
+
     // Fill in 'ResumeInfo'
-    GenTree* newContinuation  = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    GenTree* newContinuation  = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned resumeInfoOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeInfoFldHnd);
     GenTree* resumeInfoAddr =
         new (m_compiler, GT_ASYNC_RESUME_INFO) GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, (ssize_t)stateNum);
@@ -2165,7 +2738,7 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResume));
 
     // Fill in 'state'
-    newContinuation       = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    newContinuation       = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned stateOffset  = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
     GenTree* stateNumNode = m_compiler->gtNewIconNode((ssize_t)stateNum, TYP_INT);
     GenTree* storeState   = StoreAtOffset(newContinuation, stateOffset, stateNumNode, TYP_INT);
@@ -2174,33 +2747,49 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     // Fill in 'flags'
     const AsyncCallInfo& callInfo          = call->GetAsyncInfo();
     unsigned             continuationFlags = 0;
-    if (subLayout.NeedsOSRILOffset())
-        continuationFlags |= CORINFO_CONTINUATION_HAS_OSR_ILOFFSET;
+    auto                 encodeIndex = [&continuationFlags](unsigned offset, unsigned firstBit, unsigned numBits) {
+        assert(numBits < 32);
+        assert((offset % TARGET_POINTER_SIZE) == 0);
+        unsigned index = 1 + offset / TARGET_POINTER_SIZE;
+        unsigned mask  = (1u << numBits) - 1;
+
+        if ((index & mask) != index)
+        {
+            IMPL_LIMITATION("Cannot encode continuation offset in flags");
+        }
+
+        continuationFlags |= index << firstBit;
+    };
+
     if (subLayout.NeedsException())
-        continuationFlags |= CORINFO_CONTINUATION_HAS_EXCEPTION;
+        encodeIndex(layout.ExceptionOffset, CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT,
+                    CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS);
     if (subLayout.NeedsContinuationContext())
-        continuationFlags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
+        encodeIndex(layout.ContinuationContextOffset, CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT,
+                    CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS);
     if (call->gtReturnType != TYP_VOID)
-        continuationFlags |= CORINFO_CONTINUATION_HAS_RESULT;
+    {
+        const ReturnInfo* returnInfo = layout.FindReturn(m_compiler, call);
+        assert(returnInfo != nullptr);
+        encodeIndex(returnInfo->Offset, CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT,
+                    CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS);
+    }
     if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
         continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
 
-    newContinuation      = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    newContinuation      = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
     GenTree* flagsNode   = m_compiler->gtNewIconNode((ssize_t)continuationFlags, TYP_INT);
     GenTree* storeFlags  = StoreAtOffset(newContinuation, flagsOffset, flagsNode, TYP_INT);
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeFlags));
 
-    if (layout.Size > 0)
-    {
-        FillInDataOnSuspension(call, layout, subLayout, suspendBB);
-    }
+    FillInDataOnSuspension(call, layout, subLayout, suspendBB, mutatedSinceResumption, tailSaveSet);
 
     RestoreContexts(callBlock, call, suspendBB);
 
     if (suspendBB->KindIs(BBJ_RETURN))
     {
-        newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        newContinuation = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
         GenTree* ret    = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, newContinuation);
         LIR::AsRange(suspendBB).InsertAtEnd(newContinuation, ret);
     }
@@ -2259,9 +2848,11 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(bool              
 void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                     call,
                                                  const ContinuationLayout&        layout,
                                                  const ContinuationLayoutBuilder& subLayout,
-                                                 BasicBlock*                      suspendBB)
+                                                 BasicBlock*                      suspendBB,
+                                                 VARSET_VALARG_TP                 mutatedSinceResumption,
+                                                 SaveSet                          saveSet)
 {
-    if (m_compiler->doesMethodHavePatchpoints() || m_compiler->opts.IsOSR())
+    if ((saveSet != SaveSet::MutatedLocals) && (m_compiler->doesMethodHavePatchpoints() || m_compiler->opts.IsOSR()))
     {
         GenTree* ilOffsetToStore;
         if (m_compiler->doesMethodHavePatchpoints())
@@ -2287,6 +2878,11 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         }
 
         LclVarDsc* dsc = m_compiler->lvaGetDesc(inf.LclNum);
+
+        if ((saveSet != SaveSet::All) && (GetLocalSaveSet(dsc, mutatedSinceResumption) != saveSet))
+        {
+            continue;
+        }
 
         GenTree* newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         unsigned offset          = OFFSETOF__CORINFO_Continuation__data + inf.Offset;
@@ -2325,7 +2921,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         m_compiler->compLongUsed |= dsc->TypeIs(TYP_LONG);
     }
 
-    if (subLayout.NeedsContinuationContext())
+    if ((saveSet != SaveSet::UnmutatedLocals) && subLayout.NeedsContinuationContext())
     {
         // Insert call
         //   AsyncHelpers.CaptureContinuationContext(
@@ -2376,7 +2972,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         LIR::AsRange(suspendBB).Remove(flagsPlaceholder);
     }
 
-    if (subLayout.NeedsExecutionContext())
+    if ((saveSet != SaveSet::UnmutatedLocals) && subLayout.NeedsExecutionContext())
     {
         GenTreeCall* captureExecContext =
             m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureExecutionContextMethHnd, TYP_REF);
@@ -2390,6 +2986,45 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*                   
         GenTree* store           = StoreAtOffset(newContinuation, offset, captureExecContext, TYP_REF);
         LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
     }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::GetLocalSaveSet:
+//   Get the save set that a local should be saved as part of.
+//
+// Parameters:
+//   dsc - The local
+//   mutatedSinceResumption - Set of locals that may have been mutated since a resumption
+//
+// Returns:
+//   The set to save the local as part of.
+//
+SaveSet AsyncTransformation::GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption)
+{
+    if (dsc->lvPromoted)
+    {
+        for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+        {
+            LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
+            if (!fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, fieldDsc->lvVarIndex))
+            {
+                return SaveSet::MutatedLocals;
+            }
+        }
+
+        return SaveSet::UnmutatedLocals;
+    }
+
+    // We should only see struct fields for independently promoted structs
+    assert(!dsc->lvIsStructField ||
+           (m_compiler->lvaGetPromotionType(dsc->lvParentLcl) == Compiler::PROMOTION_TYPE_INDEPENDENT));
+
+    if (!dsc->lvTracked || VarSetOps::IsMember(m_compiler, mutatedSinceResumption, dsc->lvVarIndex))
+    {
+        return SaveSet::MutatedLocals;
+    }
+
+    return SaveSet::UnmutatedLocals;
 }
 
 //------------------------------------------------------------------------
@@ -2441,10 +3076,10 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
 
     GenTree* continuation = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
     GenTree* null         = m_compiler->gtNewNull();
-    GenTree* started      = m_compiler->gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    GenTree* resumed      = m_compiler->gtNewOperNode(GT_NE, TYP_INT, continuation, null);
 
-    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, LIR::SeqTree(m_compiler, started));
-    use.ReplaceWith(started);
+    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, LIR::SeqTree(m_compiler, resumed));
+    use.ReplaceWith(resumed);
     LIR::AsRange(suspendBB).Remove(resumedPlaceholder);
 
     // Replace execContextPlaceholder with actual value
@@ -2780,6 +3415,16 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
     GenTree* storeException  = m_compiler->gtNewStoreLclVarNode(exceptionLclNum, exceptionInd);
     LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeException));
 
+    if (ReuseContinuations())
+    {
+        // If we may reuse this continuation later then make sure we don't see the same exception again.
+        GenTree* continuation    = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned exceptionOffset = OFFSETOF__CORINFO_Continuation__data + layout.ExceptionOffset;
+        GenTree* null            = m_compiler->gtNewNull();
+        GenTree* nullException   = StoreAtOffset(continuation, exceptionOffset, null, TYP_REF);
+        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, nullException));
+    }
+
     GenTree* exception = m_compiler->gtNewLclVarNode(exceptionLclNum, TYP_REF);
     GenTree* null      = m_compiler->gtNewNull();
     GenTree* neNull    = m_compiler->gtNewOperNode(GT_NE, TYP_INT, exception, null);
@@ -2817,7 +3462,7 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
                                                       const ContinuationLayout& layout,
                                                       BasicBlock*               storeResultBB)
 {
-    const ReturnInfo* retInfo = layout.FindReturn(call);
+    const ReturnInfo* retInfo = layout.FindReturn(m_compiler, call);
     assert(retInfo != nullptr);
     GenTree* resultBase   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
     unsigned resultOffset = OFFSETOF__CORINFO_Continuation__data + retInfo->Offset;
@@ -3119,18 +3764,111 @@ BasicBlock* AsyncTransformation::GetSharedReturnBB()
 //
 void AsyncTransformation::CreateResumptionsAndSuspensions()
 {
+    bool useSharedLayout = (m_states.size() > 1) && ReuseContinuations();
+
+    ContinuationLayout* sharedLayout = nullptr;
+    if (useSharedLayout)
+    {
+        JITDUMP("Creating shared layout:\n");
+        ContinuationLayoutBuilder* sharedLayoutBuilder =
+            ContinuationLayoutBuilder::CreateSharedLayout(m_compiler, m_states);
+        sharedLayout = sharedLayoutBuilder->Create();
+    }
+
     JITDUMP("Creating suspensions and resumptions for %zu states\n", m_states.size());
     for (const AsyncState& state : m_states)
     {
         JITDUMP("State %u suspend @ " FMT_BB ", resume @ " FMT_BB "\n", state.Number, state.SuspensionBB->bbNum,
                 state.ResumptionBB->bbNum);
-        ContinuationLayout* layout = state.Layout->Create();
-        CreateSuspension(state.CallBlock, state.Call, state.SuspensionBB, state.Number, *layout, *state.Layout);
+        ContinuationLayout* layout = sharedLayout == nullptr ? state.Layout->Create() : sharedLayout;
+        CreateSuspension(state.CallBlock, state.Call, state.SuspensionBB, state.Number, *layout, *state.Layout,
+                         state.ResumeReachable, state.MutatedSincePreviousResumption);
         CreateResumption(state.CallBlock, state.Call, state.ResumptionBB, state.CallDefInfo, *layout, *state.Layout);
         CreateDebugInfoForSuspensionPoint(*layout, *state.Layout);
 
         JITDUMP("\n");
     }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::ReuseContinuations:
+//   Returns true if continuation reuse is enabled.
+//
+// Returns:
+//   True if so.
+//
+bool AsyncTransformation::ReuseContinuations()
+{
+#ifdef DEBUG
+    static ConfigMethodRange s_range;
+    s_range.EnsureInit(JitConfig.JitAsyncReuseContinuationsRange());
+
+    if (!s_range.Contains(m_compiler->info.compMethodHash()))
+    {
+        return false;
+    }
+#endif
+
+    return JitConfig.JitAsyncReuseContinuations() != 0;
+}
+
+//------------------------------------------------------------------------
+// ContinuationLayoutBuilder::CreateSharedLayout:
+//   Create a shared continuation layout that is the union of all per-call
+//   layouts. The shared layout contains every local, return type, and
+//   optional field needed by any individual suspension point.
+//
+// Parameters:
+//   comp   - The compiler instance.
+//   states - The vector of async states to merge.
+//
+// Returns:
+//   A new ContinuationLayoutBuilder representing the merged layout.
+//
+ContinuationLayoutBuilder* ContinuationLayoutBuilder::CreateSharedLayout(Compiler*                         comp,
+                                                                         const jitstd::vector<AsyncState>& states)
+{
+    unsigned maxLocalStored = 0;
+    for (const AsyncState& state : states)
+    {
+        jitstd::vector<unsigned>& locals = state.Layout->m_locals;
+        if (locals.size() > 0)
+        {
+            maxLocalStored = std::max(maxLocalStored, locals[locals.size() - 1]);
+        }
+    }
+
+    ContinuationLayoutBuilder* sharedLayout = new (comp, CMK_Async) ContinuationLayoutBuilder(comp);
+    BitVecTraits               traits(maxLocalStored + 1, comp);
+    BitVec                     locals(BitVecOps::MakeEmpty(&traits));
+
+    for (const AsyncState& state : states)
+    {
+        ContinuationLayoutBuilder* layout = state.Layout;
+        sharedLayout->m_needsOSRILOffset |= layout->m_needsOSRILOffset;
+        sharedLayout->m_needsException |= layout->m_needsException;
+        sharedLayout->m_needsContinuationContext |= layout->m_needsContinuationContext;
+        sharedLayout->m_needsKeepAlive |= layout->m_needsKeepAlive;
+        sharedLayout->m_needsExecutionContext |= layout->m_needsExecutionContext;
+
+        for (unsigned local : layout->m_locals)
+        {
+            assert(local <= maxLocalStored);
+            BitVecOps::AddElemD(&traits, locals, local);
+        }
+
+        for (const ReturnTypeInfo& ret : layout->m_returns)
+        {
+            sharedLayout->AddReturn(ret);
+        }
+    }
+
+    BitVecOps::VisitBits(&traits, locals, [=](unsigned localNum) {
+        sharedLayout->AddLocal(localNum);
+        return true;
+    });
+
+    return sharedLayout;
 }
 
 //------------------------------------------------------------------------
@@ -3324,5 +4062,13 @@ void AsyncTransformation::CreateResumptionSwitch()
         GenTree* ltZero           = m_compiler->gtNewOperNode(GT_LT, TYP_INT, ilOffset, zero);
         GenTree* jtrue            = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, ltZero);
         LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, jtrue));
+
+        if (ReuseContinuations())
+        {
+            // Also, save the fact that we have a reusable continuation
+            continuationArg        = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+            GenTree* storeReusable = m_compiler->gtNewStoreLclVarNode(m_reuseContinuationVar, continuationArg);
+            LIR::AsRange(onContinuationBB).InsertAtBeginning(continuationArg, storeReusable);
+        }
     }
 }
