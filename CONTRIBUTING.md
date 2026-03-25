@@ -14,6 +14,7 @@ The .NET codebase is distributed across multiple repositories in the [dotnet org
 * [dotnet/roslyn](https://github.com/dotnet/roslyn) C# and VB compiler.
 * [dotnet/aspnetcore](https://github.com/dotnet/aspnetcore) ASP.NET Core.
 * [dotnet/efcore](https://github.com/dotnet/efcore) Entity Framework Core.
+* [dotnet/extensions](https://github.com/dotnet/extensions) Additional libraries.
 * [dotnet/maui](https://github.com/dotnet/maui) .NET MAUI.
 * [dotnet/core](https://github.com/dotnet/core) Can be used to submit feedback if not sure what repo to use.
 
