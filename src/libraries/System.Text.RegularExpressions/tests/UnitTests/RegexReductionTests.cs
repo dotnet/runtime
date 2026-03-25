@@ -275,6 +275,11 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?>(?>(?>(?>))))", "")]
         [InlineData("(?>(?>(?>(?>(?!)))))", "(?!)")]
         [InlineData("(?=(?>))", "")]
+        // Atomic wrapping non-backtrackable nodes (One, Notone, Set, Multi) is redundant
+        [InlineData("(?>a)", "a")]
+        [InlineData("(?>[^a])", "[^a]")]
+        [InlineData("(?>[abc])", "[abc]")]
+        [InlineData("(?>abc)", "abc")]
         // Lookaround reduction
         [InlineData("(?!(abc))", "(?!abc)")]
         [InlineData("(?!a(b*)c)", "(?!ab*c)")]

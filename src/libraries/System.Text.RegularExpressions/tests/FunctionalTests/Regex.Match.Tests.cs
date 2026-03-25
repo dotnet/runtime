@@ -267,6 +267,12 @@ namespace System.Text.RegularExpressions.Tests
                     // Alternations
                     yield return (Case("(?>hi|hello|hey)hi"), "hellohi", options, 0, 0, false, string.Empty);
                     yield return (Case("(?>hi|hello|hey)hi"), "hihi", options, 0, 4, true, "hihi");
+
+                    // Atomic wrapping non-backtrackable nodes (reduction removes the Atomic wrapper but preserves match behavior)
+                    yield return (Case("(?>a)b"), "ab", options, 0, 2, true, "ab");
+                    yield return (Case("(?>a)b"), "cb", options, 0, 2, false, "");
+                    yield return (Case("(?>[abc])x"), "bx", options, 0, 2, true, "bx");
+                    yield return (Case("(?>abc)d"), "abcd", options, 0, 4, true, "abcd");
                 }
             }
 
