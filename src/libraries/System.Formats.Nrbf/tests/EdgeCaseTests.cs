@@ -61,15 +61,18 @@ public class EdgeCaseTests : ReadTests
         }
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsReleaseRuntime))]
+    [Theory]
     [InlineData(100)]
     [InlineData(64_001)]
     [InlineData(127_000)]
-#if RELEASE && NET // it takes a lot of time to execute
     [InlineData(2147483591)] // Array.MaxLength
-#endif
     public void CanReadArrayOfAnySize(int length)
     {
+        if (length == 2147483591 && (!PlatformDetection.Is64BitProcess || !PlatformDetection.IsReleaseRuntime || PlatformDetection.IsMonoRuntime))
+        {
+            throw new SkipTestException("It would take too much time to execute.");
+        }
+
         try
         {
             byte[] input = new byte[length];
