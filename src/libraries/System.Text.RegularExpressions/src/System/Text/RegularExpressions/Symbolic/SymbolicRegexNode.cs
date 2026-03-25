@@ -416,17 +416,17 @@ namespace System.Text.RegularExpressions.Symbolic
                 Debug.Assert(body._left is not null);
                 return CreateLoop(builder, body._left, 0, 1, isLazy || body.IsLazy);
             }
+
             // Simplify (R*)*  → R*, (R+)* → R*, (R*)+ → R*
             // More generally: (R{a,∞}){b,∞} → R{0,∞} when the combined loop can match any
             // number of R's including zero. This holds when either:
             //  - a == 0 (inner loop already matches ε, so each outer iteration can be empty), or
             //  - a == 1 && b == 0 (outer can take 0 iterations for ε, or n iterations of R+ for any n ≥ 1).
             // Counterexample: (R{2,∞})* cannot match a single R, so it's NOT equivalent to R*.
-            // This is critical for performance: without it, deeply nested patterns like ((a)*)*
-            // cause exponential blowup in derivative computation.
-            // The blowup is in the per-character cost (pattern-dependent constant), not in input-length
-            // scaling — the engine remains O(input_length) for any given pattern — but the constant
-            // grows exponentially with nesting depth, making matching impractically slow.
+            // Note: RegexNode.ReduceLoops already performs an equivalent reduction for the initial
+            // pattern tree, so nested loops from the parser are already collapsed before reaching the
+            // symbolic engine. This check is still needed because CreateLoop is also called during
+            // derivative computation (via CreateLoopContinuation), which can reconstruct nested loops.
             // Additional requirements:
             //  - No effects (captures), since collapsing loops would change capture group bindings.
             //  - Same laziness for both loops, since mixing greedy/lazy changes match priorities
