@@ -2582,12 +2582,12 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, $@"{b2}\w+{b2}", "one two", 0 };
             }
 
-            // Nested loop simplification correctness. The NonBacktracking engine simplifies
-            // certain nested loop patterns (e.g. (R*)* → R*) during construction. These tests
-            // verify the simplification produces results consistent across all engines.
+            // Nested loop correctness tests. ReduceLoops collapses redundant nested loops
+            // (e.g. (R*)* → R*) before any engine sees them. These verify the results are
+            // consistent across all engines.
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                // Patterns that ARE simplified: (R*)*, (R+)*, (R*)+ all collapse to R*
+                // Patterns that are collapsed: (R*)*, (R+)*, (R*)+ all become R*
                 yield return new object[] { engine, @"^(?:(?:a)*)*$", "aaa", 1 };
                 yield return new object[] { engine, @"^(?:(?:a)+)*$", "aaa", 1 };
                 yield return new object[] { engine, @"^(?:(?:a)*)+$", "aaa", 1 };

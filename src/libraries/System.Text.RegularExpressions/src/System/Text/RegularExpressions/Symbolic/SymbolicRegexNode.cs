@@ -416,32 +416,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 Debug.Assert(body._left is not null);
                 return CreateLoop(builder, body._left, 0, 1, isLazy || body.IsLazy);
             }
-
-            // Simplify (R*)*  → R*, (R+)* → R*, (R*)+ → R*
-            // More generally: (R{a,∞}){b,∞} → R{0,∞} when the combined loop can match any
-            // number of R's including zero. This holds when either:
-            //  - a == 0 (inner loop already matches ε, so each outer iteration can be empty), or
-            //  - a == 1 && b == 0 (outer can take 0 iterations for ε, or n iterations of R+ for any n ≥ 1).
-            // Counterexample: (R{2,∞})* cannot match a single R, so it's NOT equivalent to R*.
-            // Note: RegexNode.ReduceLoops already performs an equivalent reduction for the initial
-            // pattern tree, so nested loops from the parser are already collapsed before reaching the
-            // symbolic engine. This check is still needed because CreateLoop is also called during
-            // derivative computation (via CreateLoopContinuation), which can reconstruct nested loops.
-            // Additional requirements:
-            //  - No effects (captures), since collapsing loops would change capture group bindings.
-            //  - Same laziness for both loops, since mixing greedy/lazy changes match priorities
-            //    (e.g. (?:0*)+? is not equivalent to 0*? — the former prefers fewer outer iterations
-            //    each greedily consuming, while the latter prefers less overall).
-            // This is a while loop (not if + recursive CreateLoop call) so that arbitrary nesting
-            // depth is handled without consuming stack proportional to the depth.
-            while (upper == int.MaxValue && body._kind == SymbolicRegexNodeKind.Loop && body._upper == int.MaxValue
-                && (body._lower == 0 || (body._lower == 1 && lower == 0))
-                && !body._info.ContainsEffect && isLazy == body.IsLazy)
-            {
-                Debug.Assert(body._left is not null);
-                lower = 0;
-                body = body._left;
-            }
             return Create(builder, SymbolicRegexNodeKind.Loop, body, null, lower, upper, default, SymbolicRegexInfo.Loop(body._info, lower, isLazy));
         }
 
@@ -2351,9 +2325,9 @@ namespace System.Text.RegularExpressions.Symbolic
                             // the per-character derivative cost doubles with each such nesting level.
                             // Account for this so that the NFA size estimate catches deeply nested
                             // patterns that would cause exponential blowup.
-                            // The loop flattening in CreateLoop already collapses same-laziness nesting
-                            // without captures, so this multiplier primarily affects patterns that survive
-                            // flattening (e.g., alternating lazy/greedy nesting at every level).
+                            // Note: RegexNode.ReduceLoops already collapses same-laziness non-capturing
+                            // nested loops before the symbolic engine sees them, so this multiplier
+                            // primarily fires for patterns with captures or mixed laziness.
                             if (_left._kind == SymbolicRegexNodeKind.Loop && _left._upper == int.MaxValue)
                             {
                                 return Times(2, bodyCount);

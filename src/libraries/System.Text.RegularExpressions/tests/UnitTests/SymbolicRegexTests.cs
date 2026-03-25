@@ -230,10 +230,9 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { rootNode };
             }
 
-            // Deeply nested unbounded loops with alternating laziness bypass loop flattening
-            // (which requires matching laziness) and cause exponential derivative blowup.
-            // CountSingletons accounts for this by multiplying by 2 per nesting level, so
-            // at depth 15+ the estimate exceeds the default 10,000 threshold.
+            // Deeply nested unbounded loops with alternating laziness cause exponential
+            // derivative blowup. CountSingletons accounts for this by multiplying by 2 per
+            // nesting level, so at depth 15+ the estimate exceeds the default 10,000 threshold.
             // Build: (?:(?:(?:a)*)*?)* ... with alternating greedy/lazy quantifiers at each level
             {
                 const int depth = 20;
@@ -259,11 +258,12 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         /// <summary>
-        /// Verifies that deeply nested same-laziness unbounded loops do NOT exceed the threshold,
-        /// because loop flattening in CreateLoop collapses them (e.g. ((?:a)*)*  at depth 100 → a*).
+        /// Verifies that deeply nested same-laziness unbounded loops do NOT exceed the unsafe
+        /// threshold, because ReduceLoops collapses them (e.g. (?:(?:a)*)* at depth 100 → a*)
+        /// before the symbolic engine sees them.
         /// </summary>
         [Fact]
-        public void SameLazinessDeepNestingIsSafeAfterFlattening()
+        public void SameLazinessDeepNestingIsSafeAfterReduceLoops()
         {
             var charSetSolver = new CharSetSolver();
             var bddBuilder = new SymbolicRegexBuilder<BDD>(charSetSolver, charSetSolver);
@@ -282,10 +282,10 @@ namespace System.Text.RegularExpressions.Tests
             RegexNode tree = RegexParser.Parse(sb.ToString(), options, CultureInfo.CurrentCulture).Root;
             SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
 
-            // After loop flattening, this collapses to a*, so the estimate should be tiny
+            // After ReduceLoops, this collapses to a*, so the estimate should be tiny
             int size = rootNode.EstimateNfaSize();
             Assert.True(size <= SymbolicRegexThresholds.GetSymbolicRegexSafeSizeThreshold(),
-                $"Same-laziness nested loops should be safe after flattening, but EstimateNfaSize returned {size}");
+                $"Same-laziness nested loops should be safe after ReduceLoops, but EstimateNfaSize returned {size}");
         }
 
         [Theory]
