@@ -244,22 +244,19 @@ HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astr
             // Go through and retrieve the names of all the components.
             for (cParams = 0; cParams < NumParams; cParams++)
             {
-                OBJECTREF ParamInfoObj = ParamArray->GetAt(cParams);
-                GCPROTECT_BEGIN(ParamInfoObj)
+                struct { OBJECTREF ParamInfoObj; STRINGREF MemberNameObj; } gc;
+                gc.ParamInfoObj = ParamArray->GetAt(cParams);
+                gc.MemberNameObj = NULL;
+                GCPROTECT_BEGIN(gc)
                 {
-                    STRINGREF MemberNameObj = NULL;
-                    GCPROTECT_BEGIN(MemberNameObj)
-                    {
-                        UnmanagedCallersOnlyCaller getDispatchParameterInfoName(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PARAMETER_INFO_NAME);
-                        getDispatchParameterInfoName.InvokeThrowing(&ParamInfoObj, &MemberNameObj);
+                    UnmanagedCallersOnlyCaller getDispatchParameterInfoName(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PARAMETER_INFO_NAME);
+                    getDispatchParameterInfoName.InvokeThrowing(&gc.ParamInfoObj, &gc.MemberNameObj);
 
-                        if (MemberNameObj != NULL)
-                        {
-                            astrParamNames[cParams] = new WCHAR[MemberNameObj->GetStringLength() + 1];
-                            wcscpy_s(astrParamNames[cParams], MemberNameObj->GetStringLength() + 1, MemberNameObj->GetBuffer());
-                        }
+                    if (gc.MemberNameObj != NULL)
+                    {
+                        astrParamNames[cParams] = new WCHAR[gc.MemberNameObj->GetStringLength() + 1];
+                        wcscpy_s(astrParamNames[cParams], gc.MemberNameObj->GetStringLength() + 1, gc.MemberNameObj->GetBuffer());
                     }
-                    GCPROTECT_END();
                 }
                 GCPROTECT_END();
             }
@@ -294,19 +291,18 @@ PTRARRAYREF DispatchMemberInfo::GetParameters()
     }
     CONTRACTL_END;
 
-    PTRARRAYREF ParamArray = NULL;
-    OBJECTREF memberInfoObject = GetMemberInfoObject();
+    struct { OBJECTREF memberInfoObject; PTRARRAYREF ParamArray; } gc;
+    gc.memberInfoObject = GetMemberInfoObject();
+    gc.ParamArray = NULL;
 
-    GCPROTECT_BEGIN(memberInfoObject)
-    GCPROTECT_BEGIN(ParamArray)
+    GCPROTECT_BEGIN(gc)
     {
         UnmanagedCallersOnlyCaller getDispatchMemberParameters(METHOD__IDISPATCHHELPERS__GET_DISPATCH_MEMBER_PARAMETERS);
-        getDispatchMemberParameters.InvokeThrowing(&memberInfoObject, &ParamArray);
+        getDispatchMemberParameters.InvokeThrowing(&gc.memberInfoObject, &gc.ParamArray);
     }
     GCPROTECT_END();
-    GCPROTECT_END();
 
-    return ParamArray;
+    return gc.ParamArray;
 }
 
 OBJECTREF DispatchMemberInfo::GetMemberInfoObject()
@@ -409,14 +405,18 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
         RETURN NULL;
 
     // Get the member's properties.
-    GCPROTECT_BEGIN(MemberInfoObj);
+    struct { OBJECTREF MemberInfoObj; REFLECTMODULEBASEREF module; } gc;
+    gc.MemberInfoObj = MemberInfoObj;
+    gc.module = NULL;
+
+    GCPROTECT_BEGIN(gc);
     {
-        MethodTable *pMemberInfoClass = MemberInfoObj->GetMethodTable();
+        MethodTable *pMemberInfoClass = gc.MemberInfoObj->GetMethodTable();
         if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__METHOD))
         {
             INT_PTR methodHandle = 0;
             UnmanagedCallersOnlyCaller getDispatchMethodDesc(METHOD__IDISPATCHHELPERS__GET_DISPATCH_METHOD_DESC);
-            getDispatchMethodDesc.InvokeThrowing(&MemberInfoObj, &methodHandle);
+            getDispatchMethodDesc.InvokeThrowing(&gc.MemberInfoObj, &methodHandle);
 
             MethodDesc* pMeth = reinterpret_cast<MethodDesc*>(methodHandle);
             if (pMeth)
@@ -432,7 +432,7 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
         {
             INT_PTR fieldHandle = 0;
             UnmanagedCallersOnlyCaller getDispatchFieldDesc(METHOD__IDISPATCHHELPERS__GET_DISPATCH_FIELD_DESC);
-            getDispatchFieldDesc.InvokeThrowing(&MemberInfoObj, &fieldHandle);
+            getDispatchFieldDesc.InvokeThrowing(&gc.MemberInfoObj, &fieldHandle);
 
             FieldDesc* pFld = reinterpret_cast<FieldDesc*>(fieldHandle);
             if (pFld)
@@ -441,18 +441,13 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
         else if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__PROPERTY))
         {
             INT32 propTok = mdTokenNil;
-            REFLECTMODULEBASEREF module = NULL;
-            GCPROTECT_BEGIN(module)
-            {
-                UnmanagedCallersOnlyCaller getDispatchPropertyToken(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTY_TOKEN);
-                getDispatchPropertyToken.InvokeThrowing(&MemberInfoObj, &propTok);
+            UnmanagedCallersOnlyCaller getDispatchPropertyToken(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTY_TOKEN);
+            getDispatchPropertyToken.InvokeThrowing(&gc.MemberInfoObj, &propTok);
 
-                UnmanagedCallersOnlyCaller getDispatchPropertyModule(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTY_MODULE);
-                getDispatchPropertyModule.InvokeThrowing(&MemberInfoObj, &module);
-            }
-            GCPROTECT_END();
+            UnmanagedCallersOnlyCaller getDispatchPropertyModule(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTY_MODULE);
+            getDispatchPropertyModule.InvokeThrowing(&gc.MemberInfoObj, &gc.module);
 
-            Module* pModule = module->GetModule();
+            Module* pModule = gc.module->GetModule();
             pMemberProps = pMemberMap->GetMethodProps(propTok, pModule);
         }
     }
@@ -503,10 +498,14 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
     NewArrayHolder<WCHAR> strMemberName = NULL;
     ComMTMethodProps *pMemberProps = NULL;
 
-    GCPROTECT_BEGIN(MemberInfoObj);
+    struct { OBJECTREF MemberInfoObj; STRINGREF strObj; } gc;
+    gc.MemberInfoObj = MemberInfoObj;
+    gc.strObj = NULL;
+
+    GCPROTECT_BEGIN(gc);
     {
         // Get the member's properties.
-        pMemberProps = GetMemberProps(MemberInfoObj, pMemberMap);
+        pMemberProps = GetMemberProps(gc.MemberInfoObj, pMemberMap);
 
         // If we managed to get the member's properties then extract the name.
         if (pMemberProps)
@@ -518,19 +517,14 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
         }
         else
         {
-            STRINGREF strObj = NULL;
-            GCPROTECT_BEGIN(strObj)
-            {
-                UnmanagedCallersOnlyCaller getDispatchMemberInfoName(METHOD__IDISPATCHHELPERS__GET_DISPATCH_MEMBER_INFO_NAME);
-                getDispatchMemberInfoName.InvokeThrowing(&MemberInfoObj, &strObj);
-                _ASSERTE(strObj != NULL);
+            UnmanagedCallersOnlyCaller getDispatchMemberInfoName(METHOD__IDISPATCHHELPERS__GET_DISPATCH_MEMBER_INFO_NAME);
+            getDispatchMemberInfoName.InvokeThrowing(&gc.MemberInfoObj, &gc.strObj);
+            _ASSERTE(gc.strObj != NULL);
 
-                int MemberNameLen = strObj->GetStringLength();
-                strMemberName = new WCHAR[strObj->GetStringLength() + 1];
-                memcpy(strMemberName, strObj->GetBuffer(), MemberNameLen * sizeof(WCHAR));
-                strMemberName[MemberNameLen] = 0;
-            }
-            GCPROTECT_END();
+            int MemberNameLen = gc.strObj->GetStringLength();
+            strMemberName = new WCHAR[gc.strObj->GetStringLength() + 1];
+            memcpy(strMemberName, gc.strObj->GetBuffer(), MemberNameLen * sizeof(WCHAR));
+            strMemberName[MemberNameLen] = 0;
         }
     }
     GCPROTECT_END();
@@ -618,16 +612,18 @@ void DispatchMemberInfo::DetermineCultureAwareness()
     MethodTable * pLcIdConvAttrClass = CoreLibBinder::GetClass(CLASS__LCID_CONVERSION_TYPE);
 
     // Check to see if the attribute is set.
-    OBJECTREF MemberInfoObj = GetMemberInfoObject();
-    GCPROTECT_BEGIN(MemberInfoObj);
+    struct { OBJECTREF MemberInfoObj; OBJECTREF LcIdConvAttrObj; } gc;
+    gc.MemberInfoObj = GetMemberInfoObject();
+    gc.LcIdConvAttrObj = NULL;
+
+    GCPROTECT_BEGIN(gc);
     {
-        OBJECTREF LcIdConvAttrObj = pLcIdConvAttrClass->GetManagedClassObject();
+        gc.LcIdConvAttrObj = pLcIdConvAttrClass->GetManagedClassObject();
         BOOL hasAttribute = FALSE;
-        GCPROTECT_BEGIN(LcIdConvAttrObj)
         EX_TRY
         {
             UnmanagedCallersOnlyCaller hasDispatchCustomAttribute(METHOD__IDISPATCHHELPERS__HAS_DISPATCH_CUSTOM_ATTRIBUTE);
-            hasDispatchCustomAttribute.InvokeThrowing(&MemberInfoObj, &LcIdConvAttrObj, &hasAttribute);
+            hasDispatchCustomAttribute.InvokeThrowing(&gc.MemberInfoObj, &gc.LcIdConvAttrObj, &hasAttribute);
         }
         EX_CATCH
         {
@@ -638,7 +634,6 @@ void DispatchMemberInfo::DetermineCultureAwareness()
             m_CultureAwareState = Aware;
         else
             m_CultureAwareState = NonAware;
-        GCPROTECT_END();
     }
     GCPROTECT_END();
 }
@@ -2297,22 +2292,19 @@ void DispatchInfo::SetUpNamedParamArray(DispatchMemberInfo *pMemberInfo, DISPID 
                 // to an entry in the array.
                 if (ParamArray != NULL && numArrayComponents > pSrcArgNames[iSrcArg])
                 {
-                    OBJECTREF ParamInfoObj = ParamArray->GetAt(pSrcArgNames[iSrcArg]);
-                    GCPROTECT_BEGIN(ParamInfoObj)
+                    struct { OBJECTREF ParamInfoObj; STRINGREF MemberNameObj; } gc;
+                    gc.ParamInfoObj = ParamArray->GetAt(pSrcArgNames[iSrcArg]);
+                    gc.MemberNameObj = NULL;
+                    GCPROTECT_BEGIN(gc)
                     {
-                        STRINGREF MemberNameObj = NULL;
-                        GCPROTECT_BEGIN(MemberNameObj)
-                        {
-                            UnmanagedCallersOnlyCaller getDispatchParameterInfoName(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PARAMETER_INFO_NAME);
-                            getDispatchParameterInfoName.InvokeThrowing(&ParamInfoObj, &MemberNameObj);
+                        UnmanagedCallersOnlyCaller getDispatchParameterInfoName(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PARAMETER_INFO_NAME);
+                        getDispatchParameterInfoName.InvokeThrowing(&gc.ParamInfoObj, &gc.MemberNameObj);
 
-                            if (MemberNameObj != NULL)
-                            {
-                                (*pNamedParamArray)->SetAt(iDestArg, (OBJECTREF)MemberNameObj);
-                                bParamNameSet = TRUE;
-                            }
+                        if (gc.MemberNameObj != NULL)
+                        {
+                            (*pNamedParamArray)->SetAt(iDestArg, (OBJECTREF)gc.MemberNameObj);
+                            bParamNameSet = TRUE;
                         }
-                        GCPROTECT_END();
                     }
                     GCPROTECT_END();
                 }
@@ -2769,21 +2761,17 @@ PTRARRAYREF DispatchInfo::RetrievePropList()
     }
     CONTRACTL_END;
 
-    // return value
-    PTRARRAYREF orRetVal = NULL;
+    // return value and the exposed class object
+    struct { OBJECTREF TargetObj; PTRARRAYREF orRetVal; } gc;
+    gc.TargetObj = GetReflectionObject();
+    gc.orRetVal = NULL;
 
-    // Retrieve the exposed class object.
-    OBJECTREF TargetObj = GetReflectionObject();
-
-    GCPROTECT_BEGIN(orRetVal);
-    GCPROTECT_BEGIN(TargetObj);
+    GCPROTECT_BEGIN(gc);
     UnmanagedCallersOnlyCaller getDispatchProperties(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTIES);
-    getDispatchProperties.InvokeThrowing(&TargetObj, BINDER_DefaultLookup, &orRetVal);
-
-    GCPROTECT_END();
+    getDispatchProperties.InvokeThrowing(&gc.TargetObj, BINDER_DefaultLookup, &gc.orRetVal);
     GCPROTECT_END();
 
-    return orRetVal;
+    return gc.orRetVal;
 }
 
 PTRARRAYREF DispatchInfo::RetrieveFieldList()
@@ -2796,21 +2784,17 @@ PTRARRAYREF DispatchInfo::RetrieveFieldList()
     }
     CONTRACTL_END;
 
-    // return value
-    PTRARRAYREF orRetVal = NULL;
+    // return value and the exposed class object
+    struct { OBJECTREF TargetObj; PTRARRAYREF orRetVal; } gc;
+    gc.TargetObj = GetReflectionObject();
+    gc.orRetVal = NULL;
 
-    // Retrieve the exposed class object.
-    OBJECTREF TargetObj = GetReflectionObject();
-
-    GCPROTECT_BEGIN(orRetVal);
-    GCPROTECT_BEGIN(TargetObj);
+    GCPROTECT_BEGIN(gc);
     UnmanagedCallersOnlyCaller getDispatchFields(METHOD__IDISPATCHHELPERS__GET_DISPATCH_FIELDS);
-    getDispatchFields.InvokeThrowing(&TargetObj, BINDER_DefaultLookup, &orRetVal);
-
-    GCPROTECT_END();
+    getDispatchFields.InvokeThrowing(&gc.TargetObj, BINDER_DefaultLookup, &gc.orRetVal);
     GCPROTECT_END();
 
-    return orRetVal;
+    return gc.orRetVal;
 }
 
 PTRARRAYREF DispatchInfo::RetrieveMethList()
@@ -2823,21 +2807,17 @@ PTRARRAYREF DispatchInfo::RetrieveMethList()
     }
     CONTRACTL_END;
 
-    // return value
-    PTRARRAYREF orRetVal = NULL;
+    // return value and the exposed class object
+    struct { OBJECTREF TargetObj; PTRARRAYREF orRetVal; } gc;
+    gc.TargetObj = GetReflectionObject();
+    gc.orRetVal = NULL;
 
-    // Retrieve the exposed class object.
-    OBJECTREF TargetObj = GetReflectionObject();
-
-    GCPROTECT_BEGIN(orRetVal);
-    GCPROTECT_BEGIN(TargetObj);
+    GCPROTECT_BEGIN(gc);
     UnmanagedCallersOnlyCaller getDispatchMethods(METHOD__IDISPATCHHELPERS__GET_DISPATCH_METHODS);
-    getDispatchMethods.InvokeThrowing(&TargetObj, BINDER_DefaultLookup, &orRetVal);
-
-    GCPROTECT_END();
+    getDispatchMethods.InvokeThrowing(&gc.TargetObj, BINDER_DefaultLookup, &gc.orRetVal);
     GCPROTECT_END();
 
-    return orRetVal;
+    return gc.orRetVal;
 }
 
 // Virtual method to retrieve the InvokeMember method desc.
@@ -2908,23 +2888,25 @@ void DispatchInfo::GetExcepInfoForInvocationExcep(OBJECTREF objException, EXCEPI
     CONTRACTL_END;
 
     ExceptionData ED;
-    OBJECTREF InnerExcep = NULL;
 
     // Initialize the EXCEPINFO.
     memset(pei, 0, sizeof(EXCEPINFO));
     pei->scode = E_FAIL;
 
-    GCPROTECT_BEGIN(InnerExcep)
-    GCPROTECT_BEGIN(objException)
+    struct { OBJECTREF objException; OBJECTREF InnerExcep; } gc;
+    gc.objException = objException;
+    gc.InnerExcep = NULL;
+
+    GCPROTECT_BEGIN(gc)
     {
         UnmanagedCallersOnlyCaller getDispatchInnerException(METHOD__IDISPATCHHELPERS__GET_DISPATCH_INNER_EXCEPTION);
-        getDispatchInnerException.InvokeThrowing(&objException, &InnerExcep);
+        getDispatchInnerException.InvokeThrowing(&gc.objException, &gc.InnerExcep);
 
         // If the inner exception object is null then we can't get any info.
-        if (InnerExcep != NULL)
+        if (gc.InnerExcep != NULL)
         {
             // Retrieve the exception data for the inner exception.
-            ExceptionNative::GetExceptionData(InnerExcep, &ED);
+            ExceptionNative::GetExceptionData(gc.InnerExcep, &ED);
             pei->bstrSource = ED.bstrSource;
             pei->bstrDescription = ED.bstrDescription;
             pei->bstrHelpFile = ED.bstrHelpFile;
@@ -2932,7 +2914,6 @@ void DispatchInfo::GetExcepInfoForInvocationExcep(OBJECTREF objException, EXCEPI
             pei->scode = ED.hr;
         }
     }
-    GCPROTECT_END();
     GCPROTECT_END();
 }
 
@@ -3204,19 +3185,17 @@ PTRARRAYREF DispatchExInfo::RetrievePropList()
     }
     CONTRACTL_END;
 
-    PTRARRAYREF oPropList = NULL;
-
     // Retrieve the expando OBJECTREF.
-    OBJECTREF TargetObj = GetReflectionObject();
-    GCPROTECT_BEGIN(oPropList);
-    GCPROTECT_BEGIN(TargetObj);
+    struct { OBJECTREF TargetObj; PTRARRAYREF oPropList; } gc;
+    gc.TargetObj = GetReflectionObject();
+    gc.oPropList = NULL;
+
+    GCPROTECT_BEGIN(gc);
     UnmanagedCallersOnlyCaller getDispatchProperties(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTIES);
-    getDispatchProperties.InvokeThrowing(&TargetObj, BINDER_DefaultLookup, &oPropList);
-
-    GCPROTECT_END();
+    getDispatchProperties.InvokeThrowing(&gc.TargetObj, BINDER_DefaultLookup, &gc.oPropList);
     GCPROTECT_END();
 
-    return oPropList;
+    return gc.oPropList;
 }
 
 PTRARRAYREF DispatchExInfo::RetrieveFieldList()
@@ -3229,19 +3208,17 @@ PTRARRAYREF DispatchExInfo::RetrieveFieldList()
     }
     CONTRACTL_END;
 
-    PTRARRAYREF oFieldList = NULL;
-
     // Retrieve the expando OBJECTREF.
-    OBJECTREF TargetObj = GetReflectionObject();
-    GCPROTECT_BEGIN(oFieldList);
-    GCPROTECT_BEGIN(TargetObj);
+    struct { OBJECTREF TargetObj; PTRARRAYREF oFieldList; } gc;
+    gc.TargetObj = GetReflectionObject();
+    gc.oFieldList = NULL;
+
+    GCPROTECT_BEGIN(gc);
     UnmanagedCallersOnlyCaller getDispatchFields(METHOD__IDISPATCHHELPERS__GET_DISPATCH_FIELDS);
-    getDispatchFields.InvokeThrowing(&TargetObj, BINDER_DefaultLookup, &oFieldList);
-
-    GCPROTECT_END();
+    getDispatchFields.InvokeThrowing(&gc.TargetObj, BINDER_DefaultLookup, &gc.oFieldList);
     GCPROTECT_END();
 
-    return oFieldList;
+    return gc.oFieldList;
 }
 
 PTRARRAYREF DispatchExInfo::RetrieveMethList()
@@ -3254,19 +3231,17 @@ PTRARRAYREF DispatchExInfo::RetrieveMethList()
     }
     CONTRACTL_END;
 
-    PTRARRAYREF oMethList = NULL;
-
     // Retrieve the expando OBJECTREF.
-    OBJECTREF TargetObj = GetReflectionObject();
-    GCPROTECT_BEGIN(oMethList);
-    GCPROTECT_BEGIN(TargetObj);
+    struct { OBJECTREF TargetObj; PTRARRAYREF oMethList; } gc;
+    gc.TargetObj = GetReflectionObject();
+    gc.oMethList = NULL;
+
+    GCPROTECT_BEGIN(gc);
     UnmanagedCallersOnlyCaller getDispatchMethods(METHOD__IDISPATCHHELPERS__GET_DISPATCH_METHODS);
-    getDispatchMethods.InvokeThrowing(&TargetObj, BINDER_DefaultLookup, &oMethList);
-
-    GCPROTECT_END();
+    getDispatchMethods.InvokeThrowing(&gc.TargetObj, BINDER_DefaultLookup, &gc.oMethList);
     GCPROTECT_END();
 
-    return oMethList;
+    return gc.oMethList;
 }
 
 // Virtual method to retrieve the InvokeMember method desc.
