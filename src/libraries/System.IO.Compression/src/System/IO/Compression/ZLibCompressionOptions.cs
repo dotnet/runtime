@@ -8,13 +8,13 @@ namespace System.IO.Compression
     /// </summary>
     public sealed class ZLibCompressionOptions
     {
-        /// <summary>Gets the default window size for zlib compression.</summary>
+        /// <summary>Gets the default window log (base-2 logarithm of the window size) for zlib compression.</summary>
         public static int DefaultWindowLog => ZLibNative.DefaultWindowLog;
 
-        /// <summary>Gets the minimum window size for zlib compression.</summary>
+        /// <summary>Gets the minimum window log (base-2 logarithm of the window size) for zlib compression.</summary>
         public static int MinWindowLog => ZLibNative.MinWindowLog;
 
-        /// <summary>Gets the maximum window size for zlib compression.</summary>
+        /// <summary>Gets the maximum window log (base-2 logarithm of the window size) for zlib compression.</summary>
         public static int MaxWindowLog => ZLibNative.MaxWindowLog;
 
         private int _compressionLevel = -1;
