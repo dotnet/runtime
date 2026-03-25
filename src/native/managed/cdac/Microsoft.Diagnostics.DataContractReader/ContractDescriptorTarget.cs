@@ -46,6 +46,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
     public delegate int WriteToTargetDelegate(ulong address, Span<byte> bufferToWrite);
     public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
+    private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
     /// <summary>
     /// Create a new target instance from a contract descriptor embedded in the target memory.
@@ -595,8 +597,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// Read a null-terminated UTF-8 string from the target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
+    /// <param name="strict">Whether to throw on invalid UTF-8 sequences. If false, invalid sequences will be replaced with the replacement character.</param>
     /// <returns>String read from the target</returns>
-    public override string ReadUtf8String(ulong address)
+    public override string ReadUtf8String(ulong address, bool strict = false)
     {
         // Read characters until we find the null terminator
         ulong end = address;
@@ -613,7 +616,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             ? stackalloc byte[length]
             : new byte[length];
         ReadBuffer(address, span);
-        return Encoding.UTF8.GetString(span);
+        return strict ? strictUTF8Encoding.GetString(span) : looseUTF8Encoding.GetString(span);
     }
 
     /// <summary>
