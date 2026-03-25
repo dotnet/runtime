@@ -17,11 +17,16 @@ namespace System.Threading.Tasks.Tests
 
         // NOTE: This depends on private implementation details generally only used by the debugger.
         // If those ever change, this test will need to be updated as well.
-        private static FieldInfo AsyncDebuggingEnabledField => typeof(Task).GetField("s_asyncDebuggingEnabled", BindingFlags.NonPublic | BindingFlags.Static);
-        private static FieldInfo TaskTimestampsField => typeof(Task).GetField("s_runtimeAsyncTaskTimestamps", BindingFlags.NonPublic | BindingFlags.Static);
-        private static FieldInfo ContinuationTimestampsField => typeof(Task).GetField("s_runtimeAsyncContinuationTimestamps", BindingFlags.NonPublic | BindingFlags.Static);
-        private static FieldInfo ActiveTasksField => typeof(Task).GetField("s_currentActiveTasks", BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly FieldInfo AsyncDebuggingEnabledField = GetRequiredTaskStaticField("s_asyncDebuggingEnabled");
+        private static readonly FieldInfo TaskTimestampsField = GetRequiredTaskStaticField("s_runtimeAsyncTaskTimestamps");
+        private static readonly FieldInfo ContinuationTimestampsField = GetRequiredTaskStaticField("s_runtimeAsyncContinuationTimestamps");
+        private static readonly FieldInfo ActiveTasksField = GetRequiredTaskStaticField("s_currentActiveTasks");
 
+        private static FieldInfo GetRequiredTaskStaticField(string fieldName)
+        {
+            FieldInfo? field = typeof(Task).GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Static);
+            return field ?? throw new InvalidOperationException($"Expected static field '{fieldName}' to exist on type '{typeof(Task)}'.");
+        }
         private static int GetTaskTimestampCount() =>
             TaskTimestampsField.GetValue(null) is Dictionary<int, long> dict ? dict.Count : 0;
 
