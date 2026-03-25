@@ -1158,6 +1158,9 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             }
         }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
+#ifndef TARGET_WASM // TODO-WASM: Wasm doesn't use the dynamically composed helpers yet. When we do, we probably will
+                    // need to use a different set of arguments to construct the right helper call to avoid dynamically
+                    // composing a helper
         else if (oper == GT_FTN_ADDR)
         {
             JITDUMP("optimized\n");
@@ -1176,6 +1179,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         {
             JITDUMP("not optimized, R2R virtual case\n");
         }
+#endif
     }
     else
 #endif
