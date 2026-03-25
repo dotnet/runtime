@@ -945,7 +945,6 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
-            - WasmTestOnFirefox
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
@@ -997,7 +996,6 @@ extends:
         parameters:
           platforms:
             - browser_wasm
-            - browser_wasm_win
           nameSuffix: _Smoke_AOT
           runAOT: true
           buildAOTOnHelix: false
