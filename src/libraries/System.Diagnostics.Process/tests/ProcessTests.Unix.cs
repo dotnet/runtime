@@ -1062,6 +1062,7 @@ namespace System.Diagnostics.Tests
         private static unsafe void ReEnableCtrlCHandlerIfNeeded(PosixSignal signal) { }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ChildProcess_InheritsParentSignalMask_CanReceiveSignals()
         {
             // This test verifies that a child process started from a parent that has
