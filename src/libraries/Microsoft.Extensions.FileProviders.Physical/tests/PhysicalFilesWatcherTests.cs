@@ -359,8 +359,13 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             var tcs = new TaskCompletionSource<bool>();
             token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
 
-            // Recreate the root — token should fire (signalling the caller to re-register)
+            // Recreate the root — token must not fire yet (no matching file)
             Directory.CreateDirectory(rootPath);
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(tcs.Task.IsCompleted, "Token must not fire when only the root directory is recreated");
+
+            // Create a matching file — now the token must fire
+            File.WriteAllText(Path.Combine(rootPath, "config.json"), "{}");
 
             await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
         }
