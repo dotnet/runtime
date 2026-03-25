@@ -33,6 +33,9 @@ namespace ILCompiler.ReadyToRun
             foreach (var map in _assemblyTypeMaps.Maps)
             {
                 var groupType = map.Key;
+                if (map.Value.TargetModules.Count == 0)
+                    continue; // No resolved targets; no entry will be emitted for this group
+
                 dependencies.Add(new DependencyListEntry(_importReferenceProvider.GetImportToType(groupType), "Type Map Assembly Target"));
                 foreach (var targetModule in map.Value.TargetModules)
                 {
@@ -60,6 +63,9 @@ namespace ILCompiler.ReadyToRun
             foreach (var map in _assemblyTypeMaps.Maps)
             {
                 var groupType = map.Key;
+                if (map.Value.TargetModules.Count == 0)
+                    continue; // No resolved targets; runtime will fall back to attribute processing
+
                 Vertex groupTypeVertex = _importReferenceProvider.EncodeReferenceToType(writer, groupType);
                 VertexSequence modules = new();
                 foreach (var targetModule in map.Value.TargetModules)
