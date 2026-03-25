@@ -102,10 +102,6 @@ namespace Microsoft.Extensions.Configuration
                     }
                     catch (Exception ex)
                     {
-                        if (reload)
-                        {
-                            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-                        }
                         throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
                     }
                 }
