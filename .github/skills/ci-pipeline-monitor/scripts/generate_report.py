@@ -148,22 +148,23 @@ class ReportGenerator:
             # Unique test_names failing in this pipeline, with issue info
             seen_tests = set()
             for row in cur2.execute("""
-                SELECT DISTINCT ft.test_name, f.github_issue_number, f.github_issue_url, f.summary
+                SELECT DISTINCT ft.test_name, f.id as failure_id, f.github_issue_number, f.github_issue_url, f.summary
                 FROM failure_tests ft
                 JOIN failures f ON ft.failure_id = f.id
                 WHERE ft.pipeline_name = ?
-                ORDER BY ft.test_name
+                ORDER BY f.id, ft.test_name
             """, (p["name"],)):
                 tn = row["test_name"]
                 if tn in seen_tests:
                     continue
                 seen_tests.add(tn)
+                fid = row["failure_id"]
                 if row["github_issue_number"]:
                     issue_url = row["github_issue_url"] or f"https://github.com/dotnet/runtime/issues/{row['github_issue_number']}"
-                    out.append(f"     - {tn} (#{row['github_issue_number']}, {issue_url})")
+                    out.append(f"     - [{fid}] {tn} (#{row['github_issue_number']}, {issue_url})")
                 else:
                     brief = (row["summary"] or "")[:80]
-                    out.append(f"     - [New] {tn} ({brief})" if brief else f"     - [New] {tn}")
+                    out.append(f"     - [{fid}] [New] {tn} ({brief})" if brief else f"     - [{fid}] [New] {tn}")
             out.append("")
 
         # Skipped pipelines

@@ -36,13 +36,13 @@ Result: <P> PASS, <F> FAIL (of <M> monitored)
 
   ❌ <pipelines.name>                            <pipelines.build_number>
      https://dev.azure.com/dnceng-public/public/_build/results?buildId=<pipelines.build_id>
-     - <failures.test_name> (#<N>, https://github.com/dotnet/runtime/issues/<N>)
-     - <failures.test_name> (#<N>, https://github.com/dotnet/runtime/issues/<N>)
+     - [<N>] <failures.test_name> (#<N>, https://github.com/dotnet/runtime/issues/<N>)
+     - [<N>] <failures.test_name> (#<N>, https://github.com/dotnet/runtime/issues/<N>)
 
   ❌ <pipelines.name>                            <pipelines.build_number>
      https://dev.azure.com/dnceng-public/public/_build/results?buildId=<pipelines.build_id>
-     - <failures.test_name> (#<N>, https://github.com/dotnet/runtime/issues/<N>)
-     - [New] <failures.test_name> (<brief error description>)
+     - [<N>] <failures.test_name> (#<N>, https://github.com/dotnet/runtime/issues/<N>)
+     - [<N>] [New] <failures.test_name> (<brief error description>)
 
   ⏭️ <pipelines.name>: SKIPPED (private)
 
@@ -52,6 +52,7 @@ Notes:
 - ⏭️ = skipped (private pipeline or marked skip)
 - EVERY pipeline (✅ and ❌) must include the build URL on the line after the name.
 - List ALL failing tests per pipeline — deduplicate by test name (show each unique test once).
+- [N] maps to "FAILURE N" in the Failure Details section. Sorted by failure ID.
 - [New] = no matching GitHub issue found — may need a new issue filed.
 
 ================================================================================
