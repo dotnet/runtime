@@ -62,6 +62,7 @@ export class HostBuilder implements DotnetHostBuilder {
     /**
      * @deprecated This method is no longer supported and will be removed in a future version.
      */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     withConfigSrc (_configSrc: string): DotnetHostBuilder {
         return this;
     }

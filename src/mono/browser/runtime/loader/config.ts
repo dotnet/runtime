@@ -5,7 +5,7 @@ import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { type DotnetModuleInternal, type MonoConfigInternal, JSThreadBlockingMode } from "../types/internal";
-import type { AssemblyAsset, Assets, DotnetModuleConfig, IcuAsset, JsAsset, MonoConfig, PdbAsset, SymbolsAsset, VfsAsset, WasmAsset } from "../types";
+import type { AssemblyAsset, Assets, DotnetModuleConfig, IcuAsset, JsAsset, PdbAsset, SymbolsAsset, VfsAsset, WasmAsset } from "../types";
 import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
