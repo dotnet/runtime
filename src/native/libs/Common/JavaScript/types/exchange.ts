@@ -159,7 +159,7 @@ export type BrowserUtilsExports = {
     stringToUTF8: typeof stringToUTF8,
     utf8ToStringRelaxed: typeof utf8ToStringRelaxed,
     zeroRegion: typeof zeroRegion,
-    isSharedArrayBuffer: typeof isSharedArrayBuffer
+    isSharedArrayBuffer: typeof isSharedArrayBuffer,
     viewOrCopy: typeof viewOrCopy,
     abortBackgroundTimers: typeof abortBackgroundTimers,
     abortPosix: typeof abortPosix,

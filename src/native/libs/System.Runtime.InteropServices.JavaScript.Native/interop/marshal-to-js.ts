@@ -551,6 +551,7 @@ export function resolveOrRejectPromise(args: JSMarshalerArguments): void {
 
     } catch (ex: any) {
         if (receiverShouldFree) {
+            Module._free(args as any);
             dotnetAssert.fastCheck(false, () => `Failed to resolve or reject promise. ${ex}`);
         }
         marshalExceptionToCs(exc, ex);
