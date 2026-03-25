@@ -139,7 +139,7 @@ jobs:
 
       # Capture MSBuild crash diagnostics so they are published with build logs
       - name: MSBUILDDEBUGPATH
-        value: $(Build.SourcesDirectory)/artifacts/log/${{ parameters.buildConfig }}/MsbuildDebugLogs
+        value: $(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/MsbuildDebugLogs
 
       - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
         - template: ${{ variableTemplate.template }}
