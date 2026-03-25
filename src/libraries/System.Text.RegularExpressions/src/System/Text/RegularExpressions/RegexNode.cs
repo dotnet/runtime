@@ -718,6 +718,8 @@ namespace System.Text.RegularExpressions
                 // node can simply be removed.
                 case RegexNodeKind.Empty:
                 case RegexNodeKind.Nothing:
+                    return child;
+
                 // If the child is a single character match or a multi-char string, it inherently
                 // can't backtrack, so the Atomic wrapper is unnecessary.
                 case RegexNodeKind.One:
