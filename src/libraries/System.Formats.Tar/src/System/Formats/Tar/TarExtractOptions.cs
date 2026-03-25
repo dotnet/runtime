@@ -17,14 +17,14 @@ namespace System.Formats.Tar
         /// <summary>
         /// Gets or sets how hard link entries are handled when extracting tar archives.
         /// </summary>
-        /// <value>The default value is <see cref="TarLinkStrategy.PreserveLink"/>.</value>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is not a defined <see cref="TarLinkStrategy"/> value.</exception>
-        public TarLinkStrategy HardLinkStrategy
+        /// <value>The default value is <see cref="TarHardLinkMode.PreserveLink"/>.</value>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is not a defined <see cref="TarHardLinkMode"/> value.</exception>
+        public TarHardLinkMode HardLinkMode
         {
             get => field;
             set
             {
-                if (value is not TarLinkStrategy.PreserveLink and not TarLinkStrategy.CopyContents)
+                if (value is not TarHardLinkMode.PreserveLink and not TarHardLinkMode.CopyContents)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }

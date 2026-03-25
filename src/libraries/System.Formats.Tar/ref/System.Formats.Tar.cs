@@ -107,10 +107,10 @@ namespace System.Formats.Tar
     public sealed partial class TarExtractOptions
     {
         public TarExtractOptions() { }
-        public System.Formats.Tar.TarLinkStrategy HardLinkStrategy { get { throw null; } set { } }
+        public System.Formats.Tar.TarHardLinkMode HardLinkMode { get { throw null; } set { } }
         public bool OverwriteFiles { get { throw null; } set { } }
     }
-    public enum TarLinkStrategy
+    public enum TarHardLinkMode
     {
         PreserveLink = 0,
         CopyContents = 1,
@@ -141,7 +141,7 @@ namespace System.Formats.Tar
     {
         public TarWriterOptions() { }
         public System.Formats.Tar.TarEntryFormat Format { get { throw null; } set { } }
-        public System.Formats.Tar.TarLinkStrategy HardLinkStrategy { get { throw null; } set { } }
+        public System.Formats.Tar.TarHardLinkMode HardLinkMode { get { throw null; } set { } }
     }
     public sealed partial class UstarTarEntry : System.Formats.Tar.PosixTarEntry
     {

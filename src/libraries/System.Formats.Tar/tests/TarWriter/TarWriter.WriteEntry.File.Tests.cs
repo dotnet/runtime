@@ -208,15 +208,15 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarEntryFormat.V7, TarLinkStrategy.PreserveLink)]
-        [InlineData(TarEntryFormat.Ustar, TarLinkStrategy.PreserveLink)]
-        [InlineData(TarEntryFormat.Pax, TarLinkStrategy.PreserveLink)]
-        [InlineData(TarEntryFormat.Gnu, TarLinkStrategy.PreserveLink)]
-        [InlineData(TarEntryFormat.V7, TarLinkStrategy.CopyContents)]
-        [InlineData(TarEntryFormat.Ustar, TarLinkStrategy.CopyContents)]
-        [InlineData(TarEntryFormat.Pax, TarLinkStrategy.CopyContents)]
-        [InlineData(TarEntryFormat.Gnu, TarLinkStrategy.CopyContents)]
-        public void WriteEntry_HardLinks(TarEntryFormat format, TarLinkStrategy linkStrategy)
+        [InlineData(TarEntryFormat.V7, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Ustar, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Pax, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Gnu, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.V7, TarHardLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Ustar, TarHardLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Pax, TarHardLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Gnu, TarHardLinkMode.CopyContents)]
+        public void WriteEntry_HardLinks(TarEntryFormat format, TarHardLinkMode linkMode)
         {
             using TempDirectory root = new TempDirectory();
 
@@ -232,7 +232,7 @@ namespace System.Formats.Tar.Tests
 
             // Write to archive. Place the second pair in different directories.
             using MemoryStream archive = new MemoryStream();
-            TarWriterOptions options = new TarWriterOptions() { Format = format, HardLinkStrategy = linkStrategy };
+            TarWriterOptions options = new TarWriterOptions() { Format = format, HardLinkMode = linkMode };
             using (TarWriter writer = new TarWriter(archive, options, leaveOpen: true))
             {
                 writer.WriteEntry(file1, "file1.txt");
@@ -252,11 +252,11 @@ namespace System.Formats.Tar.Tests
                 Assert.True(entry1.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile);
                 Assert.NotNull(entry1.DataStream);
 
-                // Second entry: hard link or regular file depending on strategy
+                // Second entry: hard link or regular file depending on mode
                 TarEntry entry2 = reader.GetNextEntry();
                 Assert.NotNull(entry2);
                 Assert.Equal("linked1.txt", entry2.Name);
-                if (linkStrategy == TarLinkStrategy.PreserveLink)
+                if (linkMode == TarHardLinkMode.PreserveLink)
                 {
                     Assert.Equal(TarEntryType.HardLink, entry2.EntryType);
                     Assert.Equal("file1.txt", entry2.LinkName);
@@ -275,11 +275,11 @@ namespace System.Formats.Tar.Tests
                 Assert.True(entry3.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile);
                 Assert.NotNull(entry3.DataStream);
 
-                // Fourth entry: hard link or regular file depending on strategy
+                // Fourth entry: hard link or regular file depending on mode
                 TarEntry entry4 = reader.GetNextEntry();
                 Assert.NotNull(entry4);
                 Assert.Equal("dir2/linked2.txt", entry4.Name);
-                if (linkStrategy == TarLinkStrategy.PreserveLink)
+                if (linkMode == TarHardLinkMode.PreserveLink)
                 {
                     Assert.Equal(TarEntryType.HardLink, entry4.EntryType);
                     Assert.Equal("dir1/file2.txt", entry4.LinkName);

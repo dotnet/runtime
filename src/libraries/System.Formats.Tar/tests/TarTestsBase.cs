@@ -589,12 +589,12 @@ namespace System.Formats.Tar.Tests
         }
 
         public static IEnumerable<object[]> GetLinkStrategies()
-            => Enum.GetValues<TarLinkStrategy>().Select(s => new object[] { s });
+            => Enum.GetValues<TarHardLinkMode>().Select(s => new object[] { s });
 
         public static IEnumerable<object[]> GetInvalidLinkStrategies()
         {
-            yield return new object[] { (TarLinkStrategy)(-1) };
-            yield return new object[] { (TarLinkStrategy)99 };
+            yield return new object[] { (TarHardLinkMode)(-1) };
+            yield return new object[] { (TarHardLinkMode)99 };
         }
 
         public static IEnumerable<object[]> GetFormatsAndFiles()

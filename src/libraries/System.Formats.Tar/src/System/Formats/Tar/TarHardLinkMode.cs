@@ -6,7 +6,7 @@ namespace System.Formats.Tar
     /// <summary>
     /// Specifies how hard links are handled when writing tar entries from disk.
     /// </summary>
-    public enum TarLinkStrategy
+    public enum TarHardLinkMode
     {
         /// <summary>
         /// When multiple file paths refer to the same underlying file (hard links),

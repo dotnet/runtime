@@ -18,7 +18,7 @@ namespace System.Formats.Tar
         private bool _isDisposed;
         private readonly bool _leaveOpen;
         private readonly Stream _archiveStream;
-        private readonly TarLinkStrategy _hardLinkStrategy;
+        private readonly TarHardLinkMode _hardLinkMode;
         private int _nextGlobalExtendedAttributesEntryNumber;
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace System.Formats.Tar
 
             _archiveStream = archiveStream;
             Format = options.Format;
-            _hardLinkStrategy = options.HardLinkStrategy;
+            _hardLinkMode = options.HardLinkMode;
             _leaveOpen = leaveOpen;
             _isDisposed = false;
             _wroteEntries = false;

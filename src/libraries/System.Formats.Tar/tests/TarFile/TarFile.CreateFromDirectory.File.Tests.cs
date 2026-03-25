@@ -303,7 +303,7 @@ namespace System.Formats.Tar.Tests
 
             TarWriterOptions options = new TarWriterOptions()
             {
-                HardLinkStrategy = preserveLinks ? TarLinkStrategy.PreserveLink : TarLinkStrategy.CopyContents
+                HardLinkMode = preserveLinks ? TarHardLinkMode.PreserveLink : TarHardLinkMode.CopyContents
             };
 
             string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");

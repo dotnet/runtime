@@ -12,23 +12,23 @@ namespace System.Formats.Tar.Tests
         {
             TarExtractOptions options = new TarExtractOptions();
             Assert.False(options.OverwriteFiles);
-            Assert.Equal(TarLinkStrategy.PreserveLink, options.HardLinkStrategy);
+            Assert.Equal(TarHardLinkMode.PreserveLink, options.HardLinkMode);
         }
 
         [Theory]
         [MemberData(nameof(GetLinkStrategies))]
-        public void HardLinkStrategy_AcceptsValidValues(TarLinkStrategy strategy)
+        public void HardLinkMode_AcceptsValidValues(TarHardLinkMode mode)
         {
-            TarExtractOptions options = new TarExtractOptions() { HardLinkStrategy = strategy };
-            Assert.Equal(strategy, options.HardLinkStrategy);
+            TarExtractOptions options = new TarExtractOptions() { HardLinkMode = mode };
+            Assert.Equal(mode, options.HardLinkMode);
         }
 
         [Theory]
         [MemberData(nameof(GetInvalidLinkStrategies))]
-        public void HardLinkStrategy_RejectsInvalidValues(TarLinkStrategy strategy)
+        public void HardLinkMode_RejectsInvalidValues(TarHardLinkMode mode)
         {
             TarExtractOptions options = new TarExtractOptions();
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.HardLinkStrategy = strategy);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.HardLinkMode = mode);
         }
     }
 }

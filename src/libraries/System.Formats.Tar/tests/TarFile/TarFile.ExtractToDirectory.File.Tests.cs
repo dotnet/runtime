@@ -370,15 +370,15 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarEntryFormat.V7, TarLinkStrategy.PreserveLink)]
-        [InlineData(TarEntryFormat.Ustar, TarLinkStrategy.PreserveLink)]
-        [InlineData(TarEntryFormat.Pax, TarLinkStrategy.PreserveLink)]
-        [InlineData(TarEntryFormat.Gnu, TarLinkStrategy.PreserveLink)]
-        [InlineData(TarEntryFormat.V7, TarLinkStrategy.CopyContents)]
-        [InlineData(TarEntryFormat.Ustar, TarLinkStrategy.CopyContents)]
-        [InlineData(TarEntryFormat.Pax, TarLinkStrategy.CopyContents)]
-        [InlineData(TarEntryFormat.Gnu, TarLinkStrategy.CopyContents)]
-        public void HardLinkExtractionRoundtrip(TarEntryFormat format, TarLinkStrategy linkStrategy)
+        [InlineData(TarEntryFormat.V7, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Ustar, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Pax, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Gnu, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.V7, TarHardLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Ustar, TarHardLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Pax, TarHardLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Gnu, TarHardLinkMode.CopyContents)]
+        public void HardLinkExtractionRoundtrip(TarEntryFormat format, TarHardLinkMode linkMode)
         {
             using TempDirectory root = new TempDirectory();
 
@@ -394,7 +394,7 @@ namespace System.Formats.Tar.Tests
 
             // Create archive file.
             string archivePath = Path.Join(root.Path, "archive.tar");
-            TarWriterOptions options = new TarWriterOptions() { Format = format, HardLinkStrategy = linkStrategy };
+            TarWriterOptions options = new TarWriterOptions() { Format = format, HardLinkMode = linkMode };
             using (FileStream archiveStream = File.Create(archivePath))
             using (TarWriter writer = new TarWriter(archiveStream, options, leaveOpen: false))
             {
@@ -412,7 +412,7 @@ namespace System.Formats.Tar.Tests
             // Verify extracted files
             string targetFile1 = Path.Join(destination, "dir1", "file.txt");
             string targetFile2 = Path.Join(destination, "dir2", "linked.txt");
-            if (linkStrategy == TarLinkStrategy.PreserveLink)
+            if (linkMode == TarHardLinkMode.PreserveLink)
             {
                 AssertPathsAreHardLinked(targetFile1, targetFile2);
             }
@@ -442,7 +442,7 @@ namespace System.Formats.Tar.Tests
 
             // Create archive with hard link preservation.
             string archivePath = Path.Join(root.Path, "archive.tar");
-            TarWriterOptions writerOptions = new TarWriterOptions() { Format = TarEntryFormat.Pax, HardLinkStrategy = TarLinkStrategy.PreserveLink };
+            TarWriterOptions writerOptions = new TarWriterOptions() { Format = TarEntryFormat.Pax, HardLinkMode = TarHardLinkMode.PreserveLink };
             using (FileStream archiveStream = File.Create(archivePath))
             using (TarWriter writer = new TarWriter(archiveStream, writerOptions, leaveOpen: false))
             {
@@ -452,10 +452,10 @@ namespace System.Formats.Tar.Tests
                 writer.WriteEntry(sourceFile2, "dir2/linked.txt");
             }
 
-            // Extract archive with CopyContents strategy.
+            // Extract archive with CopyContents mode.
             string destination = Path.Join(root.Path, "destination");
             Directory.CreateDirectory(destination);
-            TarExtractOptions extractOptions = new TarExtractOptions() { HardLinkStrategy = TarLinkStrategy.CopyContents };
+            TarExtractOptions extractOptions = new TarExtractOptions() { HardLinkMode = TarHardLinkMode.CopyContents };
             TarFile.ExtractToDirectory(archivePath, destination, extractOptions);
 
             // Verify extracted files are independent copies.

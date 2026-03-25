@@ -12,7 +12,7 @@ namespace System.Formats.Tar.Tests
         {
             TarWriterOptions options = new TarWriterOptions();
             Assert.Equal(TarEntryFormat.Pax, options.Format);
-            Assert.Equal(TarLinkStrategy.PreserveLink, options.HardLinkStrategy);
+            Assert.Equal(TarHardLinkMode.PreserveLink, options.HardLinkMode);
         }
 
         [Theory]
@@ -33,18 +33,18 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(GetLinkStrategies))]
-        public void HardLinkStrategy_AcceptsValidValues(TarLinkStrategy strategy)
+        public void HardLinkMode_AcceptsValidValues(TarHardLinkMode mode)
         {
-            TarWriterOptions options = new TarWriterOptions() { HardLinkStrategy = strategy };
-            Assert.Equal(strategy, options.HardLinkStrategy);
+            TarWriterOptions options = new TarWriterOptions() { HardLinkMode = mode };
+            Assert.Equal(mode, options.HardLinkMode);
         }
 
         [Theory]
         [MemberData(nameof(GetInvalidLinkStrategies))]
-        public void HardLinkStrategy_RejectsInvalidValues(TarLinkStrategy strategy)
+        public void HardLinkMode_RejectsInvalidValues(TarHardLinkMode mode)
         {
             TarWriterOptions options = new TarWriterOptions();
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.HardLinkStrategy = strategy);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.HardLinkMode = mode);
         }
     }
 }

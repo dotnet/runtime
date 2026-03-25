@@ -650,7 +650,7 @@ namespace System.Formats.Tar
             VerifyExtractToDirectoryArguments(source, destinationDirectoryFullPath);
 
             bool overwriteFiles = options.OverwriteFiles;
-            TarLinkStrategy hardLinkStrategy = options.HardLinkStrategy;
+            TarHardLinkMode hardLinkMode = options.HardLinkMode;
 
             using TarReader reader = new TarReader(source, leaveOpen);
 
@@ -661,7 +661,7 @@ namespace System.Formats.Tar
             {
                 if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                 {
-                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkStrategy);
+                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode);
                 }
             }
             TarHelpers.SetPendingModes(pendingModes);
@@ -697,7 +697,7 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             bool overwriteFiles = options.OverwriteFiles;
-            TarLinkStrategy hardLinkStrategy = options.HardLinkStrategy;
+            TarHardLinkMode hardLinkMode = options.HardLinkMode;
 
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
             var directoryModificationTimes = new Stack<(string, DateTimeOffset)>();
@@ -709,7 +709,7 @@ namespace System.Formats.Tar
                 {
                     if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                     {
-                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkStrategy, cancellationToken).ConfigureAwait(false);
+                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }

@@ -408,7 +408,7 @@ namespace System.Formats.Tar.Tests
 
             // Create archive with hard link preservation.
             string archivePath = Path.Join(root.Path, "archive.tar");
-            TarWriterOptions writerOptions = new TarWriterOptions() { Format = TarEntryFormat.Pax, HardLinkStrategy = TarLinkStrategy.PreserveLink };
+            TarWriterOptions writerOptions = new TarWriterOptions() { Format = TarEntryFormat.Pax, HardLinkMode = TarHardLinkMode.PreserveLink };
             using (FileStream archiveStream = File.Create(archivePath))
             using (TarWriter writer = new TarWriter(archiveStream, writerOptions, leaveOpen: false))
             {
@@ -418,10 +418,10 @@ namespace System.Formats.Tar.Tests
                 writer.WriteEntry(sourceFile2, "dir2/linked.txt");
             }
 
-            // Extract archive with CopyContents strategy.
+            // Extract archive with CopyContents mode.
             string destination = Path.Join(root.Path, "destination");
             Directory.CreateDirectory(destination);
-            TarExtractOptions extractOptions = new TarExtractOptions() { HardLinkStrategy = TarLinkStrategy.CopyContents };
+            TarExtractOptions extractOptions = new TarExtractOptions() { HardLinkMode = TarHardLinkMode.CopyContents };
             await TarFile.ExtractToDirectoryAsync(archivePath, destination, extractOptions);
 
             // Verify extracted files are independent copies.

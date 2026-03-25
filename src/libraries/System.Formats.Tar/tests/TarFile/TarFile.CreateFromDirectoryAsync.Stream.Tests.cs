@@ -120,7 +120,7 @@ namespace System.Formats.Tar.Tests
 
             TarWriterOptions options = new TarWriterOptions()
             {
-                HardLinkStrategy = preserveLinks ? TarLinkStrategy.PreserveLink : TarLinkStrategy.CopyContents
+                HardLinkMode = preserveLinks ? TarHardLinkMode.PreserveLink : TarHardLinkMode.CopyContents
             };
 
             await using MemoryStream archive = new MemoryStream();
