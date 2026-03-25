@@ -5668,11 +5668,13 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 }
 
 // Lowering::LowerHWIntrinsicDotInnerMulSum: Helper function to Lowering::LowerHWIntrinsicDot. Performs the MUL+SUM
-// sequence, ensuring that
-//     the inner SIMD sum result is present in every lane.
+// sequence, ensuring that the inner SIMD sum result is present in every lane.
 //
 //   Arguments:
-//     - node: DotProduct intrinsic node
+//      node - DotProduct intrinsic node
+//
+//   Returns:
+//     Lowered node with the SIMD SUM(MUL(node->op1, node->op2)) sequence.
 //
 GenTree* Lowering::LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node)
 {
@@ -5703,6 +5705,29 @@ GenTree* Lowering::LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node)
     {
         case TYP_FLOAT:
         {
+            // For TYP_FLOAT, this is roughly the following managed code:
+            // Vector128:
+            //   var tmp1 = op1 * op2;
+            //   var tmp3 = tmp1;
+            //   var tmp2 = Avx.Permute(tmp1, 0xB1);
+            //   tmp1 = tmp2 + tmp3;
+            //   tmp3 = tmp1;
+            //   tmp2 = Avx.Permute(tmp1, 0x4E);
+            //   tmp1 = tmp2 + tmp3;
+            //   return tmp1;
+            //
+            // Vector256:
+            //   var tmp1 = op1 * op2;
+            //   var tmp3 = tmp1;
+            //   var tmp2 = Avx.Permute(tmp1, 0xB1);
+            //   tmp1 = tmp2 + tmp3;
+            //   tmp3 = tmp1;
+            //   tmp2 = Avx.Permute(tmp1, 0x4E);
+            //   tmp1 = tmp2 + tmp3;
+            //   tmp3 = tmp2 = tmp1;
+            //   tmp2 = Avx.Permute2x128(tmp2, tmp3, 0x1);
+            //   tmp1 = tmp1 + tmp2;
+            //   return tmp1;
             node->Op(1) = tmp1;
             LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
             ReplaceWithLclVar(tmp1Use);
@@ -5745,6 +5770,23 @@ GenTree* Lowering::LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node)
 
         case TYP_DOUBLE:
         {
+            // For TYP_DOUBLE, this is roughly the following managed code:
+            // Vector128:
+            //   var tmp1 = op1 * op2;
+            //   var tmp2 = tmp1;
+            //   tmp1 = Avx.Permute(tmp1, 0x5);
+            //   tmp1 = tmp1 + tmp2;
+            //   return tmp1;
+            //
+            // Vector256:
+            //   var tmp1 = op1 * op2;
+            //   var tmp2 = tmp1;
+            //   tmp1 = Avx.Permute(tmp1, 0x5);
+            //   tmp1 = tmp1 + tmp2;
+            //   tmp3 = tmp2 = tmp1;
+            //   tmp2 = Avx.Permute2x128(tmp2, tmp3, 0x1);
+            //   tmp1 = tmp1 + tmp2;
+            //   return tmp1;
             idx = m_compiler->gtNewIconNode(simdSize == 32 ? 0x5 : 0x1, TYP_INT);
             BlockRange().InsertAfter(tmp1, idx);
 
@@ -5834,85 +5876,39 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
     NamedIntrinsic horizontalAdd = NI_Illegal;
     NamedIntrinsic shuffle       = NI_Illegal;
+    LIR::Use       use;
 
     if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX) && varTypeIsFloating(simdBaseType) &&
         (simdSize == 16 || simdSize == 32))
     {
-        // When AVX is available, use a MUL+PERMUTE+ADD sequence to calculate DotProduct.
-        //
-        // For TYP_FLOAT, this is roughly the following managed code:
-        // Vector128:
-        //   var tmp1 = op1 * op2;
-        //   var tmp3 = tmp1;
-        //   var tmp2 = Avx.Permute(tmp1, 0xB1);
-        //   tmp1 = tmp2 + tmp3;
-        //   tmp3 = tmp1;
-        //   tmp2 = Avx.Permute(tmp1, 0x4E);
-        //   tmp1 = tmp2 + tmp3;
-        //   return tmp1;
-        //
-        // Vector256:
-        //   var tmp1 = op1 * op2;
-        //   var tmp3 = tmp1;
-        //   var tmp2 = Avx.Permute(tmp1, 0xB1);
-        //   tmp1 = tmp2 + tmp3;
-        //   tmp3 = tmp1;
-        //   tmp2 = Avx.Permute(tmp1, 0x4E);
-        //   tmp1 = tmp2 + tmp3;
-        //   tmp3 = tmp2 = tmp1;
-        //   tmp2 = Avx.Permute2x128(tmp2, tmp3, 0x1);
-        //   tmp1 = tmp1 + tmp2;
-        //   return tmp1;
-        //
-        // For TYP_DOUBLE, this is roughly the following managed code:
-        // Vector128:
-        //   var tmp1 = op1 * op2;
-        //   var tmp2 = tmp1;
-        //   tmp1 = Avx.Permute(tmp1, 0x5);
-        //   tmp1 = tmp1 + tmp2;
-        //   return tmp1;
-        //
-        // Vector256:
-        //   var tmp1 = op1 * op2;
-        //   var tmp2 = tmp1;
-        //   tmp1 = Avx.Permute(tmp1, 0x5);
-        //   tmp1 = tmp1 + tmp2;
-        //   tmp3 = tmp2 = tmp1;
-        //   tmp2 = Avx.Permute2x128(tmp2, tmp3, 0x1);
-        //   tmp1 = tmp1 + tmp2;
-        //   return tmp1;
-
-        tmp1 = LowerHWIntrinsicDotInnerMulSum(node);
-
-        if (!varTypeIsSIMD(node->gtType))
-        {
-            // We're producing a scalar result, so we only need the result in element 0
-            //
-            // However, doing that would break/limit CSE and requires a partial write so
-            // it's better to just broadcast the value to the entire vector
-
-            LowerNode(tmp1);
-
-            tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(node->gtType, tmp1,
-                                                        simdSize == 16 ? NI_Vector128_ToScalar : NI_Vector256_ToScalar,
-                                                        simdBaseType, simdSize);
-            BlockRange().InsertAfter(tmp1, tmp2);
-            tmp1 = tmp2;
-        }
-
-        LIR::Use use;
-
         if (BlockRange().TryGetUse(node, &use))
         {
-            use.ReplaceWith(tmp1);
-        }
-        else
-        {
-            tmp1->SetUnusedValue();
-        }
+            tmp1 = LowerHWIntrinsicDotInnerMulSum(node);
 
+            if (!varTypeIsSIMD(node->gtType))
+            {
+                // We're producing a scalar result, so we only need the result in element 0
+                //
+                // However, doing that would break/limit CSE and requires a partial write so
+                // it's better to just broadcast the value to the entire vector
+
+                LowerNode(tmp1);
+
+                tmp2 =
+                    m_compiler->gtNewSimdHWIntrinsicNode(node->gtType, tmp1,
+                                                         simdSize == 16 ? NI_Vector128_ToScalar : NI_Vector256_ToScalar,
+                                                         simdBaseType, simdSize);
+                BlockRange().InsertAfter(tmp1, tmp2);
+                tmp1 = tmp2;
+            }
+
+            use.ReplaceWith(tmp1);
+            BlockRange().Remove(node);
+            return LowerNode(tmp1);
+        }
+        tmp1 = node->gtNext;
         BlockRange().Remove(node);
-        return LowerNode(tmp1);
+        return tmp1;
     }
 
     if (simdSize == 32)
@@ -6406,8 +6402,6 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     }
 
     // We're producing a vector result, so just return the result directly
-    LIR::Use use;
-
     if (BlockRange().TryGetUse(node, &use))
     {
         use.ReplaceWith(tmp1);
