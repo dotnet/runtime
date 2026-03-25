@@ -448,6 +448,16 @@ namespace System.Diagnostics.Tests
             Assert.Equal("-arg3 -arg4", psi.Arguments);
         }
 
+        [Fact]
+        public void TestArgumentsNullProperty()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo("filename", null);
+            Assert.Equal(string.Empty, psi.Arguments);
+
+            psi.Arguments = null;
+            Assert.Equal(string.Empty, psi.Arguments);
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), InlineData(true), InlineData(false)]
         public void TestCreateNoWindowProperty(bool value)
         {
