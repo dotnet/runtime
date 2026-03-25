@@ -706,14 +706,17 @@ namespace System.Numerics.Tests
         }
 
         /// <summary>
-        /// Test cast to Double on Very Large BigInteger more than (1 &lt;&lt; (1 &lt;&lt; 24))
-        /// Tested BigInteger are: +/-pow(2, startShift + smallLoopShift * [1..smallLoopLimit] + (1 &lt;&lt; 24) * [1..bigLoopLimit])
+        /// Test cast to Double on very large BigInteger values with magnitude greater than 2^(1 &lt;&lt; 24), that is, values with more than 16,777,216 bits.
+        /// Tested BigInteger values are: +/-2^(startShift + smallLoopShift * [1..smallLoopLimit] + (1 &lt;&lt; 24) * [1..bigLoopLimit])
         /// Expected double is positive and negative infinity
         /// Note:
         /// ToString() can not operate such large values
         /// </summary>
         private static void DoubleExplicitCastFromLargeBigIntegerTests(int startShift, int bigShiftLoopLimit, int smallShift = 0, int smallShiftLoopLimit = 1)
         {
+            // Use 1<<24 (16,777,216) bits per iteration rather than int.MaxValue/10 to keep
+            // per-iteration allocations around 2 MB instead of ~107 MB, avoiding OOM in CI containers.
+            const int LargeBitShift = 1 << 24;
             BigInteger init = BigInteger.One << startShift;
 
             for (int i = 0; i < smallShiftLoopLimit; i++)
@@ -722,7 +725,7 @@ namespace System.Numerics.Tests
 
                 for (int j = 0; j < bigShiftLoopLimit; j++)
                 {
-                    temp = temp << (1 << 24);
+                    temp = temp << LargeBitShift;
                     VerifyDoubleExplicitCastFromBigInteger(double.PositiveInfinity, temp);
                     VerifyDoubleExplicitCastFromBigInteger(double.NegativeInfinity, -temp);
                 }
