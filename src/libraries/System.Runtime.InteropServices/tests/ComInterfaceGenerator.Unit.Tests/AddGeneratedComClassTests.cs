@@ -199,6 +199,52 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
+        public async Task TypeWithComVisibleTrueOnSecondPartialDeclaration_RemovesComVisibleAttribute()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
+                public partial interface I
+                {
+                }
+
+                partial class [|C|] : I
+                {
+                }
+
+                [ComVisible(true)]
+                partial class C
+                {
+                }
+                """;
+
+            string fixedSource = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0B7171CD-04A3-41B6-AD10-FE86D52197DD")]
+                public partial interface I
+                {
+                }
+
+                [GeneratedComClass]
+                partial class C : I
+                {
+                }
+
+                partial class C
+                {
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSource);
+        }
+
+        [Fact]
         public async Task TypeThatInheritsFromGeneratedComClassType_ReportsDiagnostic()
         {
             string source = """
