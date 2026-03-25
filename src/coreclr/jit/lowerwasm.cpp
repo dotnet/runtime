@@ -26,6 +26,7 @@ static void SetMultiplyUsed(GenTree* node)
 {
     assert(varTypeIsEnregisterable(node));
     assert(!node->isContained());
+    // printf("Marked [%06u] as multiply-used.\n", Compiler::dspTreeID(node));
     node->gtLIRFlags |= LIR::Flags::MultiplyUsed;
 }
 
@@ -227,7 +228,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     // TODO-WASM-CQ: Identify the specific cases where we can skip doing this and still generate valid code
     // in codegen, i.e. non-faulting destination combined with native opcode. Right now this adds some code
     // bloat due to creating a temporary for a destination that may only get used once.
-    SetMultiplyUsed(dstAddr);
+    if (!dstAddr->OperIs(GT_LCL_ADDR))
+    {
+        // It's necessary to skip doing this for local addresses to avoid mysterious failures in temporary
+        // register allocation later on
+        SetMultiplyUsed(dstAddr);
+    }
 
     if (blkNode->OperIsInitBlkOp())
     {
@@ -290,8 +296,10 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (src->OperIs(GT_IND))
         {
+            GenTree* srcAddr = src->gtGetOp1();
+            assert(!srcAddr->OperIs(GT_LCL_ADDR));
             // TODO-WASM-CQ: Skip doing this if the indirection is nonfaulting and the src is only used once.
-            SetMultiplyUsed(src->gtGetOp1());
+            SetMultiplyUsed(srcAddr);
         }
     }
 }
