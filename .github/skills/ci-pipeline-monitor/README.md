@@ -73,20 +73,26 @@ automatically:
 - **AzDO Builds API + Helix API** — public, no auth required
 - **AzDO Test Results API** — uses `az account get-access-token` (requires
   `az login` from prerequisites)
-- **GitHub API** — uses your Copilot CLI login (no separate configuration needed)
-
-GitHub API calls use the GitHub MCP tools built into Copilot CLI.
+- **GitHub API (triage)** — the agent uses GitHub MCP tools built into Copilot
+  CLI, authenticated via your Copilot CLI login. No separate configuration needed.
+- **GitHub API (validation)** — `validate_results.py` makes a small number of
+  unauthenticated spot-check searches against `api.github.com` to verify NEW
+  failures. Subject to GitHub's unauthenticated rate limit (10 searches/minute),
+  which is sufficient for typical runs with few NEW failures.
 
 ## How It Works
 
 The skill combines **Python scripts** (deterministic data collection) with
-**LLM triage** (non-deterministic analysis):
+**agent triage** (non-deterministic analysis):
 
-1. `setup_and_fetch_builds.py` — creates SQLite DB, fetches latest build per pipeline
-2. `extract_failed_tests.py` — extracts failed test methods via AzDO Test Results API
-3. `fetch_helix_logs.py` — downloads full Helix console logs to disk
-4. LLM reads logs, extracts errors verbatim, classifies, groups, searches GitHub issues
-5. `generate_report.py` — generates the final report from the DB
-6. `validate_results.py` — validates DB completeness before publishing
+| Step | What | Run By | APIs / Tools |
+|------|------|--------|-------------|
+| 1. Resolve Pipeline Definitions | Resolve missing def IDs, update `pipelines.md` | Agent | AzDO Definitions API (no auth) |
+| 2. Fetch Latest Builds | Create DB, fetch latest build per pipeline | Script (`setup_and_fetch_builds.py`) | AzDO Builds API (no auth) |
+| 3. Extract Failed Tests and Fetch Logs | Extract failed test methods, download Helix console logs | Script (`extract_failed_tests.py`, `fetch_helix_logs.py`) | AzDO Test Results API (Bearer token), Helix API (no auth) |
+| 4. Triage Failures | Read logs, extract errors verbatim, classify, group, search GitHub | Agent | GitHub MCP (`search_issues`, `issue_read`) |
+| 5. Generate Report | Generate markdown report from DB | Script (`generate_report.py`) | None (reads DB only) |
+| 6. Validate Report | Validate DB completeness and report accuracy | Script (`validate_results.py`) | GitHub Search API (unauthenticated spot-checks) |
+| 7. Bisect Regressions | Identify regressing commit/PR (on request) | Agent | GitHub MCP (`list_commits`, `search_pull_requests`) |
 
 Generated output (logs, reports, DB) stays local — nothing is committed to the repo.
