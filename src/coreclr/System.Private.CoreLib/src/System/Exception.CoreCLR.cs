@@ -406,7 +406,7 @@ namespace System
         };
 
         [UnmanagedCallersOnly]
-        internal static unsafe void CreateArgumentException(ArgumentExceptionKind kind, char* pResourceName, char* pParamName, Exception* pThrowable, Exception* pException)
+        internal static unsafe void CreateArgumentException(ArgumentExceptionKind kind, char* pResourceName, char* pParamName, object* pThrowable, Exception* pException)
         {
             try
             {

@@ -57,7 +57,7 @@ namespace System.IO
                 {
                     FileLoadExceptionKind.BadImageFormat => new BadImageFormatException(fileName, hresult),
                     FileLoadExceptionKind.FileNotFound => new FileNotFoundException(fileName, hresult),
-                    FileLoadExceptionKind.OutOfMemory => throw new OutOfMemoryException(),
+                    FileLoadExceptionKind.OutOfMemory => new OutOfMemoryException(),
                     _ /* FileLoadExceptionKind.FileLoad */ => new FileLoadException(fileName, hresult),
                 };
             }
