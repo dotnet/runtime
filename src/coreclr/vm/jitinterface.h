@@ -386,7 +386,11 @@ public:
 
     virtual ~CEEInfo()
     {
-        LIMITED_METHOD_CONTRACT;
+        CONTRACTL {
+            NOTHROW;
+            GC_TRIGGERS;
+        }
+        CONTRACTL_END;
 
 #if !defined(DACCESS_COMPILE)
         // Free all handles used by JIT

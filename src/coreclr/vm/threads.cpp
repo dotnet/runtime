@@ -2177,17 +2177,10 @@ int Thread::DecExternalCount(BOOL holdingLock)
         // destroyed it earlier during OnThreadTerminate.
         if ((retVal == 1) && (m_StrongHndToExposedObject != NULL) && ((*((void**)m_StrongHndToExposedObject)) != NULL))
         {
-            // Switch back to cooperative mode to manipulate the object.
-
-            // Don't want to switch back to COOP until we let go of the lock
-            // however we are allowed to call StoreObjectInHandle here in preemptive
-            // mode because we are setting the value to NULL.
-            CONTRACT_VIOLATION(ModeViolation);
-
-            // Clear the handle and leave the lock.
-            // We do not have to DisablePreemptiveGC here, because
-            // we just want to put NULL into a handle.
-            StoreObjectInHandle(m_StrongHndToExposedObject, NULL);
+            // Destroy the strong handle under the handle table lock to avoid
+            // racing with GC relocating the handle value in preemptive mode.
+            DestroyHandleInPreemptiveMode(m_StrongHndToExposedObject, HNDTYPE_STRONG);
+            m_StrongHndToExposedObject = NULL;
 
             tsLock.Release();
 
@@ -2196,8 +2189,6 @@ int Thread::DecExternalCount(BOOL holdingLock)
             {
                 pCurThread->DisablePreemptiveGC();
             }
-
-            GCX_ASSERT_COOP();
 
             return retVal;
         }
