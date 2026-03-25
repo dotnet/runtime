@@ -355,10 +355,8 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         }
         pthread_sigmask(SIG_SETMASK, &old_signal_set, &junk_signal_set); // Not all architectures allow NULL here
 
-        // The provided file handles might have CLOEXEC enabled,
-        // but dup2 doesn't copy the file descriptor flags,
-        // so the new file descriptors won't have CLOEXEC enabled.
-        // A value of -1 means the caller did not provide a handle for that stream.
+        // Map stdin/out/err for the new process to the provided fds.
+        // They are not closed on exec because dup2 clears CLOEXEC.
         if ((stdinFd != -1 && stdinFd != STDIN_FILENO && Dup2WithInterruptedRetry(stdinFd, STDIN_FILENO) == -1) ||
             (stdoutFd != -1 && stdoutFd != STDOUT_FILENO && Dup2WithInterruptedRetry(stdoutFd, STDOUT_FILENO) == -1) ||
             (stderrFd != -1 && stderrFd != STDERR_FILENO && Dup2WithInterruptedRetry(stderrFd, STDERR_FILENO) == -1))
