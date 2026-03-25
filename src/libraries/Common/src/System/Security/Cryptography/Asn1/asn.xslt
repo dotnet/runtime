@@ -1075,6 +1075,60 @@ namespace <xsl:value-of select="@namespace" />
   <!-- ReadBoolean() vs ReadBoolean(tag) -->
   <xsl:template name="MaybeImplicitCall0"><xsl:if test="@implicitTag"><xsl:call-template name="ContextTag"/></xsl:if></xsl:template>
 
+  <!-- Emit cache struct field declarations (recursive, 1..max) -->
+  <xsl:template name="EmitCacheFields" xml:space="default">
+    <xsl:param name="n" select="1"/>
+    <xsl:param name="max" select="10"/>
+    <xsl:param name="name"/>
+    <xsl:param name="type"/>
+    <xsl:if test="$n &lt;= $max" xml:space="preserve">
+            internal <xsl:value-of select="$type"/><xsl:text> </xsl:text><xsl:value-of select="$name"/><xsl:value-of select="$n"/>;</xsl:if>
+    <xsl:if test="$n &lt; $max">
+      <xsl:call-template name="EmitCacheFields">
+        <xsl:with-param name="n" select="$n + 1"/>
+        <xsl:with-param name="max" select="$max"/>
+        <xsl:with-param name="name" select="$name"/>
+        <xsl:with-param name="type" select="$type"/>
+      </xsl:call-template>
+    </xsl:if>
+  </xsl:template>
+
+  <!-- Emit cache assignment switch cases in DecodeCore (recursive, 1..max) -->
+  <xsl:template name="EmitCacheAssignCases" xml:space="default">
+    <xsl:param name="n" select="1"/>
+    <xsl:param name="max" select="10"/>
+    <xsl:param name="name"/>
+    <xsl:param name="indent"/>
+    <xsl:param name="target"/>
+    <xsl:if test="$n &lt;= $max" xml:space="preserve">
+                    <xsl:value-of select="$indent"/>case <xsl:value-of select="$n"/>: <xsl:value-of select="$target"/>.<xsl:value-of select="$name"/><xsl:value-of select="$n"/> = item; break;</xsl:if>
+    <xsl:if test="$n &lt; $max">
+      <xsl:call-template name="EmitCacheAssignCases">
+        <xsl:with-param name="n" select="$n + 1"/>
+        <xsl:with-param name="max" select="$max"/>
+        <xsl:with-param name="name" select="$name"/>
+        <xsl:with-param name="indent" select="$indent"/>
+        <xsl:with-param name="target" select="$target"/>
+      </xsl:call-template>
+    </xsl:if>
+  </xsl:template>
+
+  <!-- Emit cache read switch arms in MoveNext (recursive, 0-based index => 1-based field) -->
+  <xsl:template name="EmitCacheReadArms" xml:space="default">
+    <xsl:param name="n" select="1"/>
+    <xsl:param name="max" select="10"/>
+    <xsl:param name="name"/>
+    <xsl:if test="$n &lt;= $max" xml:space="preserve">
+                            <xsl:value-of select="$n - 1"/> =&gt; _cache.<xsl:value-of select="$name"/><xsl:value-of select="$n"/>,</xsl:if>
+    <xsl:if test="$n &lt; $max">
+      <xsl:call-template name="EmitCacheReadArms">
+        <xsl:with-param name="n" select="$n + 1"/>
+        <xsl:with-param name="max" select="$max"/>
+        <xsl:with-param name="name" select="$name"/>
+      </xsl:call-template>
+    </xsl:if>
+  </xsl:template>
+
   <!-- Encode(writer) vs Encode(writer, tag) -->
   <xsl:template name="MaybeImplicitCallS"><xsl:if test="@implicitTag">, <xsl:call-template name="ContextTag"/></xsl:if></xsl:template>
 
@@ -1139,7 +1193,31 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
   </xsl:template>
 
-  <xsl:template match="asn:SequenceOf | asn:SetOf" mode="ValueFieldDef" xml:space="default">
+  <xsl:template match="asn:SequenceOf[@valueName] | asn:SetOf[@valueName]" mode="ValueFieldDef" xml:space="default">
+    <xsl:choose>
+      <xsl:when test="@optional | parent::asn:Choice" xml:space="preserve">
+
+        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/>
+        {
+            get;
+            private set
+            {
+                Has<xsl:value-of select="@name"/> = true;
+                field = value;
+            }
+        }
+
+        internal bool Has<xsl:value-of select="@name"/> { get; private set; }
+        internal int <xsl:value-of select="@name"/>Length { get; private set; }
+        private <xsl:value-of select="@name"/>EnumerableCache <xsl:value-of select="@name"/>Cache;</xsl:when>
+      <xsl:otherwise xml:space="preserve">
+        internal ReadOnlySpan&lt;byte&gt; <xsl:value-of select="@name"/> { get; private set; }
+        internal int <xsl:value-of select="@name"/>Length { get; private set; }
+        private <xsl:value-of select="@name"/>EnumerableCache <xsl:value-of select="@name"/>Cache;</xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <xsl:template match="asn:SequenceOf[not(@valueName)] | asn:SetOf[not(@valueName)]" mode="ValueFieldDef" xml:space="default">
     <xsl:call-template name="ValueFieldOrProperty"><xsl:with-param name="fieldType">ReadOnlySpan&lt;byte&gt;</xsl:with-param></xsl:call-template>
   </xsl:template>
 
@@ -1310,6 +1388,11 @@ namespace <xsl:value-of select="@namespace" />
     </xsl:if>
     <xsl:if test="1" xml:space="preserve">
             <xsl:value-of select="$indent"/>decoded.<xsl:value-of select="@name"/> = <xsl:value-of select="$readerName"/>.ReadEncodedValue();</xsl:if>
+    <xsl:if test="@valueName">
+      <xsl:if test="1" xml:space="preserve">
+            <xsl:value-of select="$indent"/>decoded.<xsl:value-of select="@name"/>Cache.RuleSet = <xsl:value-of select="$readerName"/>.RuleSet;
+            <xsl:value-of select="$indent"/>decoded.InitializeAndValidate<xsl:value-of select="@name"/>();</xsl:if>
+    </xsl:if>
   </xsl:template>
 
   <!-- ==== Value* ref struct: decode orchestration ==== -->
@@ -1317,7 +1400,7 @@ namespace <xsl:value-of select="@namespace" />
   <!-- Determines if a field needs a companion bool (span or ref struct type that can't be nullable) -->
   <xsl:template name="ValueSetCompanionBool" xml:space="default">
     <xsl:param name="indent" />
-    <xsl:if test="(@optional | parent::asn:Choice) and (self::asn:AnyValue | self::asn:BitString | self::asn:OctetString | self::asn:Integer[@backingType='ReadOnlyMemory'] | self::asn:SequenceOf | self::asn:SetOf | self::asn:AsnType[@valueTypeName] | self::asn:AsnType[not(@valueTypeName) and not(@rebind='false')])" xml:space="preserve">
+    <xsl:if test="(@optional | parent::asn:Choice) and (self::asn:AnyValue | self::asn:BitString | self::asn:OctetString | self::asn:Integer[@backingType='ReadOnlyMemory'] | self::asn:SequenceOf[not(@valueName)] | self::asn:SetOf[not(@valueName)] | self::asn:AsnType[@valueTypeName] | self::asn:AsnType[not(@valueTypeName) and not(@rebind='false')])" xml:space="preserve">
             <xsl:value-of select="$indent"/>decoded.Has<xsl:value-of select="@name"/> = true;</xsl:if>
   </xsl:template>
 
@@ -1416,34 +1499,68 @@ namespace <xsl:value-of select="@namespace" />
     </xsl:variable>
     <xsl:if test="1" xml:space="preserve">
 
-        internal <xsl:value-of select="@name"/>Enumerable <xsl:value-of select="@valueName"/>(AsnEncodingRules ruleSet)
+        internal readonly <xsl:value-of select="@name"/>Enumerable <xsl:value-of select="@valueName"/>()
         {
-            return new <xsl:value-of select="@name"/>Enumerable(<xsl:value-of select="@name"/>, ruleSet);
+            return new <xsl:value-of select="@name"/>Enumerable(<xsl:value-of select="@name"/>, <xsl:value-of select="@name"/>Cache);
+        }
+
+        private void InitializeAndValidate<xsl:value-of select="@name"/>()
+        {
+            int count = 0;
+            ValueAsnReader reader = new ValueAsnReader(<xsl:value-of select="@name"/>, <xsl:value-of select="@name"/>Cache.RuleSet);
+            ValueAsnReader collReader = reader.Read<xsl:value-of select="$collNoun"/>(<xsl:call-template name="MaybeImplicitCall0"/>);
+            reader.ThrowIfNotEmpty();
+
+            while (collReader.HasData)
+            {
+                checked { count++; }
+                <xsl:value-of select="$elementType"/> item<xsl:choose><xsl:when test="*/@valueTypeName">;
+                <xsl:value-of select="*/@valueTypeName"/>.Decode(ref collReader, out item)</xsl:when><xsl:otherwise> = collReader.ReadEncodedValue()</xsl:otherwise></xsl:choose>;
+
+                switch (count)
+                {<xsl:call-template name="EmitCacheAssignCases"><xsl:with-param name="name" select="@name"/><xsl:with-param name="indent" select="''"/><xsl:with-param name="target" select="concat(@name, 'Cache')"/></xsl:call-template>
+                    default: break;
+                }
+            }
+
+            <xsl:value-of select="@name"/>Cache.Count = count &lt;= 10 ? count : null;
+            <xsl:value-of select="@name"/>Length = count;
+        }
+
+        internal ref struct <xsl:value-of select="@name"/>EnumerableCache
+        {<xsl:call-template name="EmitCacheFields"><xsl:with-param name="name" select="@name"/><xsl:with-param name="type" select="$elementType"/></xsl:call-template>
+            internal int? Count;
+            internal AsnEncodingRules RuleSet;
         }
 
         internal readonly ref struct <xsl:value-of select="@name"/>Enumerable
         {
             private readonly ReadOnlySpan&lt;byte&gt; _encoded;
-            private readonly AsnEncodingRules _ruleSet;
+            private readonly <xsl:value-of select="@name"/>EnumerableCache _cache;
 
-            internal <xsl:value-of select="@name"/>Enumerable(ReadOnlySpan&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
+            internal <xsl:value-of select="@name"/>Enumerable(ReadOnlySpan&lt;byte&gt; encoded, <xsl:value-of select="@name"/>EnumerableCache cache)
             {
                 _encoded = encoded;
-                _ruleSet = ruleSet;
+                _cache = cache;
             }
 
-            public Enumerator GetEnumerator() =&gt; new Enumerator(_encoded, _ruleSet);
+            public Enumerator GetEnumerator() =&gt; new Enumerator(_encoded, _cache);
 
             internal ref struct Enumerator
             {
                 private ValueAsnReader _reader;
                 private <xsl:value-of select="$elementType"/> _current;
+                private readonly <xsl:value-of select="@name"/>EnumerableCache _cache;
+                private int _index;
 
-                internal Enumerator(ReadOnlySpan&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
+                internal Enumerator(ReadOnlySpan&lt;byte&gt; encoded, <xsl:value-of select="@name"/>EnumerableCache cache)
                 {
-                    if (!encoded.IsEmpty)
+                    _cache = cache;
+                    _index = 0;
+
+                    if (!cache.Count.HasValue &amp;&amp; !encoded.IsEmpty)
                     {
-                        ValueAsnReader outerReader = new ValueAsnReader(encoded, ruleSet);
+                        ValueAsnReader outerReader = new ValueAsnReader(encoded, cache.RuleSet);
                         _reader = outerReader.Read<xsl:value-of select="$collNoun"/>(<xsl:call-template name="MaybeImplicitCall0"/>);
                         outerReader.ThrowIfNotEmpty();
                     }
@@ -1455,6 +1572,22 @@ namespace <xsl:value-of select="@namespace" />
 
                 public bool MoveNext()
                 {
+                    if (_cache.Count.HasValue)
+                    {
+                        if (_index &gt;= _cache.Count.Value)
+                        {
+                            return false;
+                        }
+
+                        _current = _index switch
+                        {<xsl:call-template name="EmitCacheReadArms"><xsl:with-param name="name" select="@name"/></xsl:call-template>
+                            _ =&gt; default,
+                        };
+                        _index++;
+
+                        return true;
+                    }
+
                     if (!_reader.HasData)
                     {
                         return false;

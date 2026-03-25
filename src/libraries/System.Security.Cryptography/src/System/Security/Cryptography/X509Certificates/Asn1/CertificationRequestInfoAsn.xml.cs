@@ -139,7 +139,9 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         internal System.Numerics.BigInteger Version;
         internal ReadOnlySpan<byte> Subject;
         internal System.Security.Cryptography.Asn1.ValueSubjectPublicKeyInfoAsn SubjectPublicKeyInfo;
-        internal ReadOnlySpan<byte> Attributes;
+        internal ReadOnlySpan<byte> Attributes { get; private set; }
+        internal int AttributesLength { get; private set; }
+        private AttributesEnumerableCache AttributesCache;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -240,39 +242,95 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
 
             decoded.Attributes = sequenceReader.ReadEncodedValue();
+            decoded.AttributesCache.RuleSet = sequenceReader.RuleSet;
+            decoded.InitializeAndValidateAttributes();
 
             sequenceReader.ThrowIfNotEmpty();
         }
 
 
-        internal AttributesEnumerable GetAttributes(AsnEncodingRules ruleSet)
+        internal readonly AttributesEnumerable GetAttributes()
         {
-            return new AttributesEnumerable(Attributes, ruleSet);
+            return new AttributesEnumerable(Attributes, AttributesCache);
+        }
+
+        private void InitializeAndValidateAttributes()
+        {
+            int count = 0;
+            ValueAsnReader reader = new ValueAsnReader(Attributes, AttributesCache.RuleSet);
+            ValueAsnReader collReader = reader.ReadSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
+            reader.ThrowIfNotEmpty();
+
+            while (collReader.HasData)
+            {
+                checked { count++; }
+                System.Security.Cryptography.Asn1.ValueAttributeAsn item;
+                System.Security.Cryptography.Asn1.ValueAttributeAsn.Decode(ref collReader, out item);
+
+                switch (count)
+                {
+                    case 1: AttributesCache.Attributes1 = item; break;
+                    case 2: AttributesCache.Attributes2 = item; break;
+                    case 3: AttributesCache.Attributes3 = item; break;
+                    case 4: AttributesCache.Attributes4 = item; break;
+                    case 5: AttributesCache.Attributes5 = item; break;
+                    case 6: AttributesCache.Attributes6 = item; break;
+                    case 7: AttributesCache.Attributes7 = item; break;
+                    case 8: AttributesCache.Attributes8 = item; break;
+                    case 9: AttributesCache.Attributes9 = item; break;
+                    case 10: AttributesCache.Attributes10 = item; break;
+                    default: break;
+                }
+            }
+
+            AttributesCache.Count = count <= 10 ? count : null;
+            AttributesLength = count;
+        }
+
+        internal ref struct AttributesEnumerableCache
+        {
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes1;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes2;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes3;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes4;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes5;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes6;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes7;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes8;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes9;
+            internal System.Security.Cryptography.Asn1.ValueAttributeAsn Attributes10;
+            internal int? Count;
+            internal AsnEncodingRules RuleSet;
         }
 
         internal readonly ref struct AttributesEnumerable
         {
             private readonly ReadOnlySpan<byte> _encoded;
-            private readonly AsnEncodingRules _ruleSet;
+            private readonly AttributesEnumerableCache _cache;
 
-            internal AttributesEnumerable(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
+            internal AttributesEnumerable(ReadOnlySpan<byte> encoded, AttributesEnumerableCache cache)
             {
                 _encoded = encoded;
-                _ruleSet = ruleSet;
+                _cache = cache;
             }
 
-            public Enumerator GetEnumerator() => new Enumerator(_encoded, _ruleSet);
+            public Enumerator GetEnumerator() => new Enumerator(_encoded, _cache);
 
             internal ref struct Enumerator
             {
                 private ValueAsnReader _reader;
                 private System.Security.Cryptography.Asn1.ValueAttributeAsn _current;
+                private readonly AttributesEnumerableCache _cache;
+                private int _index;
 
-                internal Enumerator(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
+                internal Enumerator(ReadOnlySpan<byte> encoded, AttributesEnumerableCache cache)
                 {
-                    if (!encoded.IsEmpty)
+                    _cache = cache;
+                    _index = 0;
+
+                    if (!cache.Count.HasValue && !encoded.IsEmpty)
                     {
-                        ValueAsnReader outerReader = new ValueAsnReader(encoded, ruleSet);
+                        ValueAsnReader outerReader = new ValueAsnReader(encoded, cache.RuleSet);
                         _reader = outerReader.ReadSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
                         outerReader.ThrowIfNotEmpty();
                     }
@@ -284,6 +342,32 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
                 public bool MoveNext()
                 {
+                    if (_cache.Count.HasValue)
+                    {
+                        if (_index >= _cache.Count.Value)
+                        {
+                            return false;
+                        }
+
+                        _current = _index switch
+                        {
+                            0 => _cache.Attributes1,
+                            1 => _cache.Attributes2,
+                            2 => _cache.Attributes3,
+                            3 => _cache.Attributes4,
+                            4 => _cache.Attributes5,
+                            5 => _cache.Attributes6,
+                            6 => _cache.Attributes7,
+                            7 => _cache.Attributes8,
+                            8 => _cache.Attributes9,
+                            9 => _cache.Attributes10,
+                            _ => default,
+                        };
+                        _index++;
+
+                        return true;
+                    }
+
                     if (!_reader.HasData)
                     {
                         return false;
