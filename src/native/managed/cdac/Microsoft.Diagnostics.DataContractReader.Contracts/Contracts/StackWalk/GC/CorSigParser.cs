@@ -6,17 +6,17 @@ using System;
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 /// <summary>
-/// Minimal CorSig signature parser for extracting method calling convention,
-/// parameter count, and GC reference classification of each parameter type.
-/// Parses the ECMA-335 II.23.2.1 MethodDefSig format.
+/// Minimal signature parser for GC reference classification of method parameters.
+/// Parses the ECMA-335 II.23.2.1 MethodDefSig format, classifying each parameter
+/// type as a GC reference, interior pointer, value type, or non-GC primitive.
 /// </summary>
 internal ref struct CorSigParser
 {
     private ReadOnlySpan<byte> _sig;
     private int _index;
-    private int _pointerSize;
+    private readonly int _pointerSize;
 
-    public CorSigParser(ReadOnlySpan<byte> signature, int pointerSize = 8)
+    public CorSigParser(ReadOnlySpan<byte> signature, int pointerSize)
     {
         _sig = signature;
         _index = 0;
@@ -30,13 +30,6 @@ internal ref struct CorSigParser
         if (_index >= _sig.Length)
             throw new InvalidOperationException("Unexpected end of signature.");
         return _sig[_index++];
-    }
-
-    public byte PeekByte()
-    {
-        if (_index >= _sig.Length)
-            throw new InvalidOperationException("Unexpected end of signature.");
-        return _sig[_index];
     }
 
     /// <summary>
@@ -63,34 +56,7 @@ internal ref struct CorSigParser
     }
 
     /// <summary>
-    /// Classifies a CorElementType for GC scanning purposes.
-    /// </summary>
-    public static GcTypeKind ClassifyElementType(CorElementType elemType)
-    {
-        switch (elemType)
-        {
-            case CorElementType.Class:
-            case CorElementType.Object:
-            case CorElementType.String:
-            case CorElementType.SzArray:
-            case CorElementType.Array:
-                return GcTypeKind.Ref;
-
-            case CorElementType.Byref:
-                return GcTypeKind.Interior;
-
-            case CorElementType.ValueType:
-            case CorElementType.TypedByRef:
-                return GcTypeKind.Other;
-
-            default:
-                return GcTypeKind.None;
-        }
-    }
-
-    /// <summary>
-    /// Reads the next element type from the signature and returns the GC classification.
-    /// Handles GENERICINST specially (CLASS-based generic = Ref, VALUETYPE-based = Other).
+    /// Reads the next type from the signature and classifies it for GC scanning.
     /// Advances past the full type encoding.
     /// </summary>
     public GcTypeKind ReadTypeAndClassify()

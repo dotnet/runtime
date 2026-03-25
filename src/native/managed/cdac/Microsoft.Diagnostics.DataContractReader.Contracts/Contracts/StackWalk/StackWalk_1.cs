@@ -241,35 +241,13 @@ internal partial class StackWalk_1 : IStackWalk
                     }
                     else
                     {
-                        // Non-frameless: capital "F" Frame GcScanRoots dispatch.
-                        // The base Frame::GcScanRoots_Impl is a no-op for most frame types.
-                        // Frame types that override it (StubDispatchFrame, ExternalMethodFrame,
-                        // CallCountingHelperFrame, DynamicHelperFrame, CLRToCOMMethodFrame,
-                        // HijackFrame, ProtectValueClassFrame) call PromoteCallerStack to
-                        // report method arguments from the transition block.
-                        //
-                        // GCFrame is NOT part of the Frame chain — it has its own linked list
-                        // that the GC scans separately. The DAC's DacStackReferenceWalker
-                        // does not scan GCFrame roots.
-                        //
-                        // For now, this is a no-op matching the base Frame behavior.
-                        // TODO(stackref): Implement PromoteCallerStack for stub frames that
-                        // report caller arguments (StubDispatchFrame, ExternalMethodFrame, etc.)
-                        try
-                        {
-                            ScanFrameRoots(gcFrame.Frame, scanContext);
-                        }
-                        catch (System.Exception)
-                        {
-                            // Don't let one bad frame abort the entire stack walk
-                        }
+                        ScanFrameRoots(gcFrame.Frame, scanContext);
                     }
                 }
             }
             catch (System.Exception ex)
             {
-                Debug.WriteLine($"Exception during WalkStackReferences: {ex}");
-                // Matching native DAC behavior: capture errors, don't propagate
+                Debug.WriteLine($"Exception during WalkStackReferences at IP=0x{gcFrame.Frame.Context.InstructionPointer:X}: {ex.GetType().Name}: {ex.Message}");
             }
         }
 
@@ -295,24 +273,11 @@ internal partial class StackWalk_1 : IStackWalk
         }
 
         public StackDataFrameHandle Frame { get; }
-        public bool IsFilterFunclet { get; set; }
-        public bool IsFilterFuncletCached { get; set; }
         public bool ShouldParentToFuncletSkipReportingGCReferences { get; set; }
         public bool ShouldCrawlFrameReportGCReferences { get; set; } // required
         public bool ShouldParentFrameUseUnwindTargetPCforGCReporting { get; set; }
-        public bool ShouldSaveFuncletInfo { get; set; }
-        public bool ShouldParentToFuncletReportSavedFuncletSlots { get; set; }
         public uint ClauseForCatchHandlerStartPC { get; set; }
         public uint ClauseForCatchHandlerEndPC { get; set; }
-    }
-
-    // TODO(stackref): Implement force-reporting for finally funclets with marker frame detection.
-    // See native StackFrameIterator::Filter in stackwalk.cpp for reference.
-    private enum ForceGcReportingStage
-    {
-        Off,
-        LookForManagedFrame,
-        LookForMarkerFrame,
     }
 
     private IEnumerable<GCFrameData> Filter(IEnumerable<StackDataFrameHandle> handles)
@@ -324,12 +289,9 @@ internal partial class StackWalk_1 : IStackWalk
         bool processNonFilterFunclet = false;
         bool processIntermediaryNonFilterFunclet = false;
         bool didFuncletReportGCReferences = true;
-        bool funcletNotSeen = false;
         TargetPointer parentStackFrame = TargetPointer.Null;
         TargetPointer funcletParentStackFrame = TargetPointer.Null;
         TargetPointer intermediaryFuncletParentStackFrame;
-
-        bool foundFirstFunclet = false;
 
         foreach (StackDataFrameHandle handle in handles)
         {
@@ -342,32 +304,15 @@ internal partial class StackWalk_1 : IStackWalk
             bool skipFuncletCallback = true;
 
             TargetPointer pExInfo = GetCurrentExceptionTracker(handle);
+
             TargetPointer frameSp = handle.State == StackWalkState.SW_FRAME ? handle.FrameAddress : handle.Context.StackPointer;
             if (pExInfo != TargetPointer.Null && frameSp > pExInfo)
             {
                 if (!movedPastFirstExInfo)
                 {
-                    Data.ExceptionInfo exInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(pExInfo);
-                    // TODO: The native StackFrameIterator::Filter checks pExInfo->m_lastReportedFunclet.IP
-                    // to handle the case where a finally funclet was reported in a previous GC run.
-                    // This requires runtime support to persist LastReportedFuncletInfo on ExInfo,
-                    // which is not yet implemented. Until then this block is unreachable.
-                    if (exInfo.PassNumber == 2 &&
-                        exInfo.CSFEnclosingClause != TargetPointer.Null &&
-                        funcletParentStackFrame == TargetPointer.Null &&
-                        false) // TODO: check lastReportedFunclet.IP != 0 when runtime support is added
-                    {
-                        funcletParentStackFrame = exInfo.CSFEnclosingClause;
-                        parentStackFrame = exInfo.CSFEnclosingClause;
-                        processNonFilterFunclet = true;
-                        didFuncletReportGCReferences = false;
-                        funcletNotSeen = true;
-                    }
                     movedPastFirstExInfo = true;
                 }
             }
-
-            gcFrame.ShouldParentToFuncletReportSavedFuncletSlots = false;
 
             // by default, there is no funclet for the current frame
             // that reported GC references
@@ -375,8 +320,6 @@ internal partial class StackWalk_1 : IStackWalk
 
             // by default, assume that we are going to report GC references
             gcFrame.ShouldCrawlFrameReportGCReferences = true;
-
-            gcFrame.ShouldSaveFuncletInfo = false;
 
             // by default, assume that parent frame is going to report GC references from
             // the actual location reported by the stack walk
@@ -426,14 +369,6 @@ internal partial class StackWalk_1 : IStackWalk
                                         // Set the parent frame so that the funclet skipping logic (below) can use it.
                                         parentStackFrame = intermediaryFuncletParentStackFrame;
                                         skippingFunclet = false;
-
-                                        IPlatformAgnosticContext callerContext = handle.Context.Clone();
-                                        callerContext.Unwind(_target);
-                                        // TODO(stackref): Implement force-reporting for finally funclets.
-                                        // When the funclet is not unwound and its caller IP is managed,
-                                        // intermediate frames should be force-reported to keep dynamic methods alive.
-                                        // This requires marker frame detection (DispatchManagedException/RhThrowEx)
-                                        // to know when to stop force-reporting.
                                     }
                                 }
                             }
@@ -466,23 +401,6 @@ internal partial class StackWalk_1 : IStackWalk
 
                                         // Set the parent frame so that the funclet skipping logic (below) can use it.
                                         parentStackFrame = funcletParentStackFrame;
-
-                                        if (!foundFirstFunclet &&
-                                            pExInfo > handle.Context.StackPointer &&
-                                            parentStackFrame > pExInfo)
-                                        {
-                                            Debug.Assert(pExInfo != TargetPointer.Null);
-                                            gcFrame.ShouldSaveFuncletInfo = true;
-                                            foundFirstFunclet = true;
-                                        }
-
-                                        IPlatformAgnosticContext callerContext = handle.Context.Clone();
-                                        callerContext.Unwind(_target);
-                                        if (!frameWasUnwound && IsManaged(callerContext.InstructionPointer, out _))
-                                        {
-                                            // TODO(stackref): Implement force-reporting for finally funclets
-                                            // (see ForceGcReportingStage). Requires marker frame detection.
-                                        }
 
                                         // For non-filter funclets, we will make the callback for the funclet
                                         // but skip all the frames until we reach the parent method. When we do,
@@ -610,12 +528,6 @@ internal partial class StackWalk_1 : IStackWalk
                                             }
                                             else if (!IsFunclet(handle))
                                             {
-                                                if (funcletNotSeen)
-                                                {
-                                                    gcFrame.ShouldParentToFuncletReportSavedFuncletSlots = true;
-                                                    funcletNotSeen = false;
-                                                }
-
                                                 didFuncletReportGCReferences = true;
                                             }
                                         }
@@ -647,8 +559,6 @@ internal partial class StackWalk_1 : IStackWalk
                                 {
                                     // Skip intermediate frames between funclet and parent.
                                     // The native runtime unconditionally skips these frames.
-                                    // TODO(stackref): Implement force-reporting for finally funclets
-                                    // (ForceGcReportingStage) with proper marker frame detection.
                                     break;
                                 }
                             }
@@ -1152,10 +1062,6 @@ internal partial class StackWalk_1 : IStackWalk
         {
             uint offset = OffsetFromGCRefMapPos(pos);
             TargetPointer slotAddress = new(transitionBlock.Value + offset);
-            // 'this' is a GC reference for reference types, interior for value types.
-            // The runtime checks methodDesc.GetMethodTable().IsValueType() && !IsUnboxingStub().
-            // For safety, treat as a regular GC reference (correct for reference type methods,
-            // and conservative for value type methods which would need interior promotion).
             scanContext.GCReportCallback(slotAddress, GcScanFlags.None);
             pos++;
         }
