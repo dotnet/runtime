@@ -88,16 +88,10 @@ namespace System.IO.Compression
 
                     OperationStatus status = errorCode switch
                     {
-                        ZLibNative.ErrorCode.Ok => _state.AvailIn == 0 && _state.AvailOut > 0
-                            ? OperationStatus.NeedMoreData
-                            : _state.AvailOut == 0
-                                ? OperationStatus.DestinationTooSmall
-                                : OperationStatus.NeedMoreData,
-                        ZLibNative.ErrorCode.StreamEnd => OperationStatus.Done,
-                        ZLibNative.ErrorCode.BufError => _state.AvailOut == 0
+                        ZLibNative.ErrorCode.Ok or ZLibNative.ErrorCode.BufError => _state.AvailOut == 0
                             ? OperationStatus.DestinationTooSmall
                             : OperationStatus.NeedMoreData,
-                        ZLibNative.ErrorCode.DataError => OperationStatus.InvalidData,
+                        ZLibNative.ErrorCode.StreamEnd => OperationStatus.Done,
                         _ => OperationStatus.InvalidData
                     };
 
