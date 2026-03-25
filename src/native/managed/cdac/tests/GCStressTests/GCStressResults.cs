@@ -17,6 +17,7 @@ internal sealed partial class GCStressResults
     public int Passed { get; private set; }
     public int Failed { get; private set; }
     public int Skipped { get; private set; }
+    public string LogFilePath { get; private set; } = "";
     public List<string> FailureDetails { get; } = [];
     public List<string> SkipDetails { get; } = [];
 
@@ -37,7 +38,7 @@ internal sealed partial class GCStressResults
         if (!File.Exists(logFilePath))
             throw new FileNotFoundException($"GC stress results log not found: {logFilePath}");
 
-        var results = new GCStressResults();
+        var results = new GCStressResults { LogFilePath = logFilePath };
 
         foreach (string line in File.ReadLines(logFilePath))
         {

@@ -286,7 +286,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitEnableNoWayAssert, W("JitEnableNoWayAssert"
 
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitFramed, W("JitFramed"), 0, "Forces EBP frames")
 CONFIG_DWORD_INFO(INTERNAL_JitThrowOnAssertionFailure, W("JitThrowOnAssertionFailure"), 0, "Throw managed exception on assertion failures during JIT instead of failfast")
-CONFIG_DWORD_INFO(INTERNAL_JitGCStress, W("JitGCStress"), 0, "GC stress mode for jit")
+CONFIG_DWORD_INFO(INTERNAL_JitGCStress, W("JitGCStress"), 0, "cDAC stress mode for jit")
 CONFIG_DWORD_INFO(INTERNAL_JitHeartbeat, W("JitHeartbeat"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JITMinOpts, W("JITMinOpts"), 0, "Forces MinOpts")
 
@@ -747,9 +747,10 @@ CONFIG_STRING_INFO(INTERNAL_PerfTypesToLog, W("PerfTypesToLog"), "Log facility L
 CONFIG_STRING_INFO(INTERNAL_PrestubGC, W("PrestubGC"), "")
 CONFIG_STRING_INFO(INTERNAL_PrestubHalt, W("PrestubHalt"), "")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_RestrictedGCStressExe, W("RestrictedGCStressExe"), "")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCStressCdacFailFast, W("GCStressCdacFailFast"), 0, "If nonzero, assert on cDAC/runtime GC ref mismatch during GC stress (GCSTRESS_CDAC mode).")
-RETAIL_CONFIG_STRING_INFO(INTERNAL_GCStressCdacLogFile, W("GCStressCdacLogFile"), "Log file path for cDAC GC stress verification results.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_GCStressCdacStep, W("GCStressCdacStep"), 1, "Verify every Nth GC stress point (1=every point, 100=every 100th). Reduces overhead while maintaining code path diversity.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_CdacStressFailFast, W("CdacStressFailFast"), 0, "If nonzero, assert on cDAC/runtime GC ref mismatch during cDAC stress (GCSTRESS_CDAC mode).")
+RETAIL_CONFIG_STRING_INFO(INTERNAL_CdacStressLogFile, W("CdacStressLogFile"), "Log file path for cDAC cDAC stress verification results.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_CdacStressStep, W("CdacStressStep"), 1, "Verify every Nth cDAC stress point (1=every point, 100=every 100th). Reduces overhead while maintaining code path diversity.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_CdacStress, W("CdacStress"), 0, "Enable cDAC stack reference verification. Bit flags: 0x1=alloc points, 0x2=GC trigger points, 0x4=unique stacks only, 0x8=instruction points.")
 CONFIG_DWORD_INFO(INTERNAL_ReturnSourceTypeForTesting, W("ReturnSourceTypeForTesting"), 0, "Allows returning the (internal only) source type of an IL to Native mapping for debugging purposes")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RSStressLog, W("RSStressLog"), 0, "Allows turning on logging for RS startup")
 CONFIG_DWORD_INFO(INTERNAL_SBDumpOnNewIndex, W("SBDumpOnNewIndex"), 0, "Used for Syncblock debugging. It's been a while since any of those have been used.")

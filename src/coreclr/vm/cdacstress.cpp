@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// cdacgcstress.cpp
+// CdacStress.cpp
 //
-// Implements in-process cDAC loading and stack reference verification
-// for GC stress testing. When GCSTRESS_CDAC (0x20) is enabled, at each
-// instruction-level GC stress point we:
+// Implements in-process cDAC loading and stack reference verification.
+// Enabled via DOTNET_CdacStress (bit flags) or legacy DOTNET_GCStress=0x20.
+// At each enabled stress point we:
 //   1. Ask the cDAC to enumerate stack GC references via ISOSDacInterface::GetStackReferences
 //   2. Ask the runtime to enumerate stack GC references via StackWalkFrames + GcInfoDecoder
 //   3. Compare the two sets and report any mismatches
@@ -16,7 +16,7 @@
 
 #ifdef HAVE_GCCOVER
 
-#include "cdacgcstress.h"
+#include "CdacStress.h"
 #include "../../native/managed/cdac/inc/cdac_reader.h"
 #include "../../debug/datadescriptor-shared/inc/contract-descriptor.h"
 #include <xclrdata.h>
@@ -61,8 +61,14 @@ static ISOSDacInterface*    s_cdacSosDac = nullptr;     // Cached QI result for 
 static bool             s_initialized = false;
 static bool             s_failFast = true;
 static DWORD            s_step = 1;       // Verify every Nth stress point (1=every point)
+static DWORD            s_cdacStressLevel = 0; // Resolved CdacStressFlags
 static FILE*            s_logFile = nullptr;
 static CrstStatic       s_cdacLock;       // Serializes cDAC access from concurrent GC stress threads
+
+// Unique-stack filtering: hash set of previously seen stack traces.
+// Protected by s_cdacLock (already held during VerifyAtStressPoint).
+static const int UNIQUE_STACK_DEPTH = 8; // Number of return addresses to hash
+static SHash<NoRemoveSHashTraits<SetSHashTraits<SIZE_T>>>* s_seenStacks = nullptr;
 
 // Thread-local reentrancy guard — prevents infinite recursion when
 // allocations inside VerifyAtStressPoint trigger VerifyAtAllocPoint.
@@ -135,20 +141,48 @@ static int ReadThreadContextCallback(uint32_t threadId, uint32_t contextFlags, u
 // Initialization / Shutdown
 //-----------------------------------------------------------------------------
 
-bool CdacGcStress::IsEnabled()
+bool CdacStress::IsEnabled()
 {
+    // Check DOTNET_CdacStress first (new config)
+    DWORD cdacStress = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CdacStress);
+    if (cdacStress != 0)
+        return true;
+
+    // Fall back to legacy DOTNET_GCStress=0x20
     return (g_pConfig->GetGCStressLevel() & EEConfig::GCSTRESS_CDAC) != 0;
 }
 
-bool CdacGcStress::IsInitialized()
+bool CdacStress::IsInitialized()
 {
     return s_initialized;
 }
 
-bool CdacGcStress::Initialize()
+DWORD GetCdacStressLevel()
+{
+    return s_cdacStressLevel;
+}
+
+bool CdacStress::IsUniqueEnabled()
+{
+    return (s_cdacStressLevel & CDACSTRESS_UNIQUE) != 0;
+}
+
+bool CdacStress::Initialize()
 {
     if (!IsEnabled())
         return false;
+
+    // Resolve the stress level from DOTNET_CdacStress or legacy GCSTRESS_CDAC
+    DWORD cdacStress = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CdacStress);
+    if (cdacStress != 0)
+    {
+        s_cdacStressLevel = cdacStress;
+    }
+    else
+    {
+        // Legacy: GCSTRESS_CDAC maps to allocation-point verification
+        s_cdacStressLevel = CDACSTRESS_ALLOC;
+    }
 
     // Load mscordaccore_universal from next to coreclr
     PathString path;
@@ -226,10 +260,10 @@ bool CdacGcStress::Initialize()
     }
 
     // Read configuration for fail-fast behavior
-    s_failFast = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressCdacFailFast) != 0;
+    s_failFast = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CdacStressFailFast) != 0;
 
     // Read step interval for throttling verifications
-    s_step = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressCdacStep);
+    s_step = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CdacStressStep);
     if (s_step == 0)
         s_step = 1;
 
@@ -261,7 +295,7 @@ bool CdacGcStress::Initialize()
     }
 
     // Open log file if configured
-    CLRConfigStringHolder logFilePath(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCStressCdacLogFile));
+    CLRConfigStringHolder logFilePath(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CdacStressLogFile));
     if (logFilePath != nullptr)
     {
         SString sLogPath(logFilePath);
@@ -275,13 +309,19 @@ bool CdacGcStress::Initialize()
     }
 
     s_cdacLock.Init(CrstGCCover, CRST_DEFAULT);
+
+    if (IsUniqueEnabled())
+    {
+        s_seenStacks = new SHash<NoRemoveSHashTraits<SetSHashTraits<SIZE_T>>>();
+    }
+
     s_initialized = true;
     LOG((LF_GCROOTS, LL_INFO10, "CDAC GC Stress: Initialized successfully (failFast=%d, logFile=%s)\n",
         s_failFast, s_logFile != nullptr ? "yes" : "no"));
     return true;
 }
 
-void CdacGcStress::Shutdown()
+void CdacStress::Shutdown()
 {
     if (!s_initialized)
         return;
@@ -336,6 +376,12 @@ void CdacGcStress::Shutdown()
     {
         ::FreeLibrary(s_cdacModule);
         s_cdacModule = NULL;
+    }
+
+    if (s_seenStacks != nullptr)
+    {
+        delete s_seenStacks;
+        s_seenStacks = nullptr;
     }
 
     s_initialized = false;
@@ -603,7 +649,7 @@ static void ReportMismatch(const char* message, Thread* pThread, PCONTEXT regs)
 // Main entry point: verify at a GC stress point
 //-----------------------------------------------------------------------------
 
-bool CdacGcStress::ShouldSkipStressPoint()
+bool CdacStress::ShouldSkipStressPoint()
 {
     LONG count = InterlockedIncrement(&s_verifyCount);
 
@@ -613,7 +659,7 @@ bool CdacGcStress::ShouldSkipStressPoint()
     return (count % s_step) != 0;
 }
 
-void CdacGcStress::VerifyAtAllocPoint()
+void CdacStress::VerifyAtAllocPoint()
 {
     if (!s_initialized)
         return;
@@ -635,7 +681,7 @@ void CdacGcStress::VerifyAtAllocPoint()
     VerifyAtStressPoint(pThread, &ctx);
 }
 
-void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
+void CdacStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
 {
     _ASSERTE(s_initialized);
     _ASSERTE(pThread != nullptr);
@@ -652,6 +698,16 @@ void CdacGcStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     // Serialize cDAC access — the cDAC's ProcessedData cache and COM interfaces
     // are not thread-safe, and GC stress can fire on multiple threads.
     CrstHolder cdacLock(&s_cdacLock);
+
+    // Unique-stack filtering: use IP + SP as a stack identity.
+    // This skips re-verification at the same code location with the same stack depth.
+    if (IsUniqueEnabled() && s_seenStacks != nullptr)
+    {
+        SIZE_T stackHash = GetIP(regs) ^ (GetSP(regs) * 2654435761u);
+        if (s_seenStacks->LookupPtr(stackHash) != nullptr)
+            return;
+        s_seenStacks->Add(stackHash);
+    }
 
     // Set the thread context for the cDAC's ReadThreadContext callback.
     s_currentContext = regs;

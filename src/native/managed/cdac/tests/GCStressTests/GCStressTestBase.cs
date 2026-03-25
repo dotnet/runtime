@@ -47,10 +47,10 @@ public abstract class GCStressTestBase
             RedirectStandardError = true,
         };
         psi.Environment["CORE_ROOT"] = coreRoot;
-        psi.Environment["DOTNET_GCStress"] = "0x24";
-        psi.Environment["DOTNET_GCStressCdacFailFast"] = "0";
-        psi.Environment["DOTNET_GCStressCdacLogFile"] = logFile;
-        psi.Environment["DOTNET_GCStressCdacStep"] = "1";
+        psi.Environment["DOTNET_CdacStress"] = "0x1";
+        psi.Environment["DOTNET_CdacStressFailFast"] = "0";
+        psi.Environment["DOTNET_CdacStressLogFile"] = logFile;
+        psi.Environment["DOTNET_CdacStressStep"] = "1";
         psi.Environment["DOTNET_ContinueOnAssert"] = "1";
 
         using var process = Process.Start(psi)!;
@@ -106,7 +106,8 @@ public abstract class GCStressTestBase
             string details = string.Join("\n", results.FailureDetails);
             Assert.Fail(
                 $"GC stress test '{debuggeeName}' had {results.Failed} failure(s) " +
-                $"out of {results.TotalVerifications} verifications.\n{details}");
+                $"out of {results.TotalVerifications} verifications.\n" +
+                $"Log: {results.LogFilePath}\n{details}");
         }
 
         if (results.Skipped > 0)
@@ -114,7 +115,8 @@ public abstract class GCStressTestBase
             string details = string.Join("\n", results.SkipDetails);
             Assert.Fail(
                 $"GC stress test '{debuggeeName}' had {results.Skipped} skip(s) " +
-                $"out of {results.TotalVerifications} verifications.\n{details}");
+                $"out of {results.TotalVerifications} verifications.\n" +
+                $"Log: {results.LogFilePath}\n{details}");
         }
     }
 
