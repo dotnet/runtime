@@ -49,6 +49,9 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
                     includedMethods.Add (args[i + 1]);
                     i++;
                     break;
+                case "-verbosity":
+                    i++;
+                    break;
                 default:
                     throw new ArgumentException($"Invalid argument '{option}'.");
             }
