@@ -1401,7 +1401,8 @@ namespace System.Text.RegularExpressions
                     RegexNode? startingNode = children[startingIndex].FindBranchOneOrMultiStart();
                     if (startingNode is null)
                     {
-                        return alternation;
+                        // Skip non-text branches; later consecutive text branches may still share a prefix.
+                        continue;
                     }
 
                     RegexOptions startingNodeOptions = startingNode.Options;

@@ -273,6 +273,14 @@ namespace System.Text.RegularExpressions.Tests
                     yield return (Case("(?>a)b"), "cb", options, 0, 2, false, "");
                     yield return (Case("(?>[abc])x"), "bx", options, 0, 2, true, "bx");
                     yield return (Case("(?>abc)d"), "abcd", options, 0, 4, true, "abcd");
+
+                    // Shared-prefix extraction past non-text branches
+                    yield return (Case("[^x]|ab|ac"), "a", options, 0, 1, true, "a");
+                    yield return (Case("[^x]|ab|ac"), "ab", options, 0, 2, true, "a");
+                    yield return (Case("[^x]|ab|ac"), "ac", options, 0, 2, true, "a");
+                    yield return (Case("[^x]|ab|ac"), "x", options, 0, 1, false, "");
+                    yield return (Case("[x]|ab|ac"), "ab", options, 0, 2, true, "ab");
+                    yield return (Case("[x]|ab|ac"), "ac", options, 0, 2, true, "ac");
                 }
             }
 
