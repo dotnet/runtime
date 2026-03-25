@@ -6,6 +6,7 @@ permissions:
   issues: read
   pull-requests: read
 
+
 network:
   allowed:
     - defaults
@@ -14,6 +15,7 @@ tools:
   github:
     mode: remote
     toolsets: [default, search]
+  web-fetch:
 
 checkout:
   fetch-depth: 50

@@ -22,7 +22,7 @@
 #
 # Review pull request changes for correctness, performance, and consistency with project conventions
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"5b123b69c3a6e841ba33a0a86bb06e6712dc6ddd45b6b88b450a32e817fa6f77","compiler_version":"v0.63.1","strict":true,"agent_id":"copilot","agent_model":"claude-opus-4.6"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"7f84227b06213ec31831335fb4cc2e40eb827273fac6455fc43725d476dedf06","compiler_version":"v0.63.1","strict":true,"agent_id":"copilot","agent_model":"claude-opus-4.6"}
 
 name: "Code Review"
 "on":
