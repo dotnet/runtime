@@ -441,7 +441,4 @@
   <data name="StripDebugInfoOption" xml:space="preserve">
     <value>Strip debug info from the R2R image.</value>
   </data>
-  <data name="DedupILBodiesOption" xml:space="preserve">
-    <value>Deduplicate identical IL method bodies in the output image.</value>
-  </data>
 </root>

@@ -65,7 +65,6 @@ namespace ILCompiler.DependencyAnalysis
         public bool IsComponentModule;
         public bool StripInliningInfo;
         public bool StripDebugInfo;
-        public bool DedupILBodies;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -1050,12 +1049,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public CopiedMethodILNode CopiedMethodIL(EcmaMethod method)
         {
-            CopiedMethodILNode node = _copiedMethodIL.GetOrAdd(method);
-            if (!OptimizationFlags.DedupILBodies)
-                return node;
             byte[] bodyBytes = CopiedMethodILNode.ReadBodyBytes(method);
-            node = _copiedMethodILDedup.GetOrAdd(bodyBytes, node);
-            return node;
+            return _copiedMethodILDedup.GetOrAdd(bodyBytes, _ => _copiedMethodIL.GetOrAdd(method));
         }
 
         private NodeCache<ModuleAndIntValueKey, CopiedFieldRvaNode> _copiedFieldRvas;
