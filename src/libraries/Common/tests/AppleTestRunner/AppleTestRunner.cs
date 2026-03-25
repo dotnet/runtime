@@ -24,6 +24,7 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
     public extern static void mono_ios_set_summary (string value);
 
     private static List<string> s_testLibs = new List<string>();
+    private static List<Assembly>? s_testAssemblies;
     private static string? s_MainTestName;
 
     public static async Task<int> Main(string[] args)
@@ -45,8 +46,20 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 
         if (s_testLibs.Count < 1)
         {
-            // Look for *.Tests.dll files if target test suites are not set via "testlib:" arguments
-            s_testLibs = Directory.GetFiles(Environment.CurrentDirectory, "*.Tests.dll").ToList();
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                // NativeAOT: test assemblies are statically linked into the native binary,
+                // so there are no DLL files on disk. Discover them from loaded assemblies.
+                s_testAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+                    .Where(a => a.GetName().Name?.EndsWith(".Tests") == true)
+                    .ToList();
+                s_testLibs = s_testAssemblies.Select(a => a.GetName().Name!).ToList();
+            }
+            else
+            {
+                // Look for *.Tests.dll files if target test suites are not set via "testlib:" arguments
+                s_testLibs = Directory.GetFiles(Environment.CurrentDirectory, "*.Tests.dll").ToList();
+            }
         }
 
         if (s_testLibs.Count < 1)
@@ -110,9 +123,19 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 
     protected override IEnumerable<TestAssemblyInfo> GetTestAssemblies()
     {
-        foreach (string file in s_testLibs)
+        if (s_testAssemblies is not null)
         {
-            yield return new TestAssemblyInfo(Assembly.LoadFrom(file), file);
+            foreach (Assembly assembly in s_testAssemblies)
+            {
+                yield return new TestAssemblyInfo(assembly, assembly.GetName().Name!);
+            }
+        }
+        else
+        {
+            foreach (string file in s_testLibs)
+            {
+                yield return new TestAssemblyInfo(Assembly.LoadFrom(file), file);
+            }
         }
     }
 
