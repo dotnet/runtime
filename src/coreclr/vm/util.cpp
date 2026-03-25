@@ -244,7 +244,11 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     case ICorDebugInfo::REGNUM_RCX: return offsetof(CONTEXT, Rcx);
     case ICorDebugInfo::REGNUM_RDX: return offsetof(CONTEXT, Rdx);
     case ICorDebugInfo::REGNUM_RBX: return offsetof(CONTEXT, Rbx);
-    case ICorDebugInfo::REGNUM_RSP: return offsetof(CONTEXT, Rsp);
+    // TODO: AMBIENT_SP isn't necessarily the same value as RSP (see x86 TODO above).
+    // This is a best-effort approximation matching the pattern used by other platforms.
+    case ICorDebugInfo::REGNUM_RSP:
+    case ICorDebugInfo::REGNUM_AMBIENT_SP:
+                                    return offsetof(CONTEXT, Rsp);
     case ICorDebugInfo::REGNUM_RBP: return offsetof(CONTEXT, Rbp);
     case ICorDebugInfo::REGNUM_RSI: return offsetof(CONTEXT, Rsi);
     case ICorDebugInfo::REGNUM_RDI: return offsetof(CONTEXT, Rdi);

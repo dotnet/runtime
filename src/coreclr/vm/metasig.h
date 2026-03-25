@@ -214,6 +214,10 @@ DEFINE_METASIG(SM(RefByte_RefByte_UIntPtr_RetVoid, r(b) r(b) U, v))
 DEFINE_METASIG(SM(RefByte_Byte_UIntPtr_RetVoid, r(b) b U, v))
 DEFINE_METASIG(SM(RefByte_UIntPtr_RetVoid, r(b) U, v))
 DEFINE_METASIG(SM(PtrVoid_Byte_UInt_RetVoid, P(v) b K, v))
+#ifdef FEATURE_COMINTEROP
+DEFINE_METASIG_T(SM(PtrICustomQueryInterface_PtrGuid_PtrIntPtr_PtrException_RetInt, P(C(ICUSTOM_QUERYINTERFACE)) P(g(GUID)) P(I) P(C(EXCEPTION)), i))
+DEFINE_METASIG_T(SM(PtrPropertyInfo_PtrException_RetInt, P(C(PROPERTY_INFO)) P(C(EXCEPTION)), i))
+#endif // FEATURE_COMINTEROP
 DEFINE_METASIG(SM(IntPtr_RefObj_IntPtr_RetVoid, I r(j) I, v))
 DEFINE_METASIG(SM(IntPtr_RefObj_IntPtr_Int_RetVoid, I r(j) I i,v))
 DEFINE_METASIG(SM(IntPtr_IntPtr_Int_Int_IntPtr_RetVoid, I I i i I, v))
