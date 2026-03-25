@@ -250,7 +250,7 @@ HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astr
                     STRINGREF MemberNameObj = NULL;
                     GCPROTECT_BEGIN(MemberNameObj)
                     {
-                        UnmanagedCallersOnlyCaller getDispatchParameterInfoName(METHOD__STUBHELPERS__GET_DISPATCH_PARAMETER_INFO_NAME);
+                        UnmanagedCallersOnlyCaller getDispatchParameterInfoName(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PARAMETER_INFO_NAME);
                         getDispatchParameterInfoName.InvokeThrowing(&ParamInfoObj, &MemberNameObj);
 
                         if (MemberNameObj != NULL)
@@ -300,7 +300,7 @@ PTRARRAYREF DispatchMemberInfo::GetParameters()
     GCPROTECT_BEGIN(memberInfoObject)
     GCPROTECT_BEGIN(ParamArray)
     {
-        UnmanagedCallersOnlyCaller getDispatchMemberParameters(METHOD__STUBHELPERS__GET_DISPATCH_MEMBER_PARAMETERS);
+        UnmanagedCallersOnlyCaller getDispatchMemberParameters(METHOD__IDISPATCHHELPERS__GET_DISPATCH_MEMBER_PARAMETERS);
         getDispatchMemberParameters.InvokeThrowing(&memberInfoObject, &ParamArray);
     }
     GCPROTECT_END();
@@ -415,7 +415,7 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
         if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__METHOD))
         {
             INT_PTR methodHandle = 0;
-            UnmanagedCallersOnlyCaller getDispatchMethodDesc(METHOD__STUBHELPERS__GET_DISPATCH_METHOD_DESC);
+            UnmanagedCallersOnlyCaller getDispatchMethodDesc(METHOD__IDISPATCHHELPERS__GET_DISPATCH_METHOD_DESC);
             getDispatchMethodDesc.InvokeThrowing(&MemberInfoObj, &methodHandle);
 
             MethodDesc* pMeth = reinterpret_cast<MethodDesc*>(methodHandle);
@@ -431,7 +431,7 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
         else if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__RT_FIELD_INFO))
         {
             INT_PTR fieldHandle = 0;
-            UnmanagedCallersOnlyCaller getDispatchFieldDesc(METHOD__STUBHELPERS__GET_DISPATCH_FIELD_DESC);
+            UnmanagedCallersOnlyCaller getDispatchFieldDesc(METHOD__IDISPATCHHELPERS__GET_DISPATCH_FIELD_DESC);
             getDispatchFieldDesc.InvokeThrowing(&MemberInfoObj, &fieldHandle);
 
             FieldDesc* pFld = reinterpret_cast<FieldDesc*>(fieldHandle);
@@ -444,10 +444,10 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             REFLECTMODULEBASEREF module = NULL;
             GCPROTECT_BEGIN(module)
             {
-                UnmanagedCallersOnlyCaller getDispatchPropertyToken(METHOD__STUBHELPERS__GET_DISPATCH_PROPERTY_TOKEN);
+                UnmanagedCallersOnlyCaller getDispatchPropertyToken(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTY_TOKEN);
                 getDispatchPropertyToken.InvokeThrowing(&MemberInfoObj, &propTok);
 
-                UnmanagedCallersOnlyCaller getDispatchPropertyModule(METHOD__STUBHELPERS__GET_DISPATCH_PROPERTY_MODULE);
+                UnmanagedCallersOnlyCaller getDispatchPropertyModule(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTY_MODULE);
                 getDispatchPropertyModule.InvokeThrowing(&MemberInfoObj, &module);
             }
             GCPROTECT_END();
@@ -521,7 +521,7 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
             STRINGREF strObj = NULL;
             GCPROTECT_BEGIN(strObj)
             {
-                UnmanagedCallersOnlyCaller getDispatchMemberInfoName(METHOD__STUBHELPERS__GET_DISPATCH_MEMBER_INFO_NAME);
+                UnmanagedCallersOnlyCaller getDispatchMemberInfoName(METHOD__IDISPATCHHELPERS__GET_DISPATCH_MEMBER_INFO_NAME);
                 getDispatchMemberInfoName.InvokeThrowing(&MemberInfoObj, &strObj);
                 _ASSERTE(strObj != NULL);
 
@@ -568,7 +568,7 @@ void DispatchMemberInfo::DetermineMemberType()
     GCPROTECT_BEGIN(MemberInfoObj);
     {
         INT32 memberType = 0;
-        UnmanagedCallersOnlyCaller getDispatchMemberInfoType(METHOD__STUBHELPERS__GET_DISPATCH_MEMBER_INFO_TYPE);
+        UnmanagedCallersOnlyCaller getDispatchMemberInfoType(METHOD__IDISPATCHHELPERS__GET_DISPATCH_MEMBER_INFO_TYPE);
         getDispatchMemberInfoType.InvokeThrowing(&MemberInfoObj, &memberType);
         m_enumType = (EnumMemberTypes)memberType;
     }
@@ -626,7 +626,7 @@ void DispatchMemberInfo::DetermineCultureAwareness()
         GCPROTECT_BEGIN(LcIdConvAttrObj)
         EX_TRY
         {
-            UnmanagedCallersOnlyCaller hasDispatchCustomAttribute(METHOD__STUBHELPERS__HAS_DISPATCH_CUSTOM_ATTRIBUTE);
+            UnmanagedCallersOnlyCaller hasDispatchCustomAttribute(METHOD__IDISPATCHHELPERS__HAS_DISPATCH_CUSTOM_ATTRIBUTE);
             hasDispatchCustomAttribute.InvokeThrowing(&MemberInfoObj, &LcIdConvAttrObj, &hasAttribute);
         }
         EX_CATCH
@@ -663,7 +663,7 @@ void DispatchMemberInfo::SetUpParamMarshalerInfo()
         if (CoreLibBinder::IsClass(pMemberInfoMT, CLASS__METHOD))
         {
             INT_PTR methodHandle = 0;
-            UnmanagedCallersOnlyCaller getDispatchMethodDesc(METHOD__STUBHELPERS__GET_DISPATCH_METHOD_DESC);
+            UnmanagedCallersOnlyCaller getDispatchMethodDesc(METHOD__IDISPATCHHELPERS__GET_DISPATCH_METHOD_DESC);
             getDispatchMethodDesc.InvokeThrowing(&MemberInfoObj, &methodHandle);
 
             MethodDesc* pMeth = reinterpret_cast<MethodDesc*>(methodHandle);
@@ -677,7 +677,7 @@ void DispatchMemberInfo::SetUpParamMarshalerInfo()
         else if (CoreLibBinder::IsClass(pMemberInfoMT, CLASS__PROPERTY))
         {
             INT_PTR setterMethodHandle = 0;
-            UnmanagedCallersOnlyCaller getDispatchPropertyAccessor(METHOD__STUBHELPERS__GET_DISPATCH_PROPERTY_ACCESSOR);
+            UnmanagedCallersOnlyCaller getDispatchPropertyAccessor(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTY_ACCESSOR);
             getDispatchPropertyAccessor.InvokeThrowing(&MemberInfoObj, CLR_BOOL_ARG(FALSE), CLR_BOOL_ARG(FALSE), &setterMethodHandle);
 
             if (setterMethodHandle != 0)
@@ -1493,7 +1493,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                     if (NumArgs != 0)
                         COMPlusThrowHR(DISP_E_BADPARAMCOUNT);
 
-                    UnmanagedCallersOnlyCaller getDispatchFieldValue(METHOD__STUBHELPERS__GET_DISPATCH_FIELD_VALUE);
+                    UnmanagedCallersOnlyCaller getDispatchFieldValue(METHOD__IDISPATCHHELPERS__GET_DISPATCH_FIELD_VALUE);
                     getDispatchFieldValue.InvokeThrowing(&pObjs->MemberInfo, &pObjs->Target, &pObjs->RetVal);
                 }
                 else if (wFlags & (DISPATCH_PROPERTYPUT | DISPATCH_PROPERTYPUTREF))
@@ -1504,7 +1504,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                     if (NumNamedArgs != 0)
                         COMPlusThrowHR(DISP_E_NONAMEDARGS);
 
-                    UnmanagedCallersOnlyCaller setDispatchFieldValue(METHOD__STUBHELPERS__SET_DISPATCH_FIELD_VALUE);
+                    UnmanagedCallersOnlyCaller setDispatchFieldValue(METHOD__IDISPATCHHELPERS__SET_DISPATCH_FIELD_VALUE);
                     setDispatchFieldValue.InvokeThrowing(
                         &pObjs->MemberInfo,
                         &pObjs->Target,
@@ -1529,7 +1529,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                     if (!IsPropertyAccessorVisible(false, &pObjs->MemberInfo))
                         COMPlusThrowHR(DISP_E_MEMBERNOTFOUND);
 
-                    UnmanagedCallersOnlyCaller getDispatchPropertyValue(METHOD__STUBHELPERS__GET_DISPATCH_PROPERTY_VALUE);
+                    UnmanagedCallersOnlyCaller getDispatchPropertyValue(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTY_VALUE);
                     getDispatchPropertyValue.InvokeThrowing(
                         &pObjs->MemberInfo,
                         &pObjs->Target,
@@ -1544,7 +1544,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                     if (!IsPropertyAccessorVisible(true, &pObjs->MemberInfo))
                         COMPlusThrowHR(DISP_E_MEMBERNOTFOUND);
 
-                    UnmanagedCallersOnlyCaller setDispatchPropertyValue(METHOD__STUBHELPERS__SET_DISPATCH_PROPERTY_VALUE);
+                    UnmanagedCallersOnlyCaller setDispatchPropertyValue(METHOD__IDISPATCHHELPERS__SET_DISPATCH_PROPERTY_VALUE);
                     setDispatchPropertyValue.InvokeThrowing(
                         &pObjs->MemberInfo,
                         &pObjs->Target,
@@ -1570,7 +1570,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                 if (!(wFlags & (DISPATCH_METHOD | DISPATCH_PROPERTYGET)))
                     COMPlusThrowHR(DISP_E_MEMBERNOTFOUND);
 
-                UnmanagedCallersOnlyCaller invokeDispatchMethodInfo(METHOD__STUBHELPERS__INVOKE_DISPATCH_METHOD_INFO);
+                UnmanagedCallersOnlyCaller invokeDispatchMethodInfo(METHOD__IDISPATCHHELPERS__INVOKE_DISPATCH_METHOD_INFO);
                 invokeDispatchMethodInfo.InvokeThrowing(
                     &pObjs->MemberInfo,
                     &pObjs->Target,
@@ -1619,7 +1619,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
 
         pObjs->TmpObj = NULL; // @TODO(DM): Look into setting the byref modifiers.
 
-        UnmanagedCallersOnlyCaller invokeDispatchReflectMember(METHOD__STUBHELPERS__INVOKE_DISPATCH_REFLECT_MEMBER);
+        UnmanagedCallersOnlyCaller invokeDispatchReflectMember(METHOD__IDISPATCHHELPERS__INVOKE_DISPATCH_REFLECT_MEMBER);
         invokeDispatchReflectMember.InvokeThrowing(
             &pObjs->ReflectionObj,
             &pObjs->MemberName,
@@ -2303,7 +2303,7 @@ void DispatchInfo::SetUpNamedParamArray(DispatchMemberInfo *pMemberInfo, DISPID 
                         STRINGREF MemberNameObj = NULL;
                         GCPROTECT_BEGIN(MemberNameObj)
                         {
-                            UnmanagedCallersOnlyCaller getDispatchParameterInfoName(METHOD__STUBHELPERS__GET_DISPATCH_PARAMETER_INFO_NAME);
+                            UnmanagedCallersOnlyCaller getDispatchParameterInfoName(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PARAMETER_INFO_NAME);
                             getDispatchParameterInfoName.InvokeThrowing(&ParamInfoObj, &MemberNameObj);
 
                             if (MemberNameObj != NULL)
@@ -2379,7 +2379,7 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
         // Get the property's MethodDesc
         MethodDesc* pMDForProperty = NULL;
         INT_PTR methodHandle = 0;
-        UnmanagedCallersOnlyCaller getDispatchPropertyAccessor(METHOD__STUBHELPERS__GET_DISPATCH_PROPERTY_ACCESSOR);
+        UnmanagedCallersOnlyCaller getDispatchPropertyAccessor(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTY_ACCESSOR);
         getDispatchPropertyAccessor.InvokeThrowing(
             pMemberInfo,
             CLR_BOOL_ARG(!fIsSetter),
@@ -2777,7 +2777,7 @@ PTRARRAYREF DispatchInfo::RetrievePropList()
 
     GCPROTECT_BEGIN(orRetVal);
     GCPROTECT_BEGIN(TargetObj);
-    UnmanagedCallersOnlyCaller getDispatchProperties(METHOD__STUBHELPERS__GET_DISPATCH_PROPERTIES);
+    UnmanagedCallersOnlyCaller getDispatchProperties(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTIES);
     getDispatchProperties.InvokeThrowing(&TargetObj, BINDER_DefaultLookup, &orRetVal);
 
     GCPROTECT_END();
@@ -2804,7 +2804,7 @@ PTRARRAYREF DispatchInfo::RetrieveFieldList()
 
     GCPROTECT_BEGIN(orRetVal);
     GCPROTECT_BEGIN(TargetObj);
-    UnmanagedCallersOnlyCaller getDispatchFields(METHOD__STUBHELPERS__GET_DISPATCH_FIELDS);
+    UnmanagedCallersOnlyCaller getDispatchFields(METHOD__IDISPATCHHELPERS__GET_DISPATCH_FIELDS);
     getDispatchFields.InvokeThrowing(&TargetObj, BINDER_DefaultLookup, &orRetVal);
 
     GCPROTECT_END();
@@ -2831,7 +2831,7 @@ PTRARRAYREF DispatchInfo::RetrieveMethList()
 
     GCPROTECT_BEGIN(orRetVal);
     GCPROTECT_BEGIN(TargetObj);
-    UnmanagedCallersOnlyCaller getDispatchMethods(METHOD__STUBHELPERS__GET_DISPATCH_METHODS);
+    UnmanagedCallersOnlyCaller getDispatchMethods(METHOD__IDISPATCHHELPERS__GET_DISPATCH_METHODS);
     getDispatchMethods.InvokeThrowing(&TargetObj, BINDER_DefaultLookup, &orRetVal);
 
     GCPROTECT_END();
@@ -2917,7 +2917,7 @@ void DispatchInfo::GetExcepInfoForInvocationExcep(OBJECTREF objException, EXCEPI
     GCPROTECT_BEGIN(InnerExcep)
     GCPROTECT_BEGIN(objException)
     {
-        UnmanagedCallersOnlyCaller getDispatchInnerException(METHOD__STUBHELPERS__GET_DISPATCH_INNER_EXCEPTION);
+        UnmanagedCallersOnlyCaller getDispatchInnerException(METHOD__IDISPATCHHELPERS__GET_DISPATCH_INNER_EXCEPTION);
         getDispatchInnerException.InvokeThrowing(&objException, &InnerExcep);
 
         // If the inner exception object is null then we can't get any info.
@@ -3210,7 +3210,7 @@ PTRARRAYREF DispatchExInfo::RetrievePropList()
     OBJECTREF TargetObj = GetReflectionObject();
     GCPROTECT_BEGIN(oPropList);
     GCPROTECT_BEGIN(TargetObj);
-    UnmanagedCallersOnlyCaller getDispatchProperties(METHOD__STUBHELPERS__GET_DISPATCH_PROPERTIES);
+    UnmanagedCallersOnlyCaller getDispatchProperties(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTIES);
     getDispatchProperties.InvokeThrowing(&TargetObj, BINDER_DefaultLookup, &oPropList);
 
     GCPROTECT_END();
@@ -3235,7 +3235,7 @@ PTRARRAYREF DispatchExInfo::RetrieveFieldList()
     OBJECTREF TargetObj = GetReflectionObject();
     GCPROTECT_BEGIN(oFieldList);
     GCPROTECT_BEGIN(TargetObj);
-    UnmanagedCallersOnlyCaller getDispatchFields(METHOD__STUBHELPERS__GET_DISPATCH_FIELDS);
+    UnmanagedCallersOnlyCaller getDispatchFields(METHOD__IDISPATCHHELPERS__GET_DISPATCH_FIELDS);
     getDispatchFields.InvokeThrowing(&TargetObj, BINDER_DefaultLookup, &oFieldList);
 
     GCPROTECT_END();
@@ -3260,7 +3260,7 @@ PTRARRAYREF DispatchExInfo::RetrieveMethList()
     OBJECTREF TargetObj = GetReflectionObject();
     GCPROTECT_BEGIN(oMethList);
     GCPROTECT_BEGIN(TargetObj);
-    UnmanagedCallersOnlyCaller getDispatchMethods(METHOD__STUBHELPERS__GET_DISPATCH_METHODS);
+    UnmanagedCallersOnlyCaller getDispatchMethods(METHOD__IDISPATCHHELPERS__GET_DISPATCH_METHODS);
     getDispatchMethods.InvokeThrowing(&TargetObj, BINDER_DefaultLookup, &oMethList);
 
     GCPROTECT_END();

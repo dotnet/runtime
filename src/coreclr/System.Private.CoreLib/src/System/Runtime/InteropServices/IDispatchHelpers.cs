@@ -8,9 +8,9 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
-namespace System.StubHelpers
+namespace System.Runtime.InteropServices
 {
-    internal static partial class StubHelpers
+    internal static class IDispatchHelpers
     {
         private const int DispatchExPropertyCanRead = 1;
         private const int DispatchExPropertyCanWrite = 2;
