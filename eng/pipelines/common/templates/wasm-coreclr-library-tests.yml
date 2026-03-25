@@ -44,24 +44,21 @@ jobs:
       # - explicitly requested
       # - libraries or illink changed and no wasm specific changes
       - name: shouldRunSmokeOnlyVar
-        ${{ if or(containsValue(parameters.scenarios, 'WasmTestOnFirefox'), containsValue(parameters.scenarios, 'WasmTestOnV8')) }}:
-          value: true
-        ${{ else }}:
-          value: $[
-            or(
-              eq('${{ parameters.shouldRunSmokeOnly }}', 'true'),
-              and(
-                eq('${{ parameters.shouldRunSmokeOnly }}', 'onLibrariesAndIllinkChanges'),
-                ne(variables['wasmDarcDependenciesChanged'], true),
-                or(
-                  eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-                  eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true)
-                ),
-                ne(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true),
-                ne(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true)
-              )
+        value: $[
+          or(
+            eq('${{ parameters.shouldRunSmokeOnly }}', 'true'),
+            and(
+              eq('${{ parameters.shouldRunSmokeOnly }}', 'onLibrariesAndIllinkChanges'),
+              ne(variables['wasmDarcDependenciesChanged'], true),
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true)
+              ),
+              ne(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true),
+              ne(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true)
             )
-            ]
+          )
+          ]
       - name: _wasmRunSmokeTestsOnlyArg
         value: /p:RunSmokeTestsOnly=$(shouldRunSmokeOnlyVar)
       - name: chromeInstallArg
