@@ -22,7 +22,7 @@ namespace System.Threading
         private static Waiter? t_waiterForCurrentThread;
 
         // Takes the cached Waiter for this thread (or allocates a new one) and removes the
-        // current wait's cached Waiter from the thread-static so that any overlapping or reentrant
+        // current wait's cached Waiter from the thread-static so that any reentrant
         // Monitor.Wait (for example, from a SynchronizationContext message pump) gets its own Waiter with a distinct AutoResetEvent.
         private static Waiter GetWaiterForCurrentThread()
         {
