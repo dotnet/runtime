@@ -644,6 +644,14 @@ void Lowering::AfterLowerBlocks()
             JITDUMP("Replaced [%06u] with a temporary:\n", Compiler::dspTreeID(node));
             DISPNODE(node);
             DISPNODE(lclNode);
+
+            if ((node->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::MultiplyUsed)
+            {
+                JITDUMP("Transferring multiply-used flag from old node to new temporary.\n");
+                node->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+                SetMultiplyUsed(lclNode);
+            }
+
             return lclNode;
         }
 
