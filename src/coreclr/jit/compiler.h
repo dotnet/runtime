@@ -502,6 +502,8 @@ enum class AddressExposedReason
     EXTERNALLY_VISIBLE_IMPLICITLY, // Local is visible externally without explicit escape in JIT IR.
                                    // For example because it is used by GC or is the outgoing arg area
                                    // that belongs to callees.
+    SMALL_TYPE_PARTIAL_DEF,        // A small-typed local has a partial def that doesn't cover the full
+                                   // local, so we must treat it as normalize-on-load.
 };
 
 #endif // DEBUG
@@ -2238,6 +2240,98 @@ public:
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoops* loops);
 #endif // DEBUG
+};
+
+class FlowGraphTryRegions;
+
+// Represents a try region in a method. Currently fairly lightweight.
+class FlowGraphTryRegion
+{
+    friend class FlowGraphTryRegions;
+    FlowGraphTryRegions* m_regions;
+    FlowGraphTryRegion* m_parent;
+    EHblkDsc* m_ehDsc;
+    BitVec m_blocks;
+
+    bool m_requiresRuntimeResumption;
+
+    FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* regions);
+
+    void SetRequiresRuntimeResumption()
+    {
+        m_requiresRuntimeResumption = true;
+    }
+
+    bool IsMutualProtectWith(FlowGraphTryRegion* other)
+    {
+        return EHblkDsc::ebdIsSameTry(this->m_ehDsc, other->m_ehDsc);
+    }
+
+public:
+
+    template<typename TFunc>
+    BasicBlockVisit VisitTryRegionBlocksReversePostOrder(TFunc func);
+
+    unsigned NumBlocks() const;
+
+    bool HasCatchHandler() const
+    {
+        return m_ehDsc->HasCatchHandler();
+    }
+
+    // True if resumption from a catch in this or in an enclosed
+    // try region requires runtime support.
+    //
+    bool RequiresRuntimeResumption() const
+    {
+        return m_requiresRuntimeResumption;
+    }
+
+#ifdef DEBUG
+    static void Dump(FlowGraphTryRegion* region);
+#endif
+};
+
+// Represents the try regions in a method
+class FlowGraphTryRegions
+{
+private:
+    FlowGraphDfsTree* m_dfsTree;
+    // Collection of try regions that were found, indexed by EhID
+    jitstd::vector<FlowGraphTryRegion*> m_tryRegions;
+
+    FlowGraphTryRegions(FlowGraphDfsTree* dfs, unsigned numRegions);
+
+    unsigned m_numRegions;
+    unsigned m_numTryCatchRegions;
+    bool m_tryRegionsIncludeHandlerBlocks;
+
+public:
+
+    static FlowGraphTryRegions* Build(Compiler* comp, FlowGraphDfsTree* dfs, bool includeHandlerBlocks = false);
+
+    BitVecTraits GetBlockBitVecTraits()
+    {
+        return m_dfsTree->PostOrderTraits();
+    }
+
+    Compiler* GetCompiler() const
+    {
+        return m_dfsTree->GetCompiler();
+    }
+
+    FlowGraphTryRegion* GetTryRegionByHeader(BasicBlock* block);
+
+    unsigned NumTryRegions() const { return m_numRegions; }
+    unsigned NumTryCatchRegions() const { return m_numTryCatchRegions; }
+
+    FlowGraphDfsTree* GetDfsTree() const { return m_dfsTree; }
+
+    bool TryRegionsIncludeHandlerBlocks() const { return m_tryRegionsIncludeHandlerBlocks; }
+
+#ifdef DEBUG
+    static void Dump(FlowGraphTryRegions* regions);
+#endif
 };
 
 // Represents the dominator tree of the flow graph.
@@ -4120,6 +4214,8 @@ public:
     // located on the original method stack frame.
     bool lvaIsOSRLocal(unsigned varNum);
 
+    int lvaOSRLocalTier0FrameOffset(unsigned varNum);
+
     //------------------------ For splitting types ----------------------------
 
     void lvaInitTypeRef();
@@ -4207,6 +4303,17 @@ public:
     unsigned lvaLclStackHomeSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
     ValueSize lvaLclValueSize(unsigned varNum);
+
+    //-----------------------------------------------------------------------------
+    // lvaIsUnknownSizeLocal: Does the local have an unknown size at compile-time?
+    //
+    // Returns:
+    //     True if the local does not have an exact size, else false.
+    //
+    bool lvaIsUnknownSizeLocal(unsigned varNum)
+    {
+        return !lvaLclValueSize(varNum).IsExact();
+    }
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
 
@@ -4603,6 +4710,8 @@ protected:
     bool impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
+
+    bool impCanReorderWithNullCheck(GenTree* tree);
 
     bool impCanPInvokeInline();
     bool impCanPInvokeInlineCallSite(BasicBlock* block);
@@ -6200,6 +6309,8 @@ public:
 
 #ifdef TARGET_WASM
     FlowGraphDfsTree* fgWasmDfs();
+    PhaseStatus fgWasmEhFlow();
+    void fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks, unsigned regionIndex, unsigned catchRetIndexLocalNum);
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
 #ifdef DEBUG
@@ -6223,6 +6334,9 @@ public:
 
     template <typename TFunc>
     void fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func);
+
+    template <typename TFunc>
+    void fgVisitBlocksInTryAwareLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphTryRegions* tryRegions, FlowGraphNaturalLoops* loops, TFunc func);
 
     void fgRemoveReturnBlock(BasicBlock* block);
 
@@ -6874,6 +6988,8 @@ private:
 public:
     bool fgIsBigOffset(size_t offset);
     bool IsValidLclAddr(unsigned lclNum, unsigned offset);
+    bool IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize accessSize);
+    bool IsWideAccess(unsigned lclNum, unsigned offset, ValueSize accessSize);
     bool IsPotentialGCSafePoint(GenTree* tree) const;
 
 private:
@@ -11443,6 +11559,7 @@ public:
         unsigned m_wideIndir;
         unsigned m_stressPoisonImplicitByrefs;
         unsigned m_externallyVisibleImplicitly;
+        unsigned m_smallTypePartialDef;
 
     public:
         void RecordLocal(const LclVarDsc* varDsc);
@@ -12192,6 +12309,8 @@ public:
             case GT_NOP:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
+            case GT_WASM_THROW_REF:
+            case GT_WASM_JEXCEPT:
                 break;
 
             // Lclvar unary operators

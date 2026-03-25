@@ -12,11 +12,12 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
+
 using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
+
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
-using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -441,17 +442,15 @@ namespace ILCompiler.ObjectWriter
                     RecordMethodSignature(signature);
                 }
 
-                if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayout.Separate)
+
+                if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
                 {
+                    Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
+
                     // Record only information we can get from the MethodDesc here. The actual
                     // body will be emitted by the call to EmitData() at the end
                     // of this loop iteration.
-                    RecordMethodDeclaration((ISymbolDefinitionNode)node, methodNode.Method);
-                }
-                else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
-                {
-                    // TODO-WASM: handle AssemblyStubNode properly here instead of skipping
-                    continue;
+                    RecordMethodDeclaration(codeNode);
                 }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
@@ -654,7 +653,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethodDeclaration(ISymbolDefinitionNode node, MethodDesc desc)
+        private protected virtual void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }

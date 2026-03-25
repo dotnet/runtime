@@ -8,6 +8,8 @@ enum class WasmValueType : unsigned
     I64,
     F32,
     F64,
+    V128,
+    ExnRef,
     Count,
 
     First = I32,

@@ -50,6 +50,9 @@ namespace ILCompiler.DependencyAnalysis
         WASM_TYPE_INDEX_LEB        = 0x204,  // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
         WASM_GLOBAL_INDEX_LEB      = 0x205,  // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
 
+        WASM_TABLE_INDEX_U32       = 0x206,  // Wasm: a table index encoded as a 4-byte uint32, e.g. for storing the "address" of a function into linear memory
+        WASM_TABLE_INDEX_U64       = 0x207,  // Wasm: a table index encoded as a 8-byte uint64, e.g. for storing the "address" of a function into linear memory
+
         //
         // Relocation operators related to TLS access
         //
@@ -449,6 +452,7 @@ namespace ILCompiler.DependencyAnalysis
 
             Debug.Assert((pcInstr & 0xFE000000) == 0x1a000000);  // Must be pcalau12i
 
+            pcInstr &= 0xFE00001F; // keep bits 31-25, 4-0
             // Assemble the pc-relative high 20 bits of 'imm' into the pcalau12i instruction
             pcInstr |= (uint)((imm >> 7) & 0x1FFFFE0);
 
@@ -456,7 +460,8 @@ namespace ILCompiler.DependencyAnalysis
 
             pcInstr = *(pCode + 1);
 
-            // Assemble the pc-relative low 12 bits of 'imm' into the addid or ld instruction
+            pcInstr &= 0xFFC003FF; // keep bits 31-22, 9-0
+            // Assemble the pc-relative low 12 bits of 'imm' into the addi.d or ld instruction
             pcInstr |= (uint)((imm & 0xFFF) << 10);
 
             *(pCode + 1) = pcInstr;          // write the assembled instruction
@@ -493,6 +498,7 @@ namespace ILCompiler.DependencyAnalysis
             long imm = imm38 + relOff;
             relOff = (((imm & 0x1ffff) - relOff) >> 2) & 0xffff;
 
+            pcInstr &= 0xFE00001F; // keep bits 31-25, 4-0
             // Assemble the pc-relative high 20 bits of 'imm38' into the pcaddu18i instruction
             pcInstr |= (uint)(((imm >> 18) & 0xFFFFF) << 5);
 
@@ -500,6 +506,7 @@ namespace ILCompiler.DependencyAnalysis
 
             pcInstr = *(pCode + 1);
 
+            pcInstr &= 0xFC0003FF; // keep bits 31-26, 9-0
             // Assemble the pc-relative low 18 bits of 'imm38' into the jirl instruction
             pcInstr |= (uint)(relOff << 10);
 
@@ -572,6 +579,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
         {
+            Debug.Assert(target != null);
             RelocType = relocType;
             Offset = offset;
             Target = target;
@@ -688,6 +696,8 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.WASM_GLOBAL_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_SLEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_TABLE_INDEX_U32 => 4,
+                RelocType.WASM_TABLE_INDEX_U64 => 8,
 
                 _ => throw new NotSupportedException(),
             };

@@ -8,14 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct TimeAsn
-    {
-        internal DateTimeOffset? UtcTime;
-        internal DateTimeOffset? GeneralTime;
-
 #if DEBUG
-        static TimeAsn()
+    file static class ValidateTimeAsn
+    {
+        static ValidateTimeAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -30,6 +26,25 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             ensureUniqueTag(Asn1Tag.UtcTime, "UtcTime");
             ensureUniqueTag(Asn1Tag.GeneralizedTime, "GeneralTime");
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct TimeAsn
+    {
+        internal DateTimeOffset? UtcTime;
+        internal DateTimeOffset? GeneralTime;
+
+#if DEBUG
+        static TimeAsn()
+        {
+            ValidateTimeAsn.Validate();
         }
 #endif
 
@@ -65,7 +80,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, out TimeAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -77,7 +92,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, out TimeAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, out TimeAsn decoded)
         {
             try
             {
@@ -89,7 +104,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, out TimeAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, out TimeAsn decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();

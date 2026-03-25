@@ -569,32 +569,32 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
     errno = ENOTSUP;
     return -1;
 #else // TARGET_WASM
-    switch (flags)
+    if ((flags & ~(PAL_O_CLOEXEC | PAL_O_NONBLOCK_READ | PAL_O_NONBLOCK_WRITE)) != 0)
     {
-        case 0:
-            break;
-        case PAL_O_CLOEXEC:
+        assert_msg(false, "Unknown pipe flag", (int)flags);
+        errno = EINVAL;
+        return -1;
+    }
+
+    int32_t pipeFlags = 0;
+    if ((flags & PAL_O_CLOEXEC) != 0)
+    {
 #if HAVE_O_CLOEXEC
-            flags = O_CLOEXEC;
+        pipeFlags = O_CLOEXEC;
 #endif
-            break;
-        default:
-            assert_msg(false, "Unknown pipe flag", (int)flags);
-            errno = EINVAL;
-            return -1;
     }
 
     int32_t result;
 #if HAVE_PIPE2
     // If pipe2 is available, use it.  This will handle O_CLOEXEC if it was set.
-    while ((result = pipe2(pipeFds, flags)) < 0 && errno == EINTR);
+    while ((result = pipe2(pipeFds, pipeFlags)) < 0 && errno == EINTR);
 #elif HAVE_PIPE
     // Otherwise, use pipe.
     while ((result = pipe(pipeFds)) < 0 && errno == EINTR);
 
     // Then, if O_CLOEXEC was specified, use fcntl to configure the file descriptors appropriately.
 #if HAVE_O_CLOEXEC
-    if ((flags & O_CLOEXEC) != 0 && result == 0)
+    if ((pipeFlags & O_CLOEXEC) != 0 && result == 0)
 #else
     if ((flags & PAL_O_CLOEXEC) != 0 && result == 0)
 #endif
@@ -616,6 +616,28 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 #else /* HAVE_PIPE */
     result = -1;
 #endif /* HAVE_PIPE */
+
+    if (result == 0 && ((flags & (PAL_O_NONBLOCK_READ | PAL_O_NONBLOCK_WRITE)) != 0))
+    {
+        if ((flags & PAL_O_NONBLOCK_READ) != 0)
+        {
+            result = SystemNative_FcntlSetIsNonBlocking((intptr_t)pipeFds[0], 1);
+        }
+
+        if (result == 0 && (flags & PAL_O_NONBLOCK_WRITE) != 0)
+        {
+            result = SystemNative_FcntlSetIsNonBlocking((intptr_t)pipeFds[1], 1);
+        }
+
+        if (result != 0)
+        {
+            int tmpErrno = errno;
+            close(pipeFds[0]);
+            close(pipeFds[1]);
+            errno = tmpErrno;
+        }
+    }
+
     return result;
 #endif // TARGET_WASM
 }
@@ -1208,6 +1230,67 @@ int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
 int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
 {
     return Common_Read(fd, buffer, bufferSize);
+}
+
+int32_t SystemNative_ReadFromNonblocking(intptr_t fd, void* buffer, int32_t bufferSize)
+{
+    while (1)
+    {
+        int32_t result = Common_Read(fd, buffer, bufferSize);
+        if (result != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
+        {
+            return result;
+        }
+
+        // The fd is non-blocking and no data is available yet.
+        // Block (on a thread pool thread) until data arrives or the pipe/socket is closed.
+        PollEvent pollEvent = { .FileDescriptor = (int32_t)fd, .Events = PAL_POLLIN, .TriggeredEvents = 0 };
+        uint32_t triggered = 0;
+        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
+        if (pollResult != Error_SUCCESS)
+        {
+            errno = ConvertErrorPalToPlatform(pollResult);
+            return -1;
+        }
+
+        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
+            (pollEvent.TriggeredEvents & PAL_POLLIN) == 0)
+        {
+            // The pipe/socket was closed with no data available (EOF).
+            return 0;
+        }
+    }
+}
+
+int32_t SystemNative_WriteToNonblocking(intptr_t fd, const void* buffer, int32_t bufferSize)
+{
+    while (1)
+    {
+        int32_t result = Common_Write(fd, buffer, bufferSize);
+        if (result != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
+        {
+            return result;
+        }
+
+        // The fd is non-blocking and the write buffer is full.
+        // Block (on a thread pool thread) until space is available or the pipe/socket is closed.
+        PollEvent pollEvent = { .FileDescriptor = (int32_t)fd, .Events = PAL_POLLOUT, .TriggeredEvents = 0 };
+        uint32_t triggered = 0;
+        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
+        if (pollResult != Error_SUCCESS)
+        {
+            errno = ConvertErrorPalToPlatform(pollResult);
+            return -1;
+        }
+
+        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
+            (pollEvent.TriggeredEvents & PAL_POLLOUT) == 0)
+        {
+            // The pipe/socket was closed.
+            errno = EPIPE;
+            return -1;
+        }
+    }
 }
 
 int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t bufferSize)
@@ -1866,7 +1949,6 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
     return (int32_t)count;
 }
 
-#if (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
 static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
 {
 #if defined(IOV_MAX)
@@ -1911,7 +1993,45 @@ static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
 
     return allowedCount;
 }
-#endif // (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
+
+int64_t SystemNative_ReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int fileDescriptor = ToFileDescriptor(fd);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
+
+    while (1)
+    {
+        int64_t count;
+        while ((count = readv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
+
+        if (count != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
+        {
+            assert(count >= -1);
+            return count;
+        }
+
+        // The fd is non-blocking and no data is available yet.
+        // Block (on a thread pool thread) until data arrives or the pipe/socket is closed.
+        PollEvent pollEvent = { .FileDescriptor = fileDescriptor, .Events = PAL_POLLIN, .TriggeredEvents = 0 };
+        uint32_t triggered = 0;
+        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
+        if (pollResult != Error_SUCCESS)
+        {
+            errno = ConvertErrorPalToPlatform(pollResult);
+            return -1;
+        }
+
+        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
+            (pollEvent.TriggeredEvents & PAL_POLLIN) == 0)
+        {
+            // The pipe/socket was closed with no data available (EOF).
+            return 0;
+        }
+    }
+}
 
 int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
 {
@@ -1952,6 +2072,46 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
 
     assert(count >= -1);
     return count;
+}
+
+int64_t SystemNative_WriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount)
+{
+    assert(vectors != NULL);
+    assert(vectorCount >= 0);
+
+    int fileDescriptor = ToFileDescriptor(fd);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
+
+    while (1)
+    {
+        int64_t count;
+        while ((count = writev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount)) < 0 && errno == EINTR);
+
+        if (count != -1 || (errno != EAGAIN && errno != EWOULDBLOCK))
+        {
+            assert(count >= -1);
+            return count;
+        }
+
+        // The fd is non-blocking and the write buffer is full.
+        // Block (on a thread pool thread) until space is available or the pipe/socket is closed.
+        PollEvent pollEvent = { .FileDescriptor = fileDescriptor, .Events = PAL_POLLOUT, .TriggeredEvents = 0 };
+        uint32_t triggered = 0;
+        int32_t pollResult = Common_Poll(&pollEvent, 1, -1, &triggered);
+        if (pollResult != Error_SUCCESS)
+        {
+            errno = ConvertErrorPalToPlatform(pollResult);
+            return -1;
+        }
+
+        if ((pollEvent.TriggeredEvents & (PAL_POLLHUP | PAL_POLLERR)) != 0 &&
+            (pollEvent.TriggeredEvents & PAL_POLLOUT) == 0)
+        {
+            // The pipe/socket was closed.
+            errno = EPIPE;
+            return -1;
+        }
+    }
 }
 
 int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)

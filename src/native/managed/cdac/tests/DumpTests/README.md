@@ -35,6 +35,10 @@ features and then calls `Environment.FailFast()` to produce a crash dump.
 | PInvokeStub | P/Invoke with SetLastError ILStub | Full |
 | VarargPInvoke | Vararg P/Invoke via __arglist (sprintf) | Full |
 | SyncBlock | Sync block locks | Full |
+| CCW | COM callable wrappers (CCW) on Windows | Full |
+| RCWCleanupList | STA-context RCW entries in g_pRCWCleanupList on Windows | Full |
+| RCW | COM RCW with populated interface entry cache on Windows | Full |
+| ComWrappers | ComWrappers-based MOW and RCW | Full |
 
 The dump type is configured per-debuggee via the `DumpTypes` property in each debuggee's
 `.csproj` (default: `Heap`, set in `Debuggees/Directory.Build.props`). Debuggees that
@@ -58,6 +62,10 @@ use. Tests are `[ConditionalTheory]` methods parameterized by `TestConfiguration
 | PInvokeStubDumpTests | StackWalk + RTS | PInvokeStub |
 | VarargPInvokeDumpTests | StackWalk + RTS | VarargPInvoke |
 | SyncBlockDumpTests | SyncBlock | SyncBlock |
+| CCWDumpTests | BuiltInCOM | CCW |
+| RCWCleanupListDumpTests | BuiltInCOM | RCWCleanupList |
+| RCWDumpTests | BuiltInCOM | RCW |
+| ComWrappersDumpTests | ComWrappers | ComWrappers |
 
 ### Runtime Versions
 

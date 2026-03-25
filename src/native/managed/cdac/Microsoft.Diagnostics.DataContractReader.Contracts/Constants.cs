@@ -20,11 +20,13 @@ public static class Constants
         public const string FeatureJavaMarshal = nameof(FeatureJavaMarshal);
         public const string FeatureOnStackReplacement = nameof(FeatureOnStackReplacement);
         public const string FeaturePortableEntrypoints = nameof(FeaturePortableEntrypoints);
+        public const string FeatureWebcil = nameof(FeatureWebcil);
 
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
         public const string RecommendedReaderVersion = nameof(RecommendedReaderVersion);
 
+        public const string ContinuationMethodTable = nameof(ContinuationMethodTable);
         public const string ExceptionMethodTable = nameof(ExceptionMethodTable);
         public const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
         public const string ObjectMethodTable = nameof(ObjectMethodTable);
@@ -53,7 +55,6 @@ public static class Constants
         public const string StressLogValidChunkSig = nameof(StressLogValidChunkSig);
 
         public const string MethodDescAlignment = nameof(MethodDescAlignment);
-        public const string ObjectHeaderSize = nameof(ObjectHeaderSize);
         public const string ArrayBaseSize = nameof(ArrayBaseSize);
         public const string SyncBlockValueToObjectOffset = nameof(SyncBlockValueToObjectOffset);
 
@@ -65,6 +66,7 @@ public static class Constants
         public const string SyncBlockIsHashOrSyncBlockIndex = nameof(SyncBlockIsHashOrSyncBlockIndex);
         public const string SyncBlockIsHashCode = nameof(SyncBlockIsHashCode);
         public const string SyncBlockIndexMask = nameof(SyncBlockIndexMask);
+        public const string SyncBlockHashCodeMask = nameof(SyncBlockHashCodeMask);
 
         public const string ArrayBoundsZero = nameof(ArrayBoundsZero);
         public const string CoreLib = nameof(CoreLib);
@@ -83,11 +85,17 @@ public static class Constants
         public const string MaxClrNotificationArgs = nameof(MaxClrNotificationArgs);
         public const string ClrNotificationArguments = nameof(ClrNotificationArguments);
         public const string FieldOffsetBigRVA = nameof(FieldOffsetBigRVA);
+        public const string FieldOffsetDynamicRVA = nameof(FieldOffsetDynamicRVA);
         public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
-        public const string ComRefcountMask = nameof(ComRefcountMask);
+        public const string CCWNumInterfaces = nameof(CCWNumInterfaces);
+        public const string CCWThisMask = nameof(CCWThisMask);
+        public const string TearOffAddRef = nameof(TearOffAddRef);
+        public const string TearOffAddRefSimple = nameof(TearOffAddRefSimple);
+        public const string TearOffAddRefSimpleInner = nameof(TearOffAddRefSimpleInner);
         public const string RCWCleanupList = nameof(RCWCleanupList);
+        public const string RCWInterfaceCacheSize = nameof(RCWInterfaceCacheSize);
 
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);
@@ -140,6 +148,7 @@ public static class Constants
         public const string HandleTableMap = nameof(HandleTableMap);
         public const string InitialHandleTableArraySize = nameof(InitialHandleTableArraySize);
         public const string DebugDestroyedHandleValue = nameof(DebugDestroyedHandleValue);
+        public const string HandleSegmentSize = nameof(HandleSegmentSize);
         public const string HandleBlocksPerSegment = nameof(HandleBlocksPerSegment);
         public const string HandleMaxInternalTypes = nameof(HandleMaxInternalTypes);
         public const string HandlesPerBlock = nameof(HandlesPerBlock);

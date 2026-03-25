@@ -11094,7 +11094,16 @@ PCODE CEECodeGenInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
         {
             _ASSERTE(pfnHelper != NULL);
             AllocMemHolder<PortableEntryPoint> portableEntryPoint = SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) });
-            portableEntryPoint->Init((void*)pfnHelper);
+            if (ftnNum >= CORINFO_HELP_NEWFAST && ftnNum <= CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE)
+            {
+                // CoreLib calls newobj helpers via calli. Give these helpers a MethodDesc
+                // so the interpreter can find the method signature for the call cookie.
+                portableEntryPoint->Init((void*)pfnHelper, CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__NEWOBJ_HELPER_DUMMY));
+            }
+            else
+            {
+                portableEntryPoint->Init((void*)pfnHelper);
+            }
             pfnHelper = (PCODE)(PortableEntryPoint*)(portableEntryPoint);
 
             if (InterlockedCompareExchangeT<PCODE>(&hlpFuncEntryPoints[ftnNum], pfnHelper, (PCODE)NULL) == (PCODE)NULL)
@@ -11419,7 +11428,7 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 #ifdef FEATURE_INTERPRETER
 
 // Forward declare the function for mapping MetaSig to a cookie.
-void* GetCookieForCalliSig(MetaSig metaSig);
+void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
 
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
@@ -11438,7 +11447,18 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
 
     _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
 
-    result = GetCookieForCalliSig(sig);
+    // When compiling a calli inside an IL stub for a P/Invoke, pass the target
+    // P/Invoke MethodDesc so ComputeCallStub can detect the Swift calling convention.
+    MethodDesc* pContextMD = nullptr;
+    if (m_pMethodBeingCompiled != nullptr && m_pMethodBeingCompiled->IsILStub())
+    {
+        MethodDesc* pTargetMD = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
+        if (pTargetMD != nullptr)
+        {
+            pContextMD = pTargetMD;
+        }
+    }
+    result = GetCookieForCalliSig(sig, pContextMD);
 
     EE_TO_JIT_TRANSITION();
     return result;
@@ -14129,6 +14149,32 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case READYTORUN_FIXUP_Helper:
         {
+#ifdef _DEBUG
+            // Reenable loading types during Eager fixups. These types should all be from CoreLib.
+            class EnableTypeLoadHolder
+            {
+                ULONG _previousForbidTypeLoad = (ULONG)-1;
+            public:
+                EnableTypeLoadHolder()
+                {
+                    if (GetThreadNULLOk() != 0)
+                    {
+                        _previousForbidTypeLoad = GetThreadNULLOk()->m_ulForbidTypeLoad;
+                        GetThreadNULLOk()->m_ulForbidTypeLoad = 0;
+                    }
+                }
+
+                ~EnableTypeLoadHolder()
+                {
+                    if (GetThreadNULLOk() != 0 && _previousForbidTypeLoad != (ULONG)-1)
+                    {
+                        _ASSERTE(GetThreadNULLOk()->m_ulForbidTypeLoad == 0);
+                        GetThreadNULLOk()->m_ulForbidTypeLoad = _previousForbidTypeLoad;
+                    }
+                }
+            }
+            enableTypeLoad;
+#endif
             DWORD helperNum = CorSigUncompressData(pBlob);
 
             CorInfoHelpFunc corInfoHelpFunc = MapReadyToRunHelper((ReadyToRunHelper)helperNum);
@@ -14260,6 +14306,19 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             TypeHandle th = TypeHandle(continuationTypeMethodTable);
             result = (size_t)th.AsPtr();
+        }
+        break;
+
+    case READYTORUN_FIXUP_ResumptionStubEntryPoint:
+        {
+            ReadyToRunInfo * pR2RInfo = currentModule->GetReadyToRunInfo();
+
+            DWORD stubRVA = GET_UNALIGNED_VAL32(pBlob);
+            PCODE stubEntryPoint = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase()) + stubRVA;
+
+            pR2RInfo->RegisterResumptionStub(stubEntryPoint);
+
+            result = (size_t)stubEntryPoint;
         }
         break;
 

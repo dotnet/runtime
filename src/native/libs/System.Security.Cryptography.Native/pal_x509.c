@@ -11,6 +11,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "openssl.h"
+
 #ifndef NAME_MAX
 #error "NAME_MAX is not defined"
 #endif
@@ -150,13 +152,13 @@ ASN1_INTEGER* CryptoNative_X509GetSerialNumber(X509* x509)
     return X509_get_serialNumber(x509);
 }
 
-X509_NAME* CryptoNative_X509GetIssuerName(X509* x509)
+const X509_NAME* CryptoNative_X509GetIssuerName(X509* x509)
 {
     // Just a field accessor, no error queue interactions apply.
     return X509_get_issuer_name(x509);
 }
 
-X509_NAME* CryptoNative_X509GetSubjectName(X509* x509)
+const X509_NAME* CryptoNative_X509GetSubjectName(X509* x509)
 {
     // Just a field accessor, no error queue interactions apply.
     return X509_get_subject_name(x509);
@@ -180,19 +182,19 @@ int32_t CryptoNative_X509GetExtCount(X509* x)
     return X509_get_ext_count(x);
 }
 
-X509_EXTENSION* CryptoNative_X509GetExt(X509* x, int32_t loc)
+const X509_EXTENSION* CryptoNative_X509GetExt(X509* x, int32_t loc)
 {
     // Just a field accessor, no error queue interactions apply.
     return X509_get_ext(x, loc);
 }
 
-ASN1_OBJECT* CryptoNative_X509ExtensionGetOid(X509_EXTENSION* x)
+const ASN1_OBJECT* CryptoNative_X509ExtensionGetOid(X509_EXTENSION* x)
 {
     // Just a field accessor, no error queue interactions apply.
     return X509_EXTENSION_get_object(x);
 }
 
-ASN1_OCTET_STRING* CryptoNative_X509ExtensionGetData(X509_EXTENSION* x)
+const ASN1_OCTET_STRING* CryptoNative_X509ExtensionGetData(X509_EXTENSION* x)
 {
     // Just a field accessor, no error queue interactions apply.
     return X509_EXTENSION_get_data(x);
@@ -204,7 +206,7 @@ int32_t CryptoNative_X509ExtensionGetCritical(X509_EXTENSION* x)
     return X509_EXTENSION_get_critical(x);
 }
 
-ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t nid)
+const ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t nid)
 {
     ERR_clear_error();
 
@@ -220,7 +222,7 @@ ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t nid)
         return NULL;
     }
 
-    X509_EXTENSION* ext = X509_get_ext(x, idx);
+    OSSL4CONST X509_EXTENSION* ext = X509_get_ext(x, idx);
 
     if (ext == NULL)
     {
@@ -625,7 +627,7 @@ int32_t CryptoNative_X509StackAddDirectoryStore(X509Stack* stack, char* storePat
     if (storeDir != NULL)
     {
         X509* cert;
-        X509Stack* tmpStack = sk_X509_new_null();
+        X509Stack* tmpStack = CryptoNative_NewX509Stack();
 
         if (tmpStack == NULL)
         {
@@ -1348,7 +1350,7 @@ int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len,
 
     if (store != NULL)
     {
-        bag = sk_X509_new_null();
+        bag = CryptoNative_NewX509Stack();
     }
 
     if (bag != NULL)

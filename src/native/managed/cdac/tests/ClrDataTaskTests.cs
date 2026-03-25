@@ -35,11 +35,12 @@ public unsafe class ClrDataTaskTests
 
         TargetPointer taskAddress = new TargetPointer(0x5000);
         IXCLRDataTask task = new ClrDataTask(taskAddress, target, legacyImpl: null);
-        int hr = task.GetCurrentAppDomain(out IXCLRDataAppDomain? appDomain);
+        DacComNullableByRef<IXCLRDataAppDomain> appDomain = new(isNullRef: false);
+        int hr = task.GetCurrentAppDomain(appDomain);
 
         Assert.Equal(HResults.S_OK, hr);
-        Assert.NotNull(appDomain);
-        ClrDataAppDomain clrAppDomain = Assert.IsType<ClrDataAppDomain>(appDomain);
+        Assert.NotNull(appDomain.Interface);
+        ClrDataAppDomain clrAppDomain = Assert.IsType<ClrDataAppDomain>(appDomain.Interface);
         Assert.Equal(new TargetPointer(expectedAppDomain), clrAppDomain.Address);
     }
 }

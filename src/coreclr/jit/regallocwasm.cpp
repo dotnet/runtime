@@ -522,10 +522,21 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
     // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
 
-    var_types    storeType = lclNode->TypeGet();
-    bool         isStruct  = storeType == TYP_STRUCT;
-    uint16_t     offset    = lclNode->GetLclOffs();
-    ClassLayout* layout    = isStruct ? lclNode->GetLayout(m_compiler) : nullptr;
+    var_types storeType = lclNode->TypeGet();
+    // We can end up with a block copy operation storing a non-STRUCT into a STRUCT due to type erasure.
+    if ((storeType == TYP_STRUCT) && lclNode->OperIsCopyBlkOp())
+    {
+        LclVarDsc* varDsc     = m_compiler->lvaGetDesc(lclNode->GetLclNum());
+        var_types  lclRegType = varDsc->GetRegisterType(lclNode);
+        if (lclRegType != TYP_UNDEF)
+        {
+            storeType = lclRegType;
+        }
+    }
+
+    bool         isStruct = storeType == TYP_STRUCT;
+    uint16_t     offset   = lclNode->GetLclOffs();
+    ClassLayout* layout   = isStruct ? lclNode->GetLayout(m_compiler) : nullptr;
     lclNode->SetOper(GT_LCL_ADDR);
     lclNode->ChangeType(TYP_I_IMPL);
     lclNode->AsLclFld()->SetLclOffs(offset);
