@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Reflection.Metadata.Ecma335;
 
@@ -16,7 +15,6 @@ internal static class InstructionEncoderExtensions
         MarkLabel(encoder.ControlFlowBuilder!, ilOffset, label);
     }
 
-    [RequiresUnsafe]
     [UnsafeAccessor(UnsafeAccessorKind.Method)]
     private static extern void MarkLabel(ControlFlowBuilder builder, int ilOffset, LabelHandle label);
 }

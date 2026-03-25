@@ -150,6 +150,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIReferenceTrackerTargetVftbl")]
         [SuppressGCTransition]
         private static partial IntPtr GetDefaultIReferenceTrackerTargetVftbl();
