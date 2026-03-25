@@ -244,7 +244,7 @@ namespace System.Threading.Tasks
                 }
                 else
                 {
-                    continuationTimestamps[newContinuation] = Stopwatch.GetTimestamp();
+                    continuationTimestamps.TryAdd(newContinuation, Stopwatch.GetTimestamp());
                 }
             }
         }
