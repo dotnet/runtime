@@ -93,10 +93,21 @@ namespace Microsoft.Extensions.Configuration
                     return fileInfo.CreateReadStream();
                 }
 
-                using Stream stream = OpenRead(file);
                 try
                 {
-                    Load(stream);
+                    using Stream stream = OpenRead(file);
+                    try
+                    {
+                        Load(stream);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (reload)
+                        {
+                            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                        }
+                        throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -104,8 +115,7 @@ namespace Microsoft.Extensions.Configuration
                     {
                         Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
                     }
-                    var exception = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
-                    HandleException(ExceptionDispatchInfo.Capture(exception));
+                    HandleException(ExceptionDispatchInfo.Capture(ex));
                 }
             }
             // REVIEW: Should we raise this in the base as well / instead?
