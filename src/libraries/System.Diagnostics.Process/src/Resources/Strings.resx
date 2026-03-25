@@ -336,4 +336,7 @@
   <data name="InvalidPerfData" xml:space="preserve">
     <value>Invalid performance counter data with type '{0}'.</value>
   </data>
+  <data name="StartAndForget_RedirectNotSupported" xml:space="preserve">
+    <value>Stream redirection is not supported by StartAndForget. Redirected streams must be drained to avoid deadlocks, which is incompatible with fire-and-forget semantics.</value>
+  </data>
 </root>
