@@ -24,6 +24,9 @@
 #include <fcntl.h>
 #endif
 #include <pthread.h>
+#if defined(TARGET_OSX)
+#include <spawn.h>
+#endif
 
 #if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
 #include <sched.h>
