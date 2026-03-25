@@ -503,7 +503,7 @@ namespace System.Formats.Tar.Tests
             Assert.True(File.Exists(extractedLink));
             Assert.Equal(targetContent, File.ReadAllText(extractedTarget));
             Assert.Equal(targetContent, File.ReadAllText(extractedLink));
-            Assert.False(new FileInfo(extractedLink).LinkTarget is not null, "File should not be a symbolic link.");
+            Assert.Null(new FileInfo(extractedLink).LinkTarget);
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]

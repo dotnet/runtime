@@ -427,6 +427,12 @@ namespace System.Formats.Tar
         // Extracts the current entry into the filesystem, regardless of the entry type.
         private void ExtractToFileInternal(string filePath, string? linkTargetPath, string? linkFullTargetPath, bool overwrite, TarHardLinkMode hardLinkMode, TarSymbolicLinkMode symbolicLinkMode)
         {
+            // Short-circuit for Skip mode before any filesystem operations.
+            if (EntryType is TarEntryType.SymbolicLink && symbolicLinkMode == TarSymbolicLinkMode.Skip)
+            {
+                return;
+            }
+
             VerifyDestinationPath(filePath, overwrite);
 
             if (EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile)
@@ -446,6 +452,13 @@ namespace System.Formats.Tar
             {
                 return Task.FromCanceled(cancellationToken);
             }
+
+            // Short-circuit for Skip mode before any filesystem operations.
+            if (EntryType is TarEntryType.SymbolicLink && symbolicLinkMode == TarSymbolicLinkMode.Skip)
+            {
+                return Task.CompletedTask;
+            }
+
             VerifyDestinationPath(filePath, overwrite);
 
             if (EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile)
@@ -483,10 +496,8 @@ namespace System.Formats.Tar
                     break;
 
                 case TarEntryType.SymbolicLink:
-                    if (symbolicLinkMode == TarSymbolicLinkMode.Skip)
-                    {
-                        break;
-                    }
+                    // Skip was already handled in ExtractToFileInternal before VerifyDestinationPath.
+                    Debug.Assert(symbolicLinkMode != TarSymbolicLinkMode.Skip);
                     if (symbolicLinkMode == TarSymbolicLinkMode.CopyContents)
                     {
                         Debug.Assert(!string.IsNullOrEmpty(linkFullTargetPath));

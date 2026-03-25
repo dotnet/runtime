@@ -350,6 +350,11 @@ namespace System.Formats.Tar.Tests
                     Assert.NotNull(link);
                     Assert.Equal(linkName, link.Name);
                     Assert.True(link.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile);
+                    Assert.NotNull(link.DataStream);
+                    using (StreamReader sr = new StreamReader(link.DataStream!))
+                    {
+                        Assert.Equal("target content", sr.ReadToEnd());
+                    }
                     Assert.Null(reader.GetNextEntry());
                 }
                 else

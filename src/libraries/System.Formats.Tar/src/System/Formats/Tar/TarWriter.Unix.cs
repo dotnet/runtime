@@ -43,7 +43,11 @@ namespace System.Formats.Tar
                         status = targetStatus;
                         fileType = status.Mode & Interop.Sys.FileTypes.S_IFMT;
                     }
-                    // If Stat fails (e.g. broken symlink), fall through and write as a regular file with no data.
+                    else
+                    {
+                        // Broken symlink: the target does not exist. Write as an empty regular file.
+                        fileType = Interop.Sys.FileTypes.S_IFREG;
+                    }
                 }
             }
 

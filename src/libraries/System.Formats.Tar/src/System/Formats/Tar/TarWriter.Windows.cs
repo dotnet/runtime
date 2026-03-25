@@ -25,35 +25,41 @@ namespace System.Formats.Tar
         {
             Debug.Assert(!string.IsNullOrEmpty(fullPath));
 
-            using SafeFileHandle handle = Interop.Kernel32.CreateFile(
+            Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInfo;
+            FileAttributes attributes;
+            bool isDirectory;
+            bool isSymbolicLink = false;
+            string? linkTarget = null;
+
+            SafeFileHandle handle = Interop.Kernel32.CreateFile(
                 fullPath,
                 Interop.Kernel32.GenericOperations.GENERIC_READ,
                 FileShare.ReadWrite | FileShare.Delete,
                 FileMode.Open,
                 Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS | Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT);
 
-            if (handle.IsInvalid)
+            using (handle)
             {
-                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError(), fullPath);
-            }
+                if (handle.IsInvalid)
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError(), fullPath);
+                }
 
-            if (!Interop.Kernel32.GetFileInformationByHandle(handle, out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInfo))
-            {
-                throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError(), fullPath);
-            }
+                if (!Interop.Kernel32.GetFileInformationByHandle(handle, out fileInfo))
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError(), fullPath);
+                }
 
-            FileAttributes attributes = (FileAttributes)fileInfo.dwFileAttributes;
+                attributes = (FileAttributes)fileInfo.dwFileAttributes;
+                isDirectory = (attributes & FileAttributes.Directory) != 0;
 
-            bool isDirectory = (attributes & FileAttributes.Directory) != 0;
-
-            // Determine if this is a symbolic link (reparse point with a non-null link target).
-            bool isSymbolicLink = false;
-            string? linkTarget = null;
-            if ((attributes & FileAttributes.ReparsePoint) != 0)
-            {
-                FileSystemInfo info = isDirectory ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
-                linkTarget = info.LinkTarget;
-                isSymbolicLink = linkTarget is not null;
+                // Determine if this is a symbolic link (reparse point with a non-null link target).
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                {
+                    FileSystemInfo info = isDirectory ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
+                    linkTarget = info.LinkTarget;
+                    isSymbolicLink = linkTarget is not null;
+                }
             }
 
             // Handle symbolic links according to the configured mode.
@@ -67,8 +73,6 @@ namespace System.Formats.Tar
                 if (_symbolicLinkMode == TarSymbolicLinkMode.CopyContents)
                 {
                     // Follow the symlink: re-open the file without FILE_FLAG_OPEN_REPARSE_POINT.
-                    handle.Dispose();
-
                     using SafeFileHandle resolvedHandle = Interop.Kernel32.CreateFile(
                         fullPath,
                         Interop.Kernel32.GenericOperations.GENERIC_READ,
