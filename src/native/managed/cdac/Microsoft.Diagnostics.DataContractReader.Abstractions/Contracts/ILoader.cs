@@ -22,6 +22,14 @@ public enum ModuleFlags
     Tenured = 0x1,                  // Set once we know for sure the Module will not be freed until the appdomain itself exits
     EditAndContinue = 0x8,          // Edit and Continue is enabled for this module
     ReflectionEmit = 0x40,          // Reflection.Emit was used to create this module
+    ProfilerDisableOpt = 0x80,      // Profiler disabled JIT optimizations when module was loaded
+}
+
+[Flags]
+public enum DebuggerAssemblyControlFlags
+{
+    DACF_USER_OVERRIDE = 0x01,
+    DACF_ALLOW_JIT_OPTS = 0x02,
 }
 
 [Flags]
@@ -75,6 +83,8 @@ public interface ILoader : IContract
 
     bool IsProbeExtensionResultValid(ModuleHandle handle) => throw new NotImplementedException();
     ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsReadyToRun(ModuleHandle handle) => throw new NotImplementedException();
+    DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle) => throw new NotImplementedException();
     bool TryGetSimpleName(ModuleHandle handle, out string simpleName) => throw new NotImplementedException();
     string GetPath(ModuleHandle handle) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();

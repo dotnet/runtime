@@ -722,4 +722,121 @@ public class CodeVersionsTests
     {
         GetGCStressCodeCopy_Impl(arch, returnsNull: false);
     }
+
+    public static IEnumerable<object[]> GetOptimizationTierValues()
+    {
+        foreach (var archData in new MockTarget.StdArch())
+        {
+            var arch = (MockTarget.Architecture)archData[0];
+            yield return [arch, NativeCodeVersionOptimizationTier.OptimizationTier0];
+            yield return [arch, NativeCodeVersionOptimizationTier.OptimizationTier1];
+            yield return [arch, NativeCodeVersionOptimizationTier.OptimizationTier1OSR];
+            yield return [arch, NativeCodeVersionOptimizationTier.OptimizationTierOptimized];
+            yield return [arch, NativeCodeVersionOptimizationTier.OptimizationTier0Instrumented];
+            yield return [arch, NativeCodeVersionOptimizationTier.OptimizationTier1Instrumented];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetOptimizationTierValues))]
+    public void GetOptimizationTier_Explicit(MockTarget.Architecture arch, NativeCodeVersionOptimizationTier expectedTier)
+    {
+        MockCodeVersions builder = new(arch);
+
+        TargetPointer nativeCodeVersionNode = builder.AddNativeCodeVersionNode();
+        builder.FillNativeCodeVersionNode(
+            nativeCodeVersionNode,
+            methodDesc: new TargetPointer(0x1a0a_0000),
+            nativeCode: new TargetCodePointer(0x0a0a_0000),
+            next: TargetPointer.Null,
+            isActive: true,
+            ilVersionId: new(1),
+            optimizationTier: (uint)expectedTier);
+
+        var target = CreateTarget(arch, builder);
+        var codeVersions = target.Contracts.CodeVersions;
+
+        NativeCodeVersionHandle handle = NativeCodeVersionHandle.CreateExplicit(nativeCodeVersionNode);
+        NativeCodeVersionOptimizationTier tier = codeVersions.GetOptimizationTier(handle);
+        Assert.Equal(expectedTier, tier);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetOptimizationTier_Explicit_MissingField(MockTarget.Architecture arch)
+    {
+        MockCodeVersions builder = new(arch);
+
+        TargetPointer nativeCodeVersionNode = builder.AddNativeCodeVersionNode();
+        builder.FillNativeCodeVersionNode(
+            nativeCodeVersionNode,
+            methodDesc: new TargetPointer(0x1a0a_0000),
+            nativeCode: new TargetCodePointer(0x0a0a_0000),
+            next: TargetPointer.Null,
+            isActive: true,
+            ilVersionId: new(1));
+
+        // Remove the OptimizationTier field from the type info to simulate a runtime
+        // that doesn't expose it (e.g. FEATURE_TIERED_COMPILATION disabled).
+        var typesWithoutTier = new Dictionary<DataType, Target.TypeInfo>(builder.Types);
+        var ncvnType = typesWithoutTier[DataType.NativeCodeVersionNode];
+        var fieldsWithoutTier = new Dictionary<string, Target.FieldInfo>(ncvnType.Fields);
+        fieldsWithoutTier.Remove(nameof(Data.NativeCodeVersionNode.OptimizationTier));
+        typesWithoutTier[DataType.NativeCodeVersionNode] = ncvnType with { Fields = fieldsWithoutTier };
+
+        TestPlaceholderTarget target = new TestPlaceholderTarget(arch, builder.Builder.GetMemoryContext().ReadFromTarget, typesWithoutTier);
+        IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
+        ContractRegistry reg = Mock.Of<ContractRegistry>(
+            c => c.CodeVersions == cvfactory.CreateContract(target, 1)
+                && c.RuntimeTypeSystem == Mock.Of<IRuntimeTypeSystem>()
+                && c.ExecutionManager == Mock.Of<IExecutionManager>()
+                && c.Loader == Mock.Of<ILoader>());
+        target.SetContracts(reg);
+
+        var codeVersions = target.Contracts.CodeVersions;
+        NativeCodeVersionHandle handle = NativeCodeVersionHandle.CreateExplicit(nativeCodeVersionNode);
+        NativeCodeVersionOptimizationTier tier = codeVersions.GetOptimizationTier(handle);
+        Assert.Equal(NativeCodeVersionOptimizationTier.OptimizationTierUnknown, tier);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetOptimizationTier_Synthetic_DelegatesToRuntimeTypeSystem(MockTarget.Architecture arch)
+    {
+        MockCodeVersions builder = new(arch);
+        TargetPointer methodDescAddress = new(0x1a0a_0000);
+
+        Mock<IRuntimeTypeSystem> mockRTS = new();
+        MethodDescHandle mdHandle = new(methodDescAddress);
+        mockRTS.Setup(r => r.GetMethodDescHandle(methodDescAddress)).Returns(mdHandle);
+        mockRTS.Setup(r => r.GetMethodDescOptimizationTier(mdHandle)).Returns(NativeCodeVersionOptimizationTier.OptimizationTierOptimized);
+
+        var target = CreateTarget(arch, builder, mockRuntimeTypeSystem: mockRTS);
+        var codeVersions = target.Contracts.CodeVersions;
+
+        NativeCodeVersionHandle handle = NativeCodeVersionHandle.CreateSynthetic(methodDescAddress);
+        NativeCodeVersionOptimizationTier tier = codeVersions.GetOptimizationTier(handle);
+        Assert.Equal(NativeCodeVersionOptimizationTier.OptimizationTierOptimized, tier);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetOptimizationTier_Synthetic_FallsBackToInitialTier(MockTarget.Architecture arch)
+    {
+        MockCodeVersions builder = new(arch);
+        TargetPointer methodDescAddress = new(0x1a0a_0000);
+
+        Mock<IRuntimeTypeSystem> mockRTS = new();
+        MethodDescHandle mdHandle = new(methodDescAddress);
+        mockRTS.Setup(r => r.GetMethodDescHandle(methodDescAddress)).Returns(mdHandle);
+        mockRTS.Setup(r => r.GetMethodDescOptimizationTier(mdHandle)).Returns(NativeCodeVersionOptimizationTier.OptimizationTierUnknown);
+        mockRTS.Setup(r => r.GetInitialOptimizationTier(mdHandle)).Returns(NativeCodeVersionOptimizationTier.OptimizationTier0);
+
+        var target = CreateTarget(arch, builder, mockRuntimeTypeSystem: mockRTS);
+        var codeVersions = target.Contracts.CodeVersions;
+
+        NativeCodeVersionHandle handle = NativeCodeVersionHandle.CreateSynthetic(methodDescAddress);
+        NativeCodeVersionOptimizationTier tier = codeVersions.GetOptimizationTier(handle);
+        Assert.Equal(NativeCodeVersionOptimizationTier.OptimizationTier0, tier);
+    }
 }
