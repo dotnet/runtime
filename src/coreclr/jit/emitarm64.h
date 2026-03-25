@@ -1484,6 +1484,9 @@ void emitInsSve_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl
 void emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
 
+void emitInsSve_Mov(
+    instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
+
 void emitIns_R_R(instruction     ins,
                  emitAttr        attr,
                  regNumber       reg1,
@@ -1600,8 +1603,13 @@ void emitIns_R_R_R_Ext(instruction ins,
                        insOpts     opt         = INS_OPTS_NONE,
                        int         shiftAmount = -1);
 
-void emitIns_R_R_I_I(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_R_I_I(instruction ins,
+                     emitAttr    attr,
+                     regNumber   reg1,
+                     regNumber   reg2,
+                     ssize_t     imm1,
+                     ssize_t     imm2,
+                     insOpts     opt = INS_OPTS_NONE);
 
 void emitIns_R_R_R_R(instruction     ins,
                      emitAttr        attr,
@@ -1639,6 +1647,16 @@ void emitInsSve_R_R_R_R_I(instruction ins,
                           ssize_t     imm,
                           insOpts     opt = INS_OPTS_NONE);
 
+void emitInsSve_R_R_R_R_I_I(instruction ins,
+                            emitAttr    attr,
+                            regNumber   reg1,
+                            regNumber   reg2,
+                            regNumber   reg3,
+                            regNumber   reg4,
+                            ssize_t     imm1,
+                            ssize_t     imm2,
+                            insOpts     opt = INS_OPTS_NONE);
+
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 
 void emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insCond cond);
@@ -1655,6 +1673,14 @@ void emitIns_R_PATTERN(
 
 void emitIns_R_PATTERN_I(
     instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, ssize_t imm, insOpts opt = INS_OPTS_NONE);
+
+void emitIns_R_R_PATTERN_I(instruction   ins,
+                           emitAttr      attr,
+                           regNumber     reg1,
+                           regNumber     reg2,
+                           insSvePattern pattern,
+                           ssize_t       imm,
+                           insOpts       opt = INS_OPTS_NONE);
 
 void emitIns_PRFOP_R_R_R(instruction     ins,
                          emitAttr        attr,

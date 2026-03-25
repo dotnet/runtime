@@ -10,9 +10,11 @@ parameters:
   type: object
   default:
     - windows_x64
+    - windows_x86
     - linux_x64
     - windows_arm64
     - linux_arm64
+    - linux_arm
     # TODO: Re-enable osx once disk space issue is resolved.
     # macOS full dumps are ~5.7GB each; with 8+ full-dump debuggees the Helix
     # machines run out of disk space (~45GB total). See PR #124782 for details.
@@ -221,6 +223,13 @@ extends:
                     _Creator: dotnet-bot
                     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
                     NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
+              - task: PublishPipelineArtifact@1
+                inputs:
+                  targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
+                  artifactName: CdacDumps_$(osGroup)_$(archType)
+                displayName: 'Publish Dump Artifacts'
+                condition: and(always(), ne(variables['Agent.JobStatus'], 'Succeeded'))
+                continueOnError: true
               - pwsh: |
                   if ("$(Agent.JobStatus)" -ne "Succeeded") {
                     Write-Error "One or more cDAC dump test failures were detected. Failing the job."
