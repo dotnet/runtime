@@ -148,5 +148,11 @@ internal sealed class SequentialLayoutBuilder
         => _layoutBuilder.Build<TView>();
 
     private static int AlignUp(int value, int alignment)
-        => (value + alignment - 1) & ~(alignment - 1);
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(value);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(alignment);
+        ArgumentOutOfRangeException.ThrowIfNotEqual(alignment & (alignment - 1), 0, nameof(alignment));
+
+        return checked(value + alignment - 1) & ~(alignment - 1);
+    }
 }

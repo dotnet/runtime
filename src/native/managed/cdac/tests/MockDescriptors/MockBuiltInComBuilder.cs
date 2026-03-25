@@ -250,29 +250,31 @@ internal sealed class MockRCW : TypedView
 
 internal sealed class MockSimpleComCallWrapper : TypedView
 {
+    private const int InlineVTablePointerCount = 2;
+
     public MockSimpleComCallWrapper()
     {
         VTablePointers = new VTablePointerCollection(this);
     }
 
     public static Layout<MockSimpleComCallWrapper> CreateLayout(MockTarget.Architecture architecture)
-    {
-        int pointerSize = architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
-        LayoutBuilder builder = new("SimpleComCallWrapper", architecture)
-        {
-            Size = checked(12 + (3 * pointerSize)),
-        };
-
-        builder.AddField("RefCount", 0, sizeof(ulong));
-        builder.AddField("Flags", 8, sizeof(uint));
-        builder.AddField("MainWrapper", 12, pointerSize);
-        builder.AddField("VTablePtr", 12 + pointerSize, pointerSize);
-        return builder.Build<MockSimpleComCallWrapper>();
-    }
+        => new SequentialLayoutBuilder("SimpleComCallWrapper", architecture)
+            .AddPointerField("OuterIUnknown")
+            .AddUInt64Field("RefCount")
+            .AddUInt32Field("Flags")
+            .AddPointerField("MainWrapper")
+            .AddField("VTablePtr", InlineVTablePointerCount * (architecture.Is64Bit ? sizeof(ulong) : sizeof(uint)))
+            .Build<MockSimpleComCallWrapper>();
 
     public ulong VTablePointerAddress => GetFieldAddress("VTablePtr");
 
     public VTablePointerCollection VTablePointers { get; }
+
+    public ulong OuterIUnknown
+    {
+        get => ReadPointerField("OuterIUnknown");
+        set => WritePointerField("OuterIUnknown", value);
+    }
 
     public ulong RefCount
     {
@@ -310,8 +312,14 @@ internal sealed class MockSimpleComCallWrapper : TypedView
 
     private Span<byte> GetVTablePointerSpan(int index)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+
         int pointerSize = Architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
-        return Memory.Span.Slice(Layout.GetField("MainWrapper").Offset + ((index + 1) * pointerSize), pointerSize);
+        int vtableOffset = Layout.GetField("VTablePtr").Offset;
+        int slotCount = (Memory.Length - vtableOffset) / pointerSize;
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, slotCount);
+
+        return Memory.Span.Slice(vtableOffset + (index * pointerSize), pointerSize);
     }
 }
 
@@ -327,18 +335,25 @@ internal sealed class MockComCallWrapper : TypedView
         int pointerSize = architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
         LayoutBuilder builder = new("ComCallWrapper", architecture)
         {
-            Size = checked(7 * pointerSize),
+            Size = checked(8 * pointerSize),
         };
 
-        builder.AddField("SimpleWrapper", 0, pointerSize);
-        builder.AddField("IPtr", pointerSize, pointerSize);
-        builder.AddField("Next", 6 * pointerSize, pointerSize);
+        builder.AddField("Handle", 0, pointerSize);
+        builder.AddField("SimpleWrapper", pointerSize, pointerSize);
+        builder.AddField("IPtr", 2 * pointerSize, pointerSize);
+        builder.AddField("Next", 7 * pointerSize, pointerSize);
         return builder.Build<MockComCallWrapper>();
     }
 
     public ulong InterfacePointerAddress => GetFieldAddress("IPtr");
 
     public InterfacePointerCollection InterfacePointers { get; }
+
+    public ulong Handle
+    {
+        get => ReadPointerField("Handle");
+        set => WritePointerField("Handle", value);
+    }
 
     public ulong SimpleWrapper
     {
@@ -370,8 +385,15 @@ internal sealed class MockComCallWrapper : TypedView
 
     private Span<byte> GetInterfacePointerSpan(int index)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+
         int pointerSize = Architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
-        return Memory.Span.Slice(Layout.GetField("IPtr").Offset + (index * pointerSize), pointerSize);
+        int interfacePointerOffset = Layout.GetField("IPtr").Offset;
+        int nextOffset = Layout.GetField("Next").Offset;
+        int slotCount = (nextOffset - interfacePointerOffset) / pointerSize;
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, slotCount);
+
+        return Memory.Span.Slice(interfacePointerOffset + (index * pointerSize), pointerSize);
     }
 }
 
@@ -403,6 +425,10 @@ internal sealed class MockBuiltInComBuilder
         InterfaceEntryLayout = MockInterfaceEntry.CreateLayout(architecture);
         CtxEntryLayout = MockCtxEntry.CreateLayout(architecture);
         RCWLayout = MockRCW.CreateLayout(architecture);
+
+        TearOffAddRefGlobalAddress = AddPointerGlobal("TearOffAddRef", TearOffAddRefAddress);
+        TearOffAddRefSimpleGlobalAddress = AddPointerGlobal("TearOffAddRefSimple", TearOffAddRefSimpleAddress);
+        TearOffAddRefSimpleInnerGlobalAddress = AddPointerGlobal("TearOffAddRefSimpleInner", TearOffAddRefSimpleInnerAddress);
     }
 
     public ulong ComRefcountMask { get; } = DefaultComRefcountMask;
@@ -416,6 +442,12 @@ internal sealed class MockBuiltInComBuilder
     public ulong TearOffAddRefSimpleAddress { get; } = DefaultTearOffAddRefSimpleAddress;
 
     public ulong TearOffAddRefSimpleInnerAddress { get; } = DefaultTearOffAddRefSimpleInnerAddress;
+
+    public ulong TearOffAddRefGlobalAddress { get; }
+
+    public ulong TearOffAddRefSimpleGlobalAddress { get; }
+
+    public ulong TearOffAddRefSimpleInnerGlobalAddress { get; }
 
     internal Layout<MockSimpleComCallWrapper> SimpleComCallWrapperLayout { get; }
 
@@ -468,6 +500,16 @@ internal sealed class MockBuiltInComBuilder
 
     public static ulong GetCCWThisMask(MockTarget.Architecture architecture)
         => architecture.Is64Bit ? ~0x3FUL : ~0x1FUL;
+
+    private ulong AddPointerGlobal(string name, ulong value)
+    {
+        int pointerSize = _architecture.Is64Bit ? sizeof(ulong) : sizeof(uint);
+        MockMemorySpace.HeapFragment global = _allocator.Allocate((ulong)pointerSize, $"[global pointer] {name}");
+        _builder.TargetTestHelpers.WritePointer(global.Data.AsSpan(), value);
+        _builder.AddHeapFragment(global);
+        return global.Address;
+    }
+
     private MockMemorySpace.HeapFragment AllocateAndAdd(ulong size, string name)
     {
         MockMemorySpace.HeapFragment fragment = _allocator.Allocate(size, name);

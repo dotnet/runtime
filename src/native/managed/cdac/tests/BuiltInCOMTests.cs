@@ -27,7 +27,11 @@ public class BuiltInCOMTests
         MockBuiltInComBuilder builtInCom = new(builder, allocator, arch);
         configure(builtInCom);
 
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, CreateContractTypes(builtInCom), CreateContractGlobals(builtInCom));
+        var target = new TestPlaceholderTarget(
+            arch,
+            builder.GetMemoryContext().ReadFromTarget,
+            CreateContractTypes(builtInCom),
+            CreateContractGlobals(builtInCom));
         ISyncBlock syncBlockContract = syncBlock ?? Mock.Of<ISyncBlock>();
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.BuiltInCOM == ((IContractFactory<IBuiltInCOM>)new BuiltInCOMFactory()).CreateContract(target, 1)
@@ -40,9 +44,6 @@ public class BuiltInCOMTests
 
     // LinkedWrapperTerminator: (PTR_ComCallWrapper)-1, all bits set
     private const ulong LinkedWrapperTerminator = ulong.MaxValue;
-
-    private const ulong AllocationStart = 0x0001_0000;
-    private const ulong AllocationEnd   = 0x0002_0000;
 
     private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockBuiltInComBuilder builtInCom)
         => new()
@@ -58,18 +59,17 @@ public class BuiltInCOMTests
     private static (string Name, ulong Value)[] CreateContractGlobals(MockBuiltInComBuilder builtInCom)
         =>
         [
-            (Constants.Globals.ComRefcountMask, builtInCom.ComRefcountMask),
             (Constants.Globals.CCWNumInterfaces, builtInCom.CCWNumInterfaces),
             (Constants.Globals.CCWThisMask, builtInCom.CCWThisMask),
-            (Constants.Globals.TearOffAddRef, builtInCom.TearOffAddRefAddress),
-            (Constants.Globals.TearOffAddRefSimple, builtInCom.TearOffAddRefSimpleAddress),
-            (Constants.Globals.TearOffAddRefSimpleInner, builtInCom.TearOffAddRefSimpleInnerAddress),
+            (Constants.Globals.TearOffAddRef, builtInCom.TearOffAddRefGlobalAddress),
+            (Constants.Globals.TearOffAddRefSimple, builtInCom.TearOffAddRefSimpleGlobalAddress),
+            (Constants.Globals.TearOffAddRefSimpleInner, builtInCom.TearOffAddRefSimpleInnerGlobalAddress),
             (Constants.Globals.RCWInterfaceCacheSize, MockRCW.InterfaceEntryCacheSize),
         ];
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetRefCount_ReturnsRefCountMasked(MockTarget.Architecture arch)
+    public void GetSimpleComCallWrapperData_ReturnsRefCountMasked(MockTarget.Architecture arch)
     {
         ulong rawRefCount = 0x0000_0000_1234_5678UL | 0x80000000UL;
         ulong wrapperAddress = 0;
@@ -88,13 +88,13 @@ public class BuiltInCOMTests
             wrapperAddress = wrapper.Address;
         });
 
-        ulong refCount = contract.GetRefCount(new TargetPointer(wrapperAddress));
-        Assert.Equal(rawRefCount & comRefcountMask, refCount);
+        SimpleComCallWrapperData sccwData = contract.GetSimpleComCallWrapperData(new TargetPointer(wrapperAddress));
+        Assert.Equal(rawRefCount & comRefcountMask, sccwData.RefCount);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsHandleWeak_WeakFlagSet_ReturnsTrue(MockTarget.Architecture arch)
+    public void GetSimpleComCallWrapperData_WeakFlagSet_ReturnsTrue(MockTarget.Architecture arch)
     {
         const uint IsHandleWeakFlag = 0x4;
         ulong wrapperAddress = 0;
@@ -110,12 +110,13 @@ public class BuiltInCOMTests
             wrapperAddress = wrapper.Address;
         });
 
-        Assert.True(contract.IsHandleWeak(new TargetPointer(wrapperAddress)));
+        SimpleComCallWrapperData sccwData = contract.GetSimpleComCallWrapperData(new TargetPointer(wrapperAddress));
+        Assert.True(sccwData.IsHandleWeak);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsHandleWeak_WeakFlagNotSet_ReturnsFalse(MockTarget.Architecture arch)
+    public void GetSimpleComCallWrapperData_WeakFlagNotSet_ReturnsFalse(MockTarget.Architecture arch)
     {
         ulong wrapperAddress = 0;
 
@@ -129,7 +130,8 @@ public class BuiltInCOMTests
             wrapperAddress = wrapper.Address;
         });
 
-        Assert.False(contract.IsHandleWeak(new TargetPointer(wrapperAddress)));
+        SimpleComCallWrapperData sccwData = contract.GetSimpleComCallWrapperData(new TargetPointer(wrapperAddress));
+        Assert.False(sccwData.IsHandleWeak);
     }
 
     [Theory]
@@ -371,7 +373,6 @@ public class BuiltInCOMTests
         IBuiltInCOM contract = CreateBuiltInCOM(arch, builtInCom =>
         {
             MockSimpleComCallWrapper simpleWrapper = builtInCom.AddSimpleComCallWrapper();
-            int pointerSize = arch.Is64Bit ? sizeof(ulong) : sizeof(uint);
             MockComCallWrapper wrapper = builtInCom.AddComCallWrapper();
 
             simpleWrapper.MainWrapper = wrapper.Address;
