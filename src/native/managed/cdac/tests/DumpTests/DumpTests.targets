@@ -62,22 +62,38 @@
     <DumpRuntimeVersion Include="$(DumpVersions)" />
   </ItemGroup>
 
-  <!--
-    On Windows, heap dumps (type 2) require the DAC (mscordaccore.dll) which is unsigned
-    in local/CI builds. Set the DisableAuxProviderSignatureCheck registry value so that
-    MiniDumpWriteDump accepts the unsigned DAC. Windows 11+ / Server 2022+ only.
+  <!-- Unsigned DAC registry commands (shared with cdac-dump-helix.proj) -->
+  <Import Project="EnableUnsignedDac.props" />
 
-    This is opt-in via /p:SetDisableAuxProviderSignatureCheck=true to avoid surprising
-    machine-wide registry changes during a normal build.
+  <!--
+    On Windows, set the DisableAuxProviderSignatureCheck registry key so that
+    MiniDumpWriteDump accepts the unsigned locally-built DAC for heap dumps.
+    Opt-in via /p:SetDisableAuxProviderSignatureCheck=true.
   -->
   <Target Name="_EnableUnsignedDacWindows"
           BeforeTargets="GenerateAllDumps"
           Condition="'$(HostOS)' == 'windows' AND '$(SetDisableAuxProviderSignatureCheck)' == 'true'">
-    <Exec Command="reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
-          IgnoreExitCode="true"
-          IgnoreStandardErrorWarningFormat="true" />
-    <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
+    <Exec Command="$(DacRegAdd)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" />
+    <!-- WoW64 view only needed for x86 processes -->
+    <Exec Command="$(DacRegAdd32)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true"
+          Condition="'$(TargetArchitecture)' == 'x86'" />
+    <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: $(DacRegAdd) (and for x86: $(DacRegAdd32))"
              Importance="normal" />
+  </Target>
+
+  <!-- Filter out Windows-only debuggees on non-Windows platforms. Debuggees opt in
+       by setting <WindowsOnly>true</WindowsOnly> in their csproj. -->
+  <Target Name="_FilterWindowsOnlyDebuggees"
+          Condition="'$(HostOS)' != 'windows'"
+          BeforeTargets="GenerateAllDumps;BuildDebuggeesOnly;PrepareHelixPayload">
+    <MSBuild Projects="@(DebuggeeCsproj)"
+             Targets="GetDumpTypes"
+             Properties="Configuration=$(DebuggeeConfiguration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_DebuggeeMeta" />
+    </MSBuild>
+    <ItemGroup>
+      <DebuggeeCsproj Remove="%(_DebuggeeMeta.ProjectPath)" Condition="'%(_DebuggeeMeta.WindowsOnly)' == 'true'" />
+    </ItemGroup>
   </Target>
 
   <!-- Top-level target — must be invoked explicitly (not triggered by Build).
@@ -114,6 +130,13 @@
                      Condition="!Exists('$(_DumpInfoFile)')" />
     <Message Text="Wrote dump-info.json: $(_DumpInfoFile) (os=$(_DumpOS), arch=$(_DumpArch))"
              Condition="!Exists('$(_DumpInfoFile)')" Importance="high" />
+  </Target>
+
+  <!-- Build all debuggees without running them (for Helix payload preparation).
+       Uses dotnet build (via Exec) to ensure implicit NuGet restore, matching
+       the pattern in _GenerateLocalDump. Invoke explicitly: dotnet msbuild /t:BuildDebuggeesOnly -->
+  <Target Name="BuildDebuggeesOnly">
+    <Exec Command="&quot;$(_DotNetExe)&quot; build &quot;%(DebuggeeCsproj.Identity)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) --nologo" />
   </Target>
 
   <Target Name="_GenerateDumpsForDebuggee">

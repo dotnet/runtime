@@ -289,5 +289,28 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<ArgumentOutOfRangeException>("format", () =>
                 TarFile.CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format));
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void CreateFromDirectory_UsesWriterOptions(bool toggle)
+        {
+            // Toggle an option property to verify changing options changes the produced archive.
+            bool preserveLinks = toggle;
+
+            using TempDirectory source = CreateSourceDirectoryForCreateFromDirectory_UsesWriterOptions();
+            using TempDirectory destination = new TempDirectory();
+
+            TarWriterOptions options = new TarWriterOptions()
+            {
+                HardLinkMode = preserveLinks ? TarHardLinkMode.PreserveLink : TarHardLinkMode.CopyContents
+            };
+
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+            TarFile.CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, options);
+
+            using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            VerifyCreateFromDirectory_UsesWriterOptions(fileStream, preserveLinks);
+        }
     }
 }

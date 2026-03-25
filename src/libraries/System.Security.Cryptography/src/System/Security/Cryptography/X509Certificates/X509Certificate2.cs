@@ -791,7 +791,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The public key was invalid, or otherwise could not be imported.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public MLKem? GetMLKemPublicKey()
         {
             if (MLKemAlgorithm.FromOid(GetKeyAlgorithm()) is null)
@@ -812,7 +811,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   An error occurred accessing the private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public MLKem? GetMLKemPrivateKey()
         {
             MLKemAlgorithm? algorithm = MLKemAlgorithm.FromOid(GetKeyAlgorithm());
@@ -845,7 +843,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="InvalidOperationException">
         ///   The certificate already has an associated private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public X509Certificate2 CopyWithPrivateKey(MLKem privateKey)
         {
             ArgumentNullException.ThrowIfNull(privateKey);
@@ -2029,7 +2026,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     base64ClearSize = base64Written;
                     Debug.Assert(!decryptedPkcs8.HasValue);
-                    decryptedPkcs8 = KeyFormatHelper.DecryptPkcs8(password, base64Buffer.AsMemory(0, base64Written), out int bytesRead);
+                    decryptedPkcs8 = KeyFormatHelper.DecryptPkcs8(password, base64Buffer.AsSpan(0, base64Written), out int bytesRead);
 
                     if (bytesRead != base64Written)
                     {

@@ -116,6 +116,18 @@ void PortableEntryPoint::Init(void* nativeEntryPoint)
     INDEBUG(_canary = CANARY_VALUE);
 }
 
+void PortableEntryPoint::Init(void* nativeEntryPoint, MethodDesc* pMD)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(nativeEntryPoint != NULL);
+    _ASSERTE(pMD != NULL);
+    _pActualCode = nativeEntryPoint;
+    _pMD = pMD;
+    _pInterpreterData = NULL;
+    _flags = kNone;
+    INDEBUG(_canary = CANARY_VALUE);
+}
+
 namespace
 {
     bool HasFlags(Volatile<int32_t>& flags, int32_t flagMask)
