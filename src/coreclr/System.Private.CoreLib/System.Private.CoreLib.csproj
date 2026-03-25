@@ -40,7 +40,7 @@
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
-    <NoWarn>$(NoWarn),0419,0649</NoWarn>
+    <NoWarn>$(NoWarn),0419,0649,CS9368</NoWarn>
     <Nullable>enable</Nullable>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
