@@ -96,6 +96,7 @@
       <_AppleRuntimeConfigFilePath Condition="'$(_AppleRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleBuildDir), '$(AssemblyName).runtimeconfig.json'))</_AppleRuntimeConfigFilePath>
       <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleBuildDir), 'runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
       <UseConsoleUITemplate Condition="'$(UseConsoleUITemplate)' == '' and '$(UseNativeAOTRuntime)' != 'true'">true</UseConsoleUITemplate>
+      <UseConsoleUITemplate Condition="'$(UseConsoleUITemplate)' == '' and '$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' == 'true'">true</UseConsoleUITemplate>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppleBundleDir)" />
