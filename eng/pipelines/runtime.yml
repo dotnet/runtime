@@ -1130,7 +1130,7 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
+      # iOS devices - Full AOT + AggressiveTrimming to reduce size
       # Build the whole product using Mono and run libraries tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1141,7 +1141,6 @@ extends:
           runtimeFlavor: mono
           platforms:
             - ios_arm64
-            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1177,7 +1176,7 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS/tvOS devices
+      # iOS devices
       # Build the whole product using Native AOT and run libraries tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1188,7 +1187,6 @@ extends:
           runtimeFlavor: coreclr
           platforms:
             - ios_arm64
-            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1221,7 +1219,7 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS/tvOS devices
+      # iOS devices
       # Build the whole product using CoreCLR and run libraries tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1232,7 +1230,6 @@ extends:
           runtimeFlavor: coreclr
           platforms:
             - ios_arm64
-            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
