@@ -10328,6 +10328,10 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
     {
         optimizedTree = fgOptimizeBitwiseAnd(tree);
     }
+    else if (tree->OperIs(GT_OR))
+    {
+        optimizedTree = fgOptimizeBitwiseOr(tree);
+    }
     else if (tree->OperIs(GT_XOR))
     {
         optimizedTree = fgOptimizeBitwiseXor(tree);
@@ -10698,6 +10702,33 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
         DEBUG_DESTROY_NODE(andOp);
 
         return op1;
+    }
+
+    return nullptr;
+}
+
+GenTree* Compiler::fgOptimizeBitwiseOr(GenTreeOp* orOp)
+{
+    assert(orOp->OperIs(GT_OR));
+
+    GenTree* op1 = orOp->gtGetOp1();
+    GenTree* op2 = orOp->gtGetOp2();
+
+    // Fold "(cmp & x) | (cmp & y)" to "cmp & (x | y)".
+    if (orOp->TypeIs(TYP_INT) && op1->OperIs(GT_AND) && op2->OperIs(GT_AND))
+    {
+        if (GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
+        {
+            orOp->ChangeOper(GT_AND, GenTree::ValueNumberUpdate::PRESERVE_VN);
+            orOp->AsOp()->gtOp1 = op1->gtGetOp1();
+            orOp->AsOp()->gtOp2 = gtNewOperNode(GT_OR, orOp->TypeGet(), op1->gtGetOp2(), op2->gtGetOp2());
+            fgMorphTreeDone(orOp->AsOp()->gtOp2);
+
+            DEBUG_DESTROY_NODE(op1);
+            DEBUG_DESTROY_NODE(op2);
+
+            return orOp;
+        }
     }
 
     return nullptr;
