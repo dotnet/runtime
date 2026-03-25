@@ -33,6 +33,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// <inheritdoc />
         public override IEnumerable<FileSystemInfoBase> EnumerateFileSystemInfos()
         {
+            _directoryInfo.Refresh();
+
             if (_directoryInfo.Exists)
             {
                 IEnumerable<FileSystemInfo> fileSystemInfos;

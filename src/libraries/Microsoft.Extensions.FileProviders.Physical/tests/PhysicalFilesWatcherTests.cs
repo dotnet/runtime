@@ -373,14 +373,14 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             await tcs.Task.WaitAsync(TimeSpan.FromSeconds(15));
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
-        public async Task WildcardToken_DoesNotThrow_WhenRootIsMissing()
+        [Theory]
+        [MemberData(nameof(WatcherModeData))]
+        public async Task WildcardToken_DoesNotThrow_WhenRootIsMissing(bool useActivePolling)
         {
             using var root = new TempDirectory(GetTestFilePath());
             string rootPath = root.Path;
 
-            using var physicalFilesWatcher = CreateWatcher(rootPath, useActivePolling: false);
+            using var physicalFilesWatcher = CreateWatcher(rootPath, useActivePolling);
 
             // Delete the root so it no longer exists
             Directory.Delete(rootPath, recursive: true);
