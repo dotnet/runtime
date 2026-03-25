@@ -2084,9 +2084,9 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
     //
     // Note that the register allocator ensures that the registers ON THE NODES will not interfere
     // with one another if consumed (i.e. reloaded or moved to their ASSIGNED reg) in execution order.
-    // Further, it ensures that they will not interfere with one another if they are then copied
-    // to the REQUIRED register (if a fixed register requirement) in execution order.  This requires,
-    // then, that we first consume all the operands, then do any necessary moves.
+    // However, the copies to the REQUIRED registers (fixed register requirements) may interfere if
+    // the source address happens to be allocated to dstReg. We handle that ordering explicitly below.
+    // This requires, then, that we first consume all the operands, then do any necessary moves.
 
     GenTree* const dstAddr = blkNode->Addr();
 
@@ -2099,8 +2099,36 @@ void CodeGen::genConsumeBlockOp(GenTreeBlk* blkNode, regNumber dstReg, regNumber
     genConsumeBlockSrc(blkNode);
 
     // Next, perform any necessary moves.
+    // We must be careful about move ordering: if the source address is currently in dstReg,
+    // we must move source to srcReg first, before overwriting dstReg with the destination address.
+    // Otherwise, copying dst to dstReg would clobber the source address value.
+    bool srcMovedFirst = false;
+    if (srcReg != REG_NA && blkNode->OperIsCopyBlkOp())
+    {
+        GenTree* src = blkNode->Data();
+        if (src->OperIs(GT_IND))
+        {
+            regNumber srcCurReg = src->AsOp()->gtOp1->GetRegNum();
+            if ((srcCurReg != REG_NA) && (srcCurReg == dstReg))
+            {
+                // Source is in the register that destination needs; move source first to avoid clobbering it.
+                // Note: a true swap (srcAddr in dstReg AND dstAddr in srcReg) would require a temporary
+                // register, but the register allocator should prevent this by ensuring at most one of the
+                // two operands ends up in the other's required register.
+                assert(dstAddr->GetRegNum() != srcReg);
+                genSetBlockSrc(blkNode, srcReg);
+                srcMovedFirst = true;
+            }
+        }
+    }
+
     genCopyRegIfNeeded(dstAddr, dstReg);
-    genSetBlockSrc(blkNode, srcReg);
+
+    if (!srcMovedFirst)
+    {
+        genSetBlockSrc(blkNode, srcReg);
+    }
+
     genSetBlockSize(blkNode, sizeReg);
 }
 
