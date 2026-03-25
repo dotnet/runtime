@@ -62,8 +62,24 @@
     <DumpRuntimeVersion Include="$(DumpVersions)" />
   </ItemGroup>
 
-  <!-- Unsigned DAC registry key for heap dumps (shared with cdac-dump-helix.proj) -->
-  <Import Project="EnableUnsignedDac.targets" />
+  <!-- Unsigned DAC registry commands (shared with cdac-dump-helix.proj) -->
+  <Import Project="EnableUnsignedDac.props" />
+
+  <!--
+    On Windows, set the DisableAuxProviderSignatureCheck registry key so that
+    MiniDumpWriteDump accepts the unsigned locally-built DAC for heap dumps.
+    Opt-in via /p:SetDisableAuxProviderSignatureCheck=true.
+  -->
+  <Target Name="_EnableUnsignedDacWindows"
+          BeforeTargets="GenerateAllDumps"
+          Condition="'$(HostOS)' == 'windows' AND '$(SetDisableAuxProviderSignatureCheck)' == 'true'">
+    <Exec Command="$(DacRegAdd)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" />
+    <!-- WoW64 view only needed for x86 processes -->
+    <Exec Command="$(DacRegAdd32)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true"
+          Condition="'$(TargetArchitecture)' == 'x86'" />
+    <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: $(DacRegAdd)"
+             Importance="normal" />
+  </Target>
 
   <!-- Filter out Windows-only debuggees on non-Windows platforms. Debuggees opt in
        by setting <WindowsOnly>true</WindowsOnly> in their csproj. -->

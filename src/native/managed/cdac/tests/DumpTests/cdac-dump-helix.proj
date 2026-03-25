@@ -63,7 +63,7 @@
     derived from each debuggee's DumpTypes property (Heap->heap/2, Full->full/4).
   -->
   <Import Project="$(DumpTestsPayload)/debuggee-metadata.props" />
-  <Import Project="$(MSBuildThisFileDirectory)EnableUnsignedDac.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)EnableUnsignedDac.props" />
 
   <!--
     Helix work item command: generate dumps then run tests (or tar + upload).
@@ -116,9 +116,9 @@
   <!-- Pre-commands: enable dump generation -->
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
     <!-- Allow heap dump generation with the unsigned locally-built DAC -->
-    <HelixPreCommand Include="$(_DacRegAdd) 2&gt;nul || (echo DisableAuxProviderSignatureCheck registry write skipped &amp; exit /b 0)" />
+    <HelixPreCommand Include="$(DacRegAdd) 2&gt;nul || (echo DisableAuxProviderSignatureCheck registry write skipped &amp; exit /b 0)" />
     <!-- WoW64 view only needed for x86 processes -->
-    <HelixPreCommand Condition="'$(TargetArchitecture)' == 'x86'" Include="$(_DacRegAdd32) 2&gt;nul || (echo DisableAuxProviderSignatureCheck /reg:32 registry write skipped &amp; exit /b 0)" />
+    <HelixPreCommand Condition="'$(TargetArchitecture)' == 'x86'" Include="$(DacRegAdd32) 2&gt;nul || (echo DisableAuxProviderSignatureCheck /reg:32 registry write skipped &amp; exit /b 0)" />
     <HelixPreCommand Include="set DOTNET_DbgEnableMiniDump=1" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">
