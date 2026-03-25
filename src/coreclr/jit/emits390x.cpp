@@ -5433,7 +5433,6 @@ void emitter::emitIns_R_R_R(instruction     ins,
     switch (ins)
     {
 #if 0
-        case INS_mul:
         case INS_smull:
         case INS_umull:
             if (insOptsAnyArrangement(opt))
@@ -5485,6 +5484,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             fmt = IF_DR_3A;
             break;
 #endif
+        case INS_mul:
         case INS_ark:
 #if 0
         case INS_sub:
@@ -6348,6 +6348,7 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
             fmt = IF_DV_3AI;
             break;
 #endif
+        case INS_mul:
         case INS_ark:
 #if 0
         case INS_sub:
@@ -10560,6 +10561,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 	    S390_RIL_a(dst, op, id->idReg1(), imm);
 	    break;
 
+        case INS_mul:
         case INS_ark: 
             op = emitInsCode(ins, fmt);
        	    S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());

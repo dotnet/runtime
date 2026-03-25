@@ -545,8 +545,6 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 //
 GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
-    EX_THROW(HRException, (E_FAIL));
-    _ASSERTE(!"NYI");
 #if 0 
     assert(mul->OperIsMul());
 
@@ -584,11 +582,9 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
         mul->ChangeOper(GT_MUL_LONG);
     }
 #endif // TARGET_S390X
-
-    ContainCheckMul(mul);
-
-    return mul->gtNext;
 #endif
+    ContainCheckMul(mul);
+    return mul->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -603,7 +599,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
     //EX_THROW(HRException, (E_FAIL));
-    _ASSERTE(!"NYI");
+   // _ASSERTE(!"NYI");
 #if 0 
     if (comp->opts.OptimizationEnabled())
     {
@@ -2889,11 +2885,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 //
 void Lowering::ContainCheckMul(GenTreeOp* node)
 {
-    EX_THROW(HRException, (E_FAIL));
-    _ASSERTE(!"NYI");
-#if 0 
     ContainCheckBinary(node);
-#endif
 }
 
 //------------------------------------------------------------------------

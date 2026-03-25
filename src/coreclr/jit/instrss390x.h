@@ -56,6 +56,7 @@ INST(lay,		"lay",			0,		0xe371)
 
 //// R_R_R
 INST(ark,		"ark",			0,		0xb9f8)
+INST(mul,		"msrkc",		0,		0xb9fd)
 
 //// R_R_R_I
 INST(stmg,		"stmg",			0,		0xeb24)
