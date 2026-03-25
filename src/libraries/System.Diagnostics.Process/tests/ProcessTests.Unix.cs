@@ -1105,7 +1105,7 @@ namespace System.Diagnostics.Tests
                 SendSignal(PosixSignal.SIGCONT, childHandle.Process.Id);
 
                 Assert.True(childHandle.Process.WaitForExit(WaitInMS));
-                Assert.Equal(0, childHandle.Process.ExitCode);
+                Assert.Equal(RemotelyInvokable.SuccessExitCode, childHandle.Process.ExitCode);
             });
         }
     }
