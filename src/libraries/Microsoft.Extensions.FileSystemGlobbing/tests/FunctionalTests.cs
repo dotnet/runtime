@@ -955,12 +955,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
 
             var files = new[]
             {
-                 "system32/1028/VsGraphicsResources.dll",
-                 "system32/1028/vsjitdebuggerui.dll",
-                 "system32/1029/VsGraphicsResources.dll",
-                 "system32/1029/vsjitdebuggerui.dll",
-                 "system32/1031/VsGraphicsResources.dll",
-                 "system32/1031/vsjitdebuggerui.dll",
+                "system32/1028/VsGraphicsResources.dll",
+                "system32/1028/vsjitdebuggerui.dll",
+                "system32/1029/VsGraphicsResources.dll",
+                "system32/1029/vsjitdebuggerui.dll",
+                "system32/1031/VsGraphicsResources.dll",
+                "system32/1031/vsjitdebuggerui.dll",
              };
 
             var results = matcher.Match("./", files);
@@ -968,12 +968,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             var actual = results.Files.Select(f => f.Stem);
             var expected = new[]
             {
-                 "system32/1028/VsGraphicsResources.dll",
-                 "system32/1028/vsjitdebuggerui.dll",
-                 "system32/1029/VsGraphicsResources.dll",
-                 "system32/1029/vsjitdebuggerui.dll",
-                 "system32/1031/VsGraphicsResources.dll",
-                 "system32/1031/vsjitdebuggerui.dll",
+                "system32/1028/VsGraphicsResources.dll",
+                "system32/1028/vsjitdebuggerui.dll",
+                "system32/1029/VsGraphicsResources.dll",
+                "system32/1029/vsjitdebuggerui.dll",
+                "system32/1031/VsGraphicsResources.dll",
+                "system32/1031/vsjitdebuggerui.dll",
              };
 
             AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
