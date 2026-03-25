@@ -20,7 +20,8 @@ namespace System.Formats.Tar
         private Dictionary<(uint, ulong), string>? _hardLinkTargets;
 
         // Windows specific implementation of the method that reads an entry from disk and writes it into the archive stream.
-        private TarEntry ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
+        // Returns null when the entry should be skipped (e.g. symbolic link with TarSymbolicLinkMode.Skip).
+        private TarEntry? ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
         {
             Debug.Assert(!string.IsNullOrEmpty(fullPath));
 
@@ -43,6 +44,59 @@ namespace System.Formats.Tar
 
             FileAttributes attributes = (FileAttributes)fileInfo.dwFileAttributes;
 
+            bool isDirectory = (attributes & FileAttributes.Directory) != 0;
+
+            // Determine if this is a symbolic link (reparse point with a non-null link target).
+            bool isSymbolicLink = false;
+            string? linkTarget = null;
+            if ((attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                FileSystemInfo info = isDirectory ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
+                linkTarget = info.LinkTarget;
+                isSymbolicLink = linkTarget is not null;
+            }
+
+            // Handle symbolic links according to the configured mode.
+            if (isSymbolicLink)
+            {
+                if (_symbolicLinkMode == TarSymbolicLinkMode.Skip)
+                {
+                    return null;
+                }
+
+                if (_symbolicLinkMode == TarSymbolicLinkMode.CopyContents)
+                {
+                    // Follow the symlink: re-open the file without FILE_FLAG_OPEN_REPARSE_POINT.
+                    handle.Dispose();
+
+                    using SafeFileHandle resolvedHandle = Interop.Kernel32.CreateFile(
+                        fullPath,
+                        Interop.Kernel32.GenericOperations.GENERIC_READ,
+                        FileShare.ReadWrite | FileShare.Delete,
+                        FileMode.Open,
+                        Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS);
+
+                    if (resolvedHandle.IsInvalid)
+                    {
+                        // Broken symlink: treat as empty regular file entry (no data stream).
+                        TarEntry emptyEntry = CreateEntryForFormat(TarHelpers.GetRegularFileEntryTypeForFormat(Format), entryName);
+                        emptyEntry._header._mTime = fileInfo.ftLastWriteTime.ToDateTimeUtc();
+                        emptyEntry.Mode = DefaultWindowsMode;
+                        return emptyEntry;
+                    }
+
+                    if (!Interop.Kernel32.GetFileInformationByHandle(resolvedHandle, out fileInfo))
+                    {
+                        throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError(), fullPath);
+                    }
+
+                    attributes = (FileAttributes)fileInfo.dwFileAttributes;
+                    isDirectory = (attributes & FileAttributes.Directory) != 0;
+                    isSymbolicLink = false;
+                    linkTarget = null;
+                }
+            }
+
             // Track files that have more than one hard link.
             // If we encounter the file again, we'll add a TarEntryType.HardLink.
             string? hardLinkTarget = null;
@@ -58,25 +112,20 @@ namespace System.Formats.Tar
                 }
             }
 
-            bool isDirectory = (attributes & FileAttributes.Directory) != 0;
-
             TarEntryType entryType;
-            string? linkTarget = null;
             if (hardLinkTarget != null)
             {
                 entryType = TarEntryType.HardLink;
             }
+            else if (isSymbolicLink)
+            {
+                // Only symlinks (IO_REPARSE_TAG_SYMLINK) and junctions (IO_REPARSE_TAG_MOUNT_POINT)
+                // have a non-null LinkTarget. Write them as symbolic link entries.
+                entryType = TarEntryType.SymbolicLink;
+            }
             else if ((attributes & FileAttributes.ReparsePoint) != 0)
             {
-                FileSystemInfo info = isDirectory ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
-                linkTarget = info.LinkTarget;
-                if (linkTarget is not null)
-                {
-                    // Only symlinks (IO_REPARSE_TAG_SYMLINK) and junctions (IO_REPARSE_TAG_MOUNT_POINT)
-                    // have a non-null LinkTarget. Write them as symbolic link entries.
-                    entryType = TarEntryType.SymbolicLink;
-                }
-                else if (isDirectory)
+                if (isDirectory)
                 {
                     // Non-symlink directory reparse points (e.g., OneDrive directories)
                     // are treated as regular directories.
@@ -107,14 +156,7 @@ namespace System.Formats.Tar
                 throw new IOException(SR.Format(SR.TarUnsupportedFile, fullPath));
             }
 
-            TarEntry entry = Format switch
-            {
-                TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
-                TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
-                TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
-                TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
-            };
+            TarEntry entry = CreateEntryForFormat(entryType, entryName);
 
             entry._header._mTime = fileInfo.ftLastWriteTime.ToDateTimeUtc();
             // We do not set atime and ctime by default because many external tools are unable to read GNU entries
@@ -153,5 +195,15 @@ namespace System.Formats.Tar
 
             return entry;
         }
+
+        private TarEntry CreateEntryForFormat(TarEntryType entryType, string entryName) =>
+            Format switch
+            {
+                TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
+                TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
+                TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
+                TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
+                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
+            };
     }
 }

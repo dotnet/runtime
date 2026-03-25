@@ -597,6 +597,15 @@ namespace System.Formats.Tar.Tests
             yield return new object[] { (TarHardLinkMode)99 };
         }
 
+        public static IEnumerable<object[]> GetSymbolicLinkModes()
+            => Enum.GetValues<TarSymbolicLinkMode>().Select(s => new object[] { s });
+
+        public static IEnumerable<object[]> GetInvalidSymbolicLinkModes()
+        {
+            yield return new object[] { (TarSymbolicLinkMode)(-1) };
+            yield return new object[] { (TarSymbolicLinkMode)99 };
+        }
+
         public static IEnumerable<object[]> GetFormatsAndFiles()
         {
             foreach (TarEntryType entryType in new[] { TarEntryType.V7RegularFile, TarEntryType.Directory })

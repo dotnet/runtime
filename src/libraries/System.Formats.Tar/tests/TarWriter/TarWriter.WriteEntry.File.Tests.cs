@@ -294,5 +294,75 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GetNextEntry());
             }
         }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [InlineData(TarEntryFormat.V7, TarSymbolicLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Ustar, TarSymbolicLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Pax, TarSymbolicLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Gnu, TarSymbolicLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.V7, TarSymbolicLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Ustar, TarSymbolicLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Pax, TarSymbolicLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Gnu, TarSymbolicLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.V7, TarSymbolicLinkMode.Skip)]
+        [InlineData(TarEntryFormat.Ustar, TarSymbolicLinkMode.Skip)]
+        [InlineData(TarEntryFormat.Pax, TarSymbolicLinkMode.Skip)]
+        [InlineData(TarEntryFormat.Gnu, TarSymbolicLinkMode.Skip)]
+        public void WriteEntry_SymbolicLinks(TarEntryFormat format, TarSymbolicLinkMode linkMode)
+        {
+            using TempDirectory root = new TempDirectory();
+
+            // Create a target file and a symbolic link pointing to it.
+            string targetName = "target.txt";
+            string linkName = "link.txt";
+            string targetPath = Path.Join(root.Path, targetName);
+            string linkPath = Path.Join(root.Path, linkName);
+            File.WriteAllText(targetPath, "target content");
+            FileInfo linkInfo = new FileInfo(linkPath);
+            linkInfo.CreateAsSymbolicLink(targetName);
+
+            using MemoryStream archive = new MemoryStream();
+            TarWriterOptions options = new TarWriterOptions() { Format = format, SymbolicLinkMode = linkMode };
+            using (TarWriter writer = new TarWriter(archive, options, leaveOpen: true))
+            {
+                writer.WriteEntry(targetPath, targetName);
+                writer.WriteEntry(linkPath, linkName);
+            }
+
+            archive.Seek(0, SeekOrigin.Begin);
+            using (TarReader reader = new TarReader(archive))
+            {
+                // First entry is always the regular target file.
+                TarEntry target = reader.GetNextEntry();
+                Assert.NotNull(target);
+                Assert.Equal(targetName, target.Name);
+                Assert.True(target.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile);
+
+                if (linkMode == TarSymbolicLinkMode.Skip)
+                {
+                    // Symbolic link entry was skipped.
+                    Assert.Null(reader.GetNextEntry());
+                }
+                else if (linkMode == TarSymbolicLinkMode.CopyContents)
+                {
+                    // Symbolic link written as a regular file with the target's content.
+                    TarEntry link = reader.GetNextEntry();
+                    Assert.NotNull(link);
+                    Assert.Equal(linkName, link.Name);
+                    Assert.True(link.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile);
+                    Assert.Null(reader.GetNextEntry());
+                }
+                else
+                {
+                    // Default: symbolic link preserved as SymbolicLink entry.
+                    TarEntry link = reader.GetNextEntry();
+                    Assert.NotNull(link);
+                    Assert.Equal(linkName, link.Name);
+                    Assert.Equal(TarEntryType.SymbolicLink, link.EntryType);
+                    Assert.Equal(targetName, link.LinkName);
+                    Assert.Null(reader.GetNextEntry());
+                }
+            }
+        }
     }
 }

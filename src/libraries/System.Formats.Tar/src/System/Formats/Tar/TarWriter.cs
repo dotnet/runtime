@@ -19,6 +19,7 @@ namespace System.Formats.Tar
         private readonly bool _leaveOpen;
         private readonly Stream _archiveStream;
         private readonly TarHardLinkMode _hardLinkMode;
+        private readonly TarSymbolicLinkMode _symbolicLinkMode;
         private int _nextGlobalExtendedAttributesEntryNumber;
 
         /// <summary>
@@ -98,6 +99,7 @@ namespace System.Formats.Tar
             _archiveStream = archiveStream;
             Format = options.Format;
             _hardLinkMode = options.HardLinkMode;
+            _symbolicLinkMode = options.SymbolicLinkMode;
             _leaveOpen = leaveOpen;
             _isDisposed = false;
             _wroteEntries = false;
@@ -197,7 +199,12 @@ namespace System.Formats.Tar
         // Reads an entry from disk and writes it into the archive stream.
         private void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
         {
-            TarEntry entry = ConstructEntryForWriting(fullPath, entryName, FileOptions.None);
+            TarEntry? entry = ConstructEntryForWriting(fullPath, entryName, FileOptions.None);
+
+            if (entry is null)
+            {
+                return; // Entry was skipped (e.g. symbolic link with Skip mode).
+            }
 
             WriteEntry(entry);
             entry._header._dataStream?.Dispose();
@@ -208,7 +215,12 @@ namespace System.Formats.Tar
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            TarEntry entry = ConstructEntryForWriting(fullPath, entryName, FileOptions.Asynchronous);
+            TarEntry? entry = ConstructEntryForWriting(fullPath, entryName, FileOptions.Asynchronous);
+
+            if (entry is null)
+            {
+                return; // Entry was skipped (e.g. symbolic link with Skip mode).
+            }
 
             await WriteEntryAsync(entry, cancellationToken).ConfigureAwait(false);
             if (entry._header._dataStream != null)

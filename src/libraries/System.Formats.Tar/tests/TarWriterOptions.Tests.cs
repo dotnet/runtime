@@ -13,6 +13,7 @@ namespace System.Formats.Tar.Tests
             TarWriterOptions options = new TarWriterOptions();
             Assert.Equal(TarEntryFormat.Pax, options.Format);
             Assert.Equal(TarHardLinkMode.PreserveLink, options.HardLinkMode);
+            Assert.Equal(TarSymbolicLinkMode.PreserveLink, options.SymbolicLinkMode);
         }
 
         [Theory]
@@ -45,6 +46,22 @@ namespace System.Formats.Tar.Tests
         {
             TarWriterOptions options = new TarWriterOptions();
             Assert.Throws<ArgumentOutOfRangeException>("value", () => options.HardLinkMode = mode);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetSymbolicLinkModes))]
+        public void SymbolicLinkMode_AcceptsValidValues(TarSymbolicLinkMode mode)
+        {
+            TarWriterOptions options = new TarWriterOptions() { SymbolicLinkMode = mode };
+            Assert.Equal(mode, options.SymbolicLinkMode);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetInvalidSymbolicLinkModes))]
+        public void SymbolicLinkMode_RejectsInvalidValues(TarSymbolicLinkMode mode)
+        {
+            TarWriterOptions options = new TarWriterOptions();
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.SymbolicLinkMode = mode);
         }
     }
 }

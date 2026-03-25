@@ -13,6 +13,7 @@ namespace System.Formats.Tar.Tests
             TarExtractOptions options = new TarExtractOptions();
             Assert.False(options.OverwriteFiles);
             Assert.Equal(TarHardLinkMode.PreserveLink, options.HardLinkMode);
+            Assert.Equal(TarSymbolicLinkMode.PreserveLink, options.SymbolicLinkMode);
         }
 
         [Theory]
@@ -29,6 +30,22 @@ namespace System.Formats.Tar.Tests
         {
             TarExtractOptions options = new TarExtractOptions();
             Assert.Throws<ArgumentOutOfRangeException>("value", () => options.HardLinkMode = mode);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetSymbolicLinkModes))]
+        public void SymbolicLinkMode_AcceptsValidValues(TarSymbolicLinkMode mode)
+        {
+            TarExtractOptions options = new TarExtractOptions() { SymbolicLinkMode = mode };
+            Assert.Equal(mode, options.SymbolicLinkMode);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetInvalidSymbolicLinkModes))]
+        public void SymbolicLinkMode_RejectsInvalidValues(TarSymbolicLinkMode mode)
+        {
+            TarExtractOptions options = new TarExtractOptions();
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.SymbolicLinkMode = mode);
         }
     }
 }
