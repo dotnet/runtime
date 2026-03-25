@@ -889,5 +889,35 @@ namespace System.IO.Compression.Tests
             Assert.Equal(ZipCompressionMethod.Deflate64, readEntry.CompressionMethod);
             await DisposeZipArchive(async, readArchive);
         }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ReadAfterSeekingPastEnd_ReturnsZeroBytes(bool async)
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var entry = archive.CreateEntry("test.txt", CompressionLevel.NoCompression);
+                using var stream = entry.Open();
+                stream.Write("Hello, World!"u8);
+            }
+
+            ms.Position = 0;
+            using var readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            Stream readStream = await OpenEntryStream(async, readArchive.Entries[0]);
+
+            readStream.Seek(1, SeekOrigin.End);
+            Assert.Equal(14, readStream.Position);
+
+            byte[] buffer = new byte[1024];
+            int bytesRead = async
+                ? await readStream.ReadAsync(buffer)
+                : readStream.Read(buffer, 0, buffer.Length);
+
+            Assert.Equal(0, bytesRead);
+            Assert.Equal(14, readStream.Position);
+
+            await DisposeStream(async, readStream);
+        }
     }
 }

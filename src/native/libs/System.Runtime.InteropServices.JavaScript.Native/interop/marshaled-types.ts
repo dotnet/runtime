@@ -13,6 +13,7 @@ export const enum MemoryViewType {
     Byte = 0,
     Int32 = 1,
     Double = 2,
+    Single = 3,
 }
 
 abstract class MemoryView implements IMemoryView {
@@ -25,12 +26,17 @@ abstract class MemoryView implements IMemoryView {
     _unsafe_create_view(): TypedArray {
         // this view must be short lived so that it doesn't fail after wasm memory growth
         // for that reason we also don't give the view out to end user and provide set/slice/copyTo API instead
-        const view = this._viewType == MemoryViewType.Byte ? new Uint8Array(dotnetApi.localHeapViewU8().buffer, this._pointer as any >>> 0, this._length)
-            : this._viewType == MemoryViewType.Int32 ? new Int32Array(dotnetApi.localHeapViewI32().buffer, this._pointer as any >>> 0, this._length)
-                : this._viewType == MemoryViewType.Double ? new Float64Array(dotnetApi.localHeapViewF64().buffer, this._pointer as any >>> 0, this._length)
-                    : null;
-        if (!view) throw new Error("NotImplementedException");
-        return view;
+        if (this._viewType == MemoryViewType.Byte) {
+            return new Uint8Array(dotnetApi.localHeapViewU8().buffer, this._pointer as any >>> 0, this._length);
+        } else if (this._viewType == MemoryViewType.Int32) {
+            return new Int32Array(dotnetApi.localHeapViewI32().buffer, this._pointer as any >>> 0, this._length);
+        } else if (this._viewType == MemoryViewType.Double) {
+            return new Float64Array(dotnetApi.localHeapViewF64().buffer, this._pointer as any >>> 0, this._length);
+        } else if (this._viewType == MemoryViewType.Single) {
+            return new Float32Array(dotnetApi.localHeapViewF32().buffer, this._pointer as any >>> 0, this._length);
+        } else {
+            throw new Error("NotImplementedException");
+        }
     }
 
     set(source: TypedArray, targetOffset?: number): void {

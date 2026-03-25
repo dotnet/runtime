@@ -17,7 +17,7 @@ namespace System.Diagnostics
     /// </summary>
     public static partial class Debug
     {
-        private static volatile DebugProvider s_provider = new DebugProvider();
+        private static DebugProvider s_provider = new DebugProvider();
 
         public static DebugProvider GetProvider() => s_provider;
 

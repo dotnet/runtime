@@ -26,9 +26,6 @@ set "__RootBinDir=%__RepoRootDir%\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
-:: Default __Exclude to issues.targets
-set __Exclude=%__RepoRootDir%\src\tests\issues.targets
-
 REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:TargetArchitecture=x64)
 set __commandName=%~nx0
 set "__args= %*"
@@ -122,7 +119,6 @@ if /i "%arg%" == "test"                  (set __BuildTestProject=!__BuildTestPro
 if /i "%arg%" == "dir"                   (set __BuildTestDir=!__BuildTestDir!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "tree"                  (set __BuildTestTree=!__BuildTestTree!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "log"                   (set __BuildLogRootName=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%arg%" == "exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "priority"              (set __Priority=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "fsanitize"             (set __CMakeArgs=%__CMakeArgs% "-DCLR_CMAKE_ENABLE_SANITIZERS=%2"&set __EnableNativeSanitizers=%2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
 
@@ -157,7 +153,6 @@ if defined __TestArgParsing (
     echo.
     echo.__BuildArch=%__BuildArch%
     echo.__BuildType=%__BuildType%
-    echo.__Exclude=%__Exclude%
     echo.__RebuildTests=%__RebuildTests%
     echo.__BuildTestProject=%__BuildTestProject%
     echo.__BuildTestDir=%__BuildTestDir%
@@ -380,7 +375,6 @@ echo -Perfmap: Emit perfmap symbol files when compiling the framework assemblies
 echo -AllTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).
 echo -ExcludeMonoFailures, Mono: Build the tests for the Mono runtime honoring mono-specific issues.
 echo.
-echo -Exclude ^<xxx^>: Specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^).
 echo     Set to "" to disable default exclusion file.
 echo -Priority ^<N^> : specify a set of tests that will be built and run, with priority N.
 echo     0: Build only priority 0 cases as essential testcases (default).

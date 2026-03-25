@@ -5,6 +5,10 @@
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- DumpTests is a separate test project with its own csproj -->
+    <Compile Remove="DumpTests\**" />
+  </ItemGroup>
 
   <Import Project="..\..\subproject.props" />
 

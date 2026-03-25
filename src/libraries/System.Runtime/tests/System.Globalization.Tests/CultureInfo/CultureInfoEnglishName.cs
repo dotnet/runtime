@@ -37,7 +37,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, myTestCulture.EnglishName);
         }
 
-        [ConditionalFact(nameof(SupportFullGlobalizationData))]
+        [ConditionalFact(typeof(CultureInfoEnglishName), nameof(SupportFullGlobalizationData))]
         public void ChineseNeutralEnglishName()
         {
             CultureInfo ci = new CultureInfo("zh-Hans");

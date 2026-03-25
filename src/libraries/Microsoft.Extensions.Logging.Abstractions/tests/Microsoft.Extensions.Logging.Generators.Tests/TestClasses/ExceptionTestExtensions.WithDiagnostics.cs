@@ -8,9 +8,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
     internal static partial class ExceptionTestExtensions
     {
-#pragma warning disable SYSLIB1013
         [LoggerMessage(EventId = 2, Level = LogLevel.Debug, Message = "M2 {arg1}: {ex}")]
         internal static partial void M2(ILogger logger, string arg1, Exception ex);
-#pragma warning restore SYSLIB1013
     }
 }

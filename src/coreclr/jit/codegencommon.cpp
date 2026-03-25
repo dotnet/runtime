@@ -731,7 +731,7 @@ void CodeGen::genMarkLabelsForCodegen()
 
 void CodeGenInterface::genUpdateLife(GenTree* tree)
 {
-    treeLifeUpdater->UpdateLife(tree);
+    treeLifeUpdater->UpdateLife<false>(tree);
 }
 
 void CodeGenInterface::genUpdateLife(VARSET_VALARG_TP newLife)
@@ -1961,7 +1961,25 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
             m_compiler->compGetHelperFtn((CorInfoHelpFunc)i);
         }
     }
-#endif
+
+#if defined(TARGET_WASM)
+    // Allow the JIT to fail R2R at this point, so we can skip over methods
+    // that compile without assert but then have Wasm validation errors
+    //
+    static ConfigMethodRange JitR2RUnsupportedRange;
+    JitR2RUnsupportedRange.EnsureInit(JitConfig.JitR2RUnsupportedRange());
+    assert(!JitR2RUnsupportedRange.Error());
+    const unsigned hash    = m_compiler->impInlineRoot()->info.compMethodHash();
+    const bool     inRange = !JitR2RUnsupportedRange.IsEmpty() && JitR2RUnsupportedRange.Contains(hash);
+
+    if (inRange)
+    {
+        JITDUMP("Failing R2R codegen because of JitR2RUnsupportedRange. Hash is 0x%08x, range is ", hash);
+        JITDUMPEXEC(JitR2RUnsupportedRange.Dump());
+        implReadyToRunUnsupported();
+    }
+#endif // defined(TARGET_WASM)
+#endif // DEBUG
 }
 
 //----------------------------------------------------------------------
@@ -2873,9 +2891,8 @@ public:
     //
     RegNode* Get(regNumber reg)
     {
-        for (int i = 0; i < m_nodes.Height(); i++)
+        for (RegNode* const node : m_nodes.BottomUpOrder())
         {
-            RegNode* node = m_nodes.Bottom(i);
             if (node->reg == reg)
             {
                 return node;
@@ -2952,9 +2969,8 @@ public:
 
         // Prefer a node with no outgoing edges meaning that its value does not
         // need to be saved.
-        for (int i = 0; i < m_nodes.Height(); i++)
+        for (RegNode* const reg : m_nodes.BottomUpOrder())
         {
-            RegNode* reg = m_nodes.Bottom(i);
             if (reg->incoming == nullptr)
             {
                 continue;
@@ -3009,9 +3025,8 @@ public:
     void Dump()
     {
         printf("%d registers in register parameter interference graph\n", m_nodes.Height());
-        for (int i = 0; i < m_nodes.Height(); i++)
+        for (RegNode* const regNode : m_nodes.BottomUpOrder())
         {
-            RegNode* regNode = m_nodes.Bottom(i);
             printf("  %s", getRegName(regNode->reg));
             for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
             {
@@ -3032,9 +3047,8 @@ public:
     //
     void Validate()
     {
-        for (int i = 0; i < m_nodes.Height(); i++)
+        for (RegNode* const regNode : m_nodes.BottomUpOrder())
         {
-            RegNode* regNode = m_nodes.Bottom(i);
             for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
             {
                 unsigned destStart = incoming->destOffset;
@@ -4142,7 +4156,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
         //
         const var_types lclTyp  = varDsc->GetStackSlotHomeType();
         const emitAttr  size    = emitActualTypeSize(lclTyp);
-        const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
+        const int       stkOffs = m_compiler->lvaOSRLocalTier0FrameOffset(lclNum) + fieldOffset;
 
 #if defined(TARGET_AMD64)
 

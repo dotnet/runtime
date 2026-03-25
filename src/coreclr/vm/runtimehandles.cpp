@@ -466,7 +466,7 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_GetFields(MethodTable* pMT, intptr_t
 
     BEGIN_QCALL;
 
-    EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, TRUE);
+    EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, EncApproxFieldDescIterator::FixUpEncFields);
     INT32 count = (INT32)fdIterator.Count();
 
     if (count > *pCount)
@@ -1086,6 +1086,22 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHan
     byRefHandle = pTypeHandle.AsTypeHandle().MakeByRef();
     GCX_COOP();
     retType.Set(byRefHandle.GetManagedClassObject());
+    END_QCALL;
+
+    return;
+}
+
+extern "C" void QCALLTYPE RuntimeTypeHandle_MakeFunctionPointer(TypeHandle* pRetAndArgTypes, INT32 numArgs, BOOL isUnmanaged, QCall::ObjectHandleOnStack retType)
+{
+    QCALL_CONTRACT;
+
+    TypeHandle fnPtrHandle;
+
+    BEGIN_QCALL;
+    BYTE callConv = (BYTE)(isUnmanaged ? IMAGE_CEE_CS_CALLCONV_UNMANAGED : IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    fnPtrHandle = ClassLoader::LoadFnptrTypeThrowing(callConv, numArgs, pRetAndArgTypes);
+    GCX_COOP();
+    retType.Set(fnPtrHandle.GetManagedClassObject());
     END_QCALL;
 
     return;

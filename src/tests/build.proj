@@ -54,18 +54,11 @@
 
   <Target Name="Rebuild" />
 
-  <Import Project="$(__Exclude)" Condition="'$(__Exclude)' != '' AND '$(XunitTestBinBase)' != ''" />
-  <PropertyGroup>
-    <HaveExcludes>False</HaveExcludes>
-    <HaveExcludes Condition="'$(__Exclude)' != ''">True</HaveExcludes>
-  </PropertyGroup>
-
   <Target Name="MonoAotCompileTests" DependsOnTargets="GetListOfTestCmds">
     <ItemGroup>
       <AllTestScripts Condition="'@(MergedRunnableTestPaths)' != ''" Include="%(MergedRunnableTestPaths.RootDir)%(MergedRunnableTestPaths.Directory)*.dll" />
       <AllTestScripts Condition="'@(OutOfProcessTestPaths)' != ''" Include="%(OutOfProcessTestPaths.RootDir)%(OutOfProcessTestPaths.Directory)*.sh" />
-      <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
-      <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
+      <TestScripts Include="@(AllTestScripts)" />
 
       <TestAssemblyPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
       <TestAssemblies Include="%(TestAssemblyPaths.Identity)" Condition="Exists(%(TestAssemblyPaths.Identity))" />
@@ -301,11 +294,6 @@
       Condition="'$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)">
 
     <MSBuild
-      Projects="$(MSBuildProjectFile)"
-      Targets="EmitTestExclusionList"
-      Properties="XunitTestBinBase=$(XunitTestBinBase)" />
-
-    <MSBuild
       Projects="Common\XUnitLogChecker\XUnitLogChecker.csproj"
       Targets="Publish"
       Properties="_IsPublishing=true;Configuration=Release;PublishDir=$(XunitTestBinBase)/XUnitLogChecker;RuntimeIdentifier=$(RuntimeIdentifier)"
@@ -373,17 +361,5 @@
     <MSBuild Projects="$(CoreCLRBuildIntegrationDir)/BuildFrameworkNativeObjects.proj"
       Targets="CreateLib"
       Properties="@(CreateLibProperty)" />
-  </Target>
-
-  <Target Name="EmitTestExclusionList" DependsOnTargets="GetFilteredExcludeList">
-    <PropertyGroup>
-      <TestExclusionListPath>$(CORE_ROOT)\TestExclusionList.txt</TestExclusionListPath>
-    </PropertyGroup>
-
-    <WriteLinesToFile
-        File="$(TestExclusionListPath)"
-        Lines="@(FilteredExcludeList)"
-        Overwrite="true"
-        Encoding="Unicode" />
   </Target>
 </Project>
