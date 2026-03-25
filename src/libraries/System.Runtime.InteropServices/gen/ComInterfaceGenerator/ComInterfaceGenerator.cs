@@ -229,18 +229,12 @@ namespace Microsoft.Interop
 
         private static MemberDeclarationSyntax GenerateShadowingMethodsInterface(ComInterfaceAndMethodsContext interfaceMethods)
         {
-            var shadowingMethods = interfaceMethods.ShadowingMethods.Select(m => m.Shadow).ToImmutableArray();
-            bool needsUnsafe = shadowingMethods.Any(
-                static m => m.DescendantNodes().OfType<PointerTypeSyntax>().Any()
-                         || m.DescendantNodes().OfType<FunctionPointerTypeSyntax>().Any());
             var containingSyntax = interfaceMethods.Interface.Info.ContainingSyntax;
             return interfaceMethods.Interface.Info.TypeDefinitionContext.WrapMemberInContainingSyntaxWithUnsafeModifier(
                 TypeDeclaration(containingSyntax.TypeKind, containingSyntax.Identifier)
-                    .WithModifiers(needsUnsafe
-                        ? containingSyntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword)
-                        : containingSyntax.Modifiers)
+                    .WithModifiers(containingSyntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword))
                     .WithTypeParameterList(containingSyntax.TypeParameters)
-                    .WithMembers(List<MemberDeclarationSyntax>(shadowingMethods)))
+                    .WithMembers(List<MemberDeclarationSyntax>(interfaceMethods.ShadowingMethods.Select(m => m.Shadow))))
                     .NormalizeWhitespace();
         }
 
