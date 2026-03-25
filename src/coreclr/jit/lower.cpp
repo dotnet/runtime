@@ -2448,6 +2448,8 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 
             GenTree* dstAddr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* srcAddr = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+            assert(!dstAddr->isContained());
+            assert(!srcAddr->isContained());
 
             // TODO-CQ: Try to create an addressing mode
             GenTreeIndir* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcAddr);
@@ -2457,10 +2459,8 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
                 GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, comp->typGetBlkLayout((unsigned)cnsSize));
             storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
 
-            // TODO-CQ: Use GenTreeBlk::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
-            // unroll this memmove as memcpy - it doesn't require lots of temp registers
-            storeBlk->gtBlkOpKind = call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) ? GenTreeBlk::BlkOpKindUnroll
-                                                                                  : GenTreeBlk::BlkOpKindUnrollMemmove;
+            // For simplicity, we use BlkOpKindUnrollMemmove even for CORINFO_HELP_MEMCPY.
+            storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnrollMemmove;
 
             BlockRange().InsertBefore(call, srcBlk);
             BlockRange().InsertBefore(call, storeBlk);
@@ -2478,7 +2478,8 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 
             JITDUMP("\nNew tree:\n")
             DISPTREE(storeBlk);
-            // TODO: This skips lowering srcBlk and storeBlk.
+            // We've just lowered srcBlk and storeBlk here and it's now what genCodeForMemmove expects.
+            // So the next node to lower is whatever we have after the storeBlk.
             *next = storeBlk->gtNext;
             return true;
         }
