@@ -414,11 +414,8 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
         MethodTable *pMemberInfoClass = gc.MemberInfoObj->GetMethodTable();
         if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__METHOD))
         {
-            INT_PTR methodHandle = 0;
-            UnmanagedCallersOnlyCaller getDispatchMethodDesc(METHOD__IDISPATCHHELPERS__GET_DISPATCH_METHOD_DESC);
-            getDispatchMethodDesc.InvokeThrowing(&gc.MemberInfoObj, &methodHandle);
-
-            MethodDesc* pMeth = reinterpret_cast<MethodDesc*>(methodHandle);
+            REFLECTMETHODREF methodRef = (REFLECTMETHODREF)gc.MemberInfoObj;
+            MethodDesc* pMeth = methodRef->GetMethod();
             if (pMeth)
             {
                 // We don't expose runtime-async methods via IDispatch.
@@ -430,22 +427,16 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
         }
         else if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__RT_FIELD_INFO))
         {
-            INT_PTR fieldHandle = 0;
-            UnmanagedCallersOnlyCaller getDispatchFieldDesc(METHOD__IDISPATCHHELPERS__GET_DISPATCH_FIELD_DESC);
-            getDispatchFieldDesc.InvokeThrowing(&gc.MemberInfoObj, &fieldHandle);
-
-            FieldDesc* pFld = reinterpret_cast<FieldDesc*>(fieldHandle);
+            REFLECTFIELDREF fieldRef = (REFLECTFIELDREF)gc.MemberInfoObj;
+            FieldDesc* pFld = fieldRef->GetField();
             if (pFld)
                 pMemberProps = pMemberMap->GetMethodProps(pFld->GetMemberDef(), pFld->GetModule());
         }
         else if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__PROPERTY))
         {
             INT32 propTok = mdTokenNil;
-            UnmanagedCallersOnlyCaller getDispatchPropertyToken(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTY_TOKEN);
-            getDispatchPropertyToken.InvokeThrowing(&gc.MemberInfoObj, &propTok);
-
-            UnmanagedCallersOnlyCaller getDispatchPropertyModule(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTY_MODULE);
-            getDispatchPropertyModule.InvokeThrowing(&gc.MemberInfoObj, &gc.module);
+            UnmanagedCallersOnlyCaller getDispatchPropertyTokenAndModule(METHOD__IDISPATCHHELPERS__GET_DISPATCH_PROPERTY_TOKEN_AND_MODULE);
+            getDispatchPropertyTokenAndModule.InvokeThrowing(&gc.MemberInfoObj, &propTok, &gc.module);
 
             Module* pModule = gc.module->GetModule();
             pMemberProps = pMemberMap->GetMethodProps(propTok, pModule);
@@ -561,10 +552,8 @@ void DispatchMemberInfo::DetermineMemberType()
 
     GCPROTECT_BEGIN(MemberInfoObj);
     {
-        INT32 memberType = 0;
         UnmanagedCallersOnlyCaller getDispatchMemberInfoType(METHOD__IDISPATCHHELPERS__GET_DISPATCH_MEMBER_INFO_TYPE);
-        getDispatchMemberInfoType.InvokeThrowing(&MemberInfoObj, &memberType);
-        m_enumType = (EnumMemberTypes)memberType;
+        m_enumType = (EnumMemberTypes)getDispatchMemberInfoType.InvokeThrowing_Ret<INT32>(&MemberInfoObj);
     }
     GCPROTECT_END();
 
@@ -657,11 +646,8 @@ void DispatchMemberInfo::SetUpParamMarshalerInfo()
 
         if (CoreLibBinder::IsClass(pMemberInfoMT, CLASS__METHOD))
         {
-            INT_PTR methodHandle = 0;
-            UnmanagedCallersOnlyCaller getDispatchMethodDesc(METHOD__IDISPATCHHELPERS__GET_DISPATCH_METHOD_DESC);
-            getDispatchMethodDesc.InvokeThrowing(&MemberInfoObj, &methodHandle);
-
-            MethodDesc* pMeth = reinterpret_cast<MethodDesc*>(methodHandle);
+            REFLECTMETHODREF methodRef = (REFLECTMETHODREF)MemberInfoObj;
+            MethodDesc* pMeth = methodRef->GetMethod();
             if (pMeth)
                 SetUpMethodMarshalerInfo(pMeth, FALSE);
         }

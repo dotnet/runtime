@@ -4,7 +4,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
@@ -13,7 +12,6 @@ namespace System.Runtime.InteropServices
         private const int DispatchExPropertyCanRead = 1;
         private const int DispatchExPropertyCanWrite = 2;
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe int GetDispatchExPropertyFlags(PropertyInfo* pMemberInfo, Exception* pException)
@@ -41,7 +39,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe void GetDispatchParameterInfoName(ParameterInfo* pParameterInfo, string* pResult, Exception* pException)
@@ -56,7 +53,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe void GetDispatchMemberInfoName(MemberInfo* pMemberInfo, string* pResult, Exception* pException)
@@ -71,22 +67,21 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static unsafe void GetDispatchMemberInfoType(MemberInfo* pMemberInfo, int* pResult, Exception* pException)
+        private static unsafe int GetDispatchMemberInfoType(MemberInfo* pMemberInfo, Exception* pException)
         {
             try
             {
-                *pResult = (int)pMemberInfo->MemberType;
+                return (int)pMemberInfo->MemberType;
             }
             catch (Exception ex)
             {
                 *pException = ex;
+                return 0;
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe void HasDispatchCustomAttribute(MemberInfo* pMemberInfo, Type* pAttributeType, bool* pResult, Exception* pException)
@@ -101,7 +96,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe void GetDispatchMemberParameters(MemberInfo* pMemberInfo, ParameterInfo[]* pResult, Exception* pException)
@@ -123,14 +117,14 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static unsafe void GetDispatchMethodDesc(MethodBase* pMethodBase, IntPtr* pResult, Exception* pException)
+        private static unsafe void GetDispatchPropertyTokenAndModule(PropertyInfo* pPropertyInfo, int* pToken, RuntimeModule* pModule, Exception* pException)
         {
             try
             {
-                *pResult = pMethodBase->MethodHandle.Value;
+                *pToken = pPropertyInfo->MetadataToken;
+                *pModule = (RuntimeModule)pPropertyInfo->Module;
             }
             catch (Exception ex)
             {
@@ -138,52 +132,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
-        [UnmanagedCallersOnly]
-        [RequiresUnsafe]
-        private static unsafe void GetDispatchFieldDesc(FieldInfo* pFieldInfo, IntPtr* pResult, Exception* pException)
-        {
-            try
-            {
-                *pResult = pFieldInfo->FieldHandle.Value;
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
-        [SupportedOSPlatform("windows")]
-        [UnmanagedCallersOnly]
-        [RequiresUnsafe]
-        private static unsafe void GetDispatchPropertyToken(PropertyInfo* pPropertyInfo, int* pResult, Exception* pException)
-        {
-            try
-            {
-                *pResult = pPropertyInfo->MetadataToken;
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
-        [SupportedOSPlatform("windows")]
-        [UnmanagedCallersOnly]
-        [RequiresUnsafe]
-        private static unsafe void GetDispatchPropertyModule(PropertyInfo* pPropertyInfo, RuntimeModule* pResult, Exception* pException)
-        {
-            try
-            {
-                *pResult = (RuntimeModule)pPropertyInfo->Module;
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe void GetDispatchPropertyAccessor(PropertyInfo* pPropertyInfo, bool getter, bool nonPublic, IntPtr* pResult, Exception* pException)
@@ -199,7 +147,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe void GetDispatchFieldValue(FieldInfo* pFieldInfo, object* pTarget, object* pResult, Exception* pException)
@@ -214,7 +161,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe void SetDispatchFieldValue(FieldInfo* pFieldInfo, object* pTarget, object* pValue, int invokeAttr, Binder* pBinder, Globalization.CultureInfo* pCulture, Exception* pException)
@@ -234,7 +180,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe void GetDispatchPropertyValue(PropertyInfo* pPropertyInfo, object* pTarget, int invokeAttr, Binder* pBinder, object[]* pIndexArgs, Globalization.CultureInfo* pCulture, object* pResult, Exception* pException)
@@ -254,7 +199,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe void SetDispatchPropertyValue(PropertyInfo* pPropertyInfo, object* pTarget, object* pValue, int invokeAttr, Binder* pBinder, object[]* pIndexArgs, Globalization.CultureInfo* pCulture, Exception* pException)
@@ -275,7 +219,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe void InvokeDispatchMethodInfo(MethodInfo* pMemberInfo, object* pTarget, int invokeAttr, Binder* pBinder, object[]* pArgs, Globalization.CultureInfo* pCulture, object* pResult, Exception* pException)
@@ -295,7 +238,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [RequiresUnreferencedCode("The member might be removed")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
@@ -319,7 +261,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [RequiresUnreferencedCode("The member might be removed")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
@@ -335,7 +276,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [RequiresUnreferencedCode("The member might be removed")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
@@ -351,7 +291,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [RequiresUnreferencedCode("The member might be removed")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
@@ -367,7 +306,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
         private static unsafe void GetDispatchInnerException(Exception* pExceptionObject, Exception* pResult, Exception* pException)
