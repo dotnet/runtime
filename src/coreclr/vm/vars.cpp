@@ -94,6 +94,10 @@ GPTR_IMPL_INIT(StressLog, g_pStressLog, &StressLog::theLog);
 GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_COMWRAPPERS
+GARY_IMPL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
+#endif // FEATURE_COMWRAPPERS
+
 #ifdef FEATURE_INTEROP_DEBUGGING
 GVAL_IMPL_INIT(DWORD, g_debuggerWordTLSIndex, TLS_OUT_OF_INDEXES);
 #endif

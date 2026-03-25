@@ -152,10 +152,35 @@ C_FUNC(\Name):
 // d2
 // d1
 // d0                          <- __PWTB_FloatArgumentRegisters
-.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, saveFpArgs = 1, pushArgRegs = 0
+// Optional: Callee saved floating point registers (if pushCalleeSavedFloatRegs=1)
+//   d15
+//   d14
+//   d13
+//   d12
+//   d11
+//   d10
+//   d9
+//   d8                        <- __PWTB_FloatCalleeSavedRegisters
+//
+// pushCalleeSavedFloatRegs - Optional parameter. If set to 1, the macro will also save
+//                            the callee-saved floating point registers (d8-d15) to the stack.
+//                            These registers are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
+//
+.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, saveFpArgs = 1, pushArgRegs = 0, pushCalleeSavedFloatRegs = 0
 
-        __PWTB_FloatArgumentRegisters = \extraLocals
+        __PWTB_FloatCalleeSavedRegisters = \extraLocals
         __PWTB_SaveFPArgs = \saveFpArgs
+        __PWTB_PushCalleeSavedFloatRegs = \pushCalleeSavedFloatRegs
+
+        // If pushCalleeSavedFloatRegs is specified, reserve space for d8-d15 (8 registers * 8 bytes = 64 bytes)
+        .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+                .if ((__PWTB_FloatCalleeSavedRegisters % 8) != 0)
+                __PWTB_FloatCalleeSavedRegisters = __PWTB_FloatCalleeSavedRegisters + 4
+                .endif
+                __PWTB_FloatArgumentRegisters = __PWTB_FloatCalleeSavedRegisters + 64
+        .else
+                __PWTB_FloatArgumentRegisters = \extraLocals
+        .endif
 
         .if (__PWTB_SaveFPArgs == 1)
                 .if ((__PWTB_FloatArgumentRegisters % 8) != 0)
@@ -172,6 +197,7 @@ C_FUNC(\Name):
         .endif
 
         __PWTB_StackAlloc = __PWTB_TransitionBlock
+        __PWTB_ArgumentRegisters = __PWTB_StackAlloc + 36
 
         .ifnc \pushArgRegs, DoNotPushArgRegs
                 PUSH_ARGUMENT_REGISTERS
@@ -186,6 +212,12 @@ C_FUNC(\Name):
         .if (__PWTB_SaveFPArgs == 1)
                 add r6, sp, #(__PWTB_FloatArgumentRegisters)
                 vstm r6, {d0-d7}
+        .endif
+
+        // Save callee-saved floating point registers if requested
+        .if (__PWTB_PushCalleeSavedFloatRegs == 1)
+                add r6, sp, #(__PWTB_FloatCalleeSavedRegisters)
+                vstm r6, {d8-d15}
         .endif
 
         CHECK_STACK_ALIGNMENT
@@ -355,3 +387,24 @@ C_FUNC(\Name):
         movw \DestReg, #((\Constant) & 0xFFFF)
         movt \DestReg, #((\Constant) >> 16)
 .endm
+
+
+// thumb with PIC version
+.macro INLINE_GET_TLS_VAR var
+        ldr     r0, 2f
+1:
+        add     r0, pc, r0
+        bl      __tls_get_addr
+        b       3f
+
+        // Inline data
+        // LLVM assembler has no concept of subsections and this is not expressible as
+        // cross-section relocation.
+        .p2align 2
+2:
+        .extern \var
+        .type \var, tls_object
+        .long  \var(TLSGD) + (2b - 1b - 4)
+3:
+.endm
+

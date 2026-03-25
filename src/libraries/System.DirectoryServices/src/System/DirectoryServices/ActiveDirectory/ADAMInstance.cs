@@ -636,7 +636,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // this adam instance
                     if (!Partitions.Contains(value))
                     {
-                        throw new ArgumentException(SR.Format(SR.ServerNotAReplica, value), nameof(value));
+                        throw new ArgumentException(SR.ServerNotAReplica, nameof(value));
                     }
                     ntdsaEntry.Properties[PropertyManager.MsDSDefaultNamingContext].Value = value;
                 }

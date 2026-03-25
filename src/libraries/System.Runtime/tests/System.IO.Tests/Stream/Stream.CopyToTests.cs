@@ -40,7 +40,7 @@ namespace System.IO.Tests
             Assert.InRange(outerCount, 1, int.MaxValue); // the buffer can't be size 0
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task AsyncIfCanSeekIsFalseLengthAndPositionShouldNotBeCalled()
         {
             var baseStream = new DelegateStream(
@@ -80,7 +80,7 @@ namespace System.IO.Tests
             Assert.InRange(trackingStream.TimesCalled(nameof(trackingStream.Position)), 0, 1);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task AsyncIfCanSeekIsTrueLengthAndPositionShouldOnlyBeCalledOnce()
         {
             var baseStream = new DelegateStream(
@@ -133,7 +133,7 @@ namespace System.IO.Tests
             Assert.InRange(outerCount, 1, int.MaxValue);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(LengthIsLessThanOrEqualToPosition))]
         public async Task AsyncIfLengthIsLessThanOrEqualToPositionCopyToShouldStillBeCalledWithAPositiveBufferSize(long length, long position)
         {
@@ -188,7 +188,7 @@ namespace System.IO.Tests
             Assert.InRange(outerCount, 1, int.MaxValue);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(LengthMinusPositionPositiveOverflows))]
         public async Task AsyncIfLengthMinusPositionPositiveOverflowsBufferSizeShouldStillBePositive(long length, long position)
         {
@@ -267,7 +267,7 @@ namespace System.IO.Tests
             Assert.Equal(ReadLimit - 1, dest.TimesCalled(nameof(dest.Write)));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(LengthIsGreaterThanPositionAndDoesNotOverflow))]
         public async Task AsyncIfLengthIsGreaterThanPositionAndDoesNotOverflowEverythingShouldGoNormally(long length, long position)
         {

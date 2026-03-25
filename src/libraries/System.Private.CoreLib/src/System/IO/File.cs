@@ -170,6 +170,32 @@ namespace System.IO
             return SafeFileHandle.Open(Path.GetFullPath(path), mode, access, share, options, preallocationSize);
         }
 
+        /// <summary>
+        /// Opens a handle to the system's null device.
+        /// </summary>
+        /// <returns>A <see cref="SafeFileHandle"/> to the system's null device.</returns>
+        /// <remarks>
+        /// <para>
+        /// On Windows, this opens a handle to "NUL". On Unix-based systems, this opens a handle to "/dev/null".
+        /// </para>
+        /// <para>
+        /// The null device is a special file that discards all data written to it and provides no data (EOF)
+        /// when read from. This is useful for redirecting unwanted output or providing empty input to processes.
+        /// </para>
+        /// <para>
+        /// The returned handle supports both reading and writing. All read operations return 0 (EOF), and all
+        /// write operations succeed without storing any data.
+        /// </para>
+        /// <para>
+        /// For scenarios that don't require raw file handles or descriptors, consider using <see cref="Stream.Null"/> instead.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="IOException">An I/O error occurred while opening the null device.</exception>
+        public static SafeFileHandle OpenNullHandle()
+        {
+            return SafeFileHandle.Open(NullDevicePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.None, preallocationSize: 0);
+        }
+
         // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
         // ToUniversalTime treats this as local.
         internal static DateTimeOffset GetUtcDateTimeOffset(DateTime dateTime)

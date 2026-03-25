@@ -2360,12 +2360,11 @@ namespace System
 
             int outputLength = ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks: true);
 
-            string result = string.FastAllocateString(outputLength);
-
-            int charsWritten = ConvertToBase64ArrayInsertLineBreaks(new Span<char>(ref result.GetRawStringData(), result.Length), bytes);
-            Debug.Assert(result.Length == charsWritten, $"Expected {result.Length} == {charsWritten}");
-
-            return result;
+            return string.Create(outputLength, bytes, static (buffer, bytes) =>
+            {
+                int charsWritten = ConvertToBase64WithLineBreaks(buffer, bytes);
+                Debug.Assert(buffer.Length == charsWritten, $"Expected {buffer.Length} == {charsWritten}");
+            });
         }
 
         public static int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut)
@@ -2407,7 +2406,7 @@ namespace System
             }
             else
             {
-                int converted = ConvertToBase64ArrayInsertLineBreaks(outArray.AsSpan(offsetOut), new ReadOnlySpan<byte>(inArray, offsetIn, length));
+                int converted = ConvertToBase64WithLineBreaks(outArray.AsSpan(offsetOut), new ReadOnlySpan<byte>(inArray, offsetIn, length));
                 Debug.Assert(converted == charLengthRequired);
             }
 
@@ -2443,7 +2442,7 @@ namespace System
             }
             else
             {
-                int converted = ConvertToBase64ArrayInsertLineBreaks(chars, bytes);
+                int converted = ConvertToBase64WithLineBreaks(chars, bytes);
                 Debug.Assert(converted == charLengthRequired);
             }
 
@@ -2451,70 +2450,32 @@ namespace System
             return true;
         }
 
-        private static unsafe int ConvertToBase64ArrayInsertLineBreaks(Span<char> outChars, ReadOnlySpan<byte> inData)
+        private static int ConvertToBase64WithLineBreaks(Span<char> destination, ReadOnlySpan<byte> source)
         {
-            fixed (char* outCharsPtr = &MemoryMarshal.GetReference(outChars))
-            fixed (byte* inDataPtr = &MemoryMarshal.GetReference(inData))
-            {
-                return ConvertToBase64ArrayInsertLineBreaks(outCharsPtr, inDataPtr, inData.Length);
-            }
-        }
+            Debug.Assert(destination.Length >= ToBase64_CalculateAndValidateOutputLength(source.Length, insertLineBreaks: true));
 
-        private static unsafe int ConvertToBase64ArrayInsertLineBreaks(char* outChars, byte* inData, int length)
-        {
-            int lengthmod3 = length % 3;
-            int calcLength = length - lengthmod3;
-            int j = 0;
-            int charcount = 0;
-            // Convert three bytes at a time to base64 notation.  This will consume 4 chars.
-            int i;
+            int writeOffset = 0;
 
-            // get a pointer to the base64 table to avoid unnecessary range checking
-            ReadOnlySpan<byte> base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="u8;
-            for (i = 0; i < calcLength; i += 3)
+            while (true)
             {
-                if (charcount == Base64LineBreakPosition)
+                int chunkSize = Math.Min(source.Length, Base64LineBreakPosition / 4 * 3); // 76 base64 chars == 57 bytes
+
+                OperationStatus status = Base64.EncodeToChars(source.Slice(0, chunkSize), destination.Slice(writeOffset), out int bytesConsumed, out int charsWritten);
+                Debug.Assert(status == OperationStatus.Done && bytesConsumed == chunkSize);
+
+                source = source.Slice(chunkSize);
+                writeOffset += charsWritten;
+
+                if (source.IsEmpty)
                 {
-                    outChars[j++] = '\r';
-                    outChars[j++] = '\n';
-                    charcount = 0;
+                    break;
                 }
-                charcount += 4;
-                outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
-                outChars[j + 1] = (char)base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
-                outChars[j + 2] = (char)base64[((inData[i + 1] & 0x0f) << 2) | ((inData[i + 2] & 0xc0) >> 6)];
-                outChars[j + 3] = (char)base64[inData[i + 2] & 0x3f];
-                j += 4;
+
+                destination[writeOffset++] = '\r';
+                destination[writeOffset++] = '\n';
             }
 
-            // Where we left off before
-            i = calcLength;
-
-            if ((lengthmod3 != 0) && (charcount == Base64LineBreakPosition))
-            {
-                outChars[j++] = '\r';
-                outChars[j++] = '\n';
-            }
-
-            switch (lengthmod3)
-            {
-                case 2: // One character padding needed
-                    outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
-                    outChars[j + 1] = (char)base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
-                    outChars[j + 2] = (char)base64[(inData[i + 1] & 0x0f) << 2];
-                    outChars[j + 3] = (char)base64[64]; // Pad
-                    j += 4;
-                    break;
-                case 1: // Two character padding needed
-                    outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
-                    outChars[j + 1] = (char)base64[(inData[i] & 0x03) << 4];
-                    outChars[j + 2] = (char)base64[64]; // Pad
-                    outChars[j + 3] = (char)base64[64]; // Pad
-                    j += 4;
-                    break;
-            }
-
-            return j;
+            return writeOffset;
         }
 
         private static int ToBase64_CalculateAndValidateOutputLength(int inputLength, bool insertLineBreaks)

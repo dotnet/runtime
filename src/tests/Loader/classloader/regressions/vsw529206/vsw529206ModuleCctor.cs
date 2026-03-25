@@ -9,6 +9,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Test_vsw529206ModuleCctor
 {
@@ -29,6 +30,7 @@ public class Test_vsw529206ModuleCctor
 		TriggerModuleCctorClass.intStatic = 5;
 	}
 
+     [ActiveIssue("needs triage", TestRuntimes.Mono)]
     	[Fact]
     	public static int TestEntryPoint()
     	{

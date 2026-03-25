@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 {
     public class SimpleConsoleFormatterTests : ConsoleFormatterTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(LoggerColorBehavior.Default)]
         [InlineData(LoggerColorBehavior.Enabled)]
         [InlineData(LoggerColorBehavior.Disabled)]
@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Log_NoLogScope_DoesNotWriteAnyScopeContentToOutput()
         {
             // Arrange
@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Log_SingleLine_LogsWhenMessageIsNotProvided()
         {
             // Arrange
@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Log_SingleLine_LogsWhenBothMessageAndExceptionProvided()
         {
             // Arrange

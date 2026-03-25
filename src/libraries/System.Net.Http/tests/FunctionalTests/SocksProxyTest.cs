@@ -15,12 +15,12 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocksProxyTest(ITestOutputHelper helper) : base(helper) { }
 
-        private static string[] Hosts(string socksScheme) => socksScheme == "socks5"
+        private static string[] Hosts(string socksScheme) => socksScheme == "socks5" || socksScheme == "socks5h"
             ? new[] { "localhost", "127.0.0.1", "::1" }
             : new[] { "localhost", "127.0.0.1" };
 
         public static IEnumerable<object[]> TestLoopbackAsync_MemberData() =>
-            from scheme in new[] { "socks4", "socks4a", "socks5" }
+            from scheme in new[] { "socks4", "socks4a", "socks5", "socks5h" }
             from useSsl in BoolValues
             from useAuth in BoolValues
             from host in Hosts(scheme)
@@ -77,7 +77,7 @@ namespace System.Net.Http.Functional.Tests
 
             yield return new object[] { "socks4", new string('a', 256), false, null, "Failed to resolve the destination host to an IPv4 address." };
 
-            foreach (string scheme in new[] { "socks4a", "socks5" })
+            foreach (string scheme in new[] { "socks4a", "socks5", "socks5h" })
             {
                 yield return new object[] { scheme, new string('a', 256), false, null, "Encoding the host took more than the maximum of 255 bytes." };
             }
@@ -86,6 +86,10 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { "socks5", "localhost", true, new NetworkCredential("bad_username", "bad_password"), "Failed to authenticate with the SOCKS server." };
             yield return new object[] { "socks5", "localhost", true, new NetworkCredential(new string('a', 256), "foo"), "Encoding the UserName took more than the maximum of 255 bytes." };
             yield return new object[] { "socks5", "localhost", true, new NetworkCredential("foo", new string('a', 256)), "Encoding the Password took more than the maximum of 255 bytes." };
+            yield return new object[] { "socks5h", "localhost", true, null, "SOCKS server did not return a suitable authentication method." };
+            yield return new object[] { "socks5h", "localhost", true, new NetworkCredential("bad_username", "bad_password"), "Failed to authenticate with the SOCKS server." };
+            yield return new object[] { "socks5h", "localhost", true, new NetworkCredential(new string('a', 256), "foo"), "Encoding the UserName took more than the maximum of 255 bytes." };
+            yield return new object[] { "socks5h", "localhost", true, new NetworkCredential("foo", new string('a', 256)), "Encoding the Password took more than the maximum of 255 bytes." };
         }
 
         [Theory]

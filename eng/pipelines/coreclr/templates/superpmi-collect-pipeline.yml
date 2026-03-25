@@ -97,7 +97,11 @@ extends:
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
-              # Build CLR assets for x64 as well as the target as we need an x64 mcs
+              # Build CLR assets for x64 as well as the target as we need an x64
+              # mcs. We need to do that in a container, so ensure we can access the
+              # internal NuGet feeds in that container.
+              - task: NuGetAuthenticate@1
+                target: linux_x64
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
                   buildArgs: -s clr.spmi -c $(_BuildConfig)
@@ -216,7 +220,11 @@ extends:
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
-              # Build CLR assets for x64 as well as the target as we need an x64 mcs
+              # Build CLR assets for x64 as well as the target as we need an x64
+              # mcs. We need to do that in a container, so ensure we can access the
+              # internal NuGet feeds in that container.
+              - task: NuGetAuthenticate@1
+                target: linux_x64
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
                   buildArgs: -s clr.spmi -c $(_BuildConfig)
@@ -491,7 +499,7 @@ extends:
           platforms:
           - osx_arm64
           - linux_arm64
-          # - linux_x64 # currently runs of disk space too often.
+          - linux_x64
           - windows_x64
           - windows_arm64
           helixQueueGroup: ci

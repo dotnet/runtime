@@ -149,6 +149,7 @@ namespace System.Net.Http.Tests
         [InlineData("socks4://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
         [InlineData("socks4a://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
         [InlineData("socks5://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
+        [InlineData("socks5h://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
         [InlineData("https://1.1.1.5:3005", "1.1.1.5", "3005", null, null)]
         [InlineData("https://1.1.1.5", "1.1.1.5", "443", null, null)]
         // Everything before the last '@' is considered as user info (unlike regular Uri parsing).

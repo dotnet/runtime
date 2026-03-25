@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 {
     [SetupLinkAttributesFile("LinkAttributeErrorCases.xml")]
     [IgnoreLinkAttributes(false)]
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [SetupCompileBefore("library.dll", new string[] { "Dependencies/EmbeddedAttributeErrorCases.cs" },
         resources: new object[] { new string[] { "Dependencies/EmbeddedAttributeErrorCases.xml", "ILLink.LinkAttributes.xml" } })]
 

@@ -1094,11 +1094,11 @@ JIT_PollGCRarePath
 
     NESTED_ENTRY InterpreterStub
 
-        PROLOG_WITH_TRANSITION_BLOCK
+        PROLOG_WITH_TRANSITION_BLOCK , , PushCalleeSavedFloatRegs
 
         INLINE_GETTHREAD x20, x19
-        cbz x20, NoManagedThreadOrCallStub
         mov x19, METHODDESC_REGISTER ; x19 contains IR bytecode address
+        cbz x20, NoManagedThreadOrCallStub
 
         ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
         cbnz x11, HaveInterpThreadContext
@@ -1175,6 +1175,18 @@ HaveInterpThreadContext
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
         EPILOG_RETURN
     NESTED_END InterpreterStubRetBuff
+
+    NESTED_ENTRY InterpreterStubRetBuffX1
+        PROLOG_SAVE_REG_PAIR   fp, lr, #-16!
+        ; The +16 is for the fp, lr above
+        add x0, sp, #__PWTB_TransitionBlock + 16
+        ; Load the return buffer address from incoming x1 before clobbering x1
+        mov x2, x1
+        mov x1, x19 ; the IR bytecode pointer
+        bl ExecuteInterpretedMethod
+        EPILOG_RESTORE_REG_PAIR fp, lr, #16!
+        EPILOG_RETURN
+    NESTED_END InterpreterStubRetBuffX1
 
     NESTED_ENTRY InterpreterStubRet2I8
         PROLOG_SAVE_REG_PAIR   fp, lr, #-16!
@@ -2604,6 +2616,73 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
+    NESTED_ENTRY CallJittedMethodRetBuffX1
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
+        str x4, [fp, #16]
+        sub sp, sp, x3
+        mov x10, x0
+        mov x9, x1
+        mov x1, x2
+        ldr x11, [x10], #8
+        blr x11
+        ldr x4, [fp, #16]
+        str x2, [x4]
+        EPILOG_STACK_RESTORE
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
+        EPILOG_RETURN
+    NESTED_END CallJittedMethodRetBuffX1
+
+    ; X0 - routines array
+    ; X1 - interpreter stack args location
+    ; X2 - interpreter stack return value location
+    ; X3 - stack arguments size (properly aligned)
+    ; X4 - address of continuation return value
+    NESTED_ENTRY CallJittedMethodRetI1
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
+        stp x2, x4, [fp, #16]
+        sub sp, sp, x3
+        mov x10, x0
+        mov x9, x1
+        ldr x11, [x10], #8
+        blr x11
+        sxtb x0, w0
+        ldr x9, [fp, #16]
+        str x0, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
+        EPILOG_STACK_RESTORE
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
+        EPILOG_RETURN
+    NESTED_END CallJittedMethodRetI1
+
+    ; X0 - routines array
+    ; X1 - interpreter stack args location
+    ; X2 - interpreter stack return value location
+    ; X3 - stack arguments size (properly aligned)
+    ; X4 - address of continuation return value
+    NESTED_ENTRY CallJittedMethodRetI2
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
+        stp x2, x4, [fp, #16]
+        sub sp, sp, x3
+        mov x10, x0
+        mov x9, x1
+        ldr x11, [x10], #8
+        blr x11
+        sxth x0, w0
+        ldr x9, [fp, #16]
+        str x0, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
+        EPILOG_STACK_RESTORE
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
+        EPILOG_RETURN
+    NESTED_END CallJittedMethodRetI2
+
+    ; X0 - routines array
+    ; X1 - interpreter stack args location
+    ; X2 - interpreter stack return value location
+    ; X3 - stack arguments size (properly aligned)
+    ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRetI8
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
@@ -2620,6 +2699,52 @@ CopyLoop
         EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRetI8
+
+    ; X0 - routines array
+    ; X1 - interpreter stack args location
+    ; X2 - interpreter stack return value location
+    ; X3 - stack arguments size (properly aligned)
+    ; X4 - address of continuation return value
+    NESTED_ENTRY CallJittedMethodRetU1
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
+        stp x2, x4, [fp, #16]
+        sub sp, sp, x3
+        mov x10, x0
+        mov x9, x1
+        ldr x11, [x10], #8
+        blr x11
+        uxtb x0, w0
+        ldr x9, [fp, #16]
+        str x0, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
+        EPILOG_STACK_RESTORE
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
+        EPILOG_RETURN
+    NESTED_END CallJittedMethodRetU1
+
+    ; X0 - routines array
+    ; X1 - interpreter stack args location
+    ; X2 - interpreter stack return value location
+    ; X3 - stack arguments size (properly aligned)
+    ; X4 - address of continuation return value
+    NESTED_ENTRY CallJittedMethodRetU2
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
+        stp x2, x4, [fp, #16]
+        sub sp, sp, x3
+        mov x10, x0
+        mov x9, x1
+        ldr x11, [x10], #8
+        blr x11
+        uxth x0, w0
+        ldr x9, [fp, #16]
+        str x0, [x9]
+        ldr x9, [fp, #24]
+        str x2, [x9]
+        EPILOG_STACK_RESTORE
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
+        EPILOG_RETURN
+    NESTED_END CallJittedMethodRetU2
 
     ; X0 - routines array
     ; X1 - interpreter stack args location
@@ -3010,6 +3135,64 @@ CopyLoop
         EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet4Vector128
+
+;; ------------------------------------------------------------------
+;; Create a real TransitionBlock and call CallInterpreterFuncletWorker
+;; to execute an interpreter funclet (catch/finally/filter handler).
+;;
+;; extern "C" DWORD_PTR CallInterpreterFunclet(
+;;     OBJECTREF throwable,        ; x0
+;;     void* pHandler,             ; x1
+;;     REGDISPLAY *pRD,            ; x2
+;;     ExInfo *pExInfo,            ; x3
+;;     bool isFilter               ; x4
+;; );
+;; ------------------------------------------------------------------
+    IMPORT CallInterpreterFuncletWorker
+
+    NESTED_ENTRY CallInterpreterFunclet
+
+        PROLOG_WITH_TRANSITION_BLOCK , , PushCalleeSavedFloatRegs
+
+        ; Pass TransitionBlock* as last (6th) argument
+        ; Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+        ; Original args: x0=throwable, x1=pHandler, x2=pRD, x3=pExInfo, x4=isFilter
+        ; x0-x4 remain unchanged
+
+        add     x5, sp, #__PWTB_TransitionBlock     ; TransitionBlock* as 6th param (x5)
+
+        bl      CallInterpreterFuncletWorker
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+    NESTED_END CallInterpreterFunclet
+
+;; ------------------------------------------------------------------
+;; Resume an interpreter continuation after an async await.
+;; The worker function will restore callee-saved registers from the
+;; TransitionBlock.
+;;
+;; extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuation(
+;;     ContinuationObject* cont,          // x0
+;;     uint8_t* resultStorage             // x1
+;; );
+;; ------------------------------------------------------------------
+    IMPORT AsyncHelpers_ResumeInterpreterContinuationWorker
+
+    NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation
+
+        PROLOG_WITH_TRANSITION_BLOCK , , PushCalleeSavedFloatRegs
+
+        ; Worker signature: AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, TransitionBlock*)
+        ; x0, x1 remain unchanged
+
+        add     x2, sp, #__PWTB_TransitionBlock     ; TransitionBlock* as 3rd param (x2)
+
+        bl      AsyncHelpers_ResumeInterpreterContinuationWorker
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+    NESTED_END AsyncHelpers_ResumeInterpreterContinuation
 
 
 #endif // FEATURE_INTERPRETER

@@ -1229,7 +1229,7 @@ namespace System.Text.Json
             Debug.Assert(
                 ((_consumed < _buffer.Length) &&
                 !_isNotPrimitive &&
-                JsonConstants.Delimiters.IndexOf(_buffer[_consumed]) >= 0)
+                JsonConstants.Delimiters.Contains(_buffer[_consumed]))
                 || (_isNotPrimitive ^ (_consumed >= (uint)_buffer.Length)));
 
             return true;
@@ -1570,7 +1570,7 @@ namespace System.Text.Json
             if (i < data.Length)
             {
                 nextByte = data[i];
-                if (JsonConstants.Delimiters.IndexOf(nextByte) >= 0)
+                if (JsonConstants.Delimiters.Contains(nextByte))
                 {
                     return ConsumeNumberResult.Success;
                 }
@@ -1626,7 +1626,7 @@ namespace System.Text.Json
                     return ConsumeNumberResult.NeedMoreData;
                 }
             }
-            if (JsonConstants.Delimiters.IndexOf(nextByte) >= 0)
+            if (JsonConstants.Delimiters.Contains(nextByte))
             {
                 return ConsumeNumberResult.Success;
             }

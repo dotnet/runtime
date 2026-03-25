@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace Test76531
 {
@@ -38,6 +39,7 @@ namespace Test76531
 
     public class Program
     {
+        [ActiveIssue("Assembly.GetExecutingAssembly().Location returns NULL on WASM", TestPlatforms.Browser)]
         [Fact]
         public static void TestExternalMethodFixupWorker()
         {
@@ -48,6 +50,7 @@ namespace Test76531
             });
         }
 
+        [ActiveIssue("Assembly.GetExecutingAssembly().Location returns NULL on WASM", TestPlatforms.Browser)]
         [Fact]
         public static void TestPreStubWorker()
         {
@@ -69,6 +72,7 @@ namespace Test76531
             }
         }
 
+        [ActiveIssue("Assembly.GetExecutingAssembly().Location returns NULL on WASM", TestPlatforms.Browser)]
         [Fact]
         public static void TestVSD_ResolveWorker()
         {

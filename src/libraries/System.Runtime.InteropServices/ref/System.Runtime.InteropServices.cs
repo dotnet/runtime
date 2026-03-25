@@ -489,6 +489,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public StrategyBasedComWrappers() { }
         public static System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceDetailsStrategy DefaultIUnknownInterfaceDetailsStrategy { get { throw null; } }
         public static System.Runtime.InteropServices.Marshalling.IIUnknownStrategy DefaultIUnknownStrategy { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         protected unsafe sealed override System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry* ComputeVtables(object obj, System.Runtime.InteropServices.CreateComInterfaceFlags flags, out int count) { throw null; }
         protected virtual System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy CreateCacheStrategy() { throw null; }
         protected static System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy CreateDefaultCacheStrategy() { throw null; }
@@ -767,9 +768,11 @@ namespace System.Runtime.InteropServices
         public struct ComInterfaceDispatch
         {
             public System.IntPtr Vtable;
+            [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
             public unsafe static T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
         }
         public System.IntPtr GetOrCreateComInterfaceForObject(object instance, System.Runtime.InteropServices.CreateComInterfaceFlags flags) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, System.Runtime.InteropServices.CreateComInterfaceFlags flags, out int count);
         public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, System.Runtime.InteropServices.CreateObjectFlags flags) { throw null; }
         public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, System.Runtime.InteropServices.CreateObjectFlags flags, object? userState) { throw null; }
@@ -1297,8 +1300,10 @@ namespace System.Runtime.InteropServices
         [System.CLSCompliantAttribute(false)]
         public static void* AlignedAlloc(nuint byteCount, nuint alignment) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void AlignedFree(void* ptr) { }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void* AlignedRealloc(void* ptr, nuint byteCount, nuint alignment) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void* Alloc(nuint byteCount) { throw null; }
@@ -1309,14 +1314,19 @@ namespace System.Runtime.InteropServices
         [System.CLSCompliantAttribute(false)]
         public static void* AllocZeroed(nuint elementCount, nuint elementSize) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void Free(void* ptr) { }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void* Realloc(void* ptr, nuint byteCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void Clear(void* ptr, nuint byteCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void Copy(void* source, void* destination, nuint byteCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void Fill(void* ptr, nuint byteCount, byte value) { throw null; }
     }
     public readonly partial struct NFloat : System.IComparable, System.IComparable<System.Runtime.InteropServices.NFloat>, System.IEquatable<System.Runtime.InteropServices.NFloat>, System.IFormattable, System.IParsable<System.Runtime.InteropServices.NFloat>, System.ISpanFormattable, System.ISpanParsable<System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IComparisonOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IDecrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.IDivisionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IEqualityOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IExponentialFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointConstants<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IHyperbolicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.ILogarithmicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IMinMaxValue<System.Runtime.InteropServices.NFloat>, System.Numerics.IModulusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.INumber<System.Runtime.InteropServices.NFloat>, System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>, System.Numerics.IPowerFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IRootFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.ITrigonometricFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryPlusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.IUtf8SpanFormattable
@@ -1581,6 +1591,8 @@ namespace System.Runtime.InteropServices
     }
     public enum PosixSignal
     {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGKILL = -11,
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         SIGTSTP = -10,
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
@@ -2396,9 +2408,13 @@ namespace System.Runtime.InteropServices.Java
     [System.CLSCompliantAttribute(false)]
     public static class JavaMarshal
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferencesArgs*, void> markCrossReferences) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe GCHandle CreateReferenceTrackingHandle(object obj, void* context) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void* GetContext(GCHandle obj) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void FinishCrossReferenceProcessing(
             MarkCrossReferencesArgs* crossReferences,
             System.ReadOnlySpan<GCHandle> unreachableObjectHandles) => throw null;
@@ -2438,6 +2454,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             System.Exception exception,
             System.RuntimeMethodHandle lastMethod,
             out System.IntPtr context);
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void Initialize(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<System.IntPtr, int> isReferencedCallback,
@@ -2469,14 +2486,18 @@ namespace System.Runtime.InteropServices.Marshalling
         typeof(System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller.ManagedToUnmanagedIn))]
     public static unsafe class AnsiStringMarshaller
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static byte* ConvertToUnmanaged(string? managed) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static string? ConvertToManaged(byte* unmanaged) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void Free(byte* unmanaged) { throw null; }
 
         public ref struct ManagedToUnmanagedIn
         {
             public static int BufferSize { get { throw null; } }
             public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
+            [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
             public byte* ToUnmanaged()  { throw null; }
             public void Free() { throw null; }
         }
@@ -2493,12 +2514,16 @@ namespace System.Runtime.InteropServices.Marshalling
     public static unsafe class ArrayMarshaller<T, TUnmanagedElement>
         where TUnmanagedElement : unmanaged
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements) { throw null; }
         public static System.ReadOnlySpan<T> GetManagedValuesSource(T[]? managed) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
         public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) { throw null; }
         public static System.Span<T> GetManagedValuesDestination(T[]? managed) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void Free(TUnmanagedElement* unmanaged) { }
 
         public unsafe ref struct ManagedToUnmanagedIn
@@ -2511,6 +2536,7 @@ namespace System.Runtime.InteropServices.Marshalling
             public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() { throw null; }
             public ref TUnmanagedElement GetPinnableReference() { throw null; }
             public static ref T GetPinnableReference(T[]? array) { throw null; }
+            [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
             public TUnmanagedElement* ToUnmanaged() { throw null; }
             public void Free() { }
         }
@@ -2525,13 +2551,16 @@ namespace System.Runtime.InteropServices.Marshalling
     public static unsafe class BStrStringMarshaller
     {
         public static ushort* ConvertToUnmanaged(string? managed) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static string? ConvertToManaged(ushort* unmanaged) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void Free(ushort* unmanaged) { throw null; }
 
         public ref struct ManagedToUnmanagedIn
         {
             public static int BufferSize { get { throw null; } }
             public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
+            [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
             public ushort* ToUnmanaged()  { throw null; }
             public void Free() { throw null; }
         }
@@ -2561,10 +2590,14 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T*[]? managed, out int numElements) { throw null; }
         public static System.ReadOnlySpan<IntPtr> GetManagedValuesSource(T*[]? managed) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static T*[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) { throw null; }
         public static System.Span<IntPtr> GetManagedValuesDestination(T*[]? managed) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void Free(TUnmanagedElement* unmanaged) { }
 
         public unsafe ref struct ManagedToUnmanagedIn
@@ -2577,6 +2610,7 @@ namespace System.Runtime.InteropServices.Marshalling
             public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() { throw null; }
             public ref TUnmanagedElement GetPinnableReference() { throw null; }
             public static ref byte GetPinnableReference(T*[]? array) { throw null; }
+            [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
             public TUnmanagedElement* ToUnmanaged() { throw null; }
             public void Free() { }
         }
@@ -2590,14 +2624,18 @@ namespace System.Runtime.InteropServices.Marshalling
         typeof(System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.ManagedToUnmanagedIn))]
     public static unsafe class Utf8StringMarshaller
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static byte* ConvertToUnmanaged(string? managed) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static string? ConvertToManaged(byte* unmanaged) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void Free(byte* unmanaged) { throw null; }
 
         public ref struct ManagedToUnmanagedIn
         {
             public static int BufferSize { get { throw null; } }
             public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
+            [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
             public byte* ToUnmanaged()  { throw null; }
             public void Free() { throw null; }
         }
@@ -2609,7 +2647,9 @@ namespace System.Runtime.InteropServices.Marshalling
     public static unsafe class Utf16StringMarshaller
     {
         public static ushort* ConvertToUnmanaged(string? managed) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static string? ConvertToManaged(ushort* unmanaged) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static void Free(ushort* unmanaged) { throw null; }
         public static ref readonly char GetPinnableReference(string? str) { throw null; }
     }
@@ -2633,6 +2673,7 @@ namespace System.Security
     {
         public SecureString() { }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe SecureString(char* value, int length) { }
         public int Length { get { throw null; } }
         public void AppendChar(char c) { }

@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Xunit;
+using TestLibrary;
 
 public unsafe class Pointers
 {
@@ -66,6 +67,7 @@ public unsafe class Pointers
         }
     }
 
+    [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void Pointer()
     {
@@ -96,6 +98,7 @@ public unsafe class Pointers
         }
     }
 
+    [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void PointerArray()
     {
@@ -144,6 +147,7 @@ public unsafe class Pointers
         }
     }
 
+    [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void FunctionPointer()
     {
@@ -175,6 +179,7 @@ public unsafe class Pointers
 
     }
 
+    [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void FunctionPointerArray()
     {

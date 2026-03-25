@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
+    <!-- Needed for CLRTestTargetUnsupported (inherited from Directory.Build.props) -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
 
@@ -11,6 +11,9 @@
     <ProjectReference Include="genericslib.ilproj">
       <Project>{F74F55A1-DFCF-4C7C-B462-E96E1D0BB667}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="callgenericctor.cs" />

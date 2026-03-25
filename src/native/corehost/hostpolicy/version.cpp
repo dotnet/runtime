@@ -11,7 +11,12 @@
 // -- if version_t is an empty value (-1 for all segments) then as_str() returns an empty string
 // -- Different terminology; fx_ver_t(major, minor, patch, build) vs version_t(major, minor, build, revision)
 
-version_t::version_t() : version_t(-1, -1, -1, -1) { }
+/*static*/
+const version_t& version_t::empty()
+{
+    static const version_t s_empty(-1, -1, -1, -1);
+    return s_empty;
+}
 
 version_t::version_t(int major, int minor, int build, int revision)
     : m_major(major)

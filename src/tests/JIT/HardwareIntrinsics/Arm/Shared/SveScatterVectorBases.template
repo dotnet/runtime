@@ -338,7 +338,7 @@ namespace {Namespace}._Sve
 
             _dataTable.ResetOutArray();
 
-            typeof(Sve).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op2VectorType}<{Op2BaseType}>), typeof({Op1VectorType}<{Op1BaseType}>) })
+            typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({Op2VectorType}<{Op2BaseType}>), typeof({Op1VectorType}<{Op1BaseType}>) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inMaskArrayPtr),
                                         Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inAddressArrayPtr),

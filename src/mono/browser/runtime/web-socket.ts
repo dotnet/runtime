@@ -38,8 +38,8 @@ function verifyEnvironment () {
     }
     if (typeof globalThis.WebSocket !== "function") {
         const message = ENVIRONMENT_IS_NODE
-            ? "Please install `ws` npm package to enable networking support. See also https://aka.ms/dotnet-wasm-features"
-            : "This browser doesn't support WebSocket API. Please use a modern browser. See also https://aka.ms/dotnet-wasm-features";
+            ? "Please install `ws` npm package to enable networking support."
+            : "This browser doesn't support WebSocket API. Please use a modern browser. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms";
         throw new Error(message);
     }
 }
@@ -104,8 +104,8 @@ export function ws_wasm_create (uri: string, sub_protocols: string[] | null, rec
             forceThreadMemoryViewRefresh();
 
             ws[wasm_ws_close_received] = true;
-            ws["close_status"] = ev.code;
-            ws["close_status_description"] = ev.reason;
+            ws["closeStatus"] = ev.code;
+            ws["closeStatusDescription"] = ev.reason;
 
             if (ws[wasm_ws_pending_open_promise_used]) {
                 open_promise_control.reject(new Error(ev.reason));
@@ -492,8 +492,8 @@ type WebSocketExtension = WebSocket & {
     [wasm_ws_pending_send_buffer_offset]: number
     [wasm_ws_pending_send_buffer_type]: number
     [wasm_ws_pending_send_buffer]: Uint8Array | null
-    ["close_status"]: number | undefined
-    ["close_status_description"]: string | undefined
+    ["closeStatus"]: number | undefined
+    ["closeStatusDescription"]: string | undefined
     dispose(): void
 }
 

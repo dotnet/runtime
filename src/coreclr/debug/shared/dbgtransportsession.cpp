@@ -16,6 +16,19 @@ public:
     BYTE             m_event[CorDBIPC_BUFFER_SIZE];     // buffer for the IPC event
 };
 
+#define INITGUID
+#include <guiddef.h>
+
+DEFINE_GUID(IID_IDebugChannel,0x0498eef8,0x7a24,0x44a7,0x81,0x41,0xdc,0x40,0x19,0x04,0xce,0x25);
+
+HRESULT CreateChannel(
+    /* [in] */ const ProcessDescriptor& procDesc,
+    /* [out] */ IDebugChannel** ppChannel);
+
+HRESULT ConnectToChannel(
+    /* [in] */ const ProcessDescriptor& procDesc,
+    /* [out] */ IDebugChannel** ppChannel);
+
 //
 // Provides a robust and secure transport session between a debugger and a debuggee that are potentially on
 // different machines.
@@ -56,6 +69,9 @@ DbgTransportSession::~DbgTransportSession()
 
     if (m_fInitStateLock)
         m_sStateLock.Destroy();
+
+    if (m_channel != NULL)
+        (void)m_channel->Release();
 }
 
 // Allocates initial resources (including starting the transport thread). The session will start in the
@@ -72,18 +88,13 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
 {
     _ASSERTE(m_eState == SS_Closed);
 
-    // Start with a blank slate so that Shutdown() on a partially initialized instance will only do the
-    // cleanup necessary.
-    *this = {};
-
-    // Because of the above memset the embedded classes/structs need to be reinitialized especially
-    // the two way pipe; it expects the in/out handles to be -1 instead of 0.
     m_ref = 1;
-    m_pipe = TwoWayPipe();
-    m_sStateLock = {};
 
     // Initialize all per-session state variables.
     InitSessionState();
+
+    m_sStateLock.Init();
+    m_fInitStateLock = true;
 
 #ifdef RIGHT_SIDE_COMPILE
     // The RS randomly allocates a session ID which is sent to the LS in the SessionRequest message. In the
@@ -91,12 +102,8 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
     // a new request from a different RS.
     if (!minipal_guid_v4_create(&m_sSessionID))
         return E_FAIL;
-#endif // RIGHT_SIDE_COMPILE
 
-
-#ifdef RIGHT_SIDE_COMPILE
     m_pd = pd;
-
     if (!DuplicateHandle(GetCurrentProcess(),
                          hProcessExited,
                          GetCurrentProcess(),
@@ -109,22 +116,17 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
     }
 
     m_fDebuggerAttached = false;
-#else // RIGHT_SIDE_COMPILE
-    m_pDCB = pDCB;
-#endif // RIGHT_SIDE_COMPILE
-
-    m_sStateLock.Init();
-    m_fInitStateLock = true;
-
-#ifdef RIGHT_SIDE_COMPILE
     m_hSessionOpenEvent = CreateEvent(NULL, TRUE, FALSE, NULL); // Manual reset, not signalled
     if (m_hSessionOpenEvent == NULL)
         return E_OUTOFMEMORY;
+
 #else // RIGHT_SIDE_COMPILE
-    ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
-    if (!m_pipe.CreateServer(pd)) {
-        return E_OUTOFMEMORY;
-    }
+    m_pDCB = pDCB;
+
+    HRESULT hr = CreateChannel(ProcessDescriptor::FromCurrentProcess(), &m_channel);
+    if (FAILED(hr))
+        return hr;
+
 #endif // RIGHT_SIDE_COMPILE
 
     // Allocate some buffers to receive incoming events. The initial number is chosen arbitrarily, tune as
@@ -192,9 +194,9 @@ void DbgTransportSession::Shutdown()
             SessionState ePreviousState = m_eState;
             m_eState = SS_Closed;
 
-            if (ePreviousState != SS_Closed)
+            if (ePreviousState != SS_Closed && m_channel != NULL)
             {
-                m_pipe.Disconnect();
+                m_channel->CloseConnection();
             }
 
         } // Leave m_sStateLock
@@ -216,7 +218,7 @@ void DbgTransportSession::Shutdown()
 // TerminateProcess and for unhandled native exceptions and asserts.
 void DbgTransportSession::AbortConnection()
 {
-    m_pipe.Disconnect();
+    m_channel->CloseConnection();
 }
 
 // API used only by the LS to drive the transport into a state where it won't accept connections. This is used
@@ -236,7 +238,12 @@ void DbgTransportSession::Neuter()
 // and semaphores when the debugger detects the debuggee process  exited.
 void DbgTransportSession::CleanupTargetProcess()
 {
-    m_pipe.CleanupTargetProcess();
+    if (m_channel == NULL)
+        return;
+
+    (void)m_channel->CloseConnection();
+    (void)m_channel->Release();
+    m_channel = NULL;
 }
 
 // On the RS it may be useful to wait and see if the session can reach the SS_Open state. If the target
@@ -796,7 +803,6 @@ HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
 bool DbgTransportSession::SendBlock(PBYTE pbBuffer, DWORD cbBuffer)
 {
     _ASSERTE(m_eState == SS_Opening || m_eState == SS_Resync || m_eState == SS_Open);
-    _ASSERTE(m_pipe.GetState() == TwoWayPipe::ServerConnected || m_pipe.GetState() == TwoWayPipe::ClientConnected);
     _ASSERTE(cbBuffer > 0);
 
     DBG_TRANSPORT_INC_STAT(SentBlocks);
@@ -807,7 +813,7 @@ bool DbgTransportSession::SendBlock(PBYTE pbBuffer, DWORD cbBuffer)
     if (DBG_TRANSPORT_SHOULD_INJECT_FAULT(Send))
         fSuccess = false;
     else
-        fSuccess = ((DWORD)m_pipe.Write(pbBuffer, cbBuffer) == cbBuffer);
+        fSuccess = SUCCEEDED((DWORD)m_channel->Write(pbBuffer, cbBuffer));
 
     if (!fSuccess)
     {
@@ -826,7 +832,6 @@ bool DbgTransportSession::SendBlock(PBYTE pbBuffer, DWORD cbBuffer)
 // state).
 bool DbgTransportSession::ReceiveBlock(PBYTE pbBuffer, DWORD cbBuffer)
 {
-    _ASSERTE(m_pipe.GetState() == TwoWayPipe::ServerConnected || m_pipe.GetState() == TwoWayPipe::ClientConnected);
     _ASSERTE(cbBuffer > 0);
 
     DBG_TRANSPORT_INC_STAT(ReceivedBlocks);
@@ -838,7 +843,7 @@ bool DbgTransportSession::ReceiveBlock(PBYTE pbBuffer, DWORD cbBuffer)
     if (DBG_TRANSPORT_SHOULD_INJECT_FAULT(Receive))
         fSuccess = false;
     else
-        fSuccess = ((DWORD)m_pipe.Read(pbBuffer, cbBuffer) == cbBuffer);
+        fSuccess = SUCCEEDED((DWORD)m_channel->Read(pbBuffer, cbBuffer));
 
     if (!fSuccess)
     {
@@ -900,7 +905,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
         // we'll call CancelReceive() to abort the operation. The transport thread itself will handle the
         // actual Destroy() (having one thread do this management greatly simplifies things).
         m_eState = SS_Resync_NC;
-        m_pipe.Disconnect();
+        m_channel->CloseConnection();
         break;
 
     default:
@@ -1218,7 +1223,7 @@ DWORD WINAPI DbgTransportSession::TransportWorkerStatic(LPVOID pvContext)
 // origin.
 #define HANDLE_TRANSIENT_ERROR() do {           \
     HandleNetworkError(false);                  \
-    m_pipe.Disconnect();                        \
+    m_channel->CloseConnection();               \
     goto ResetConnection;                       \
 } while (false)
 
@@ -1230,6 +1235,8 @@ DWORD WINAPI DbgTransportSession::TransportWorkerStatic(LPVOID pvContext)
 void DbgTransportSession::TransportWorker()
 {
     _ASSERTE(m_eState == SS_Opening_NC);
+
+    HRESULT hr;
 
     // Loop until shutdown. Each loop iteration involves forming a connection (or waiting for one to form)
     // followed by processing incoming messages on that connection until there's a failure (either here of
@@ -1243,6 +1250,14 @@ void DbgTransportSession::TransportWorker()
 
         DbgTransportLog(LC_Proxy, "Forming new connection");
 
+        // Clear out any existing connection.
+        if (m_channel != NULL)
+        {
+            (void)m_channel->CloseConnection();
+            (void)m_channel->Release();
+            m_channel = NULL;
+        }
+
 #ifdef RIGHT_SIDE_COMPILE
         // The session is definitely not open at this point.
         ResetEvent(m_hSessionOpenEvent);
@@ -1253,10 +1268,13 @@ void DbgTransportSession::TransportWorker()
         // terminate this loop.
         ConnStatus eStatus;
         if (DBG_TRANSPORT_SHOULD_INJECT_FAULT(Connect))
+        {
             eStatus = SCS_NetworkFailure;
+        }
         else
         {
-            if (m_pipe.Connect(m_pd))
+            hr = ConnectToChannel(m_pd, &m_channel);
+            if (SUCCEEDED(hr))
             {
                 eStatus = SCS_Success;
             }
@@ -1272,19 +1290,25 @@ void DbgTransportSession::TransportWorker()
         {
             DbgTransportLog(LC_Proxy, "AllocateConnection() failed with %u\n", eStatus);
             DBG_TRANSPORT_INC_STAT(MiscErrors);
-            _ASSERTE(m_pipe.GetState() != TwoWayPipe::ClientConnected);
             Sleep(1000);
             continue;
         }
 #else // RIGHT_SIDE_COMPILE
         ConnStatus eStatus;
         if (DBG_TRANSPORT_SHOULD_INJECT_FAULT(Accept))
+        {
             eStatus = SCS_NetworkFailure;
+        }
         else
         {
-            ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
-            if ((m_pipe.GetState() == TwoWayPipe::Created || m_pipe.CreateServer(pd)) &&
-                 m_pipe.WaitForConnection())
+            BOOL isConnected = FALSE;
+            hr = CreateChannel(ProcessDescriptor::FromCurrentProcess(), &m_channel);
+            if (SUCCEEDED(hr))
+            {
+                (void)m_channel->WaitForConnection(/* timeoutMilliseconds */ -1, &isConnected);
+            }
+
+            if (isConnected)
             {
                 eStatus = SCS_Success;
             }
@@ -1300,7 +1324,6 @@ void DbgTransportSession::TransportWorker()
         {
             DbgTransportLog(LC_Proxy, "Accept() failed with %u\n", eStatus);
             DBG_TRANSPORT_INC_STAT(MiscErrors);
-            _ASSERTE(m_pipe.GetState() != TwoWayPipe::ServerConnected);
             Sleep(1000);
             continue;
         }
@@ -1469,7 +1492,7 @@ void DbgTransportSession::TransportWorker()
                 // Check none of the sends failed.
                 if (m_eState != SS_Opening)
                 {
-                    m_pipe.Disconnect();
+                    m_channel->CloseConnection();
                     continue;
                 }
             } // Leave m_sStateLock
@@ -1616,7 +1639,7 @@ void DbgTransportSession::TransportWorker()
                     break;
                 else if (m_eState == SS_Resync_NC)
                 {
-                    m_pipe.Disconnect();
+                    m_channel->CloseConnection();
                     continue;
                 }
                 else
@@ -1750,7 +1773,7 @@ void DbgTransportSession::TransportWorker()
                         break;
                     }
 
-                    m_pipe.Disconnect();
+                    m_channel->CloseConnection();
 
                     // We could add code to drain the send queue here (like we have for SS_Closed at the end of
                     // this method) but I'm pretty sure we can only get a graceful session close with no
@@ -2024,7 +2047,8 @@ void DbgTransportSession::TransportWorker()
 #endif // RIGHT_SIDE_COMPILE
 
     // Close the connection if we haven't done so already.
-    m_pipe.Disconnect();
+    if (m_channel != NULL)
+        m_channel->CloseConnection();
 
     // Drain any remaining entries in the send queue (aborting them when they need completions).
     {
@@ -2615,6 +2639,137 @@ bool DbgTransportSession::DbgTransportShouldInjectFault(DbgTransportFaultOp eOp,
     return false;
 }
 #endif // _DEBUG
+
+#include <twowaypipe.h>
+
+class DbgTransportPipeChannel final : public IDebugChannel
+{
+private:
+    LONG m_refCount;
+    TwoWayPipe m_pipe;
+
+public:
+    DbgTransportPipeChannel()
+        : m_refCount{ 1 }
+        , m_pipe{}
+    { }
+
+    ~DbgTransportPipeChannel()
+    {
+        m_pipe.CleanupTargetProcess();
+    }
+
+    TwoWayPipe& Pipe() { return m_pipe; }
+
+public: // IDebugChannel
+    HRESULT STDMETHODCALLTYPE WaitForConnection(
+        /* [in] */ DWORD /* timeoutMilliseconds */,
+        /* [out] */ BOOL* isConnected) override
+    {
+        _ASSERTE(isConnected != NULL);
+        *isConnected = m_pipe.WaitForConnection();
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE CloseConnection() override
+    {
+        m_pipe.Disconnect();
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE Read(
+        /* [out] */ BYTE* buffer,
+        /* [in] */ DWORD size) override
+    {
+        _ASSERTE(m_pipe.GetState() == TwoWayPipe::ServerConnected || m_pipe.GetState() == TwoWayPipe::ClientConnected);
+        return ((DWORD)m_pipe.Read(buffer, size) == size)
+            ? S_OK
+            : E_FAIL;
+    }
+
+    HRESULT STDMETHODCALLTYPE Write(
+        /* [in] */ BYTE* data,
+        /* [in] */ DWORD size) override
+    {
+        _ASSERTE(m_pipe.GetState() == TwoWayPipe::ServerConnected || m_pipe.GetState() == TwoWayPipe::ClientConnected);
+        return ((DWORD)m_pipe.Write(data, size) == size)
+            ? S_OK
+            : E_FAIL;
+    }
+
+public: // IUnknown
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override
+    {
+        if (ppvObject == NULL)
+            return E_POINTER;
+
+        if (riid == IID_IUnknown || riid == IID_IDebugChannel)
+        {
+            *ppvObject = static_cast<IDebugChannel*>(this);
+        }
+        else
+        {
+            *ppvObject = NULL;
+            return E_NOINTERFACE;
+        }
+
+        (void)AddRef();
+        return S_OK;
+    }
+
+    ULONG STDMETHODCALLTYPE AddRef() override
+    {
+        return InterlockedIncrement(&m_refCount);
+    }
+
+    ULONG STDMETHODCALLTYPE Release() override
+    {
+        LONG refCount = InterlockedDecrement(&m_refCount);
+        if (refCount == 0)
+        {
+            delete this;
+        }
+        return refCount;
+    }
+};
+
+HRESULT CreateChannel(
+    /* [in] */ const ProcessDescriptor& procDesc,
+    /* [out] */ IDebugChannel** ppChannel)
+{
+    DbgTransportPipeChannel* channel = new (nothrow) DbgTransportPipeChannel();
+    if (channel == NULL)
+        return E_OUTOFMEMORY;
+
+    if (!channel->Pipe().CreateServer(procDesc))
+    {
+        (void)channel->Release();
+        return E_OUTOFMEMORY;
+    }
+
+    HRESULT hr = channel->QueryInterface(IID_IDebugChannel, (void**)ppChannel);
+    (void)channel->Release();
+    return hr;
+}
+
+HRESULT ConnectToChannel(
+    /* [in] */ const ProcessDescriptor& procDesc,
+    /* [out] */ IDebugChannel** ppChannel)
+{
+    DbgTransportPipeChannel* channel = new (nothrow) DbgTransportPipeChannel();
+    if (channel == NULL)
+        return E_OUTOFMEMORY;
+
+    if (!channel->Pipe().Connect(procDesc))
+    {
+        (void)channel->Release();
+        return E_OUTOFMEMORY;
+    }
+
+    HRESULT hr = channel->QueryInterface(IID_IDebugChannel, (void**)ppChannel);
+    (void)channel->Release();
+    return hr;
+}
 
 // Lock abstraction code (hides difference in lock implementation between left and right side).
 #ifdef RIGHT_SIDE_COMPILE

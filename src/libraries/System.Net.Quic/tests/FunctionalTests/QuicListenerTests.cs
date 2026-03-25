@@ -14,7 +14,7 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest), nameof(QuicTestBase.IsNotAzureLinux3VM))]
     public sealed class QuicListenerTests : QuicTestBase
     {
         public QuicListenerTests(ITestOutputHelper output) : base(output) { }
@@ -32,7 +32,7 @@ namespace System.Net.Quic.Tests
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
 
-        [ConditionalFact(nameof(IsIPv6Available))]
+        [ConditionalFact(typeof(QuicListenerTests), nameof(IsIPv6Available))]
         public async Task Listener_Backlog_Success_IPv6()
         {
             await Task.Run(async () =>

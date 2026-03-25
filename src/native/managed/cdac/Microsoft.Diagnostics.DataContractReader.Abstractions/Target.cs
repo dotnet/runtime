@@ -60,12 +60,28 @@ public abstract class Target
     public abstract TargetPointer ReadPointer(ulong address);
 
     /// <summary>
+    /// Read a pointer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <param name="value">Pointer read from the target</param>
+    /// <returns>True if read succeeds, false otherwise.</returns>
+    public abstract bool TryReadPointer(ulong address, out TargetPointer value);
+
+    /// <summary>
     /// Read a code pointer from the target in target endianness
     /// </summary>
     /// <param name="address">Address to start reading from</param>
     /// <returns>Pointer read from the target</returns>
     /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
     public abstract TargetCodePointer ReadCodePointer(ulong address);
+
+    /// <summary>
+    /// Read a code pointer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <param name="value">Pointer read from the target</param>
+    /// <returns>True if read succeeds, false otherwise.</returns>
+    public abstract bool TryReadCodePointer(ulong address, out TargetCodePointer value);
 
     /// <summary>
     /// Read some bytes from the target
@@ -86,9 +102,10 @@ public abstract class Target
     /// Read a null-terminated UTF-8 string from the target
     /// </summary>
     /// <param name="address">Address to start reading from</param>
+    /// <param name="strict">If true, throw if the string is not valid UTF-8. If false, replace invalid sequences with the replacement character.</param>
     /// <returns>String read from the target</returns>
     /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
-    public abstract string ReadUtf8String(ulong address);
+    public abstract string ReadUtf8String(ulong address, bool strict = false);
 
     /// <summary>
     /// Read a null-terminated UTF-16 string from the target in target endianness
@@ -273,4 +290,14 @@ public abstract class Target
     /// A cache of the contracts for the target process
     /// </summary>
     public abstract ContractRegistry Contracts { get; }
+
+    /// <summary>
+    /// Clear all cached data held by this target, including processed data and contract caches.
+    /// Called when the target process state may have changed (e.g. on resume).
+    /// </summary>
+    public void Flush()
+    {
+        ProcessedData.Clear();
+        Contracts.Flush();
+    }
 }

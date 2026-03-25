@@ -93,7 +93,7 @@ void RegSet::verifyRegUsed(regNumber reg)
 
 void RegSet::verifyRegistersUsed(regMaskTP regMask)
 {
-    if (m_rsCompiler->opts.OptimizationDisabled())
+    if (m_compiler->opts.OptimizationDisabled())
     {
         return;
     }
@@ -110,10 +110,10 @@ void RegSet::verifyRegistersUsed(regMaskTP regMask)
 
 void RegSet::rsClearRegsModified()
 {
-    assert(m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT);
+    assert(m_compiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT);
 
 #ifdef DEBUG
-    if (m_rsCompiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("Clearing modified regs.\n");
     }
@@ -125,7 +125,7 @@ void RegSet::rsClearRegsModified()
 #ifdef SWIFT_SUPPORT
     // If this method has a SwiftError* parameter, we will return SwiftError::Value in REG_SWIFT_ERROR,
     // so don't treat it as callee-save.
-    if (m_rsCompiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    if (m_compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
     {
         rsAllCalleeSavedMask &= ~RBM_SWIFT_ERROR;
         rsIntCalleeSavedMask &= ~RBM_SWIFT_ERROR;
@@ -144,12 +144,12 @@ void RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump))
     // code generation isn't actually adding to set of modified registers.
     // Frame layout is only affected by callee-saved registers, so only ensure that callee-saved
     // registers aren't modified after final frame layout.
-    assert((m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) || m_rsCompiler->compGeneratingProlog ||
-           m_rsCompiler->compGeneratingEpilog ||
+    assert((m_compiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) || m_compiler->compGeneratingProlog ||
+           m_compiler->compGeneratingEpilog ||
            (((rsModifiedRegsMask | mask) & RBM_CALLEE_SAVED) == (rsModifiedRegsMask & RBM_CALLEE_SAVED)));
 
 #ifdef DEBUG
-    if (m_rsCompiler->verbose && !suppressDump)
+    if (m_compiler->verbose && !suppressDump)
     {
         if (rsModifiedRegsMask != (rsModifiedRegsMask | mask))
         {
@@ -173,12 +173,12 @@ void RegSet::rsRemoveRegsModified(regMaskTP mask)
     assert(rsModifiedRegsMaskInitialized);
 
     // See comment in rsSetRegsModified().
-    assert((m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) || m_rsCompiler->compGeneratingProlog ||
-           m_rsCompiler->compGeneratingEpilog ||
+    assert((m_compiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) || m_compiler->compGeneratingProlog ||
+           m_compiler->compGeneratingEpilog ||
            (((rsModifiedRegsMask & ~mask) & RBM_CALLEE_SAVED) == (rsModifiedRegsMask & RBM_CALLEE_SAVED)));
 
 #ifdef DEBUG
-    if (m_rsCompiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("Removing modified regs: ");
         dspRegMask(mask);
@@ -204,7 +204,7 @@ void RegSet::rsRemoveRegsModified(regMaskTP mask)
 void RegSet::SetMaskVars(regMaskTP newMaskVars)
 {
 #ifdef DEBUG
-    if (m_rsCompiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("\t\t\t\t\t\t\tLive regs: ");
         if (_rsMaskVars == newMaskVars)
@@ -214,7 +214,7 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
         else
         {
             printRegMask(_rsMaskVars);
-            m_rsCompiler->GetEmitter()->emitDispRegSet(_rsMaskVars);
+            m_compiler->GetEmitter()->emitDispRegSet(_rsMaskVars);
 
             // deadSet = old - new
             regMaskTP deadSet = _rsMaskVars & ~newMaskVars;
@@ -225,19 +225,19 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
             if (deadSet != RBM_NONE)
             {
                 printf(" -");
-                m_rsCompiler->GetEmitter()->emitDispRegSet(deadSet);
+                m_compiler->GetEmitter()->emitDispRegSet(deadSet);
             }
 
             if (bornSet != RBM_NONE)
             {
                 printf(" +");
-                m_rsCompiler->GetEmitter()->emitDispRegSet(bornSet);
+                m_compiler->GetEmitter()->emitDispRegSet(bornSet);
             }
 
             printf(" => ");
         }
         printRegMask(newMaskVars);
-        m_rsCompiler->GetEmitter()->emitDispRegSet(newMaskVars);
+        m_compiler->GetEmitter()->emitDispRegSet(newMaskVars);
         printf("\n");
     }
 #endif // DEBUG
@@ -247,7 +247,7 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
 #endif // HAS_FIXED_REGISTER_SET
 
 RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
-    : m_rsCompiler(compiler)
+    : m_compiler(compiler)
     , m_rsGCInfo(gcInfo)
 {
     /* Initialize the spill logic */
@@ -337,7 +337,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 
     if (tree->IsMultiRegLclVar())
     {
-        LclVarDsc* varDsc = m_rsCompiler->lvaGetDesc(tree->AsLclVar());
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree->AsLclVar());
         treeType          = varDsc->TypeGet();
         isMultiRegTree    = true;
     }
@@ -391,7 +391,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     assert(tree->GetRegByIndex(regIdx) == reg);
 
     // Are any registers free for spillage?
-    SpillDsc* spill = SpillDsc::alloc(m_rsCompiler, this, tempType);
+    SpillDsc* spill = SpillDsc::alloc(m_compiler, this, tempType);
 
     // Grab a temp to store the spilled value
     TempDsc* temp    = tmpGetTemp(tempType);
@@ -402,9 +402,9 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     spill->spillTree = tree;
 
 #ifdef DEBUG
-    if (m_rsCompiler->verbose)
+    if (m_compiler->verbose)
     {
-        printf("\t\t\t\t\t\t\tThe register %s spilled with ", m_rsCompiler->compRegVarName(reg));
+        printf("\t\t\t\t\t\t\tThe register %s spilled with ", m_compiler->compRegVarName(reg));
         Compiler::printTreeID(spill->spillTree);
         if (isMultiRegTree)
         {
@@ -422,7 +422,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     rsSpillDesc[reg]   = spill;
 
 #ifdef DEBUG
-    if (m_rsCompiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("\n");
     }
@@ -431,7 +431,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     // Generate the code to spill the register
     var_types storeType = floatSpill ? treeType : tempType;
 
-    m_rsCompiler->codeGen->spillReg(storeType, temp, reg);
+    m_compiler->codeGen->spillReg(storeType, temp, reg);
 
     // Mark the tree node as having been spilled
     rsMarkSpill(tree, reg);
@@ -455,7 +455,7 @@ void RegSet::rsSpillFPStack(GenTreeCall* call)
     TempDsc*  temp;
     var_types treeType = call->TypeGet();
 
-    spill = SpillDsc::alloc(m_rsCompiler, this, treeType);
+    spill = SpillDsc::alloc(m_compiler, this, treeType);
 
     /* Grab a temp to store the spilled value */
 
@@ -471,11 +471,11 @@ void RegSet::rsSpillFPStack(GenTreeCall* call)
     rsSpillDesc[reg]   = spill;
 
 #ifdef DEBUG
-    if (m_rsCompiler->verbose)
+    if (m_compiler->verbose)
         printf("\n");
 #endif
 
-    m_rsCompiler->codeGen->GetEmitter()->emitIns_S(INS_fstp, emitActualTypeSize(treeType), temp->tdTempNum(), 0);
+    m_compiler->codeGen->GetEmitter()->emitIns_S(INS_fstp, emitActualTypeSize(treeType), temp->tdTempNum(), 0);
 
     /* Mark the tree node as having been spilled */
 
@@ -548,7 +548,7 @@ TempDsc* RegSet::rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regI
     }
 
 #ifdef DEBUG
-    if (m_rsCompiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("\t\t\t\t\t\t\tTree-Node marked unspilled from ");
         Compiler::printTreeID(tree);
@@ -658,7 +658,7 @@ TempDsc* RegSet::tmpGetTemp(var_types type)
     noway_assert(temp != nullptr);
 
 #ifdef DEBUG
-    if (m_rsCompiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("%s temp #%u, slot %u, size = %u\n", isNewTemp ? "created" : "reused", -temp->tdTempNum(), slot,
                temp->tdTempSize());
@@ -710,10 +710,10 @@ void RegSet::tmpPreAllocateTemps(var_types type, unsigned count)
         }
 #endif // TARGET_ARM
 
-        TempDsc* temp = new (m_rsCompiler, CMK_Unknown) TempDsc(-((int)tmpCount), size, type);
+        TempDsc* temp = new (m_compiler, CMK_Unknown) TempDsc(-((int)tmpCount), size, type);
 
 #ifdef DEBUG
-        if (m_rsCompiler->verbose)
+        if (m_compiler->verbose)
         {
             printf("pre-allocated temp #%u, slot %u, size = %u\n", -temp->tdTempNum(), slot, temp->tdTempSize());
         }
@@ -741,7 +741,7 @@ void RegSet::tmpRlsTemp(TempDsc* temp)
     slot = tmpSlot(temp->tdTempSize());
 
 #ifdef DEBUG
-    if (m_rsCompiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("release temp #%u, slot %u, size = %u\n", -temp->tdTempNum(), slot, temp->tdTempSize());
     }

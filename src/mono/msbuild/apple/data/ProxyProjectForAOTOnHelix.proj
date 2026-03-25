@@ -7,7 +7,7 @@
     <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'extraFiles'))</ExtraFilesPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'obj'))</BaseIntermediateOutputPath>
 
-    <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
+    <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;_RunR2RCompilationOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
     <!-- Forced by ILLink targets -->
     <SelfContained>true</SelfContained>
     <PublishDir>$(OriginalPublishDir)</PublishDir>
@@ -36,7 +36,7 @@
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <OutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'bin'))</OutputPath>
     <PublishDir>$(OriginalPublishDir)</PublishDir>
-    <_IlcLibraryBuildDependsOn>LinkNative;CopyNativeBinary</_IlcLibraryBuildDependsOn>
+    <_IlcLibraryBuildDependsOn>LinkNative</_IlcLibraryBuildDependsOn>
     <!-- we should not strip symbols from the generated library as xcode build will attempt to strip already stripped symbols -->
     <StripSymbols>false</StripSymbols>
   </PropertyGroup>
@@ -95,6 +95,64 @@
       <RuntimeComponents Include="marshal-ilgen" />
     </ItemGroup>
   </Target>
+
+  <Target Name="_RunR2RCompilationOnHelix"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'"
+          DependsOnTargets="_PrepareR2RItemsOnHelix;CreateReadyToRunImages;_AddR2RFilesToAppleBundle" />
+
+  <Target Name="_AddR2RFilesToAppleBundle"
+          Condition="'$(PublishReadyToRunContainerFormat)' == 'macho'">
+
+    <PropertyGroup>
+      <_R2ROutputPath>$(IntermediateOutputPath)R2R</_R2ROutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_R2RCompiledAssemblies Include="$(_R2ROutputPath)\*.dll" />
+      <_R2RDylibFiles Include="$(_R2ROutputPath)\*.r2r.dylib" />
+    </ItemGroup>
+
+    <Warning Condition="'@(_R2RDylibFiles)' == ''" Text="No R2R dylib files found at $(_R2ROutputPath)." />
+
+    <Copy SourceFiles="@(_R2RCompiledAssemblies)"
+          DestinationFolder="$(OriginalPublishDir)"
+          OverwriteReadOnlyFiles="true" />
+
+    <Copy SourceFiles="@(_R2RDylibFiles)"
+          DestinationFolder="$(OriginalPublishDir)"
+          OverwriteReadOnlyFiles="true" />
+
+    <ItemGroup>
+      <AppleNativeFilesToBundle Include="@(_R2RDylibFiles->'$(OriginalPublishDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_PrepareR2RItemsOnHelix">
+    <PropertyGroup>
+      <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+      <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" />
+      <_R2RPublishAssembly Include="$(OriginalPublishDir)*.dll" Exclude="$(OriginalPublishDir)*.resources.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ResolvedFileToPublish Include="@(_R2RPublishAssembly)" PostprocessAssembly="true">
+        <RelativePath>%(Filename)%(Extension)</RelativePath>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+
+    <ItemGroup>
+      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
+      <IntermediateAssembly Include="$(OriginalPublishDir)$(AssemblyName).dll" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Override _ComputeAssembliesToPostprocessOnPublish and _ComputeManagedRuntimePackAssemblies to be a no-op, already populated. -->
+  <Target Name="_ComputeAssembliesToPostprocessOnPublish" />
+  <Target Name="_ComputeManagedRuntimePackAssemblies" />
 
   <Target Name="_PublishRuntimePack"
           Condition="'$(UsePortableRuntimePack)' == 'true'">

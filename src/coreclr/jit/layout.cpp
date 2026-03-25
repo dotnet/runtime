@@ -902,6 +902,31 @@ ClassLayoutBuilder::ClassLayoutBuilder(Compiler* compiler, unsigned size)
 }
 
 //------------------------------------------------------------------------
+// IsArrayTooLarge: check if an array of the specified length would exceed
+//    the specified maximum byte size for its payload.
+//
+// Arguments:
+//    compiler      - Compiler instance
+//    arrayHandle   - class handle for array
+//    length        - array length (in elements)
+//    maxByteSize   - maximum allowed byte size for the array payload
+//
+// Return value:
+//    true if the array would be too large
+//
+bool ClassLayoutBuilder::IsArrayTooLarge(Compiler*            compiler,
+                                         CORINFO_CLASS_HANDLE arrayHandle,
+                                         unsigned             length,
+                                         unsigned             maxByteSize)
+{
+    CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+    var_types            type = JITtype2varType(compiler->info.compCompHnd->getChildType(arrayHandle, &elemClsHnd));
+    unsigned elementSize = (type == TYP_STRUCT) ? compiler->typGetObjLayout(elemClsHnd)->GetSize() : genTypeSize(type);
+    uint64_t byteSize    = static_cast<uint64_t>(elementSize) * static_cast<uint64_t>(length);
+    return byteSize > maxByteSize;
+}
+
+//------------------------------------------------------------------------
 // BuildArray: Construct a builder for an array layout
 //
 // Arguments:
@@ -939,7 +964,7 @@ ClassLayoutBuilder ClassLayoutBuilder::BuildArray(Compiler* compiler, CORINFO_CL
     totalSize *= static_cast<unsigned>(length);
     totalSize.AlignUp(TARGET_POINTER_SIZE);
     totalSize += static_cast<unsigned>(OFFSETOF__CORINFO_Array__data);
-    assert(!totalSize.IsOverflow());
+    assert(!totalSize.IsOverflow()); // should never overflow if caller used IsArrayTooLarge beforehand
 
     ClassLayoutBuilder builder(compiler, totalSize.Value());
 

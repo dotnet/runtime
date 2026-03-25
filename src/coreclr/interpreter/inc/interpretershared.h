@@ -14,8 +14,8 @@
 #define INTERP_API __attribute__ ((visibility ("default")))
 #endif // _MSC_VER
 
-#define INTERP_STACK_SLOT_SIZE 8    // Alignment of each var offset on the interpreter stack
-#define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
+#define INTERP_STACK_SLOT_SIZE 8u    // Alignment of each var offset on the interpreter stack
+#define INTERP_STACK_ALIGNMENT 16u   // Alignment of interpreter stack at the start of a frame
 
 struct InterpHelperData {
     uint32_t addressDataItemIndex : 29;
@@ -192,8 +192,8 @@ enum class CalliFlags : int32_t
 
 struct InterpIntervalMapEntry
 {
-    uint32_t startOffset;
-    uint32_t countBytes; // If count is 0 then this is the end marker.
+    uint32_t startOffset = 0;
+    uint32_t countBytes = 0; // If count is 0 then this is the end marker.
 };
 
 struct InterpAsyncSuspendData

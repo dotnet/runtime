@@ -5,6 +5,7 @@
 .assembly extern System.Console { auto }
 .assembly GitHub_15949 { }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
 // Ensure that shifting a 64 bit value by 64 bits produces the same value. The ECMA spec doesn't specify
 // what should happen in this case but it would be preferable to have the same behavior for all shift
@@ -21,6 +22,10 @@
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00
         )
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+            string('Doesn\'t pass after LLVM AOT compilation.')
+            int32(2) // Mono
+        }
         .entrypoint
         .maxstack 8
         .locals(int64)

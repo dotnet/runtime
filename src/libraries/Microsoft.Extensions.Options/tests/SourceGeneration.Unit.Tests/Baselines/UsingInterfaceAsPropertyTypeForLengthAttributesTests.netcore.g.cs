@@ -14,7 +14,7 @@
         /// <returns>Validation result.</returns>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
         #if !NET
-        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
              Justification = "The created ValidationContext object is used in a way that never call reflection")]
         #endif
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Test.MyOptions options)
@@ -143,7 +143,7 @@ namespace __OptionValidationGeneratedAttributes
             {
                 length = stringValue.Length;
             }
-            else if (value is System.Collections.ICollection collectionValue)
+            else if (value is global::System.Collections.ICollection collectionValue)
             {
                 length = collectionValue.Count;
             }
@@ -190,7 +190,7 @@ namespace __OptionValidationGeneratedAttributes
             {
                 length = stringValue.Length;
             }
-            else if (value is System.Collections.ICollection collectionValue)
+            else if (value is global::System.Collections.ICollection collectionValue)
             {
                 length = collectionValue.Count;
             }
@@ -234,7 +234,7 @@ namespace __OptionValidationGeneratedAttributes
             {
                 length = stringValue.Length;
             }
-            else if (value is System.Collections.ICollection collectionValue)
+            else if (value is global::System.Collections.ICollection collectionValue)
             {
                 length = collectionValue.Count;
             }

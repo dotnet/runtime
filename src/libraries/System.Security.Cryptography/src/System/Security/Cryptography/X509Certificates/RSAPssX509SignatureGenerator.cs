@@ -70,10 +70,10 @@ namespace System.Security.Cryptography.X509Certificates
             //  * don't allow custom trailer
             // we don't have to worry about any of the DEFAULTs. (specify, specify, specify, omit).
 
-            PssParamsAsn parameters = new PssParamsAsn
+            ValuePssParamsAsn parameters = new ValuePssParamsAsn
             {
-                HashAlgorithm = new AlgorithmIdentifierAsn { Algorithm = digestOid },
-                MaskGenAlgorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Mgf1 },
+                HashAlgorithm = new ValueAlgorithmIdentifierAsn { Algorithm = digestOid },
+                MaskGenAlgorithm = new ValueAlgorithmIdentifierAsn { Algorithm = Oids.Mgf1 },
                 SaltLength = cbSalt,
                 TrailerField = 1,
             };
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             parameters.Encode(writer);
 
-            AlgorithmIdentifierAsn identifier = new AlgorithmIdentifierAsn
+            ValueAlgorithmIdentifierAsn identifier = new ValueAlgorithmIdentifierAsn
             {
                 Algorithm = Oids.RsaPss,
                 Parameters = writer.Encode(),

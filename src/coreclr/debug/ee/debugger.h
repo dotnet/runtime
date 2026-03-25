@@ -1931,9 +1931,6 @@ public:
     void LazyInit(); // will throw
     HRESULT LazyInitWrapper(); // calls LazyInit and converts to HR.
 
-    // Helper on startup to notify debugger
-    void RaiseStartupNotification();
-
     // Send a raw managed debug event over the managed pipeline.
     void SendRawEvent(const DebuggerIPCEvent * pManagedEvent);
 
@@ -2668,6 +2665,7 @@ public:
 #ifndef DACCESS_COMPILE
     virtual void OnMethodEnter(void * pIP);
     virtual DWORD* GetJMCFlagAddr(Module * pModule);
+    virtual bool IsMethodEnterEnabled();
 #endif
 
     // GetJMCFlagAddr provides a unique flag for each module. UpdateModuleJMCFlag
@@ -2728,6 +2726,7 @@ private:
         // AppDomain, Thread, are already initialized
     }
 
+public:
     // Let this function to figure out the unique Id that we will use for Thread.
     void InitIPCEvent(DebuggerIPCEvent *ipce,
                       DebuggerIPCEventType type,
@@ -2749,6 +2748,7 @@ private:
         ipce->vmThread.SetRawPtr(pThread);
     }
 
+private:
     void InitIPCEvent(DebuggerIPCEvent *ipce,
                       DebuggerIPCEventType type)
     {
