@@ -31,6 +31,12 @@
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Build</WasmBuildAppAfterThisTarget>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
 
+    <!-- The nested publish needs the full Publish chain (which includes Build) so that
+         GenerateStaticWebAssetsManifest runs before _CleanupReferencedProjectItemGroups
+         tries to read the manifest. The WebAssembly SDK sets this to ComputeFilesToPublish
+         which skips Build and causes a missing manifest error. -->
+    <_WasmNestedPublishAppPreTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true'">Publish</_WasmNestedPublishAppPreTarget>
+
     <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
 
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
