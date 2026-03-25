@@ -552,8 +552,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     private static string GetDefaultBootConfigFileName(string binFrameworkDir)
     {
-        // Probe for known boot config candidates to support different TFMs:
-        // - dotnet.js with embedded config (net10+, inline boot config)
+        // Probe for the boot config file to support different TFMs:
+        // - blazor.boot.json for pre-net10
+        // - dotnet.js with embedded config for net10+ (inline boot config)
         if (File.Exists(Path.Combine(binFrameworkDir, "blazor.boot.json")))
             return "blazor.boot.json";
 
