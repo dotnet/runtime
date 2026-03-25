@@ -3211,15 +3211,16 @@ namespace System.Numerics
             // correct by checking against 10^approx
             BigInteger power = Pow(10, (int)approx);
 
-            if (value < power)
+            while (value < power)
             {
-                return approx - One;
+                approx--;
+                power /= 10;
             }
 
-            // Check if we need to go one higher
-            if (value >= power * 10)
+            while (value >= power * 10)
             {
-                return approx + One;
+                approx++;
+                power *= 10;
             }
 
             return approx;
