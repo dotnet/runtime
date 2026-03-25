@@ -36,8 +36,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StartAndForget_WithNullArguments_StartsProcess()
         {
-            // hostname is available on all platforms and requires no arguments
-            int pid = Process.StartAndForget("hostname", null);
+            // hostname is not available on Android or Azure Linux.
+            // ls is available on every Unix.
+            int pid = Process.StartAndForget(OperatingSystem.IsWindows() ? "hostname" : "ls", null);
 
             Assert.True(pid > 0);
         }
