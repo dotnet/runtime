@@ -14,14 +14,25 @@ internal readonly struct Object_1 : IObject
     private readonly byte _objectToMethodTableUnmask;
     private readonly TargetPointer _stringMethodTable;
     private readonly TargetPointer _syncTableEntries;
+    private readonly uint _syncBlockIsHashOrSyncBlockIndex;
+    private readonly uint _syncBlockIsHashCode;
+    private readonly uint _syncBlockHashCodeMask;
+    private readonly uint _syncBlockIndexMask;
 
-    internal Object_1(Target target, ulong methodTableOffset, byte objectToMethodTableUnmask, TargetPointer stringMethodTable, TargetPointer syncTableEntries)
+    internal Object_1(Target target, ulong methodTableOffset, byte objectToMethodTableUnmask,
+        TargetPointer stringMethodTable, TargetPointer syncTableEntries,
+        uint syncBlockIsHashOrSyncBlockIndex, uint syncBlockIsHashCode,
+        uint syncBlockHashCodeMask, uint syncBlockIndexMask)
     {
         _target = target;
         _methodTableOffset = methodTableOffset;
         _stringMethodTable = stringMethodTable;
         _objectToMethodTableUnmask = objectToMethodTableUnmask;
         _syncTableEntries = syncTableEntries;
+        _syncBlockIsHashOrSyncBlockIndex = syncBlockIsHashOrSyncBlockIndex;
+        _syncBlockIsHashCode = syncBlockIsHashCode;
+        _syncBlockHashCodeMask = syncBlockHashCodeMask;
+        _syncBlockIndexMask = syncBlockIndexMask;
     }
 
     public TargetPointer GetMethodTableAddress(TargetPointer address)
@@ -82,7 +93,7 @@ internal readonly struct Object_1 : IObject
         }
 
         // Sync block is before `this` pointer, so substract the object header size
-        ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - _target.ReadGlobal<uint>(Constants.Globals.ObjectHeaderSize);
+        ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
         return address + dataOffset;
     }
 
@@ -92,19 +103,48 @@ internal readonly struct Object_1 : IObject
         ccw = TargetPointer.Null;
         ccf = TargetPointer.Null;
 
-        uint syncBlockValue = _target.Read<uint>(address - _target.ReadGlobal<ushort>(Constants.Globals.SyncBlockValueToObjectOffset));
+        ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
+        uint syncBlockValue = header.SyncBlockValue;
 
         // Check if the sync block value represents a sync block index
-        if ((syncBlockValue & (_target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashCode) | _target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex)))
-                != _target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex))
+        if ((syncBlockValue & (_syncBlockIsHashCode | _syncBlockIsHashOrSyncBlockIndex))
+                != _syncBlockIsHashOrSyncBlockIndex)
             return false;
 
-        uint index = syncBlockValue & _target.ReadGlobal<uint>(Constants.Globals.SyncBlockIndexMask);
+        uint index = syncBlockValue & _syncBlockIndexMask;
         ulong offsetInSyncTableEntries = index * (ulong)_target.GetTypeInfo(DataType.SyncTableEntry).Size!;
         Data.SyncTableEntry entry = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + offsetInSyncTableEntries);
         if (entry.SyncBlock is not Data.SyncBlock syncBlock)
             return false;
 
         return _target.Contracts.SyncBlock.GetBuiltInComData(syncBlock.Address, out rcw, out ccw, out ccf);
+    }
+
+    int IObject.TryGetHashCode(TargetPointer address)
+    {
+        ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
+        uint syncBlockValue = header.SyncBlockValue;
+
+        if ((syncBlockValue & _syncBlockIsHashOrSyncBlockIndex) != 0)
+        {
+            if ((syncBlockValue & _syncBlockIsHashCode) != 0)
+            {
+                return (int)(syncBlockValue & _syncBlockHashCodeMask);
+            }
+            else
+            {
+                uint index = syncBlockValue & _syncBlockIndexMask;
+                TargetPointer syncBlockPtr = _target.Contracts.SyncBlock.GetSyncBlock(index);
+                if (syncBlockPtr != TargetPointer.Null)
+                {
+                    Data.SyncBlock syncBlock = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlockPtr);
+                    return (int)syncBlock.HashCode;
+                }
+            }
+        }
+
+        return 0;
     }
 }

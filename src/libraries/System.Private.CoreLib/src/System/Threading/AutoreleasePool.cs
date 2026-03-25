@@ -51,5 +51,35 @@ namespace System.Threading
                 s_AutoreleasePoolInstance = IntPtr.Zero;
             }
         }
+
+#if CORECLR
+        [System.Runtime.InteropServices.UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void CreateAutoreleasePool(Exception* pException)
+        {
+            try
+            {
+                CreateAutoreleasePool();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [System.Runtime.InteropServices.UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void DrainAutoreleasePool(Exception* pException)
+        {
+            try
+            {
+                DrainAutoreleasePool();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
     }
 }

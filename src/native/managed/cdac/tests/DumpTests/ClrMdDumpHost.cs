@@ -79,7 +79,15 @@ internal sealed class ClrMdDumpHost : IDisposable
 
             ulong address = module.GetExportSymbolAddress("DotNetRuntimeContractDescriptor");
             if (address != 0)
+            {
+                // ClrMD may return addresses with spurious upper bits on 32-bit targets
+                // (observed on ARM32 ELF). Mask to the target's pointer size.
+                // https://github.com/microsoft/clrmd/issues/1407
+                if (_dataTarget.DataReader.PointerSize == 4)
+                    address &= 0xFFFF_FFFF;
+
                 return address;
+            }
         }
 
         throw new InvalidOperationException("Could not find DotNetRuntimeContractDescriptor export in any runtime module in the dump.");
