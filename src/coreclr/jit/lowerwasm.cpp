@@ -224,11 +224,10 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* dstAddr = blkNode->Addr();
     GenTree* src     = blkNode->Data();
 
+    SetMultiplyUsed(dstAddr);
+
     if (blkNode->OperIsInitBlkOp())
     {
-        // We need to flag the destination as multiply-used for null checks.
-        SetMultiplyUsed(dstAddr);
-
         if (src->OperIs(GT_INIT_VAL))
         {
             src->SetContained();
@@ -286,7 +285,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
         }
 
-        SetMultiplyUsed(dstAddr);
         if (src->OperIs(GT_IND))
         {
             SetMultiplyUsed(src->gtGetOp1());

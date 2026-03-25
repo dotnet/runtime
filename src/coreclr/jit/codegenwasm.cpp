@@ -2903,9 +2903,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         destOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
         assert(fpBased);
     }
-    else if (isCopyBlk)
+    else if (isCopyBlk || nullCheckDest)
     {
-        // Lowering does not contain dest or flag it as multiple-use for initblk
         destReg = GetMultiUseOperandReg(dest);
     }
 
