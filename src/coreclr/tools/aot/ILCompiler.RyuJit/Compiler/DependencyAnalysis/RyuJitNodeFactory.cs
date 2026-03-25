@@ -9,12 +9,18 @@ namespace ILCompiler.DependencyAnalysis
 {
     public sealed class RyuJitNodeFactory : NodeFactory
     {
+        private readonly MethodBodyDeduplicator _methodBodyDeduplicator;
+
         public RyuJitNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager,
             InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider, InlinedThreadStatics inlinedThreadStatics, PreinitializationManager preinitializationManager,
-            DevirtualizationManager devirtualizationManager, ObjectDataInterner dataInterner, TypeMapManager typeMapManager)
+            DevirtualizationManager devirtualizationManager, ObjectDataInterner dataInterner, MethodBodyDeduplicator methodBodyDeduplicator, TypeMapManager typeMapManager)
             : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), vtableSliceProvider, dictionaryLayoutProvider, inlinedThreadStatics, new ExternSymbolsImportedNodeProvider(), preinitializationManager, devirtualizationManager, dataInterner, typeMapManager)
         {
+            _methodBodyDeduplicator = methodBodyDeduplicator;
         }
+
+        protected override bool CanFold(MethodDesc method)
+            => _methodBodyDeduplicator?.CanFold(method) ?? false;
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {

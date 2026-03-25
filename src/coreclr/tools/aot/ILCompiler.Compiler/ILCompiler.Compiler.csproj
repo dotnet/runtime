@@ -503,6 +503,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
     <Compile Include="Compiler\ExpectedIsaFeaturesRootProvider.cs" />
     <Compile Include="Compiler\ExternSymbolMappedField.cs" />
+    <Compile Include="Compiler\MethodBodyDeduplicator.cs" />
     <Compile Include="Compiler\ObjectDataInterner.cs" />
     <Compile Include="Compiler\ReachabilityInstrumentationFilter.cs" />
     <Compile Include="Compiler\ReachabilityInstrumentationProvider.cs" />
