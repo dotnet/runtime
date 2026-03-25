@@ -257,10 +257,27 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             return -1;
         }
 
-        // Reset all signal handlers to default
-        sigset_t all_signals;
-        sigfillset(&all_signals);
-        if ((result = posix_spawnattr_setsigdefault(&attr, &all_signals)) != 0)
+        // Build sigdefault set: only reset signals that have custom handlers,
+        // preserving SIG_IGN and SIG_DFL handlers (matching fork path behavior).
+        sigset_t sigdefault_set;
+        sigemptyset(&sigdefault_set);
+        for (int sig = 1; sig < NSIG; ++sig)
+        {
+            if (sig == SIGKILL || sig == SIGSTOP)
+            {
+                continue;
+            }
+            struct sigaction sa_old;
+            if (!sigaction(sig, NULL, &sa_old))
+            {
+                void (*oldhandler)(int) = handler_from_sigaction(&sa_old);
+                if (oldhandler != SIG_IGN && oldhandler != SIG_DFL)
+                {
+                    sigaddset(&sigdefault_set, sig);
+                }
+            }
+        }
+        if ((result = posix_spawnattr_setsigdefault(&attr, &sigdefault_set)) != 0)
         {
             int saved_errno = result;
             posix_spawnattr_destroy(&attr);
