@@ -85,22 +85,6 @@ CREATE TABLE IF NOT EXISTS test_results (
     failure_id        INTEGER,
     FOREIGN KEY (failure_id) REFERENCES failures(id)
 );
-
-CREATE TABLE IF NOT EXISTS github_issues (
-    issue_number      INTEGER,
-    issue_url         TEXT,
-    title             TEXT NOT NULL,
-    state             TEXT,
-    assigned          TEXT,
-    pipelines_affected INTEGER DEFAULT 1,
-    suggested_labels  TEXT
-);
-
-CREATE TABLE IF NOT EXISTS action_items (
-    priority    INTEGER PRIMARY KEY,
-    description TEXT NOT NULL,
-    issue_url   TEXT
-);
 """
 
 
@@ -121,8 +105,16 @@ def parse_pipelines_md(path):
             if name.startswith("Pipeline") or name.startswith("---"):
                 continue
 
-            if def_id_str == "—" or "Private" in notes or "skip" in notes.lower():
+            notes_lower = notes.lower()
+            is_private = bool(re.search(r'\bprivate', notes_lower))
+            is_skip = bool(re.search(r'\bskip', notes_lower))
+
+            if is_private:
                 pipelines.append({"name": name, "def_id": None, "skip": True, "skip_reason": "private"})
+            elif is_skip:
+                pipelines.append({"name": name, "def_id": None, "skip": True, "skip_reason": "skip"})
+            elif def_id_str == "—":
+                pipelines.append({"name": name, "def_id": None, "skip": True, "skip_reason": "missing_def_id"})
             else:
                 pipelines.append({"name": name, "def_id": int(def_id_str), "skip": False})
 
@@ -187,7 +179,7 @@ def main():
             )
             conn.commit()
             skipped += 1
-            print(f"  SKIP  {name} (private)", file=sys.stderr)
+            print(f"  SKIP  {name} ({p.get('skip_reason', 'unknown')})", file=sys.stderr)
             continue
 
         build, url = fetch_latest_build(p["def_id"])

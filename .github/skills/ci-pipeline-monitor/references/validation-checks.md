@@ -1,4 +1,4 @@
-# Validation Checks — Step 5.5 Details
+# Validation Checks — Step 6 Details
 
 ```bash
 python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines.md --report logs/test-report-<timestamp>.md --log logs/ci-pipeline-monitor-<timestamp>.log
@@ -13,7 +13,6 @@ has test_results, all console logs fetched, all test_results triaged.
 every failure has at least one pipeline and one test.
 
 **Data Quality:** no empty error_message/test_name in failures,
-github_issues covers all referenced issue numbers, action_items exist,
 no duplicate failure groups.
 
 **Content Accuracy:** error_message text appears verbatim in the

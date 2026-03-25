@@ -174,30 +174,6 @@ def main():
     if not ok:
         failures += 1
 
-    # 10. github_issues covers all referenced issue numbers
-    total += 1
-    uncovered = conn.execute("""
-        SELECT DISTINCT github_issue_number FROM failures
-        WHERE github_issue_number IS NOT NULL
-        AND github_issue_number NOT IN (
-            SELECT issue_number FROM github_issues WHERE issue_number IS NOT NULL
-        )
-    """).fetchall()
-    ok = check("github_issues covers all referenced issues",
-               len(uncovered) == 0,
-               f"missing: {[r[0] for r in uncovered]}" if uncovered else "")
-    if not ok:
-        failures += 1
-
-    # 11. action_items exist
-    total += 1
-    ai_count = count(conn, "SELECT COUNT(*) FROM action_items")
-    ok = check("action_items exist",
-               ai_count > 0,
-               f"{ai_count} items")
-    if not ok:
-        failures += 1
-
     # 12. Each unique failure should appear only once in the triage results
     total += 1
     dupes = conn.execute("""
@@ -510,33 +486,6 @@ def main():
                    if missed_matches else f"confirmed {len(new_failures)} NEW failures have no matching issue")
     if not ok:
         failures += 1
-
-    # 16e. Report action items must not say "file new" for failures with a linked issue.
-    # Cross-checks the failures table: if github_issue_number is set, neither the
-    # report Action Items section nor the action_items DB table should say "file new".
-    # This check runs against the DB only; the report-text check is in Report Sanity.
-    total += 1
-    mismatched = []
-    for r in conn.execute("""
-        SELECT id, test_name, github_issue_number FROM failures
-        WHERE github_issue_number IS NOT NULL
-    """):
-        mismatched_in_items = conn.execute("""
-            SELECT description FROM action_items
-            WHERE (description LIKE '%file new%' OR description LIKE '%needs issue%')
-              AND description LIKE ?
-        """, (f"%{r['test_name'][:40]}%",)).fetchall()
-        if mismatched_in_items:
-            mismatched.append((r["id"], r["test_name"][:50],
-                               f"has #{r['github_issue_number']} but action_items says file new"))
-    ok = check("No action_items say 'file new' for failures with linked GitHub issue",
-               len(mismatched) == 0,
-               f"{len(mismatched)} mismatches: {mismatched}" if mismatched
-               else "",
-               warn_only=True)
-    # This is a warning, not a hard failure, because generate_report.py now generates
-    # action items from the failures table directly.  The action_items table is
-    # legacy / LLM-populated and may be stale.
 
     # 16f. error_message and stack_trace lines are not cut in the middle.
     # Every line in error_message/stack_trace must appear as a complete line
