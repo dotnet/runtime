@@ -33,41 +33,6 @@ The list of pipelines and their cached definition IDs is maintained in
   grouping by root cause, searching GitHub for matching issues, writing
   analysis, and populating the triage tables in `monitor.db`.
 
-## Directory Layout
-
-```
-.github/skills/ci-pipeline-monitor/
-├── pipelines.md          # Pipeline definitions (edit to add/remove)
-├── report-template.md    # Template for test reports
-├── log-template.md       # Template for debug logs
-├── SKILL.md              # This file
-├── scripts/              # Python scripts + monitor.db
-│   ├── setup_and_fetch_builds.py
-│   ├── extract_failed_tests.py
-│   ├── fetch_helix_logs.py
-│   ├── generate_report.py
-│   ├── validate_results.py
-│   └── monitor.db        # SQLite database (created by scripts)
-├── references/           # Detailed instructions (loaded on demand)
-│   ├── triage-workflow.md
-│   ├── verbatim-rules.md
-│   └── validation-checks.md
-├── logs/                 # Debug logs + test reports ONLY
-│   ├── ci-pipeline-monitor-*.log
-│   └── test-report-*.md
-└── helix-logs/           # Full Helix console logs (one .log file per test)
-    ├── runtime-coreclr_libraries-pgo__System.Text.Json.Tests.log
-    ├── runtime-coreclr_jitstressregs__tracing_userevents_....log
-    └── ...
-```
-
-**`helix-logs/`** — Stores the complete, unmodified Helix console log for
-every failed test. One file per unique console URL. Files are saved by
-`fetch_helix_logs.py` and referenced via `test_results.console_log_path`.
-The agent reads these files in full during triage (Step 4) to extract error
-messages and stack traces by verbatim copy-paste. These files are NOT mixed
-with `logs/` (which contains only debug logs and test reports).
-
 ## Scripts
 
 Use these scripts — do NOT write ad-hoc replacements.
@@ -83,6 +48,10 @@ Use these scripts — do NOT write ad-hoc replacements.
 **End-to-end pipeline:**
 ```bash
 cd .github/skills/ci-pipeline-monitor
+
+# Step 1: Resolve pipeline definitions (agent)
+# Agent compares Pipeline Details against Cached Mapping in pipelines.md,
+# resolves missing def IDs via AzDO Definitions API, updates pipelines.md
 
 # Step 2: Fetch latest builds (deterministic)
 python scripts/setup_and_fetch_builds.py --pipelines pipelines.md --db scripts/monitor.db > failing_builds.json
