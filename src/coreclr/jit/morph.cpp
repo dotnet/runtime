@@ -10715,7 +10715,7 @@ GenTree* Compiler::fgOptimizeBitwiseOr(GenTreeOp* orOp)
     GenTree* op2 = orOp->gtGetOp2();
 
     // Fold "(cmp & x) | (cmp & y)" to "cmp & (x | y)".
-    if (orOp->TypeIs(TYP_INT) && op1->OperIs(GT_AND) && op2->OperIs(GT_AND))
+    if (varTypeIsIntegralOrI(orOp) && op1->OperIs(GT_AND) && op2->OperIs(GT_AND))
     {
         if (GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
         {
