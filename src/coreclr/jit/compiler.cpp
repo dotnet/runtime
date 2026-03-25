@@ -4745,7 +4745,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Add any internal blocks/trees we may need
 
-#ifndef TARGET_S390X
+#ifdef TARGET_S390X
 	//disabled for the initial phase
     DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
 #endif

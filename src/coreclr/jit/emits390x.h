@@ -77,7 +77,7 @@ void getInsSveExecutionCharacteristics(instrDesc* id, insExecutionCharacteristic
 
 void emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
-void emitDispInsSveHelp(instrDesc* id);
+//void emitDispInsSveHelp(instrDesc* id);
 void emitDispLargeJmp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
 void emitDispComma();
@@ -1795,6 +1795,11 @@ inline bool emitIsLoadConstant(instrDesc* jmp)
             (jmp->idInsFmt() == IF_LARGELDC));
 }
 
+//  The return value replaces REG_ZR with REG_SP
+static regNumber encodingZRtoSP(regNumber reg)
+{
+    return (reg == REG_SP) ? REG_SP : reg; // TODO : Giri : This function can be renamed !!
+} // ZR (R31) encodes the SP register
 
 // Missing functions referenced in emits390x.cpp
 bool emitInsMayWriteToGCReg(instrDesc* id);

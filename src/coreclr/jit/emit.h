@@ -1148,7 +1148,7 @@ protected:
                 case IF_SN_0A:
                     if (idIsEmptyAlign())
                     {
-                        size = 0;
+                        size = 2;
                     }
                     break;
                 default:
@@ -1163,7 +1163,7 @@ protected:
         inline bool idIsEmptyAlign() const
         {
             //return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
-            //return (idInsOpt() == INS_OPTS_NONE); //TODO : Giri , should be have INS_align? 
+            return (idInsOpt() == INS_OPTS_NONE); //TODO : Giri , should be have INS_align? 
         }
 
         unsigned idCodeSize() const
@@ -1173,6 +1173,7 @@ protected:
             {
 		case INS_ret:
 		case INS_br:
+		case INS_nop:
 			size = 2;
 			break;
 		case INS_lgfi:
@@ -1632,8 +1633,8 @@ protected:
         bool idReg3Scaled() const
         {
             assert(!idIsSmallDsc());
-	    _ASSERTE(!"NYI");
-            //return (idAddr()->_idRegBit == 1);
+	    //_ASSERTE(!"NYI");
+            return (idAddr()->_idRegBit == 1);
         }
         void idReg3Scaled(bool val)
         {

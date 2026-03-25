@@ -32,13 +32,15 @@
 
 // RV32I & RV64I
 INST(invalid,		"INVALID",		0,		BAD_CODE)
-INST(nop,		"nop",			0,		0x00000013)
+INST(align,             "align",                0,              BAD_CODE)
+INST(nop,               "nop",                  0,              0x07)
 //// R
 INST(br,		"br",			0,		0x07)
-INST(ret,		"br",			0,		0x07)
+INST(ret,		"ret",			0,		0x07)
 //// R_R
 INST(lgfi,		"lgfi",			0,		0xc01)
 INST(break,		"break",		0,		0x00)
+INST(brk_unix,          "brk_unix",             0,              0xD4200000)
 
 ////R_I
 INST(llgc,		"llgc",			0,		0xe390)

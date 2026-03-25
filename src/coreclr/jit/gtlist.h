@@ -202,7 +202,7 @@ GTNODE(MULHI            , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
 // MUL_LONG is also used on ARM64, where 64 bit multiplication is more expensive.
 #if !defined(TARGET_64BIT)
 GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,0,GTK_BINOP|DBK_NOTHIR)
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_S390X)
 GTNODE(MUL_LONG         , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 // AndNot - emitted on ARM/ARM64 as the BIC instruction. Also used for creating AndNot HWINTRINSIC vector nodes in a cross-ISA manner.
@@ -256,6 +256,12 @@ GTNODE(SELECT_NEG       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(SELECT_NEGCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 
+#ifdef TARGET_S390X
+GTNODE(CCMP             , GenTreeCCMP        ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+GTNODE(SELECT_INCCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SELECT_INVCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SELECT_NEGCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
+#endif
 //-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:
 //-----------------------------------------------------------------------------

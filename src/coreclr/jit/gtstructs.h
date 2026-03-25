@@ -121,6 +121,10 @@ GTSTRUCT_3(OpCC        , GT_SELECTCC, GT_JCMP, GT_JTEST)
 #if !defined(TARGET_64BIT)
 GTSTRUCT_1(MultiRegOp  , GT_MUL_LONG)
 #endif
+
+#ifdef TARGET_S390X
+GTSTRUCT_1(CCMP        , GT_CCMP)
+#endif
 /*****************************************************************************/
 #undef  GTSTRUCT_0
 #undef  GTSTRUCT_1

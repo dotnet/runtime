@@ -1683,7 +1683,7 @@ public:
             return true;
         }
 #endif
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_S390X)
         if (OperIs(GT_CCMP, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
         {
             return true;
@@ -3082,7 +3082,7 @@ struct GenTreeOp : public GenTreeUnOp
         }
     }
 
-#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
+#if !defined(TARGET_64BIT) || defined(TARGET_ARM64) || defined(TARGET_S390X)
     bool IsValidLongMul();
 #endif
 
@@ -9513,7 +9513,27 @@ enum insCflags : unsigned
     INS_FLAGS_NZC,
     INS_FLAGS_NZCV,
 };
+
+struct GenTreeCCMP final : public GenTreeOpCC
+{
+    insCflags gtFlagsVal;
+
+    GenTreeCCMP(var_types type, GenCondition condition, GenTree* op1, GenTree* op2, insCflags flagsVal)
+        : GenTreeOpCC(GT_CCMP, type, condition, op1, op2)
+        , gtFlagsVal(flagsVal)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeCCMP()
+        : GenTreeOpCC()
+    {
+    }
+#endif // DEBUGGABLE_GENTREE
+};
+
 #endif
+
 //------------------------------------------------------------------------
 // Deferred inline functions of GenTree -- these need the subtypes above to
 // be defined already.

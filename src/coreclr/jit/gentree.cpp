@@ -3734,7 +3734,7 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
     return tree;
 }
 
-#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
+#if !defined(TARGET_64BIT) || defined(TARGET_ARM64) || defined(TARGET_S390X)
 //------------------------------------------------------------------------------
 // IsValidLongMul : Check for long multiplication with 32 bit operands.
 //
