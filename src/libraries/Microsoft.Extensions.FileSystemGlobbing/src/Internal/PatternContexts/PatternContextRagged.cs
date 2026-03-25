@@ -32,8 +32,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
 
         public sealed override void PushDirectory(DirectoryInfoBase directory)
         {
-            // copy the current frame
-            FrameData frame = Frame;
+            // clone the current frame
+            FrameData frame = Frame.Clone();
 
             if (IsStackEmpty())
             {
@@ -101,15 +101,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
             PushDataFrame(frame);
         }
 
-        public override void PopDirectory()
-        {
-            base.PopDirectory();
-            if (Frame.StemItems.Count > 0)
-            {
-                Frame.StemItems.RemoveAt(Frame.StemItems.Count - 1);
-            }
-        }
-
         public struct FrameData
         {
             public bool IsNotApplicable;
@@ -129,6 +120,13 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
             public IList<string> StemItems => _stemItems ??= new List<string>();
 
             public string? Stem => _stemItems == null ? null : string.Join("/", _stemItems);
+
+            internal readonly FrameData Clone()
+            {
+                FrameData clone = this;
+                clone._stemItems = _stemItems is null ? null : new List<string>(_stemItems);
+                return clone;
+            }
         }
 
         protected IRaggedPattern Pattern { get; }

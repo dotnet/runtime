@@ -946,5 +946,37 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             Assert.False(patternMatchingResult.HasMatches);
             Assert.Equal(0, patternMatchingResult.Files.Count());
         }
+
+        [Fact]
+        public void StemIsCorrectForMultipleWildcardSiblingDirectories()
+        {
+            var matcher = new Matcher();
+            matcher.AddInclude("sys*/1*/*.dll");
+
+            var files = new[]
+            {
+                 "system32/1028/VsGraphicsResources.dll",
+                 "system32/1028/vsjitdebuggerui.dll",
+                 "system32/1029/VsGraphicsResources.dll",
+                 "system32/1029/vsjitdebuggerui.dll",
+                 "system32/1031/VsGraphicsResources.dll",
+                 "system32/1031/vsjitdebuggerui.dll",
+             };
+
+            var results = matcher.Match("./", files);
+
+            var actual = results.Files.Select(f => f.Stem);
+            var expected = new[]
+            {
+                 "system32/1028/VsGraphicsResources.dll",
+                 "system32/1028/vsjitdebuggerui.dll",
+                 "system32/1029/VsGraphicsResources.dll",
+                 "system32/1029/vsjitdebuggerui.dll",
+                 "system32/1031/VsGraphicsResources.dll",
+                 "system32/1031/vsjitdebuggerui.dll",
+             };
+
+            AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
+        }
     }
 }
