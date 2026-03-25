@@ -188,7 +188,7 @@ STEP 5.5: Validate
 ================================================================================
 
 [HH:mm:ss] Running: python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines.md --report logs/test-report-<timestamp>.md
-[HH:mm:ss] 15/15 checks passed
+[HH:mm:ss] <X>/<Y> checks passed
 
 ================================================================================
 SUMMARY

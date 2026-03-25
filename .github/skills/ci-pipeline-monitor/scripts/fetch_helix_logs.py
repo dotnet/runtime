@@ -63,14 +63,18 @@ def fetch_and_save(url, out_path):
     }
 
 
-def make_log_filename(pipeline_name, run_name, test_name):
-    """Create a filesystem-safe filename for a console log."""
-    run_hash = hashlib.sha1(run_name.encode()).hexdigest()[:8]
-    safe = re.sub(r'[^\w\-.]', '_', f"{pipeline_name}__{test_name}__{run_hash}")
-    # Truncate to avoid filesystem limits
-    if len(safe) > 200:
-        safe = safe[:200]
-    return safe + '.log'
+def make_log_filename(pipeline_name, test_name, console_log_url):
+    """Create a filesystem-safe filename for a console log.
+
+    Includes a short hash of the console_log_url to guarantee uniqueness
+    even when the human-readable part is truncated.
+    """
+    url_hash = hashlib.sha256(console_log_url.encode()).hexdigest()[:8]
+    safe = re.sub(r'[^\w\-.]', '_', f"{pipeline_name}__{test_name}")
+    # Leave room for _<hash>.log suffix (1 + 8 + 4 = 13 chars)
+    if len(safe) > 187:
+        safe = safe[:187]
+    return f"{safe}_{url_hash}.log"
 
 
 def process_from_db(db_path, logdir):
@@ -106,7 +110,7 @@ def process_from_db(db_path, logdir):
     results = {}
     for url, entries in url_to_ids.items():
         first = entries[0]
-        filename = make_log_filename(first['pipeline_name'], first['run_name'], first['test_name'])
+        filename = make_log_filename(first['pipeline_name'], first['test_name'], url)
         out_path = os.path.join(logdir, filename)
 
         print(f"Fetching {first['test_name']}...", file=sys.stderr)
@@ -175,7 +179,7 @@ def process_from_json(input_path, logdir):
         name = info['test_name']
         pipeline = info.get('pipeline_name', '')
         run = info.get('run_name', '')
-        filename = make_log_filename(pipeline, run, name)
+        filename = make_log_filename(pipeline, name, url)
         out_path = os.path.join(logdir, filename)
 
         print(f'Fetching {name}...', file=sys.stderr)
