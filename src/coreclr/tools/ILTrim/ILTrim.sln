@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILTrim.Tests.Cases.Expectat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILTrim.Tests.Cases", "ILTrim.Tests.Cases\ILTrim.Tests.Cases.csproj", "{FEABED53-9B40-40C4-A218-9BAD98F63FCB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILTrim.TypeSystem", "ILTrim.TypeSystem\ILTrim.TypeSystem.csproj", "{7BC4B552-EB30-48F7-B431-0E11827C11F4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.TypeSystem", "..\aot\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj", "{7BC4B552-EB30-48F7-B431-0E11827C11F4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILVerification", "..\ILVerification\ILVerification.csproj", "{E47EB47D-C5CD-4EB6-9E78-55A7E9501CA6}"
 EndProject

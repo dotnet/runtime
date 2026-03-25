@@ -9,7 +9,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
@@ -17,45 +16,23 @@ using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore
 
 #nullable enable
 
-namespace Internal.TypeSystem
-{
-    // ILTrim.TypeSystem doesn't compile the Canon files. Provide minimal stubs.
-    public enum CanonicalFormKind
-    {
-        Specific,
-        Universal,
-        Any,
-    }
-
-    public static class CanonTypeExtensions
-    {
-        public static TypeDesc ConvertToCanonForm(this TypeDesc type, CanonicalFormKind kind) => type;
-        public static MethodDesc GetCanonMethodTarget(this MethodDesc method, CanonicalFormKind kind) => method;
-    }
-
-    // IsSealed is on MetadataType but shared dataflow code calls it on TypeDesc.
-    public static class TypeDescSealedExtensions
-    {
-        public static bool IsSealed(this TypeDesc type)
-        {
-            if (type is MetadataType metadataType)
-                return metadataType.IsSealed || metadataType.IsModuleType;
-            Debug.Assert(type.IsArray, "IsSealed on a type with no virtual methods?");
-            return true;
-        }
-    }
-}
-
 namespace ILCompiler
 {
     public class CompilerTypeSystemContext : MetadataTypeSystemContext
     {
+        public override bool SupportsCanon => false;
+        public override bool SupportsUniversalCanon => false;
+
         public MethodDesc? GetAsyncVariant(MethodDesc method) => null;
         public MethodDesc? GetAsyncVariantMethod(MethodDesc method) => null;
         public MethodDesc? GetTargetOfAsyncVariantMethod(MethodDesc method) => null;
 
-        // No generic sharing in ILTrim — canon type is meaningless.
-        public TypeDesc? CanonType => null;
+        internal DefType GetClosestDefType(TypeDesc type)
+        {
+            if (type is DefType defType)
+                return defType;
+            return GetWellKnownType(WellKnownType.Array);
+        }
 
         // Logger.cs uses these to resolve module file names for diagnostics.
         public Dictionary<string, string> ReferenceFilePaths { get; } = new();

@@ -16,12 +16,14 @@
 
   <ItemGroup>
     <ProjectReference Include="../../aot/ILCompiler.DependencyAnalysisFramework/ILCompiler.DependencyAnalysisFramework.csproj" />
-    <ProjectReference Include="../ILTrim.TypeSystem/ILTrim.TypeSystem.csproj" />
+    <ProjectReference Include="../../aot/ILCompiler.TypeSystem/ILCompiler.TypeSystem.csproj" />
   </ItemGroup>
 
-  <!-- TypeSystem IL files compiled directly (same pattern as ILCompiler.Compiler) -->
+  <!-- TypeSystem files compiled directly (needed for internal member access by dataflow/ILTrim code).
+       These shadow the same types from ILCompiler.TypeSystem.dll (CS0436 suppressed). -->
   <ItemGroup>
     <Compile Include="..\..\Common\TypeSystem\IL\ILProvider.cs" Link="IL\ILProvider.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="IL\ILReader.cs" />
   </ItemGroup>
 
   <!-- Common/Compiler shared files -->
@@ -38,10 +40,9 @@
     <Compile Include="..\..\Common\Compiler\Dataflow\TypeProxy.cs" Link="Shared\Dataflow\TypeProxy.cs" />
     <Compile Include="..\..\Common\Compiler\Dataflow\TypeExtensions.cs" Link="Shared\Dataflow\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Shared\INodeWithRuntimeDeterminedDependencies.cs" />
-    <Compile Include="..\..\Common\TypeSystem\Common\ConstructedTypeRewritingHelpers.cs" Link="Shared\ConstructedTypeRewritingHelpers.cs" />
-    <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Shared\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\ProcessLinkerXmlBase.cs" Link="Shared\ProcessLinkerXmlBase.cs" />
     <Compile Include="..\..\Common\Compiler\FeatureSettings.cs" Link="Shared\FeatureSettings.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Shared\TypeExtensions.cs" />
     <Compile Include="..\..\Common\System\Collections\Generic\ArrayBuilder.cs" Link="Shared\ArrayBuilder.cs" />
   </ItemGroup>
 

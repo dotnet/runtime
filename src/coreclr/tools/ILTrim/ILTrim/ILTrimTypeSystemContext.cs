@@ -20,6 +20,10 @@ namespace ILCompiler
         private readonly MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         private readonly MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
 
+        // ILTrim does not use generic sharing / canonical forms.
+        public override bool SupportsCanon => false;
+        public override bool SupportsUniversalCanon => false;
+
         private MetadataStringDecoder _metadataStringDecoder;
 
         private class ModuleData
