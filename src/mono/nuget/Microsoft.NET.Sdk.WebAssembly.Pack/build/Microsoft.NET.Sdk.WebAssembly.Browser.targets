@@ -948,22 +948,24 @@ Copyright (c) .NET Foundation. All rights reserved.
           SkipUnchangedFiles="true" />
   </Target>
 
-  <!-- Publish-time telemetry for WebAssembly/Blazor configuration properties -->
-  <Target Name="_WasmPublishTelemetry"
-          AfterTargets="GeneratePublishWasmBootJson"
+  <!-- Hook WASM publish telemetry into the workload telemetry pipeline -->
+  <PropertyGroup>
+    <WorkloadTelemetryDependsOn>$(WorkloadTelemetryDependsOn);_GatherWasmPublishTelemetry</WorkloadTelemetryDependsOn>
+  </PropertyGroup>
+
+  <Target Name="_GatherWasmPublishTelemetry"
           Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <ItemGroup>
-      <WasmPublishConfig Include="InvariantTimezone" Value="$(InvariantTimezone)" />
-      <WasmPublishConfig Include="InvariantGlobalization" Value="$(_WasmInvariantGlobalization)" />
-      <WasmPublishConfig Include="BlazorWebAssemblyLoadAllGlobalizationData" Value="$(_BlazorWebAssemblyLoadAllGlobalizationData)" />
-      <WasmPublishConfig Include="WasmEnableWebcil" Value="$(_WasmEnableWebcil)" />
-      <WasmPublishConfig Include="WasmInlineBootConfig" Value="$(_WasmInlineBootConfig)" />
-      <WasmPublishConfig Include="OverrideHtmlAssetPlaceholders" Value="$(OverrideHtmlAssetPlaceholders)" />
-      <WasmPublishConfig Include="WasmFingerprintBootConfig" Value="$(_WasmFingerprintBootConfig)" />
-      <WasmPublishConfig Include="WasmPreloadAssets" Value="$(_WasmPreloadAssets)" />
-      <WasmPublishConfig Include="WasmBundlerFriendlyBootConfig" Value="$(_WasmBundlerFriendlyBootConfig)" />
-      <WasmPublishConfig Include="UseMonoRuntime" Value="$(UseMonoRuntime)" />
+      <WorkloadPublishProperties Include="InvariantTimezone" Value="$(InvariantTimezone)" />
+      <WorkloadPublishProperties Include="InvariantGlobalization" Value="$(_WasmInvariantGlobalization)" />
+      <WorkloadPublishProperties Include="BlazorWebAssemblyLoadAllGlobalizationData" Value="$(_BlazorWebAssemblyLoadAllGlobalizationData)" />
+      <WorkloadPublishProperties Include="WasmEnableWebcil" Value="$(_WasmEnableWebcil)" />
+      <WorkloadPublishProperties Include="WasmInlineBootConfig" Value="$(_WasmInlineBootConfig)" />
+      <WorkloadPublishProperties Include="OverrideHtmlAssetPlaceholders" Value="$(OverrideHtmlAssetPlaceholders)" />
+      <WorkloadPublishProperties Include="WasmFingerprintBootConfig" Value="$(_WasmFingerprintBootConfig)" />
+      <WorkloadPublishProperties Include="WasmPreloadAssets" Value="$(_WasmPreloadAssets)" />
+      <WorkloadPublishProperties Include="WasmBundlerFriendlyBootConfig" Value="$(_WasmBundlerFriendlyBootConfig)" />
+      <WorkloadPublishProperties Include="UseMonoRuntime" Value="$(UseMonoRuntime)" />
     </ItemGroup>
-    <AllowEmptyTelemetry EventName="WasmPublishConfig" EventData="@(WasmPublishConfig)" />
   </Target>
 </Project>
