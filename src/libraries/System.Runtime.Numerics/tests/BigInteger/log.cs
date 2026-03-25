@@ -139,8 +139,8 @@ namespace System.Numerics.Tests
         }
 
         /// <summary>
-        /// Test Log method on very large BigInteger values greater than 2^(1 &lt;&lt; 24), that is, values with more than 16,777,216 bits, using base 2.
-        /// Tested BigInteger values are 2^(startShift + smallShift * [1..smallShiftLoopLimit] + (1 &lt;&lt; 24) * [1..bigShiftLoopLimit]).
+        /// Test Log Method on Very Large BigInteger more than (1 &lt;&lt; (1 &lt;&lt; 24)) by base 2
+        /// Tested BigInteger are: pow(2, startShift + smallLoopShift * [1..smallLoopLimit] + (1 &lt;&lt; 24) * [1..bigLoopLimit])
         /// Note:
         /// ToString() can not operate such large values
         /// VerifyLogString() can not operate such large values,
@@ -148,9 +148,6 @@ namespace System.Numerics.Tests
         /// </summary>
         private static void LargeValueLogTests(int startShift, int bigShiftLoopLimit, int smallShift = 0, int smallShiftLoopLimit = 1)
         {
-            // Use 1<<24 (16,777,216) bits per iteration rather than int.MaxValue/10 to keep
-            // per-iteration allocations around 2 MB instead of ~107 MB, avoiding OOM in CI containers.
-            const int LargeBitShift = 1 << 24;
             BigInteger init = BigInteger.One << startShift;
             double logbase = 2D;
 
@@ -160,11 +157,11 @@ namespace System.Numerics.Tests
 
                 for (int j = 0; j<bigShiftLoopLimit; j++)
                 {
-                    temp = temp << LargeBitShift;
+                    temp = temp << (1 << 24);
                     double expected =
                         (double)startShift +
                         smallShift * (double)(i + 1) +
-                        LargeBitShift * (double)(j + 1);
+                        (1 << 24) * (double)(j + 1);
                     Assert.True(ApproxEqual(BigInteger.Log(temp, logbase), expected));
                 }
 
