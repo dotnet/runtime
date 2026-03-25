@@ -451,7 +451,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestArgumentsNullProperty()
         {
-            ProcessStartInfo psi = new ProcessStartInfo("filename", null);
+            string? args = null;
+            ProcessStartInfo psi = new ProcessStartInfo("filename", args);
             Assert.Equal(string.Empty, psi.Arguments);
 
             psi.Arguments = null;
