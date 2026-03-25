@@ -223,10 +223,12 @@ if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
   if [[ $test_exitcode -ne 1 ]]; then
     dmesg | tail -50
 
-    # If dmesg was denied (CAP_SYSLOG not available), check cgroup v2 memory.events
-    # as a fallback to confirm whether the OOM killer fired.
+    # For exit code 137, also check cgroup v2 memory.events as a fallback
+    # to confirm whether the OOM killer fired (e.g., if dmesg is unavailable).
     if [[ $test_exitcode -eq 137 ]]; then
-      for memevents in /sys/fs/cgroup/memory.events /sys/fs/cgroup/$(cat /proc/self/cgroup 2>/dev/null | grep -oP '0::\K.*' 2>/dev/null | sed 's:^/::')/memory.events; do
+      cg_path=$(awk -F: '$1=="0" && $2=="" {print $3; exit}' /proc/self/cgroup 2>/dev/null)
+      cg_path=${cg_path#/}
+      for memevents in /sys/fs/cgroup/memory.events ${cg_path:+/sys/fs/cgroup/$cg_path/memory.events}; do
         if [[ -f "$memevents" ]]; then
           echo "cgroup memory.events ($memevents):"
           cat "$memevents"
