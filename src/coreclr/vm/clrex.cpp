@@ -1292,14 +1292,15 @@ static ArgumentExceptionKind GetArgumentExceptionKind(RuntimeExceptionKind reKin
     LIMITED_METHOD_CONTRACT;
     switch (reKind)
     {
+    default:
+        UNREACHABLE();
+        __fallthrough;
     case kArgumentException:
         return ArgumentExceptionKind::Argument;
     case kArgumentNullException:
         return ArgumentExceptionKind::ArgumentNull;
     case kArgumentOutOfRangeException:
         return ArgumentExceptionKind::ArgumentOutOfRange;
-    default:
-        UNREACHABLE();
     }
 }
 
@@ -1568,10 +1569,11 @@ static FileLoadExceptionKind GetFileLoadExceptionKind(HRESULT hr)
         return FileLoadExceptionKind::FileNotFound;
     case kOutOfMemoryException:
         return FileLoadExceptionKind::OutOfMemory;
-    case kFileLoadException:
-        return FileLoadExceptionKind::FileLoad;
     default:
         UNREACHABLE();
+        __fallthrough;
+    case kFileLoadException:
+        return FileLoadExceptionKind::FileLoad;
     }
 }
 

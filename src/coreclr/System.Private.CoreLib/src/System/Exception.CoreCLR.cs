@@ -403,7 +403,7 @@ namespace System
             Argument,
             ArgumentNull,
             ArgumentOutOfRange
-        };
+        }
 
         [UnmanagedCallersOnly]
         internal static unsafe void CreateArgumentException(ArgumentExceptionKind kind, char* pResourceName, char* pParamName, object* pThrowable, Exception* pException)
