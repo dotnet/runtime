@@ -279,7 +279,7 @@ namespace System.Security.Cryptography.Cose
                                 }
                                 else if (state == CborReaderState.UnsignedInteger || state == CborReaderState.NegativeInteger)
                                 {
-                                    reader.ReadInt32();
+                                    reader.ReadInt32ForCrypto();
                                 }
                                 else if (state == CborReaderState.TextString)
                                 {
@@ -323,7 +323,7 @@ namespace System.Security.Cryptography.Cose
                     throw new CborContentException(SR.CoseHeaderMapCborEncodedValueNotValid);
                 }
             }
-            catch (Exception ex) when (ex is CborContentException or InvalidOperationException or OverflowException)
+            catch (Exception ex) when (ex is CborContentException or InvalidOperationException)
             {
                 throw new ArgumentException(SR.Format(SR.CoseHeaderMapArgumentCoseHeaderValueIncorrect, label.LabelName), nameof(value), ex);
             }
