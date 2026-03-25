@@ -5,6 +5,7 @@
 //     multiple threads
 
 using System;
+using TestLibrary;
 
 namespace ServerSimulator
 {
@@ -37,6 +38,12 @@ namespace ServerSimulator
         // entrypoint
         public static int Main(String[] args)
         {
+            if (CoreClrConfigurationDetection.IsHeapVerify)
+            {
+                Console.WriteLine("Skipping test: HeapVerify is enabled and this test is incompatible with it.");
+                return 100;
+            }
+
             Params = new Parameters();
 
             if (args.Length > 0)

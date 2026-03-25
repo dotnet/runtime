@@ -116,14 +116,6 @@ then
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
-      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(HeapVerifyIncompatible)' == 'true'"><![CDATA[
-$(BashCLRTestEnvironmentCompatibilityCheck)
-if [ ! -z "$DOTNET_HeapVerify" ]
-then
-  echo SKIPPING EXECUTION BECAUSE DOTNET_HeapVerify IS SET
-  exit $(IncompatibleTestBashScriptExitCode)
-fi
-      ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(IlasmRoundTripIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ ! -z "$RunningIlasmRoundTrip" ]
