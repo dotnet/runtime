@@ -77,7 +77,7 @@
     <!-- WoW64 view only needed for x86 processes -->
     <Exec Command="$(DacRegAdd32)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true"
           Condition="'$(TargetArchitecture)' == 'x86'" />
-    <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: $(DacRegAdd)"
+    <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: $(DacRegAdd) (and for x86: $(DacRegAdd32))"
              Importance="normal" />
   </Target>
 
