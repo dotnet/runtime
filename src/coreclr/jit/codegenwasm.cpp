@@ -1807,16 +1807,36 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     GenTree* const index = node->Index();
 
     assert(varTypeIsIntegral(index->TypeGet()));
+    var_types indexType = index->TypeGet();
 
     // Generate the bounds check if necessary.
+    //
     if (node->IsBoundsChecked())
     {
-        // We need internal registers for this case.
-        NYI_WASM("GT_INDEX_ADDR with bounds check");
+        regNumber baseReg  = GetMultiUseOperandReg(base);
+        regNumber indexReg = GetMultiUseOperandReg(index);
+
+        // fetch index
+        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(index), WasmRegToIndex(indexReg));
+
+        // fetch array length
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(baseReg));
+        GetEmitter()->emitIns_I(ins_Load(TYP_INT), EA_4BYTE, node->gtLenOffset);
+
+        // Extend array length if needed.
+        if (indexType == TYP_LONG)
+        {
+            GetEmitter()->emitIns(INS_i64_extend_u_i32);
+        }
+
+        // compare
+        GetEmitter()->emitIns(indexType == TYP_INT ? INS_i32_ge_u : INS_i64_ge_u);
+
+        genJumpToThrowHlpBlk(SCK_RNGCHK_FAIL);
     }
 
     // Zero extend index if necessary.
-    if (genTypeSize(index->TypeGet()) < TARGET_POINTER_SIZE)
+    if (genTypeSize(indexType) < TARGET_POINTER_SIZE)
     {
         assert(TARGET_POINTER_SIZE == 8);
         GetEmitter()->emitIns(INS_i64_extend_u_i32);
