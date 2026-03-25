@@ -85,11 +85,11 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        private volatile SubjectIdentifier? _lazyRecipientIdentifier;
-        private volatile AlgorithmIdentifier? _lazyKeyEncryptionAlgorithm;
-        private volatile byte[]? _lazyEncryptedKey;
-        private volatile SubjectIdentifierOrKey? _lazyOriginatorIdentifierKey;
+        private SubjectIdentifier? _lazyRecipientIdentifier;
+        private AlgorithmIdentifier? _lazyKeyEncryptionAlgorithm;
+        private byte[]? _lazyEncryptedKey;
+        private SubjectIdentifierOrKey? _lazyOriginatorIdentifierKey;
         private DateTime? _lazyDate;
-        private volatile CryptographicAttributeObject? _lazyOtherKeyAttribute;
+        private CryptographicAttributeObject? _lazyOtherKeyAttribute;
     }
 }

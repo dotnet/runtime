@@ -15,7 +15,7 @@ namespace System.ComponentModel.Composition.Hosting
     public partial class ApplicationCatalog : ComposablePartCatalog, ICompositionElement
     {
         private bool _isDisposed;
-        private volatile AggregateCatalog? _innerCatalog;
+        private AggregateCatalog? _innerCatalog;
         private readonly object _thisLock = new object();
         private readonly ICompositionElement? _definitionOrigin;
         private readonly ReflectionContext? _reflectionContext;

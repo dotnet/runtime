@@ -98,6 +98,7 @@ template<>
 struct cdac_data<CtxEntry>
 {
     static constexpr size_t STAThread = offsetof(CtxEntry, m_pSTAThread);
+    static constexpr size_t CtxCookie = offsetof(CtxEntry, m_pCtxCookie);
 };
 
 //==============================================================
