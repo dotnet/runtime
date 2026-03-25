@@ -692,10 +692,8 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
         case VT_SAFEARRAY:
         case VT_CARRAY:
             return CoreLibBinder::GetClass(CLASS__INTPTR);
-#ifdef FEATURE_COMINTEROP
         case VT_VARIANT:
             return CoreLibBinder::GetClass(CLASS__COMVARIANT);
-#endif // FEATURE_COMINTEROP
         case VTHACK_ANSICHAR:
             return CoreLibBinder::GetClass(CLASS__BYTE);
         case VT_UI2:
