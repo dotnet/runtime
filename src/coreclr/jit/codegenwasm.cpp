@@ -2101,10 +2101,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     {
         var_types type = varDsc->GetRegisterType(tree);
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
-        // Watch for structs treated as primtives.
-        emitAttr ea = (tree->TypeGet() == TYP_STRUCT) ? emitTypeSize(type) : emitTypeSize(tree);
-        assert(ea != EA_UNKNOWN);
-        GetEmitter()->emitIns_S(ins_Load(type), ea, tree->GetLclNum(), 0);
+        GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
         WasmProduceReg(tree);
     }
     else
