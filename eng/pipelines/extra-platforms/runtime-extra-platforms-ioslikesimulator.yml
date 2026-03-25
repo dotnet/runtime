@@ -15,7 +15,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Debug
+    buildConfig: Release
     runtimeFlavor: mono
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
@@ -46,7 +46,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: Debug
+    buildConfig: Release
     runtimeFlavor: mono
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
@@ -86,7 +86,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Debug
+    buildConfig: Release
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
@@ -117,7 +117,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Debug
+    buildConfig: Release
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
@@ -150,7 +150,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: Debug
+    buildConfig: Release
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
@@ -190,7 +190,7 @@ jobs:
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
+    buildConfig: Debug
     runtimeFlavor: coreclr
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
