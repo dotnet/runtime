@@ -11,6 +11,9 @@ parameters:
 jobs:
 
 #
+# tvOS - Full AOT + AggressiveTrimming to reduce size
+# Build the whole product using Mono and run libraries tests
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -47,6 +50,9 @@ jobs:
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
+#
+# tvOS
+# Build the whole product using Mono and run runtime tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -88,6 +94,9 @@ jobs:
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
+# tvOS
+# Build the whole product using Native AOT and run libraries tests
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -117,6 +126,9 @@ jobs:
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
+#
+# tvOS
+# Build the whole product using CoreCLR and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -149,6 +161,9 @@ jobs:
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
+#
+# tvOS
+# Build the whole product using CoreCLR and run runtime tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -189,6 +204,9 @@ jobs:
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
+#
+# tvOS
+# Build the whole product using CoreCLR and run libraries smoke tests (Debug)
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

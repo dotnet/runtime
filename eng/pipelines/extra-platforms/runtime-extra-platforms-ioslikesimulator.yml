@@ -11,6 +11,9 @@ parameters:
 jobs:
 
 #
+# iOSSimulator interp - requires AOT Compilation and Interp flags
+# Build the whole product using Mono and run libraries tests
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -41,6 +44,9 @@ jobs:
             interpreter: true
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
+#
+# iOSSimulator
+# Build the whole product using Mono and run runtime tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -82,6 +88,9 @@ jobs:
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
+# iOSSimulator
+# Build the whole product using Native AOT and run libraries tests
+#
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -112,6 +121,9 @@ jobs:
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
+#
+# iOSSimulator
+# Build the whole product using CoreCLR and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -145,6 +157,9 @@ jobs:
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
+#
+# iOSSimulator
+# Build the whole product using CoreCLR and run runtime tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -185,6 +200,9 @@ jobs:
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
+#
+# iOSSimulator
+# Build the whole product using CoreCLR and run libraries smoke tests (Debug)
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
