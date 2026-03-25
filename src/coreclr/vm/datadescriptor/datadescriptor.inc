@@ -775,7 +775,6 @@ CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, EHInfo, offsetof(RealCodeHeader, ph
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, GCInfo, offsetof(RealCodeHeader, phdrJitGCInfo))
 CDAC_TYPE_FIELD(RealCodeHeader, /*uint32*/, NumUnwindInfos, offsetof(RealCodeHeader, nUnwindInfos))
 CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
-CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, JitEHInfo, offsetof(RealCodeHeader, phdrJitEHInfo))
 CDAC_TYPE_END(RealCodeHeader)
 
 CDAC_TYPE_BEGIN(EEExceptionClause)

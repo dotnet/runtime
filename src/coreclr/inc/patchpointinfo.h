@@ -242,4 +242,10 @@ private:
 
 typedef DPTR(struct PatchpointInfo) PTR_PatchpointInfo;
 
+template<>
+struct cdac_data<PatchpointInfo>
+{
+    static constexpr size_t LocalCount = offsetof(PatchpointInfo, m_numberOfLocals);
+};
+
 #endif // _PATCHPOINTINFO_H_
