@@ -159,7 +159,8 @@ class ReportGenerator:
                     continue
                 seen_tests.add(tn)
                 if row["github_issue_number"]:
-                    out.append(f"     - {tn} (#{row['github_issue_number']}, {row['github_issue_url']})")
+                    issue_url = row["github_issue_url"] or f"https://github.com/dotnet/runtime/issues/{row['github_issue_number']}"
+                    out.append(f"     - {tn} (#{row['github_issue_number']}, {issue_url})")
                 else:
                     brief = (row["summary"] or "")[:80]
                     out.append(f"     - [New] {tn} ({brief})" if brief else f"     - [New] {tn}")
@@ -210,9 +211,10 @@ class ReportGenerator:
 
         # GitHub issue line
         if fail["github_issue_number"]:
+            issue_url = fail['github_issue_url'] or f"https://github.com/dotnet/runtime/issues/{fail['github_issue_number']}"
             out.append(
                 f"GitHub Issue: #{fail['github_issue_number']} "
-                f"({fail['github_issue_url']}) — {fail['github_issue_state']}"
+                f"({issue_url}) — {fail['github_issue_state']}"
             )
             if fail["github_issue_assigned"]:
                 out.append(f"Assigned to: @{fail['github_issue_assigned']}")
