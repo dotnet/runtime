@@ -51,13 +51,13 @@ namespace System.IO
             try
             {
                 string? fileName = pFileName is not null ? new string(pFileName) : null;
+                Debug.Assert(Enum.IsDefined(kind));
                 *pThrowable = kind switch
                 {
                     FileLoadExceptionKind.BadImageFormat => new BadImageFormatException(fileName, hresult),
                     FileLoadExceptionKind.FileNotFound => new FileNotFoundException(fileName, hresult),
                     FileLoadExceptionKind.OutOfMemory => throw new OutOfMemoryException(),
-                    FileLoadExceptionKind.FileLoad => new FileLoadException(fileName, hresult),
-                    _ => throw new InvalidOperationException()
+                    _ /* FileLoadExceptionKind.FileLoad */ => new FileLoadException(fileName, hresult),
                 };
             }
             catch (Exception ex)

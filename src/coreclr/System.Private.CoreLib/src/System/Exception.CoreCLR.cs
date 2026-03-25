@@ -413,14 +413,12 @@ namespace System
                 string? message = pResourceName is not null ? SR.GetResourceString(new string(pResourceName)) : null;
                 string? paramName = pParamName is not null ? new string(pParamName) : null;
 
-                // Note that ArgumentException takes arguments to its constructor in a different order,
-                // for usability reasons.  However it is inconsistent with our other exceptions.
+                Debug.Assert(Enum.IsDefined(kind));
                 *pThrowable = kind switch
                 {
-                    ArgumentExceptionKind.Argument => new ArgumentException(message, paramName),
                     ArgumentExceptionKind.ArgumentNull => new ArgumentNullException(paramName, message),
                     ArgumentExceptionKind.ArgumentOutOfRange => new ArgumentOutOfRangeException(paramName, message),
-                    _ => throw new InvalidOperationException()
+                    _ /* ArgumentExceptionKind.Argument */ => new ArgumentException(message, paramName)
                 };
             }
             catch (Exception ex)
