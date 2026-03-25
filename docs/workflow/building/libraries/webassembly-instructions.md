@@ -119,13 +119,13 @@ L: GC_MAJOR: (user request) time 3.00ms, stw 3.00ms los size: 0K in use: 0K
 
 ## Updating Emscripten version in Docker image
 
-First update the emscripten version in the [webassembly Dockerfile](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/main/src/ubuntu/26.04/helix/webassembly/amd64/Dockerfile).
+First update the emscripten version in the [webassembly Dockerfile](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/main/src/ubuntu/24.04/helix/webassembly/amd64/Dockerfile).
 
-Submit a PR request with the updated version, wait for all checks to pass and for the request to be merged. A [image-info.json file](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json) will be updated with the new docker image tag.
+Submit a PR with the updated version, wait for all checks to pass and for it to be merged. The [image-info manifest](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json) will be updated with the new docker image tag.
 
 Copy the docker image tag and update the references in the runtime repo pipeline files (e.g., `eng/pipelines/helix-platforms.yml` and `eng/pipelines/libraries/helix-queues-setup.yml`).
 
-Open a PR request with the new image.
+Open a PR with the new image.
 
 # Test libraries
 
