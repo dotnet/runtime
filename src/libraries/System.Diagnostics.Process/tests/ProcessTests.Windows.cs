@@ -31,6 +31,7 @@ namespace System.Diagnostics.Tests
         // then signals the parent via stdout and blocks until killed by the parent.
         private static int CreateMainWindowWithTitle()
         {
+            // MessageBoxW blocks the current thread until the user closes the message box
             Thread t = new Thread(() => MessageBoxW(IntPtr.Zero, string.Empty, "Test Main Window", 0 /* MB_OK */));
             t.IsBackground = true;
             t.Start();
@@ -49,26 +50,16 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(ProcessTests), nameof(IsNotNanoServerNotServerCoreAndRemoteExecutorSupported))]
         [OuterLoop("Pops UI")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void MainWindowHandle_And_Title_GetWithGui_ShouldRefresh_Windows()
+        public async Task MainWindowHandle_And_Title_GetWithGui_ShouldRefresh_Windows()
         {
-            var options = new RemoteInvokeOptions { Start = false };
-            options.StartInfo.RedirectStandardOutput = true;
-
-            Process process;
-            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(CreateMainWindowWithTitle, options))
-            {
-                process = handle.Process;
-                handle.Process = null;
-            }
-            AddProcessForDispose(process);
+            using Process process = CreateProcess(CreateMainWindowWithTitle);
+            process.StartInfo.RedirectStandardOutput = true;
             process.Start();
 
             try
             {
                 // Wait for child to signal that its window is ready.
-                Task<string?> readTask = process.StandardOutput.ReadLineAsync();
-                Assert.True(readTask.Wait(WaitInMS), "Timed out waiting for child process to signal window ready");
-                Assert.Equal("ready", readTask.Result);
+                Assert.Equal("ready", await process.StandardOutput.ReadLineAsync());
 
                 process.Refresh();
                 Assert.NotEqual(IntPtr.Zero, process.MainWindowHandle);
@@ -77,7 +68,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 process.Kill();
-                Assert.True(process.WaitForExit(WaitInMS));
+                process.WaitForExit();
             }
         }
 
