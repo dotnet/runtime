@@ -5,9 +5,9 @@ using System.Formats.Cbor;
 
 namespace System.Security.Cryptography.Cose
 {
-    internal static class Helper
+    internal static class CborReaderExtensions
     {
-        internal static int ReadInt32ForCrypto(CborReader reader)
+        internal static int ReadInt32ForCrypto(this CborReader reader)
         {
             try
             {

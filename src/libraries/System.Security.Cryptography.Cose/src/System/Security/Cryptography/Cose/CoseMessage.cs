@@ -307,7 +307,7 @@ namespace System.Security.Cryptography.Cose
 
                 CoseHeaderLabel label = state switch
                 {
-                    CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(Helper.ReadInt32ForCrypto(reader)),
+                    CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(reader.ReadInt32ForCrypto()),
                     CborReaderState.TextString => new CoseHeaderLabel(reader.ReadTextString()),
                     _ => throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeSign1MapLabelWasIncorrect))
                 };
@@ -602,7 +602,7 @@ namespace System.Security.Cryptography.Cose
                 empty = false;
                 CoseHeaderLabel label = state switch
                 {
-                    CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(Helper.ReadInt32ForCrypto(reader)),
+                    CborReaderState.UnsignedInteger or CborReaderState.NegativeInteger => new CoseHeaderLabel(reader.ReadInt32ForCrypto()),
                     CborReaderState.TextString => new CoseHeaderLabel(reader.ReadTextString()),
                     _ => throw new CryptographicException(SR.CriticalHeadersLabelWasIncorrect)
                 };
