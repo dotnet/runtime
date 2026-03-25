@@ -389,6 +389,55 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             await tcs.Task.WaitAsync(TimeSpan.FromSeconds(15));
         }
 
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task WildcardToken_DoesNotThrow_WhenRootIsMissing()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            string rootPath = root.Path;
+
+            using var physicalFilesWatcher = CreateWatcher(rootPath, useActivePolling: false);
+
+            // Delete the root so it no longer exists
+            Directory.Delete(rootPath, recursive: true);
+
+            // Watching a wildcard pattern when root is missing must not throw
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("**/*.json");
+            Assert.NotNull(token);
+            Assert.False(token.HasChanged);
+
+            var tcs = new TaskCompletionSource<bool>();
+            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+
+            // Recreate the root — token should fire (signalling the caller to re-register)
+            Directory.CreateDirectory(rootPath);
+
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task WildcardToken_DoesNotThrow_WhenPrefixDirectoryIsMissing()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            string missingDir = Path.Combine(root.Path, "subdir");
+
+            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling: false);
+
+            // Watch a wildcard pattern whose non-wildcard prefix directory doesn't exist
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("subdir/**/*.json");
+            Assert.NotNull(token);
+            Assert.False(token.HasChanged);
+
+            var tcs = new TaskCompletionSource<bool>();
+            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+
+            // Create the missing directory — token should fire (signalling the caller to re-register)
+            Directory.CreateDirectory(missingDir);
+
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        }
+
         private class TestPollingChangeToken : IPollingChangeToken
         {
             public int Id { get; set; }

@@ -24,6 +24,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
     public class PhysicalFilesWatcher : IDisposable
     {
         private static readonly Action<object?> _cancelTokenSource = state => ((CancellationTokenSource?)state)!.Cancel();
+        private static readonly char[] _wildcardChars = new[] { '*', '?' };
 
         internal static TimeSpan DefaultPollingInterval = TimeSpan.FromSeconds(4);
 
@@ -235,6 +236,45 @@ namespace Microsoft.Extensions.FileProviders.Physical
             return !Directory.Exists(Path.Combine(_root, filePath.Substring(0, lastSlash)));
         }
 
+        // Returns true when _root or any non-wildcard directory prefix of pattern does not exist.
+        // pattern uses '/' separators (already normalized by NormalizePath).
+        private bool HasMissingWildcardDirectory(string pattern)
+        {
+            if (!Directory.Exists(_root))
+            {
+                return true;
+            }
+
+            // Extract the directory prefix before the first wildcard character.
+            int wildcardIndex = pattern.IndexOfAny(_wildcardChars);
+            if (wildcardIndex <= 0)
+            {
+                return false; // no directory prefix before the wildcard
+            }
+
+            int lastSlashBeforeWildcard = pattern.LastIndexOf('/', wildcardIndex - 1);
+            if (lastSlashBeforeWildcard < 0)
+            {
+                return false; // wildcard is in the first path component, _root is already checked
+            }
+
+            return !Directory.Exists(Path.Combine(_root, pattern.Substring(0, lastSlashBeforeWildcard)));
+        }
+
+        // Returns the non-wildcard directory prefix of a pattern.
+        // For "subdir/**/*.json" returns "subdir". For "**/*.json" or "*.json" returns "".
+        private static string GetNonWildcardPrefix(string pattern)
+        {
+            int wildcardIndex = pattern.IndexOfAny(_wildcardChars);
+            if (wildcardIndex <= 0)
+            {
+                return string.Empty;
+            }
+
+            int lastSlash = pattern.LastIndexOf('/', wildcardIndex - 1);
+            return lastSlash > 0 ? pattern.Substring(0, lastSlash) : string.Empty;
+        }
+
         // Returns the absolute path of the deepest existing ancestor directory of filePath.
         // filePath uses '/' separators (already normalized).
         private string FindDeepestExistingAncestor(string filePath)
@@ -349,6 +389,94 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         internal IChangeToken GetOrAddWildcardChangeToken(string pattern)
         {
+            // When using a FileSystemWatcher, if _root or any directory prefix of the pattern
+            // does not yet exist, use a pending creation token to avoid enabling the main FSW
+            // on a non-existent directory (which would throw).
+            if (_fileWatcher != null && HasMissingWildcardDirectory(pattern))
+            {
+                // For wildcards, the pending creation token targets the deepest missing
+                // non-wildcard directory prefix. When it appears, the token fires and the
+                // caller re-registers, which will then use the normal wildcard path.
+                string prefix = GetNonWildcardPrefix(pattern);
+                string targetPath = string.IsNullOrEmpty(prefix) ? _root : Path.Combine(_root, prefix);
+
+                // Find the deepest missing component to watch for.
+                // Walk up from targetPath until we find an existing directory.
+                var missingComponents = new Stack<string>();
+                string current = targetPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+                while (!Directory.Exists(current))
+                {
+                    missingComponents.Push(Path.GetFileName(current));
+                    string? parent = Path.GetDirectoryName(current);
+                    if (parent is null)
+                    {
+                        break;
+                    }
+
+                    current = parent;
+                }
+
+                // We only need to wait for the directory prefix to appear (not the wildcard target).
+                string[] components = missingComponents.Count > 0
+                    ? missingComponents.ToArray()
+                    : new[] { Path.GetFileName(current) };
+
+                string key = "wildcard:" + pattern;
+
+                // We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
+#pragma warning disable CA1416
+                while (true)
+                {
+                    if (_pendingCreationWatchers.TryGetValue(key, out PendingCreationWatcher? existing))
+                    {
+                        if (!existing.ChangeToken.HasChanged)
+                        {
+                            return existing.ChangeToken;
+                        }
+
+                        _pendingCreationWatchers.TryRemove(key, out _);
+                    }
+
+                    PendingCreationWatcher newWatcher;
+                    try
+                    {
+                        newWatcher = new PendingCreationWatcher(current, components);
+                    }
+                    catch
+                    {
+                        return new CancellationChangeToken(new CancellationToken(canceled: true));
+                    }
+
+                    if (_pendingCreationWatchers.TryAdd(key, newWatcher))
+                    {
+                        newWatcher.ChangeToken.RegisterChangeCallback(static state =>
+                        {
+                            var tuple = (Tuple<ConcurrentDictionary<string, PendingCreationWatcher>, string, PendingCreationWatcher>)state!;
+                            ConcurrentDictionary<string, PendingCreationWatcher> dict = tuple.Item1;
+                            string k = tuple.Item2;
+                            PendingCreationWatcher w = tuple.Item3;
+
+#if NET
+                            dict.TryRemove(new KeyValuePair<string, PendingCreationWatcher>(k, w));
+#else
+                            if (dict.TryRemove(k, out PendingCreationWatcher? removed) && removed != w)
+                            {
+                                dict.TryAdd(k, removed);
+                            }
+#endif
+
+                            w.Dispose();
+                        }, Tuple.Create(_pendingCreationWatchers, key, newWatcher));
+
+                        return newWatcher.ChangeToken;
+                    }
+
+                    newWatcher.Dispose();
+                }
+#pragma warning restore CA1416
+            }
+
             if (!_wildcardTokenLookup.TryGetValue(pattern, out ChangeTokenInfo tokenInfo))
             {
                 var cancellationTokenSource = new CancellationTokenSource();
