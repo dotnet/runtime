@@ -63,7 +63,7 @@
   </ItemGroup>
 
   <!-- Unsigned DAC registry key for heap dumps (shared with cdac-dump-helix.proj) -->
-  <Import Project="EnableUnsignedDac.props" />
+  <Import Project="EnableUnsignedDac.targets" />
 
   <!-- Filter out Windows-only debuggees on non-Windows platforms. Debuggees opt in
        by setting <WindowsOnly>true</WindowsOnly> in their csproj. -->

@@ -63,7 +63,7 @@
     derived from each debuggee's DumpTypes property (Heap->heap/2, Full->full/4).
   -->
   <Import Project="$(DumpTestsPayload)/debuggee-metadata.props" />
-  <Import Project="$(MSBuildThisFileDirectory)EnableUnsignedDac.props" />
+  <Import Project="$(MSBuildThisFileDirectory)EnableUnsignedDac.targets" />
 
   <!--
     Helix work item command: generate dumps then run tests (or tar + upload).
