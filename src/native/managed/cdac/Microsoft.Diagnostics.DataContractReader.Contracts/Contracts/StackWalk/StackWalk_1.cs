@@ -172,6 +172,12 @@ internal readonly struct StackWalk_1 : IStackWalk
         return TargetPointer.Null;
     }
 
+    TargetPointer IStackWalk.GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+        return handle.Context.InstructionPointer;
+    }
+
     string IStackWalk.GetFrameName(TargetPointer frameIdentifier)
         => FrameIterator.GetFrameName(_target, frameIdentifier);
 

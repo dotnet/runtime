@@ -160,7 +160,7 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")] // this needs to come after the ios attribute due to limitations in the platform analyzer
-        public static System.Diagnostics.Process Start(string fileName, string arguments) { throw null; }
+        public static System.Diagnostics.Process Start(string fileName, string? arguments) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")] // this needs to come after the ios attribute due to limitations in the platform analyzer
@@ -221,7 +221,7 @@ namespace System.Diagnostics
     {
         public ProcessStartInfo() { }
         public ProcessStartInfo(string fileName) { }
-        public ProcessStartInfo(string fileName, string arguments) { }
+        public ProcessStartInfo(string fileName, string? arguments) { }
         public ProcessStartInfo(string fileName, System.Collections.Generic.IEnumerable<string> arguments) { }
         public System.Collections.ObjectModel.Collection<string> ArgumentList { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
