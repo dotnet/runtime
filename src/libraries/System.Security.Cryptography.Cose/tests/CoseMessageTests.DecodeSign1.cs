@@ -227,5 +227,15 @@ namespace System.Security.Cryptography.Cose.Tests
                () => CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(inputHex)),
                "Header '2' does not accept the specified value.");
         }
+
+        [Fact]
+        public void DecodeSign1_ThrowsCryptographicExceptionForOversizedHeaderLabel()
+        {
+            byte[] data = ByteUtils.HexToByteArray(
+                "d28443a10440a13b3a3a3a3a3a85858531447465ff74582e00040000007f00000000000840000000ffff43a001000000001e00047443a001d9a100800000d28443a100000000");
+
+            CryptographicException ex = Assert.Throws<CryptographicException>(() => CoseMessage.DecodeSign1(data));
+            Assert.IsType<OverflowException>(ex.InnerException);
+        }
     }
 }

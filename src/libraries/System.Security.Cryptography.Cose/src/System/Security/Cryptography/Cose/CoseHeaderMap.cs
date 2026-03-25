@@ -323,7 +323,7 @@ namespace System.Security.Cryptography.Cose
                     throw new CborContentException(SR.CoseHeaderMapCborEncodedValueNotValid);
                 }
             }
-            catch (Exception ex) when (ex is CborContentException or InvalidOperationException)
+            catch (Exception ex) when (ex is CborContentException or InvalidOperationException or OverflowException)
             {
                 throw new ArgumentException(SR.Format(SR.CoseHeaderMapArgumentCoseHeaderValueIncorrect, label.LabelName), nameof(value), ex);
             }

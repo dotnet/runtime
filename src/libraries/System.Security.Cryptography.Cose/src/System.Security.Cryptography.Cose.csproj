@@ -24,6 +24,7 @@
     <Compile Include="System\Security\Cryptography\Cose\CoseHeaderMap.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseHeaderValue.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseHelpers.cs" />
+    <Compile Include="System\Security\Cryptography\Cose\Helper.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseKey.cs" />
     <Compile Include="System\Security\Cryptography\Cose\CoseMessage.cs" />
