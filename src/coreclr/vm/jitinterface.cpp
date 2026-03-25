@@ -5372,6 +5372,20 @@ void CEEInfo::getCallInfo(
 #endif // STUB_DISPATCH_PORTABLE
     }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // On portable entry points, getFunctionEntryPoint is not available to resolve MethodImpl
+    // overrides. Do the resolution here so the interpreter compiler gets the right target
+    // method for non-virtual calls to MethodImpl-overridden methods.
+    if (directCall)
+    {
+        MethodDesc* pResolvedMD = MethodTable::MapMethodDeclToMethodImpl(pTargetMD);
+        if (pResolvedMD != pTargetMD)
+        {
+            pTargetMD = pResolvedMD;
+        }
+    }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
     pResult->hMethod = CORINFO_METHOD_HANDLE(pTargetMD);
 
     pResult->accessAllowed = CORINFO_ACCESS_ALLOWED;
