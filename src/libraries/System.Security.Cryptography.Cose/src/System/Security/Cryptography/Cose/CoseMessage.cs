@@ -323,7 +323,7 @@ namespace System.Security.Cryptography.Cose
                     // Lift the well-known header value validation into a CryptographicException.
                     if (e.ParamName == "value")
                     {
-                        throw new CryptographicException(e.Message);
+                        throw new CryptographicException(e.Message, e.InnerException);
                     }
 
                     Debug.Fail("Unexpected ArgumentException from CoseHeaderMap.Add");
