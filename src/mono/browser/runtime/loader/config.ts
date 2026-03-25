@@ -240,19 +240,17 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
         await loaderHelpers.afterConfigLoaded.promise;
         return;
     }
-    let configFilePath;
+    let configFilePath: string | undefined;
     try {
-        if (!module.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
-            // if config file location nor assets are provided
-            module.configSrc = "dotnet.boot.js";
+        if (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources)) {
+            // if assets are not provided, load the default boot config
+            configFilePath = "dotnet.boot.js";
         }
-
-        configFilePath = module.configSrc;
 
         configLoaded = true;
         if (configFilePath) {
             mono_log_debug("mono_wasm_load_config");
-            await loadBootConfig(module);
+            await loadBootConfig(module, configFilePath);
         }
 
         normalizeConfig();
@@ -290,8 +288,8 @@ export function isDebuggingSupported (): boolean {
     return loaderHelpers.isChromium || loaderHelpers.isFirefox;
 }
 
-async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {
-    const defaultConfigSrc = module.configSrc!;
+async function loadBootConfig (module: DotnetModuleInternal, configSrc: string): Promise<void> {
+    const defaultConfigSrc = configSrc;
     const defaultConfigUrl = loaderHelpers.locateFile(defaultConfigSrc);
 
     let loaderResponse = null;
