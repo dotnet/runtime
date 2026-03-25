@@ -5841,7 +5841,29 @@ GenTree* Lowering::LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node)
         BlockRange().InsertAfter(tmp2, tmp1);
     }
 
-    return tmp1;
+    if (!varTypeIsSIMD(node->gtType))
+    {
+        // We're producing a scalar result, so we only need the result in element 0
+        //
+        // However, doing that would break/limit CSE and requires a partial write so
+        // it's better to just broadcast the value to the entire vector
+
+        LowerNode(tmp1);
+
+        tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(node->gtType, tmp1,
+                                                    simdSize == 16 ? NI_Vector128_ToScalar : NI_Vector256_ToScalar,
+                                                    simdBaseType, simdSize);
+        BlockRange().InsertAfter(tmp1, tmp2);
+        tmp1 = tmp2;
+    }
+
+    LIR::Use use;
+    bool     foundUse = BlockRange().TryGetUse(node, &use);
+    assert(foundUse);
+
+    use.ReplaceWith(tmp1);
+    BlockRange().Remove(node);
+    return LowerNode(tmp1);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -5883,29 +5905,9 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     {
         if (BlockRange().TryGetUse(node, &use))
         {
-            tmp1 = LowerHWIntrinsicDotInnerMulSum(node);
-
-            if (!varTypeIsSIMD(node->gtType))
-            {
-                // We're producing a scalar result, so we only need the result in element 0
-                //
-                // However, doing that would break/limit CSE and requires a partial write so
-                // it's better to just broadcast the value to the entire vector
-
-                LowerNode(tmp1);
-
-                tmp2 =
-                    m_compiler->gtNewSimdHWIntrinsicNode(node->gtType, tmp1,
-                                                         simdSize == 16 ? NI_Vector128_ToScalar : NI_Vector256_ToScalar,
-                                                         simdBaseType, simdSize);
-                BlockRange().InsertAfter(tmp1, tmp2);
-                tmp1 = tmp2;
-            }
-
-            use.ReplaceWith(tmp1);
-            BlockRange().Remove(node);
-            return LowerNode(tmp1);
+            return LowerHWIntrinsicDotInnerMulSum(node);
         }
+
         tmp1 = node->gtNext;
         BlockRange().Remove(node);
         return tmp1;
