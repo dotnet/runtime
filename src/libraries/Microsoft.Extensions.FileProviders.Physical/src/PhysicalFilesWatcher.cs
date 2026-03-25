@@ -24,7 +24,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
     public class PhysicalFilesWatcher : IDisposable
     {
         private static readonly Action<object?> _cancelTokenSource = state => ((CancellationTokenSource?)state)!.Cancel();
-        private static readonly char[] _wildcardChars = new[] { '*', '?' };
 
         internal static TimeSpan DefaultPollingInterval = TimeSpan.FromSeconds(4);
 
@@ -94,7 +93,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 throw new ArgumentNullException(nameof(root));
             }
 
-            _root = root;
+            _root = root.Length > 0 && root[root.Length - 1] != Path.DirectorySeparatorChar && root[root.Length - 1] != Path.AltDirectorySeparatorChar
+                ? root + Path.DirectorySeparatorChar
+                : root;
 
             if (fileSystemWatcher != null)
             {
@@ -173,11 +174,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         internal IChangeToken GetOrAddFilePathChangeToken(string filePath)
         {
-            // When using a FileSystemWatcher, if any parent directory in the path does not yet exist,
-            // return a token backed by a watcher that internally cascades through the missing directory
-            // levels and only fires once the target file itself is created.  This avoids adding recursive
-            // inotify watches and avoids spurious token fires for intermediate directory creations.
-            if (_fileWatcher != null && HasMissingParentDirectory(filePath))
+            // When using a FileSystemWatcher and _root does not exist, use a pending creation
+            // token that cascades through missing directory levels above and including _root,
+            // then through subdirectories down to the target file.  For missing directories
+            // under _root, the recursive main FileSystemWatcher handles detection.
+            if (_fileWatcher != null && !Directory.Exists(_root))
             {
                 // We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
 #pragma warning disable CA1416
@@ -221,88 +222,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
             return changeToken;
         }
 
-        // Returns true when at least one directory component of filePath (relative to _root) does not exist,
-        // including _root itself.
-        // filePath uses '/' separators (already normalized by NormalizePath).
-        private bool HasMissingParentDirectory(string filePath)
-        {
-            int lastSlash = filePath.LastIndexOf('/');
-
-            if (lastSlash < 0)
-            {
-                return !Directory.Exists(_root);
-            }
-
-            return !Directory.Exists(Path.Combine(_root, filePath.Substring(0, lastSlash)));
-        }
-
-        // Returns true when _root or any non-wildcard directory prefix of pattern does not exist.
-        // pattern uses '/' separators (already normalized by NormalizePath).
-        private bool HasMissingWildcardDirectory(string pattern)
-        {
-            if (!Directory.Exists(_root))
-            {
-                return true;
-            }
-
-            // Extract the directory prefix before the first wildcard character.
-            int wildcardIndex = pattern.IndexOfAny(_wildcardChars);
-            if (wildcardIndex <= 0)
-            {
-                return false; // no directory prefix before the wildcard
-            }
-
-            int lastSlashBeforeWildcard = pattern.LastIndexOf('/', wildcardIndex - 1);
-            if (lastSlashBeforeWildcard < 0)
-            {
-                return false; // wildcard is in the first path component, _root is already checked
-            }
-
-            return !Directory.Exists(Path.Combine(_root, pattern.Substring(0, lastSlashBeforeWildcard)));
-        }
-
-        // Returns the non-wildcard directory prefix of a pattern.
-        // For "subdir/**/*.json" returns "subdir". For "**/*.json" or "*.json" returns "".
-        private static string GetNonWildcardPrefix(string pattern)
-        {
-            int wildcardIndex = pattern.IndexOfAny(_wildcardChars);
-            if (wildcardIndex <= 0)
-            {
-                return string.Empty;
-            }
-
-            int lastSlash = pattern.LastIndexOf('/', wildcardIndex - 1);
-            return lastSlash > 0 ? pattern.Substring(0, lastSlash) : string.Empty;
-        }
-
-        // Returns the absolute path of the deepest existing ancestor directory of filePath.
-        // filePath uses '/' separators (already normalized).
-        private string FindDeepestExistingAncestor(string filePath)
-        {
-            // Walk from the deepest candidate upward; return the first one that exists.
-            // In the common case where all parents are present this succeeds in one check.
-            int slashIndex = filePath.LastIndexOf('/');
-            while (slashIndex > 0)
-            {
-                string candidate = Path.Combine(_root, filePath.Substring(0, slashIndex));
-
-                if (Directory.Exists(candidate))
-                {
-                    return candidate;
-                }
-
-                slashIndex = filePath.LastIndexOf('/', slashIndex - 1);
-            }
-            return _root;
-        }
-
-        // Returns a change token that fires when the target file identified by filePath is
-        // actually created. A non-recursive FileSystemWatcher is placed at the deepest existing
-        // ancestor of filePath and automatically advances through intermediate directory levels as
-        // they are created, so no recursive watches are added and the token does not fire
-        // for intermediate directory creations. The token may also be triggered when the watcher
-        // encounters an error (including deletion of the watched directory), allowing callers to
-        // observe this and re-register a new watcher if desired.
+        // Returns a change token that fires when _root is created and the target file is
+        // eventually created inside it. Only used when _root does not exist.
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
@@ -310,28 +231,23 @@ namespace Microsoft.Extensions.FileProviders.Physical
         [SupportedOSPlatform("maccatalyst")]
         private CancellationChangeToken GetOrAddPendingCreationToken(string filePath)
         {
-            string watchDir = FindDeepestExistingAncestor(filePath);
+            return GetOrAddPendingCreationToken(filePath, filePath.Split('/'));
+        }
 
-            // Compute the remaining path components from watchDir down to the target file.
-            // filePath uses '/' separators; _root may or may not end with a directory separator.
-            string relWatchDir = watchDir.Length > _root.Length
-                ? watchDir.Substring(_root.Length).Replace(Path.DirectorySeparatorChar, '/')
-                : string.Empty;
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private CancellationChangeToken GetOrAddPendingCreationToken(string key, string[] remainingComponents)
+        {
+            // _root does not exist; the PendingCreationWatcher constructor will walk up
+            // to find an existing ancestor above _root.
+            string watchDir = _root;
 
-            if (relWatchDir.Length > 0 && relWatchDir[0] == '/')
-            {
-                relWatchDir = relWatchDir.Substring(1);
-            }
-            string remainingRelPath = relWatchDir.Length > 0
-                ? filePath.Substring(relWatchDir.Length + 1) // skip "relWatchDir/"
-                : filePath;
-
-            string[] remainingComponents = remainingRelPath.Split('/');
-
-            // Key by filePath so each watched path has its own cascading watcher.
             while (true)
             {
-                if (_pendingCreationWatchers.TryGetValue(filePath, out PendingCreationWatcher? existing))
+                if (_pendingCreationWatchers.TryGetValue(key, out PendingCreationWatcher? existing))
                 {
                     if (!existing.ChangeToken.HasChanged)
                     {
@@ -339,7 +255,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     }
 
                     // Stale watcher (already fired); remove it and create a fresh one.
-                    _pendingCreationWatchers.TryRemove(filePath, out _);
+                    _pendingCreationWatchers.TryRemove(key, out _);
                     // Do not dispose here – cleanup is already scheduled via ChangeToken registration.
                 }
 
@@ -350,12 +266,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 }
                 catch
                 {
-                    // Unexpected – the watchDir was confirmed to exist moments ago.
-                    // Fall back to an already-cancelled token so the caller re-registers immediately.
+                    // Unexpected – fall back to an already-cancelled token so the caller re-registers immediately.
                     return new CancellationChangeToken(new CancellationToken(canceled: true));
                 }
 
-                if (_pendingCreationWatchers.TryAdd(filePath, newWatcher))
+                if (_pendingCreationWatchers.TryAdd(key, newWatcher))
                 {
                     // When the token fires, remove this entry and dispose the watcher.
                     newWatcher.ChangeToken.RegisterChangeCallback(static state =>
@@ -377,7 +292,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 #endif
 
                         w.Dispose();
-                    }, Tuple.Create(_pendingCreationWatchers, filePath, newWatcher));
+                    }, Tuple.Create(_pendingCreationWatchers, key, newWatcher));
 
                     return newWatcher.ChangeToken;
                 }
@@ -389,91 +304,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         internal IChangeToken GetOrAddWildcardChangeToken(string pattern)
         {
-            // When using a FileSystemWatcher, if _root or any directory prefix of the pattern
-            // does not yet exist, use a pending creation token to avoid enabling the main FSW
-            // on a non-existent directory (which would throw).
-            if (_fileWatcher != null && HasMissingWildcardDirectory(pattern))
+            // When using a FileSystemWatcher and _root does not exist, use a pending creation
+            // token to avoid enabling the main FSW on a non-existent directory (which would throw).
+            // The token fires when _root appears, signalling the caller to re-register.
+            // We use the _root directory name as the single remaining component so the
+            // PendingCreationWatcher watches for _root to be created.
+            if (_fileWatcher != null && !Directory.Exists(_root))
             {
-                // For wildcards, the pending creation token targets the deepest missing
-                // non-wildcard directory prefix. When it appears, the token fires and the
-                // caller re-registers, which will then use the normal wildcard path.
-                string prefix = GetNonWildcardPrefix(pattern);
-                string targetPath = string.IsNullOrEmpty(prefix) ? _root : Path.Combine(_root, prefix);
-
-                // Find the deepest missing component to watch for.
-                // Walk up from targetPath until we find an existing directory.
-                var missingComponents = new Stack<string>();
-                string current = targetPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-
-                while (!Directory.Exists(current))
-                {
-                    missingComponents.Push(Path.GetFileName(current));
-                    string? parent = Path.GetDirectoryName(current);
-                    if (parent is null)
-                    {
-                        break;
-                    }
-
-                    current = parent;
-                }
-
-                // We only need to wait for the directory prefix to appear (not the wildcard target).
-                string[] components = missingComponents.Count > 0
-                    ? missingComponents.ToArray()
-                    : new[] { Path.GetFileName(current) };
-
-                string key = "wildcard:" + pattern;
-
                 // We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
+                // Pass an empty components array — the PendingCreationWatcher constructor
+                // will prepend the missing _root directory levels automatically.
 #pragma warning disable CA1416
-                while (true)
-                {
-                    if (_pendingCreationWatchers.TryGetValue(key, out PendingCreationWatcher? existing))
-                    {
-                        if (!existing.ChangeToken.HasChanged)
-                        {
-                            return existing.ChangeToken;
-                        }
-
-                        _pendingCreationWatchers.TryRemove(key, out _);
-                    }
-
-                    PendingCreationWatcher newWatcher;
-                    try
-                    {
-                        newWatcher = new PendingCreationWatcher(current, components);
-                    }
-                    catch
-                    {
-                        return new CancellationChangeToken(new CancellationToken(canceled: true));
-                    }
-
-                    if (_pendingCreationWatchers.TryAdd(key, newWatcher))
-                    {
-                        newWatcher.ChangeToken.RegisterChangeCallback(static state =>
-                        {
-                            var tuple = (Tuple<ConcurrentDictionary<string, PendingCreationWatcher>, string, PendingCreationWatcher>)state!;
-                            ConcurrentDictionary<string, PendingCreationWatcher> dict = tuple.Item1;
-                            string k = tuple.Item2;
-                            PendingCreationWatcher w = tuple.Item3;
-
-#if NET
-                            dict.TryRemove(new KeyValuePair<string, PendingCreationWatcher>(k, w));
-#else
-                            if (dict.TryRemove(k, out PendingCreationWatcher? removed) && removed != w)
-                            {
-                                dict.TryAdd(k, removed);
-                            }
-#endif
-
-                            w.Dispose();
-                        }, Tuple.Create(_pendingCreationWatchers, key, newWatcher));
-
-                        return newWatcher.ChangeToken;
-                    }
-
-                    newWatcher.Dispose();
-                }
+                return GetOrAddPendingCreationToken("wildcard:" + pattern, Array.Empty<string>());
 #pragma warning restore CA1416
             }
 
