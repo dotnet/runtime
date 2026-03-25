@@ -374,7 +374,7 @@ UMThunkMarshInfo::~UMThunkMarshInfo()
     CONTRACTL_END;
 
 #ifdef _DEBUG
-    FillMemory(this, sizeof(*this), 0xcc);
+    FillMemory((void*)this, sizeof(*this), 0xcc);
 #endif
 }
 
