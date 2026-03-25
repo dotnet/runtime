@@ -174,6 +174,18 @@ CREATE TABLE failure_tests (
     run_name        TEXT NOT NULL,
     test_name       TEXT NOT NULL
 );
+
+-- Tracks API timeouts and download failures during data collection.
+-- Surfaced in the "Data Collection Warnings" section of the report.
+CREATE TABLE data_collection_errors (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    step              TEXT NOT NULL,         -- 'extract_tests' or 'fetch_logs'
+    pipeline_name     TEXT NOT NULL,
+    build_id          INTEGER,
+    error_type        TEXT NOT NULL,         -- 'no_results', 'download_failed', etc.
+    detail            TEXT,
+    created_at        TEXT DEFAULT (datetime('now'))
+);
 ```
 
 ## Workflow
@@ -191,8 +203,8 @@ All output goes in `logs/` (sibling of `scripts/`).
   entry immediately after the action it describes. Follow
   [`log-template.md`](log-template.md). Log every API call URL + response
   summary, every decision with reasoning, timestamps, and errors.
-- **Test Report** (`logs/test-report-<timestamp>.md`) — generated on
-  request via `generate_report.py`.
+- **Test Report** (`logs/test-report-<timestamp>.md`) — always generated
+  via `generate_report.py`.
 
 ### Step 1: Resolve Pipeline Definitions (agent)
 

@@ -23,6 +23,7 @@ import json
 import hashlib
 import os
 import re
+import socket
 import sqlite3
 import sys
 import urllib.request
@@ -129,9 +130,24 @@ def process_from_db(db_path, logdir):
             }
             print(f"  OK: {log_data['total_lines']} lines, exit={log_data['exit_code']}, "
                   f"saved to {log_data['path']}, updated {len(entries)} rows", file=sys.stderr)
+        except socket.timeout as e:
+            error_type = "timeout"
+            results[first['test_name']] = {'url': url, 'error': str(e)}
+            print(f"  TIMEOUT: {e}", file=sys.stderr)
+            conn.execute(
+                "INSERT INTO data_collection_errors (step, pipeline_name, build_id, error_type, detail) VALUES (?, ?, ?, ?, ?)",
+                ("fetch_logs", first['pipeline_name'], 0, error_type, f"Console log download timed out: {e}")
+            )
+            conn.commit()
         except Exception as e:
+            error_type = "timeout" if "timed out" in str(e).lower() else "download_failed"
             results[first['test_name']] = {'url': url, 'error': str(e)}
             print(f"  ERROR: {e}", file=sys.stderr)
+            conn.execute(
+                "INSERT INTO data_collection_errors (step, pipeline_name, build_id, error_type, detail) VALUES (?, ?, ?, ?, ?)",
+                ("fetch_logs", first['pipeline_name'], 0, error_type, str(e))
+            )
+            conn.commit()
 
     conn.close()
     return results

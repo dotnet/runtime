@@ -39,6 +39,7 @@ class ReportGenerator:
         report_path = os.path.join(logs_dir, report_name)
         lines = []
         self._header(lines)
+        self._data_collection_warnings(lines)
         self._pipeline_summary(lines)
         self._failure_details(lines)
         self._github_issue_summary(lines)
@@ -73,6 +74,34 @@ class ReportGenerator:
         out.append(f"Branch:     refs/heads/main")
         out.append(f"Pipelines:  {total} total ({monitored} monitored, {skipped} skipped)")
         out.append("=" * 80)
+        out.append("")
+
+    def _data_collection_warnings(self, out):
+        """Show warnings for any data collection errors (timeouts, failed requests)."""
+        cur = self.conn.cursor()
+        # Check if the table exists (older DBs may not have it)
+        table_exists = cur.execute(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='data_collection_errors'"
+        ).fetchone()[0]
+        if not table_exists:
+            return
+
+        errors = cur.execute(
+            "SELECT step, pipeline_name, build_id, error_type, detail FROM data_collection_errors ORDER BY id"
+        ).fetchall()
+        if not errors:
+            return
+
+        out.append("=" * 80)
+        out.append("Data Collection Warnings")
+        out.append("=" * 80)
+        out.append("")
+        out.append("The following errors occurred during data collection. Affected pipelines")
+        out.append("may have incomplete or missing failure details in this report.")
+        out.append("")
+        for e in errors:
+            step_label = "Test extraction" if e[0] == "extract_tests" else "Log download"
+            out.append(f"  \u26a0\ufe0f {step_label}: {e[1]} (build {e[2]}) \u2014 {e[3]}: {e[4]}")
         out.append("")
 
     def _pipeline_summary(self, out):

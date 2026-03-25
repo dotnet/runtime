@@ -88,16 +88,27 @@ def get_token():
 
 
 def fetch_failed_tests(build_id, pipeline_name, token):
-    """Fetch all failed test results for a build via AzDO Test Results API."""
+    """Fetch all failed test results for a build via AzDO Test Results API.
+
+    Returns (failures_list, error_or_None). error is a dict with
+    'error_type' and 'detail' if a request failed, else None.
+    """
     headers = {"Authorization": f"Bearer {token}"}
     failures = []
 
     # Step 1: Get test runs for this build
     url = f"{ADO_BASE}/test/runs?buildUri=vstfs:///Build/Build/{build_id}&api-version=7.1"
-    resp = requests.get(url, headers=headers)
+    try:
+        resp = requests.get(url, headers=headers, timeout=30)
+    except requests.exceptions.Timeout as e:
+        print(f"ERROR: test/runs request timed out for build {build_id}: {e}", file=sys.stderr)
+        return failures, {"error_type": "timeout", "detail": f"test/runs timed out: {e}"}
+    except requests.RequestException as e:
+        print(f"ERROR: test/runs request failed for build {build_id}: {e}", file=sys.stderr)
+        return failures, {"error_type": "request_failed", "detail": f"test/runs failed: {e}"}
     if resp.status_code != 200:
         print(f"ERROR: test/runs for build {build_id} returned HTTP {resp.status_code}", file=sys.stderr)
-        return failures
+        return failures, {"error_type": "http_error", "detail": f"test/runs returned HTTP {resp.status_code}"}
 
     runs = resp.json().get("value", [])
 
@@ -113,7 +124,17 @@ def fetch_failed_tests(build_id, pipeline_name, token):
                 f"{ADO_BASE}/test/runs/{run_id}/results"
                 f"?outcomes=Failed&$top={page_size}&$skip={skip}&api-version=7.1"
             )
-            resp2 = requests.get(url2, headers=headers)
+            try:
+                resp2 = requests.get(url2, headers=headers, timeout=30)
+            except requests.exceptions.Timeout as e:
+                print(f"WARNING: results request timed out for run {run_id}: {e}", file=sys.stderr)
+                break
+            except requests.RequestException as e:
+                print(
+                    f"WARNING: results request failed for run {run_id}: {e}",
+                    file=sys.stderr,
+                )
+                break
             if resp2.status_code != 200:
                 print(
                     f"WARNING: results for run {run_id} returned HTTP {resp2.status_code}",
@@ -179,7 +200,7 @@ def fetch_failed_tests(build_id, pipeline_name, token):
                 break
 
             skip += page_size
-    return failures
+    return failures, None
 
 
 def insert_into_db(db_path, failures):
@@ -236,10 +257,19 @@ def main():
         sys.exit(1)
 
     all_failures = []
+    collection_errors = []
     for build_id, pipeline_name in builds:
         print(f"Fetching failed tests for build {build_id} ({pipeline_name})...", file=sys.stderr)
-        failures = fetch_failed_tests(build_id, pipeline_name, token)
+        failures, error = fetch_failed_tests(build_id, pipeline_name, token)
         print(f"  Found {len(failures)} failed tests", file=sys.stderr)
+        if error:
+            collection_errors.append({
+                "step": "extract_tests",
+                "pipeline_name": pipeline_name,
+                "build_id": build_id,
+                "error_type": error["error_type"],
+                "detail": error["detail"]
+            })
         all_failures.extend(failures)
 
     print(f"Total: {len(all_failures)} failed tests from {len(builds)} builds", file=sys.stderr)
@@ -247,6 +277,16 @@ def main():
     # Insert into DB if requested
     if args.db:
         insert_into_db(args.db, all_failures)
+        if collection_errors:
+            conn = sqlite3.connect(args.db)
+            for e in collection_errors:
+                conn.execute(
+                    "INSERT INTO data_collection_errors (step, pipeline_name, build_id, error_type, detail) VALUES (?, ?, ?, ?, ?)",
+                    (e["step"], e["pipeline_name"], e["build_id"], e["error_type"], e["detail"])
+                )
+            conn.commit()
+            conn.close()
+            print(f"Recorded {len(collection_errors)} data collection error(s)", file=sys.stderr)
 
     # Output JSON to stdout
     json.dump(all_failures, sys.stdout, indent=2)

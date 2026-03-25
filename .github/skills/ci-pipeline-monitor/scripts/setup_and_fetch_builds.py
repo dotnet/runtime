@@ -80,10 +80,20 @@ CREATE TABLE IF NOT EXISTS test_results (
     console_log_url   TEXT,
     exit_code         INTEGER,              -- from console log (script-extracted)
     console_log_path  TEXT,                 -- path to full console log file on disk
-    error_message     TEXT,                 -- extracted by LLM (verbatim copy-paste from console log)
-    stack_trace       TEXT,                 -- extracted by LLM (verbatim copy-paste from console log)
+    error_message     TEXT,                 -- extracted by agent (verbatim copy-paste from console log)
+    stack_trace       TEXT,                 -- extracted by agent (verbatim copy-paste from console log)
     failure_id        INTEGER,
     FOREIGN KEY (failure_id) REFERENCES failures(id)
+);
+
+CREATE TABLE IF NOT EXISTS data_collection_errors (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    step              TEXT NOT NULL,         -- 'extract_tests' or 'fetch_logs'
+    pipeline_name     TEXT NOT NULL,
+    build_id          INTEGER,
+    error_type        TEXT NOT NULL,         -- 'timeout', 'http_error', 'request_failed'
+    detail            TEXT,
+    created_at        TEXT DEFAULT (datetime('now'))
 );
 """
 
