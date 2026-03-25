@@ -952,6 +952,7 @@ extends:
           platforms:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
+          shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
@@ -1071,8 +1072,6 @@ extends:
           - android_arm64
           variables:
             # map dependencies variables to local variables
-            - name: librariesContainsChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
             - name: monoContainsChange
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
           jobParameters:
@@ -1082,9 +1081,7 @@ extends:
             timeoutInMinutes: 120
             condition: >-
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
             postBuildSteps:
@@ -1094,7 +1091,6 @@ extends:
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
                   condition: >-
                     or(
-                    eq(variables['librariesContainsChange'], true),
                     eq(variables['monoContainsChange'], true),
                     eq(variables['isRollingBuild'], true))
 
