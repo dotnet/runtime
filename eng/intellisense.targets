@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <UseCompilerGeneratedDocXmlFile Condition="'$(UseCompilerGeneratedDocXmlFile)' == ''">true</UseCompilerGeneratedDocXmlFile>
+    <!-- Set IsPlatformNotSupportedAssembly when GeneratePlatformNotSupportedAssemblyMessage is set so it can flow through
+         AdditionalTargetFrameworkInfoProperty to the outer build for doc XML discovery. -->
+    <IsPlatformNotSupportedAssembly Condition="'$(IsPlatformNotSupportedAssembly)' == '' and '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">true</IsPlatformNotSupportedAssembly>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true'">
@@ -24,20 +27,25 @@
     <TargetPathWithTargetPlatformMoniker>
       <UseCompilerGeneratedDocXmlFile>$(UseCompilerGeneratedDocXmlFile)</UseCompilerGeneratedDocXmlFile>
       <IsPartialFacadeAssembly>$(IsPartialFacadeAssembly)</IsPartialFacadeAssembly>
-      <IsPlatformNotSupportedAssembly Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">true</IsPlatformNotSupportedAssembly>
+      <IsPlatformNotSupportedAssembly>$(IsPlatformNotSupportedAssembly)</IsPlatformNotSupportedAssembly>
       <SuppressPlatformNotSupportedAssemblyDocXmlError>$(SuppressPlatformNotSupportedAssemblyDocXmlError)</SuppressPlatformNotSupportedAssemblyDocXmlError>
     </TargetPathWithTargetPlatformMoniker>
   </ItemDefinitionGroup>
 
   <ItemGroup>
     <PackageDownload Include="Microsoft.Private.Intellisense" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
+    <!-- Flow IsPlatformNotSupportedAssembly to the outer build via AdditionalTargetFrameworkInfoProperty so that
+         the outer build can identify which target frameworks are PNSE when selecting a doc source. -->
+    <AdditionalTargetFrameworkInfoProperty Include="IsPlatformNotSupportedAssembly" />
   </ItemGroup>
 
   <!-- Warn if the docs team provided package doesn't have an intellisense file for a given library and the library explicitly
-       opts out from using the compiler generated xml file. -->
+       opts out from using the compiler generated xml file. For PNSE builds the doc XML comes from a non-PNSE sibling
+       target framework, so the warning is not applicable. -->
   <Target Name="ValidateIntellisensePackageXmlFilePathExists"
           Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true' and
-                     '$(IntellisensePackageXmlFilePath)' == ''"
+                     '$(IntellisensePackageXmlFilePath)' == '' and
+                     '$(IsPlatformNotSupportedAssembly)' != 'true'"
           BeforeTargets="CoreCompile">
     <Warning Text="The 'UseCompilerGeneratedDocXmlFile' property was set to '$(UseCompilerGeneratedDocXmlFile)', but the doc team doesn't provide a file for this assembly. Remove the 'UseCompilerGeneratedDocXmlFile' property to let the compiler generate the file." />
   </Target>
@@ -54,11 +62,12 @@
     <Touch Files="$(IntermediateDocFileItemFromIntellisensePackage)" />
   </Target>
 
-  <!-- Replace the compiler generated xml file in the obj folder with the one that comes from the intellisense package. -->
+  <!-- Replace the compiler generated xml file in the obj folder with the one that comes from the intellisense package.
+       For PNSE assemblies, GetDocFileFromNonPNSEBuild handles the doc file instead. -->
   <Target Name="ChangeDocumentationFileForPackaging"
           DependsOnTargets="PrepareIntellisensePackageXmlFile"
           BeforeTargets="CopyFilesToOutputDirectory;DocumentationProjectOutputGroup"
-          Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true' and '$(IntellisensePackageXmlFilePath)' != ''">
+          Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true' and '$(IntellisensePackageXmlFilePath)' != '' and '$(IsPlatformNotSupportedAssembly)' != 'true'">
     <ItemGroup>
       <DocFileItem Remove="@(DocFileItem)" />
       <DocFileItem Include="$(IntermediateDocFileItemFromIntellisensePackage)" />
@@ -67,10 +76,72 @@
 
   <!-- Allow P2Ps to retrieve the DocFileItem path. -->
   <Target Name="AnnotateTargetPathWithTargetPlatformMonikerWithDocFileItem"
-          DependsOnTargets="ChangeDocumentationFileForPackaging;GetTargetPathWithTargetPlatformMoniker"
+          DependsOnTargets="ChangeDocumentationFileForPackaging;GetDocFileFromNonPNSEBuild;GetTargetPathWithTargetPlatformMoniker"
           BeforeTargets="GetTargetPath">
     <ItemGroup>
       <TargetPathWithTargetPlatformMoniker DocFileItem="@(DocFileItem)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Returns this target framework if it is a suitable candidate to provide doc XML to a PNSE sibling build:
+       it must target NetCoreAppCurrent (with or without a platform suffix) and must not itself be a PNSE assembly. -->
+  <Target Name="GetDocumentationCandidateTargetFramework"
+          Returns="@(_DocCandidateTF)">
+    <ItemGroup Condition="'$(IsPlatformNotSupportedAssembly)' != 'true' and
+                          ('$(TargetFramework)' == '$(NetCoreAppCurrent)' or
+                           $([System.String]::Copy('$(TargetFramework)').StartsWith('$(NetCoreAppCurrent)-')))">
+      <_DocCandidateTF Include="$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Returns the DocFileItem for this build after preparing it (e.g. copying from the intellisense package). -->
+  <Target Name="GetDocFileItemPath"
+          DependsOnTargets="ChangeDocumentationFileForPackaging"
+          Returns="@(DocFileItem)">
+  </Target>
+
+  <!-- For PNSE builds that opt out of compiler-generated doc XML, find a non-PNSE sibling target framework,
+       build it (getting only its doc file), and use that doc file for this PNSE build.  This avoids the poor
+       intellisense that results from the auto-generated PNSE stubs. -->
+  <Target Name="GetDocFileFromNonPNSEBuild"
+          Condition="'$(IsPlatformNotSupportedAssembly)' == 'true' and
+                     '$(UseCompilerGeneratedDocXmlFile)' != 'true' and
+                     '$(IsCrossTargetingBuild)' != 'true'"
+          BeforeTargets="CopyFilesToOutputDirectory;DocumentationProjectOutputGroup">
+
+    <!-- Call the outer (cross-targeting) build to identify the best non-PNSE candidate target framework. -->
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Targets="GetDocumentationTargetFramework"
+             RemoveProperties="TargetFramework">
+      <Output ItemName="_PNSEDocTFItems" TaskParameter="TargetOutputs" />
+    </MSBuild>
+
+    <PropertyGroup>
+      <!-- GetDocumentationTargetFramework returns exactly one item, so no semicolons in the expansion. -->
+      <_PNSEDocTF>@(_PNSEDocTFItems)</_PNSEDocTF>
+    </PropertyGroup>
+
+    <!-- Call GetDocFileItemPath on the non-PNSE sibling target framework to retrieve its prepared doc file. -->
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Targets="GetDocFileItemPath"
+             Properties="TargetFramework=$(_PNSEDocTF)"
+             Condition="'$(_PNSEDocTF)' != ''">
+      <Output ItemName="_DocFileItemFromSibling" TaskParameter="TargetOutputs" />
+    </MSBuild>
+
+    <!-- Copy the sibling's doc file into this build's intermediate output directory so all outputs are
+         newer than all inputs (consistent with how PrepareIntellisensePackageXmlFile works). -->
+    <Copy SourceFiles="@(_DocFileItemFromSibling)"
+          DestinationFiles="$(IntermediateDocFileItemFromIntellisensePackage)"
+          Condition="'@(_DocFileItemFromSibling)' != ''" />
+
+    <Touch Files="$(IntermediateDocFileItemFromIntellisensePackage)"
+           Condition="'@(_DocFileItemFromSibling)' != ''" />
+
+    <!-- Replace the DocFileItem with the copy we made from the sibling target framework. -->
+    <ItemGroup Condition="'@(_DocFileItemFromSibling)' != ''">
+      <DocFileItem Remove="@(DocFileItem)" />
+      <DocFileItem Include="$(IntermediateDocFileItemFromIntellisensePackage)" />
     </ItemGroup>
   </Target>
 
