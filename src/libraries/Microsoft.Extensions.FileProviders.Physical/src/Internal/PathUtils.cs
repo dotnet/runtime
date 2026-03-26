@@ -26,8 +26,10 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
         internal static bool HasInvalidFilterChars(string path) =>
             path.AsSpan().ContainsAny(_invalidFilterChars);
 
-        internal static readonly char[] PathSeparators =
+        private static readonly char[] _pathSeparators =
             [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
+
+        internal static ReadOnlySpan<char> PathSeparators => _pathSeparators;
 
         internal static string EnsureTrailingSlash(string path)
         {
@@ -42,7 +44,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
 
         internal static bool PathNavigatesAboveRoot(string path)
         {
-            var tokenizer = new StringTokenizer(path, PathSeparators);
+            var tokenizer = new StringTokenizer(path, _pathSeparators);
             int depth = 0;
 
             foreach (StringSegment segment in tokenizer)

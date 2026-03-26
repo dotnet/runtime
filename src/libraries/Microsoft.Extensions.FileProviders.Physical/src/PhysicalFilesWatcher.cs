@@ -688,7 +688,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             public PendingCreationWatcher(string directory)
             {
                 Token = _cts.Token;
-                _targetDirectory = directory.TrimEnd(PathUtils.PathSeparators);
+                _targetDirectory = directory;
 
                 // Walk up to find the nearest existing ancestor.
                 string current = _targetDirectory;
@@ -715,10 +715,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
             // Returns the name of the immediate child of existingAncestor on the path to target.
             private static string GetChildName(string existingAncestor, string target)
             {
-                string remaining = target.Substring(existingAncestor.Length)
-                    .TrimStart(PathUtils.PathSeparators);
-                int sep = remaining.IndexOfAny(PathUtils.PathSeparators);
-                return sep >= 0 ? remaining.Substring(0, sep) : remaining;
+                Debug.Assert(target.StartsWith(existingAncestor, StringComparison.Ordinal));
+
+                ReadOnlySpan<char> remaining = target.AsSpan(existingAncestor.Length).TrimStart(PathUtils.PathSeparators);
+                int separator = remaining.IndexOfAny(PathUtils.PathSeparators);
+                return (separator >= 0 ? remaining.Slice(0, separator) : remaining).ToString();
+            }
+
+            private bool IsTargetDirectory(string path)
+            {
+                // _targetDirectory may have a trailing separator; compare ignoring it.
+                ReadOnlySpan<char> target = _targetDirectory.AsSpan().TrimEnd(PathUtils.PathSeparators);
+                return target.Equals(path.AsSpan().TrimEnd(PathUtils.PathSeparators), StringComparison.OrdinalIgnoreCase);
             }
 
             [UnsupportedOSPlatform("browser")]
@@ -735,7 +743,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     while (Directory.Exists(childPath))
                     {
                         watchDir = childPath;
-                        if (string.Equals(watchDir, _targetDirectory, StringComparison.OrdinalIgnoreCase))
+                        if (IsTargetDirectory(watchDir))
                         {
                             _cts.Cancel();
                             return;
@@ -780,7 +788,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     _watcher = null;
                     watchDir = childPath;
 
-                    if (string.Equals(watchDir, _targetDirectory, StringComparison.OrdinalIgnoreCase))
+                    if (IsTargetDirectory(watchDir))
                     {
                         _cts.Cancel();
                         return;
@@ -818,7 +826,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     _watcher = null;
 
                     string createdPath = e.FullPath;
-                    if (string.Equals(createdPath, _targetDirectory, StringComparison.OrdinalIgnoreCase))
+                    if (IsTargetDirectory(createdPath))
                     {
                         _cts.Cancel();
                     }
