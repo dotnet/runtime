@@ -446,15 +446,10 @@ namespace ILCompiler.ObjectWriter
                 {
                     Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
 
-                    // TODO: eventually this should check IMethodCodeNodeWithTypeSignature
-                    // Once we have signatures implemented for all code-carrying nodes
-                    if (node is IMethodBodyNode methodNode)
-                    {
-                        // Record only information we can get from the MethodDesc here. The actual
-                        // body will be emitted by the call to EmitData() at the end
-                        // of this loop iteration.
-                        RecordMethodDeclaration(codeNode, methodNode.Method);
-                    }
+                    // Record only information we can get from the MethodDesc here. The actual
+                    // body will be emitted by the call to EmitData() at the end
+                    // of this loop iteration.
+                    RecordMethodDeclaration(codeNode);
                 }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
@@ -658,7 +653,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethodDeclaration(INodeWithTypeSignature node, MethodDesc desc)
+        private protected virtual void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }

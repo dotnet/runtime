@@ -50,6 +50,9 @@ namespace ILCompiler.DependencyAnalysis
         WASM_TYPE_INDEX_LEB        = 0x204,  // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
         WASM_GLOBAL_INDEX_LEB      = 0x205,  // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
 
+        WASM_TABLE_INDEX_U32       = 0x206,  // Wasm: a table index encoded as a 4-byte uint32, e.g. for storing the "address" of a function into linear memory
+        WASM_TABLE_INDEX_U64       = 0x207,  // Wasm: a table index encoded as a 8-byte uint64, e.g. for storing the "address" of a function into linear memory
+
         //
         // Relocation operators related to TLS access
         //
@@ -576,6 +579,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
         {
+            Debug.Assert(target != null);
             RelocType = relocType;
             Offset = offset;
             Target = target;
@@ -692,6 +696,8 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.WASM_GLOBAL_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_SLEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_TABLE_INDEX_U32 => 4,
+                RelocType.WASM_TABLE_INDEX_U64 => 8,
 
                 _ => throw new NotSupportedException(),
             };

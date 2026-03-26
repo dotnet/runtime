@@ -201,7 +201,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             uint numArgs;
             int hr = xclrFrame.GetNumArguments(&numArgs);
 
-            // MethodA(int depth) is static with 1 parameter → numArgs == 1.
+            // MethodA(int depth) is static with 1 parameter -> numArgs == 1.
             AssertHResult(HResults.S_OK, hr);
             Assert.Equal(1u, numArgs);
 
@@ -220,7 +220,6 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IStackWalk stackWalk = Target.Contracts.StackWalk;
-        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
         foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
@@ -233,6 +232,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodB")
                 continue;
 
+            IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
             MethodDescHandle mdh = rts.GetMethodDescHandle(md);
             Assert.True(rts.IsIL(mdh), "MethodB should be an IL method");
 
@@ -280,6 +280,227 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         }
 
         Assert.Fail("No managed frames with MethodDesc found");
+    }
+
+    // ========== GetArgumentByIndex ==========
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void GetArgumentByIndex_ReturnsValueForMethodADepthArg(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        {
+            TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
+            if (md == TargetPointer.Null)
+                continue;
+
+            string? name = DumpTestHelpers.GetMethodName(Target, md);
+            if (name is not "MethodA")
+                continue;
+
+            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            IXCLRDataFrame xclrFrame = frame;
+
+            // MethodA(int depth) is static with 1 argument
+            DacComNullableByRef<IXCLRDataValue> argOut = new(isNullRef: false);
+            int hr = xclrFrame.GetArgumentByIndex(0, argOut, 0, null, null);
+
+            AssertHResult(HResults.S_OK, hr);
+            Assert.NotNull(argOut.Interface);
+
+            return;
+        }
+
+        Assert.Fail("MethodA not found on the crashing thread's stack");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void GetArgumentByIndex_ReturnsParameterName(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        {
+            TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
+            if (md == TargetPointer.Null)
+                continue;
+
+            string? name = DumpTestHelpers.GetMethodName(Target, md);
+            if (name is not "MethodA")
+                continue;
+
+            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            IXCLRDataFrame xclrFrame = frame;
+
+            // Get the name of the first (and only) argument: "depth"
+            char* nameBuf = stackalloc char[256];
+            uint nameLen;
+            DacComNullableByRef<IXCLRDataValue> argOut = new(isNullRef: false);
+            int hr = xclrFrame.GetArgumentByIndex(0, argOut, 256, &nameLen, nameBuf);
+
+            AssertHResult(HResults.S_OK, hr);
+            string argName = new string(nameBuf);
+            Assert.Equal("depth", argName);
+
+            return;
+        }
+
+        Assert.Fail("MethodA not found on the crashing thread's stack");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void GetArgumentByIndex_InvalidIndex_ReturnsError(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        {
+            TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
+            if (md == TargetPointer.Null)
+                continue;
+
+            string? name = DumpTestHelpers.GetMethodName(Target, md);
+            if (name is not "MethodA")
+                continue;
+
+            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            IXCLRDataFrame xclrFrame = frame;
+
+            // MethodA has 1 argument, so index 1 should be out of range
+            DacComNullableByRef<IXCLRDataValue> argOut = new(isNullRef: false);
+            int hr = xclrFrame.GetArgumentByIndex(1, argOut, 0, null, null);
+
+            Assert.True(hr < 0, $"Expected failure HRESULT for out-of-range index, got 0x{hr:X8}");
+
+            return;
+        }
+
+        Assert.Fail("MethodA not found on the crashing thread's stack");
+    }
+
+    // ========== GetLocalVariableByIndex ==========
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void GetLocalVariableByIndex_ReturnsValueForMethodBLocal(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        {
+            TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
+            if (md == TargetPointer.Null)
+                continue;
+
+            string? name = DumpTestHelpers.GetMethodName(Target, md);
+            if (name is not "MethodB")
+                continue;
+
+            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            IXCLRDataFrame xclrFrame = frame;
+
+            // MethodB has at least 1 local variable (localObj)
+            DacComNullableByRef<IXCLRDataValue> localOut = new(isNullRef: false);
+            int hr = xclrFrame.GetLocalVariableByIndex(0, localOut, 0, null, null);
+
+            AssertHResult(HResults.S_OK, hr);
+            Assert.NotNull(localOut.Interface);
+
+            return;
+        }
+
+        Assert.Fail("MethodB not found on the crashing thread's stack");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void GetLocalVariableByIndex_InvalidIndex_ReturnsError(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        {
+            TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
+            if (md == TargetPointer.Null)
+                continue;
+
+            string? name = DumpTestHelpers.GetMethodName(Target, md);
+            if (name is not "MethodB")
+                continue;
+
+            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            IXCLRDataFrame xclrFrame = frame;
+
+            // Get actual local count, then use an out-of-range index
+            uint numLocals;
+            int countHr = xclrFrame.GetNumLocalVariables(&numLocals);
+            AssertHResult(HResults.S_OK, countHr);
+
+            DacComNullableByRef<IXCLRDataValue> localOut = new(isNullRef: false);
+            int hr = xclrFrame.GetLocalVariableByIndex(numLocals, localOut, 0, null, null);
+
+            Assert.True(hr < 0, $"Expected failure HRESULT for out-of-range index, got 0x{hr:X8}");
+
+            return;
+        }
+
+        Assert.Fail("MethodB not found on the crashing thread's stack");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void GetLocalVariableByIndex_LocalNameIsEmpty(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        {
+            TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
+            if (md == TargetPointer.Null)
+                continue;
+
+            string? name = DumpTestHelpers.GetMethodName(Target, md);
+            if (name is not "MethodB")
+                continue;
+
+            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            IXCLRDataFrame xclrFrame = frame;
+
+            // Local variable names are not available - name should be empty
+            char* nameBuf = stackalloc char[256];
+            uint nameLen;
+            DacComNullableByRef<IXCLRDataValue> localOut = new(isNullRef: false);
+            int hr = xclrFrame.GetLocalVariableByIndex(0, localOut, 256, &nameLen, nameBuf);
+
+            AssertHResult(HResults.S_OK, hr);
+            Assert.Equal('\0', nameBuf[0]);
+
+            return;
+        }
+
+        Assert.Fail("MethodB not found on the crashing thread's stack");
     }
 
     // ========== Helpers ==========

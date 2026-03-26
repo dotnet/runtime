@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
+using System.Diagnostics;
+using System.Linq;
+using System.Collections.Generic;
+using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter.WasmInstructions;
 
@@ -12,6 +15,8 @@ namespace ILCompiler.ObjectWriter
     {
         int EncodeSize();
         int Encode(Span<byte> buffer);
+        int EncodeRelocationCount();
+        int EncodeRelocations(Span<Relocation> buffer);
     }
 
     public enum WasmSectionType
@@ -53,6 +58,8 @@ namespace ILCompiler.ObjectWriter
         {
             Kind = kind;
         }
+        public abstract int EncodeRelocationCount();
+        public abstract int EncodeRelocations(Span<Relocation> buffer);
     }
 
     public enum WasmExternalKind : byte
@@ -84,6 +91,8 @@ namespace ILCompiler.ObjectWriter
         }
 
         public override int EncodeSize() => 2;
+        public override int EncodeRelocationCount() => 0;
+        public override int EncodeRelocations(Span<Relocation> buffer) => 0;
     }
 
     public enum WasmLimitType : byte
@@ -131,6 +140,9 @@ namespace ILCompiler.ObjectWriter
             }
             return (int)size;
         }
+
+        public override int EncodeRelocationCount() => 0;
+        public override int EncodeRelocations(Span<Relocation> buffer) => 0;
     }
 
     public class WasmImport : IWasmEncodable
@@ -151,6 +163,8 @@ namespace ILCompiler.ObjectWriter
 
         public int Encode(Span<byte> buffer) => Import.Encode(buffer);
         public int EncodeSize() => Import.EncodeSize();
+        public int EncodeRelocationCount() => Import.EncodeRelocationCount();
+        public int EncodeRelocations(Span<Relocation> buffer) => Import.EncodeRelocations(buffer);
     }
 
     public class WasmGlobal : IWasmEncodable
@@ -177,6 +191,8 @@ namespace ILCompiler.ObjectWriter
             return 2 + _initExpr.Encode(buffer.Slice(2));
         }
 
+        public int EncodeRelocationCount() => 0;
+        public int EncodeRelocations(Span<Relocation> buffer) => 0;
         public int EncodeSize() => 2 + _initExpr.EncodeSize();
     }
 }
