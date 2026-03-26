@@ -11119,6 +11119,62 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
             return;
         }
 
+        // Non-constant coalescing increases code size (adds cast+shift+or instructions).
+        // Only do it if we can see that the local is read back at a wider width within
+        // the next few instructions, which would cause a store-forwarding stall.
+        {
+            unsigned  newOffset      = min(prevOffset, currOffset);
+            unsigned  combinedSize   = genTypeSize(currType) * 2;
+            bool      foundWiderRead = false;
+            GenTree*  scanNode       = store->gtNext;
+            const int scanLimit      = 20;
+
+            for (int scanCount = 0; scanNode != nullptr && scanCount < scanLimit; scanCount++)
+            {
+                // Stop scanning at control flow boundaries.
+                if (scanNode->OperIsConditionalJump() || scanNode->OperGet() == GT_JMP ||
+                    scanNode->OperGet() == GT_RETURN || scanNode->OperGet() == GT_SWIFT_ERROR_RET)
+                {
+                    break;
+                }
+
+                // Check for a local read from the same variable that overlaps our store range
+                // at a wider width.
+                if (scanNode->OperIsLocalRead() && scanNode->AsLclVarCommon()->GetLclNum() == currLclNum)
+                {
+                    unsigned readOffset = scanNode->AsLclVarCommon()->GetLclOffs();
+                    unsigned readSize   = genTypeSize(scanNode->TypeGet());
+                    if (readSize == 0 && scanNode->TypeIs(TYP_STRUCT))
+                    {
+                        readSize = scanNode->AsLclVarCommon()->GetLayout(m_compiler)->GetSize();
+                    }
+
+                    // Does this read overlap our combined store range and is it wider?
+                    if (readSize > genTypeSize(currType) && readOffset <= newOffset &&
+                        (readOffset + readSize) >= (newOffset + combinedSize))
+                    {
+                        foundWiderRead = true;
+                        break;
+                    }
+                }
+
+                // Stop at stores to the same local (would invalidate the forwarding scenario).
+                if (scanNode->OperIsLocalStore() && scanNode->AsLclVarCommon()->GetLclNum() == currLclNum)
+                {
+                    break;
+                }
+
+                scanNode = scanNode->gtNext;
+            }
+
+            if (!foundWiderRead)
+            {
+                JITDUMP("Skipping non-const GT_STORE_LCL_FLD coalescing: no wider read found within %d nodes\n",
+                        scanLimit);
+                return;
+            }
+        }
+
         // Both values must have closed tree ranges so we can safely relocate them.
         bool isCurrValueClosed = false;
         bool isPrevValueClosed = false;
