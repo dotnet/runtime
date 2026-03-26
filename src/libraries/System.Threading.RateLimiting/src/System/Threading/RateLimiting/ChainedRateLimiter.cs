@@ -64,12 +64,16 @@ namespace System.Threading.RateLimiting
 
                 foreach (RateLimiter limiter in _limiters)
                 {
-                    if (limiter.IdleDuration is { } idleDuration)
+                    TimeSpan? idleDuration = limiter.IdleDuration;
+                    if (idleDuration is null)
                     {
-                        if (lowestIdleDuration is null || idleDuration < lowestIdleDuration)
-                        {
-                            lowestIdleDuration = idleDuration;
-                        }
+                        // The chain should not be considered idle if any of its children is not idle.
+                        return null;
+                    }
+
+                    if (lowestIdleDuration is null || idleDuration < lowestIdleDuration)
+                    {
+                        lowestIdleDuration = idleDuration;
                     }
                 }
 

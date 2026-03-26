@@ -209,16 +209,27 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         [Fact]
-        public void IdleDurationReturnsLowestValue()
+        public void IdleDurationReturnsNullWhenAnyChildReturnsNull()
         {
-            using var limiter1 = new CustomizableLimiter();
+            using var limiter1 = new CustomizableLimiter { IdleDurationImpl = () => null };
             using var limiter2 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(2) };
+            using var limiter3 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(3) };
+
+            using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2, limiter3);
+            Assert.Null(chainedLimiter.IdleDuration);
+        }
+
+        [Fact]
+        public void IdleDurationReturnsLowestValueWhenAllChildrenAreIdle()
+        {
+            using var limiter1 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(2) };
+            using var limiter2 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(1) };
             using var limiter3 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(3) };
 
             using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2, limiter3);
 
             var idleDuration = chainedLimiter.IdleDuration;
-            Assert.Equal(2, idleDuration.Value.TotalMilliseconds);
+            Assert.Equal(1, idleDuration.Value.TotalMilliseconds);
         }
 
         [Fact]
@@ -809,7 +820,7 @@ namespace System.Threading.RateLimiting.Tests
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0
             });
-            
+
             using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
 
             var lease = chainedLimiter.AttemptAcquire();
