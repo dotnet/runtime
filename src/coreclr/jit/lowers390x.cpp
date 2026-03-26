@@ -3076,10 +3076,9 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 // Return Value:
 //    false if no changes were made
 //
-#if 0
 bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
 {
-    //_ASSERTE(!"NYI");
+    _ASSERTE(!"NYI");
     assert(tree->OperIs(GT_AND, GT_OR));
 
     if (!comp->opts.OptimizationEnabled())
