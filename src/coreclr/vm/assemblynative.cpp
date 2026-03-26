@@ -1773,9 +1773,17 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
             (newProxyTypeEntry != nullptr && !hasPrecachedProxy) ||
             !hasPrecachedTargets)
         {
-            // Only fall back to attribute parsing for the assembly targets if they were
-            // not found in the pre-cached R2R section.
-            if (!hasPrecachedTargets)
+            // Fall back to attribute parsing for the assembly targets if they were
+            // not found in the pre-cached R2R section, or if the external/proxy type
+            // maps were not pre-cached. When CrossGen2 fails to resolve an assembly
+            // target, it emits an assembly targets entry with count=0 but marks the
+            // external/proxy maps as invalid (state=0). Re-processing the assembly
+            // target attributes in that case ensures the runtime correctly loads (and
+            // throws for) unresolvable assemblies. The AssemblyTargetProcessor already
+            // deduplicates, so re-processing is safe.
+            if (!hasPrecachedTargets
+                || (newExternalTypeEntry != nullptr && !hasPrecachedExternal)
+                || (newProxyTypeEntry != nullptr && !hasPrecachedProxy))
             {
                 ProcessTypeMapAttribute(
                     TypeMapAssemblyTargetAttributeName,
