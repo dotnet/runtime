@@ -61,7 +61,7 @@ internal sealed class DacEnumerableHash
         {
             // offsets are stored on the parent type
             VolatileEntryValue = address + (ulong)type.Fields[nameof(VolatileEntryValue)].Offset;
-            VolatileEntryNextEntry = target.ReadPointer(address + (ulong)type.Fields[nameof(VolatileEntryNextEntry)].Offset);
+            VolatileEntryNextEntry = target.ReadPointerField(address, type, nameof(VolatileEntryNextEntry));
         }
 
         public TargetPointer VolatileEntryValue { get; init; }

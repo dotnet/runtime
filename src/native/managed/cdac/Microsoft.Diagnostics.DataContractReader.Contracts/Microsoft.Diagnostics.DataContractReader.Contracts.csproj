@@ -13,6 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader" />
     <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
   </ItemGroup>
 
