@@ -225,12 +225,6 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
-        if (buildOptions.BootConfigFileName != null)
-        {
-            // Omit implicit default
-            buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} -p:WasmBootConfigFileName={buildOptions.BootConfigFileName}" };
-        }
-
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(configuration, info.ProjectName, buildOptions);
 
         if (buildOptions.UseCache)
