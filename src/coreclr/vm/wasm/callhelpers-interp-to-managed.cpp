@@ -289,6 +289,12 @@ namespace
         *((int64_t*)pRet) = (*fptr)(ARG_I32(0));
     }
 
+    static void CallFunc_I32_I32_I32_RetI64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    {
+        int64_t (*fptr)(int32_t, int32_t, int32_t) = (int64_t (*)(int32_t, int32_t, int32_t))pcode;
+        *((int64_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2));
+    }
+
     static void CallFunc_I32_I32_I32_I64_RetI64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         int64_t (*fptr)(int32_t, int32_t, int32_t, int64_t) = (int64_t (*)(int32_t, int32_t, int32_t, int64_t))pcode;
@@ -516,6 +522,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "innn", (void*)&CallFunc_IND_IND_IND_RetI32 },
     { "l", (void*)&CallFunc_Void_RetI64 },
     { "li", (void*)&CallFunc_I32_RetI64 },
+    { "liii", (void*)&CallFunc_I32_I32_I32_RetI64 },
     { "liiil", (void*)&CallFunc_I32_I32_I32_I64_RetI64 },
     { "lil", (void*)&CallFunc_I32_I64_RetI64 },
     { "lili", (void*)&CallFunc_I32_I64_I32_RetI64 },
