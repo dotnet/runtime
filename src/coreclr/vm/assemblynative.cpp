@@ -1781,16 +1781,11 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
             // target attributes in that case ensures the runtime correctly loads (and
             // throws for) unresolvable assemblies. The AssemblyTargetProcessor already
             // deduplicates, so re-processing is safe.
-            if (!hasPrecachedTargets
-                || (newExternalTypeEntry != nullptr && !hasPrecachedExternal)
-                || (newProxyTypeEntry != nullptr && !hasPrecachedProxy))
-            {
-                ProcessTypeMapAttribute(
-                    TypeMapAssemblyTargetAttributeName,
-                    assemblies,
-                    groupTypeMT,
-                    currAssembly);
-            }
+            ProcessTypeMapAttribute(
+                TypeMapAssemblyTargetAttributeName,
+                assemblies,
+                groupTypeMT,
+                currAssembly);
 
             // We will only process the specific type maps if we have a callback to process
             // the entry and the precached map was not calculated for this module.
