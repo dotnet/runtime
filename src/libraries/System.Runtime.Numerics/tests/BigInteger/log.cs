@@ -139,8 +139,8 @@ namespace System.Numerics.Tests
         }
 
         /// <summary>
-        /// Test Log Method on Very Large BigInteger more than (1 &lt;&lt; (1 &lt;&lt; 24)) by base 2
-        /// Tested BigInteger are: pow(2, startShift + smallLoopShift * [1..smallLoopLimit] + (1 &lt;&lt; 24) * [1..bigLoopLimit])
+        /// Test Log Method on Very Large BigInteger more than (1 &lt;&lt; Int.MaxValue) by base 2
+        /// Tested BigInteger are: pow(2, startShift + smallLoopShift * [1..smallLoopLimit] + Int32.MaxValue * [1..bigLoopLimit])
         /// Note:
         /// ToString() can not operate such large values
         /// VerifyLogString() can not operate such large values,
