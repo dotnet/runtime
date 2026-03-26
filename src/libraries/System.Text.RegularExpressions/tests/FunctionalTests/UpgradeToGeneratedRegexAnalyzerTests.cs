@@ -1050,13 +1050,24 @@ public class Program
         [Fact]
         public async Task AnayzerSupportsMultipleDiagnostics()
         {
+            // The first diagnostic is a method-body call, so FixAll for CreateGeneratedRegexProperty
+            // runs first on the original document. The field (between the two method calls in source
+            // order) is fixed by a different equivalence key and must not inflate the name offset
+            // for method-body fixes: regex2 should get MyRegex1 (not MyRegex2).
             string test = @"using System.Text.RegularExpressions;
 
 public class Program
 {
-    public static void Main()
+    public static void M1()
     {
         Regex regex1 = [|new Regex|](""a|b"");
+    }
+
+    private static readonly Regex s_field = [|new Regex|](""x"");
+
+    public static void M2()
+    {
+        var _ = s_field;
         Regex regex2 = [|new Regex|](""c|d"", RegexOptions.CultureInvariant);
     }
 }
@@ -1065,9 +1076,17 @@ public class Program
 
 public partial class Program
 {
-    public static void Main()
+    public static void M1()
     {
         Regex regex1 = MyRegex;
+    }
+
+    [GeneratedRegex(""x"")]
+    private static partial Regex s_field { get; }
+
+    public static void M2()
+    {
+        var _ = s_field;
         Regex regex2 = MyRegex1;
     }
 
@@ -1082,7 +1101,7 @@ public partial class Program
             {
                 TestCode = test,
                 FixedCode = fixedSource,
-                NumberOfFixAllIterations = 2,
+                NumberOfFixAllIterations = 3,
             }.RunAsync();
         }
 

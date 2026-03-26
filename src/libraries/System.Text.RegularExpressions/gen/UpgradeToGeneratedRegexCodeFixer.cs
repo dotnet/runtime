@@ -525,8 +525,12 @@ namespace System.Text.RegularExpressions.Generator
                     // Only check ancestors up to (not including) declSyntax, so that
                     // types *containing* declSyntax (e.g., an outer class) are not
                     // mistaken for nested types.
+                    // Also skip call sites inside field/property declarations — those are
+                    // fixed via ConvertFieldToGeneratedRegexProperty / ConvertPropertyToGeneratedRegexProperty,
+                    // which keep the original member name and don't compete for MyRegex* names.
                     if (descendant.Ancestors().TakeWhile(a => a != declSyntax).Any(a =>
-                        a is TypeDeclarationSyntax && a is not ExtensionBlockDeclarationSyntax))
+                        a is TypeDeclarationSyntax && a is not ExtensionBlockDeclarationSyntax ||
+                        a is FieldDeclarationSyntax or PropertyDeclarationSyntax))
                     {
                         continue;
                     }
