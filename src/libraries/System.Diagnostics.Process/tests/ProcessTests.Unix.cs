@@ -351,16 +351,13 @@ namespace System.Diagnostics.Tests
             {
                 try
                 {
-                    // ProcessName may transiently reflect the parent process name immediately after
-                    // fork() if execve() hasn't completed yet, so poll briefly until it stabilizes.
-                    string processName = px.ProcessName;
-                    for (int i = 0; processName != Program && i < 20; i++)
+                    // ProcessName may transiently reflect the parent's thread name immediately
+                    // after fork() if execve() hasn't completed yet in the child, so retry briefly.
+                    RetryHelper.Execute(() =>
                     {
-                        Thread.Sleep(50);
                         px.Refresh();
-                        processName = px.ProcessName;
-                    }
-                    Assert.Equal(Program, processName);
+                        Assert.Equal(Program, px.ProcessName);
+                    });
                 }
                 finally
                 {
@@ -383,16 +380,13 @@ namespace System.Diagnostics.Tests
             {
                 try
                 {
-                    // ProcessName may transiently reflect the parent process name immediately after
-                    // fork() if execve() hasn't completed yet, so poll briefly until it stabilizes.
-                    string processName = px.ProcessName;
-                    for (int i = 0; processName != Program && i < 20; i++)
+                    // ProcessName may transiently reflect the parent's thread name immediately
+                    // after fork() if execve() hasn't completed yet in the child, so retry briefly.
+                    RetryHelper.Execute(() =>
                     {
-                        Thread.Sleep(50);
                         px.Refresh();
-                        processName = px.ProcessName;
-                    }
-                    Assert.Equal(Program, processName);
+                        Assert.Equal(Program, px.ProcessName);
+                    });
                 }
                 finally
                 {
