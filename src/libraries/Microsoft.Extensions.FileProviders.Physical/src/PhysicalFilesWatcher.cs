@@ -703,6 +703,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     current = parent;
                 }
 
+                // If no existing ancestor was found (e.g. unmounted drive), cancel immediately.
+                if (!Directory.Exists(current))
+                {
+                    _expectedName = string.Empty;
+                    _cts.Cancel();
+                    return;
+                }
+
                 // current is the deepest existing ancestor; expected name is its immediate child.
                 _expectedName = GetChildName(current, _targetDirectory);
 
@@ -767,7 +775,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         newWatcher.Error += OnError;
                         newWatcher.EnableRaisingEvents = true;
                     }
-                    catch
+                    catch (Exception ex) when (ex is ArgumentException or IOException)
                     {
                         newWatcher?.Dispose();
                         _cts.Cancel();
