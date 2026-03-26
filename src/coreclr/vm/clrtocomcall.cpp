@@ -24,6 +24,7 @@
 #include "sigbuilder.h"
 #include "callconvbuilder.hpp"
 #include "callsiteinspect.h"
+#include "method.hpp"
 
 #define DISPATCH_INVOKE_SLOT 6
 
@@ -141,11 +142,89 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
     return pComInfo;
 }
 
+namespace
+{
+    MethodDesc* CreateEventCallStub(MethodDesc* pMD)
+    {
+        STANDARD_VM_CONTRACT;
+
+        _ASSERTE(pMD->IsCLRToCOMCall());
+
+        CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pMD);
+
+        _ASSERTE(pComInfo->m_pEventProviderMD != NULL);
+
+        MethodDesc *pEvProvMD = pComInfo->m_pEventProviderMD;
+        MethodTable *pEvProvMT = pEvProvMD->GetMethodTable();
+
+        FunctionSigBuilder sigBuilder;
+        sigBuilder.SetCallingConv((CorCallingConvention)IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS);
+
+        LocalDesc obj(ELEMENT_TYPE_OBJECT);
+        sigBuilder.NewArg(&obj);
+
+        MetaSig sig(pEvProvMD);
+        LocalDesc retType(sig.GetRetTypeHandleThrowing());
+        sigBuilder.SetReturnType(&retType);
+
+        DWORD cbMetaSigSize = sigBuilder.GetSigSize();
+        AllocMemHolder<BYTE> szMetaSig(pMD->GetMethodTable()->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMetaSigSize)));
+        sigBuilder.GetSig(szMetaSig, cbMetaSigSize);
+
+        Signature signature(szMetaSig, cbMetaSigSize);
+        SigTypeContext typeContext;
+
+        ILStubLinker stubLinker(pMD->GetModule(), signature, &typeContext, pEvProvMD, ILStubLinkerFlags::ILSTUB_LINKER_FLAG_STUB_HAS_THIS);
+
+        ILCodeStream* pCode = stubLinker.NewCodeStream(ILStubLinker::kDispatch);
+
+        pCode->EmitLoadThis();
+        pCode->EmitLDTOKEN(pCode->GetToken(pEvProvMT));
+        pCode->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
+        pCode->EmitCALL(METHOD__COM_OBJECT__GET_EVENT_PROVIDER, 2, 1);
+        pCode->EmitLDARG(0);
+        pCode->EmitCALL(pCode->GetToken(pEvProvMD), 2, 1);
+        pCode->EmitRET();
+
+        MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
+            pMD->GetLoaderAllocator(),
+            pMD->GetMethodTable(),
+            PINVOKESTUB_FL_COMEVENTCALL,
+            pMD->GetModule(),
+            szMetaSig,
+            cbMetaSigSize,
+            &typeContext,
+            &stubLinker
+        );
+
+    #if defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
+        if (pStubMD->IsDynamicMethod())
+        {
+            DynamicMethodDesc* pDMD = pStubMD->AsDynamicMethodDesc();
+            pDMD->SetNativeStackArgSize(2 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
+        }
+    #endif
+
+        szMetaSig.SuppressRelease();
+
+        return pStubMD;
+    }
+}
+
 MethodDesc* CLRToCOMCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
 
-    if (SF_IsCOMLateBoundStub(dwStubFlags) || SF_IsCOMEventCallStub(dwStubFlags))
+    // COM event stubs are very simple and don't go through any marshalling logic.
+    // We generate them as a regular IL stub outside of the P/Invoke system.
+    if (SF_IsCOMEventCallStub(dwStubFlags))
+    {
+        _ASSERTE(pMD->IsCLRToCOMCall()); //  no generic COM eventing
+        ((CLRToCOMCallMethodDesc *)pMD)->InitComEventCallInfo();
+        return CreateEventCallStub(pMD);
+    }
+
+    if (SF_IsCOMLateBoundStub(dwStubFlags))
         return NULL;
 
     // Get the call signature information
@@ -281,76 +360,6 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
     GCPROTECT_END();
 
     return WrapperTypeArr;
-}
-
-UINT32 CLRToCOMEventCallWorker(CLRToCOMMethodFrame* pFrame, CLRToCOMCallMethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pFrame));
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END;
-
-    struct {
-        OBJECTREF EventProviderTypeObj;
-        OBJECTREF EventProviderObj;
-        OBJECTREF ThisObj;
-    } gc;
-    gc.EventProviderTypeObj = NULL;
-    gc.EventProviderObj = NULL;
-    gc.ThisObj = NULL;
-
-    LOG((LF_STUBS, LL_INFO1000, "Calling CLRToCOMEventCallWorker %s::%s \n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-
-    // Retrieve the method table and the method desc of the call.
-    MethodDesc *pEvProvMD = pMD->GetEventProviderMD();
-    MethodTable *pEvProvMT = pEvProvMD->GetMethodTable();
-
-    GCPROTECT_BEGIN(gc)
-    {
-        // Retrieve the exposed type object for event provider.
-        gc.EventProviderTypeObj = pEvProvMT->GetManagedClassObject();
-        gc.ThisObj = pFrame->GetThis();
-
-        UnmanagedCallersOnlyCaller getEventProvider(METHOD__COM_OBJECT__GET_EVENT_PROVIDER);
-
-        // Retrieve the event provider for the event interface type.
-        getEventProvider.InvokeThrowing(&gc.ThisObj, &gc.EventProviderTypeObj, &gc.EventProviderObj);
-
-        // Set up an arg iterator to retrieve the arguments from the frame.
-        MetaSig mSig(pMD);
-        ArgIterator ArgItr(&mSig);
-
-        // Make the call on the event provider method desc.
-        MethodDescCallSite eventProvider(pEvProvMD, &gc.EventProviderObj);
-
-        // Retrieve the event handler passed in.
-        OBJECTREF EventHandlerObj = ObjectToOBJECTREF(*(Object**)(pFrame->GetTransitionBlock() + ArgItr.GetNextOffset()));
-
-        ARG_SLOT EventMethArgs[] =
-        {
-            ObjToArgSlot(gc.EventProviderObj),
-            ObjToArgSlot(EventHandlerObj)
-        };
-
-        //
-        // If this can ever return something bigger than an INT64 byval
-        // then this code is broken.  Currently, however, it cannot.
-        //
-        *(ARG_SLOT *)(pFrame->GetReturnValuePtr()) = eventProvider.Call_RetArgSlot(EventMethArgs);
-
-        // The COM event call worker does not support value returned in
-        // floating point registers.
-        _ASSERTE(ArgItr.GetFPReturnSize() == 0);
-    }
-    GCPROTECT_END();
-
-    // tell the asm stub that we are not returning an FP type
-    return 0;
 }
 
 static CallsiteDetails CreateCallsiteDetails(_In_ FramedMethodFrame *pFrame)
@@ -728,12 +737,9 @@ UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMe
     // Retrieve the interface method table.
     MethodTable *pItfMT = pMD->GetInterfaceMethodTable();
 
-    // If the interface is a COM event call, then delegate to the CLRToCOMEventCallWorker.
-    if (pItfMT->IsComEventItfType())
-    {
-        returnValue = CLRToCOMEventCallWorker(pFrame, pMD);
-    }
-    else if (pItfMT->GetComInterfaceType() == ifDispatch)
+    // COM event calls should be handled by an IL stub.
+    _ASSERTE(!pItfMT->IsComEventItfType());
+    if (pItfMT->GetComInterfaceType() == ifDispatch)
     {
         // If the interface is a Dispatch only interface then convert the early bound
         // call to a late bound call.
