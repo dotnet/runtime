@@ -1489,7 +1489,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
         }
         case InlineObservation::CALLEE_FORCE_INLINE_CALL:
         {
-            // Track cumulative IL size of AggressiveInlining callees.
+            // Track cumulative IL size of force-inlined callees (AggressiveInlining or below ALWAYS_INLINE_SIZE).
             m_ForceInlineCallSize += (unsigned)value;
             break;
         }
@@ -1541,9 +1541,9 @@ unsigned ExtendedDefaultPolicy::EstimatedTotalILSize() const
     //
     codeSize -= (INT64)m_FoldableSwitch * 70;
 
-    // Calls to AggressiveInlining methods will cascade — each such callee
-    // is likely to be inlined and bring its own IL. Add friction to account
-    // for this expansion so the budget reflects the true cost.
+    // Calls to force-inlined methods (AggressiveInlining or below ALWAYS_INLINE_SIZE)
+    // will cascade — each such callee is likely to be inlined and bring its own IL.
+    // Add friction to account for this expansion so the budget reflects the true cost.
     // m_ForceInlineCallSize accumulates the IL sizes of force-inline callees.
     //
     codeSize += (INT64)(m_ForceInlineCallSize * 0.5);

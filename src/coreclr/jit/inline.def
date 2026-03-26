@@ -83,7 +83,7 @@ INLINE_OBSERVATION(CLASS_PROMOTABLE,          bool,   "promotable value class", 
 INLINE_OBSERVATION(CLASS_VALUETYPE,           bool,   "value class",                          INFORMATION, CALLEE)
 INLINE_OBSERVATION(FOLDABLE_BOX,              int,    "foldable box/unbox operation",         INFORMATION, CALLEE)
 INLINE_OBSERVATION(INTRINSIC,                 int,    "call marked as intrinsic",             INFORMATION, CALLEE)
-INLINE_OBSERVATION(FORCE_INLINE_CALL,         int,    "call to AggressiveInlining method",    INFORMATION, CALLEE)
+INLINE_OBSERVATION(FORCE_INLINE_CALL,         int,    "call to force-inlined method",         INFORMATION, CALLEE)
 INLINE_OBSERVATION(BACKWARD_JUMP,             int,    "backward jump",                        INFORMATION, CALLEE)
 INLINE_OBSERVATION(THROW_BLOCK,               int,    "throw block",                          INFORMATION, CALLEE)
 INLINE_OBSERVATION(DOES_NOT_RETURN,           bool,   "does not return",                      INFORMATION, CALLEE)

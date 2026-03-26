@@ -1087,7 +1087,7 @@ namespace Internal.JitInterface
         private bool tryGetMethodILSize(CORINFO_METHOD_STRUCT_* ftn, ref uint pILSize, ref bool pIsAggressiveInline)
         {
             MethodDesc method = HandleToObject(ftn);
-            pIsAggressiveInline = method.IsAggressiveInlining;
+            pIsAggressiveInline = !method.IsNoInlining && method.IsAggressiveInlining;
             MethodIL methodIL = _compilation.GetMethodIL(method);
             if (methodIL != null)
             {
