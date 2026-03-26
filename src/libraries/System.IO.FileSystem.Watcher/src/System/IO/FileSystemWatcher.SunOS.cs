@@ -1508,31 +1508,48 @@ namespace System.IO
                 // Read directory contents
                 var entries = new List<FileEntry>();
 
-                foreach (string fullPath in Directory.EnumerateFileSystemEntries(path))
+                try
                 {
-                    try
+                    foreach (string fullPath in Directory.EnumerateFileSystemEntries(path))
                     {
-                        // Might like to use statat(2) here later.
-                        string name = System.IO.Path.GetFileName(fullPath)!;
-                        // Use LStat to not follow symlinks (we don't want to traverse outside the watch tree)
-                        if (Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus entryStatus) == 0)
+                        try
                         {
-                            FileEntry entry = new FileEntry(name, ref entryStatus);
-                            entries.Add(entry);
+                            // Might like to use statat(2) here later.
+                            string name = System.IO.Path.GetFileName(fullPath)!;
+                            // Use LStat to not follow symlinks (don't traverse outside the watch tree)
+                            if (Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus entryStatus) == 0)
+                            {
+                                FileEntry entry = new FileEntry(name, ref entryStatus);
+                                entries.Add(entry);
+                            }
+                        }
+                        // Exception handling for LStat.
+                        catch (Exception ex) when (ex is DirectoryNotFoundException ||
+                                                   ex is FileNotFoundException ||
+                                                   ex is UnauthorizedAccessException)
+                        {
+                            Debug.WriteLine($"[FSW] Can't stat '{fullPath}' ENOENT/EACCES Ex={ex}");
+                            // Just continue with other directory entries.
+                        }
+                        catch (IOException ex)
+                        {
+                            Debug.WriteLine($"[FSW] Can't stat '{fullPath}' Unexpected Ex={ex}");
+                            // Just continue with other directory entries.
                         }
                     }
-                    catch (Exception ex) when (ex is DirectoryNotFoundException ||
-                                               ex is FileNotFoundException ||
-                                               ex is UnauthorizedAccessException)
-                    {
-                        Debug.WriteLine($"[FSW] Can't stat '{fullPath}' ENOENT/EACCES Ex={ex}");
-                        // Just continue with other directory entries.
-                    }
-                    catch (IOException ex)
-                    {
-                        Debug.WriteLine($"[FSW] Can't stat '{fullPath}' Unexpected Ex={ex}");
-                        // Just continue with other directory entries.
-                    }
+                }
+                // Exception handling for enumeration.
+                catch (Exception ex) when (ex is DirectoryNotFoundException ||
+                                           ex is FileNotFoundException ||
+                                           ex is UnauthorizedAccessException)
+                {
+                    Debug.WriteLine($"[FSW] Can't enumerate '{path}' ENOENT/EACCES Ex={ex}");
+                    return new DirectorySnapshot(entries);
+                }
+                catch (IOException ex)
+                {
+                    Debug.WriteLine($"[FSW] Can't enumerate '{path}' Unexpected Ex={ex}");
+                    return new DirectorySnapshot(entries);
                 }
 
                 // Sort by name for comparison
