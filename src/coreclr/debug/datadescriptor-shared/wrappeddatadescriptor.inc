@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // No include guards. This file is included multiple times.
-// Wraps a datadescriptor.inc to define and undefine macros used in the file.
-// Define CDAC_DATADESCRIPTOR_INC before including this file to override which
-// datadescriptor.inc is processed. Defaults to "datadescriptor.inc".
+// Wraps datadescriptor.inc to define and undefine macros used in the file.
 
 // Field type annotation defines. In debug/checked builds, these expand to type
 // names that appear in the data descriptor blob's string pool. In release builds,

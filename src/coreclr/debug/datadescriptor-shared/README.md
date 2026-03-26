@@ -123,12 +123,6 @@ expands to `pointer` in the blob since arrays are accessed via pointers.
 - Used for multi-contract scenarios where one contract references another
 - Example: `CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))`
 
-### Overriding the Descriptor Include
-
-Define `CDAC_DATADESCRIPTOR_INC` before including `wrappeddatadescriptor.inc` to process
-a different `.inc` file instead of the default `datadescriptor.inc`. This is used by
-`cdactypevalidation.inc` to validate multiple descriptors.
-
 ## Compile-Time Type Validation
 
 In debug/checked builds, `cdactypevalidation.inc` validates that every `TYPE(name)` reference

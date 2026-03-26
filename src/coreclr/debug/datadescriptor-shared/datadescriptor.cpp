@@ -76,7 +76,7 @@ struct GlobalContractSpec
 #define STRINGIFY(...) #__VA_ARGS__
 
 // Double-indirection stringify: expands macros in x before stringifying.
-// This is needed because the T_* type annotation defines (T_UINT32, T(GCHandle), etc.)
+// This is needed because the T_* type annotation defines (T_UINT32, TYPE(GCHandle), etc.)
 // must be expanded before stringification. Direct #x does not expand macros.
 #define CDAC_STRINGIFY_IMPL(x) #x
 #define CDAC_STRINGIFY(x) CDAC_STRINGIFY_IMPL(x)
