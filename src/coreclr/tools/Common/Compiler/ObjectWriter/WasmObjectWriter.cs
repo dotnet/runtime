@@ -249,7 +249,7 @@ namespace ILCompiler.ObjectWriter
             WebcilSection section = _sections[sectionIndex] as WebcilSection;
             // We should only be updating the alignment of Webcil sections; Wasm-native sections should
             // not have alignment constraints.
-            Debug.Assert(section != null, $"Section: {sectionIndex} is not a WebcilSection");
+            Debug.Assert(section != null || alignment == 1, $"Section: {sectionIndex} is not a WebcilSection but alignment {alignment} requested");
             if (section == null)
             {
                 return;
