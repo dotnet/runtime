@@ -315,10 +315,10 @@ namespace System.Runtime.Loader.Tests
                 StrongBox<InvalidCastSharedType> _ = (StrongBox<InvalidCastSharedType>)instance;
             });
 
-            // The message should include the full generic type names with the differing argument
+            // The message should include the types with the differing generic argument types
             // and the ALC context names.
             Assert.Contains(nameof(StrongBox<InvalidCastSharedType>), ice.Message);
-            Assert.Contains("generic argument '", ice.Message);
+            Assert.Contains($"generic argument '{nameof(InvalidCastSharedType)}", ice.Message);
             Assert.Contains("Default", ice.Message);
             Assert.Contains("TestALC", ice.Message);
         }
