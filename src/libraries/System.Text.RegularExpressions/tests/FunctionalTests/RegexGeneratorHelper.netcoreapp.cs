@@ -165,13 +165,13 @@ namespace System.Text.RegularExpressions.Tests
             const int MaxBatchSize = 200;
             if (!Environment.Is64BitProcess && regexes.Length > MaxBatchSize)
             {
-                var results = new List<Regex>(regexes.Length);
+                var batchResults = new List<Regex>(regexes.Length);
                 for (int i = 0; i < regexes.Length; i += MaxBatchSize)
                 {
                     int end = Math.Min(i + MaxBatchSize, regexes.Length);
-                    results.AddRange(await SourceGenRegexAsync(regexes[i..end], cancellationToken));
+                    batchResults.AddRange(await SourceGenRegexAsync(regexes[i..end], cancellationToken));
                 }
-                return results.ToArray();
+                return batchResults.ToArray();
             }
 
             Debug.Assert(regexes.Length > 0);
