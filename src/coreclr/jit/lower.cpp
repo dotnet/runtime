@@ -11339,14 +11339,15 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                 {
                     break; // Size mismatch, can't bypass.
                 }
-                // Only bypass if this is the last use
 
-                bool const isLastUse = ((scanNode->gtFlags & GTF_VAR_DEATH) != 0);
-
-                if (isLastUse)
+                // Verify the stored value can reach the load — the store's data must be
+                // invariant between the store and the load (no intervening modifications).
+                if (!IsInvariantInRange(store->Data(), scanNode))
                 {
-                    JITDUMP(
-                        "Bypassing constant store [%06u] + last-use load [%02u] for V%02u[+%u]: replacing load with constant %lld\n",
+                    break;
+                }
+
+                JITDUMP("Forwarding constant store [%06u] to load [%06u] for V%02u[+%u]: value %lld\n",
                         m_compiler->dspTreeID(store), m_compiler->dspTreeID(scanNode), lclNum, offset,
                         (int64_t)store->Data()->AsIntCon()->IconValue());
 
@@ -11373,9 +11374,6 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                     // LowerStoreLocCommon is still processing this node. Later phases
                     // or the register allocator can handle the dead store.
                     break;
-                }
-                // Not the last use — stop scanning, can't bypass.
-                break;
             }
 
             // Stop at stores to the same local (would change the value).
