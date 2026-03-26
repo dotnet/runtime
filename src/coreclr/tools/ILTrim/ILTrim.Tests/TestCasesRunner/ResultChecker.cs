@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
@@ -63,7 +64,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     PerformOutputAssemblyChecks (original, trimmedResult.OutputAssemblyPath.Parent);
                     PerformOutputSymbolChecks (original, trimmedResult.OutputAssemblyPath.Parent);
 
-                    if (!HasAttribute (original.MainModule.GetType (trimmedResult.TestCase.ReconstructedFullTypeName), nameof (SkipKeptItemsValidationAttribute))) {
+                    if (!HasActiveSkipKeptItemsValidationAttribute (original.MainModule.GetType (trimmedResult.TestCase.ReconstructedFullTypeName))) {
                         CreateAssemblyChecker (original, linked).Verify ();
                     }
                 }
@@ -738,10 +739,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
         }
 
-        bool IsProducedByLinker (CustomAttribute attr)
+        static bool IsProducedByLinker (CustomAttribute attr)
         {
+            if (attr.Constructor.Parameters.Count > 2 && attr.ConstructorArguments[^2].Type.Name == "Tool")
+                return ((Tool) attr.ConstructorArguments[^2].Value).HasFlag (Tool.Trimmer);
             var producedBy = attr.GetPropertyValue ("ProducedBy");
-            return producedBy is null ? true : ((ProducedBy) producedBy).HasFlag (ProducedBy.Trimmer);
+            return producedBy is null ? true : ((Tool) producedBy).HasFlag (Tool.Trimmer);
         }
         IEnumerable<ICustomAttributeProvider> GetAttributeProviders (AssemblyDefinition assembly)
         {
@@ -811,6 +814,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
             foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
                 foreach (var attr in typeWithRemoveInAssembly.CustomAttributes.Where (IsTypeInOtherAssemblyAssertion)) {
                     var assemblyName = (string) attr.ConstructorArguments[0].Value;
+
+                    Tool? toolTarget = (Tool?) (int?) attr.GetPropertyValue ("Tool");
+                    if (toolTarget is not null && !toolTarget.Value.HasFlag (Tool.Trimmer))
+                        continue;
+
                     if (!checks.TryGetValue (assemblyName, out List<CustomAttribute>? checksForAssembly))
                         checks[assemblyName] = checksForAssembly = new List<CustomAttribute> ();
 
@@ -831,16 +839,50 @@ namespace Mono.Linker.Tests.TestCasesRunner
             return attr.AttributeType.Resolve ()?.DerivesFrom (nameof (BaseInAssemblyAttribute)) ?? false;
         }
 
-        bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
+        static bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
+        {
+            return TryGetCustomAttribute (caProvider, attributeName, out _);
+        }
+
+        internal static bool HasActiveSkipKeptItemsValidationAttribute (IMemberDefinition provider)
+        {
+            if (TryGetCustomAttribute (provider, nameof (SkipKeptItemsValidationAttribute), out var attribute)) {
+                object? by = attribute.GetPropertyValue (nameof (SkipKeptItemsValidationAttribute.By));
+                return by is null ? true : ((Tool) by).HasFlag (Tool.Trimmer);
+            }
+
+            return false;
+        }
+
+        internal static bool TryGetCustomAttribute (ICustomAttributeProvider caProvider, string attributeName, [NotNullWhen (true)] out CustomAttribute? customAttribute)
+        {
+            if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null) {
+                customAttribute = assembly.EntryPoint.DeclaringType.CustomAttributes
+                    .FirstOrDefault (attr => attr!.AttributeType.Name == attributeName, null);
+                return customAttribute is not null;
+            }
+
+            if (caProvider is TypeDefinition type) {
+                customAttribute = type.CustomAttributes
+                    .FirstOrDefault (attr => attr!.AttributeType.Name == attributeName, null);
+                return customAttribute is not null;
+            }
+
+            customAttribute = null;
+            return false;
+        }
+
+        static IEnumerable<CustomAttribute> GetCustomAttributes (ICustomAttributeProvider caProvider, string attributeName)
         {
             if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null)
                 return assembly.EntryPoint.DeclaringType.CustomAttributes
-                    .Any (attr => attr.AttributeType.Name == attributeName);
+                    .Where (attr => attr!.AttributeType.Name == attributeName);
 
             if (caProvider is TypeDefinition type)
-                return type.CustomAttributes.Any (attr => attr.AttributeType.Name == attributeName);
+                return type.CustomAttributes
+                    .Where (attr => attr!.AttributeType.Name == attributeName);
 
-            return false;
+            return Enumerable.Empty<CustomAttribute> ();
         }
     }
 }

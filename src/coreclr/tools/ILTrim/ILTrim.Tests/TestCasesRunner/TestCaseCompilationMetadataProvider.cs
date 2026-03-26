@@ -112,12 +112,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			string runtimeDir = Path.GetDirectoryName (typeof (object).Assembly.Location)!;
 			string ncaVersion = Path.GetFileName (runtimeDir);
 			string dotnetDir = Path.GetDirectoryName (Path.GetDirectoryName (Path.GetDirectoryName (runtimeDir)))!;
-			return Path.Combine (dotnetDir, "packs", "Microsoft.NETCore.App.Ref", ncaVersion, "ref", PathUtilities.TFMDirectoryName);
+			return Path.Combine (dotnetDir, "packs", "Microsoft.NETCore.App.Ref", ncaVersion, "ref", PathUtilities.TargetFramework);
 		}
 
 		public virtual IEnumerable<string> GetCommonReferencedAssemblies (NPath workingDirectory)
 		{
-			yield return workingDirectory.Combine ("ILTrim.Tests.Cases.Expectations.dll").ToString ();
+			yield return workingDirectory.Combine ("Mono.Linker.Tests.Cases.Expectations.dll").ToString ();
 			if (Characteristics.HasFlag (TestRunCharacteristics.TargetingNetCore)) {
 				string referenceDir = GetReferenceDir ();
 
@@ -202,7 +202,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				References = ((CustomAttributeArgument[]) ctorArguments[2].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Defines = ((CustomAttributeArgument[]) ctorArguments[3].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Resources = ResourcesForAttributeArgument (ctorArguments[4]),
-				AdditionalArguments = (string) ctorArguments[5].Value,
+				AdditionalArguments = ((string?) ctorArguments[5].Value)?.Split (new char[0], StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string> (),
 				CompilerToUse = (string) ctorArguments[6].Value,
 				AddAsReference = ctorArguments.Count >= 8 ? (bool) ctorArguments[7].Value : true,
 				RemoveFromLinkerInput = ctorArguments.Count >= 9 ? (bool) ctorArguments[8].Value : false,
@@ -237,6 +237,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					};
 				})
 				?.ToArray ();
+		}
+		public virtual IEnumerable<NPath> GetCommonSourceFiles ()
+		{
+			return Enumerable.Empty<NPath> ();
+		}
+
+		public virtual bool GetGenerateTargetFrameworkAttribute ()
+		{
+			return false;
 		}
 	}
 }

@@ -15,12 +15,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public bool IgnoreSubstitutions;
 		public bool IgnoreLinkAttributes;
 		public string KeepTypeForwarderOnlyAssemblies;
-		public string KeepDebugMembers;
 		public string LinkSymbols;
 		public bool SkipUnresolved;
 		public bool StripDescriptors;
 		public bool StripSubstitutions;
 		public bool StripLinkAttributes;
+		public bool DumpDependencies;
 
 		public List<KeyValuePair<string, string[]>> AdditionalArguments = new List<KeyValuePair<string, string[]>> ();
 
@@ -29,5 +29,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public List<string> Substitutions = new List<string> ();
 
 		public List<string> LinkAttributes = new List<string> ();
+
+		public List<string> RootEntireAssemblies = new();
 	}
 }

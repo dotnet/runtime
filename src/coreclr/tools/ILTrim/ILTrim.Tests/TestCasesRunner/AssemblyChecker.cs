@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class AssemblyChecker
+	public partial class AssemblyChecker
 	{
 		readonly AssemblyDefinition originalAssembly, linkedAssembly;
 
@@ -106,9 +106,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// - It contains at least one member which has [Kept] attribute (not recursive)
 			//
 			bool expectedKept =
-				original.HasAttributeDerivedFrom (nameof (KeptAttribute)) ||
+				HasActiveKeptDerivedAttribute (original) ||
 				(linked != null && linkedModule!.Assembly.EntryPoint?.DeclaringType == linked) ||
-				original.AllMembers ().Any (l => l.HasAttribute (nameof (KeptAttribute)));
+				original.AllMembers ().Any (HasActiveKeptDerivedAttribute);
 
 			if (!expectedKept) {
 				if (linked != null)
@@ -870,21 +870,32 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyDelegateBackingFields (TypeDefinition src, TypeDefinition linked)
 		{
-			var expectedFieldNames = GetCustomAttributeCtorValues<string> (src, nameof (KeptDelegateCacheFieldAttribute))
-				.Select (unique => $"<>f__mg$cache{unique}")
+			var expectedFieldNames = src.CustomAttributes
+				.Where (a => a.AttributeType.Name == nameof (KeptDelegateCacheFieldAttribute))
+				.Select (a => (a.ConstructorArguments[0].Value as string, a.ConstructorArguments[1].Value as string))
+				.Select (indexAndField => $"<{indexAndField.Item1}>__{indexAndField.Item2}")
 				.ToList ();
 
 			if (expectedFieldNames.Count == 0)
 				return;
 
-			foreach (var srcField in src.Fields) {
-				if (!expectedFieldNames.Contains (srcField.Name))
+			foreach (var nestedType in src.NestedTypes) {
+				if (!IsDelegateBackingFieldsType (nestedType))
 					continue;
 
-				var linkedField = linked?.Fields.FirstOrDefault (l => l.Name == srcField.Name);
-				VerifyFieldKept (srcField, linkedField);
-				verifiedGeneratedFields.Add (srcField.FullName);
-				linkedMembers.Remove (srcField.FullName);
+				var linkedNestedType = linked.NestedTypes.FirstOrDefault (t => t.Name == nestedType.Name);
+				foreach (var expectedFieldName in expectedFieldNames) {
+					var originalField = nestedType.Fields.FirstOrDefault (f => f.Name == expectedFieldName);
+					Assert.True (originalField is not null, $"Invalid expected delegate backing field {expectedFieldName} in {src}. This member was not in the unlinked assembly");
+
+					var linkedField = linkedNestedType?.Fields.FirstOrDefault (f => f.Name == expectedFieldName);
+					VerifyFieldKept (originalField!, linkedField);
+					verifiedGeneratedFields.Add (linkedField!.FullName);
+					linkedMembers.Remove (linkedField.FullName);
+				}
+
+				VerifyTypeDefinitionKept (nestedType, linkedNestedType);
+				verifiedGeneratedTypes.Add (linkedNestedType!.FullName);
 			}
 		}
 
@@ -938,14 +949,52 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual bool ShouldBeKept<T> (T member, string? signature = null) where T : MemberReference, ICustomAttributeProvider
 		{
-			if (member.HasAttribute (nameof (KeptAttribute)))
+			if (HasActiveKeptAttribute (member) || member.HasAttribute (nameof (KeptByAttribute)))
 				return true;
 
 			ICustomAttributeProvider cap = (ICustomAttributeProvider) member.DeclaringType;
 			if (cap == null)
 				return false;
 
-			return GetCustomAttributeCtorValues<string> (cap, nameof (KeptMemberAttribute)).Any (a => a == (signature ?? member.Name));
+			return GetActiveKeptAttributes (cap, nameof (KeptMemberAttribute)).Any (ca => {
+				if (ca.Constructor.Parameters.Count != 1 ||
+					ca.ConstructorArguments[0].Value is not string a)
+					return false;
+
+				return a == (signature ?? member.Name);
+			});
+		}
+
+		static IEnumerable<CustomAttribute> GetActiveKeptAttributes (ICustomAttributeProvider provider, string attributeName)
+		{
+			return provider.CustomAttributes.Where (ca => {
+				if (ca.AttributeType.Name != attributeName)
+					return false;
+
+				object? keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
+				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.Trimmer);
+			});
+		}
+
+		static bool HasActiveKeptAttribute (ICustomAttributeProvider provider)
+		{
+			return GetActiveKeptAttributes (provider, nameof (KeptAttribute)).Any ();
+		}
+
+		static IEnumerable<CustomAttribute> GetActiveKeptDerivedAttributes (ICustomAttributeProvider provider)
+		{
+			return provider.CustomAttributes.Where (ca => {
+				if (!ca.AttributeType.Resolve ().DerivesFrom (nameof (KeptAttribute)))
+					return false;
+
+				object? keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
+				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.Trimmer);
+			});
+		}
+
+		static bool HasActiveKeptDerivedAttribute (ICustomAttributeProvider provider)
+		{
+			return GetActiveKeptDerivedAttributes (provider).Any ();
 		}
 
 		protected static uint GetExpectedPseudoAttributeValue (ICustomAttributeProvider provider, uint sourceValue)

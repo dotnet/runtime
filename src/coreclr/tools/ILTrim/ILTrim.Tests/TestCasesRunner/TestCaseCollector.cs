@@ -1,5 +1,9 @@
-﻿using System;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
@@ -8,155 +12,148 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	public class TestCaseCollector
-	{
-		private readonly NPath _rootDirectory;
-		private readonly NPath _testCaseAssemblyPath;
+    public class TestCaseCollector
+    {
+        private readonly NPath _rootDirectory;
+        private readonly NPath _testCaseAssemblyRoot;
 
-		public TestCaseCollector (string rootDirectory, string testCaseAssemblyPath)
-			: this (rootDirectory.ToNPath (), testCaseAssemblyPath.ToNPath ())
-		{
-		}
+        public TestCaseCollector(string rootDirectory, string testCaseAssemblyPath)
+            : this(rootDirectory.ToNPath(), testCaseAssemblyPath.ToNPath())
+        {
+        }
 
-		public TestCaseCollector (NPath rootDirectory, NPath testCaseAssemblyPath)
-		{
-			_rootDirectory = rootDirectory;
-			_testCaseAssemblyPath = testCaseAssemblyPath;
-		}
+        public TestCaseCollector(NPath rootDirectory, NPath testCaseAssemblyRoot)
+        {
+            _rootDirectory = rootDirectory;
+            _testCaseAssemblyRoot = testCaseAssemblyRoot;
+        }
 
-		public IEnumerable<TestCase> Collect ()
-		{
-			return Collect (AllSourceFiles ());
-		}
+        public IEnumerable<TestCase> Collect()
+        {
+            return Collect(AllSourceFiles());
+        }
 
-		public TestCase? Collect (NPath sourceFile)
-		{
-			return Collect (new[] { sourceFile }).FirstOrDefault ();
-		}
+        public TestCase? Collect(NPath sourceFile)
+        {
+            return Collect(new[] { sourceFile }).FirstOrDefault();
+        }
 
-		public IEnumerable<TestCase> Collect (IEnumerable<NPath> sourceFiles)
-		{
-			_rootDirectory.DirectoryMustExist ();
-			_testCaseAssemblyPath.FileMustExist ();
+        public IEnumerable<TestCase> Collect(IEnumerable<NPath> sourceFiles)
+        {
+            _rootDirectory.DirectoryMustExist();
+            _testCaseAssemblyRoot.DirectoryMustExist();
 
-			using (var caseAssemblyDefinition = AssemblyDefinition.ReadAssembly (_testCaseAssemblyPath.ToString ())) {
-				foreach (var file in sourceFiles) {
-					if (CreateCase (caseAssemblyDefinition, file, out TestCase? testCase) && testCase != null)
-						yield return testCase;
-				}
-			}
-		}
+            foreach (var file in sourceFiles)
+            {
+                var testCaseAssemblyPath = FindTestCaseAssembly(file);
+                testCaseAssemblyPath.FileMustExist();
+                if (CreateCase(testCaseAssemblyPath, file, out TestCase? testCase))
+                    yield return testCase;
+            }
+        }
 
-		public IEnumerable<NPath> AllSourceFiles ()
-		{
-			_rootDirectory.DirectoryMustExist ();
+        NPath FindTestCaseAssembly(NPath sourceFile)
+        {
+            if (!sourceFile.IsChildOf(_rootDirectory))
+                throw new ArgumentException($"{sourceFile} is not a child of {_rootDirectory}");
 
-			foreach (var file in _rootDirectory.Files ("*.cs")) {
-				yield return file;
-			}
+            var current = sourceFile;
+            do
+            {
+                if (current.Parent.Files("*.csproj").FirstOrDefault() is NPath csproj)
+                {
+                    var relative = csproj.Parent.RelativeTo(_rootDirectory);
+                    return _testCaseAssemblyRoot.Combine(relative).Combine(csproj.ChangeExtension("dll").FileName);
+                }
 
-			foreach (var subDir in _rootDirectory.Directories ()) {
-				if (subDir.FileName == "bin" || subDir.FileName == "obj" || subDir.FileName == "Properties")
-					continue;
+                current = current.Parent;
+            } while (current != _rootDirectory);
 
-				foreach (var file in subDir.Files ("*.cs", true)) {
+            throw new InvalidOperationException($"Could not find a .csproj file for {sourceFile}");
+        }
 
-					var relativeParents = file.RelativeTo (_rootDirectory);
-					// Magic : Anything in a directory named Dependencies is assumed to be a dependency to a test case
-					// and never a test itself
-					// This makes life a little easier when writing these supporting files as it removes some constraints you would previously have
-					// had to follow such as ensuring a class exists that matches the file name and putting [NotATestCase] on that class
-					if (relativeParents.RecursiveParents.Any (p => p.Elements.Any () && p.FileName == "Dependencies"))
-						continue;
+        public IEnumerable<NPath> AllSourceFiles()
+        {
+            _rootDirectory.DirectoryMustExist();
 
-					// Magic: Anything in a directory named Individual is expected to be ran by it's own [Test] rather than as part of [TestCaseSource]
-					if (relativeParents.RecursiveParents.Any (p => p.Elements.Any () && p.FileName == "Individual"))
-						continue;
+            foreach (var file in _rootDirectory.Files("*.cs"))
+            {
+                yield return file;
+            }
 
-					yield return file;
-				}
-			}
-		}
+            foreach (var subDir in _rootDirectory.Directories())
+            {
+                if (subDir.FileName == "bin" || subDir.FileName == "obj" || subDir.FileName == "Properties")
+                    continue;
 
-		public TestCase? CreateIndividualCase (Type testCaseType)
-		{
-			_rootDirectory.DirectoryMustExist ();
-			_testCaseAssemblyPath.FileMustExist ();
+                foreach (var file in subDir.Files("*.cs", true))
+                {
+                    var relativeParents = file.RelativeTo(_rootDirectory);
 
-			var pathRelativeToAssembly = $"{testCaseType.FullName?.Substring (testCaseType.Module.Name.Length - 3).Replace ('.', '/')}.cs";
-			var fullSourcePath = _rootDirectory.Combine (pathRelativeToAssembly).FileMustExist ();
+                    if (relativeParents.RecursiveParents.Any(p => p.Elements.Any() && p.FileName == "Dependencies"))
+                        continue;
 
-			using (var caseAssemblyDefinition = AssemblyDefinition.ReadAssembly (_testCaseAssemblyPath.ToString ())) {
-				if (!CreateCase (caseAssemblyDefinition, fullSourcePath, out TestCase? testCase))
-					throw new ArgumentException ($"Could not create a test case for `{testCaseType}`.  Ensure the namespace matches it's location on disk");
+                    if (relativeParents.RecursiveParents.Any(p => p.Elements.Any() && p.FileName == "Individual"))
+                        continue;
 
-				return testCase;
-			}
-		}
+                    yield return file;
+                }
+            }
+        }
 
-		private bool CreateCase (AssemblyDefinition caseAssemblyDefinition, NPath sourceFile, out TestCase? testCase)
-		{
-			var potentialCase = new TestCase (sourceFile, _rootDirectory, _testCaseAssemblyPath);
+        public TestCase? CreateIndividualCase(Type testCaseType)
+        {
+            _rootDirectory.DirectoryMustExist();
 
-			var typeDefinition = FindTypeDefinition (caseAssemblyDefinition, potentialCase);
+            var pathRelativeToAssembly = $"{testCaseType.FullName?.Substring(testCaseType.Module.Name.Length - 3).Replace('.', '/')}.cs";
+            var fullSourcePath = _rootDirectory.Combine(pathRelativeToAssembly).FileMustExist();
+            var testCaseAssemblyPath = FindTestCaseAssembly(fullSourcePath);
 
-			testCase = null;
+            if (!CreateCase(testCaseAssemblyPath, fullSourcePath, out TestCase? testCase))
+                throw new ArgumentException($"Could not create a test case for `{testCaseType}`.  Ensure the namespace matches it's location on disk");
 
-			if (typeDefinition == null) {
-				Console.WriteLine ($"Could not find the matching type for test case {sourceFile}.  Ensure the file name and class name match");
-				return false;
-			}
+            return testCase;
+        }
 
-			if (typeDefinition.HasAttribute (nameof (NotATestCaseAttribute))) {
-				return false;
-			}
+        private bool CreateCase(NPath caseAssemblyPath, NPath sourceFile, [NotNullWhen(true)] out TestCase? testCase)
+        {
+            using AssemblyDefinition caseAssemblyDefinition = AssemblyDefinition.ReadAssembly(caseAssemblyPath.ToString());
 
-			// Verify the class as a static main method
-			var mainMethod = typeDefinition.Methods.FirstOrDefault (m => m.Name == "Main");
+            var potentialCase = new TestCase(sourceFile, _rootDirectory, caseAssemblyPath);
+            var typeDefinition = potentialCase.TryFindTypeDefinition(caseAssemblyDefinition);
 
-			if (mainMethod == null) {
-				Console.WriteLine ($"{typeDefinition} in {sourceFile} is missing a Main() method");
-				return false;
-			}
+            testCase = null;
 
-			if (!mainMethod.IsStatic) {
-				Console.WriteLine ($"The Main() method for {typeDefinition} in {sourceFile} should be static");
-				return false;
-			}
+            if (typeDefinition is null)
+            {
+                Console.WriteLine($"Could not find the matching type for test case {sourceFile}.  Ensure the file name and class name match");
+                return false;
+            }
 
-			testCase = potentialCase;
-			return true;
-		}
+            if (typeDefinition.HasAttribute(nameof(NotATestCaseAttribute)))
+            {
+                return false;
+            }
 
-		private static TypeDefinition? FindTypeDefinition (AssemblyDefinition caseAssemblyDefinition, TestCase testCase)
-		{
-			var typeDefinition = caseAssemblyDefinition.MainModule.GetType (testCase.ReconstructedFullTypeName);
+            var mainMethod = typeDefinition.Methods.FirstOrDefault(m => m.Name ==
+                (typeDefinition.FullName == "Program"
+                    ? "<Main>$"
+                    : "Main"));
 
-			// For all of the Test Cases, the full type name we constructed from the directory structure will be correct and we can successfully find
-			// the type from GetType.
-			if (typeDefinition != null)
-				return typeDefinition;
+            if (mainMethod is null)
+            {
+                Console.WriteLine($"{typeDefinition} in {sourceFile} is missing a Main() method");
+                return false;
+            }
 
-			// However, some of types are supporting types rather than test cases.  and may not follow the standardized naming scheme of the test cases
-			// We still need to be able to locate these type defs so that we can parse some of the metadata on them.
-			// One example, Unity run's into this with it's tests that require a type UnityEngine.MonoBehaviours to exist.  This tpe is defined in it's own
-			// file and it cannot follow our standardized naming directory & namespace naming scheme since the namespace must be UnityEngine
-			foreach (var type in caseAssemblyDefinition.MainModule.Types) {
-				//  Let's assume we should never have to search for a test case that has no namespace.  If we don't find the type from GetType, then o well, that's not a test case.
-				if (string.IsNullOrEmpty (type.Namespace))
-					continue;
+            if (!mainMethod.IsStatic)
+            {
+                Console.WriteLine($"The Main() method for {typeDefinition} in {sourceFile} should be static");
+                return false;
+            }
 
-				if (type.Name == testCase.Name) {
-					// This isn't foolproof, but let's do a little extra vetting to make sure the type we found corresponds to the source file we are
-					// processing.
-					if (!testCase.SourceFile.ReadAllText ().Contains ($"namespace {type.Namespace}"))
-						continue;
-
-					return type;
-				}
-			}
-
-			return null;
-		}
-	}
+            testCase = potentialCase;
+            return true;
+        }
+    }
 }

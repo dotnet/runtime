@@ -6,17 +6,21 @@ using Mono.Linker.Tests.TestCases;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-    public class TrimmedTestCaseResult
+    partial class TrimmedTestCaseResult
     {
-        public readonly TestCase TestCase;
-        public readonly NPath InputAssemblyPath;
         public readonly NPath OutputAssemblyPath;
-        public readonly NPath ExpectationsAssemblyPath;
-        public readonly TestCaseSandbox Sandbox;
-        public readonly TestCaseMetadataProvider MetadataProvider;
-        public readonly ManagedCompilationResult CompilationResult;
 
-        public TrimmedTestCaseResult(TestCase testCase, NPath inputAssemblyPath, NPath outputAssemblyPath, NPath expectationsAssemblyPath, TestCaseSandbox sandbox, TestCaseMetadataProvider metadataProvider, ManagedCompilationResult compilationResult)
+        public TrimmedTestCaseResult(
+            TestCase testCase,
+            NPath inputAssemblyPath,
+            NPath outputAssemblyPath,
+            NPath expectationsAssemblyPath,
+            TestCaseSandbox sandbox,
+            TestCaseMetadataProvider metadataProvider,
+            ManagedCompilationResult compilationResult,
+            TrimmingTestLogger logger,
+            TrimmingCustomizations? customizations,
+            TrimmingResults trimmingResults)
         {
             TestCase = testCase;
             InputAssemblyPath = inputAssemblyPath;
@@ -25,6 +29,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             Sandbox = sandbox;
             MetadataProvider = metadataProvider;
             CompilationResult = compilationResult;
+            Logger = logger;
         }
     }
 }

@@ -1,15 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Reflection.PortableExecutable;
 using ILCompiler;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-    public class TrimmerDriver
+    public class TrimmingDriver
     {
-        public void Trim (TrimmerOptions options)
+        public TrimmingResults Trim(TrimmerOptions options, TrimmingCustomizations? customizations, TrimmingTestLogger logger)
         {
             TrimmerSettings settings = new TrimmerSettings(
                 LibraryMode: options.IsLibraryMode,
@@ -20,6 +18,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 options.OutputDirectory,
                 options.ReferencePaths,
                 settings);
+            return new TrimmingResults();
         }
     }
 }
