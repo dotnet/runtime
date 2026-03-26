@@ -280,30 +280,12 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                 }
             }
         }
-        if ((result = posix_spawnattr_setsigdefault(&attr, &sigdefault_set)) != 0)
-        {
-            int saved_errno = result;
-            posix_spawnattr_destroy(&attr);
-            errno = saved_errno;
-            return -1;
-        }
 
-        // Set the child's signal mask to match the parent's current mask
         sigset_t current_mask;
-        if (pthread_sigmask(SIG_SETMASK, NULL, &current_mask) != 0)
-        {
-            posix_spawnattr_destroy(&attr);
-            return -1;
-        }
-        if ((result = posix_spawnattr_setsigmask(&attr, &current_mask)) != 0)
-        {
-            int saved_errno = result;
-            posix_spawnattr_destroy(&attr);
-            errno = saved_errno;
-            return -1;
-        }
-
-        if ((result = posix_spawn_file_actions_init(&file_actions)) != 0)
+        if ((result = posix_spawnattr_setsigdefault(&attr, &sigdefault_set)) != 0
+            || pthread_sigmask(SIG_SETMASK, NULL, &current_mask) != 0 // Set the child's signal mask to match the parent's current mask
+            || (result = posix_spawnattr_setsigmask(&attr, &current_mask)) != 0
+            || (result = posix_spawn_file_actions_init(&file_actions)) != 0)
         {
             int saved_errno = result;
             posix_spawnattr_destroy(&attr);
