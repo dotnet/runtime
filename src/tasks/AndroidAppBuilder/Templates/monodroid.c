@@ -26,7 +26,6 @@
 #include <assert.h>
 #include <setjmp.h>
 #include <signal.h>
-#include <ucontext.h>
 #include <unistd.h>
 
 /********* exported symbols *********/
