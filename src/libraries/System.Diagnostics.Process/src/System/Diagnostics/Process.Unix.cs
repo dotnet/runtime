@@ -18,7 +18,6 @@ namespace System.Diagnostics
     {
         private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
-        private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
 
         /// <summary>
         /// Puts a Process component in state to interact with operating system processes that run in a
@@ -359,12 +358,7 @@ namespace System.Diagnostics
             return new SafeProcessHandle(_processId, GetSafeWaitHandle());
         }
 
-        /// <summary>
-        /// Starts the process using the supplied start info.
-        /// With UseShellExecute option, we'll try the shell tools to launch it(e.g. "open fileName")
-        /// </summary>
-        /// <param name="startInfo">The start info with which to start the process.</param>
-        private bool StartCore(ProcessStartInfo startInfo)
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             if (PlatformDoesNotSupportProcessStartAndKill)
             {
@@ -376,15 +370,6 @@ namespace System.Diagnostics
             string? filename;
             string[] argv;
 
-            if (startInfo.UseShellExecute)
-            {
-                if (startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError)
-                {
-                    throw new InvalidOperationException(SR.CantRedirectStreams);
-                }
-            }
-
-            int stdinFd = -1, stdoutFd = -1, stderrFd = -1;
             string[] envp = CreateEnvp(startInfo);
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
@@ -401,9 +386,10 @@ namespace System.Diagnostics
             // Unix applications expect the terminal to be in an echoing state by default.
             // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
             // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
-            bool usesTerminal = !(startInfo.RedirectStandardInput &&
-                                  startInfo.RedirectStandardOutput &&
-                                  startInfo.RedirectStandardError);
+            // Handle can be null only for UseShellExecute or platforms that don't support Console.Open* methods like Android.
+            bool usesTerminal = (stdinHandle is not null && Interop.Sys.IsATty(stdinHandle))
+                || (stdoutHandle is not null && Interop.Sys.IsATty(stdoutHandle))
+                || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle));
 
             if (startInfo.UseShellExecute)
             {
@@ -428,7 +414,7 @@ namespace System.Diagnostics
                     isExecuting = ForkAndExecProcess(
                         startInfo, filename, argv, envp, cwd,
                         setCredentials, userId, groupId, groups,
-                        out stdinFd, out stdoutFd, out stderrFd, usesTerminal,
+                        stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
                         throwOnNoExec: false); // return false instead of throwing on ENOEXEC
                 }
 
@@ -441,7 +427,7 @@ namespace System.Diagnostics
                     ForkAndExecProcess(
                         startInfo, filename, argv, envp, cwd,
                         setCredentials, userId, groupId, groups,
-                        out stdinFd, out stdoutFd, out stderrFd, usesTerminal);
+                        stdinHandle, stdoutHandle, stderrHandle, usesTerminal);
                 }
             }
             else
@@ -456,31 +442,7 @@ namespace System.Diagnostics
                 ForkAndExecProcess(
                     startInfo, filename, argv, envp, cwd,
                     setCredentials, userId, groupId, groups,
-                    out stdinFd, out stdoutFd, out stderrFd, usesTerminal);
-            }
-
-            // Configure the parent's ends of the redirection streams.
-            // We use UTF8 encoding without BOM by-default(instead of Console encoding as on Windows)
-            // as there is no good way to get this information from the native layer
-            // and we do not want to take dependency on Console contract.
-            if (startInfo.RedirectStandardInput)
-            {
-                Debug.Assert(stdinFd >= 0);
-                _standardInput = new StreamWriter(OpenStream(stdinFd, PipeDirection.Out),
-                    startInfo.StandardInputEncoding ?? Encoding.Default, StreamBufferSize)
-                { AutoFlush = true };
-            }
-            if (startInfo.RedirectStandardOutput)
-            {
-                Debug.Assert(stdoutFd >= 0);
-                _standardOutput = new StreamReader(OpenStream(stdoutFd, PipeDirection.In),
-                    startInfo.StandardOutputEncoding ?? Encoding.Default, true, StreamBufferSize);
-            }
-            if (startInfo.RedirectStandardError)
-            {
-                Debug.Assert(stderrFd >= 0);
-                _standardError = new StreamReader(OpenStream(stderrFd, PipeDirection.In),
-                    startInfo.StandardErrorEncoding ?? Encoding.Default, true, StreamBufferSize);
+                    stdinHandle, stdoutHandle, stderrHandle, usesTerminal);
             }
 
             return true;
@@ -490,7 +452,7 @@ namespace System.Diagnostics
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
             string[] envp, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
-            out int stdinFd, out int stdoutFd, out int stderrFd,
+            SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
             bool usesTerminal, bool throwOnNoExec = true)
         {
             if (string.IsNullOrEmpty(resolvedFilename))
@@ -501,7 +463,7 @@ namespace System.Diagnostics
 
             // Lock to avoid races with OnSigChild
             // By using a ReaderWriterLock we allow multiple processes to start concurrently.
-            s_processStartLock.EnterReadLock();
+            ProcessUtils.s_processStartLock.EnterReadLock();
             try
             {
                 if (usesTerminal)
@@ -511,16 +473,15 @@ namespace System.Diagnostics
 
                 int childPid;
 
-                // Invoke the shim fork/execve routine.  It will create pipes for all requested
-                // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
+                // Invoke the shim fork/execve routine.  It will fork a child process,
+                // map the provided file handles onto the appropriate stdin/stdout/stderr
                 // descriptors, and execve to execute the requested process.  The shim implementation
                 // is used to fork/execve as executing managed code in a forked process is not safe (only
                 // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
                 int errno = Interop.Sys.ForkAndExecProcess(
                     resolvedFilename, argv, envp, cwd,
-                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                     setCredentials, userId, groupId, groups,
-                    out childPid, out stdinFd, out stdoutFd, out stderrFd);
+                    out childPid, stdinHandle, stdoutHandle, stderrHandle);
 
                 if (errno == 0)
                 {
@@ -548,23 +509,20 @@ namespace System.Diagnostics
             }
             finally
             {
-                s_processStartLock.ExitReadLock();
+                ProcessUtils.s_processStartLock.ExitReadLock();
 
                 if (_waitStateHolder == null && usesTerminal)
                 {
                     // We failed to launch a child that could use the terminal.
-                    s_processStartLock.EnterWriteLock();
+                    ProcessUtils.s_processStartLock.EnterWriteLock();
                     ConfigureTerminalForChildProcesses(-1);
-                    s_processStartLock.ExitWriteLock();
+                    ProcessUtils.s_processStartLock.ExitWriteLock();
                 }
             }
         }
 
         /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
         private ProcessWaitState.Holder? _waitStateHolder;
-
-        /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
-        private const int StreamBufferSize = 4096;
 
         /// <summary>Converts the filename and arguments information from a ProcessStartInfo into an argv array.</summary>
         /// <param name="psi">The ProcessStartInfo.</param>
@@ -753,15 +711,23 @@ namespace System.Diagnostics
             return TimeSpan.FromSeconds(ticks / (double)ticksPerSecond);
         }
 
-        /// <summary>Opens a stream around the specified file descriptor and with the specified access.</summary>
-        /// <param name="fd">The file descriptor.</param>
-        /// <param name="direction">The pipe direction.</param>
-        /// <returns>The opened stream.</returns>
-        private static AnonymousPipeClientStream OpenStream(int fd, PipeDirection direction)
+        private static AnonymousPipeClientStream OpenStream(SafeFileHandle handle, FileAccess access)
         {
-            Debug.Assert(fd >= 0);
-            return new AnonymousPipeClientStream(direction, new SafePipeHandle((IntPtr)fd, ownsHandle: true));
+            PipeDirection direction = access == FileAccess.Write ? PipeDirection.Out : PipeDirection.In;
+
+            // Transfer the ownership to SafePipeHandle, so that it can be properly released when the AnonymousPipeClientStream is disposed.
+            SafePipeHandle safePipeHandle = new(handle.DangerousGetHandle(), ownsHandle: true);
+            handle.SetHandleAsInvalid();
+
+            // Use AnonymousPipeClientStream for async, cancellable read/write support.
+            return new AnonymousPipeClientStream(direction, safePipeHandle);
         }
+
+        private static bool SupportsAtomicNonInheritablePipeCreation => Interop.Sys.IsAtomicNonInheritablePipeCreationSupported;
+
+        private static Encoding GetStandardInputEncoding() => Encoding.Default;
+
+        private static Encoding GetStandardOutputEncoding() => Encoding.Default;
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>
         /// <param name="arguments">The argument string.</param>
@@ -1017,7 +983,7 @@ namespace System.Diagnostics
             // DelayedSigChildConsoleConfiguration will be called.
 
             // Lock to avoid races with Process.Start
-            s_processStartLock.EnterWriteLock();
+            ProcessUtils.s_processStartLock.EnterWriteLock();
             try
             {
                 bool childrenUsingTerminalPre = AreChildrenUsingTerminal;
@@ -1029,7 +995,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                s_processStartLock.ExitWriteLock();
+                ProcessUtils.s_processStartLock.ExitWriteLock();
             }
         }
 
