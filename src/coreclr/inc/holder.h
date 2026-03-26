@@ -1265,6 +1265,11 @@ public:
         Free();
     }
 
+    BSTRHolder(const BSTRHolder&) = delete;
+    BSTRHolder& operator=(const BSTRHolder&) = delete;
+    BSTRHolder(BSTRHolder&&) = delete;
+    BSTRHolder& operator=(BSTRHolder&&) = delete;
+
     void Free()
     {
         STATIC_CONTRACT_WRAPPER;
@@ -1280,7 +1285,13 @@ public:
         m_str = str;
     }
 
-    BSTR* operator&() { STATIC_CONTRACT_LEAF; return &m_str; }
+    BSTR* operator&()
+    {
+        STATIC_CONTRACT_LEAF;
+        _ASSERTE(m_str == NULL);
+        return &m_str;
+    }
+
     operator BSTR() const { STATIC_CONTRACT_LEAF; return m_str; }
 };
 #endif // FEATURE_COMINTEROP
