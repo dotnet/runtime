@@ -562,6 +562,15 @@ int32_t SystemNative_CloseDir(DIR* dir)
     return result;
 }
 
+int32_t SystemNative_IsAtomicNonInheritablePipeCreationSupported(void)
+{
+#if HAVE_PIPE2
+    return 1;
+#else
+    return 0;
+#endif
+}
+
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 {
 #ifdef TARGET_WASM
