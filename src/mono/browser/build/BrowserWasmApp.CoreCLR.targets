@@ -37,7 +37,13 @@
          which skips Build and causes a missing manifest error. -->
     <_WasmNestedPublishAppPreTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true'">Publish</_WasmNestedPublishAppPreTarget>
 
-    <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
+    <!--
+      - For regular builds, it will use the symbols file from the runtime pack.
+      - for AOT builds on CI, we avoid WasmNativeDebugSymbols and we WasmNativeStrip so that we don't run OOM on helix during wasm-opt
+    -->
+    <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</WasmNativeStrip>
+    <WasmNativeDebugSymbols Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">false</WasmNativeDebugSymbols>
+    <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
 
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
