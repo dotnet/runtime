@@ -117,7 +117,7 @@ namespace System.Reflection
 
             // Resolve the core assembly now
             _coreAssembly = LoadCoreAssembly(coreAssemblyName);
-            _coreTypes = new CoreTypes(_coreAssembly, coreAssemblyName);
+            _coreTypes = new CoreTypes(_coreAssembly);
         }
 
         /// <summary>
@@ -206,8 +206,7 @@ namespace System.Reflection
         /// The core assembly is treated differently than other assemblies because references to these well-known types do
         /// not include the assembly reference, unlike normal types.
         ///
-        /// Typically, this assembly is named "mscorlib", or "netstandard". If the core assembly cannot be found, the value will be
-        /// null and many other reflection methods, including those that parse method signatures, will throw.
+        /// Typically, this assembly is named "mscorlib", or "netstandard".
         ///
         /// The CoreAssembly is determined by passing the coreAssemblyName parameter passed to the MetadataAssemblyResolver constructor
         /// to the MetadataAssemblyResolver's Resolve method.
