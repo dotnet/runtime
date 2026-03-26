@@ -1355,13 +1355,6 @@ public:
         return TT_U2M;
     }
 
-    //------------------------------------------------------------------------
-    // Performs cleanup on an exception unwind
-    //------------------------------------------------------------------------
-#ifndef DACCESS_COMPILE
-    void ExceptionUnwind_Impl();
-#endif
-
 protected:
     TADDR           m_pvDatum;        // type depends on the sub class
 

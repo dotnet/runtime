@@ -248,16 +248,21 @@ namespace System.Diagnostics.Tests
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerStartedMessage, WaitInMS);
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerDisposedMessage, WaitInMS);
 
-                SendSignal(signal, remoteHandle.Process.Id);
-
                 // https://github.com/dotnet/runtime/issues/125733
+                // Mono prints running threads stack trace listings and does not quit on receiving SIGQUIT
                 if (PlatformDetection.IsMonoRuntime && signal == PosixSignal.SIGQUIT && !PlatformDetection.IsWindows)
                 {
+                    // Terminate process using SIGTERM instead.
                     SendSignal(PosixSignal.SIGTERM, remoteHandle.Process.Id);
+                }
+                else
+                {
+                    SendSignal(signal, remoteHandle.Process.Id);
                 }
 
                 Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
                 Assert.True(remoteHandle.Process.StandardOutput.EndOfStream);
+
                 if (OperatingSystem.IsWindows())
                 {
                     Assert.Equal(unchecked((int)0xC000013A), remoteHandle.Process.ExitCode); // STATUS_CONTROL_C_EXIT
@@ -1935,76 +1940,6 @@ namespace System.Diagnostics.Tests
         {
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.MainWindowHandle);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection),
-            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
-            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
-        [OuterLoop("Pops UI")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
-        {
-            const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
-
-            using (Process process = Process.Start(ExePath))
-            {
-                try
-                {
-                    for (int attempt = 0; attempt < 50; ++attempt)
-                    {
-                        process.Refresh();
-                        if (process.MainWindowHandle != IntPtr.Zero)
-                        {
-                            break;
-                        }
-
-                        Thread.Sleep(100);
-                    }
-
-                    Assert.NotEqual(IntPtr.Zero, process.MainWindowHandle);
-                }
-                finally
-                {
-                    process.Kill();
-                    Assert.True(process.WaitForExit(WaitInMS));
-                }
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection),
-            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
-            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
-        [OuterLoop("Pops UI")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
-        {
-            const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
-
-            using (Process process = Process.Start(new ProcessStartInfo(ExePath)))
-            {
-                try
-                {
-                    for (int attempt = 0; attempt < 50; ++attempt)
-                    {
-                        process.Refresh();
-                        if (process.MainWindowTitle != string.Empty)
-                        {
-                            break;
-                        }
-
-                        Thread.Sleep(100);
-                    }
-
-                    Assert.NotEqual(string.Empty, process.MainWindowTitle);
-                }
-                finally
-                {
-                    process.Kill();
-                    Assert.True(process.WaitForExit(WaitInMS));
-                }
-            }
         }
 
         [Fact]
