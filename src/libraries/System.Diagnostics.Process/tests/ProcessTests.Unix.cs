@@ -351,7 +351,13 @@ namespace System.Diagnostics.Tests
             {
                 try
                 {
-                    Assert.Equal(Program, px.ProcessName);
+                    // ProcessName may transiently reflect the parent's thread name immediately
+                    // after fork() if execve() hasn't completed yet in the child, so retry briefly.
+                    RetryHelper.Execute(() =>
+                    {
+                        px.Refresh();
+                        Assert.Equal(Program, px.ProcessName);
+                    });
                 }
                 finally
                 {
@@ -374,7 +380,13 @@ namespace System.Diagnostics.Tests
             {
                 try
                 {
-                    Assert.Equal(Program, px.ProcessName);
+                    // ProcessName may transiently reflect the parent's thread name immediately
+                    // after fork() if execve() hasn't completed yet in the child, so retry briefly.
+                    RetryHelper.Execute(() =>
+                    {
+                        px.Refresh();
+                        Assert.Equal(Program, px.ProcessName);
+                    });
                 }
                 finally
                 {
