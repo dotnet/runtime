@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <ProjectReference Include="helper/helper.csproj" />
+  </ItemGroup>
+</Project>

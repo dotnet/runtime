@@ -474,7 +474,7 @@ namespace Internal.JitInterface
         private HashSet<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
-        private List<EcmaMethod> _ilBodiesNeeded;
+        private List<MethodDesc> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
         public bool HasColdCode { get; private set; }
@@ -845,7 +845,7 @@ namespace Internal.JitInterface
                         }
                         else
                         {
-                            _ilBodiesNeeded = _ilBodiesNeeded ?? new List<EcmaMethod>();
+                            _ilBodiesNeeded = _ilBodiesNeeded ?? new List<MethodDesc>();
                             _ilBodiesNeeded.Add(ecmaMethod);
                         }
                     }
@@ -3338,21 +3338,23 @@ namespace Internal.JitInterface
                 {
                     // If a method is implemented by an IL Stub, then we may need to defer creation of the IL body that
                     // we can really emit into the final file.
-                    _ilBodiesNeeded = _ilBodiesNeeded ?? new List<EcmaMethod>();
-                    _ilBodiesNeeded.Add((EcmaMethod)typicalMethod);
+                    _ilBodiesNeeded = _ilBodiesNeeded ?? new List<MethodDesc>();
+                    Debug.Assert(typicalMethod.IsMethodDefinition);
+                    _ilBodiesNeeded.Add(typicalMethod);
                 }
-                else if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod) &&
-                    typicalMethod is EcmaMethod ecmaMethod)
+                else if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod)
+                    && typicalMethod.GetPrimaryMethodDesc().GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 {
-                    // TODO, when we implement the async variant logic we'll need to detect generating the ILBodyFixupSignature here
-                    Debug.Assert(_compilation.CompilationModuleGroup.CrossModuleInlineable(typicalMethod) ||
-                                 _compilation.CompilationModuleGroup.IsNonVersionableWithILTokensThatDoNotNeedTranslation(typicalMethod));
-                    bool needsTokenTranslation = !_compilation.CompilationModuleGroup.IsNonVersionableWithILTokensThatDoNotNeedTranslation(typicalMethod);
+                    Debug.Assert(_compilation.CompilationModuleGroup.CrossModuleInlineable(ecmaMethod) ||
+                                 _compilation.CompilationModuleGroup.IsNonVersionableWithILTokensThatDoNotNeedTranslation(ecmaMethod));
+                    bool needsTokenTranslation = !_compilation.CompilationModuleGroup.IsNonVersionableWithILTokensThatDoNotNeedTranslation(ecmaMethod);
 
                     if (needsTokenTranslation)
                     {
                         // This can happen if the method is marked as NonVersionable if there are tokens of interest
                         // or if we are working with a full cross module inline
+                        // The CheckILBodyFixupSignature will use the exact IL in metadata, not what is used by the ReadyToRunILProvider,
+                        // which can be different for runtime-async methods (the ILProvider returns the Task-returning thunk for runtime-async EcmaMethods).
                         ISymbolNode ilBodyNode = _compilation.SymbolNodeFactory.CheckILBodyFixupSignature(ecmaMethod);
                         AddPrecodeFixup(ilBodyNode);
                     }
@@ -3363,11 +3365,15 @@ namespace Internal.JitInterface
                     //    tokens that are useable in compilation, record that information, and once the multi-threaded portion
                     //    of the build finishes, it will then compute the IL bodies for those methods, then run the compilation again.
 
-                    if (needsTokenTranslation && !(methodIL is IMethodTokensAreUseableInCompilation) && methodIL is EcmaMethodIL)
+                    if (needsTokenTranslation && !(methodIL is IMethodTokensAreUseableInCompilation)
+                        && (methodIL is EcmaMethodIL || methodIL is ReadyToRunILProvider.AsyncEcmaMethodIL))
                     {
-                        // We may have already acquired the right type of MethodIL here, or be working with a method that is an IL Intrinsic
-                        _ilBodiesNeeded = _ilBodiesNeeded ?? new List<EcmaMethod>();
-                        _ilBodiesNeeded.Add(ecmaMethod);
+                        // We may have already acquired the right type of MethodIL here, or be working with a method that is an IL Intrinsic.
+                        // Add the typicalMethod (which may be an AsyncMethodVariant) so that
+                        // CreateCrossModuleInlineableTokensForILBody stores under the correct key.
+                        _ilBodiesNeeded = _ilBodiesNeeded ?? new List<MethodDesc>();
+                        Debug.Assert(typicalMethod.IsMethodDefinition);
+                        _ilBodiesNeeded.Add(typicalMethod);
                     }
                 }
             }

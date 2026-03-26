@@ -15,6 +15,11 @@ using Internal.JitInterface;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
+    /// <Summary>
+    /// This fixup instructs the runtime to validate that the IL found at runtime matches the hash of the IL computed at compile time.
+    /// This will use the method IL in metatadata for the EcmaMethod, not what is provided by the ILProvider. Notably, this is different for Async methods,
+    /// for which the ILProvider used during JIT compilation will return the Task-returning thunk for a runtime-async EcmaMethod.
+    /// </Summary>
     public class ILBodyFixupSignature : Signature, IEquatable<ILBodyFixupSignature>
     {
         private readonly ReadyToRunFixupKind _fixupKind;
