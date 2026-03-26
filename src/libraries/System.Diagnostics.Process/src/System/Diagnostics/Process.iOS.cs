@@ -113,11 +113,6 @@ namespace System.Diagnostics
 
 #pragma warning restore IDE0060
 
-        /// <summary>Gets execution path</summary>
-        private static string GetPathToOpenFile()
-        {
-            throw new PlatformNotSupportedException();
-        }
 
 #pragma warning disable CA1822
         private int ParentProcessId => throw new PlatformNotSupportedException();

@@ -51,11 +51,7 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Gets execution path</summary>
-        private static string GetPathToOpenFile()
-        {
-            return "/usr/bin/open";
-        }
+        
 
         /// <summary>
         /// Gets the amount of time the associated process has spent utilizing the CPU.

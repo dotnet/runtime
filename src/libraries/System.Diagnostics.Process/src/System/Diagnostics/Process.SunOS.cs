@@ -35,11 +35,7 @@ namespace System.Diagnostics
         /// <summary>Gets the parent process ID</summary>
         private int ParentProcessId => GetProcInfo().ParentPid;
 
-        /// <summary>Gets execution path</summary>
-        private static string? GetPathToOpenFile()
-        {
-            return ProcessUtils.FindProgramInPath("xdg-open");
-        }
+        
 
         /// <summary>
         /// Gets the amount of time the associated process has spent utilizing the CPU.

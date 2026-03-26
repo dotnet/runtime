@@ -112,18 +112,7 @@ namespace System.Diagnostics
             }
         }
 
-        // <summary>Gets execution path</summary>
-        private static string? GetPathToOpenFile()
-        {
-            if (Interop.Sys.Stat("/usr/local/bin/open", out _) == 0)
-            {
-                return "/usr/local/bin/open";
-            }
-            else
-            {
-                return null;
-            }
-        }
+        
 
         // ----------------------------------
         // ---- Unix PAL layer ends here ----

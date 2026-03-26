@@ -309,6 +309,7 @@
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.Linux.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
              Link="Common\Interop\Linux\Interop.cgroups.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
@@ -337,6 +338,7 @@
     <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.OSX.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.OSX.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.OSX.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.cs"
              Link="Common\Interop\OSX\Interop.libproc.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.GetProcessInfoById.cs"
@@ -365,6 +367,7 @@
     <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.FreeBSD.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.FreeBSD.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.FreeBSD.cs" />
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.Sysctl.cs"
              Link="Common\Interop\BSD\System.Native\Interop.Sysctl.cs" />
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.cs"
@@ -378,6 +381,7 @@
     <Compile Include="System\Diagnostics\Process.SunOS.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.SunOS.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.SunOS.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.SunOS.cs" />
     <Compile Include="$(CommonPath)Interop\SunOS\procfs\Interop.ProcFs.GetProcessInfoById.cs"
              Link="Common\Interop\SunOS\procfs\Interop.ProcFs.GetProcessInfoById.cs" />
     <Compile Include="$(CommonPath)Interop\SunOS\procfs\Interop.ProcFs.GetThreadInfoById.cs"
@@ -388,6 +392,7 @@
     <Compile Include="System\Diagnostics\Process.iOS.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.iOS.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.iOS.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.iOS.cs" />
   </ItemGroup>
 
   <ItemGroup>

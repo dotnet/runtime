@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.IO;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -30,6 +32,25 @@ namespace System.Diagnostics
             }
 
             return null;
+        }
+
+        internal static void ValidateHandle(SafeFileHandle? handle, string paramName)
+        {
+            if (handle is not null)
+            {
+                if (handle.IsInvalid)
+                {
+                    throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
+                }
+                ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
+            }
+        }
+
+        internal static Win32Exception CreateExceptionForErrorStartingProcess(string errorMessage, int errorCode, string fileName, string? workingDirectory)
+        {
+            string directoryForException = string.IsNullOrEmpty(workingDirectory) ? Directory.GetCurrentDirectory() : workingDirectory;
+            string msg = SR.Format(SR.ErrorStartingProcess, fileName, directoryForException, errorMessage);
+            return new Win32Exception(errorCode, msg);
         }
     }
 }
