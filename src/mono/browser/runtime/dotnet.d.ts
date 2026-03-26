@@ -526,9 +526,7 @@ type RunAPIType = {
      */
     exit: (code: number, reason?: any) => void;
     /**
-     * Sets the environment variable for the "process"
-     * @param name
-     * @param value
+     * @deprecated use withEnvironmentVariable() on the host builder instead.
      */
     setEnvironmentVariable: (name: string, value: string) => void;
     /**

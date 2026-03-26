@@ -496,12 +496,6 @@ type RunAPIType = {
      */
     exit: (code: number, reason?: any) => void;
     /**
-     * Sets the environment variable for the "process"
-     * @param name
-     * @param value
-     */
-    setEnvironmentVariable: (name: string, value: string) => void;
-    /**
      * Returns the [JSExport] methods of the assembly with the given name
      * @param assemblyName
      */
