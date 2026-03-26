@@ -58,12 +58,12 @@ namespace System.Runtime.InteropServices
         private static readonly Guid IID_IInspectable = new Guid(0xAF86E2E0, 0xB12D, 0x4c6a, 0x9C, 0x5A, 0xD7, 0xAA, 0x65, 0x10, 0x1E, 0x90);
         private static readonly Guid IID_IWeakReferenceSource = new Guid(0x00000038, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 
-        private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_nativeObjectWrapperTable = [];
+        private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_nativeObjectWrapperTable = []; // [cDAC] [ComWrappers] : Contract depends on this exact name
 
         /// <summary>
         /// Associates an object with all the <see cref="ManagedObjectWrapperHolder"/>s that were created for it.
         /// </summary>
-        private static readonly ConditionalWeakTable<object, List<ManagedObjectWrapperHolder>> s_allManagedObjectWrapperTable = [];
+        private static readonly ConditionalWeakTable<object, List<ManagedObjectWrapperHolder>> s_allManagedObjectWrapperTable = []; // [cDAC] [ComWrappers] : Contract depends on this exact name
 
         /// <summary>
         /// Associates a managed object with the <see cref="ManagedObjectWrapperHolder"/> that was created for it by this <see cref="ComWrappers" /> instance.

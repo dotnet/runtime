@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -49,6 +50,7 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>The above native signature does not directly correspond to the managed signature.</para>
             ///   <para>This intrinsic is only available on 64-bit processes</para>
             /// </summary>
+            [RequiresUnsafe]
             public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
@@ -84,6 +86,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  MULX r32a, r32b, r/m32</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* low) { throw new PlatformNotSupportedException(); }
 
         /// <summary>

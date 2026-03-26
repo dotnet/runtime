@@ -4,16 +4,22 @@
 namespace System.Diagnostics.CodeAnalysis
 {
     /// <summary>
-    /// Indicates that the specified method requires unsafe code that may not be available
-    /// in all execution environments.
+    /// Indicates that the specified member requires the caller to be in an unsafe context.
     /// </summary>
-    /// <remarks>
-    /// This allows tools to understand which methods are unsafe to call when targeting
-    /// environments that do not support unsafe code.
-    /// </remarks>
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-    [Conditional("DEBUG")]
-    internal sealed class RequiresUnsafeAttribute : Attribute
+    [AttributeUsage(
+        AttributeTargets.Constructor | AttributeTargets.Event | AttributeTargets.Method | AttributeTargets.Property,
+        Inherited = false,
+        AllowMultiple = false)]
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        sealed class RequiresUnsafeAttribute : Attribute
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RequiresUnsafeAttribute"/> class.
+        /// </summary>
+        public RequiresUnsafeAttribute() { }
     }
 }

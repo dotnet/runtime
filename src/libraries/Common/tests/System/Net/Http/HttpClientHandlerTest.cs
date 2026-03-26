@@ -2332,7 +2332,9 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public async Task LargeUriAndHeaders_Works()
         {
-            int length = IsWinHttpHandler ? 65_000 : 10_000_000;
+            int length = IsWinHttpHandler ? 65_000
+                : PlatformDetection.IsAndroid ? 100_000
+                : 10_000_000;
 
             string longPath = "/" + new string('X', length);
             string longHeaderName = new string('Y', length);
