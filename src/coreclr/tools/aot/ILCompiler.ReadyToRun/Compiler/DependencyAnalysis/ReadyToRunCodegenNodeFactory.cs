@@ -343,11 +343,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new CopiedMetadataBlobNode(module);
             });
 
-            _copiedMethodIL = new NodeCache<MethodDesc, CopiedMethodILNode>(method =>
-            {
-                return new CopiedMethodILNode((EcmaMethod)method);
-            });
-
             _copiedFieldRvas = new NodeCache<ModuleAndIntValueKey, CopiedFieldRvaNode>(key =>
             {
                 return new CopiedFieldRvaNode(key.Module, key.IntValue);
@@ -1044,13 +1039,12 @@ namespace ILCompiler.DependencyAnalysis
             return _copiedMetadataBlobs.GetOrAdd(module);
         }
 
-        private NodeCache<MethodDesc, CopiedMethodILNode> _copiedMethodIL;
-        private readonly ConcurrentDictionary<byte[], CopiedMethodILNode> _copiedMethodILDedup = new(ByteArrayComparer.Instance);
+        private readonly ConcurrentDictionary<byte[], CopiedMethodILNode> _copiedMethodIL = new(ByteArrayComparer.Instance);
 
         public CopiedMethodILNode CopiedMethodIL(EcmaMethod method)
         {
             byte[] bodyBytes = CopiedMethodILNode.ReadBodyBytes(method);
-            return _copiedMethodILDedup.GetOrAdd(bodyBytes, _ => _copiedMethodIL.GetOrAdd(method));
+            return _copiedMethodIL.GetOrAdd(bodyBytes, _ => new CopiedMethodILNode(method));
         }
 
         private NodeCache<ModuleAndIntValueKey, CopiedFieldRvaNode> _copiedFieldRvas;
