@@ -67,6 +67,11 @@
   -->
   <Import Project="$(DumpTestsPayload)/debuggee-metadata.props" />
 
+  <!-- Build the JSON array of expected debuggees for dump-info.json. -->
+  <PropertyGroup>
+    <_DebuggeeJsonArray>@(_Debuggee->'{"name":"%(Identity)","dumpDir":"%(DumpDir)","r2rDir":"%(R2RDir)"}', ',')</_DebuggeeJsonArray>
+  </PropertyGroup>
+
   <!--
     Helix work item command: generate dumps then run tests (or tar + upload).
 
@@ -80,7 +85,7 @@
   <!-- Windows commands -->
   <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
     <_DumpGenCommands>@(_Debuggee->'mkdir %HELIX_WORKITEM_PAYLOAD%\dumps\local\%(DumpDir)\%(R2RDir)\%(Identity) &amp; set "DOTNET_DbgMiniDumpType=%(MiniDumpType)" &amp; set "DOTNET_DbgMiniDumpName=%HELIX_WORKITEM_PAYLOAD%\dumps\local\%(DumpDir)\%(R2RDir)\%(Identity)\%(Identity).dmp" &amp; set "DOTNET_ReadyToRun=%(R2RValue)" &amp; %HELIX_CORRELATION_PAYLOAD%\dotnet.exe exec %HELIX_WORKITEM_PAYLOAD%\debuggees\%(Identity)\%(Identity).dll', ' &amp; ')</_DumpGenCommands>
-    <_DumpInfoCommand>echo {"os":"$(TargetOS)","arch":"$(TargetArchitecture)"}&gt; %HELIX_WORKITEM_PAYLOAD%\dumps\local\dump-info.json</_DumpInfoCommand>
+    <_DumpInfoCommand>echo {"os":"$(TargetOS)","arch":"$(TargetArchitecture)","debuggees":[$(_DebuggeeJsonArray)]}&gt; %HELIX_WORKITEM_PAYLOAD%\dumps\local\dump-info.json</_DumpInfoCommand>
   </PropertyGroup>
 
   <!-- Windows: test mode tail command -->
@@ -98,7 +103,7 @@
   <!-- Unix commands -->
   <PropertyGroup Condition="'$(TargetOS)' != 'windows'">
     <_DumpGenCommands>@(_Debuggee->'mkdir -p $HELIX_WORKITEM_PAYLOAD/dumps/local/%(DumpDir)/%(R2RDir)/%(Identity) &amp;&amp; DOTNET_DbgMiniDumpType=%(MiniDumpType) DOTNET_DbgMiniDumpName=$HELIX_WORKITEM_PAYLOAD/dumps/local/%(DumpDir)/%(R2RDir)/%(Identity)/%(Identity).dmp DOTNET_ReadyToRun=%(R2RValue) $HELIX_CORRELATION_PAYLOAD/dotnet exec $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/%(Identity).dll || true', ' &amp;&amp; ')</_DumpGenCommands>
-    <_DumpInfoCommand>echo '{"os":"$(TargetOS)","arch":"$(TargetArchitecture)"}' &gt; $HELIX_WORKITEM_PAYLOAD/dumps/local/dump-info.json</_DumpInfoCommand>
+    <_DumpInfoCommand>echo '{"os":"$(TargetOS)","arch":"$(TargetArchitecture)","debuggees":[$(_DebuggeeJsonArray)]}' &gt; $HELIX_WORKITEM_PAYLOAD/dumps/local/dump-info.json</_DumpInfoCommand>
   </PropertyGroup>
 
   <!-- Unix: test mode tail command -->

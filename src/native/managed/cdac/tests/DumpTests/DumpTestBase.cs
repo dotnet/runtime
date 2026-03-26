@@ -88,13 +88,15 @@ public abstract class DumpTestBase : IDisposable
 
         EvaluateSkipAttributes(config, callerName, dumpType);
 
-        string dumpTypeDir = Path.Combine(versionDir, dumpType);
-        Assert.True(Directory.Exists(dumpTypeDir), $"Dump type directory not found: {dumpTypeDir}");
-
-        string dumpPath = Path.Combine(dumpTypeDir, config.R2RMode, debuggeeName, $"{debuggeeName}.dmp");
+        string dumpPath = Path.Combine(versionDir, dumpType, config.R2RMode, debuggeeName, $"{debuggeeName}.dmp");
 
         if (!File.Exists(dumpPath))
+        {
+            if (_dumpInfo is not null && _dumpInfo.IsDumpExpected(debuggeeName, dumpType, config.R2RMode))
+                Assert.Fail($"Expected {config.R2RMode}/{dumpType} dump for {debuggeeName} but not found: {dumpPath}");
+
             throw new SkipTestException($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
+        }
 
         _host = ClrMdDumpHost.Open(dumpPath);
         ulong contractDescriptor = _host.FindContractDescriptorAddress();

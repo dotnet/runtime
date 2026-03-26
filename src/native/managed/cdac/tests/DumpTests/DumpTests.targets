@@ -123,15 +123,31 @@
 
   <!-- Writes dump-info.json for a single runtime version directory. -->
   <Target Name="_WriteDumpInfo">
+    <MSBuild Projects="@(DebuggeeCsproj)"
+             Targets="GetDumpTypes"
+             Properties="Configuration=$(DebuggeeConfiguration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_DumpInfoDebuggeeTypes" />
+    </MSBuild>
+
+    <ItemGroup>
+      <_DumpInfoHeap Include="@(_DumpInfoDebuggeeTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Heap'))" DumpDir="heap" />
+      <_DumpInfoFull Include="@(_DumpInfoDebuggeeTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Full'))" DumpDir="full" />
+      <_DumpInfoByType Include="@(_DumpInfoHeap);@(_DumpInfoFull)" />
+      <_DumpInfoR2R Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('R2R'))" R2RDir="r2r" />
+      <_DumpInfoJit Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('Jit'))" R2RDir="jit" />
+      <_DumpInfoAll Include="@(_DumpInfoR2R);@(_DumpInfoJit)" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_VersionDir>$([MSBuild]::NormalizeDirectory('$(DumpOutputDir)', '$(DumpRuntimeVersion)'))</_VersionDir>
       <_DumpInfoFile>$([MSBuild]::NormalizePath('$(_VersionDir)', 'dump-info.json'))</_DumpInfoFile>
       <_DumpOS>$(HostOS)</_DumpOS>
       <_DumpArch>$(_HostArch)</_DumpArch>
+      <_DebuggeeJsonArray>@(_DumpInfoAll->'{"name":"%(Identity)","dumpDir":"%(DumpDir)","r2rDir":"%(R2RDir)"}', ',')</_DebuggeeJsonArray>
     </PropertyGroup>
     <MakeDir Directories="$(_VersionDir)" />
     <WriteLinesToFile File="$(_DumpInfoFile)" Overwrite="true"
-                     Lines='{%0a  "os": "$(_DumpOS)",%0a  "arch": "$(_DumpArch)"%0a}'
+                     Lines='{%0a  "os": "$(_DumpOS)",%0a  "arch": "$(_DumpArch)",%0a  "debuggees": [$(_DebuggeeJsonArray)]%0a}'
                      Condition="!Exists('$(_DumpInfoFile)')" />
     <Message Text="Wrote dump-info.json: $(_DumpInfoFile) (os=$(_DumpOS), arch=$(_DumpArch))"
              Condition="!Exists('$(_DumpInfoFile)')" Importance="high" />

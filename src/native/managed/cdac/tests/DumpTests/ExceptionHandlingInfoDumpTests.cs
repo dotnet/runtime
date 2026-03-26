@@ -61,11 +61,11 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         CodeBlockHandle codeBlock = FindCrashMethodCodeBlock();
-        uint jitType = Target.Contracts.ExecutionManager.GetJITType(codeBlock);
+        JitType jitType = Target.Contracts.ExecutionManager.GetJITType(codeBlock);
         if (config.R2RMode == "jit")
-            Assert.True(jitType == 1, "Expected jit mode, received r2r");
+            Assert.Equal(jitType, JitType.Jit);
         else if (config.R2RMode == "r2r")
-            Assert.True(jitType == 2, "Expected r2r mode, recieved jit");
+            Assert.Equal(jitType, JitType.R2R);
         else
             Assert.Fail($"Unexpected R2RMode value: {config.R2RMode}");
     }

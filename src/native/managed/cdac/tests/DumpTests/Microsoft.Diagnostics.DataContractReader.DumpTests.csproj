@@ -51,7 +51,7 @@
       $(HelixPayloadDir)/
         tests/                    — test DLLs + xunit.console.dll + deps
         debuggees/{name}/         — built debuggee binaries
-        debuggee-metadata.props   — auto-generated _Debuggee items with DumpDir/MiniDumpType
+        debuggee-metadata.props   — auto-generated _Debuggee items with all metadata
 
     Usage:
       dotnet build /p:PrepareHelixPayload=true
