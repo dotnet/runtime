@@ -795,10 +795,28 @@ internal partial class StackWalk_1 : IStackWalk
         return false;
     }
 
-    private unsafe void FillContextFromThread(IPlatformAgnosticContext context, ThreadData threadData)
+    private void FillContextFromThread(IPlatformAgnosticContext context, ThreadData threadData)
     {
         byte[] bytes = new byte[context.Size];
         Span<byte> buffer = new Span<byte>(bytes);
+
+        // Match the native DacStackReferenceWalker behavior: if the thread has a
+        // FilterContext or ProfilerFilterContext set, use that instead of calling
+        // GetThreadContext. During debugger breaks, GC stress redirection, or
+        // profiler stack walks, these contexts hold the correct managed frame state.
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.ThreadAddress);
+
+        TargetPointer filterContext = thread.DebuggerFilterContext;
+        if (filterContext == TargetPointer.Null)
+            filterContext = thread.ProfilerFilterContext;
+
+        if (filterContext != TargetPointer.Null)
+        {
+            _target.ReadBuffer(filterContext.Value, buffer);
+            context.FillFromBuffer(buffer);
+            return;
+        }
+
         // The underlying ICLRDataTarget.GetThreadContext has some variance depending on the host.
         // SOS's managed implementation sets the ContextFlags to platform specific values defined in ThreadService.cs (diagnostics repo)
         // SOS's native implementation keeps the ContextFlags passed into this function.
