@@ -189,6 +189,9 @@ enum ICodeManagerFlags
     NoReportUntracked
                     =   0x0080, // EnumGCRefs/EnumerateLiveSlots should *not* include
                                 // any untracked slots
+    ReportFPBasedSlotsOnly
+                    =   0x0200, // EnumGCRefs/EnumerateLiveSlots should only include
+                                // slots that are based on the frame pointer
 };
 
 #endif // !_strike_h
@@ -739,11 +742,12 @@ private:
     {
         _ASSERTE(slotIndex < slotDecoder.GetNumSlots());
         const GcSlotDesc* pSlot = slotDecoder.GetSlotDesc(slotIndex);
+        bool reportFpBasedSlotsOnly = (inputFlags & ReportFPBasedSlotsOnly);
 
         if(slotIndex < slotDecoder.GetNumRegisters())
         {
             UINT32 regNum = pSlot->Slot.RegisterNumber;
-            if( reportScratchSlots || !IsScratchRegister( regNum, pRD ) )
+            if( ( reportScratchSlots || !IsScratchRegister( regNum, pRD ) ) && !reportFpBasedSlotsOnly )
             {
                 ReportRegisterToGC(
                             regNum,
@@ -764,7 +768,8 @@ private:
             INT32 spOffset = pSlot->Slot.Stack.SpOffset;
             GcStackSlotBase spBase = pSlot->Slot.Stack.Base;
 
-            if( reportScratchSlots || !IsScratchStackSlot(spOffset, spBase, pRD) )
+            if( ( reportScratchSlots || !IsScratchStackSlot(spOffset, spBase, pRD) ) &&
+                ( !reportFpBasedSlotsOnly || (GC_FRAMEREG_REL == spBase ) ) )
             {
                 ReportStackSlotToGC(
                             spOffset,
