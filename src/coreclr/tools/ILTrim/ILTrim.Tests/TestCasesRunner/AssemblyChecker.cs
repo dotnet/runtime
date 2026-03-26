@@ -111,8 +111,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				original.AllMembers ().Any (HasActiveKeptDerivedAttribute);
 
 			if (!expectedKept) {
-				if (linked != null)
-					Assert.True (false, $"Type `{original}' should have been removed");
+				if (linked != null) {
+					if (!SkipKeptItemsValidation (original))
+						Assert.True (false, $"Type `{original}' should have been removed");
+
+					// Compiler-generated types that were kept but aren't expected:
+					// skip verification but remove from tracking to avoid spurious
+					// "unexpected member" errors.
+					verifiedGeneratedTypes.Add (linked.FullName);
+					foreach (var member in linked.AllMembers ())
+						linkedMembers.Remove (member.FullName);
+				}
 
 				return;
 			}
@@ -153,6 +162,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			VerifyFixedBufferFields (original, linked);
 
+			// Need to check delegate cache fields before nested types so that the
+			// compiler-generated delegate cache type (<>O) is added to verifiedGeneratedTypes
+			// before VerifyTypeDefinition is called on it.
+			VerifyDelegateBackingFields (original, linked);
+
 			foreach (var td in original.NestedTypes) {
 				VerifyTypeDefinition (td, linked?.NestedTypes.FirstOrDefault (l => td.FullName == l.FullName));
 				linkedMembers.Remove (td.FullName);
@@ -168,9 +182,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				VerifyEvent (e, linked.Events.FirstOrDefault (l => e.Name == l.Name), linked);
 				linkedMembers.Remove (e.FullName);
 			}
-
-			// Need to check delegate cache fields before the normal field check
-			VerifyDelegateBackingFields (original, linked);
 
 			foreach (var f in original.Fields) {
 				if (verifiedGeneratedFields.Contains (f.FullName))
