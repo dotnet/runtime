@@ -100,7 +100,7 @@ CommonKey3:CommonKey4=IniValue6";
 
             Assert.Throws<FileNotFoundException>(() => configurationBuilder.Build());
         }
-        
+
         [Fact]
         public void CanHandleExceptionIfFileNotFound()
         {
@@ -539,6 +539,129 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void LoadDataErrorRaisesOnLoadException()
+        {
+            const string FileName = $"{nameof(LoadDataErrorRaisesOnLoadException)}.json";
+
+            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
+
+            FileConfigurationProvider failingProvider = null;
+            Action<FileLoadExceptionContext> jsonLoadError = c =>
+            {
+                failingProvider = c.Provider;
+                c.Ignore = true;
+            };
+
+            CreateBuilder()
+                .AddJsonFile(s =>
+                {
+                    s.Path = FileName;
+                    s.OnLoadException = jsonLoadError;
+                })
+                .Build();
+
+            Assert.NotNull(failingProvider);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void LoadIoErrorRaisesOnLoadException()
+        {
+            const string FileName = $"{nameof(LoadIoErrorRaisesOnLoadException)}.json";
+
+            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
+
+            using (_fileSystem.LockFileReading(FileName))
+            {
+                FileConfigurationProvider failingProvider = null;
+                Action<FileLoadExceptionContext> jsonLoadError = c =>
+                {
+                    failingProvider = c.Provider;
+                    c.Ignore = true;
+                };
+
+                CreateBuilder()
+                    .AddJsonFile(s =>
+                    {
+                        s.Path = FileName;
+                        s.OnLoadException = jsonLoadError;
+                    })
+                    .Build();
+
+                Assert.NotNull(failingProvider);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task ReloadDataErrorRaisesOnLoadException()
+        {
+            const string FileName = $"{nameof(ReloadDataErrorRaisesOnLoadException)}.json";
+
+            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
+
+            FileConfigurationProvider failingProvider = null;
+            Action<FileLoadExceptionContext> jsonLoadError = c =>
+            {
+                failingProvider = c.Provider;
+                c.Ignore = true;
+            };
+
+            CreateBuilder()
+                .AddJsonFile(s =>
+                {
+                    s.Path = FileName;
+                    s.OnLoadException = jsonLoadError;
+                    s.ReloadOnChange = true;
+                })
+                .Build();
+
+            // No error should be triggered so far.
+            Assert.Null(failingProvider);
+
+            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
+
+            await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event at time.");
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task ReloadIoErrorRaisesOnLoadException()
+        {
+            const string FileName = $"{nameof(ReloadIoErrorRaisesOnLoadException)}.json";
+
+            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
+
+            FileConfigurationProvider failingProvider = null;
+            Action<FileLoadExceptionContext> jsonLoadError = c =>
+            {
+                failingProvider = c.Provider;
+                c.Ignore = true;
+            };
+
+            CreateBuilder()
+                .AddJsonFile(s =>
+                {
+                    s.Path = FileName;
+                    s.OnLoadException = jsonLoadError;
+                    s.ReloadOnChange = true;
+                })
+                .Build();
+
+            // No error should be triggered so far.
+            Assert.Null(failingProvider);
+
+            using (_fileSystem.LockFileReading(FileName))
+            {
+                // we need NoWait because Wait reads file under the hood and that is restricted in LockFileReading context
+                _fileSystem.WriteFileNoWait(FileName, @"{""JsonKey1"": ""JsonValue1Updated"" }");
+
+                await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event at time.");
+            }
+        }
+
+        [Fact]
         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task TouchingFileWillReload()
         {
@@ -689,7 +812,7 @@ IniKey1=IniValue2");
             Assert.Equal("IniValue1", config["Key"]);
             Assert.True(token.HasChanged);
         }
-        
+
         [Theory]
         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         [InlineData(false)]
