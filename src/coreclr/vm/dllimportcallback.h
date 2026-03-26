@@ -310,7 +310,7 @@ public:
             // otherwise debugger would fail to step in.
             RETURN orDelegate->GetMethodPtr();
         }
-        else if (m_pManagedTarget != NULL)
+        else if (m_pManagedTarget != (PCODE)NULL)
         {
             RETURN m_pManagedTarget;
         }
@@ -320,7 +320,7 @@ public:
         }
         else
         {
-            RETURN NULL;
+            RETURN (PCODE)NULL;
         }
     }
 #endif // !DACCESS_COMPILE
