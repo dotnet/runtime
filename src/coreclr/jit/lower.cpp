@@ -11169,144 +11169,178 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
             continue;
         }
 
-#ifdef TARGET_64BIT
-        // Non-constant values: compose two integral values into a wider value via
-        // cast + shift + OR. For now, restrict to int+int -> long which is the dominant
-        // case and avoids complications with small type register widening.
-        if (currType != TYP_INT || newType != TYP_LONG)
+        if (TryCoalesceNonConstStoreLclFld(store, prevStore, currType, newType))
         {
             return;
         }
-
-        // Non-constant coalescing increases code size (adds cast+shift+or instructions).
-        // Only do it if we can see that the local is read back at a wider width within
-        // the next few instructions, which would cause a store-forwarding stall.
-        {
-            unsigned  newOffset      = min(prevOffset, currOffset);
-            unsigned  combinedSize   = genTypeSize(currType) * 2;
-            bool      foundWiderRead = false;
-            GenTree*  scanNode       = store->gtNext;
-            const int scanLimit      = 20;
-
-            for (int scanCount = 0; scanNode != nullptr && scanCount < scanLimit; scanCount++)
-            {
-                // Stop scanning at control flow boundaries.
-                if (scanNode->OperIsConditionalJump() || scanNode->OperGet() == GT_JMP ||
-                    scanNode->OperGet() == GT_RETURN || scanNode->OperGet() == GT_SWIFT_ERROR_RET)
-                {
-                    break;
-                }
-
-                // Check for a local read from the same variable that overlaps our store range
-                // at a wider width.
-                if (scanNode->OperIsLocalRead() && scanNode->AsLclVarCommon()->GetLclNum() == currLclNum)
-                {
-                    unsigned readOffset = scanNode->AsLclVarCommon()->GetLclOffs();
-                    unsigned readSize   = genTypeSize(scanNode->TypeGet());
-                    if (readSize == 0 && scanNode->TypeIs(TYP_STRUCT))
-                    {
-                        readSize = scanNode->AsLclVarCommon()->GetLayout(m_compiler)->GetSize();
-                    }
-
-                    // Does this read overlap our combined store range and is it wider?
-                    if (readSize > genTypeSize(currType) && readOffset <= newOffset &&
-                        (readOffset + readSize) >= (newOffset + combinedSize))
-                    {
-                        foundWiderRead = true;
-                        break;
-                    }
-                }
-
-                // Stop at stores to the same local (would invalidate the forwarding scenario).
-                if (scanNode->OperIsLocalStore() && scanNode->AsLclVarCommon()->GetLclNum() == currLclNum)
-                {
-                    break;
-                }
-
-                scanNode = scanNode->gtNext;
-            }
-
-            if (!foundWiderRead)
-            {
-                JITDUMP("Skipping non-const GT_STORE_LCL_FLD coalescing: no wider read found within %d nodes\n",
-                        scanLimit);
-                return;
-            }
-        }
-
-        // Both values must have closed tree ranges so we can safely relocate them.
-        bool isCurrValueClosed = false;
-        bool isPrevValueClosed = false;
-        BlockRange().GetTreeRange(currValue, &isCurrValueClosed);
-        BlockRange().GetTreeRange(prevValue, &isPrevValueClosed);
-        if (!isCurrValueClosed || !isPrevValueClosed)
-        {
-            return;
-        }
-
-        JITDUMP("Coalescing two non-const GT_STORE_LCL_FLD stores via shift+OR:\n");
-        JITDUMP("  Previous store: V%02u [+%u] %s\n", currLclNum, prevOffset, varTypeName(prevType));
-        JITDUMP("  Current store:  V%02u [+%u] %s\n", currLclNum, currOffset, varTypeName(currType));
-        JITDUMP("  New type: %s\n", varTypeName(newType));
-
-        // Identify which value goes in the low bits and which in the high bits.
-        GenTree* lowValue  = (prevOffset < currOffset) ? prevValue : currValue;
-        GenTree* highValue = (prevOffset < currOffset) ? currValue : prevValue;
-
-        // Clear containment flags — the values may have been marked contained for
-        // the original stores but need to be uncontained for the new CAST/OR tree.
-        lowValue->ClearContained();
-        highValue->ClearContained();
-
-        // Remove the previous store node, keeping its data subtree in the LIR.
-        prevStore->Data() = nullptr;
-        BlockRange().Remove(prevStore);
-
-        // Zero-extend both values to the new wider type (int -> long).
-        unsigned shiftBits = genTypeSize(currType) * BITS_PER_BYTE;
-
-        if (genTypeSize(newType) > genTypeSize(genActualType(lowValue)))
-        {
-            GenTree* castLow = m_compiler->gtNewCastNode(newType, lowValue, true, newType);
-            BlockRange().InsertBefore(store, castLow);
-            lowValue = castLow;
-        }
-
-        if (genTypeSize(newType) > genTypeSize(genActualType(highValue)))
-        {
-            GenTree* castHigh = m_compiler->gtNewCastNode(newType, highValue, true, newType);
-            BlockRange().InsertBefore(store, castHigh);
-            highValue = castHigh;
-        }
-
-        // Shift the high value left.
-        GenTree* shiftAmount = m_compiler->gtNewIconNode((ssize_t)shiftBits);
-        GenTree* shifted     = m_compiler->gtNewOperNode(GT_LSH, newType, highValue, shiftAmount);
-        BlockRange().InsertBefore(store, shiftAmount, shifted);
-
-        // OR the low and shifted-high values.
-        GenTree* combined = m_compiler->gtNewOperNode(GT_OR, newType, lowValue, shifted);
-        BlockRange().InsertBefore(store, combined);
-
-        // Update the current store to use the combined value at the lower offset.
-        unsigned newOffset = min(prevOffset, currOffset);
-        store->AsLclFld()->SetLclOffs(newOffset);
-        store->gtType = newType;
-        store->Data() = combined;
-
-        JITDUMP("Coalesced two non-const stores into a single store via shift+OR\n");
-        // Don't loop for non-constant coalescing — the combined value is no longer a simple
-        // constant, so further coalescing would need a different approach.
         return;
-#else
-        return;
-#endif // TARGET_64BIT
 
     } while (true);
 
     TryForwardConstantStoreLclFld(store);
 
 #endif // TARGET_XARCH || TARGET_ARM64
+}
+
+//------------------------------------------------------------------------
+// TryCoalesceNonConstStoreLclFld: Try to coalesce two adjacent non-constant
+//    GT_STORE_LCL_FLD stores into a single wider store by composing the two
+//    register values via cast + shift + OR. Only handles int+int -> long.
+//
+//    This is only profitable when a wider read follows, which would otherwise
+//    cause a store-forwarding stall.
+//
+// Arguments:
+//    store    - the current GT_STORE_LCL_FLD node
+//    prevStore - the previous GT_STORE_LCL_FLD node (same local, adjacent offset)
+//    currType  - the type of both stores (must be TYP_INT)
+//    newType   - the wider type to coalesce into (must be TYP_LONG)
+//
+// Return Value:
+//    true if the coalescing was performed, false otherwise.
+//
+bool Lowering::TryCoalesceNonConstStoreLclFld(GenTreeLclVarCommon* store,
+                                              GenTreeLclFld*       prevStore,
+                                              var_types            currType,
+                                              var_types            newType)
+{
+#ifdef TARGET_64BIT
+    // For now, restrict to int+int -> long which is the dominant case
+    // and avoids complications with small type register widening.
+    if (currType != TYP_INT || newType != TYP_LONG)
+    {
+        return false;
+    }
+
+    unsigned currLclNum = store->GetLclNum();
+    unsigned currOffset = store->AsLclFld()->GetLclOffs();
+    unsigned prevOffset = prevStore->GetLclOffs();
+
+    // Non-constant coalescing increases code size (adds cast+shift+or instructions).
+    // Only do it if we can see that the local is read back at a wider width within
+    // the next few instructions, which would cause a store-forwarding stall.
+    {
+        unsigned  newOffset      = min(prevOffset, currOffset);
+        unsigned  combinedSize   = genTypeSize(currType) * 2;
+        bool      foundWiderRead = false;
+        GenTree*  scanNode       = store->gtNext;
+        const int scanLimit      = 20;
+
+        for (int scanCount = 0; scanNode != nullptr && scanCount < scanLimit; scanCount++)
+        {
+            // Stop scanning at control flow boundaries.
+            if (scanNode->OperIsConditionalJump() || scanNode->OperGet() == GT_JMP ||
+                scanNode->OperGet() == GT_RETURN || scanNode->OperGet() == GT_SWIFT_ERROR_RET)
+            {
+                break;
+            }
+
+            // Check for a local read from the same variable that overlaps our store range
+            // at a wider width.
+            if (scanNode->OperIsLocalRead() && scanNode->AsLclVarCommon()->GetLclNum() == currLclNum)
+            {
+                unsigned readOffset = scanNode->AsLclVarCommon()->GetLclOffs();
+                unsigned readSize   = genTypeSize(scanNode->TypeGet());
+                if (readSize == 0 && scanNode->TypeIs(TYP_STRUCT))
+                {
+                    readSize = scanNode->AsLclVarCommon()->GetLayout(m_compiler)->GetSize();
+                }
+
+                // Does this read overlap our combined store range and is it wider?
+                if (readSize > genTypeSize(currType) && readOffset <= newOffset &&
+                    (readOffset + readSize) >= (newOffset + combinedSize))
+                {
+                    foundWiderRead = true;
+                    break;
+                }
+            }
+
+            // Stop at stores to the same local (would invalidate the forwarding scenario).
+            if (scanNode->OperIsLocalStore() && scanNode->AsLclVarCommon()->GetLclNum() == currLclNum)
+            {
+                break;
+            }
+
+            scanNode = scanNode->gtNext;
+        }
+
+        if (!foundWiderRead)
+        {
+            JITDUMP("Skipping non-const GT_STORE_LCL_FLD coalescing: no wider read found within %d nodes\n",
+                    scanLimit);
+            return false;
+        }
+    }
+
+    GenTree* currValue = store->Data();
+    GenTree* prevValue = prevStore->Data();
+
+    // Both values must have closed tree ranges so we can safely relocate them.
+    bool isCurrValueClosed = false;
+    bool isPrevValueClosed = false;
+    BlockRange().GetTreeRange(currValue, &isCurrValueClosed);
+    BlockRange().GetTreeRange(prevValue, &isPrevValueClosed);
+    if (!isCurrValueClosed || !isPrevValueClosed)
+    {
+        return false;
+    }
+
+    var_types prevType = prevStore->TypeGet();
+    JITDUMP("Coalescing two non-const GT_STORE_LCL_FLD stores via shift+OR:\n");
+    JITDUMP("  Previous store: V%02u [+%u] %s\n", currLclNum, prevOffset, varTypeName(prevType));
+    JITDUMP("  Current store:  V%02u [+%u] %s\n", currLclNum, currOffset, varTypeName(currType));
+    JITDUMP("  New type: %s\n", varTypeName(newType));
+
+    // Identify which value goes in the low bits and which in the high bits.
+    GenTree* lowValue  = (prevOffset < currOffset) ? prevValue : currValue;
+    GenTree* highValue = (prevOffset < currOffset) ? currValue : prevValue;
+
+    // Clear containment flags — the values may have been marked contained for
+    // the original stores but need to be uncontained for the new CAST/OR tree.
+    lowValue->ClearContained();
+    highValue->ClearContained();
+
+    // Remove the previous store node, keeping its data subtree in the LIR.
+    prevStore->Data() = nullptr;
+    BlockRange().Remove(prevStore);
+
+    // Zero-extend both values to the new wider type (int -> long).
+    unsigned shiftBits = genTypeSize(currType) * BITS_PER_BYTE;
+
+    if (genTypeSize(newType) > genTypeSize(genActualType(lowValue)))
+    {
+        GenTree* castLow = m_compiler->gtNewCastNode(newType, lowValue, true, newType);
+        BlockRange().InsertBefore(store, castLow);
+        lowValue = castLow;
+    }
+
+    if (genTypeSize(newType) > genTypeSize(genActualType(highValue)))
+    {
+        GenTree* castHigh = m_compiler->gtNewCastNode(newType, highValue, true, newType);
+        BlockRange().InsertBefore(store, castHigh);
+        highValue = castHigh;
+    }
+
+    // Shift the high value left.
+    GenTree* shiftAmount = m_compiler->gtNewIconNode((ssize_t)shiftBits);
+    GenTree* shifted     = m_compiler->gtNewOperNode(GT_LSH, newType, highValue, shiftAmount);
+    BlockRange().InsertBefore(store, shiftAmount, shifted);
+
+    // OR the low and shifted-high values.
+    GenTree* combined = m_compiler->gtNewOperNode(GT_OR, newType, lowValue, shifted);
+    BlockRange().InsertBefore(store, combined);
+
+    // Update the current store to use the combined value at the lower offset.
+    unsigned newOffset = min(prevOffset, currOffset);
+    store->AsLclFld()->SetLclOffs(newOffset);
+    store->gtType = newType;
+    store->Data() = combined;
+
+    JITDUMP("Coalesced two non-const stores into a single store via shift+OR\n");
+    return true;
+#else
+    return false;
+#endif // TARGET_64BIT
 }
 
 //------------------------------------------------------------------------
