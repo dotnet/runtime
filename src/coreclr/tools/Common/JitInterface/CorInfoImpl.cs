@@ -1088,8 +1088,10 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(ftn);
             pIsAggressiveInline = !method.IsNoInlining && method.IsAggressiveInlining;
+            if (method.IsPInvoke)
+                return false;
             MethodIL methodIL = _compilation.GetMethodIL(method);
-            if (methodIL != null)
+            if (methodIL is not null)
             {
                 pILSize = (uint)methodIL.GetILBytes().Length;
                 return true;
