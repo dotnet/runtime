@@ -38,7 +38,7 @@ namespace Mono.Linker.Tests.Cases.Basic
         static void A() { }
 
         [Kept]
-        static void B() { }
+        static void B() { throw new Exception(); }
 
         [Kept]
         static void C() { }

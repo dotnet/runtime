@@ -4,8 +4,6 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-[module: KeptAttributeAttribute(typeof(System.Security.UnverifiableCodeAttribute))]
-
 namespace Mono.Linker.Tests.Cases.Basic
 {
     [SetupCompileArgument("/unsafe")]

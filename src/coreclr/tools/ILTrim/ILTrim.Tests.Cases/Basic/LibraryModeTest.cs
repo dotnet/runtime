@@ -5,7 +5,7 @@ namespace Mono.Linker.Tests.Cases.Basic
 {
 #pragma warning disable 169
 
-    [SetupLinkerArgument("-a", "test.exe", "library")]
+    [SetupLinkerArgument("-a", "test", "library")]
     [SetupLinkerArgument("--enable-opt", "ipconstprop")]
     public class LibraryModeTest
     {

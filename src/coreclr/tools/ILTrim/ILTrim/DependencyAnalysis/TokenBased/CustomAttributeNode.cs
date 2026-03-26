@@ -20,6 +20,26 @@ namespace ILCompiler.DependencyAnalysis
 
         private CustomAttributeHandle Handle => (CustomAttributeHandle)_handle;
 
+        public static bool IsCustomAttributeForSecurity(EcmaModule module, CustomAttributeHandle handle)
+        {
+            MetadataReader metadataReader = module.MetadataReader;
+            CustomAttribute ca = metadataReader.GetCustomAttribute(handle);
+            if (metadataReader.GetAttributeNamespaceAndName(handle, out StringHandle namespaceHandle, out StringHandle nameHandle)
+                && metadataReader.StringEquals(namespaceHandle, "System.Security"u8))
+            {
+                return metadataReader.StringEquals(nameHandle, "SecurityCriticalAttribute"u8)
+                    || metadataReader.StringEquals(nameHandle, "SecuritySafeCriticalAttribute"u8)
+                    || metadataReader.StringEquals(nameHandle, "SuppressUnmanagedCodeSecurityAttribute"u8)
+                    || metadataReader.StringEquals(nameHandle, "DynamicSecurityMethodAttribute"u8)
+                    || metadataReader.StringEquals(nameHandle, "UnverifiableCodeAttribute"u8)
+                    || metadataReader.StringEquals(nameHandle, "AllowPartiallyTrustedCallersAttribute"u8)
+                    || metadataReader.StringEquals(nameHandle, "SecurityTransparentAttribute"u8)
+                    || metadataReader.StringEquals(nameHandle, "SecurityRulesAttribute"u8);
+            }
+
+            return false;
+        }
+
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             CustomAttribute customAttribute = _module.MetadataReader.GetCustomAttribute(Handle);

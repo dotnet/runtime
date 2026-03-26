@@ -38,7 +38,9 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (CustomAttributeHandle customAttribute in typeDef.GetCustomAttributes())
             {
-                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a type");
+                // TODO: Matches RemoveSecurityStep in ILLink that is enabled by default in testing, but this should be configurable
+                if (!CustomAttributeNode.IsCustomAttributeForSecurity(_module, customAttribute))
+                    yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a type");
             }
 
             if (typeDef.IsNested)

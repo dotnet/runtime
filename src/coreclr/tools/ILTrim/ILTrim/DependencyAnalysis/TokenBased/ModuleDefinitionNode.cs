@@ -33,7 +33,9 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (CustomAttributeHandle customAttribute in _module.MetadataReader.GetModuleDefinition().GetCustomAttributes())
             {
-                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a module");
+                // TODO: Matches RemoveSecurityStep in ILLink that is enabled by default in testing, but this should be configurable
+                if (!CustomAttributeNode.IsCustomAttributeForSecurity(_module, customAttribute))
+                    yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a module");
             }
 
             foreach (var resourceHandle in _module.MetadataReader.ManifestResources)
