@@ -11313,6 +11313,7 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
         unsigned  lclNum    = store->GetLclNum();
         unsigned  offset    = store->AsLclFld()->GetLclOffs();
         var_types storeType = store->TypeGet();
+        unsigned  storeSize = genTypeSize(storeType);
 
         GenTree*  scanNode  = store->gtNext;
         const int scanLimit = 20;
@@ -11325,19 +11326,27 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                 break;
             }
 
-            // Found a read from the same local, same offset, same size.
+            // Found a read from the same local that may overlap our store.
             if (scanNode->OperIs(GT_LCL_VAR, GT_LCL_FLD) && scanNode->OperIsLocalRead() &&
-                scanNode->AsLclVarCommon()->GetLclNum() == lclNum && scanNode->AsLclVarCommon()->GetLclOffs() == offset)
+                scanNode->AsLclVarCommon()->GetLclNum() == lclNum)
             {
-                unsigned readSize = genTypeSize(scanNode->TypeGet());
+                unsigned readOffset = scanNode->AsLclVarCommon()->GetLclOffs();
+                unsigned readSize   = genTypeSize(scanNode->TypeGet());
                 if (readSize == 0 && scanNode->TypeIs(TYP_STRUCT))
                 {
                     readSize = scanNode->AsLclVarCommon()->GetLayout(m_compiler)->GetSize();
                 }
 
-                if (readSize != genTypeSize(storeType))
+                // The read must be fully contained within the store's range.
+                if (readOffset < offset || (readOffset + readSize) > (offset + storeSize))
                 {
-                    break; // Size mismatch, can't bypass.
+                    break; // Read extends outside the store — can't forward.
+                }
+
+                // Only forward to integral reads (not struct reads wider than a register).
+                if (!varTypeIsIntegral(scanNode->TypeGet()) && !scanNode->TypeIs(TYP_STRUCT))
+                {
+                    break;
                 }
 
                 // Verify the stored value can reach the load — the store's data must be
@@ -11347,33 +11356,44 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                     break;
                 }
 
-                JITDUMP("Forwarding constant store [%06u] to load [%06u] for V%02u[+%u]: value %lld\n",
-                        m_compiler->dspTreeID(store), m_compiler->dspTreeID(scanNode), lclNum, offset,
-                        (int64_t)store->Data()->AsIntCon()->IconValue());
+                // Extract the portion of the constant that corresponds to the read.
+                ssize_t fullVal      = store->Data()->AsIntCon()->IconValue();
+                unsigned bitOffset   = (readOffset - offset) * BITS_PER_BYTE;
+                size_t   readMask    = (readSize >= sizeof(size_t))
+                                         ? ~(size_t)0
+                                         : ((size_t)1 << (readSize * BITS_PER_BYTE)) - 1;
+                ssize_t  forwardVal  = (ssize_t)(((size_t)fullVal >> bitOffset) & readMask);
 
-                    // Create a new constant node and insert it in place of the load.
-                    // Mark it with GTF_ICON_STRUCT_INIT_VAL so that TryTransformStoreObjAsStoreInd
-                    // uses it as-is instead of treating the low byte as a fill pattern.
-                    ssize_t  constVal = store->Data()->AsIntCon()->IconValue();
-                    GenTree* newConst = m_compiler->gtNewIconNode(constVal, storeType);
-                    newConst->gtFlags |= GTF_ICON_STRUCT_INIT_VAL;
-                    BlockRange().InsertAfter(scanNode, newConst);
+                // For the forwarded constant, use the read's type if it's integral,
+                // otherwise use the store type.
+                var_types fwdType = varTypeIsIntegral(scanNode->TypeGet()) ? scanNode->TypeGet() : storeType;
 
-                    // Replace all uses of the load with the new constant.
-                    LIR::Use use;
-                    if (BlockRange().TryGetUse(scanNode, &use))
-                    {
-                        use.ReplaceWith(newConst);
-                    }
+                JITDUMP("Forwarding constant store [%06u] to load [%06u] for V%02u[+%u]: "
+                        "store value 0x%llx, forwarded value 0x%llx (read offset +%u, size %u)\n",
+                        m_compiler->dspTreeID(store), m_compiler->dspTreeID(scanNode), lclNum, readOffset,
+                        (unsigned long long)(size_t)fullVal, (unsigned long long)(size_t)forwardVal,
+                        readOffset, readSize);
 
-                    // Remove the load node.
-                    BlockRange().Remove(scanNode);
+                // Create a new constant node and insert it in place of the load.
+                // Mark it with GTF_ICON_STRUCT_INIT_VAL so that TryTransformStoreObjAsStoreInd
+                // uses it as-is instead of treating the low byte as a fill pattern.
+                GenTree* newConst = m_compiler->gtNewIconNode(forwardVal, fwdType);
+                newConst->gtFlags |= GTF_ICON_STRUCT_INIT_VAL;
+                BlockRange().InsertAfter(scanNode, newConst);
 
-                    // The store is now dead (its value was forwarded to the load's user).
-                    // We leave it in place — removing it here would cause issues since
-                    // LowerStoreLocCommon is still processing this node. Later phases
-                    // or the register allocator can handle the dead store.
-                    break;
+                // Replace all uses of the load with the new constant.
+                LIR::Use use;
+                if (BlockRange().TryGetUse(scanNode, &use))
+                {
+                    use.ReplaceWith(newConst);
+                }
+
+                // Remove the load node.
+                BlockRange().Remove(scanNode);
+
+                // The store may now be dead, but we leave it in place since
+                // LowerStoreLocCommon is still processing this node.
+                break;
             }
 
             // Stop at stores to the same local (would change the value).
