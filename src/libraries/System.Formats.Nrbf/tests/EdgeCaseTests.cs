@@ -61,7 +61,7 @@ public class EdgeCaseTests : ReadTests
         }
     }
 
-    [Theory]
+    [ConditionalTheory]
     [InlineData(100)]
     [InlineData(64_001)]
     [InlineData(127_000)]
