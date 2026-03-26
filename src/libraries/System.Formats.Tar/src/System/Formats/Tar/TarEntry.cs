@@ -217,8 +217,8 @@ namespace System.Formats.Tar
             {
                 throw new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType));
             }
-            // HardLink entries are rejected above. hardLinkMode will not be used.
-            ExtractToFileInternal(destinationFileName, linkTargetPath: null, linkFullTargetPath: null, overwrite, TarHardLinkMode.PreserveLink, TarSymbolicLinkMode.PreserveLink);
+            // SymbolicLink and HardLink entries are rejected above. No link modes will be used.
+            ExtractToFileInternal(destinationFileName, linkTargetPath: null, linkTargetFullPath: null, overwrite, TarHardLinkMode.PreserveLink, TarSymbolicLinkMode.PreserveLink);
         }
 
         /// <summary>
@@ -252,8 +252,8 @@ namespace System.Formats.Tar
             {
                 return Task.FromException(new InvalidOperationException(SR.Format(SR.TarEntryTypeNotSupportedForExtracting, EntryType)));
             }
-            // HardLink entries are rejected above. hardLinkMode will not be used.
-            return ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, linkFullTargetPath: null, overwrite, TarHardLinkMode.PreserveLink, TarSymbolicLinkMode.PreserveLink, cancellationToken);
+            // SymbolicLink and HardLink entries are rejected above. No link modes will be used.
+            return ExtractToFileInternalAsync(destinationFileName, linkTargetPath: null, linkTargetFullPath: null, overwrite, TarHardLinkMode.PreserveLink, TarSymbolicLinkMode.PreserveLink, cancellationToken);
         }
 
         /// <summary>
@@ -315,9 +315,9 @@ namespace System.Formats.Tar
         internal abstract bool IsDataStreamSetterSupported();
 
         // Extracts the current entry to a location relative to the specified directory.
-        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, TarHardLinkMode hardLinkMode, TarSymbolicLinkMode symbolicLinkMode = TarSymbolicLinkMode.PreserveLink)
+        internal void ExtractRelativeToDirectory(string destinationDirectoryPath, TarExtractOptions options, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes)
         {
-            (string destinationFullPath, string? linkTargetPath, string? linkFullTargetPath) = GetDestinationAndLinkPaths(destinationDirectoryPath);
+            (string destinationFullPath, string? linkTargetPath, string? linkTargetFullPath) = GetDestinationAndLinkPaths(destinationDirectoryPath);
 
             if (EntryType == TarEntryType.Directory)
             {
@@ -328,19 +328,19 @@ namespace System.Formats.Tar
             {
                 // If it is a file, create containing directory.
                 TarHelpers.CreateDirectory(Path.GetDirectoryName(destinationFullPath)!, mode: null, pendingModes);
-                ExtractToFileInternal(destinationFullPath, linkTargetPath, linkFullTargetPath, overwrite, hardLinkMode, symbolicLinkMode);
+                ExtractToFileInternal(destinationFullPath, linkTargetPath, linkTargetFullPath, options.OverwriteFiles, options.HardLinkMode, options.SymbolicLinkMode);
             }
         }
 
         // Asynchronously extracts the current entry to a location relative to the specified directory.
-        internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, bool overwrite, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, TarHardLinkMode hardLinkMode, CancellationToken cancellationToken, TarSymbolicLinkMode symbolicLinkMode = TarSymbolicLinkMode.PreserveLink)
+        internal Task ExtractRelativeToDirectoryAsync(string destinationDirectoryPath, TarExtractOptions options, SortedDictionary<string, UnixFileMode>? pendingModes, Stack<(string, DateTimeOffset)> directoryModificationTimes, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
             }
 
-            (string destinationFullPath, string? linkTargetPath, string? linkFullTargetPath) = GetDestinationAndLinkPaths(destinationDirectoryPath);
+            (string destinationFullPath, string? linkTargetPath, string? linkTargetFullPath) = GetDestinationAndLinkPaths(destinationDirectoryPath);
 
             if (EntryType == TarEntryType.Directory)
             {
@@ -352,14 +352,14 @@ namespace System.Formats.Tar
             {
                 // If it is a file, create containing directory.
                 TarHelpers.CreateDirectory(Path.GetDirectoryName(destinationFullPath)!, mode: null, pendingModes);
-                return ExtractToFileInternalAsync(destinationFullPath, linkTargetPath, linkFullTargetPath, overwrite, hardLinkMode, symbolicLinkMode, cancellationToken);
+                return ExtractToFileInternalAsync(destinationFullPath, linkTargetPath, linkTargetFullPath, options.OverwriteFiles, options.HardLinkMode, options.SymbolicLinkMode, cancellationToken);
             }
         }
 
         // Gets the sanitized paths for the file destination and link target paths to be used when extracting relative to a directory.
-        // Returns (destinationFullPath, linkTargetPath, linkFullTargetPath) where:
+        // Returns (destinationFullPath, linkTargetPath, linkTargetFullPath) where:
         //   - linkTargetPath is the link target name for creating the link (relative for symlinks, absolute for hard links).
-        //   - linkFullTargetPath is the fully resolved absolute path of the link target within the destination directory.
+        //   - linkTargetFullPath is the fully resolved absolute path of the link target within the destination directory.
         private (string, string?, string?) GetDestinationAndLinkPaths(string destinationDirectoryPath)
         {
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
@@ -375,7 +375,7 @@ namespace System.Formats.Tar
             }
 
             string? linkTargetPath = null;
-            string? linkFullTargetPath = null;
+            string? linkTargetFullPath = null;
             if (EntryType is TarEntryType.SymbolicLink)
             {
                 // LinkName is an absolute path, or path relative to the fileDestinationPath directory.
@@ -391,7 +391,7 @@ namespace System.Formats.Tar
                 // Use the linkName for creating the symbolic link.
                 linkTargetPath = linkName;
                 // Keep the fully resolved path for CopyContents mode.
-                linkFullTargetPath = linkDestination;
+                linkTargetFullPath = linkDestination;
             }
             else if (EntryType is TarEntryType.HardLink)
             {
@@ -407,10 +407,10 @@ namespace System.Formats.Tar
                 }
                 // Use the target path for creating the hard link.
                 linkTargetPath = linkDestination;
-                linkFullTargetPath = linkDestination;
+                linkTargetFullPath = linkDestination;
             }
 
-            return (fileDestinationPath, linkTargetPath, linkFullTargetPath);
+            return (fileDestinationPath, linkTargetPath, linkTargetFullPath);
         }
 
         // Returns the full destination path if the path is the destinationDirectory or a subpath. Otherwise, returns null.
@@ -425,7 +425,7 @@ namespace System.Formats.Tar
         }
 
         // Extracts the current entry into the filesystem, regardless of the entry type.
-        private void ExtractToFileInternal(string filePath, string? linkTargetPath, string? linkFullTargetPath, bool overwrite, TarHardLinkMode hardLinkMode, TarSymbolicLinkMode symbolicLinkMode)
+        private void ExtractToFileInternal(string filePath, string? linkTargetPath, string? linkTargetFullPath, bool overwrite, TarHardLinkMode hardLinkMode, TarSymbolicLinkMode symbolicLinkMode)
         {
             // Short-circuit for Skip mode before any filesystem operations.
             if (EntryType is TarEntryType.SymbolicLink && symbolicLinkMode == TarSymbolicLinkMode.Skip)
@@ -441,12 +441,12 @@ namespace System.Formats.Tar
             }
             else
             {
-                CreateNonRegularFile(filePath, linkTargetPath, linkFullTargetPath, hardLinkMode, symbolicLinkMode);
+                CreateNonRegularFile(filePath, linkTargetPath, linkTargetFullPath, hardLinkMode, symbolicLinkMode);
             }
         }
 
         // Asynchronously extracts the current entry into the filesystem, regardless of the entry type.
-        private Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, string? linkFullTargetPath, bool overwrite, TarHardLinkMode hardLinkMode, TarSymbolicLinkMode symbolicLinkMode, CancellationToken cancellationToken)
+        private Task ExtractToFileInternalAsync(string filePath, string? linkTargetPath, string? linkTargetFullPath, bool overwrite, TarHardLinkMode hardLinkMode, TarSymbolicLinkMode symbolicLinkMode, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -467,12 +467,12 @@ namespace System.Formats.Tar
             }
             else
             {
-                CreateNonRegularFile(filePath, linkTargetPath, linkFullTargetPath, hardLinkMode, symbolicLinkMode);
+                CreateNonRegularFile(filePath, linkTargetPath, linkTargetFullPath, hardLinkMode, symbolicLinkMode);
                 return Task.CompletedTask;
             }
         }
 
-        private void CreateNonRegularFile(string filePath, string? linkTargetPath, string? linkFullTargetPath, TarHardLinkMode hardLinkMode, TarSymbolicLinkMode symbolicLinkMode)
+        private void CreateNonRegularFile(string filePath, string? linkTargetPath, string? linkTargetFullPath, TarHardLinkMode hardLinkMode, TarSymbolicLinkMode symbolicLinkMode)
         {
             Debug.Assert(EntryType is not (TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile));
 
@@ -500,11 +500,12 @@ namespace System.Formats.Tar
                     Debug.Assert(symbolicLinkMode != TarSymbolicLinkMode.Skip);
                     if (symbolicLinkMode == TarSymbolicLinkMode.CopyContents)
                     {
-                        Debug.Assert(!string.IsNullOrEmpty(linkFullTargetPath));
+                        Debug.Assert(!string.IsNullOrEmpty(linkTargetFullPath));
                         // Overwrite is already handled by VerifyDestinationPath.
-                        if (Directory.Exists(linkFullTargetPath))
+                        if (Directory.Exists(linkTargetFullPath))
                         {
-                            // The symlink points to a directory; create a new directory at the destination.
+                            // The symlink points to a directory; create an empty directory at the destination.
+                            // Directory contents are not recursed to avoid potential issues with cyclic symlinks.
                             if (!OperatingSystem.IsWindows())
                             {
                                 Directory.CreateDirectory(filePath, Mode);
@@ -514,9 +515,9 @@ namespace System.Formats.Tar
                                 Directory.CreateDirectory(filePath);
                             }
                         }
-                        else if (File.Exists(linkFullTargetPath))
+                        else if (File.Exists(linkTargetFullPath))
                         {
-                            File.Copy(linkFullTargetPath, filePath);
+                            File.Copy(linkTargetFullPath, filePath);
                         }
                         else
                         {
@@ -526,7 +527,8 @@ namespace System.Formats.Tar
                         }
                         break;
                     }
-                    // Default: TarSymbolicLinkMode.PreserveLink
+                    // TarSymbolicLinkMode.PreserveLink
+                    Debug.Assert(symbolicLinkMode == TarSymbolicLinkMode.PreserveLink);
                     Debug.Assert(!string.IsNullOrEmpty(linkTargetPath));
                     FileInfo link = new(filePath);
                     link.CreateAsSymbolicLink(linkTargetPath);

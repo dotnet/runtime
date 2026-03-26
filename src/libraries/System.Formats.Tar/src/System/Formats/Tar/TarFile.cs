@@ -649,10 +649,6 @@ namespace System.Formats.Tar
         {
             VerifyExtractToDirectoryArguments(source, destinationDirectoryFullPath);
 
-            bool overwriteFiles = options.OverwriteFiles;
-            TarHardLinkMode hardLinkMode = options.HardLinkMode;
-            TarSymbolicLinkMode symbolicLinkMode = options.SymbolicLinkMode;
-
             using TarReader reader = new TarReader(source, leaveOpen);
 
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
@@ -662,7 +658,7 @@ namespace System.Formats.Tar
             {
                 if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                 {
-                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode, symbolicLinkMode);
+                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, options, pendingModes, directoryModificationTimes);
                 }
             }
             TarHelpers.SetPendingModes(pendingModes);
@@ -697,10 +693,6 @@ namespace System.Formats.Tar
             VerifyExtractToDirectoryArguments(source, destinationDirectoryFullPath);
             cancellationToken.ThrowIfCancellationRequested();
 
-            bool overwriteFiles = options.OverwriteFiles;
-            TarHardLinkMode hardLinkMode = options.HardLinkMode;
-            TarSymbolicLinkMode symbolicLinkMode = options.SymbolicLinkMode;
-
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
             var directoryModificationTimes = new Stack<(string, DateTimeOffset)>();
             TarReader reader = new TarReader(source, leaveOpen);
@@ -711,7 +703,7 @@ namespace System.Formats.Tar
                 {
                     if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                     {
-                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode, cancellationToken, symbolicLinkMode).ConfigureAwait(false);
+                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, options, pendingModes, directoryModificationTimes, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
