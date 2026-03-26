@@ -11266,8 +11266,7 @@ bool Lowering::TryCoalesceNonConstStoreLclFld(GenTreeLclVarCommon* store,
 
         if (!foundWiderRead)
         {
-            JITDUMP("Skipping non-const GT_STORE_LCL_FLD coalescing: no wider read found within %d nodes\n",
-                    scanLimit);
+            JITDUMP("Skipping non-const GT_STORE_LCL_FLD coalescing: no wider read found within %d nodes\n", scanLimit);
             return false;
         }
     }
@@ -11355,8 +11354,7 @@ bool Lowering::TryCoalesceNonConstStoreLclFld(GenTreeLclVarCommon* store,
 void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
 {
     if (!store->OperIs(GT_STORE_LCL_FLD) || !store->Data()->IsCnsIntOrI() ||
-        store->Data()->AsIntCon()->ImmedValNeedsReloc(m_compiler) ||
-        m_compiler->lvaVarAddrExposed(store->GetLclNum()))
+        store->Data()->AsIntCon()->ImmedValNeedsReloc(m_compiler) || m_compiler->lvaVarAddrExposed(store->GetLclNum()))
     {
         return;
     }
@@ -11395,12 +11393,10 @@ void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
             }
 
             // Extract the portion of the constant that corresponds to the read.
-            ssize_t  fullVal    = store->Data()->AsIntCon()->IconValue();
-            unsigned bitOffset  = (readOffset - offset) * BITS_PER_BYTE;
-            size_t   readMask   = (readSize >= sizeof(size_t))
-                                    ? ~(size_t)0
-                                    : ((size_t)1 << (readSize * BITS_PER_BYTE)) - 1;
-            ssize_t  forwardVal = (ssize_t)(((size_t)fullVal >> bitOffset) & readMask);
+            ssize_t  fullVal   = store->Data()->AsIntCon()->IconValue();
+            unsigned bitOffset = (readOffset - offset) * BITS_PER_BYTE;
+            size_t readMask = (readSize >= sizeof(size_t)) ? ~(size_t)0 : ((size_t)1 << (readSize * BITS_PER_BYTE)) - 1;
+            ssize_t forwardVal = (ssize_t)(((size_t)fullVal >> bitOffset) & readMask);
 
             // For the forwarded constant, use the read's type if it's integral,
             // otherwise use the store type.
@@ -11409,8 +11405,7 @@ void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
             JITDUMP("Forwarding constant store [%06u] to load [%06u] for V%02u[+%u]: "
                     "store value 0x%llx, forwarded value 0x%llx (read offset +%u, size %u)\n",
                     m_compiler->dspTreeID(store), m_compiler->dspTreeID(scanNode), lclNum, readOffset,
-                    (unsigned long long)(size_t)fullVal, (unsigned long long)(size_t)forwardVal,
-                    readOffset, readSize);
+                    (unsigned long long)(size_t)fullVal, (unsigned long long)(size_t)forwardVal, readOffset, readSize);
 
             // Create a new constant node and insert it in place of the load.
             // Mark it with GTF_ICON_STRUCT_INIT_VAL so that TryTransformStoreObjAsStoreInd
