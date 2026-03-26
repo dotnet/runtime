@@ -5654,6 +5654,9 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     DISPTREERANGE(BlockRange(), lclStore);
     JITDUMP("\n");
 
+    // Try to coalesce adjacent GT_STORE_LCL_FLD nodes into a single wider store.
+    LowerStoreLclFldCoalescing(lclStore);
+
     TryRetypingFloatingPointStoreToIntegerStore(lclStore);
 
     GenTree*   src           = lclStore->gtGetOp1();
@@ -10871,6 +10874,318 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             // A mark for future foldings that this IND doesn't need to be atomic.
             ind->gtFlags |= GTF_IND_ALLOW_NON_ATOMIC;
         }
+
+    } while (true);
+#endif // TARGET_XARCH || TARGET_ARM64
+}
+
+//------------------------------------------------------------------------
+// LowerStoreLclFldCoalescing: If the given GT_STORE_LCL_FLD node is preceded by another
+//    GT_STORE_LCL_FLD to the same local at an adjacent offset with constant data, merge
+//    them into a single wider store. This avoids store-forwarding stalls when the struct
+//    is later read back at the wider width.
+//
+//    Example:
+//
+//    *  STORE_LCL_FLD int    V04 [+0]
+//    \--*  CNS_INT   int    0x1
+//
+//    *  STORE_LCL_FLD int    V04 [+4]
+//    \--*  CNS_INT   int    0x2
+//
+//    After coalescing:
+//
+//    *  STORE_LCL_FLD long   V04 [+0]
+//    \--*  CNS_INT   long   0x200000001
+//
+// Arguments:
+//    store - the current GT_STORE_LCL_FLD node
+//
+void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
+{
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (!m_compiler->opts.OptimizationEnabled())
+    {
+        return;
+    }
+
+    if (!store->OperIs(GT_STORE_LCL_FLD))
+    {
+        return;
+    }
+
+    do
+    {
+        if (!store->OperIs(GT_STORE_LCL_FLD))
+        {
+            return;
+        }
+
+        var_types currType   = store->TypeGet();
+        unsigned  currLclNum = store->GetLclNum();
+        unsigned  currOffset = store->AsLclFld()->GetLclOffs();
+
+        if (!varTypeIsIntegral(currType) && !varTypeIsSIMD(currType))
+        {
+            return;
+        }
+
+        // Make sure the current node's tree range is closed (no unexpected interleaved nodes).
+        bool               isClosedRange = false;
+        LIR::ReadOnlyRange currRange     = BlockRange().GetTreeRange(store, &isClosedRange);
+        if (!isClosedRange)
+        {
+            return;
+        }
+
+        // Look backward for a previous GT_STORE_LCL_FLD, skipping NOPs and IL_OFFSETs.
+        GenTree* prevTree = currRange.FirstNode()->gtPrev;
+        while ((prevTree != nullptr) && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
+        {
+            prevTree = prevTree->gtPrev;
+        }
+
+        if ((prevTree == nullptr) || !prevTree->OperIs(GT_STORE_LCL_FLD))
+        {
+            return;
+        }
+
+        GenTreeLclFld* prevStore = prevTree->AsLclFld();
+
+        // Must be the same local variable.
+        if (prevStore->GetLclNum() != currLclNum)
+        {
+            return;
+        }
+
+        // Both stores must be the same type.
+        var_types prevType = prevStore->TypeGet();
+        if (prevType != currType)
+        {
+            return;
+        }
+
+        // The offsets must be adjacent (differ by exactly the type size).
+        unsigned prevOffset = prevStore->GetLclOffs();
+        if (abs((int)prevOffset - (int)currOffset) != (int)genTypeSize(currType))
+        {
+            return;
+        }
+
+        GenTree* currValue = store->Data();
+        GenTree* prevValue = prevStore->Data();
+
+        // Previous store's tree range must also be closed.
+        bool               isPrevClosedRange = false;
+        LIR::ReadOnlyRange prevRange         = BlockRange().GetTreeRange(prevStore, &isPrevClosedRange);
+        if (!isPrevClosedRange)
+        {
+            return;
+        }
+
+        bool isCurrConst = currValue->OperIsConst() &&
+                           !(currValue->IsCnsIntOrI() && currValue->AsIntCon()->ImmedValNeedsReloc(m_compiler));
+        bool isPrevConst = prevValue->OperIsConst() &&
+                           !(prevValue->IsCnsIntOrI() && prevValue->AsIntCon()->ImmedValNeedsReloc(m_compiler));
+
+        // Determine the new wider type.
+        var_types newType = TYP_UNDEF;
+        switch (currType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                newType = TYP_USHORT;
+                break;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                newType = TYP_INT;
+                break;
+
+#ifdef TARGET_64BIT
+            case TYP_INT:
+                newType = TYP_LONG;
+                break;
+
+#if defined(FEATURE_HW_INTRINSICS)
+            case TYP_LONG:
+                newType = TYP_SIMD16;
+                break;
+
+#if defined(TARGET_AMD64)
+            case TYP_SIMD16:
+                if (m_compiler->getPreferredVectorByteLength() >= 32)
+                {
+                    newType = TYP_SIMD32;
+                    break;
+                }
+                return;
+
+            case TYP_SIMD32:
+                if (m_compiler->getPreferredVectorByteLength() >= 64)
+                {
+                    newType = TYP_SIMD64;
+                    break;
+                }
+                return;
+#endif // TARGET_AMD64
+#endif // FEATURE_HW_INTRINSICS
+#endif // TARGET_64BIT
+
+            default:
+                return;
+        }
+
+        assert(newType != TYP_UNDEF);
+
+        // Both constants: combine via bit manipulation (existing path).
+        if (isCurrConst && isPrevConst)
+        {
+            JITDUMP("Coalescing two GT_STORE_LCL_FLD stores into a single wider store:\n");
+            JITDUMP("  Previous store: V%02u [+%u] %s\n", currLclNum, prevOffset, varTypeName(prevType));
+            JITDUMP("  Current store:  V%02u [+%u] %s\n", currLclNum, currOffset, varTypeName(currType));
+            JITDUMP("  New type: %s\n", varTypeName(newType));
+
+            BlockRange().Remove(prevRange.FirstNode(), prevRange.LastNode());
+
+            unsigned newOffset = min(prevOffset, currOffset);
+            store->AsLclFld()->SetLclOffs(newOffset);
+            store->gtType = newType;
+            currValue->ClearContained();
+
+#if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
+            if (varTypeIsSIMD(currType))
+            {
+                int8_t* lowerCns = prevValue->AsVecCon()->gtSimdVal.i8;
+                int8_t* upperCns = currValue->AsVecCon()->gtSimdVal.i8;
+
+                if (prevOffset > currOffset)
+                {
+                    std::swap(lowerCns, upperCns);
+                }
+
+                simd_t   newCns   = {};
+                uint32_t oldWidth = genTypeSize(currType);
+                memcpy(newCns.i8, lowerCns, oldWidth);
+                memcpy(newCns.i8 + oldWidth, upperCns, oldWidth);
+
+                currValue->AsVecCon()->gtSimdVal = newCns;
+                currValue->gtType                = newType;
+                continue;
+            }
+#endif
+
+            size_t lowerCns = (size_t)prevValue->AsIntCon()->IconValue();
+            size_t upperCns = (size_t)currValue->AsIntCon()->IconValue();
+
+            if (prevOffset > currOffset)
+            {
+                std::swap(lowerCns, upperCns);
+            }
+
+#if defined(TARGET_64BIT) && defined(FEATURE_HW_INTRINSICS)
+            if (varTypeIsSIMD(newType))
+            {
+                int8_t val[16];
+                memcpy(val, &lowerCns, 8);
+                memcpy(val + 8, &upperCns, 8);
+                GenTreeVecCon* vecCns = m_compiler->gtNewVconNode(newType, &val);
+
+                BlockRange().InsertAfter(currValue, vecCns);
+                BlockRange().Remove(currValue);
+                store->Data() = vecCns;
+                continue;
+            }
+#endif // TARGET_64BIT && FEATURE_HW_INTRINSICS
+
+            size_t mask = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(currType)) * BITS_PER_BYTE;
+            lowerCns &= mask;
+            upperCns &= mask;
+
+            size_t val = (lowerCns | (upperCns << (genTypeSize(currType) * BITS_PER_BYTE)));
+            JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
+
+            currValue->AsIntCon()->gtIconVal = (ssize_t)val;
+            currValue->gtType                = newType;
+            continue;
+        }
+
+#ifdef TARGET_64BIT
+        // Non-constant values: compose two integral values into a wider value via
+        // cast + shift + OR. For now, restrict to int+int -> long which is the dominant
+        // case and avoids complications with small type register widening.
+        if (currType != TYP_INT || newType != TYP_LONG)
+        {
+            return;
+        }
+
+        // Both values must have closed tree ranges so we can safely relocate them.
+        bool isCurrValueClosed = false;
+        bool isPrevValueClosed = false;
+        BlockRange().GetTreeRange(currValue, &isCurrValueClosed);
+        BlockRange().GetTreeRange(prevValue, &isPrevValueClosed);
+        if (!isCurrValueClosed || !isPrevValueClosed)
+        {
+            return;
+        }
+
+        JITDUMP("Coalescing two non-const GT_STORE_LCL_FLD stores via shift+OR:\n");
+        JITDUMP("  Previous store: V%02u [+%u] %s\n", currLclNum, prevOffset, varTypeName(prevType));
+        JITDUMP("  Current store:  V%02u [+%u] %s\n", currLclNum, currOffset, varTypeName(currType));
+        JITDUMP("  New type: %s\n", varTypeName(newType));
+
+        // Identify which value goes in the low bits and which in the high bits.
+        GenTree* lowValue  = (prevOffset < currOffset) ? prevValue : currValue;
+        GenTree* highValue = (prevOffset < currOffset) ? currValue : prevValue;
+
+        // Clear containment flags — the values may have been marked contained for
+        // the original stores but need to be uncontained for the new CAST/OR tree.
+        lowValue->ClearContained();
+        highValue->ClearContained();
+
+        // Remove the previous store node, keeping its data subtree in the LIR.
+        prevStore->Data() = nullptr;
+        BlockRange().Remove(prevStore);
+
+        // Zero-extend both values to the new wider type (int -> long).
+        unsigned shiftBits = genTypeSize(currType) * BITS_PER_BYTE;
+
+        if (genTypeSize(newType) > genTypeSize(genActualType(lowValue)))
+        {
+            GenTree* castLow = m_compiler->gtNewCastNode(newType, lowValue, true, newType);
+            BlockRange().InsertBefore(store, castLow);
+            lowValue = castLow;
+        }
+
+        if (genTypeSize(newType) > genTypeSize(genActualType(highValue)))
+        {
+            GenTree* castHigh = m_compiler->gtNewCastNode(newType, highValue, true, newType);
+            BlockRange().InsertBefore(store, castHigh);
+            highValue = castHigh;
+        }
+
+        // Shift the high value left.
+        GenTree* shiftAmount = m_compiler->gtNewIconNode((ssize_t)shiftBits);
+        GenTree* shifted     = m_compiler->gtNewOperNode(GT_LSH, newType, highValue, shiftAmount);
+        BlockRange().InsertBefore(store, shiftAmount, shifted);
+
+        // OR the low and shifted-high values.
+        GenTree* combined = m_compiler->gtNewOperNode(GT_OR, newType, lowValue, shifted);
+        BlockRange().InsertBefore(store, combined);
+
+        // Update the current store to use the combined value at the lower offset.
+        unsigned newOffset = min(prevOffset, currOffset);
+        store->AsLclFld()->SetLclOffs(newOffset);
+        store->gtType = newType;
+        store->Data() = combined;
+
+        JITDUMP("Coalesced two non-const stores into a single store via shift+OR\n");
+        // Don't loop for non-constant coalescing — the combined value is no longer a simple
+        // constant, so further coalescing would need a different approach.
+        return;
+#else
+        return;
+#endif // TARGET_64BIT
 
     } while (true);
 #endif // TARGET_XARCH || TARGET_ARM64

@@ -389,6 +389,7 @@ private:
     void     UnmarkTree(GenTree* root);
     GenTree* LowerStoreIndir(GenTreeStoreInd* node);
     void     LowerStoreIndirCoalescing(GenTreeIndir* node);
+    void     LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
     bool     TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
