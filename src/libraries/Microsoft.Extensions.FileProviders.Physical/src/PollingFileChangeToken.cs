@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// Gets a value that indicates whether the file or directory has changed since the change token was created.
         /// </summary>
         /// <remarks>
-        /// Once the file or directory changes, this value is always <see langword="true"/>. Change tokens should not reused once expired. The caller should discard this
+        /// Once the file or directory changes, this value is always <see langword="true"/>. Change tokens should not be reused once expired. The caller should discard this
         /// instance once it sees <see cref="HasChanged" /> is true.
         /// </remarks>
         public bool HasChanged
