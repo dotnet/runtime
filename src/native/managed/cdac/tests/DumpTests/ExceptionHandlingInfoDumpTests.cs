@@ -63,9 +63,9 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
         CodeBlockHandle codeBlock = FindCrashMethodCodeBlock();
         JitType jitType = Target.Contracts.ExecutionManager.GetJITType(codeBlock);
         if (config.R2RMode == "jit")
-            Assert.Equal(jitType, JitType.Jit);
+            Assert.Equal(JitType.Jit, jitType);
         else if (config.R2RMode == "r2r")
-            Assert.Equal(jitType, JitType.R2R);
+            Assert.Equal(JitType.R2R, jitType);
         else
             Assert.Fail($"Unexpected R2RMode value: {config.R2RMode}");
     }
