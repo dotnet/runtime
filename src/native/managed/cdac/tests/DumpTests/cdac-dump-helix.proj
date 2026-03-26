@@ -63,6 +63,7 @@
     derived from each debuggee's DumpTypes property (Heap->heap/2, Full->full/4).
   -->
   <Import Project="$(DumpTestsPayload)/debuggee-metadata.props" />
+  <Import Project="$(MSBuildThisFileDirectory)EnableUnsignedDac.props" />
 
   <!--
     Helix work item command: generate dumps then run tests (or tar + upload).
@@ -83,7 +84,8 @@
   <!-- Windows: test mode tail command -->
   <PropertyGroup Condition="'$(TargetOS)' == 'windows' AND '$(DumpOnly)' != 'true'">
     <_TestCommand>%HELIX_CORRELATION_PAYLOAD%\dotnet.exe exec --runtimeconfig %HELIX_WORKITEM_PAYLOAD%\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile %HELIX_WORKITEM_PAYLOAD%\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json %HELIX_WORKITEM_PAYLOAD%\tests\xunit.console.dll %HELIX_WORKITEM_PAYLOAD%\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults.xml -nologo</_TestCommand>
-    <_FullCommand>$(_DumpGenCommands) &amp; $(_DumpInfoCommand) &amp; $(_TestCommand)</_FullCommand>
+    <_TarCommand>tar -czf %HELIX_WORKITEM_UPLOAD_ROOT%\dumps.tar.gz -C %HELIX_WORKITEM_PAYLOAD%\dumps .</_TarCommand>
+    <_FullCommand>$(_DumpGenCommands) &amp; $(_DumpInfoCommand) &amp; $(_TestCommand) &amp; if errorlevel 1 set _FAIL=1 &amp; $(_TarCommand) &amp; if defined _FAIL exit /b 1</_FullCommand>
   </PropertyGroup>
 
   <!-- Windows: DumpOnly mode tail command -->
@@ -101,7 +103,8 @@
   <!-- Unix: test mode tail command -->
   <PropertyGroup Condition="'$(TargetOS)' != 'windows' AND '$(DumpOnly)' != 'true'">
     <_TestCommand>$HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/xunit.console.dll $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults.xml -nologo</_TestCommand>
-    <_FullCommand>$(_DumpGenCommands) &amp;&amp; $(_DumpInfoCommand) &amp;&amp; $(_TestCommand)</_FullCommand>
+    <_TarCommand>tar -czf $HELIX_WORKITEM_UPLOAD_ROOT/dumps.tar.gz -C $HELIX_WORKITEM_PAYLOAD/dumps .</_TarCommand>
+    <_FullCommand>$(_DumpGenCommands) &amp;&amp; $(_DumpInfoCommand) &amp;&amp; $(_TestCommand); _rc=$?; $(_TarCommand); exit $_rc</_FullCommand>
   </PropertyGroup>
 
   <!-- Unix: DumpOnly mode tail command -->
@@ -113,7 +116,9 @@
   <!-- Pre-commands: enable dump generation -->
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
     <!-- Allow heap dump generation with the unsigned locally-built DAC -->
-    <HelixPreCommand Include="reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f 2&gt;nul || (echo DisableAuxProviderSignatureCheck registry write skipped &amp; exit /b 0)" />
+    <HelixPreCommand Include="$(DacRegAdd) 2&gt;nul || (echo DisableAuxProviderSignatureCheck registry write skipped &amp; exit /b 0)" />
+    <!-- WoW64 view only needed for x86 processes -->
+    <HelixPreCommand Condition="'$(TargetArchitecture)' == 'x86'" Include="$(DacRegAdd32) 2&gt;nul || (echo DisableAuxProviderSignatureCheck /reg:32 registry write skipped &amp; exit /b 0)" />
     <HelixPreCommand Include="set DOTNET_DbgEnableMiniDump=1" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">
@@ -133,12 +138,13 @@
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
   </PropertyGroup>
 
-  <!-- Test mode: generate dumps then run tests -->
+  <!-- Test mode: generate dumps, run tests, then tar dumps for download -->
   <ItemGroup Condition="'$(DumpOnly)' != 'true'">
     <HelixWorkItem Include="CdacDumpTests">
       <PayloadDirectory>$(DumpTestsPayload)</PayloadDirectory>
       <Command>$(_FullCommand)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
+      <DownloadFilesFromResults>dumps.tar.gz</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
 

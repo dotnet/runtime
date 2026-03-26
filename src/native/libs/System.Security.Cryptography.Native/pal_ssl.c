@@ -196,13 +196,18 @@ const SSL_METHOD* CryptoNative_SslV2_3Method(void)
 {
     // No error queue impact.
     const SSL_METHOD* method = TLS_method();
-    assert(method != NULL);
+
     return method;
 }
 
 SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
 {
     ERR_clear_error();
+
+    if (method == NULL)
+    {
+        return NULL;
+    }
 
     SSL_CTX* ctx = SSL_CTX_new(method);
 

@@ -1290,7 +1290,6 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
         }
         else
         {
-            // <TODO> If VSD isn't compiled in this gives the wrong result for virtuals (we need run time virtualization). </TODO>
             // Reflection or the code in BindToMethodName will pass us the unboxing stub for non-static methods on value types. But
             // for open invocation on value type methods the actual reference will be passed so we need the unboxed method desc
             // instead.

@@ -77,7 +77,8 @@ enum instruction : uint32_t
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 #elif defined(TARGET_WASM)
-    #define INST(id, nm, info, fmt, opcode) INS_##id,
+    #define INST(id, nm, info, fmt, opcode         ) INS_##id,
+    #define INST2(id, nm, info, fmt, prefix, opcode) INS_##id,
     #include "instrs.h"
 
 #else
