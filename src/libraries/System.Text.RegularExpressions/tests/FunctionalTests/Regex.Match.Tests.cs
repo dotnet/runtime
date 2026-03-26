@@ -2583,8 +2583,9 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             // Nested loop correctness tests. ReduceLoops collapses redundant nested loops
-            // (e.g. (R*)* → R*) before any engine sees them. These verify the results are
-            // consistent across all engines.
+            // (e.g. (R*)* -> R*) before any engine sees them. These verify the results are
+            // consistent across all engines, including edge cases where simplification must
+            // not be applied.
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 // Patterns that are collapsed: (R*)*, (R+)*, (R*)+ all become R*
@@ -2681,14 +2682,9 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                // NonBacktracking uses a lower nesting depth to avoid stack overflow in the recursive
-                // derivative processing. 120 levels is still well beyond what would previously hang
-                // (previously, even 20 levels would cause >60s execution time).
-                int depth = RegexHelpers.IsNonBacktracking(engine) ? 120 : 2000;
-
-                yield return new object[] { engine, "(", "a", ")*", "a", depth, 1000 };
-                yield return new object[] { engine, "(", "[aA]", ")+", "aA", depth, 3000 };
-                yield return new object[] { engine, "(", "ab", "){0,1}", "ab", depth, 1000 };
+                yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000 };
+                yield return new object[] { engine, "(", "[aA]", ")+", "aA", 2000, 3000 };
+                yield return new object[] { engine, "(", "ab", "){0,1}", "ab", 2000, 1000 };
             }
         }
 

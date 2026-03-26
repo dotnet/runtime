@@ -238,10 +238,15 @@ namespace System.Text.RegularExpressions.Tests
                 const int depth = 20;
                 var sb = new StringBuilder();
                 for (int i = 0; i < depth; i++)
+                {
                     sb.Append("(?:");
+                }
+
                 sb.Append('a');
                 for (int i = depth - 1; i >= 0; i--)
+                {
                     sb.Append(i % 2 == 0 ? ")*" : ")*?");
+                }
 
                 RegexNode tree = RegexParser.Parse(sb.ToString(), options, CultureInfo.CurrentCulture).Root;
                 SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
@@ -274,10 +279,15 @@ namespace System.Text.RegularExpressions.Tests
             const int depth = 100;
             var sb = new StringBuilder();
             for (int i = 0; i < depth; i++)
+            {
                 sb.Append("(?:");
+            }
+
             sb.Append('a');
             for (int i = 0; i < depth; i++)
+            {
                 sb.Append(")*");
+            }
 
             RegexNode tree = RegexParser.Parse(sb.ToString(), options, CultureInfo.CurrentCulture).Root;
             SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
