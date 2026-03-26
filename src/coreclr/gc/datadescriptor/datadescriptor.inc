@@ -145,7 +145,6 @@ CDAC_GLOBAL(HandleBlocksPerSegment, /*uint32*/, HANDLE_BLOCKS_PER_SEGMENT)
 CDAC_GLOBAL(HandleMaxInternalTypes, /*uint32*/, HANDLE_MAX_INTERNAL_TYPES)
 CDAC_GLOBAL(HandlesPerBlock, /*uint32*/, HANDLE_HANDLES_PER_BLOCK)
 CDAC_GLOBAL(BlockInvalid, /*uint8*/, BLOCK_INVALID)
-CDAC_GLOBAL(HandleSegmentSize, /*uint32*/, HANDLE_SEGMENT_SIZE)
 CDAC_GLOBAL(CardTableInfoSize, /*uint32*/, (uint32_t)sizeof(dac_card_table_info))
 #ifdef USE_REGIONS
 CDAC_GLOBAL(CountFreeRegionKinds, /*uint32*/, (uint32_t)FREE_REGION_KINDS)
