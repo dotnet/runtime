@@ -7,6 +7,8 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessUtils
     {
+        internal static bool SupportsAtomicNonInheritablePipeCreation => Interop.Sys.IsAtomicNonInheritablePipeCreationSupported;
+
         private static bool IsExecutable(string fullPath)
         {
             Interop.Sys.FileStatus fileinfo;

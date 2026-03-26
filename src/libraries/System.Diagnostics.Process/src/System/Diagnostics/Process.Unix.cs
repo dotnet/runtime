@@ -458,7 +458,7 @@ namespace System.Diagnostics
             if (string.IsNullOrEmpty(resolvedFilename))
             {
                 Interop.ErrorInfo errno = Interop.Error.ENOENT.Info();
-                throw CreateExceptionForErrorStartingProcess(errno.GetErrorMessage(), errno.RawErrno, startInfo.FileName, cwd);
+                throw ProcessUtils.CreateExceptionForErrorStartingProcess(errno.GetErrorMessage(), errno.RawErrno, startInfo.FileName, cwd);
             }
 
             // Lock to avoid races with OnSigChild
@@ -504,7 +504,7 @@ namespace System.Diagnostics
                         return false;
                     }
 
-                    throw CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
+                    throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
                 }
             }
             finally
@@ -722,8 +722,6 @@ namespace System.Diagnostics
             // Use AnonymousPipeClientStream for async, cancellable read/write support.
             return new AnonymousPipeClientStream(direction, safePipeHandle);
         }
-
-        private static bool SupportsAtomicNonInheritablePipeCreation => Interop.Sys.IsAtomicNonInheritablePipeCreationSupported;
 
         private static Encoding GetStandardInputEncoding() => Encoding.Default;
 
