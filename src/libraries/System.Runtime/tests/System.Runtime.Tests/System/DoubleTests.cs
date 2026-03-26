@@ -473,8 +473,8 @@ namespace System.Tests
             yield return new object[] { "0x1.999999999999ap-4", NumberStyles.HexFloat, invariantFormat, 0.1 };
 
             // HexFloat without AllowDecimalPoint should parse integers only
-            yield return new object[] { "0xFFp0", NumberStyles.AllowHexSpecifier | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, invariantFormat, 255.0 };
-            yield return new object[] { "0xAp0", NumberStyles.AllowHexSpecifier, invariantFormat, 10.0 };
+            yield return new object[] { "0xFFp0", NumberStyles.AllowHexSpecifier | NumberStyles.AllowExponent | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, invariantFormat, 255.0 };
+            yield return new object[] { "0xAp0", NumberStyles.AllowHexSpecifier | NumberStyles.AllowExponent, invariantFormat, 10.0 };
 
             // Zero with absurd exponent (still zero)
             yield return new object[] { "0x0p99999", NumberStyles.HexFloat, invariantFormat, 0.0 };
@@ -643,7 +643,7 @@ namespace System.Tests
             yield return new object[] { "xyz", NumberStyles.HexFloat, null, typeof(FormatException) }; // no hex digits
             yield return new object[] { "0x1.0.p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double decimal point
             yield return new object[] { "0x 1p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // embedded whitespace after prefix
-            yield return new object[] { "0x1.8p0", NumberStyles.AllowHexSpecifier, null, typeof(FormatException) }; // decimal point not allowed without AllowDecimalPoint
+            yield return new object[] { "0x1.8p0", NumberStyles.AllowHexSpecifier | NumberStyles.AllowExponent, null, typeof(FormatException) }; // decimal point not allowed without AllowDecimalPoint
         }
 
         [Theory]
@@ -1152,9 +1152,9 @@ namespace System.Tests
         [Theory]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowThousands)]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowCurrencySymbol)]
-        [InlineData(NumberStyles.HexFloat | NumberStyles.AllowExponent)]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowTrailingSign)]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.AllowHexSpecifier)]
         [InlineData(NumberStyles.AllowBinarySpecifier)]
         public static void HexFloat_StyleValidation(NumberStyles style)
         {

@@ -75,8 +75,9 @@ namespace System.Globalization
 
         /// <summary>
         /// Indicates that the <see cref="AllowLeadingWhite"/>, <see cref="AllowTrailingWhite"/>,
-        /// <see cref="AllowLeadingSign"/>, <see cref="AllowHexSpecifier"/>, and <see cref="AllowDecimalPoint"/>
-        /// styles are used. This is a composite number style used for parsing hexadecimal floating-point values
+        /// <see cref="AllowLeadingSign"/>, <see cref="AllowDecimalPoint"/>, <see cref="AllowExponent"/>,
+        /// and <see cref="AllowHexSpecifier"/> styles are used.
+        /// This is a composite number style used for parsing hexadecimal floating-point values
         /// based on the syntax defined in IEEE 754:2008 §5.12.3:
         /// <code>
         ///   [sign] 0x hexSignificand pExponent
@@ -86,23 +87,16 @@ namespace System.Globalization
         /// <c>hexSignificand</c> is one of <c>hh</c>, <c>hh.</c>, <c>hh.hh</c>, or <c>.hh</c>
         /// (where <c>hh</c> represents one or more hexadecimal digits), and
         /// <c>pExponent</c> is a required <c>p</c> (or <c>P</c>) followed by an optional sign (<c>+</c> or <c>-</c>)
-        /// and one or more decimal digits specifying a base-2 exponent (the significand is multiplied by
-        /// 2 raised to this power).
+        /// and one or more decimal digits specifying an exponent in the radix of the floating-point format
+        /// (for binary types such as <see cref="float"/> and <see cref="double"/>,
+        /// the significand is multiplied by 2 raised to this power).
         /// </summary>
         /// <remarks>
-        /// <para>
         /// Note that unlike <see cref="HexNumber"/> for integer types (which rejects a "0x"/"0X" prefix),
         /// <see cref="HexFloat"/> requires the prefix. This difference exists because the
         /// IEEE 754 hex float grammar (e.g., <c>0x1.921fb54442d18p+1</c>) naturally includes the prefix.
-        /// </para>
-        /// <para>
-        /// <see cref="AllowExponent"/> is intentionally not included in <see cref="HexFloat"/>.
-        /// The <c>p</c>/<c>P</c> exponent in the hex float grammar is handled directly by the
-        /// hex float parser and is distinct from the <c>e</c>/<c>E</c> decimal exponent
-        /// controlled by <see cref="AllowExponent"/>.
-        /// </para>
         /// </remarks>
-        HexFloat = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowHexSpecifier | AllowDecimalPoint,
+        HexFloat = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowDecimalPoint | AllowExponent | AllowHexSpecifier,
 
         Currency = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowTrailingSign |
                    AllowParentheses | AllowDecimalPoint | AllowThousands | AllowCurrencySymbol,

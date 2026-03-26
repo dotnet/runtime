@@ -874,7 +874,7 @@ namespace System.Numerics.Tests
             yield return new object[] { "xyz", NumberStyles.HexFloat, null, typeof(FormatException) }; // no hex digits
             yield return new object[] { "0x1.0.p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double decimal point
             yield return new object[] { "0x 1p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // embedded whitespace after prefix
-            yield return new object[] { "0x1.8p0", NumberStyles.AllowHexSpecifier, null, typeof(FormatException) }; // decimal point not allowed without AllowDecimalPoint
+            yield return new object[] { "0x1.8p0", NumberStyles.AllowHexSpecifier | NumberStyles.AllowExponent, null, typeof(FormatException) }; // decimal point not allowed without AllowDecimalPoint
         }
 
         [Theory]
@@ -1194,7 +1194,7 @@ namespace System.Numerics.Tests
         [Theory]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowThousands)]
         [InlineData(NumberStyles.HexFloat | NumberStyles.AllowCurrencySymbol)]
-        [InlineData(NumberStyles.HexFloat | NumberStyles.AllowExponent)]
+        [InlineData(NumberStyles.AllowHexSpecifier)]
         [InlineData(NumberStyles.AllowBinarySpecifier)]
         public static void HexFloat_StyleValidation(NumberStyles style)
         {

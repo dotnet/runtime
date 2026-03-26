@@ -26,11 +26,11 @@ namespace System.Globalization.Tests
 
         [Theory]
         [InlineData(unchecked((NumberStyles)0xFFFFFC00), false)]
-        [InlineData(NumberStyles.HexNumber | NumberStyles.Integer, true)]
-        [InlineData(NumberStyles.AllowHexSpecifier, true)]
+        [InlineData(NumberStyles.HexNumber | NumberStyles.Integer, false)]
+        [InlineData(NumberStyles.AllowHexSpecifier, false)]
         [InlineData(NumberStyles.HexFloat, true)]
         [InlineData(NumberStyles.AllowBinarySpecifier, false)]
-        [InlineData(NumberStyles.AllowHexSpecifier | NumberStyles.AllowExponent, false)]
+        [InlineData(NumberStyles.AllowHexSpecifier | NumberStyles.AllowExponent, true)]
         [InlineData(NumberStyles.None, true)]
         public void ValidateParseStyle_Float(NumberStyles style, bool valid)
         {

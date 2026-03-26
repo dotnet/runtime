@@ -1145,7 +1145,8 @@ namespace System
             }
 
             // Parse the exponent: 'p' or 'P' followed by optional sign and decimal digits.
-            // The decimal value specifies a base-2 exponent (value is multiplied by 2 raised to this power).
+            // The decimal value specifies an exponent in the radix of the floating-point format
+            // (for binary types, the value is multiplied by 2 raised to this power).
             int binaryExponent = 0;
             if (index < value.Length && ((TChar.CastToUInt32(value[index]) | 0x20) == 'p'))
             {
