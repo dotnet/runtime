@@ -68,7 +68,7 @@ public class EdgeCaseTests : ReadTests
     [InlineData(2147483591)] // Array.MaxLength
     public void CanReadArrayOfAnySize(int length)
     {
-        if (length == 2147483591 && (!PlatformDetection.Is64BitProcess || PlatformDetection.SlowRuntimeTimeoutModifier != 1 || !PlatformDetection.IsNetCore))
+        if (length == 2147483591 && (!PlatformDetection.Is64BitProcess || !PlatformDetection.IsReleaseRuntime || !PlatformDetection.IsNetCore))
         {
             throw new SkipTestException("It would take too much time to execute.");
         }
