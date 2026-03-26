@@ -496,10 +496,17 @@ namespace Internal.JitInterface
             _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.ResumptionStubEntryPoint(compiledStubNode));
         }
 
+        private bool _resumptionStubFixupAdded;
+
         private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
         {
             MethodDesc asyncResumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(MethodBeingCompiled, MethodBeingCompiled.OwningType);
-            AddResumptionStubFixup(_compilation.NodeFactory.CompiledMethodNode(asyncResumptionStub));
+
+            if (!_resumptionStubFixupAdded)
+            {
+                AddResumptionStubFixup(_compilation.NodeFactory.CompiledMethodNode(asyncResumptionStub));
+                _resumptionStubFixupAdded = true;
+            }
 
             entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.CompiledMethodNode(asyncResumptionStub));
             return ObjectToHandle(asyncResumptionStub);

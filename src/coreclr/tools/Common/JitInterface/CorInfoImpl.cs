@@ -704,7 +704,6 @@ namespace Internal.JitInterface
             _debugInfo = null;
 #endif
 
-
             _debugLocInfos = null;
             _debugVarInfos = null;
             _lastException = null;
@@ -718,6 +717,7 @@ namespace Internal.JitInterface
             _stashedInlinedMethods.Clear();
             _ilBodiesNeeded = null;
             _synthesizedPgoDependencies = null;
+            _resumptionStubFixupAdded = false;
 #endif
 
             _instantiationToJitVisibleInstantiation = null;
