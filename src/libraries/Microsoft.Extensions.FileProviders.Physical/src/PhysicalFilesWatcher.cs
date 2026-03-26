@@ -411,6 +411,38 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+        // Fires tokens for any watched entries that already exist on disk. Called after enabling
+        // the FileSystemWatcher to catch entries created before the watcher was active (e.g.
+        // files created between _root appearing and the FSW being enabled).
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private void ReportExistingWatchedEntries()
+        {
+            if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) && Directory.Exists(_root))
+            {
+                try
+                {
+                    foreach (string fullPath in
+                        Directory.EnumerateFileSystemEntries(_root, "*", SearchOption.AllDirectories))
+                    {
+                        OnFileSystemEntryChange(fullPath);
+
+                        if (_filePathTokenLookup.IsEmpty && _wildcardTokenLookup.IsEmpty)
+                        {
+                            break;
+                        }
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or SecurityException or DirectoryNotFoundException or UnauthorizedAccessException)
+                {
+                    // Swallow — the directory may have been deleted or become inaccessible.
+                }
+            }
+        }
+
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("wasi")]
         [UnsupportedOSPlatform("ios")]
@@ -435,23 +467,27 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private void TryEnableFileSystemWatcher()
         {
-            if (_fileWatcher != null)
+            if (_fileWatcher is null)
             {
-                lock (_fileWatcherLock)
-                {
+                return;
+            }
+
 // We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
 #pragma warning disable CA1416 // Validate platform compatibility
-                    if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) &&
-                        !_fileWatcher.EnableRaisingEvents)
-                    {
-                        if (!Directory.Exists(_root))
-                        {
-                            // _root doesn't exist yet — start a PendingCreationWatcher that will
-                            // call TryEnableFileSystemWatcher once _root appears.
-                            EnsureRootCreationWatcher();
-                            return;
-                        }
+            bool needsRootWatcher = false;
+            bool justEnabledAfterRootCreated = false;
 
+            lock (_fileWatcherLock)
+            {
+                if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) &&
+                    !_fileWatcher.EnableRaisingEvents)
+                {
+                    if (!Directory.Exists(_root))
+                    {
+                        needsRootWatcher = true;
+                    }
+                    else
+                    {
                         try
                         {
                             if (string.IsNullOrEmpty(_fileWatcher.Path))
@@ -461,6 +497,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
                             // Perf: Turn off the file monitoring if no files to monitor.
                             _fileWatcher.EnableRaisingEvents = true;
+
+                            // Only scan for existing entries if the FSW was enabled after _root
+                            // was initially missing (i.e. we went through the PCW path). In the
+                            // normal case where _root always existed, there is no gap to cover.
+                            justEnabledAfterRootCreated = _rootCreationWatcher is not null;
                         }
                         catch (Exception ex) when (ex is ArgumentException or IOException)
                         {
@@ -468,13 +509,28 @@ namespace Microsoft.Extensions.FileProviders.Physical
                             // and the property sets above. Fall back to watching for root creation.
                             if (!Directory.Exists(_root))
                             {
-                                EnsureRootCreationWatcher();
+                                needsRootWatcher = true;
                             }
                         }
                     }
-#pragma warning restore CA1416
                 }
             }
+
+            // After enabling the FSW following a root-missing period, check for entries that
+            // were created before the watcher was active. Without this, files created between
+            // _root appearing and the FSW being enabled would be missed.
+            if (justEnabledAfterRootCreated)
+            {
+                ReportExistingWatchedEntries();
+            }
+
+            // Call outside the lock — EnsureRootCreationWatcher may invoke Token.Register,
+            // which can fire synchronously and re-enter TryEnableFileSystemWatcher.
+            if (needsRootWatcher)
+            {
+                EnsureRootCreationWatcher();
+            }
+#pragma warning restore CA1416
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -499,8 +555,22 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 _rootCreationWatcher = newWatcher;
             }
 
+            // If the token is already cancelled (e.g. setup error because the ancestor directory
+            // also doesn't exist), don't register a callback — it would fire synchronously and
+            // could cause a tight retry loop.
+            if (newWatcher.Token.IsCancellationRequested)
+            {
+                // If _root appeared during setup, enable the FSW now.
+                if (Directory.Exists(_root))
+                {
+                    TryEnableFileSystemWatcher();
+                }
+
+                return;
+            }
+
             // Register outside the lock to avoid deadlocking with TryEnableFileSystemWatcher
-            // if the token is already cancelled (synchronous callback invocation).
+            // if the token gets cancelled (synchronous callback invocation).
             newWatcher.Token.Register(_ => TryEnableFileSystemWatcher(), null);
         }
 
