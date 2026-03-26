@@ -2332,6 +2332,11 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public async Task LargeUriAndHeaders_Works()
         {
+            if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
+            {
+                throw new SkipTestException("Test times out on Android emulators due to large (30MB) payload and 72s loopback server timeout");
+            }
+
             int length = IsWinHttpHandler ? 65_000 : 10_000_000;
 
             string longPath = "/" + new string('X', length);
