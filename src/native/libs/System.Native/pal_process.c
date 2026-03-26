@@ -263,6 +263,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             {
                 continue;
             }
+
             struct sigaction sa_old;
             if (!sigaction(sig, NULL, &sa_old))
             {
@@ -303,7 +304,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         if ((stdinFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdinFd, STDIN_FILENO)) != 0)
             || (stdoutFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdoutFd, STDOUT_FILENO)) != 0)
             || (stderrFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stderrFd, STDERR_FILENO)) != 0)
-            || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0)) // // Change working directory if specified
+            || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0)) // Change working directory if specified
         {
             int saved_errno = result;
             posix_spawn_file_actions_destroy(&file_actions);
