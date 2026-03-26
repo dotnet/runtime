@@ -11357,12 +11357,12 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                 }
 
                 // Extract the portion of the constant that corresponds to the read.
-                ssize_t fullVal      = store->Data()->AsIntCon()->IconValue();
-                unsigned bitOffset   = (readOffset - offset) * BITS_PER_BYTE;
-                size_t   readMask    = (readSize >= sizeof(size_t))
-                                         ? ~(size_t)0
-                                         : ((size_t)1 << (readSize * BITS_PER_BYTE)) - 1;
-                ssize_t  forwardVal  = (ssize_t)(((size_t)fullVal >> bitOffset) & readMask);
+                ssize_t  fullVal    = store->Data()->AsIntCon()->IconValue();
+                unsigned bitOffset  = (readOffset - offset) * BITS_PER_BYTE;
+                size_t   readMask   = (readSize >= sizeof(size_t))
+                                        ? ~(size_t)0
+                                        : ((size_t)1 << (readSize * BITS_PER_BYTE)) - 1;
+                ssize_t  forwardVal = (ssize_t)(((size_t)fullVal >> bitOffset) & readMask);
 
                 // For the forwarded constant, use the read's type if it's integral,
                 // otherwise use the store type.
