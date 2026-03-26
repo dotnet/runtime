@@ -11308,7 +11308,8 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
     // last-use read from the same local. If found, we can bypass the store+load entirely
     // by replacing the load with the constant value and removing the store.
     if (store->OperIs(GT_STORE_LCL_FLD) && store->Data()->OperIsConst() && store->Data()->IsCnsIntOrI() &&
-        !store->Data()->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        !store->Data()->AsIntCon()->ImmedValNeedsReloc(m_compiler) &&
+        !m_compiler->lvaVarAddrExposed(store->GetLclNum()))
     {
         unsigned  lclNum    = store->GetLclNum();
         unsigned  offset    = store->AsLclFld()->GetLclOffs();
