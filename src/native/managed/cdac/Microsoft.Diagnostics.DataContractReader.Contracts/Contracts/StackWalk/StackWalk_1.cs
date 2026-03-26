@@ -49,21 +49,23 @@ internal partial class StackWalk_1 : IStackWalk
         bool IsActiveFrame = false) : IStackDataFrameHandle
     { }
 
-    private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData, bool skipDuplicateActiveICF = false)
+    private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData, bool skipActiveICFOnce = false)
     {
         public IPlatformAgnosticContext Context { get; set; } = context;
         public StackWalkState State { get; set; } = state;
         public FrameIterator FrameIter { get; set; } = frameIter;
         public ThreadData ThreadData { get; set; } = threadData;
 
-        // When true, CheckForSkippedFrames will skip past an active InlinedCallFrame
-        // that was just processed as SW_FRAME without advancing the FrameIterator.
-        // This prevents a duplicate SW_SKIPPED_FRAME yield for the same managed IP.
+        // When an active InlinedCallFrame is processed as SW_FRAME without advancing
+        // the FrameIterator, the same Frame would be re-encountered by
+        // CheckForSkippedFrames. This one-shot flag tells CheckForSkippedFrames to
+        // advance past it once, preventing a duplicate SW_SKIPPED_FRAME yield.
         //
         // Must be false for ClrDataStackWalk (which needs exact DAC frame parity)
         // and true for WalkStackReferences (which matches native DacStackReferenceWalker
         // behavior of not re-enumerating the same InlinedCallFrame).
-        public bool SkipDuplicateActiveICF { get; } = skipDuplicateActiveICF;
+        public bool SkipActiveICFOnce { get; } = skipActiveICFOnce;
+        public bool SkipCurrentFrameInCheck { get; set; }
 
 
         // Track isFirst exactly like native CrawlFrame::isFirst in StackFrameIterator.
@@ -139,10 +141,6 @@ internal partial class StackWalk_1 : IStackWalk
 
         if (skipInitialFrames)
         {
-            // Skip Frames below the initial managed frame's caller SP. All Frames
-            // below this SP belong to the current managed frame or frames pushed more
-            // recently (e.g., RedirectedThreadFrame from GC stress, active
-            // InlinedCallFrames from P/Invoke calls within the method).
             TargetPointer skipBelowSP;
             if (state == StackWalkState.SW_FRAMELESS)
             {
@@ -160,13 +158,12 @@ internal partial class StackWalk_1 : IStackWalk
             }
         }
 
-        // if the next Frame is not valid and we are not in managed code, there is nothing to return
         if (state == StackWalkState.SW_FRAME && !frameIterator.IsValid())
         {
             yield break;
         }
 
-        StackWalkData stackWalkData = new(context, state, frameIterator, threadData, skipDuplicateActiveICF: skipInitialFrames);
+        StackWalkData stackWalkData = new(context, state, frameIterator, threadData, skipActiveICFOnce: skipInitialFrames);
 
         yield return stackWalkData.ToDataFrame();
         stackWalkData.AdvanceIsFirst();
@@ -196,6 +193,7 @@ internal partial class StackWalk_1 : IStackWalk
 
                 bool reportGcReferences = gcFrame.ShouldCrawlFrameReportGCReferences;
 
+
                 TargetPointer pFrame = ((IStackWalk)this).GetFrameAddress(gcFrame.Frame);
                 scanContext.UpdateScanContext(
                     gcFrame.Frame.Context.StackPointer,
@@ -209,9 +207,6 @@ internal partial class StackWalk_1 : IStackWalk
                         if (!IsManaged(gcFrame.Frame.Context.InstructionPointer, out CodeBlockHandle? cbh))
                             throw new InvalidOperationException("Expected managed code");
 
-                        // IsActiveFrame was computed during CreateStackWalk, matching native
-                        // CrawlFrame::IsActiveFunc() semantics. Active frames report scratch
-                        // registers; non-active frames skip them.
                         CodeManagerFlags codeManagerFlags = gcFrame.Frame.IsActiveFrame
                             ? CodeManagerFlags.ActiveStackFrame
                             : 0;
@@ -222,10 +217,6 @@ internal partial class StackWalk_1 : IStackWalk
                         uint? relOffsetOverride = null;
                         if (gcFrame.ShouldParentFrameUseUnwindTargetPCforGCReporting)
                         {
-                            // When resuming in a catch funclet associated with the same parent,
-                            // report liveness at the first interruptible point of the catch handler
-                            // instead of the original throw site. This mirrors the native runtime
-                            // logic in gcenv.ee.common.cpp.
                             _eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddr, out uint gcVersion);
                             IGCInfoHandle gcHandle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
                             if (gcHandle is IGCInfoDecoder decoder)
@@ -575,6 +566,13 @@ internal partial class StackWalk_1 : IStackWalk
                             // Invoke the GC callback for this crawlframe (to keep any dynamic methods alive) but do not report its references.
                             gcFrame.ShouldCrawlFrameReportGCReferences = false;
                         }
+                        else if (IsAtFirstPassExceptionThrowSite(handle))
+                        {
+                            // During first-pass exception handling, the throw-site frame is
+                            // being dispatched. The legacy DAC does not report GC refs from
+                            // this frame during first pass. Suppress to match DAC behavior.
+                            gcFrame.ShouldCrawlFrameReportGCReferences = false;
+                        }
                     }
 
                     stop = true;
@@ -628,6 +626,10 @@ internal partial class StackWalk_1 : IStackWalk
                 }
                 break;
             case StackWalkState.SW_SKIPPED_FRAME:
+                // Skipped Frames still need UpdateContextFromFrame if they restore
+                // a context (e.g., SoftwareExceptionFrame, ResumableFrame). The native
+                // StackFrameIterator always calls UpdateRegDisplay for these frames.
+                handle.FrameIter.UpdateContextFromFrame(handle.Context);
                 handle.FrameIter.Next();
                 break;
             case StackWalkState.SW_FRAME:
@@ -635,6 +637,16 @@ internal partial class StackWalk_1 : IStackWalk
                 if (!handle.FrameIter.IsInlineCallFrameWithActiveCall())
                 {
                     handle.FrameIter.Next();
+                }
+                else
+                {
+                    // Active InlinedCallFrame: FrameIter was NOT advanced. The next
+                    // CheckForSkippedFrames would re-encounter this same Frame and
+                    // create a spurious SW_SKIPPED_FRAME -> SW_FRAMELESS duplicate.
+                    // Only applies to WalkStackReferences path — ClrDataStackWalk
+                    // must yield Frames in the same order as the legacy DAC.
+                    if (handle.SkipActiveICFOnce)
+                        handle.SkipCurrentFrameInCheck = true;
                 }
                 break;
             case StackWalkState.SW_ERROR:
@@ -688,11 +700,12 @@ internal partial class StackWalk_1 : IStackWalk
             return false;
         }
 
-        // If the current Frame was already processed as SW_FRAME (active InlinedCallFrame
-        // that wasn't advanced), skip past it to avoid a duplicate SW_SKIPPED_FRAME yield.
-        // Only applies to WalkStackReferences (SkipDuplicateActiveICF=true).
-        if (handle.SkipDuplicateActiveICF && handle.FrameIter.IsInlineCallFrameWithActiveCall())
+        // If the current Frame was already processed as SW_FRAME (e.g., an active
+        // InlinedCallFrame that wasn't advanced), skip it once to avoid a duplicate
+        // SW_SKIPPED_FRAME -> SW_FRAMELESS yield for the same managed IP.
+        if (handle.SkipCurrentFrameInCheck)
         {
+            handle.SkipCurrentFrameInCheck = false;
             handle.FrameIter.Next();
             if (!handle.FrameIter.IsValid())
             {

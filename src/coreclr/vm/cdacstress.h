@@ -24,13 +24,24 @@ enum cdac_trigger_points
 #ifdef HAVE_GCCOVER
 
 // Bit flags for DOTNET_CdacStress configuration.
+//
+// Low nibble:  WHERE to trigger verification
+// High nibble: WHAT to validate
+// Modifier:    HOW to filter
 enum CdacStressFlags : DWORD
 {
-    CDACSTRESS_NONE   = 0x0,
-    CDACSTRESS_ALLOC  = 0x1,
-    CDACSTRESS_GC     = 0x2,
-    CDACSTRESS_UNIQUE = 0x4,
-    CDACSTRESS_INSTR  = 0x8,
+    // Trigger points (low nibble — where stress fires)
+    CDACSTRESS_ALLOC        = 0x1,    // Verify at allocation points
+    CDACSTRESS_GC           = 0x2,    // Verify at GC trigger points (future)
+    CDACSTRESS_INSTR        = 0x4,    // Verify at instruction stress points (needs GCStress=0x4)
+
+    // Validation types (high nibble — what to check)
+    CDACSTRESS_REFS         = 0x10,   // Compare GC stack references
+    CDACSTRESS_WALK         = 0x20,   // Compare IXCLRDataStackWalk frame-by-frame
+    CDACSTRESS_USE_DAC      = 0x40,   // Also load legacy DAC and compare cDAC against it
+
+    // Modifiers
+    CDACSTRESS_UNIQUE       = 0x100,  // Only verify on unique (IP, SP) pairs
 };
 
 // Forward declarations

@@ -47,7 +47,7 @@ public abstract class GCStressTestBase
             RedirectStandardError = true,
         };
         psi.Environment["CORE_ROOT"] = coreRoot;
-        psi.Environment["DOTNET_CdacStress"] = "0x1";
+        psi.Environment["DOTNET_CdacStress"] = "0x11";
         psi.Environment["DOTNET_CdacStressFailFast"] = "0";
         psi.Environment["DOTNET_CdacStressLogFile"] = logFile;
         psi.Environment["DOTNET_CdacStressStep"] = "1";
