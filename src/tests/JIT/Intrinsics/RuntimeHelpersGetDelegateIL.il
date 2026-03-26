@@ -566,16 +566,6 @@
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.NullableContextAttribute::.ctor(uint8) = ( 01 00 01 00 00 )
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.NullableAttribute::.ctor(uint8) = ( 01 00 00 00 00 )
   .method public hidebysig static class [System.Runtime]System.Func`2<class [RuntimeHelpersGetDelegateCases]IInterface,object>
-          GetInterfaceInstance() cil managed noinlining
-  {
-    .maxstack  2
-    ldftn      instance object [RuntimeHelpersGetDelegateCases]IInterface::InterfaceInstance()
-    ldsflda    class [System.Runtime]System.Func`2<class [RuntimeHelpersGetDelegateCases]IInterface,object> [RuntimeHelpersGetDelegateCases]VirtualCache::InterfaceInstance
-    call       !!0 [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::GetDelegate<class [System.Runtime]System.Func`2<class [RuntimeHelpersGetDelegateCases]IInterface,object>>(native int, !!0&)
-    ret
-  } // end of method VirtualResolver::GetInterfaceInstance
-
-  .method public hidebysig static class [System.Runtime]System.Func`2<class [RuntimeHelpersGetDelegateCases]IInterface,object>
           GetInterfaceInstanceDim() cil managed noinlining
   {
     .maxstack  2
@@ -594,16 +584,6 @@
     call       !!0 [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::GetDelegate<class [System.Runtime]System.Func`2<class [RuntimeHelpersGetDelegateCases]IInterface,object>>(native int, !!0&)
     ret
   } // end of method VirtualResolver::GetInterfaceInstanceDimOverriden
-
-  .method public hidebysig static class [System.Runtime]System.Func`2<class [RuntimeHelpersGetDelegateCases]BaseClass,object>
-          GetBaseAbstract() cil managed noinlining
-  {
-    .maxstack  2
-    ldftn      instance object [RuntimeHelpersGetDelegateCases]BaseClass::BaseAbstract()
-    ldsflda    class [System.Runtime]System.Func`2<class [RuntimeHelpersGetDelegateCases]BaseClass,object> [RuntimeHelpersGetDelegateCases]VirtualCache::BaseAbstract
-    call       !!0 [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::GetDelegate<class [System.Runtime]System.Func`2<class [RuntimeHelpersGetDelegateCases]BaseClass,object>>(native int, !!0&)
-    ret
-  } // end of method VirtualResolver::GetBaseAbstract
 
   .method public hidebysig static class [System.Runtime]System.Func`2<class [RuntimeHelpersGetDelegateCases]BaseClass,object>
           GetBaseVirtual() cil managed noinlining

@@ -101,7 +101,7 @@ public static class Program
             del => AssertEquals(Constants.TestString, del()),
             typeof(NonGeneric).GetMethod(nameof(IStaticInterface.InterfaceStaticVirtualOverriden), Constants.StaticFlags));
 
-        AssertValid(VirtualResolver.GetInterfaceInstance,
+        AssertValid(VirtualCache.GetInterfaceInstance,
             del => AssertEquals(Constants.TestString, del(new NonGeneric())),
             typeof(IInterface).GetMethod(nameof(IInterface.InterfaceInstance), Constants.InstanceFlags));
         AssertValid(VirtualResolver.GetInterfaceInstanceDim,
@@ -111,7 +111,7 @@ public static class Program
             del => AssertEquals(Constants.TestString, del(new NonGeneric())),
             typeof(IInterface).GetMethod(nameof(IInterface.InterfaceInstanceDimOverriden), Constants.InstanceFlags));
 
-        AssertValid(VirtualResolver.GetBaseAbstract,
+        AssertValid(VirtualCache.GetBaseAbstract,
             del => AssertEquals(Constants.TestString, del(new NonGeneric())),
             typeof(BaseClass).GetMethod(nameof(BaseClass.BaseAbstract), Constants.InstanceFlags));
         AssertValid(VirtualResolver.GetBaseVirtual,
@@ -154,7 +154,7 @@ public static class Program
             del => AssertEquals(Constants.TestString, del()),
             typeof(NonGenericStruct).GetMethod(nameof(IStaticInterface.InterfaceStaticVirtualOverriden), Constants.StaticFlags));
 
-        AssertValid(VirtualResolver.GetInterfaceInstance,
+        AssertValid(VirtualCache.GetInterfaceInstance,
             del => AssertEquals(Constants.TestString, del(new NonGenericStruct())),
             typeof(IInterface).GetMethod(nameof(IInterface.InterfaceInstance), Constants.InstanceFlags));
         AssertValid(VirtualResolver.GetInterfaceInstanceDim,
@@ -272,7 +272,7 @@ public static class Program
             del => AssertEquals(Constants.TestString, del()),
             typeof(Generic<T>).GetMethod(nameof(IStaticInterface.InterfaceStaticVirtualOverriden), Constants.StaticFlags));
 
-        AssertValid(VirtualResolver.GetInterfaceInstance,
+        AssertValid(VirtualCache.GetInterfaceInstance,
             del => AssertEquals(Constants.TestString, del(new Generic<T>())),
             typeof(IInterface).GetMethod(nameof(IInterface.InterfaceInstance), Constants.InstanceFlags));
         AssertValid(VirtualResolver.GetInterfaceInstanceDim,
@@ -282,7 +282,7 @@ public static class Program
             del => AssertEquals(Constants.TestString, del(new Generic<T>())),
             typeof(IInterface).GetMethod(nameof(IInterface.InterfaceInstanceDimOverriden), Constants.InstanceFlags));
 
-        AssertValid(VirtualResolver.GetBaseAbstract,
+        AssertValid(VirtualCache.GetBaseAbstract,
             del => AssertEquals(Constants.TestString, del(new Generic<T>())),
             typeof(BaseClass).GetMethod(nameof(BaseClass.BaseAbstract), Constants.InstanceFlags));
         AssertValid(VirtualResolver.GetBaseVirtual,
@@ -396,7 +396,7 @@ public static class Program
             del => AssertEquals(Constants.TestString, del()),
             typeof(GenericStruct<T>).GetMethod(nameof(IStaticInterface.InterfaceStaticVirtualOverriden), Constants.StaticFlags));
 
-        AssertValid(VirtualResolver.GetInterfaceInstance,
+        AssertValid(VirtualCache.GetInterfaceInstance,
             del => AssertEquals(Constants.TestString, del(new GenericStruct<T>())),
             typeof(IInterface).GetMethod(nameof(IInterface.InterfaceInstance), Constants.InstanceFlags));
         AssertValid(VirtualResolver.GetInterfaceInstanceDim,

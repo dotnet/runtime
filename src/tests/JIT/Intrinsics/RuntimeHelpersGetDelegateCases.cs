@@ -329,6 +329,13 @@ public static class VirtualCache
     public static Func<BaseClass, object>? BaseAbstract;
     public static Func<BaseClass, object>? BaseVirtual;
     public static Func<BaseClass, object>? BaseVirtualOverriden;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Func<BaseClass, object> GetBaseAbstract() => RuntimeHelpers.GetDelegate(typeof(BaseClass).GetMethod(nameof(BaseClass.BaseAbstract),
+        Constants.InstanceFlags)!.MethodHandle.GetFunctionPointer(), ref BaseAbstract);
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Func<IInterface, object> GetInterfaceInstance() => RuntimeHelpers.GetDelegate(typeof(IInterface).GetMethod(nameof(IInterface.InterfaceInstance),
+        Constants.InstanceFlags)!.MethodHandle.GetFunctionPointer(), ref InterfaceInstance);
 }
 
 public static class Constants
