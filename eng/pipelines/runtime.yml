@@ -965,6 +965,17 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
+
+      # WebAssembly CoreCLR - smoke tests only on Firefox and V8
+      - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          alwaysRun: ${{ variables.isRollingBuild }}
+          shouldRunSmokeOnly: 'true'
+          nameSuffix: _SmokeFirefoxV8
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          scenarios:
             - WasmTestOnFirefox
             - WasmTestOnV8
 

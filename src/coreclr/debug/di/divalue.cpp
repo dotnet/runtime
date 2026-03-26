@@ -2460,7 +2460,7 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
 
     DacDbiArrayList<DacExceptionCallStackData> dacStackFrames;
 
-    IfFailThrow(pDAC->GetStackFramesFromException(vmObj, dacStackFrames));
+    IfFailThrow(pDAC->GetStackFramesFromException(vmObj, &dacStackFrames));
     int stackFramesLength = dacStackFrames.Count();
 
     if (stackFramesLength > 0)
