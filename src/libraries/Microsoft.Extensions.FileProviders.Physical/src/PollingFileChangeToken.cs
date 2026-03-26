@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
     public class PollingFileChangeToken : IPollingChangeToken
     {
         private readonly FileInfo _fileInfo;
-        private readonly DirectoryInfo _directoryInfo;
+        private DirectoryInfo? _directoryInfo;
         private DateTime _previousWriteTimeUtc;
         private DateTime _lastCheckedTimeUtc;
         private bool _hasChanged;
@@ -38,7 +38,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
         public PollingFileChangeToken(FileInfo fileInfo)
         {
             _fileInfo = fileInfo;
-            _directoryInfo = new DirectoryInfo(fileInfo.FullName);
             _previousWriteTimeUtc = GetLastWriteTimeUtc();
         }
 
@@ -54,6 +53,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(_fileInfo) ?? _fileInfo.LastWriteTimeUtc;
             }
 
+            _directoryInfo ??= new DirectoryInfo(_fileInfo.FullName);
             _directoryInfo.Refresh();
 
             if (_directoryInfo.Exists)
