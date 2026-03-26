@@ -353,7 +353,9 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             // Delete the root directory — the token should fire
             Directory.Delete(rootPath, recursive: true);
-            await Task.Delay(WaitTimeForTokenToFire);
+            var deleteTcs = new TaskCompletionSource<bool>();
+            token.RegisterChangeCallback(_ => deleteTcs.TrySetResult(true), null);
+            await deleteTcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
             Assert.True(token.HasChanged, "Token should fire when the root directory is deleted");
 
             // Re-watch the same file — root is now missing, so this goes through PendingCreationWatcher
