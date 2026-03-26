@@ -543,9 +543,9 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 
         mul->ChangeOper(GT_MUL_LONG);
     }
-    
+
     ContainCheckMul(mul);
-    
+
     return mul->gtNext;
 }
 
@@ -559,7 +559,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //    The next node to lower.
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
-{ 
+{
     if (comp->opts.OptimizationEnabled())
     {
         if (binOp->OperIs(GT_AND))
