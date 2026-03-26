@@ -2912,7 +2912,10 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     }
     else
     {
-        NYI_WASM("What should destReg be here?");
+        // This should be a native memory.fill for an initblk, where
+        // the destination is not being null checked so we didn't flag
+        // dest as multiply-used and can't allocate a reg for it.
+        assert(isNativeOp);
     }
 
     if (nullCheckDest)
