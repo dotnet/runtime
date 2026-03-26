@@ -169,16 +169,21 @@ class ReportGenerator:
 
         # Skipped pipelines
         for p in cur.execute(
-            "SELECT name, skip_reason FROM pipelines WHERE result = 'skipped' ORDER BY name"
+            "SELECT name, build_id, build_number, skip_reason FROM pipelines WHERE result = 'skipped' ORDER BY name"
         ):
             reason = p["skip_reason"] or "private"
-            out.append(f"  ⏭️ {p['name']}: SKIPPED ({reason})")
+            bn = p["build_number"] or ""
+            if p["build_id"] and reason != "private":
+                url = f"https://dev.azure.com/{ADO_ORG}/{ADO_PROJECT}/_build/results?buildId={p['build_id']}"
+                out.append(f"  ⏭️ [{p['name']} {bn}]({url}): SKIPPED ({reason})")
+            else:
+                out.append(f"  ⏭️ {p['name']}: SKIPPED ({reason})")
 
         out.append("")
         out.append("Notes:")
         out.append("- ✅ = all tests passed")
         out.append("- ❌ = one or more test failures")
-        out.append("- ⏭️ = skipped (private pipeline or marked skip)")
+        out.append("- ⏭️ = skipped (private pipeline or marked skip). Non-private skipped pipelines include a build URL.")
         out.append("- EVERY pipeline (✅ and ❌) must include the build URL on the line after the name.")
         out.append("- List ALL failing tests per pipeline — deduplicate by test name (show each unique test once).")
         out.append("- [New] = no matching GitHub issue found — may need a new issue filed.")

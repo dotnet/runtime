@@ -46,10 +46,12 @@ Result: <P> PASS, <F> FAIL (of <M> monitored)
 
   ⏭️ <pipelines.name>: SKIPPED (private)
 
+  ⏭️ [<pipelines.name> <pipelines.build_number>](https://dev.azure.com/dnceng-public/public/_build/results?buildId=<pipelines.build_id>): SKIPPED (<skip_reason, e.g. canceled>)
+
 Notes:
 - ✅ = all tests passed
 - ❌ = one or more test failures
-- ⏭️ = skipped (private pipeline or marked skip)
+- ⏭️ = skipped (private pipeline or marked skip). Non-private skipped pipelines include a build URL.
 - EVERY pipeline (✅ and ❌) must include the build URL on the line after the name.
 - List ALL failing tests per pipeline — deduplicate by test name (show each unique test once).
 - [N] maps to "FAILURE N" in the Failure Details section. Sorted by failure ID.
@@ -91,7 +93,7 @@ Body (paste as-is into GitHub issue):
 **Summary:**
   <1-2 sentence description of the failure and its impact>
 
-**Failed in (<count>):**
+**Failed in (<count>) pipeline(s):**
 - [<pipelines.name> <pipelines.build_number>](https://dev.azure.com/dnceng-public/public/_build/results?buildId=<pipelines.build_id>)
 - [<pipelines.name> <pipelines.build_number>](https://dev.azure.com/dnceng-public/public/_build/results?buildId=<pipelines.build_id>)
 
