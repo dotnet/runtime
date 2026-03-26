@@ -336,7 +336,7 @@ public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePo
 
 ```
 
-`GetJitType` returns the JIT type by finding the JIT manager for the data range containing the relevant code block. We return Jit for the EEJitManager, R2R for the R2RJitManager, and Unknown for any other value.
+`GetJITType` returns the JIT type by finding the JIT manager for the data range containing the relevant code block. We return `Jit` for the `EEJitManager`, `R2R` for the `R2RJitManager`, and `Unknown` for any other value.
 ```csharp
 public enum JitType : uint
 {

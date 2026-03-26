@@ -131,7 +131,8 @@
     </MSBuild>
 
     <ItemGroup>
-      <_DumpInfoHeap Include="@(_DumpInfoDebuggeeTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Heap'))" DumpDir="heap" />
+      <!-- Exclude heap entries for net10.0 — heap dumps are not generated for that version. -->
+      <_DumpInfoHeap Include="@(_DumpInfoDebuggeeTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Heap')) AND '$(DumpRuntimeVersion)' != 'net10.0'" DumpDir="heap" />
       <_DumpInfoFull Include="@(_DumpInfoDebuggeeTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Full'))" DumpDir="full" />
       <_DumpInfoByType Include="@(_DumpInfoHeap);@(_DumpInfoFull)" />
       <_DumpInfoR2R Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('R2R'))" R2RDir="r2r" />
