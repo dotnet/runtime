@@ -147,10 +147,9 @@
     </PropertyGroup>
     <MakeDir Directories="$(_VersionDir)" />
     <WriteLinesToFile File="$(_DumpInfoFile)" Overwrite="true"
-                     Lines='{%0a  "os": "$(_DumpOS)",%0a  "arch": "$(_DumpArch)",%0a  "debuggees": [$(_DebuggeeJsonArray)]%0a}'
-                     Condition="!Exists('$(_DumpInfoFile)')" />
+                     Lines='{%0a  "os": "$(_DumpOS)",%0a  "arch": "$(_DumpArch)",%0a  "debuggees": [$(_DebuggeeJsonArray)]%0a}' />
     <Message Text="Wrote dump-info.json: $(_DumpInfoFile) (os=$(_DumpOS), arch=$(_DumpArch))"
-             Condition="!Exists('$(_DumpInfoFile)')" Importance="high" />
+             Importance="high" />
   </Target>
 
   <!-- Build all debuggees with R2R without running them (for Helix payload preparation).
