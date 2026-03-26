@@ -1367,7 +1367,10 @@ static void HandleShutdown(void)
 
 static int32_t EnsureOpenSsl11Initialized(void)
 {
-    OPENSSL_init_ssl(
+    // OPENSSL_init_ssl returns 1 on success, 0 on failure.
+    // When OPENSSL_INIT_LOAD_CONFIG is specified with a broken configuration,
+    // this call can fail or leave OpenSSL in a partially initialized state.
+    if (!OPENSSL_init_ssl(
             OPENSSL_INIT_ADD_ALL_CIPHERS |
             OPENSSL_INIT_ADD_ALL_DIGESTS |
             OPENSSL_INIT_LOAD_CONFIG |
@@ -1375,7 +1378,22 @@ static int32_t EnsureOpenSsl11Initialized(void)
             OPENSSL_INIT_NO_ATEXIT |
             OPENSSL_INIT_LOAD_CRYPTO_STRINGS |
             OPENSSL_INIT_LOAD_SSL_STRINGS,
-        NULL);
+        NULL))
+    {
+        // Try again without loading the config. This allows the application
+        // to continue even if the openssl.cnf is malformed (e.g., missing
+        // provider sections, referencing non-existent modules).
+        if (!OPENSSL_init_ssl(
+                OPENSSL_INIT_ADD_ALL_CIPHERS |
+                OPENSSL_INIT_ADD_ALL_DIGESTS |
+                OPENSSL_INIT_NO_ATEXIT |
+                OPENSSL_INIT_LOAD_CRYPTO_STRINGS |
+                OPENSSL_INIT_LOAD_SSL_STRINGS,
+            NULL))
+        {
+            return 1;
+        }
+    }
 
     // As a fallback for when the NO_ATEXIT isn't respected, register a later
     // atexit handler, so we will indicate that we're in the shutdown state
