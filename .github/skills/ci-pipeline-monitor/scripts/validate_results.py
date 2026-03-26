@@ -12,10 +12,12 @@ import json
 import os
 import re
 import sqlite3
+import subprocess
 import sys
 import time
-import urllib.request
+import urllib.error
 import urllib.parse
+import urllib.request
 
 
 def check(name, passed, detail="", warn_only=False):
@@ -437,32 +439,53 @@ def main():
     """).fetchall()
     missed_matches = []
     search_failures = 0
+    gh_available = subprocess.run(
+        ["gh", "auth", "status"], capture_output=True, timeout=10
+    ).returncode == 0 if new_failures else True
+    if not gh_available:
+        print("    [INFO] gh CLI not authenticated — running 'gh auth login'...")
+        subprocess.run(["gh", "auth", "login"], timeout=120)
+        gh_available = subprocess.run(
+            ["gh", "auth", "status"], capture_output=True, timeout=10
+        ).returncode == 0
+    if not gh_available:
+        print("    [INFO] gh CLI still not authenticated — falling back to unauthenticated GitHub Search API")
     for r in new_failures:
         test_name = r["test_name"]
-        # Search GitHub using the full test name — this is the most reliable
-        # way to find matching issues since issues are typically filed with
-        # the exact fully-qualified test name in the title.
-        q = urllib.parse.quote(test_name)
-        url = (
-            f"https://api.github.com/search/issues?"
-            f"q={q}+repo:dotnet/runtime+is:issue&per_page=5"
-        )
         found_issue = None
         try:
-            req = urllib.request.Request(url, headers={
-                "Accept": "application/vnd.github+json",
-                "User-Agent": "ci-pipeline-monitor-validator",
-            })
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                data = json.loads(resp.read())
-                for item in data.get("items", []):
-                    title = item.get("title", "")
-                    body = item.get("body", "") or ""
-                    issue_text = title + " " + body
-                    if test_name.lower() in issue_text.lower():
-                        found_issue = (item["number"], title[:80], item["state"])
-                        break
-            time.sleep(0.5)  # rate limit courtesy
+            if gh_available:
+                result = subprocess.run(
+                    ["gh", "api", "search/issues",
+                     "-f", f"q={test_name} repo:dotnet/runtime is:issue",
+                     "-f", "per_page=5"],
+                    capture_output=True, text=True, timeout=30
+                )
+                if result.returncode != 0:
+                    print(f"    [WARN] GitHub search failed for '{test_name}': {result.stderr.strip()}")
+                    search_failures += 1
+                    continue
+                data = json.loads(result.stdout)
+            else:
+                q = urllib.parse.quote(test_name)
+                url = (
+                    f"https://api.github.com/search/issues?"
+                    f"q={q}+repo:dotnet/runtime+is:issue&per_page=5"
+                )
+                req = urllib.request.Request(url, headers={
+                    "Accept": "application/vnd.github+json",
+                    "User-Agent": "ci-pipeline-monitor-validator",
+                })
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    data = json.loads(resp.read())
+                time.sleep(6)  # unauthenticated rate limit: 10 req/min
+            for item in data.get("items", []):
+                title = item.get("title", "")
+                body = item.get("body", "") or ""
+                issue_text = title + " " + body
+                if test_name.lower() in issue_text.lower():
+                    found_issue = (item["number"], title[:80], item["state"])
+                    break
         except Exception as e:
             print(f"    [WARN] GitHub search failed for '{test_name}': {e}")
             search_failures += 1
