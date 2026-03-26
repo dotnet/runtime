@@ -7,23 +7,4 @@
   <assembly fullname="mscorlib" />
   <assembly fullname="TestILAssembly" />
   <assembly fullname="System.Private.CoreLib" />
-
-  <!--
-    DllImportTests.cs uses MetadataLoadContext to read pseudo-custom attributes
-    (MarshalAs, DllImport) from the test assembly on disk. The SampleMetadata types
-    hold fields/methods whose marshal blobs and ImplMap entries are the test data.
-    Without explicit preservation, the trimmer strips these since the members are
-    never accessed directly in code. We also need to preserve the MarshalAsAttribute
-    fields so the test can instantiate the attribute and set members like
-    IidParameterIndex and SafeArrayUserDefinedSubType via reflection.
-  -->
-  <assembly fullname="System.Reflection.MetadataLoadContext.Tests">
-    <type fullname="SampleMetadata.MarshalAsHolders" preserve="fields" />
-    <type fullname="SampleMetadata.DllImportHolders" preserve="methods" />
-    <type fullname="SampleMetadata.MyUdt" />
-  </assembly>
-  <assembly fullname="System.Private.CoreLib">
-    <type fullname="System.Runtime.InteropServices.MarshalAsAttribute" preserve="fields" />
-    <type fullname="System.Runtime.InteropServices.DllImportAttribute" preserve="fields" />
-  </assembly>
 </linker>
