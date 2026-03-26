@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Configuration
                         {
                             Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
                         }
-                        string filePath = Source.Path ?? file.Name;
+                        string filePath = file.PhysicalPath ?? Source.Path ?? file.Name;
                         throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, filePath), ex);
                     }
                 }
