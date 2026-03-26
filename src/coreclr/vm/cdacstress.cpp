@@ -945,6 +945,36 @@ void CdacStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
                     }
                 }
 
+                // Log all unique Source IPs from cDAC refs to show which frames were walked
+                {
+                    CLRDATA_ADDRESS uniqueSources[64];
+                    int numUnique = 0;
+                    for (int i = 0; i < cdacCount && numUnique < 64; i++)
+                    {
+                        bool seen = false;
+                        for (int j = 0; j < numUnique; j++)
+                        {
+                            if (uniqueSources[j] == cdacRefs[i].Source) { seen = true; break; }
+                        }
+                        if (!seen)
+                            uniqueSources[numUnique++] = cdacRefs[i].Source;
+                    }
+                    fprintf(s_logFile, "  DIAG: cDAC walked %d unique frames (Source IPs):\n", numUnique);
+                    for (int i = 0; i < numUnique; i++)
+                    {
+                        EECodeInfo srcInfo((PCODE)uniqueSources[i]);
+                        if (srcInfo.IsValid() && srcInfo.GetMethodDesc())
+                            fprintf(s_logFile, "    [%d] Source=0x%llx %s::%s+0x%x\n",
+                                i, (unsigned long long)uniqueSources[i],
+                                srcInfo.GetMethodDesc()->m_pszDebugClassName,
+                                srcInfo.GetMethodDesc()->m_pszDebugMethodName,
+                                srcInfo.GetRelOffset());
+                        else
+                            fprintf(s_logFile, "    [%d] Source=0x%llx (Frame or unresolved)\n",
+                                i, (unsigned long long)uniqueSources[i]);
+                    }
+                }
+
                 // Check what the first RT ref looks like
                 if (runtimeCount > 0)
                     fprintf(s_logFile, "  DIAG: RT[0]: Address=0x%llx Object=0x%llx Flags=0x%x\n",
