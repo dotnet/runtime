@@ -10962,11 +10962,13 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
         var_types prevType = prevStore->TypeGet();
         if (prevType != currType)
         {
-            // Special case: a wider constant-zero store followed by a narrower constant store
-            // that's fully contained within the wider store's range. We can fold the narrow
-            // value into the wider zero constant, eliminating the narrow store entirely.
-            // Example: STORE_LCL_FLD int [+0] = 0; STORE_LCL_FLD ubyte [+0] = 1
+            // Special case: a wider constant store followed by a narrower constant store
+            // that's fully contained within the wider store's range. We can splice the narrow
+            // value into the wider constant, eliminating the narrow store.
+            // Example: STORE_LCL_FLD int [+0] = 0;   STORE_LCL_FLD ubyte [+0] = 1
             //       => STORE_LCL_FLD int [+0] = 1
+            // Example: STORE_LCL_FLD int [+0] = 256; STORE_LCL_FLD ubyte [+0] = 0
+            //       => STORE_LCL_FLD int [+0] = 256  (narrow store is redundant)
             unsigned prevSize   = genTypeSize(prevType);
             unsigned prevOffset = prevStore->GetLclOffs();
 
@@ -10983,26 +10985,33 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                     return;
                 }
 
-                if (prevValue->IsIntegralConst(0) && currValue->IsCnsIntOrI() &&
-                    !currValue->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+                if (prevValue->IsCnsIntOrI() && !prevValue->AsIntCon()->ImmedValNeedsReloc(m_compiler) &&
+                    currValue->IsCnsIntOrI() && !currValue->AsIntCon()->ImmedValNeedsReloc(m_compiler))
                 {
                     unsigned insertBitOffset = (currOffset - prevOffset) * BITS_PER_BYTE;
-                    size_t   mask            = (~(size_t(0)) >> ((sizeof(size_t) - genTypeSize(currType)) * BITS_PER_BYTE));
-                    size_t   narrowVal       = (size_t)currValue->AsIntCon()->IconValue() & mask;
-                    size_t   combined        = narrowVal << insertBitOffset;
+                    unsigned narrowBits      = genTypeSize(currType) * BITS_PER_BYTE;
+                    size_t   narrowMask      = (~(size_t(0)) >> (sizeof(size_t) * BITS_PER_BYTE - narrowBits));
+                    size_t   narrowVal       = (size_t)currValue->AsIntCon()->IconValue() & narrowMask;
+                    size_t   wideVal         = (size_t)prevValue->AsIntCon()->IconValue();
 
-                    JITDUMP("Folding narrow constant store into wider zero-init:\n");
-                    JITDUMP("  Wide store: V%02u [+%u] %s = 0\n", currLclNum, prevOffset, varTypeName(prevType));
+                    // Clear the bits in the wide value where the narrow value will be inserted,
+                    // then OR in the narrow value.
+                    size_t   clearMask = ~(narrowMask << insertBitOffset);
+                    size_t   combined  = (wideVal & clearMask) | (narrowVal << insertBitOffset);
+
+                    JITDUMP("Folding narrow constant store into wider constant store:\n");
+                    JITDUMP("  Wide store: V%02u [+%u] %s = %lld\n", currLclNum, prevOffset,
+                            varTypeName(prevType), (int64_t)prevValue->AsIntCon()->IconValue());
                     JITDUMP("  Narrow store: V%02u [+%u] %s = %lld\n", currLclNum, currOffset,
                             varTypeName(currType), (int64_t)currValue->AsIntCon()->IconValue());
                     JITDUMP("  Combined value: %lld\n", (int64_t)combined);
 
-                    // Remove the previous (wider zero) store.
+                    // Remove the previous (wider) store.
                     BlockRange().Remove(prevRange.FirstNode(), prevRange.LastNode());
 
                     // Update the current store to be the wider type with the combined value.
                     store->AsLclFld()->SetLclOffs(prevOffset);
-                    store->gtType    = prevType;
+                    store->gtType                    = prevType;
                     currValue->gtType                = prevType;
                     currValue->AsIntCon()->gtIconVal = (ssize_t)combined;
                     currValue->ClearContained();
