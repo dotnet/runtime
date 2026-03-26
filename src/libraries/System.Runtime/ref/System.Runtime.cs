@@ -9110,6 +9110,11 @@ namespace System.Diagnostics.CodeAnalysis
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false, AllowMultiple=false)]
+    public sealed partial class RequiresUnsafeAttribute : System.Attribute
+    {
+        public RequiresUnsafeAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor, AllowMultiple=false, Inherited=false)]
     public sealed partial class SetsRequiredMembersAttribute : System.Attribute
     {

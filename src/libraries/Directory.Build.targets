@@ -199,24 +199,20 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\EncodingPolyfills.cs" Link="System\Text\EncodingPolyfills.cs" />
   </ItemGroup>
 
-  <!-- Adds RequiresUnsafeAttribute polyfill for non-CoreLib library source projects that share Common
-       source files annotated with [RequiresUnsafe]. Excluded from shim/ref/PNSE assemblies that
-       must only contain type-forwards, and projects that opt out of polyfills. -->
+  <!-- Adds RequiresUnsafeAttribute polyfill for non-CoreLib library source projects targeting
+       non-.NETCoreApp TFMs (e.g. netstandard2.0, netfx) where the attribute isn't available from
+       the framework. For .NETCoreApp targets, RequiresUnsafeAttribute is public in CoreLib and
+       forwarded through System.Runtime. Excluded from shim/ref/PNSE assemblies that must only
+       contain type-forwards, and projects that opt out of polyfills. -->
   <ItemGroup Condition="'$(SkipIncludePolyfills)' != 'true' and
                         '$(MSBuildProjectExtension)' == '.csproj' and
                         '$(IsReferenceAssemblyProject)' != 'true' and
+                        '$(TargetFrameworkIdentifier)' != '.NETCoreApp' and
                         '$(GeneratePlatformNotSupportedAssemblyMessage)' == '' and
                         '$(GeneratePlatformNotSupportedAssembly)' != 'true' and
                         !$(MSBuildProjectDirectory.Contains('shims'))">
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs"
              Link="System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs" />
-  </ItemGroup>
-
-  <!-- Prevent GenFacades from generating a type forwarder for RequiresUnsafeAttribute in partial
-       facade assemblies. The polyfill defines this type locally as internal, and GenFacades would
-       otherwise generate a conflicting type forwarder to CoreLib (CS0436/CS0729). -->
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
-    <GenFacadesOmitType Include="System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute" />
   </ItemGroup>
 
   <!-- If a tfm doesn't target .NETCoreApp but uses the platform support attributes, then we include the
