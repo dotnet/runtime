@@ -10,11 +10,13 @@
       $(CLRTestBatchPreCommands)
       set DOTNET_gcServer=1
       set DOTNET_GCHeapCount=1
+      set DOTNET_GCRegionSize=400000
       ]]></CLRTestBatchPreCommands>
     <CLRTestBashPreCommands><![CDATA[
       $(CLRTestBashPreCommands)
       export DOTNET_gcServer=1
       export DOTNET_GCHeapCount=1
+      export DOTNET_GCRegionSize=400000
       ]]></CLRTestBashPreCommands>
   </PropertyGroup>
   <ItemGroup>

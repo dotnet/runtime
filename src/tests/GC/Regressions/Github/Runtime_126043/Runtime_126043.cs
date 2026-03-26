@@ -10,11 +10,12 @@
 //   - 64-bit process
 //
 // Mechanism:
-//   1. Allocate byte[8208] objects (8,224 bytes each = exactly one alloc quantum)
+//   1. Allocate byte[8200] objects (8,224 bytes each) interleaved with byte[0] (24 bytes)
+//      to fill each 4MB region exactly: 510 * 8,224 + 1 * 24 = 4,194,264 bytes
 //   2. Compacting gen2 GCs pack objects contiguously (eliminate quantum gaps)
 //   3. Pin all objects; gen2 compact -> pinned_surv ~= 4.19MB < 6MB -> demote to gen0
-//   4. Free pins -> one big non-pinned plug = 510 * 8224 = 4,194,240 bytes
-//   5. Gen1 compact: plug + 48B SHORT_PLUGS padding = 4,194,288 > 4,194,264 -> HANG
+//   4. Free pins -> one big non-pinned plug = 4,194,264 bytes (full region)
+//   5. Gen1 compact: plug + 24B SHORT_PLUGS front padding = 4,194,288 > 4,194,264 -> HANG
 
 using System;
 using System.Runtime;
@@ -32,7 +33,7 @@ public class Runtime_126043
     //   510 * 8,224 + 1 * 24 = 4,194,264 = full region. plug = 4,194,264.
     //   plug + 24B front_pad = 4,194,288 > 4,194,264 -> HANG!
     //
-    // 11,220 objects = 22 groups of (510+1), ensures LOH arrays (>85KB).
+    // 11,242 objects = 22 groups of (510+1), ensures LOH arrays (>85KB).
     private const int ArrayDataLength = 8200;
     private const int ObjectsPerGroup = 511; // 510 large + 1 small per region
     private const int GroupCount = 22;
@@ -66,7 +67,7 @@ public class Runtime_126043
         // Phase 1: Clean slate.
         GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
 
-        // Phase 2: Allocate objects. byte[8208] = 8,224 bytes = one full quantum.
+        // Phase 2: Allocate objects. byte[8200] = 8,224 bytes on heap, interleaved with byte[0].
         byte[][] live = AllocateObjects(ObjectCount);
         Console.WriteLine($"  Allocated, gen={GC.GetGeneration(live[0])}");
 
@@ -81,7 +82,7 @@ public class Runtime_126043
             pins[i] = GCHandle.Alloc(live[i], GCHandleType.Pinned);
         Console.WriteLine($"  Pinned {ObjectCount} objects");
 
-        // Phase 5: Burn through demotion delay (hex 14 = 20 GC cycles).
+        // Phase 5: Burn through GC cycles so demotion kicks in.
         for (int i = 0; i < 60; i++)
             GC.Collect(0, GCCollectionMode.Forced, blocking: true);
 

@@ -5493,7 +5493,7 @@ void gc_heap::attribute_pin_higher_gen_alloc (
 
 #ifdef USE_REGIONS
         // With regions it's a bit more complicated since we only set the plan_gen_num
-        // of a region after we've planned it. This means if the pinning plug is in the
+        // of a region after we've planned it. This means if the pinning plug is in
         // the same seg we are planning, we haven't set its plan_gen_num yet. So we
         // need to check for that first.
         int togn = (in_range_for_segment (plug, seg) ? to_gen_number : object_gennum_plan (plug));
