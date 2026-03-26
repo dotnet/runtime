@@ -1292,15 +1292,10 @@ static ArgumentExceptionKind GetArgumentExceptionKind(RuntimeExceptionKind reKin
     LIMITED_METHOD_CONTRACT;
     switch (reKind)
     {
-    default:
-        UNREACHABLE();
-        __fallthrough;
-    case kArgumentException:
-        return ArgumentExceptionKind::Argument;
-    case kArgumentNullException:
-        return ArgumentExceptionKind::ArgumentNull;
-    case kArgumentOutOfRangeException:
-        return ArgumentExceptionKind::ArgumentOutOfRange;
+        case kArgumentException: return ArgumentExceptionKind::Argument;
+        case kArgumentNullException: return ArgumentExceptionKind::ArgumentNull;
+        case kArgumentOutOfRangeException: return ArgumentExceptionKind::ArgumentOutOfRange;
+        default: UNREACHABLE();
     }
 }
 
@@ -1563,17 +1558,11 @@ static FileLoadExceptionKind GetFileLoadExceptionKind(HRESULT hr)
     RuntimeExceptionKind kind = EEFileLoadException::GetFileLoadKind(hr);
     switch (kind)
     {
-    case kBadImageFormatException:
-        return FileLoadExceptionKind::BadImageFormat;
-    case kFileNotFoundException:
-        return FileLoadExceptionKind::FileNotFound;
-    case kOutOfMemoryException:
-        return FileLoadExceptionKind::OutOfMemory;
-    default:
-        UNREACHABLE();
-        __fallthrough;
-    case kFileLoadException:
-        return FileLoadExceptionKind::FileLoad;
+        case kFileLoadException: return FileLoadExceptionKind::FileLoad;
+        case kBadImageFormatException: return FileLoadExceptionKind::BadImageFormat;
+        case kFileNotFoundException: return FileLoadExceptionKind::FileNotFound;
+        case kOutOfMemoryException: return FileLoadExceptionKind::OutOfMemory;
+        default: UNREACHABLE();
     }
 }
 
