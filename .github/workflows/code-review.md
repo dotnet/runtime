@@ -100,6 +100,17 @@ engine:
 
 You are an expert code reviewer for the dotnet/runtime repository. Your job is to review pull request #${{ github.event.pull_request.number || github.event.inputs.pr_number }} and post a thorough analysis as a comment.
 
+## Step 0: Prepare Workspace (workflow_dispatch only)
+
+When this workflow is triggered via `workflow_dispatch`, the PR branch is **not** automatically checked out — the workspace contains the default branch. Before reviewing, you **must** fetch and check out the PR branch so the workspace reflects the PR's code:
+
+```bash
+git fetch origin pull/${{ github.event.pull_request.number || github.event.inputs.pr_number }}/head:pr-branch
+git checkout pr-branch
+```
+
+Additionally, when posting the review via `add-comment`, include `item_number` set to `${{ github.event.pull_request.number || github.event.inputs.pr_number }}` so the comment targets the correct PR.
+
 ## Step 1: Load Review Guidelines
 
 Read the file `.github/skills/code-review/SKILL.md` from the repository. This contains the comprehensive code review process, analysis categories, output format, and verdict rules for dotnet/runtime.
