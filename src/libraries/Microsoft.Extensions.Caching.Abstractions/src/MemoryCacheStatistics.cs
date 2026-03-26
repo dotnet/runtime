@@ -35,5 +35,10 @@ namespace Microsoft.Extensions.Caching.Memory
         /// Gets the total number of cache hits.
         /// </summary>
         public long TotalHits { get; init; }
+
+        /// <summary>
+        /// Gets the total number of cache evictions.
+        /// </summary>
+        public long TotalEvictions { get; init; }
     }
 }
