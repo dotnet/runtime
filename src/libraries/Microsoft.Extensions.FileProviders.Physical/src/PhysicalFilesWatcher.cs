@@ -40,6 +40,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         // We made sure that browser/iOS/tvOS never uses FileSystemWatcher so this is always null on those platforms.
         private PendingCreationWatcher? _rootCreationWatcher;
         private readonly object _rootCreationWatcherLock = new();
+        private bool _rootWasUnavailable;
 
         private Timer? _timer;
         private bool _timerInitialized;
@@ -270,10 +271,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     _fileWatcher?.Dispose();
                     _timer?.Dispose();
 
-// We made sure that browser/iOS/tvOS never uses FileSystemWatcher so _rootCreationWatcher is always null on those platforms.
+                    // We made sure that browser/iOS/tvOS never uses FileSystemWatcher so _rootCreationWatcher is always null on those platforms.
 #pragma warning disable CA1416
-                    _rootCreationWatcher?.Dispose();
-                    _rootCreationWatcher = null;
+                    lock (_rootCreationWatcherLock)
+                    {
+                        _rootCreationWatcher?.Dispose();
+                        _rootCreationWatcher = null;
+                    }
 #pragma warning restore CA1416
                 }
                 _disposed = true;
@@ -485,6 +489,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     if (!Directory.Exists(_root))
                     {
                         needsRootWatcher = true;
+                        _rootWasUnavailable = true;
                     }
                     else
                     {
@@ -501,7 +506,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                             // Only scan for existing entries if the FSW was enabled after _root
                             // was initially missing (i.e. we went through the PCW path). In the
                             // normal case where _root always existed, there is no gap to cover.
-                            justEnabledAfterRootCreated = _rootCreationWatcher is not null;
+                            justEnabledAfterRootCreated = _rootWasUnavailable;
                         }
                         catch (Exception ex) when (ex is ArgumentException or IOException)
                         {
@@ -510,6 +515,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                             if (!Directory.Exists(_root))
                             {
                                 needsRootWatcher = true;
+                                _rootWasUnavailable = true;
                             }
                         }
                     }
