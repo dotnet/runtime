@@ -639,11 +639,10 @@ namespace System.IO
                     // See finally: AssociateNode(dir);
                 }
                 catch (Exception ex) when (ex is DirectoryNotFoundException ||
-                                           ex is FileNotFoundException ||
-                                           ex is UnauthorizedAccessException)
+                                           ex is FileNotFoundException)
                 {
                     Debug.WriteLine($"[FSW] Can't stat '{dir.Path}' {ex}");
-                    // The directory no longer exists or is not readable. Remove.
+                    // The directory no longer exists. Remove.
                     reAssociate = false;
                     DissociateNode(dir);
                     _cookieMap!.Remove(dir.Cookie);
@@ -661,6 +660,12 @@ namespace System.IO
                         // processing loop surface the error via OnError to avoid double-reporting.
                         throw;
                     }
+                }
+                catch (Exception ex) when (ex is UnauthorizedAccessException)
+                {
+                    Debug.WriteLine($"[FSW] Can't stat '{dir.Path}' {ex}");
+                    // Access now disallowed.  Continue as best we can.
+                    watcher.OnError(new ErrorEventArgs(ex));
                 }
                 catch (Exception ex)
                 {
@@ -718,16 +723,21 @@ namespace System.IO
                     // See finally: AssociateNode(file);
                 }
                 catch (Exception ex) when (ex is DirectoryNotFoundException ||
-                                           ex is FileNotFoundException ||
-                                           ex is UnauthorizedAccessException)
+                                           ex is FileNotFoundException)
                 {
                     Debug.WriteLine($"[FSW] Can't stat '{file.Path}' {ex}");
-                    // The directory no longer exists or is not readable.
+                    // The file no longer exists.
                     // Let CompareSnapshotsAndNotify handle all file lifecycle events
                     // (delete/rename) to avoid duplicate event notifications.
                     // The directory's CompareSnapshotsAndNotify will detect whether
                     // this was a delete or a rename (via inode matching).
                     reAssociate = false;
+                }
+                catch (Exception ex) when (ex is UnauthorizedAccessException)
+                {
+                    Debug.WriteLine($"[FSW] Can't stat '{file.Path}' {ex}");
+                    // Access now disallowed.  Continue as best we can.
+                    watcher.OnError(new ErrorEventArgs(ex));
                 }
                 catch (Exception ex)
                 {
