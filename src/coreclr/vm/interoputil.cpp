@@ -3299,7 +3299,7 @@ void IUInvokeDispMethod(
 
                         // We managed to retrieve an IDispatchEx IP so we will use it to
                         // retrieve the DISPID.
-                        BSTRHolder bstrTmpName = SysAllocString(aNamesToConvert[0]);
+                        BSTRHolder bstrTmpName{ SysAllocString(aNamesToConvert[0]) };
                         if (!bstrTmpName)
                             COMPlusThrowOM();
 

@@ -1244,6 +1244,47 @@ private:
 };
 #endif // HOST_WINDOWS
 
+#ifdef FEATURE_COMINTEROP
+class BSTRHolder final
+{
+    BSTR m_str;
+public:
+    BSTRHolder()
+        : m_str{}
+    {
+        STATIC_CONTRACT_LEAF;
+    }
+    explicit BSTRHolder(BSTR str)
+        : m_str{ str }
+    {
+        STATIC_CONTRACT_LEAF;
+    }
+    ~BSTRHolder() noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+        Free();
+    }
+
+    void Free()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        ::SysFreeString(m_str);
+        m_str = NULL;
+    }
+
+    void Attach(BSTR str)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        Free();
+        _ASSERTE(m_str == NULL);
+        m_str = str;
+    }
+
+    BSTR* operator&() { STATIC_CONTRACT_LEAF; return &m_str; }
+    operator BSTR() const { STATIC_CONTRACT_LEAF; return m_str; }
+};
+#endif // FEATURE_COMINTEROP
+
 //----------------------------------------------------------------------------
 //
 // External data access does not want certain holder implementations

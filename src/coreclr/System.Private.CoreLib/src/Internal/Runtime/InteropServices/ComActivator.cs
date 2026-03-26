@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
 
@@ -762,10 +763,17 @@ namespace Internal.Runtime.InteropServices
             [UnsafeAccessorType(LicInfoHelperLicenseContextTypeName)] object? licInfoHelperContext,
             string assemblyName);
 
-        // Helper function to create an object from the native side
-        public static object Create()
+        [UnmanagedCallersOnly]
+        private static unsafe void Create(object* pResult, Exception* pException)
         {
-            return new LicenseInteropProxy();
+            try
+            {
+                *pResult = new LicenseInteropProxy();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
         // Determine if the type supports licensing
@@ -866,31 +874,42 @@ namespace Internal.Runtime.InteropServices
             }
         }
 
-        // See usage in native RCW code
-        public void GetCurrentContextInfo(RuntimeTypeHandle rth, out bool isDesignTime, out IntPtr bstrKey)
+        [UnmanagedCallersOnly]
+        private static unsafe void GetCurrentContextInfo(LicenseInteropProxy* pProxy, MethodTable* pMT, bool* pIsDesignTime, ushort** pBstrKey, Exception* pException)
         {
-            Type targetRcwTypeMaybe = Type.GetTypeFromHandle(rth)!;
+            try
+            {
+                RuntimeType targetRcwTypeMaybe = RuntimeTypeHandle.GetRuntimeType(pMT);
+                pProxy->_licContext = GetCurrentContextInfo(null, targetRcwTypeMaybe, out *pIsDesignTime, out string? key);
 
-            _licContext = GetCurrentContextInfo(null, targetRcwTypeMaybe, out isDesignTime, out string? key);
-
-            _targetRcwType = targetRcwTypeMaybe;
-            bstrKey = Marshal.StringToBSTR((string)key!);
+                pProxy->_targetRcwType = targetRcwTypeMaybe;
+                *pBstrKey = BStrStringMarshaller.ConvertToUnmanaged(key);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
         // The CLR invokes this when instantiating a licensed COM
         // object inside a designtime license context.
         // It's purpose is to save away the license key that the CLR
         // retrieved using RequestLicKey().
-        public void SaveKeyInCurrentContext(IntPtr bstrKey)
+        [UnmanagedCallersOnly]
+        private static unsafe void SaveKeyInCurrentContext(LicenseInteropProxy* pProxy, ushort* bstrKey, Exception* pException)
         {
-            if (bstrKey == IntPtr.Zero)
+            try
             {
-                return;
+                string? key = BStrStringMarshaller.ConvertToManaged(bstrKey);
+                if (key is not null)
+                {
+                    SetSavedLicenseKey(pProxy->_licContext!, pProxy->_targetRcwType!, key);
+                }
             }
-
-            string key = Marshal.PtrToStringBSTR(bstrKey);
-
-            SetSavedLicenseKey(_licContext!, _targetRcwType!, key);
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
     }
 }
