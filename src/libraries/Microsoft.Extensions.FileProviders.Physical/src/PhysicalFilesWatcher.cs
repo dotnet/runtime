@@ -500,13 +500,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
                                 _fileWatcher.Path = _root;
                             }
 
-                            // Perf: Turn off the file monitoring if no files to monitor.
                             _fileWatcher.EnableRaisingEvents = true;
 
                             // Only scan for existing entries if the FSW was enabled after _root
                             // was initially missing (i.e. we went through the PCW path). In the
                             // normal case where _root always existed, there is no gap to cover.
                             justEnabledAfterRootCreated = _rootWasUnavailable;
+                            _rootWasUnavailable = false;
                         }
                         catch (Exception ex) when (ex is ArgumentException or IOException)
                         {
