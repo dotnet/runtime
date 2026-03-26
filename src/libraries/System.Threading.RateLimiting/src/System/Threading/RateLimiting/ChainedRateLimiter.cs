@@ -81,6 +81,31 @@ namespace System.Threading.RateLimiting
             }
         }
 
+        internal void TryReplenish()
+        {
+            List<Exception>? exceptions = null;
+            foreach (RateLimiter limiter in _limiters)
+            {
+                if (limiter is ReplenishingRateLimiter replenishingRateLimiter)
+                {
+                    try
+                    {
+                        replenishingRateLimiter.TryReplenish();
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions ??= [];
+                        exceptions.Add(ex);
+                    }
+                }
+            }
+
+            if (exceptions is not null)
+            {
+                throw new AggregateException(exceptions);
+            }
+        }
+
         protected override RateLimitLease AttemptAcquireCore(int permitCount)
         {
             ThrowIfDisposed();

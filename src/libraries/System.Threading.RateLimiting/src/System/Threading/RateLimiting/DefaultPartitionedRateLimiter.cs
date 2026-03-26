@@ -259,7 +259,20 @@ namespace System.Threading.RateLimiting
                     }
                     catch (Exception ex)
                     {
-                        aggregateExceptions ??= new List<Exception>();
+                        aggregateExceptions ??= [];
+                        aggregateExceptions.Add(ex);
+                    }
+                }
+                // ChainedRateLimiter is a special case: it may call replenish on its children
+                else if (rateLimiter.Value.Value is ChainedRateLimiter chainedRateLimiter)
+                {
+                    try
+                    {
+                        chainedRateLimiter.TryReplenish();
+                    }
+                    catch (Exception ex)
+                    {
+                        aggregateExceptions ??= [];
                         aggregateExceptions.Add(ex);
                     }
                 }
