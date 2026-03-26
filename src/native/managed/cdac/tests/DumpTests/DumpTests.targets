@@ -62,21 +62,22 @@
     <DumpRuntimeVersion Include="$(DumpVersions)" />
   </ItemGroup>
 
-  <!--
-    On Windows, heap dumps (type 2) require the DAC (mscordaccore.dll) which is unsigned
-    in local/CI builds. Set the DisableAuxProviderSignatureCheck registry value so that
-    MiniDumpWriteDump accepts the unsigned DAC. Windows 11+ / Server 2022+ only.
+  <!-- Unsigned DAC registry commands (shared with cdac-dump-helix.proj) -->
+  <Import Project="EnableUnsignedDac.props" />
 
-    This is opt-in via /p:SetDisableAuxProviderSignatureCheck=true to avoid surprising
-    machine-wide registry changes during a normal build.
+  <!--
+    On Windows, set the DisableAuxProviderSignatureCheck registry key so that
+    MiniDumpWriteDump accepts the unsigned locally-built DAC for heap dumps.
+    Opt-in via /p:SetDisableAuxProviderSignatureCheck=true.
   -->
   <Target Name="_EnableUnsignedDacWindows"
           BeforeTargets="GenerateAllDumps"
           Condition="'$(HostOS)' == 'windows' AND '$(SetDisableAuxProviderSignatureCheck)' == 'true'">
-    <Exec Command="reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
-          IgnoreExitCode="true"
-          IgnoreStandardErrorWarningFormat="true" />
-    <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
+    <Exec Command="$(DacRegAdd)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" />
+    <!-- WoW64 view only needed for x86 processes -->
+    <Exec Command="$(DacRegAdd32)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true"
+          Condition="'$(TargetArchitecture)' == 'x86'" />
+    <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: $(DacRegAdd) (and for x86: $(DacRegAdd32))"
              Importance="normal" />
   </Target>
 

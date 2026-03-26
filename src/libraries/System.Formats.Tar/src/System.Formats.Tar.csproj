@@ -28,9 +28,12 @@
     <Compile Include="System\Formats\Tar\PaxGlobalExtendedAttributesTarEntry.cs" />
     <Compile Include="System\Formats\Tar\PaxTarEntry.cs" />
     <Compile Include="System\Formats\Tar\TarEntryType.cs" />
+    <Compile Include="System\Formats\Tar\TarExtractOptions.cs" />
     <Compile Include="System\Formats\Tar\TarFile.cs" />
     <Compile Include="System\Formats\Tar\TarReader.cs" />
+    <Compile Include="System\Formats\Tar\TarHardLinkMode.cs" />
     <Compile Include="System\Formats\Tar\TarWriter.cs" />
+    <Compile Include="System\Formats\Tar\TarWriterOptions.cs" />
     <Compile Include="System\Formats\Tar\SubReadStream.cs" />
     <Compile Include="System\Formats\Tar\SeekableSubReadStream.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
@@ -47,6 +50,17 @@
     <Compile Include="System\Formats\Tar\TarWriter.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Windows.cs" Link="Common\System\IO\Archiving.Utils.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs" Link="Common\System\IO\PathInternal.Windows.cs" />
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs" Link="Common\System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs" Link="Common\Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Kernel32\Interop.CreateFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs" Link="Common\Interop\Windows\Kernel32\Interop.FILE_TIME.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs" Link="Common\Interop\Windows\Kernel32\Interop.FileOperations.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Common\Interop\Windows\Kernel32\Interop.GenericOperations.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandle.cs" Link="Common\Interop\Windows\Kernel32\Interop.GetFileInformationByHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
   </ItemGroup>
 
   <!-- Unix specific files -->
