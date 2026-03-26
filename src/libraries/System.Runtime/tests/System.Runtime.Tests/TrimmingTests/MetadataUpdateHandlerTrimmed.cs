@@ -18,7 +18,6 @@ class Program
         // We use types that the trimmer cannot remove (public API surface).
         _ = typeof(System.ComponentModel.TypeConverter);
         _ = typeof(System.Text.Json.JsonSerializer);
-        _ = typeof(Microsoft.Extensions.DependencyInjection.ActivatorUtilities);
 
         // MetadataUpdater.IsSupported should be false
         if (MetadataUpdater.IsSupported)
@@ -44,7 +43,6 @@ class Program
         string[] handlerTypeNames = new[]
         {
             "System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler",
-            "Microsoft.Extensions.DependencyInjection.ActivatorUtilities+ActivatorUtilitiesUpdateHandler",
             "System.ComponentModel.ReflectionCachesUpdateHandler",
             "System.Text.Json.JsonSerializerOptionsUpdateHandler",
         };
