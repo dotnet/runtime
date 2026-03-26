@@ -22,16 +22,36 @@
 #
 # Generate breaking change documentation for merged PRs labeled needs-breaking-change-doc-created. Produces two markdown files (issue-draft.md and pr-comment.md) and optionally comments on the PR.
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"4036d89024628e53eb681620e773177858293ed7cc9c323b43dc30c37235b858","compiler_version":"v0.63.0","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"7a4c8e0246f41ebcee996fc09a263552744bfa9110ef0fb5ff3db566eb8ce06a","compiler_version":"v0.63.0","strict":true,"agent_id":"copilot"}
 
 name: "Breaking Change Documentation"
 "on":
-  pull_request:
-    # names: # Label filtering applied via job conditions
-    # - needs-breaking-change-doc-created # Label filtering applied via job conditions
+  pull_request_target:
     types:
     - closed
     - labeled
+  # steps: # Steps injected into pre-activation job
+  # - name: Checkout the select-copilot-pat action folder
+    # uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    # with:
+      # fetch-depth: 1
+      # persist-credentials: false
+      # sparse-checkout: .github/actions/select-copilot-pat
+      # sparse-checkout-cone-mode: true
+  # - env:
+      # SECRET_0: ${{ secrets.COPILOT_PAT_0 }}
+      # SECRET_1: ${{ secrets.COPILOT_PAT_1 }}
+      # SECRET_2: ${{ secrets.COPILOT_PAT_2 }}
+      # SECRET_3: ${{ secrets.COPILOT_PAT_3 }}
+      # SECRET_4: ${{ secrets.COPILOT_PAT_4 }}
+      # SECRET_5: ${{ secrets.COPILOT_PAT_5 }}
+      # SECRET_6: ${{ secrets.COPILOT_PAT_6 }}
+      # SECRET_7: ${{ secrets.COPILOT_PAT_7 }}
+      # SECRET_8: ${{ secrets.COPILOT_PAT_8 }}
+      # SECRET_9: ${{ secrets.COPILOT_PAT_9 }}
+    # id: select-copilot-pat
+    # name: Select Copilot token from pool
+    # uses: ./.github/actions/select-copilot-pat
   workflow_dispatch:
     inputs:
       aw_context:
@@ -61,10 +81,9 @@ jobs:
   activation:
     needs: pre_activation
     if: >
-      needs.pre_activation.outputs.activated == 'true' && (((github.event_name == 'workflow_dispatch' ||
+      needs.pre_activation.outputs.activated == 'true' && (github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.merged == true &&
-      contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created'))
-      ) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.id == github.repository_id)) && (github.event_name != 'pull_request' || github.event.action != 'labeled' || github.event.label.name == 'needs-breaking-change-doc-created'))
+      contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created')))
     runs-on: ubuntu-slim
     permissions:
       contents: read
@@ -112,7 +131,7 @@ jobs:
         id: validate-secret
         run: ${RUNNER_TEMP}/gh-aw/actions/validate_multi_secret.sh COPILOT_GITHUB_TOKEN 'GitHub Copilot CLI' https://github.github.com/gh-aw/reference/engines/#github-copilot-default
         env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ case(needs.pre_activation.outputs.copilot_pat_number == '0', secrets.COPILOT_PAT_0, needs.pre_activation.outputs.copilot_pat_number == '1', secrets.COPILOT_PAT_1, needs.pre_activation.outputs.copilot_pat_number == '2', secrets.COPILOT_PAT_2, needs.pre_activation.outputs.copilot_pat_number == '3', secrets.COPILOT_PAT_3, needs.pre_activation.outputs.copilot_pat_number == '4', secrets.COPILOT_PAT_4, needs.pre_activation.outputs.copilot_pat_number == '5', secrets.COPILOT_PAT_5, needs.pre_activation.outputs.copilot_pat_number == '6', secrets.COPILOT_PAT_6, needs.pre_activation.outputs.copilot_pat_number == '7', secrets.COPILOT_PAT_7, needs.pre_activation.outputs.copilot_pat_number == '8', secrets.COPILOT_PAT_8, needs.pre_activation.outputs.copilot_pat_number == '9', secrets.COPILOT_PAT_9, secrets.COPILOT_GITHUB_TOKEN) }}
       - name: Checkout .github and .agents folders
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -606,7 +625,7 @@ jobs:
             -- /bin/bash -c '/usr/local/bin/copilot --add-dir /tmp/gh-aw/ --log-level all --log-dir /tmp/gh-aw/sandbox/agent/logs/ --add-dir "${GITHUB_WORKSPACE}" --disable-builtin-mcps --allow-tool github --allow-tool safeoutputs --allow-tool '\''shell(cat)'\'' --allow-tool '\''shell(date)'\'' --allow-tool '\''shell(echo)'\'' --allow-tool '\''shell(gh:*)'\'' --allow-tool '\''shell(grep)'\'' --allow-tool '\''shell(head)'\'' --allow-tool '\''shell(ls)'\'' --allow-tool '\''shell(pwd)'\'' --allow-tool '\''shell(pwsh)'\'' --allow-tool '\''shell(sort)'\'' --allow-tool '\''shell(tail)'\'' --allow-tool '\''shell(uniq)'\'' --allow-tool '\''shell(wc)'\'' --allow-tool '\''shell(yq)'\'' --allow-tool write --allow-all-paths --prompt "$(cat /tmp/gh-aw/aw-prompts/prompt.txt)"' 2>&1 | tee -a /tmp/gh-aw/agent-stdio.log
         env:
           COPILOT_AGENT_RUNNER_TYPE: STANDALONE
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ case(needs.pre_activation.outputs.copilot_pat_number == '0', secrets.COPILOT_PAT_0, needs.pre_activation.outputs.copilot_pat_number == '1', secrets.COPILOT_PAT_1, needs.pre_activation.outputs.copilot_pat_number == '2', secrets.COPILOT_PAT_2, needs.pre_activation.outputs.copilot_pat_number == '3', secrets.COPILOT_PAT_3, needs.pre_activation.outputs.copilot_pat_number == '4', secrets.COPILOT_PAT_4, needs.pre_activation.outputs.copilot_pat_number == '5', secrets.COPILOT_PAT_5, needs.pre_activation.outputs.copilot_pat_number == '6', secrets.COPILOT_PAT_6, needs.pre_activation.outputs.copilot_pat_number == '7', secrets.COPILOT_PAT_7, needs.pre_activation.outputs.copilot_pat_number == '8', secrets.COPILOT_PAT_8, needs.pre_activation.outputs.copilot_pat_number == '9', secrets.COPILOT_PAT_9, secrets.COPILOT_GITHUB_TOKEN) }}
           COPILOT_MODEL: ${{ vars.GH_AW_MODEL_AGENT_COPILOT || '' }}
           GH_AW_MCP_CONFIG: /home/runner/.copilot/mcp-config.json
           GH_AW_PHASE: agent
@@ -679,8 +698,18 @@ jobs:
             const { main } = require('${{ runner.temp }}/gh-aw/actions/redact_secrets.cjs');
             await main();
         env:
-          GH_AW_SECRET_NAMES: 'COPILOT_GITHUB_TOKEN,GH_AW_GITHUB_MCP_SERVER_TOKEN,GH_AW_GITHUB_TOKEN,GITHUB_TOKEN'
+          GH_AW_SECRET_NAMES: 'COPILOT_GITHUB_TOKEN,COPILOT_PAT_0,COPILOT_PAT_1,COPILOT_PAT_2,COPILOT_PAT_3,COPILOT_PAT_4,COPILOT_PAT_5,COPILOT_PAT_6,COPILOT_PAT_7,COPILOT_PAT_8,COPILOT_PAT_9,GH_AW_GITHUB_MCP_SERVER_TOKEN,GH_AW_GITHUB_TOKEN,GITHUB_TOKEN'
           SECRET_COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          SECRET_COPILOT_PAT_0: ${{ secrets.COPILOT_PAT_0 }}
+          SECRET_COPILOT_PAT_1: ${{ secrets.COPILOT_PAT_1 }}
+          SECRET_COPILOT_PAT_2: ${{ secrets.COPILOT_PAT_2 }}
+          SECRET_COPILOT_PAT_3: ${{ secrets.COPILOT_PAT_3 }}
+          SECRET_COPILOT_PAT_4: ${{ secrets.COPILOT_PAT_4 }}
+          SECRET_COPILOT_PAT_5: ${{ secrets.COPILOT_PAT_5 }}
+          SECRET_COPILOT_PAT_6: ${{ secrets.COPILOT_PAT_6 }}
+          SECRET_COPILOT_PAT_7: ${{ secrets.COPILOT_PAT_7 }}
+          SECRET_COPILOT_PAT_8: ${{ secrets.COPILOT_PAT_8 }}
+          SECRET_COPILOT_PAT_9: ${{ secrets.COPILOT_PAT_9 }}
           SECRET_GH_AW_GITHUB_MCP_SERVER_TOKEN: ${{ secrets.GH_AW_GITHUB_MCP_SERVER_TOKEN }}
           SECRET_GH_AW_GITHUB_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN }}
           SECRET_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -840,7 +869,7 @@ jobs:
             -- /bin/bash -c '/usr/local/bin/copilot --add-dir /tmp/gh-aw/ --log-level all --log-dir /tmp/gh-aw/sandbox/agent/logs/ --add-dir "${GITHUB_WORKSPACE}" --disable-builtin-mcps --allow-tool '\''shell(cat)'\'' --allow-tool '\''shell(grep)'\'' --allow-tool '\''shell(head)'\'' --allow-tool '\''shell(jq)'\'' --allow-tool '\''shell(ls)'\'' --allow-tool '\''shell(tail)'\'' --allow-tool '\''shell(wc)'\'' --prompt "$(cat /tmp/gh-aw/aw-prompts/prompt.txt)"' 2>&1 | tee -a /tmp/gh-aw/threat-detection/detection.log
         env:
           COPILOT_AGENT_RUNNER_TYPE: STANDALONE
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ case(needs.pre_activation.outputs.copilot_pat_number == '0', secrets.COPILOT_PAT_0, needs.pre_activation.outputs.copilot_pat_number == '1', secrets.COPILOT_PAT_1, needs.pre_activation.outputs.copilot_pat_number == '2', secrets.COPILOT_PAT_2, needs.pre_activation.outputs.copilot_pat_number == '3', secrets.COPILOT_PAT_3, needs.pre_activation.outputs.copilot_pat_number == '4', secrets.COPILOT_PAT_4, needs.pre_activation.outputs.copilot_pat_number == '5', secrets.COPILOT_PAT_5, needs.pre_activation.outputs.copilot_pat_number == '6', secrets.COPILOT_PAT_6, needs.pre_activation.outputs.copilot_pat_number == '7', secrets.COPILOT_PAT_7, needs.pre_activation.outputs.copilot_pat_number == '8', secrets.COPILOT_PAT_8, needs.pre_activation.outputs.copilot_pat_number == '9', secrets.COPILOT_PAT_9, secrets.COPILOT_GITHUB_TOKEN) }}
           COPILOT_MODEL: ${{ vars.GH_AW_MODEL_DETECTION_COPILOT || '' }}
           GH_AW_PHASE: detection
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
@@ -1004,14 +1033,15 @@ jobs:
 
   pre_activation:
     if: >
-      ((github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.merged == true &&
       contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created'))
-      ) && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.id == github.repository_id)) && (github.event_name != 'pull_request' || github.event.action != 'labeled' || github.event.label.name == 'needs-breaking-change-doc-created')
     runs-on: ubuntu-slim
     outputs:
       activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
+      copilot_pat_number: ${{ steps.select-copilot-pat.outputs.copilot_pat_number }}
       matched_command: ''
+      select-copilot-pat_result: ${{ steps.select-copilot-pat.outcome }}
     steps:
       - name: Setup Scripts
         uses: github/gh-aw-actions/setup@9128d2542bbf1bdfec94dabeaf3e1d3c0d402577 # v0.63.0
@@ -1029,6 +1059,27 @@ jobs:
             setupGlobals(core, github, context, exec, io);
             const { main } = require('${{ runner.temp }}/gh-aw/actions/check_membership.cjs');
             await main();
+      - name: Checkout the select-copilot-pat action folder
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: .github/actions/select-copilot-pat
+          sparse-checkout-cone-mode: true
+      - name: Select Copilot token from pool
+        id: select-copilot-pat
+        uses: ./.github/actions/select-copilot-pat
+        env:
+          SECRET_0: ${{ secrets.COPILOT_PAT_0 }}
+          SECRET_1: ${{ secrets.COPILOT_PAT_1 }}
+          SECRET_2: ${{ secrets.COPILOT_PAT_2 }}
+          SECRET_3: ${{ secrets.COPILOT_PAT_3 }}
+          SECRET_4: ${{ secrets.COPILOT_PAT_4 }}
+          SECRET_5: ${{ secrets.COPILOT_PAT_5 }}
+          SECRET_6: ${{ secrets.COPILOT_PAT_6 }}
+          SECRET_7: ${{ secrets.COPILOT_PAT_7 }}
+          SECRET_8: ${{ secrets.COPILOT_PAT_8 }}
+          SECRET_9: ${{ secrets.COPILOT_PAT_9 }}
 
   safe_outputs:
     needs: agent
