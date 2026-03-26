@@ -10962,6 +10962,56 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
         var_types prevType = prevStore->TypeGet();
         if (prevType != currType)
         {
+            // Special case: a wider constant-zero store followed by a narrower constant store
+            // that's fully contained within the wider store's range. We can fold the narrow
+            // value into the wider zero constant, eliminating the narrow store entirely.
+            // Example: STORE_LCL_FLD int [+0] = 0; STORE_LCL_FLD ubyte [+0] = 1
+            //       => STORE_LCL_FLD int [+0] = 1
+            unsigned prevSize   = genTypeSize(prevType);
+            unsigned prevOffset = prevStore->GetLclOffs();
+
+            if (varTypeIsIntegral(prevType) && varTypeIsIntegral(currType) && prevSize > genTypeSize(currType) &&
+                currOffset >= prevOffset && (currOffset + genTypeSize(currType)) <= (prevOffset + prevSize))
+            {
+                GenTree* prevValue = prevStore->Data();
+                GenTree* currValue = store->Data();
+
+                bool isPrevClosedRange = false;
+                LIR::ReadOnlyRange prevRange = BlockRange().GetTreeRange(prevStore, &isPrevClosedRange);
+                if (!isPrevClosedRange)
+                {
+                    return;
+                }
+
+                if (prevValue->IsIntegralConst(0) && currValue->IsCnsIntOrI() &&
+                    !currValue->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+                {
+                    unsigned insertBitOffset = (currOffset - prevOffset) * BITS_PER_BYTE;
+                    size_t   mask            = (~(size_t(0)) >> ((sizeof(size_t) - genTypeSize(currType)) * BITS_PER_BYTE));
+                    size_t   narrowVal       = (size_t)currValue->AsIntCon()->IconValue() & mask;
+                    size_t   combined        = narrowVal << insertBitOffset;
+
+                    JITDUMP("Folding narrow constant store into wider zero-init:\n");
+                    JITDUMP("  Wide store: V%02u [+%u] %s = 0\n", currLclNum, prevOffset, varTypeName(prevType));
+                    JITDUMP("  Narrow store: V%02u [+%u] %s = %lld\n", currLclNum, currOffset,
+                            varTypeName(currType), (int64_t)currValue->AsIntCon()->IconValue());
+                    JITDUMP("  Combined value: %lld\n", (int64_t)combined);
+
+                    // Remove the previous (wider zero) store.
+                    BlockRange().Remove(prevRange.FirstNode(), prevRange.LastNode());
+
+                    // Update the current store to be the wider type with the combined value.
+                    store->AsLclFld()->SetLclOffs(prevOffset);
+                    store->gtType    = prevType;
+                    currValue->gtType                = prevType;
+                    currValue->AsIntCon()->gtIconVal = (ssize_t)combined;
+                    currValue->ClearContained();
+
+                    // Continue to try further coalescing with the now-widened store.
+                    continue;
+                }
+            }
+
             return;
         }
 
