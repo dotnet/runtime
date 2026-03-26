@@ -577,7 +577,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             // Register outside the lock to avoid deadlocking with TryEnableFileSystemWatcher
             // if the token gets cancelled (synchronous callback invocation).
-            newWatcher.Token.Register(_ => TryEnableFileSystemWatcher(), null);
+            try
+            {
+                newWatcher.Token.Register(_ => TryEnableFileSystemWatcher(), null);
+            }
+            catch (ObjectDisposedException)
+            {
+                // Catch ObjectDisposedException in case PhysicalFilesWatcher.Dispose() ran
+                // concurrently and disposed the PendingCreationWatcher between releasing the
+                // lock and this Register call.
+
+                // This should only happen on .NET Framework with the ThrowExceptionIfDisposedCancellationTokenSource compat switch on.
+            }
         }
 
         private static string NormalizePath(string filter) => filter.Replace('\\', '/');
