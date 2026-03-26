@@ -283,8 +283,8 @@ namespace System.Runtime.Loader.Tests
             var alc = new AssemblyLoadContext("TestALC");
             Assembly alcAssembly = alc.LoadFromAssemblyPath(typeof(AssemblyLoadContextTest).Assembly.Location);
 
-            Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName);
-            object instance = Activator.CreateInstance(alcType);
+            Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName!, throwOnError: true)!;
+            object instance = Activator.CreateInstance(alcType)!;
 
             // Cast directly to InvalidCastSharedType from the Default ALC.
             var ice = Assert.Throws<InvalidCastException>(() =>
@@ -306,9 +306,9 @@ namespace System.Runtime.Loader.Tests
 
             // The outer type (StrongBox<T>) is from CoreLib (same in all contexts),
             // but the generic argument comes from a different ALC.
-            Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName);
+            Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName!, throwOnError: true)!;
             Type boxType = typeof(StrongBox<>).MakeGenericType(alcType);
-            object instance = Activator.CreateInstance(boxType);
+            object instance = Activator.CreateInstance(boxType)!;
 
             var ice = Assert.Throws<InvalidCastException>(() =>
             {
