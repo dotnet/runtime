@@ -294,8 +294,7 @@ foreach (var batchId in BatchIds)
     var ts = TimeSpan.FromMinutes(totalMinutes);
 
     var helixItem = new TaskItem(ItemPrefix + "Batch-" + bid);
-    helixItem.SetMetadata("PayloadDirectory", BatchOutputDir + "batch-" + bid + "/");
-    helixItem.SetMetadata("Command", "chmod +x WasmBatchRunner.sh && ./WasmBatchRunner.sh");
+    helixItem.SetMetadata("BatchDir", BatchOutputDir + "batch-" + bid + "/");
     helixItem.SetMetadata("Timeout", ts.ToString(@"hh\:mm\:ss"));
     result.Add(helixItem);
 }
@@ -462,8 +461,21 @@ TimedItems = result.ToArray();
       <Output TaskParameter="TimedItems" ItemName="_WasmTimedBatchItem" />
     </_ComputeBatchTimeout>
 
+    <!-- Create ZIP archives from batch directories (sendtohelixhelp.proj requires PayloadArchive) -->
+    <ZipDirectory SourceDirectory="%(_WasmTimedBatchItem.BatchDir)"
+                  DestinationFile="$(IntermediateOutputPath)helix-batches/%(_WasmTimedBatchItem.Identity).zip"
+                  Overwrite="true" />
+
+    <!-- Build a batch-specific HelixCommand that runs WasmBatchRunner.sh instead of RunTests.sh -->
+    <PropertyGroup>
+      <_WasmBatchHelixCommand>$(HelixCommand.Replace('./RunTests.sh', 'chmod +x WasmBatchRunner.sh &amp;&amp; ./WasmBatchRunner.sh'))</_WasmBatchHelixCommand>
+    </PropertyGroup>
+
     <ItemGroup>
-      <HelixWorkItem Include="@(_WasmTimedBatchItem)" />
+      <HelixWorkItem Include="@(_WasmTimedBatchItem)">
+        <PayloadArchive>$(IntermediateOutputPath)helix-batches/%(Identity).zip</PayloadArchive>
+        <Command>$(_WasmBatchHelixCommand)</Command>
+      </HelixWorkItem>
     </ItemGroup>
   </Target>
 </Project>

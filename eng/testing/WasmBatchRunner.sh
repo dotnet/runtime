@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-EXECUTION_DIR=$(dirname "$0")
-
 if [[ -z "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
     ORIGINAL_UPLOAD_ROOT="$PWD/test-results"
 else
