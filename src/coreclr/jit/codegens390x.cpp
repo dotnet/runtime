@@ -4745,6 +4745,9 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_ADD:
             ins = INS_ark;
             break;
+        case GT_SUB:
+            ins = INS_srk;
+            break;
         case GT_AND:
             ins = INS_nrk;
             break;
@@ -4781,9 +4784,6 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_RSZ:
             ins = INS_lsr;
             break;
-        case GT_SUB:
-            ins = INS_sub;
-	    break;
         case GT_ROR:
             ins = INS_ror;
             break;

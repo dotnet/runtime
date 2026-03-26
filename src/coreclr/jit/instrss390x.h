@@ -58,7 +58,7 @@ INST(lay,		"lay",			0,		0xe371)
 
 //// R_R_R
 INST(ark,		"ark",			0,		0xb9f8)
-
+INST(srk,       "srk",          0,      0xb9f9)
 INST(nrk,       "nrk",          0,      0xb9f4)
 INST(ncrk,      "ncrk",         0,      0xb9f5)
 INST(ork,       "ork",          0,      0xb9f6)
