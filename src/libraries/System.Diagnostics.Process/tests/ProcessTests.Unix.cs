@@ -1063,12 +1063,12 @@ namespace System.Diagnostics.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.Windows, "SIGCONT is not supported on Windows.")]
-        public void ChildProcess_InheritsParentSignalMask_CanReceiveSignals()
+        public void ChildProcess_WithParentSignalHandler_CanReceiveSignals()
         {
             // This test verifies that a child process started from a parent that has
             // registered signal handlers can still receive signals correctly.
             // This exercises the posix_spawn path on macOS where the child must
-            // inherit the parent's signal mask via posix_spawnattr_setsigmask.
+            // cooperate correctly with signal handling in both the parent and child.
             const string SignalReceivedMessage = "Signal received";
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
