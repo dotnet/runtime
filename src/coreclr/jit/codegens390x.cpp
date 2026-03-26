@@ -5153,8 +5153,6 @@ void CodeGen::genPushCalleeSavedRegisters()
 
 void CodeGen::genFnEpilog(BasicBlock* block)
 {
-    //_ASSERTE("!NYI");
-
 #ifdef DEBUG
     if (verbose)
         printf("*************** In genFnEpilog()\n");

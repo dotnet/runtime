@@ -25,7 +25,7 @@ public:
     inline Lowering(Compiler* compiler, LinearScanInterface* lsra)
         : Phase(compiler, PHASE_LOWERING)
         , vtableCallTemp(BAD_VAR_NUM)
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_S390X)
         , m_blockIndirs(compiler->getAllocator(CMK_ArrayStack))
 #endif
     {
@@ -97,6 +97,13 @@ private:
     void      TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond);
     void      TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
     bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
+    bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
+#endif
+#ifdef TARGET_S390X
+    bool      TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next);
+    bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
+    insCflags TruthifyingFlags(GenCondition cond);
+    void      ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
@@ -621,7 +628,7 @@ private:
     unsigned m_outgoingArgSpaceSize = 0;
 #endif
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_S390X)
     struct SavedIndir
     {
         GenTreeIndir*  Indir;

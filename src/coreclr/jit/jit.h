@@ -826,7 +826,7 @@ inline size_t unsigned_abs(int64_t x)
 #define CLFLG_STRUCTPROMOTE 0x00000
 #endif
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_S390X)
 #define FEATURE_LOOP_ALIGN 1
 #else
 #define FEATURE_LOOP_ALIGN 0

@@ -180,10 +180,9 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
  */
 void emitter::emitInsSanityCheck(instrDesc* id)
 {
-    _ASSERTE(!"NYI");
-#if 0
+    //_ASSERTE(!"NYI");
     /* What instruction format have we got? */
-
+#if 0
     switch (id->idInsFmt())
     {
         instruction ins;
@@ -972,7 +971,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
 bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
 {
-    _ASSERTE(!"NYI");
+    return false;
+    //_ASSERTE(!"NYI");
 #if 0
     instruction ins = id->idIns();
     insFormat   fmt = id->idInsFmt();
@@ -1090,7 +1090,8 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
 
 bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 {
-    _ASSERTE(!"NYI");
+    return false;
+    //_ASSERTE(!"NYI");
 #if 0
     if (!id->idIsLclVar())
         return false;
@@ -1117,7 +1118,8 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 
 bool emitter::emitInsWritesToLclVarStackLocPair(instrDesc* id)
 {
-    _ASSERTE(!"NYI");
+    return false;
+    //_ASSERTE(!"NYI");
 #if 0
     if (!id->idIsLclVar())
         return false;
@@ -1590,13 +1592,11 @@ bool emitter::emitInsIsVectorNarrow(instruction ins)
 //
 bool emitter::emitInsIsVectorWide(instruction ins)
 {
-    _ASSERTE(!"NYI");
-#if 0
+ //   _ASSERTE(!"NYI");
     if (ins < ArrLen(CodeGenInterface::instInfo))
         return (CodeGenInterface::instInfo[ins] & WID) != 0;
     else
         return false;
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -3061,19 +3061,16 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 void emitter::emitIns(instruction ins)
 {
-	return;
     instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
 
-   // if (ins != INS_BREAKPOINT)
-   // {
-   //     assert(fmt == IF_SN_0A);
-   // }
+#if 0
+    if (ins != INS_BREAKPOINT)
+    {
+        assert(fmt == IF_SN_0A);
+    }
+#endif
 
     id->idIns(ins);
-    //id->idInsFmt(fmt);
-    //id->idAddr()->iiaSetInstrEncode(emitInsCode(ins));
-    //id->idCodeSize(2);
-
     dispIns(id);
     appendToCurIG(id);
 }
@@ -3150,7 +3147,9 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
 #endif
         default:
             // fallback to emit SVE instructions.
-//            return emitInsSve_R(ins, attr, reg, opt);
+            // return emitInsSve_R(ins, attr, reg, opt);
+           _ASSERTE(!"NYI");
+           break;
     }
 
     assert(fmt != IF_NONE);
@@ -3495,6 +3494,8 @@ void emitter::emitIns_R_I(instruction ins,
         default:
             // fallback to emit SVE instructions.
       //      return emitInsSve_R_I(ins, attr, reg, imm, opt, sopt);
+        
+	    _ASSERTE(!"NYI");
     } // end switch (ins)
 
     //assert(canEncode);
@@ -10507,30 +10508,30 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         emitAttr datasize;
 	
 	case INS_br: 
-            assert((ins == INS_ret) || (ins == INS_br));
-            op = emitInsCode(ins, fmt);
+      assert(ins == INS_br);
+      op = emitInsCode(ins, fmt);
 	    S390_RR(dst, op, id->idReg1(), 0); 
-            break;
-	    
+      break;
+
 	case INS_ret: 
-            assert((ins == INS_ret) || (ins == INS_br));
-            op = emitInsCode(ins, fmt);
+      assert(ins == INS_ret);
+      op = emitInsCode(ins, fmt);
 	    S390_RR(dst, op, 0xf, id->idReg1());
-            break;
-        
+      break;
+
 	case INS_st:
-            imm = emitGetInsSC(id); //get instruction's constant value
-            assert((imm >= 0) && (imm <= 2047)); // 11 bit imm unsigned value
-            op = emitInsCode(ins, fmt);
+      imm = emitGetInsSC(id); //get instruction's constant value
+      assert((imm >= 0) && (imm <= 2047)); // 11 bit imm unsigned value
+      op = emitInsCode(ins, fmt);
 	    S390_RX_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
-            break;
-	    
+      break;
+
 	case INS_stg:
 	    op = emitInsCode(ins, fmt);
 	    imm = emitGetInsSC(id);
 	    S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
 	    break;
-	    
+
 	case INS_stmg:
 	    op = emitInsCode(ins, fmt);
 	    imm = emitGetInsSC(id);
@@ -10544,15 +10545,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 	    break;
 
 	case INS_lay:
-            op = emitInsCode(ins, fmt);
-            imm = emitGetInsSC(id);
+      op = emitInsCode(ins, fmt);
+      imm = emitGetInsSC(id);
 	    S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
-            break;
+      break;
 
 	case INS_l:    
-            imm = emitGetInsSC(id); //get instruction's constant value
-            assert((imm >= 0) && (imm <= 2047)); // unsigned 11 bits
-            op = emitInsCode(ins, fmt);
+      imm = emitGetInsSC(id); //get instruction's constant value
+      assert((imm >= 0) && (imm <= 2047)); // unsigned 11 bits
+      op = emitInsCode(ins, fmt);
 	    S390_RX_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
 	    break;
 
@@ -10560,37 +10561,42 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 	    op = emitInsCode(ins, fmt);
 	    S390_RRE(dst, op, id->idReg1(), id->idReg2());
 	    break;
-       
+
 	case INS_lgfi: 
-            imm = emitGetInsSC(id);
-            op = emitInsCode(ins, fmt);
+      imm = emitGetInsSC(id);
+      op = emitInsCode(ins, fmt);
 	    S390_RIL_a(dst, op, id->idReg1(), imm);
 	    break;
 
-    case INS_ark:
-        op = emitInsCode(ins, fmt);
-        S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
-        break;
+  case INS_nop:
+      op = emitInsCode(ins, fmt);
+      S390_RR(dst, op, 0, 0); 
+      break;
 
-    case INS_nrk:
-        op = emitInsCode(ins, fmt);
-        S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
-        break;
+  case INS_ark:
+      op = emitInsCode(ins, fmt);
+      S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+      break;
 
-    case INS_ork:
-        op = emitInsCode(ins, fmt);
-        S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
-        break;
-	   
-    case INS_xrk:
-        op = emitInsCode(ins, fmt);
-        S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
-        break;
+  case INS_nrk:
+      op = emitInsCode(ins, fmt);
+      S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+      break;
 
-    case INS_ncrk:
-        op = emitInsCode(ins, fmt);
-        S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
-        break;
+  case INS_ork:
+      op = emitInsCode(ins, fmt);
+      S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+      break;
+
+  case INS_xrk:
+      op = emitInsCode(ins, fmt);
+      S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+      break;
+
+  case INS_ncrk:
+      op = emitInsCode(ins, fmt);
+      S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+      break;
 
 	default:
 	    _ASSERTE(!"NYI");
@@ -11592,7 +11598,6 @@ void emitter::emitDispLargeJmp(
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-#if 0
     // Special case: IF_LARGEJMP
 
     if ((id->idInsFmt() == IF_LARGEJMP) && id->idIsBound())
@@ -11612,9 +11617,8 @@ void emitter::emitDispIns(
     }
     else
     {
-#endif
         emitDispInsHelp(id, isNew, doffs, asmfm, offset, pCode, sz, ig);
-//    }
+    }
 }
 
 //--------------------------------------------------------------------
@@ -11681,7 +11685,7 @@ void emitter::emitDispInsHelp(
     /* Get the instruction and format */
 
     instruction ins = id->idIns();
-    insFormat   fmt = id->idInsFmt();
+    //insFormat   fmt = id->idInsFmt();
 
     emitDispInst(ins);
 
@@ -11697,7 +11701,7 @@ void emitter::emitDispInsHelp(
     else if (id->idGCref() == GCT_BYREF)
         attr = EA_BYREF;
 
-    switch (fmt)
+    switch (ins)
     {
         ssize_t      imm;
         int          doffs;
@@ -11797,12 +11801,10 @@ void emitter::emitDispInsHelp(
             }
         }
         break;
-#endif
         case IF_BR_1A: // BR_1A   ................ ......nnnnn.....         Rn
             assert(insOptsNone(id->idInsOpt()));
             emitDispReg(id->idReg1(), size, false);
             break;
-#if 0
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
             // The size of a branch target is always EA_PTRSIZE
             assert(insOptsNone(id->idInsOpt()));
@@ -12028,7 +12030,6 @@ void emitter::emitDispInsHelp(
             emitDispImmOptsLSL(emitGetInsSC(id), insOptsLSL12(id->idInsOpt()), 12);
             emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             break;
-#endif
         case IF_DI_1B: // DI_1B   X........hwiiiii iiiiiiiiiiiddddd      Rd       imm(i16,hw)
             emitDispReg(id->idReg1(), size, true);
             hwi.immHWVal = (unsigned)emitGetInsSC(id);
@@ -12047,7 +12048,6 @@ void emitter::emitDispInsHelp(
             }
             emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             break;
-#if 0
         case IF_DI_1C: // DI_1C   X........Nrrrrrr ssssssnnnnn.....         Rn    imm(N,r,s)
             emitDispReg(id->idReg1(), size, true);
             bmi.immNRS = (unsigned)emitGetInsSC(id);
@@ -12245,14 +12245,12 @@ void emitter::emitDispInsHelp(
             emitDispComma();
             emitDispCond(cfi.cond);
             break;
-#endif
         case IF_DR_3A: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
             if ((ins == INS_lgfi) /*|| (ins == INS_sub)*/)
             {
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, true);
             }
-#if 0
             else if ((ins == INS_smulh) || (ins == INS_umulh))
             {
                 size = EA_8BYTE;
@@ -12267,7 +12265,6 @@ void emitter::emitDispInsHelp(
                 size = EA_4BYTE;
                 emitDispReg(id->idReg2(), size, true);
             }
-#endif
             else
             {
                 emitDispReg(id->idReg1(), size, true);
@@ -12284,7 +12281,6 @@ void emitter::emitDispInsHelp(
             }
 
             break;
-#if 0
         case IF_DR_3B: // DR_3B   X.......sh.mmmmm ssssssnnnnnddddd      Rd Rn Rm {LSL,LSR,ASR} imm(0-63)
             emitDispReg(id->idReg1(), size, true);
             emitDispReg(id->idReg2(), size, true);
@@ -13290,10 +13286,10 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
 void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess)
 {
-    _ASSERTE(!"NYI");
-#if 0
+    //_ASSERTE(!"NYI");
     unsigned    memAccessKind = PERFSCORE_MEMORY_NONE;
     bool        isLocalAccess = false;
+#if 0
     instruction ins           = id->idIns();
 
     if (emitInsIsLoadOrStore(ins))
@@ -13449,10 +13445,9 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
                 break;
         }
     }
-
+#endif
     *pMemAccessKind = memAccessKind;
     *pIsLocalAccess = isLocalAccess;
-#endif
 }
 
 //----------------------------------------------------------------------------------------
@@ -13474,8 +13469,7 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
 //
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    _ASSERTE(!"NYI");
-#if 0
+    //_ASSERTE(!"NYI");
     insExecutionCharacteristics result;
     instruction                 ins    = id->idIns();
     insFormat                   insFmt = id->idInsFmt();
@@ -13487,6 +13481,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     result.insThroughput = PERFSCORE_THROUGHPUT_ILLEGAL;
     result.insLatency    = PERFSCORE_LATENCY_ILLEGAL;
 
+#if 0
     // Initialize insLatency based upon the instruction's memAccessKind and local access values
     //
     if (memAccessKind == PERFSCORE_MEMORY_READ)
@@ -15150,9 +15145,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             getInsSveExecutionCharacteristics(id, result);
             break;
     }
-
-    return result;
 #endif
+    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+    result.insLatency    = PERFSCORE_LATENCY_1C;
+    return result;
+
 }
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)

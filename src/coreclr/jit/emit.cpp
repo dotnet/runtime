@@ -2917,6 +2917,131 @@ const char* emitter::emitLabelString(const insGroup* ig) const
     return retbuf;
 }
 
+#if defined (TARGET_S390X)
+/*****************************************************************************
+ *
+ * Split the region from 'startLoc' to 'endLoc' into fragments by calling
+ * a callback function to indicate the beginning of a fragment. The initial code,
+ * starting at 'startLoc', doesn't get a callback, but the first code fragment,
+ * about 'maxSplitSize' bytes out does, as does the beginning of each fragment
+ * after that. There is no callback for the end (only the beginning of the last
+ * fragment gets a callback). A fragment must contain at least one instruction
+ * group. It should be smaller than 'maxSplitSize', although it may be larger to
+ * satisfy the "at least one instruction group" rule. Do not split prologs or
+ * epilogs. (Currently, prologs exist in a single instruction group at the main
+ * function beginning, so they aren't split. Funclets, however, might span IGs,
+ * so we can't split in between them.)
+ *
+ * Note that the locations must be the start of instruction groups; the part of
+ * the location indicating offset within a group must be zero.
+ *
+ * If 'startLoc' is NULL, it means the start of the code.
+ * If 'endLoc'   is NULL, it means the end   of the code.
+ */
+
+void emitter::emitSplit(emitLocation*         startLoc,
+                        emitLocation*         endLoc,
+                        UNATIVE_OFFSET        maxSplitSize,
+                        void*                 context,
+                        emitSplitCallbackType callbackFunc)
+{
+    insGroup*      igStart = (startLoc == NULL) ? emitIGlist : startLoc->GetIG();
+    insGroup*      igEnd   = (endLoc == NULL) ? NULL : endLoc->GetIG();
+    insGroup*      igPrev;
+    insGroup*      ig;
+    insGroup*      igLastReported;
+    insGroup*      igLastCandidate;
+    UNATIVE_OFFSET curSize;
+    UNATIVE_OFFSET candidateSize;
+
+    auto splitIfNecessary = [&]() {
+        if (curSize < maxSplitSize)
+        {
+            return;
+        }
+
+        // Is there a candidate?
+        if (igLastCandidate == NULL)
+        {
+#ifdef DEBUG
+            if (EMITVERBOSE)
+                printf("emitSplit: can't split at IG%02u; we don't have a candidate to report\n", ig->igNum);
+#endif
+            return;
+        }
+
+        // Don't report the same thing twice (this also happens for the first block, since igLastReported is
+        // initialized to igStart).
+        if (igLastCandidate == igLastReported)
+        {
+#ifdef DEBUG
+            if (EMITVERBOSE)
+                printf("emitSplit: can't split at IG%02u; we already reported it\n", igLastCandidate->igNum);
+#endif
+            return;
+        }
+
+        // Don't report a zero-size candidate. This will only occur in a stress mode with JitSplitFunctionSize
+        // set to something small, and a zero-sized IG (possibly inserted for use by the alignment code). Normally,
+        // the split size will be much larger than the maximum size of an instruction group. The invariant we want
+        // to maintain is that each fragment contains a non-zero amount of code.
+        if (candidateSize == 0)
+        {
+#ifdef DEBUG
+            if (EMITVERBOSE)
+                printf("emitSplit: can't split at IG%02u; zero-sized candidate\n", igLastCandidate->igNum);
+#endif
+            return;
+        }
+
+        // Report it!
+
+#ifdef DEBUG
+        if (EMITVERBOSE)
+        {
+            printf("emitSplit: split at IG%02u is size %x, %s than requested maximum size of %x\n",
+                   igLastCandidate->igNum, candidateSize, (candidateSize >= maxSplitSize) ? "larger" : "less",
+                   maxSplitSize);
+        }
+#endif
+
+        // hand memory ownership to the callback function
+        emitLocation* pEmitLoc = new (emitComp, CMK_Unknown) emitLocation(igLastCandidate);
+        callbackFunc(context, pEmitLoc);
+        igLastReported  = igLastCandidate;
+        igLastCandidate = NULL;
+        curSize -= candidateSize;
+    };
+
+    for (igPrev = NULL, ig = igLastReported = igStart, igLastCandidate = NULL, candidateSize = 0, curSize = 0;
+         ig != igEnd && ig != NULL; igPrev = ig, ig = ig->igNext)
+    {
+        splitIfNecessary();
+
+        // Update the current candidate to be this block, if it isn't in the middle of a
+        // prolog or epilog, which we can't split. All we know is that certain
+        // IGs are marked as prolog or epilog. We don't actually know if two adjacent
+        // IGs are part of the *same* prolog or epilog, so we have to assume they are.
+
+        if (igPrev && (((igPrev->igFlags & IGF_FUNCLET_PROLOG) && (ig->igFlags & IGF_FUNCLET_PROLOG)) ||
+                       ((igPrev->igFlags & IGF_EPILOG) && (ig->igFlags & IGF_EPILOG))))
+        {
+            // We can't update the candidate
+        }
+        else
+        {
+            igLastCandidate = ig;
+            candidateSize   = curSize;
+        }
+
+        curSize += ig->igSize;
+
+    } // end for loop
+
+    splitIfNecessary();
+    assert(curSize < UW_MAX_FRAGMENT_SIZE_BYTES);
+}
+#endif
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 // Does the argument location point to an IG at the end of a function or funclet?
@@ -4393,6 +4518,8 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
 // This is done as part of emitSetShortJump();
 // insSize isz = emitInsSize(id->idInsFmt());
 // id->idInsSize(isz);
+#elif  defined(TARGET_S390X)
+// TODO: Giri : Something needs here ?
 #else
         /* It is fatal to over-estimate the instruction size */
         IMPL_LIMITATION("Over-estimated instruction size");
@@ -5654,7 +5781,7 @@ void emitter::emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlac
     unsigned insAlignCount    = nPaddingBytes / MAX_ENCODED_SIZE;
     unsigned lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
     unsigned paddingBytes     = MAX_ENCODED_SIZE;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64 ) || defined(TARGET_S390X)
     unsigned nAlignInstr   = alignmentBoundary / INSTR_ENCODED_SIZE;
     unsigned insAlignCount = nAlignInstr;
     unsigned paddingBytes  = INSTR_ENCODED_SIZE;
@@ -6170,7 +6297,7 @@ void emitter::emitLoopAlignAdjustments()
 #if defined(TARGET_XARCH)
                 int instrAdjusted =
                     (emitComp->opts.compJitAlignLoopBoundary + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_S390X)
                 unsigned short instrAdjusted = (emitComp->opts.compJitAlignLoopBoundary >> 1) / INSTR_ENCODED_SIZE;
                 if (!emitComp->opts.compJitAlignLoopAdaptive)
                 {
@@ -6187,7 +6314,7 @@ void emitter::emitLoopAlignAdjustments()
 #if defined(TARGET_XARCH)
                     unsigned newPadding = min(paddingToAdj, (unsigned)MAX_ENCODED_SIZE);
                     alignInstrToAdj->idCodeSize(newPadding);
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined (TARGET_S390X)
                     unsigned newPadding = min(paddingToAdj, (unsigned)INSTR_ENCODED_SIZE);
                     if (newPadding == 0)
                     {
@@ -6875,7 +7002,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     {
         assert(((size_t)consBlock & 15) == 0);
     }
-#endif // 0
+#endif
 #endif
 
     // if (emitConsDsc.dsdOffs)
