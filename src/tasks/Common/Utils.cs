@@ -48,61 +48,6 @@ internal static class Utils
         => !File.Exists(inFile) || !File.Exists(outFile) ||
                 (File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile));
 
-    public static (int exitCode, string output) RunShellCommand(
-                                        TaskLoggingHelper logger,
-                                        string command,
-                                        IDictionary<string, string> envVars,
-                                        string workingDir,
-                                        bool silent=false,
-                                        bool logStdErrAsMessage=false,
-                                        MessageImportance debugMessageImportance=MessageImportance.Low,
-                                        string? label=null)
-    {
-        string scriptFileName = CreateTemporaryBatchFile(command);
-        (string shell, string args) = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                                                    ? ("cmd", $"/c \"{scriptFileName}\"")
-                                                    : ("/bin/sh", $"\"{scriptFileName}\"");
-
-        string msgPrefix = label == null ? string.Empty : $"[{label}] ";
-        logger.LogMessage(debugMessageImportance, $"{msgPrefix}Running {command} via script {scriptFileName}:", msgPrefix);
-        logger.LogMessage(debugMessageImportance, File.ReadAllText(scriptFileName), msgPrefix);
-
-        return TryRunProcess(logger,
-                             shell,
-                             args,
-                             envVars,
-                             workingDir,
-                             silent: silent,
-                             logStdErrAsMessage: logStdErrAsMessage,
-                             label: label,
-                             debugMessageImportance: debugMessageImportance);
-
-        static string CreateTemporaryBatchFile(string command)
-        {
-            string extn = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".cmd" : ".sh";
-            string file = Path.Combine(Path.GetTempPath(), $"tmp{Guid.NewGuid():N}{extn}");
-
-            using StreamWriter sw = new(file);
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // set encoding to UTF-8 -> full Unicode support is needed for usernames -
-                // `command` contains tmp dir path with the username
-                sw.WriteLine(@"%SystemRoot%\System32\chcp.com 65001>nul");
-                sw.WriteLine("setlocal");
-                sw.WriteLine("set errorlevel=dummy");
-                sw.WriteLine("set errorlevel=");
-            }
-            else
-            {
-                // Use sh rather than bash, as not all 'nix systems necessarily have Bash installed
-                sw.WriteLine("#!/bin/sh");
-            }
-
-            sw.WriteLine(command);
-            return file;
-        }
-    }
-
     public static string RunProcess(
         TaskLoggingHelper logger,
         string path,
