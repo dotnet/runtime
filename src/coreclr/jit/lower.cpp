@@ -10978,8 +10978,8 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                 GenTree* prevValue = prevStore->Data();
                 GenTree* currValue = store->Data();
 
-                bool isPrevClosedRange = false;
-                LIR::ReadOnlyRange prevRange = BlockRange().GetTreeRange(prevStore, &isPrevClosedRange);
+                bool               isPrevClosedRange = false;
+                LIR::ReadOnlyRange prevRange         = BlockRange().GetTreeRange(prevStore, &isPrevClosedRange);
                 if (!isPrevClosedRange)
                 {
                     return;
@@ -10996,14 +10996,14 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
 
                     // Clear the bits in the wide value where the narrow value will be inserted,
                     // then OR in the narrow value.
-                    size_t   clearMask = ~(narrowMask << insertBitOffset);
-                    size_t   combined  = (wideVal & clearMask) | (narrowVal << insertBitOffset);
+                    size_t clearMask = ~(narrowMask << insertBitOffset);
+                    size_t combined  = (wideVal & clearMask) | (narrowVal << insertBitOffset);
 
                     JITDUMP("Folding narrow constant store into wider constant store:\n");
-                    JITDUMP("  Wide store: V%02u [+%u] %s = %lld\n", currLclNum, prevOffset,
-                            varTypeName(prevType), (int64_t)prevValue->AsIntCon()->IconValue());
-                    JITDUMP("  Narrow store: V%02u [+%u] %s = %lld\n", currLclNum, currOffset,
-                            varTypeName(currType), (int64_t)currValue->AsIntCon()->IconValue());
+                    JITDUMP("  Wide store: V%02u [+%u] %s = %lld\n", currLclNum, prevOffset, varTypeName(prevType),
+                            (int64_t)prevValue->AsIntCon()->IconValue());
+                    JITDUMP("  Narrow store: V%02u [+%u] %s = %lld\n", currLclNum, currOffset, varTypeName(currType),
+                            (int64_t)currValue->AsIntCon()->IconValue());
                     JITDUMP("  Combined value: %lld\n", (int64_t)combined);
 
                     // Remove the previous (wider) store.
@@ -11327,8 +11327,7 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
 
             // Found a read from the same local, same offset, same size.
             if (scanNode->OperIs(GT_LCL_VAR, GT_LCL_FLD) && scanNode->OperIsLocalRead() &&
-                scanNode->AsLclVarCommon()->GetLclNum() == lclNum &&
-                scanNode->AsLclVarCommon()->GetLclOffs() == offset)
+                scanNode->AsLclVarCommon()->GetLclNum() == lclNum && scanNode->AsLclVarCommon()->GetLclOffs() == offset)
             {
                 unsigned readSize = genTypeSize(scanNode->TypeGet());
                 if (readSize == 0 && scanNode->TypeIs(TYP_STRUCT))
@@ -11340,33 +11339,16 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                 {
                     break; // Size mismatch, can't bypass.
                 }
-                // Only bypass if this is the last use — either GTF_VAR_DEATH is set,
-                // or the local is do-not-enreg and we can verify no further reads.
-                bool isLastUse = ((scanNode->gtFlags & GTF_VAR_DEATH) != 0);
-                if (!isLastUse && m_compiler->lvaGetDesc(lclNum)->lvDoNotEnregister)
-                {
-                    // For untracked locals, scan forward to verify no more reads.
-                    isLastUse    = true;
-                    GenTree* chk = scanNode->gtNext;
-                    for (int chkCount = 0; chk != nullptr && chkCount < scanLimit; chkCount++)
-                    {
-                        if (chk->OperIsLocalRead() && chk->AsLclVarCommon()->GetLclNum() == lclNum)
-                        {
-                            isLastUse = false;
-                            break;
-                        }
-                        if (chk->OperIsLocalStore() && chk->AsLclVarCommon()->GetLclNum() == lclNum)
-                        {
-                            break; // redefined before next read = this was the last use
-                        }
-                        chk = chk->gtNext;
-                    }
-                }
+                // Only bypass if this is the last use
+
+                bool const isLastUse = ((scanNode->gtFlags & GTF_VAR_DEATH) != 0);
 
                 if (isLastUse)
                 {
-                    JITDUMP("Bypassing constant store+load for V%02u [+%u]: replacing load with constant %lld\n",
-                            lclNum, offset, (int64_t)store->Data()->AsIntCon()->IconValue());
+                    JITDUMP(
+                        "Bypassing constant store [%06u] + last-use load [%02u] for V%02u[+%u]: replacing load with constant %lld\n",
+                        m_compiler->dspTreeID(store), m_compiler->dspTreeID(scanNode), lclNum, offset,
+                        (int64_t)store->Data()->AsIntCon()->IconValue());
 
                     // Create a new constant node and insert it in place of the load.
                     ssize_t  constVal = store->Data()->AsIntCon()->IconValue();
