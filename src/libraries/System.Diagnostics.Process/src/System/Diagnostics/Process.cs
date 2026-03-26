@@ -1484,7 +1484,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Process Start(string fileName, string arguments)
+        public static Process Start(string fileName, string? arguments)
         {
             // the underlying Start method can only return null on Windows platforms,
             // when the ProcessStartInfo.UseShellExecute property is set to true.

@@ -235,8 +235,6 @@ public:
     // Sets up the class method table for the IClassX and also lays it out.
     static ComMethodTable *SetupComMethodTableForClass(MethodTable *pMT, BOOL bLayOutComMT);
 
-    MethodDesc * GetICustomQueryInterfaceGetInterfaceMD();
-
     BOOL HasInvisibleParent()
     {
         LIMITED_METHOD_CONTRACT;
@@ -328,7 +326,6 @@ private:
         enum_IsSafeTypeForMarshalling         = 0x2000, // The class can be safely marshalled out of process via DCOM
     };
     DWORD                                   m_flags;
-    MethodDesc*                             m_pICustomQueryInterfaceGetInterfaceMD;
     ULONG                                   m_cbInterfaces;
     SLOT*                                   m_rgpIPtr[1];
 };

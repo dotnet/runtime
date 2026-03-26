@@ -718,10 +718,8 @@ namespace System.Diagnostics
             // Transfer the ownership to SafePipeHandle, so that it can be properly released when the AnonymousPipeClientStream is disposed.
             SafePipeHandle safePipeHandle = new(handle.DangerousGetHandle(), ownsHandle: true);
             handle.SetHandleAsInvalid();
-            handle.Dispose();
 
-            // In contrary to Windows, we use AnonymousPipeClientStream which is internally backed by a Socket on Unix.
-            // This provides best performance and cancellation support.
+            // Use AnonymousPipeClientStream for async, cancellable read/write support.
             return new AnonymousPipeClientStream(direction, safePipeHandle);
         }
 

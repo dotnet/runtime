@@ -34,6 +34,7 @@ typedef struct
     int64_t RDev;      // ID of the device if it is a special file
     int64_t Ino;       // inode number of the file
     uint32_t UserFlags; // user defined flags
+    uint32_t HardLinkCount; // Number of hard links to the file
 } FileStatus;
 
 typedef struct

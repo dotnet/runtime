@@ -33814,7 +33814,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             case NI_Vector512_WithElement:
 #endif
             {
-                if ((cnsNode != op1) || !op3->OperIsConst())
+                if ((cnsNode != op1) || !op2->IsCnsIntOrI() || !op3->OperIsConst())
                 {
                     break;
                 }
