@@ -1145,11 +1145,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void PopulateParameterInfoValues(JsonParameterInfoValues[] parameterInfoValues)
         {
-            if (parameterInfoValues.Length == 0)
-            {
-                return;
-            }
-
             Dictionary<ParameterLookupKey, JsonParameterInfoValues> parameterIndex = new(parameterInfoValues.Length);
             foreach (JsonParameterInfoValues parameterInfoValue in parameterInfoValues)
             {

@@ -20,6 +20,15 @@ internal enum HResultValidationMode
     /// same invalid input (e.g., InvalidOperationException vs E_INVALIDARG), producing different failing HRESULTs.
     /// </summary>
     AllowDivergentFailures,
+
+    /// <summary>
+    /// Like <see cref="AllowDivergentFailures"/>, but also allows the cDAC to succeed when the native DAC fails.
+    /// The native DAC's MetaSig constructor traverses MethodDesc -> Module -> MDImport -> signature blob via
+    /// DAC host pointers, and any intermediate read can throw under EX_TRY on certain frames (e.g., EH dispatch).
+    /// The cDAC reads the same metadata through contracts (EcmaMetadata -> PEImage -> metadata blob) which uses
+    /// a different pointer traversal path that doesn't hit the same failure.
+    /// </summary>
+    AllowCdacSuccess,
 }
 
 internal static class DebugExtensions
@@ -38,6 +47,7 @@ internal static class DebugExtensions
             {
                 HResultValidationMode.Exact => cdacHr == dacHr,
                 HResultValidationMode.AllowDivergentFailures => cdacHr == dacHr || (cdacHr < 0 && dacHr < 0),
+                HResultValidationMode.AllowCdacSuccess => cdacHr == dacHr || (cdacHr < 0 && dacHr < 0) || (cdacHr >= 0 && dacHr < 0),
                 _ => cdacHr == dacHr,
             };
             Debug.Assert(match, $"HResult mismatch - cDAC: 0x{unchecked((uint)cdacHr):X8}, DAC: 0x{unchecked((uint)dacHr):X8} ({Path.GetFileName(filePath)}:{lineNumber})");

@@ -1930,7 +1930,7 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
         else
         {
 #ifdef TARGET_UNIX
-            PAL_VirtualUnwind(pContext, NULL);
+            PAL_VirtualUnwind(pContext);
 #else
             Thread::VirtualUnwindCallFrame(pContext);
 #endif

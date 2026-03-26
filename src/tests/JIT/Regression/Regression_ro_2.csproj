@@ -91,8 +91,10 @@
     <Compile Include="JitBlue\Runtime_124507\Runtime_124507.cs" />
     <Compile Include="JitBlue\Runtime_125041\Runtime_125041.cs" />
     <Compile Include="JitBlue\Runtime_125058\Runtime_125058.cs" />
+    <Compile Include="JitBlue\Runtime_125169\Runtime_125169.cs" />
     <Compile Include="JitBlue\Runtime_125301\Runtime_125301.cs" />
     <Compile Include="JitBlue\Runtime_125328\Runtime_125328.cs" />
+    <Compile Include="JitBlue\Runtime_126060\Runtime_126060.cs" />
   </ItemGroup>
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
 </Project>

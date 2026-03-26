@@ -15,6 +15,11 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 {
     private Dictionary<ModuleHandle, MetadataReaderProvider?> _metadata = new();
 
+    public void Flush()
+    {
+        _metadata.Clear();
+    }
+
     public TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
     {
         ILoader loader = target.Contracts.Loader;

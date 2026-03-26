@@ -87,6 +87,8 @@ partial interface IRuntimeTypeSystem : IContract
     // HasTypeParam will return true for cases where this is the interop view, and false for normal valuetypes.
     public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
 
+    // return true if the TypeHandle represents an enum type.
+    bool IsEnum(TypeHandle typeHandle);
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     bool IsArray(TypeHandle typeHandle, out uint rank);
     TypeHandle GetTypeParam(TypeHandle typeHandle);
@@ -205,6 +207,11 @@ bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
+```
+
+### Other APIs
+```csharp
+void GetCoreLibFieldDescAndDef(string @namespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef);
 ```
 
 ## Version 1
@@ -687,6 +694,22 @@ Contracts used:
             return (CorElementType)(TypeAndFlags & 0xFF);
         }
         return default(CorElementType);
+    }
+
+    // Enums have Category_PrimitiveValueType in their MethodTable flags and their
+    // InternalCorElementType is a primitive type (I1, U1, I2, U2, I4, U4, I8, U8),
+    // not ValueType. Regular primitive value types (IntPtr/UIntPtr) have Category_TruePrimitive.
+    public bool IsEnum(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+
+        CorElementType sigType = GetSignatureCorElementType(typeHandle);
+        if (sigType != CorElementType.ValueType)
+            return false;
+
+        CorElementType internalType = (CorElementType)GetClassData(typeHandle).InternalCorElementType;
+        return internalType != CorElementType.ValueType;
     }
 
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
@@ -1756,5 +1779,23 @@ uint GetFieldDescOffset(TargetPointer fieldDescPointer)
         return (uint)fieldDef.GetRelativeVirtualAddress();
     }
     return DWord2 & (uint)FieldDescFlags2.OffsetMask;
+}
+```
+
+### Other APIs
+
+```csharp
+void GetCoreLibFieldDescAndDef(string @namespace, string typeName, string fieldName, out TargetPointer fieldDescAddr, out FieldDefinition fieldDef)
+{
+    ILoader loader = _target.Contracts.Loader;
+    TargetPointer systemAssembly = loader.GetSystemAssembly();
+    ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
+    IRuntimeTypeSystem rts = (IRuntimeTypeSystem)this;
+    TypeHandle th = rts.GetTypeByNameAndModule(typeName, @namespace, moduleHandle);
+    fieldDescAddr = rts.GetFieldDescByName(th, fieldName);
+    uint token = rts.GetFieldDescMemberDef(fieldDescAddr);
+    FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
+    MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+    fieldDef = mdReader.GetFieldDefinition(fieldHandle);
 }
 ```
