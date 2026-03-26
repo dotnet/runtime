@@ -877,6 +877,12 @@ namespace Internal.JitInterface
 
         private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
         {
+            if (_compilation.NodeFactory.Target.IsWasm)
+            {
+                // WebAssembly doesn't use the compact ReadyToRun helpers, so disable them here.
+                return false;
+            }
+
             switch (id)
             {
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEW:
@@ -1779,7 +1785,7 @@ namespace Internal.JitInterface
                         fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                     }
                 }
-                else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) || _compilation.NodeFactory.Target.IsWasm)
                 {
                     // The JIT wants to know how to access a static field on a generic type. We need a runtime lookup.
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
@@ -2312,7 +2318,7 @@ namespace Internal.JitInterface
             // All virtual calls which take method instantiations must
             // currently be implemented by an indirect call via a runtime-lookup
             // function pointer
-            else if (targetMethod.HasInstantiation)
+            else if (targetMethod.HasInstantiation || _compilation.NodeFactory.Target.IsWasm) // WASM doesn't currently support the stub dispatch path
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
                 pResult->nullInstanceCheck = true;
