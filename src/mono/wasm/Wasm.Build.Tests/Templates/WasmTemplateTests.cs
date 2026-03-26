@@ -301,8 +301,8 @@ namespace Wasm.Build.Tests
         }
 
         [Theory, TestCategory("no-workload")]
-        // [InlineData(false, false)] https://github.com/dotnet/runtime/issues/123477
-        // [InlineData(false, true)] https://github.com/dotnet/runtime/issues/123477
+        [InlineData(false, false)]
+        [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
         public async Task LibraryMode(bool useWasmSdk, bool isPublish)
