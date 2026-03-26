@@ -2593,14 +2593,15 @@ void Thread::CooperativeCleanup()
     if (threadObjMaybe != NULL)
         ((THREADBASEREF)threadObjMaybe)->SetIsDead();
 
-    // Destroy handles that we're using to hold onto exception objects and the exposed thread object.
+    // Destroy handles that we're using to hold onto exception objects.
     // This runs under GCX_COOP() above, so it is safe to destroy handles here.
     SafeSetThrowables(NULL);
 
-    DestroyShortWeakHandle(m_ExposedObject);
-    m_ExposedObject = NULL;
-    DestroyStrongHandle(m_StrongHndToExposedObject);
-    m_StrongHndToExposedObject = NULL;
+    // Note: m_ExposedObject and m_StrongHndToExposedObject are intentionally
+    // NOT destroyed here. They are still needed by CleanupDetachedThreads()
+    // which calls IncExternalCount(), GetExposedObject(), and the managed
+    // OnThreadExiting callback after the thread has detached.
+    // These handles are destroyed later in ~Thread() via DestroyHandleInPreemptiveMode.
 }
 
 // See general comments on thread destruction (code:#threadDestruction) above.
