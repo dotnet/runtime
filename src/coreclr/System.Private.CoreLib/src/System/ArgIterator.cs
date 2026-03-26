@@ -49,6 +49,7 @@ namespace System
         // This is much like the C va_start macro
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public ArgIterator(RuntimeArgumentHandle arglist, void* ptr)
         {
             IntPtr cookie = arglist.Value;
