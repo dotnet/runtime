@@ -15,6 +15,7 @@ public class Test_EmittingIgnoresAccessChecksToAttributeIsRespected
 
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [ActiveIssue("Reflection.Emit is not supported on fullaot", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/125988", typeof(Utilities), nameof(Utilities.IsCoreClrInterpreter))]
     [Fact]
     public static void TestEntryPoint()
     {
