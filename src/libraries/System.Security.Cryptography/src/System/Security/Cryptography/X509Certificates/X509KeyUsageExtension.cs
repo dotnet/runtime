@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
 
-        private static void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
+        internal static void DecodeX509KeyUsageExtension(ReadOnlySpan<byte> encoded, out X509KeyUsageFlags keyUsages)
         {
             KeyUsageFlagsAsn keyUsagesAsn;
 

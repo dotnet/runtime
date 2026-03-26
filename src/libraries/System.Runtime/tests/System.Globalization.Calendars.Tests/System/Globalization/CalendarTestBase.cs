@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -71,7 +73,24 @@ namespace System.Globalization.Tests
             Day = 8
         }
 
-        private static int MinEra(Calendar calendar) => calendar.GetEra(calendar.MinSupportedDateTime);
+        // ICU have introduced a breaking change regarding the Japanese Meiji era: the start date has been updated from 1868-09-08 to 1868-10-23.
+        // Additional details are available in the relevant CLDR issue https://unicode-org.atlassian.net/browse/CLDR-11375 and CLDR pull request https://github.com/unicode-org/cldr/pull/4610.
+        // This means the hardcoded MinSupportedDateTime for JapaneseCalendar (1868-09-08) is no longer valid on ICU and results in various tests failing.
+        // We have fixed the issue in .NET 11 through the PR https://github.com/dotnet/runtime/pull/122480, we can consider porting the fix to earlier versions if requested by users.
+        // For now, we are using reflection to get the correct MinSupportedDateTime for JapaneseCalendar on ICU and use that for testing.
+        private static DateTime JapaneseCalendaraMinSupportedDateTime { get; } = new Func<DateTime>(() =>
+        {
+            JapaneseCalendar calendar = new JapaneseCalendar();
+            object[] eraInfo = (object[])calendar.GetType().GetMethod("GetEraInfo", BindingFlags.NonPublic | BindingFlags.Static)!.Invoke(null, null)!;
+            long minTicks = (long)eraInfo[eraInfo.Length - 1].GetType().GetField("ticks", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(eraInfo[eraInfo.Length - 1])!;
+            return new DateTime(minTicks);
+        })();
+
+        private static DateTime GetCalendarMinSupportedDateTime(Calendar calendar) =>
+            PlatformDetection.IsIcuGlobalization && calendar is JapaneseCalendar ? JapaneseCalendaraMinSupportedDateTime : calendar.MinSupportedDateTime;
+
+        private static int MinEra(Calendar calendar) => calendar.GetEra(GetCalendarMinSupportedDateTime(calendar));
+
         private static int MaxEra(Calendar calendar) => calendar.GetEra(calendar.MaxSupportedDateTime);
 
         private static int MaxCalendarYearInEra(Calendar calendar, int era)
@@ -132,7 +151,7 @@ namespace System.Globalization.Tests
             Assert.InRange(era, 0, eras[0]);
             if (eras.Length == 1 || era == eras[eras.Length - 1] || era == 0)
             {
-                return calendar.GetYear(calendar.MinSupportedDateTime);
+                return calendar.GetYear(GetCalendarMinSupportedDateTime(calendar));
             }
             return calendar.GetYear(calendar.ToDateTime(1, 1, 1, 0, 0, 0, 0, era));
         }
@@ -386,7 +405,7 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => calendar.ToDateTime(calendar.GetYear(calendar.MaxSupportedDateTime), month, day, hour, minute, second, millisecond, MaxEra(calendar) + 1));
 
             // New date is out of range
-            DateTime minDateTime = calendar.MinSupportedDateTime;
+            DateTime minDateTime = GetCalendarMinSupportedDateTime(calendar);
             int minEra = calendar.GetEra(minDateTime);
             int minYear = calendar.GetYear(minDateTime);
 

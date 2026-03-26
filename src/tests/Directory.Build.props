@@ -10,7 +10,7 @@
 
   <PropertyGroup>
     <!-- Override the compiler version with a private build that supports runtime-async -->
-    <MicrosoftNetCompilersToolsetVersion>5.0.0-1.25259.6</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftNetCompilersToolsetVersion>5.0.0-1.25259.7</MicrosoftNetCompilersToolsetVersion>
     <RoslynCompilerType>Custom</RoslynCompilerType>
   </PropertyGroup>
 
@@ -126,6 +126,11 @@
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
     <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
+     <!-- The SDK for VB.NET requires the DefineConstants variable to be , delimited instead of ; -->
+     <DefineConstants Condition="'$(MSBuildProjectExtension)' == '.vbproj'">$(DefineConstants.Replace(';',','))</DefineConstants>
   </PropertyGroup>
 
   <!-- Setup the default output and intermediate paths -->

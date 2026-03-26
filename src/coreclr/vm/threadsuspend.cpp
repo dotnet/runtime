@@ -2194,6 +2194,10 @@ void Thread::RareDisablePreemptiveGC()
 
         if (ThreadStore::IsTrappingThreadsForSuspension())
         {
+            // Mark that this thread is trapped for suspension.
+            // Used by the sample profiler to determine this thread was in managed code.
+            SetThreadState(TS_SuspensionTrapped);
+
             EnablePreemptiveGC();
 
 #ifdef PROFILING_SUPPORTED
@@ -2232,6 +2236,9 @@ void Thread::RareDisablePreemptiveGC()
 
             // disable preemptive gc.
             m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+
+            // Clear the suspension trapped flag now that we're resuming.
+            ResetThreadState(TS_SuspensionTrapped);
 
             // check again if we have something to do
             continue;
@@ -5725,16 +5732,17 @@ retry_for_debugger:
 //          It is unsafe to use blocking APIs or allocate in this method.
 BOOL CheckActivationSafePoint(SIZE_T ip)
 {
-    Thread *pThread = GetThreadNULLOk();
+    Thread *pThread = GetThreadAsyncSafe();
 
     // The criteria for safe activation is to be running managed code.
     // Also we are not interested in handling interruption if we are already in preemptive mode nor if we are single stepping
     BOOL isActivationSafePoint = pThread != NULL &&
         (pThread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0 &&
         pThread->PreemptiveGCDisabled() &&
-        ExecutionManager::IsManagedCode(ip);
+        (ExecutionManager::GetScanFlags(pThread) != ExecutionManager::ScanReaderLock) &&
+        ExecutionManager::IsManagedCodeNoLock(ip);
 
-    if (!isActivationSafePoint)
+    if (!isActivationSafePoint && pThread != NULL)
     {
         pThread->m_hasPendingActivation = false;
     }

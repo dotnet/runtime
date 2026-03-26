@@ -3060,5 +3060,29 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(Array.Empty<int>(), result.IEnumerableProperty);
             Assert.Equal(Array.Empty<string>(), result.StringArray);
         }
+
+        [Fact]
+        public void TestBindingNestedIEnumerable()
+        {
+            string jsonConfig1 = """
+                {
+                  "source": {
+                    "name": "DemoService",
+                    "addresses": [ "127.0.0.1" ]
+                  }
+                }
+                """;
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig1)))
+                        .Build();
+
+            ContainingIEnumerable? result = configuration.Get<ContainingIEnumerable>();
+
+            Assert.NotNull(result);
+            Assert.Equal("DemoService", result.Source.Name);
+            Assert.Equal(1, result.Source.Addresses.Count());
+            Assert.Equal("127.0.0.1", result.Source.Addresses.First());
+        }
     }
 }

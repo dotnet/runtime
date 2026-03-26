@@ -625,7 +625,7 @@ void Thread::Hijack()
     PalHijack(this);
 }
 
-void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack)
+void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack, bool doInlineSuspend)
 {
     // If we are no longer trying to suspend, no need to do anything.
     // This is just an optimization. It is ok to race with the setting the trap flag here.
@@ -694,9 +694,8 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHij
         ASSERT(codeManager->IsUnwindable(pvAddress) || runtime->IsConservativeStackReportingEnabled());
 #endif
 
-        // if we are not given a thread to hijack
         // perform in-line wait on the current thread
-        if (pThreadToHijack == NULL)
+        if (doInlineSuspend)
         {
             ASSERT(pThread->m_interruptedContext == NULL);
             pThread->InlineSuspend(pThreadContext);

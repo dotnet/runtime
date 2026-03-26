@@ -135,6 +135,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Emit\src\System.Reflection.Emit.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.MetadataLoadContext\src\System.Reflection.MetadataLoadContext.csproj" />
   </ItemGroup>
 

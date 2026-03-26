@@ -117,8 +117,8 @@ void DbgAssertModuleDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void 
 //
 void CordbModule::DbgAssertModuleDeleted()
 {
-    GetProcess()->GetDAC()->EnumerateModulesInAssembly(
-        m_pAssembly->GetDomainAssemblyPtr(),
+    GetProcess()->GetDAC()->EnumerateAssembliesInAppDomain(
+        m_pAppDomain->GetADToken(),
         DbgAssertModuleDeletedCallback,
         this);
 }
