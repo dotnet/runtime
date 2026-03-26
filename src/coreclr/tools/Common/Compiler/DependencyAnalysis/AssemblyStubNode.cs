@@ -86,8 +86,7 @@ namespace ILCompiler.DependencyAnalysis
                 case TargetArchitecture.Wasm32:
                     Wasm.WasmEmitter wasmEmitter = new Wasm.WasmEmitter(factory, relocsOnly);
                     EmitCode(factory, ref wasmEmitter, relocsOnly);
-                    wasmEmitter.Builder.AddSymbol(this);
-                    return wasmEmitter.Builder.ToObjectData();
+                    return wasmEmitter.Encode(this);
 
                 default:
                     throw new NotImplementedException();

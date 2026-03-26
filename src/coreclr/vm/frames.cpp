@@ -645,7 +645,7 @@ void Frame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targe
     do
     {
 #ifdef TARGET_UNIX
-        PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+        PAL_VirtualUnwind(pRD->pCurrentContext);
 #else
         Thread::VirtualUnwindCallFrame(pRD);
 #endif
@@ -683,7 +683,7 @@ void InlinedCallFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, 
         while (!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)))
         {
     #ifdef TARGET_UNIX
-            PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+            PAL_VirtualUnwind(pRD->pCurrentContext);
     #else
             Thread::VirtualUnwindCallFrame(pRD);
     #endif
@@ -1807,7 +1807,6 @@ BOOL TransitionFrame::Protects_Impl(OBJECTREF * ppORef)
 #endif //defined (_DEBUG) && !defined (DACCESS_COMPILE)
 
 #ifndef DACCESS_COMPILE
-
 VOID InlinedCallFrame::Init()
 {
     WRAPPER_NO_CONTRACT;
@@ -1818,7 +1817,6 @@ VOID InlinedCallFrame::Init()
     m_pCallSiteSP = NULL;
     m_pCallerReturnAddress = (TADDR)NULL;
 }
-
 #endif // !DACCESS_COMPILE
 
 #ifdef FEATURE_INTERPRETER

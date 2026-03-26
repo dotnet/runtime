@@ -1264,7 +1264,6 @@ struct cdac_data<FramedMethodFrame>
 };
 
 #ifdef FEATURE_COMINTEROP
-
 //------------------------------------------------------------------------
 // This represents a generic call from CLR to COM
 //------------------------------------------------------------------------
@@ -2356,6 +2355,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_isFaulting = isFaulting;
+    }
+
+    Interception GetInterception_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_isFaulting ? INTERCEPTION_EXCEPTION : INTERCEPTION_NONE;
     }
 
     void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)

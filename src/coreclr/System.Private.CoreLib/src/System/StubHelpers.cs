@@ -319,6 +319,21 @@ namespace System.StubHelpers
             }
         }
 
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe IntPtr ConvertToNative(string* pStr, Exception* pException)
+        {
+            try
+            {
+                return ConvertToNative(*pStr, IntPtr.Zero);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return default;
+            }
+        }
+
         internal static unsafe string? ConvertToManaged(IntPtr bstr)
         {
             if (IntPtr.Zero == bstr)
@@ -359,6 +374,19 @@ namespace System.StubHelpers
                 }
 
                 return ret;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void ConvertToManaged(IntPtr bstr, string* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = ConvertToManaged(bstr);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
 
@@ -846,6 +874,7 @@ namespace System.StubHelpers
     internal static unsafe partial class MngdRefCustomMarshaler
     {
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static void ConvertContentsToNative(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -858,6 +887,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalManagedToNative.
@@ -871,6 +901,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static void ConvertContentsToManaged(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -883,6 +914,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object? pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalNativeToManaged.
@@ -896,6 +928,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static void ClearNative(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -908,6 +941,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static void ClearNative(ICustomMarshaler marshaler, ref object _, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to CleanUpNativeData.
@@ -927,6 +961,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static void ClearManaged(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
         {
             try
@@ -939,6 +974,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static void ClearManaged(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* _)
         {
             // COMPAT: We never pass null to CleanUpManagedData.
@@ -952,6 +988,7 @@ namespace System.StubHelpers
 
         [UnmanagedCallersOnly]
         [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Custom marshaler GetInstance method is preserved by ILLink (see MarkCustomMarshalerGetInstance).")]
+        [RequiresUnsafe]
         internal static void GetCustomMarshalerInstance(void* pMT, byte* pCookie, int cCookieBytes, object* pResult, Exception* pException)
         {
             try
@@ -1507,11 +1544,84 @@ namespace System.StubHelpers
 
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void GetIEnumeratorToEnumVariantMarshaler(object* pResult, Exception* pException)
         {
             try
             {
                 *pResult = GetIEnumeratorToEnumVariantMarshaler();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        private const int DispatchExPropertyCanRead = 1;
+        private const int DispatchExPropertyCanWrite = 2;
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe int GetDispatchExPropertyFlags(PropertyInfo* pMemberInfo, Exception* pException)
+        {
+            try
+            {
+                int result = 0;
+                PropertyInfo property = *pMemberInfo;
+                if (property.CanRead)
+                {
+                    result |= DispatchExPropertyCanRead;
+                }
+
+                if (property.CanWrite)
+                {
+                    result |= DispatchExPropertyCanWrite;
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return 0;
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe int CallICustomQueryInterface(ICustomQueryInterface* pObject, Guid* pIid, IntPtr* ppObject, Exception* pException)
+        {
+            try
+            {
+                return (int)(*pObject).GetInterface(ref *pIid, out *ppObject);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return 0;
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void InvokeConnectionPointProviderMethod(
+            object* pProvider,
+            delegate*<object, object?, void> providerMethodEntryPoint,
+            object* pDelegate,
+            delegate*<object, object?, nint, void> delegateCtorMethodEntryPoint,
+            object* pSubscriber,
+            nint pEventMethodCodePtr,
+            Exception* pException)
+        {
+            try
+            {
+                // Construct the delegate before invoking the provider method.
+                delegateCtorMethodEntryPoint(*pDelegate, *pSubscriber, pEventMethodCodePtr);
+
+                providerMethodEntryPoint(*pProvider, *pDelegate);
             }
             catch (Exception ex)
             {
@@ -1592,9 +1702,11 @@ namespace System.StubHelpers
         // Profiler helpers
         //-------------------------------------------------------
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
+        [RequiresUnsafe]
         internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
+        [RequiresUnsafe]
         internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD);
 #endif // PROFILING_SUPPORTED
 
@@ -1614,6 +1726,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
@@ -1633,6 +1746,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe void FmtClassUpdateCLRInternal(object obj, byte* pNative)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
