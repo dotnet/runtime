@@ -1876,7 +1876,6 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
 #endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
-
 VOID InlinedCallFrame::Init()
 {
     WRAPPER_NO_CONTRACT;
@@ -1887,17 +1886,6 @@ VOID InlinedCallFrame::Init()
     m_pCallSiteSP = NULL;
     m_pCallerReturnAddress = (TADDR)NULL;
 }
-
-
-#ifdef FEATURE_COMINTEROP
-void UnmanagedToManagedFrame::ExceptionUnwind_Impl()
-{
-    WRAPPER_NO_CONTRACT;
-
-    AppDomain::ExceptionUnwind(this);
-}
-#endif // FEATURE_COMINTEROP
-
 #endif // !DACCESS_COMPILE
 
 #ifdef FEATURE_COMINTEROP
