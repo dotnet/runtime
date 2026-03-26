@@ -11360,13 +11360,6 @@ void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
                 break;
             }
 
-            // Verify the stored value can reach the load — the store's data must be
-            // invariant between the store and the load (no intervening modifications).
-            if (!IsInvariantInRange(store->Data(), scanNode))
-            {
-                break;
-            }
-
             // Extract the portion of the constant that corresponds to the read.
             ssize_t  fullVal    = store->Data()->AsIntCon()->IconValue();
             unsigned bitOffset  = (readOffset - offset) * BITS_PER_BYTE;
