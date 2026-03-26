@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System.Numerics
 {
@@ -19,7 +20,8 @@ namespace System.Numerics
           IComparable<BigInteger>,
           IEquatable<BigInteger>,
           IBinaryInteger<BigInteger>,
-          ISignedNumber<BigInteger>
+          ISignedNumber<BigInteger>,
+          ISerializable // introduced in .NET 11 for compat with existing serialized assets, not exposed in the ref assembly
     {
         internal const uint UInt32HighBit = 0x80000000;
         internal const int BitsPerUInt32 = 32;
@@ -681,6 +683,83 @@ namespace System.Numerics
             }
 
             AssertValid();
+        }
+
+        /// <summary>
+        /// Initializes a new <see cref="BigInteger"/> from serialized data.
+        /// Reads <see cref="_bits"/> as <see cref="uint"/>[] for backward compatibility with previous
+        /// runtimes where the field was <see cref="uint"/>[].
+        /// </summary>
+        private BigInteger(SerializationInfo info, StreamingContext _)
+        {
+            ArgumentNullException.ThrowIfNull(info);
+
+            _sign = info.GetInt32("_sign");
+            uint[]? bits32 = (uint[]?)info.GetValue("_bits", typeof(uint[]));
+
+            if (bits32 is null)
+            {
+                _bits = null;
+            }
+            else if (nint.Size == 4)
+            {
+                _bits = new nuint[bits32.Length];
+                Array.Copy(bits32, _bits, bits32.Length);
+            }
+            else
+            {
+                int nuintLen = (bits32.Length + 1) / 2;
+                _bits = new nuint[nuintLen];
+                for (int i = 0; i < bits32.Length; i += 2)
+                {
+                    ulong lo = bits32[i];
+                    ulong hi = (i + 1 < bits32.Length) ? bits32[i + 1] : 0;
+                    _bits[i / 2] = (nuint)(lo | (hi << 32));
+                }
+            }
+
+            AssertValid();
+        }
+
+        /// <summary>
+        /// Populates a <see cref="SerializationInfo"/> with the data needed to serialize the <see cref="BigInteger"/>.
+        /// Serializes <see cref="_bits"/> as <see cref="uint"/>[] for backward compatibility with previous
+        /// runtimes where the field was <see cref="uint"/>[].
+        /// </summary>
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            ArgumentNullException.ThrowIfNull(info);
+            info.AddValue("_sign", _sign);
+
+            uint[]? bits32 = null;
+            if (_bits is not null)
+            {
+                if (nint.Size == 4)
+                {
+                    bits32 = new uint[_bits.Length];
+                    Array.Copy(_bits, bits32, _bits.Length);
+                }
+                else
+                {
+                    int len = _bits.Length * 2;
+                    if ((uint)(_bits[^1] >> 32) == 0)
+                    {
+                        len--;
+                    }
+
+                    bits32 = new uint[len];
+                    for (int i = 0; i < _bits.Length; i++)
+                    {
+                        bits32[i * 2] = (uint)_bits[i];
+                        if (i * 2 + 1 < len)
+                        {
+                            bits32[i * 2 + 1] = (uint)(_bits[i] >> 32);
+                        }
+                    }
+                }
+            }
+
+            info.AddValue("_bits", bits32, typeof(uint[]));
         }
 
         public static BigInteger Zero => s_zero;
