@@ -561,7 +561,6 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    //_ASSERTE(!"NYI");
     if (comp->opts.OptimizationEnabled())
     {
         if (binOp->OperIs(GT_AND))
@@ -587,7 +586,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                 BlockRange().Remove(notNode);
             }
         }
-
+#if 0
+#ifdef TARGET_S390X
         if (binOp->OperIs(GT_AND, GT_OR))
         {
             GenTree* next;
@@ -608,6 +608,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             }
         }
 */
+#endif
+#endif
     }
 
     ContainCheckBinary(binOp);
