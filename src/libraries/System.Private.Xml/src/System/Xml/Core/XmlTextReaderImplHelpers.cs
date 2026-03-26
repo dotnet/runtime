@@ -10,6 +10,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 
@@ -703,6 +704,30 @@ namespace System.Xml
                     Debug.Fail("We should never get to this point.");
                     // 'other' is null, 'this' is not null. Always return 1, like "".CompareTo(null).
                     return 1;
+                }
+            }
+
+            internal sealed class AtomizedNameEqualityComparer : IEqualityComparer<NodeData>
+            {
+                internal static readonly AtomizedNameEqualityComparer Instance = new AtomizedNameEqualityComparer();
+
+                public bool Equals(NodeData? x, NodeData? y)
+                {
+                    if (x is null)
+                    {
+                        return y is null;
+                    }
+
+                    return y is not null
+                        && Ref.Equal(x.localName, y.localName)
+                        && Ref.Equal(x.ns, y.ns);
+                }
+
+                public int GetHashCode(NodeData node)
+                {
+                    return HashCode.Combine(
+                        RuntimeHelpers.GetHashCode(node.localName),
+                        RuntimeHelpers.GetHashCode(node.ns));
                 }
             }
         }
