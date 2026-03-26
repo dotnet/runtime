@@ -1643,6 +1643,9 @@ namespace System.Text.Json.SourceGeneration
                     constructionStrategy = ObjectConstructionStrategy.ParameterizedConstructor;
                     constructorParameters = new ParameterGenerationSpec[paramCount];
 
+                    // Compute ArgsIndex for each parameter.
+                    // out parameters don't have entries in the args array.
+                    int argsIndex = 0;
                     for (int i = 0; i < paramCount; i++)
                     {
                         IParameterSymbol parameterInfo = constructor.Parameters[i];
@@ -1654,7 +1657,14 @@ namespace System.Text.Json.SourceGeneration
                             continue;
                         }
 
-                        TypeRef parameterTypeRef = EnqueueType(parameterInfo.Type, typeToGenerate.Mode);
+                        // Don't enqueue out parameter types for JSON contract generation — they
+                        // aren't deserialized and may reference unsupported types (e.g. Task).
+                        TypeRef parameterTypeRef = parameterInfo.RefKind == RefKind.Out
+                            ? new TypeRef(parameterInfo.Type)
+                            : EnqueueType(parameterInfo.Type, typeToGenerate.Mode);
+
+                        // out parameters don't receive values from JSON, so they have ArgsIndex = -1.
+                        int currentArgsIndex = parameterInfo.RefKind == RefKind.Out ? -1 : argsIndex++;
 
                         constructorParameters[i] = new ParameterGenerationSpec
                         {
@@ -1663,7 +1673,9 @@ namespace System.Text.Json.SourceGeneration
                             HasDefaultValue = parameterInfo.HasExplicitDefaultValue,
                             DefaultValue = parameterInfo.HasExplicitDefaultValue ? parameterInfo.ExplicitDefaultValue : null,
                             ParameterIndex = i,
+                            ArgsIndex = currentArgsIndex,
                             IsNullable = parameterInfo.IsNullable(),
+                            RefKind = parameterInfo.RefKind,
                         };
                     }
                 }
@@ -1684,7 +1696,9 @@ namespace System.Text.Json.SourceGeneration
 
                 HashSet<string>? memberInitializerNames = null;
                 List<PropertyInitializerGenerationSpec>? propertyInitializers = null;
-                int paramCount = constructorParameters?.Length ?? 0;
+
+                // Count non-out constructor parameters - out params don't have entries in the args array.
+                int paramCount = constructorParameters?.Count(p => p.RefKind != RefKind.Out) ?? 0;
 
                 // Determine potential init-only or required properties that need to be part of the constructor delegate signature.
                 foreach (PropertyGenerationSpec property in properties)
@@ -1724,7 +1738,8 @@ namespace System.Text.Json.SourceGeneration
                                 Name = property.NameSpecifiedInSourceCode,
                                 ParameterType = property.PropertyType,
                                 MatchesConstructorParameter = matchingConstructorParameter is not null,
-                                ParameterIndex = matchingConstructorParameter?.ParameterIndex ?? paramCount++,
+                                // Use ArgsIndex for matching ctor params (excludes out params), or paramCount++ for new ones
+                                ParameterIndex = matchingConstructorParameter?.ArgsIndex ?? paramCount++,
                                 IsNullable = property.PropertyType.CanBeNull && !property.IsSetterNonNullableAnnotation,
                             };
 
@@ -1736,7 +1751,9 @@ namespace System.Text.Json.SourceGeneration
                             return paramGenSpecs?.FirstOrDefault(MatchesConstructorParameter);
 
                             bool MatchesConstructorParameter(ParameterGenerationSpec paramSpec)
-                                => propSpec.MemberName.Equals(paramSpec.Name, StringComparison.OrdinalIgnoreCase);
+                                // Don't match out parameters - they don't receive values from JSON.
+                                => paramSpec.RefKind != RefKind.Out &&
+                                   propSpec.MemberName.Equals(paramSpec.Name, StringComparison.OrdinalIgnoreCase);
                         }
                     }
                 }
@@ -1914,6 +1931,7 @@ namespace System.Text.Json.SourceGeneration
                     JsonKnownNamingPolicy.SnakeCaseUpper => JsonNamingPolicy.SnakeCaseUpper,
                     JsonKnownNamingPolicy.KebabCaseLower => JsonNamingPolicy.KebabCaseLower,
                     JsonKnownNamingPolicy.KebabCaseUpper => JsonNamingPolicy.KebabCaseUpper,
+                    JsonKnownNamingPolicy.PascalCase => JsonNamingPolicy.PascalCase,
                     _ => null,
                 };
 

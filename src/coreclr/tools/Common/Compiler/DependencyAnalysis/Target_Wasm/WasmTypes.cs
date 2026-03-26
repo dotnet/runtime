@@ -152,6 +152,9 @@ namespace ILCompiler.DependencyAnalysis.Wasm
 
         public int SignatureLength => _params.Types.Length + _returns.Types.Length;
 
+        public WasmResultType Params => _params;
+        public WasmResultType Returns => _returns;
+
         public WasmFuncType(WasmResultType paramTypes, WasmResultType returnTypes)
         {
             _params = paramTypes;

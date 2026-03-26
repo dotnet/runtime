@@ -49,7 +49,7 @@ namespace System.Diagnostics
         ///     Specifies the name of the application that is to be started, as well as a set
         ///     of command line arguments to pass to the application.
         /// </devdoc>
-        public ProcessStartInfo(string fileName, string arguments)
+        public ProcessStartInfo(string fileName, string? arguments)
         {
             _fileName = fileName;
             _arguments = arguments;
