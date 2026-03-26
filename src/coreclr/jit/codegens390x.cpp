@@ -4759,11 +4759,11 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
             break;
         case GT_AND_NOT:
             ins = INS_ncrk;
-            break;
-#if 0
+            break;        
         case GT_MUL:
             ins = INS_mul;
             break;
+#if 0
 #if !defined(USE_HELPERS_FOR_INT_DIV)
         case GT_DIV:
             ins = INS_sdiv;

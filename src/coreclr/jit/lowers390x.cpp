@@ -509,7 +509,6 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 //
 GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
-//    _ASSERTE(!"NYI");
     assert(mul->OperIsMul());
 
     if (comp->opts.OptimizationEnabled() && mul->OperIs(GT_MUL) && mul->IsValidLongMul())
@@ -2827,11 +2826,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 //
 void Lowering::ContainCheckMul(GenTreeOp* node)
 {
-    //EX_THROW(HRException, (E_FAIL));
-    _ASSERTE(!"NYI");
-#if 0 
     ContainCheckBinary(node);
-#endif
 }
 
 //------------------------------------------------------------------------

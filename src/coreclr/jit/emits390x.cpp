@@ -5434,7 +5434,6 @@ void emitter::emitIns_R_R_R(instruction     ins,
     switch (ins)
     {
 #if 0
-        case INS_mul:
         case INS_smull:
         case INS_umull:
             if (insOptsAnyArrangement(opt))
@@ -5486,6 +5485,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             fmt = IF_DR_3A;
             break;
 #endif
+        case INS_mul:
         case INS_ark:
         case INS_srk:
             if (isVectorRegister(reg1))
@@ -6354,6 +6354,7 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
             fmt = IF_DV_3AI;
             break;
 #endif
+        case INS_mul:
         case INS_ark:
         case INS_srk:
             setFlags = false;
@@ -10600,7 +10601,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
             break;
 
-
+        case INS_mul:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+            break;
+        
+        
 	   
         default:
             _ASSERTE(!"NYI");

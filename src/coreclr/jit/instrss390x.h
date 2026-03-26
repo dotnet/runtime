@@ -63,6 +63,7 @@ INST(nrk,       "nrk",          0,      0xb9f4)
 INST(ncrk,      "ncrk",         0,      0xb9f5)
 INST(ork,       "ork",          0,      0xb9f6)
 INST(xrk,       "xrk",          0,      0xb9f7)
+INST(mul,		"msrkc",		0,		0xb9fd)
 
 //// R_R_R_I
 INST(stmg,		"stmg",			0,		0xeb24)
