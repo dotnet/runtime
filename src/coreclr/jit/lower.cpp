@@ -11304,9 +11304,9 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
 
     } while (true);
 
-    // After coalescing, if the store has a constant value, look ahead for a same-sized
-    // last-use read from the same local. If found, we can bypass the store+load entirely
-    // by replacing the load with the constant value and removing the store.
+    // After coalescing, if the store has a constant value, look ahead for an overlapped read
+    // from the same local. If found, we can bypass the store+load entirely
+    // by replacing the load with the constant value.
     if (store->OperIs(GT_STORE_LCL_FLD) && store->Data()->OperIsConst() && store->Data()->IsCnsIntOrI() &&
         !store->Data()->AsIntCon()->ImmedValNeedsReloc(m_compiler) &&
         !m_compiler->lvaVarAddrExposed(store->GetLclNum()))
@@ -11319,14 +11319,8 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
         GenTree*  scanNode  = store->gtNext;
         const int scanLimit = 20;
 
-        for (int scanCount = 0; scanNode != nullptr && scanCount < scanLimit; scanCount++)
+        for (int scanCount = 0; (scanNode != nullptr) && (scanCount < scanLimit); scanCount++)
         {
-            if (scanNode->OperIsConditionalJump() || scanNode->OperGet() == GT_JMP ||
-                scanNode->OperGet() == GT_RETURN || scanNode->OperGet() == GT_SWIFT_ERROR_RET)
-            {
-                break;
-            }
-
             // Found a read from the same local that may overlap our store.
             if (scanNode->OperIs(GT_LCL_VAR, GT_LCL_FLD) && scanNode->OperIsLocalRead() &&
                 scanNode->AsLclVarCommon()->GetLclNum() == lclNum)
@@ -11358,12 +11352,11 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                 }
 
                 // Extract the portion of the constant that corresponds to the read.
-                ssize_t  fullVal    = store->Data()->AsIntCon()->IconValue();
-                unsigned bitOffset  = (readOffset - offset) * BITS_PER_BYTE;
-                size_t   readMask   = (readSize >= sizeof(size_t))
-                                        ? ~(size_t)0
-                                        : ((size_t)1 << (readSize * BITS_PER_BYTE)) - 1;
-                ssize_t  forwardVal = (ssize_t)(((size_t)fullVal >> bitOffset) & readMask);
+                ssize_t  fullVal   = store->Data()->AsIntCon()->IconValue();
+                unsigned bitOffset = (readOffset - offset) * BITS_PER_BYTE;
+                size_t   readMask =
+                    (readSize >= sizeof(size_t)) ? ~(size_t)0 : ((size_t)1 << (readSize * BITS_PER_BYTE)) - 1;
+                ssize_t forwardVal = (ssize_t)(((size_t)fullVal >> bitOffset) & readMask);
 
                 // For the forwarded constant, use the read's type if it's integral,
                 // otherwise use the store type.
@@ -11372,8 +11365,8 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                 JITDUMP("Forwarding constant store [%06u] to load [%06u] for V%02u[+%u]: "
                         "store value 0x%llx, forwarded value 0x%llx (read offset +%u, size %u)\n",
                         m_compiler->dspTreeID(store), m_compiler->dspTreeID(scanNode), lclNum, readOffset,
-                        (unsigned long long)(size_t)fullVal, (unsigned long long)(size_t)forwardVal,
-                        readOffset, readSize);
+                        (unsigned long long)(size_t)fullVal, (unsigned long long)(size_t)forwardVal, readOffset,
+                        readSize);
 
                 // Create a new constant node and insert it in place of the load.
                 // Mark it with GTF_ICON_STRUCT_INIT_VAL so that TryTransformStoreObjAsStoreInd
@@ -11392,8 +11385,7 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                 // Remove the load node.
                 BlockRange().Remove(scanNode);
 
-                // The store may now be dead, but we leave it in place since
-                // LowerStoreLocCommon is still processing this node.
+                // The store may not be dead, so we leave it in place.
                 break;
             }
 
