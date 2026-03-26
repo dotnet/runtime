@@ -129,7 +129,9 @@ namespace Microsoft.Extensions.Configuration
         /// <exception cref="InvalidDataException">An exception was thrown by the concrete implementation of the
         /// <see cref="Load()"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
         /// if you need more control over the exception.</exception>
-        /// <exception cref="IOException">An exception was thrown when opening file.</exception>
+        /// <exception cref="IOException">An exception was thrown when opening the file. Use the source
+        /// <see cref="FileConfigurationSource.OnLoadException"/> callback if you need more control over the
+        /// exception.</exception>
         public override void Load()
         {
             Load(reload: false);
