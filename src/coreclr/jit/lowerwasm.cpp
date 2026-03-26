@@ -296,7 +296,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         if (src->OperIs(GT_IND))
         {
             GenTree* srcAddr = src->gtGetOp1();
-            assert(!srcAddr->OperIs(GT_LCL_ADDR));
             // TODO-WASM-CQ: Skip doing this if the indirection is nonfaulting and the src is only used once.
             SetMultiplyUsed(srcAddr);
         }
