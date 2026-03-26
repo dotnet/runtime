@@ -59,6 +59,12 @@
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.LinkerTestDir">
       <Value>$(ToolsProjectRoot)illink/test/</Value>
     </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ExpectationsDir">
+      <Value>$(ToolsProjectRoot)illink/test/Mono.Linker.Tests.Cases.Expectations/</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ILLinkSharedDir">
+      <Value>$(ToolsProjectRoot)illink/src/ILLink.Shared/</Value>
+    </RuntimeHostConfigurationOption>
   </ItemGroup>
 
   <Import Project="$(ToolsProjectRoot)illink\test\Trimming.Tests.Shared\Trimming.Tests.Shared.projitems" Label="Shared" />

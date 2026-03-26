@@ -240,7 +240,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 		public virtual IEnumerable<NPath> GetCommonSourceFiles ()
 		{
-			return Enumerable.Empty<NPath> ();
+			yield return PathUtilities.GetMonoLinkerTestsExpectationsDirectory ().ToNPath ()
+				.Combine ("Support")
+				.Combine ("DynamicallyAccessedMembersAttribute.cs");
+
+			var sharedDir = PathUtilities.GetILLinkSharedDirectory ().ToNPath ();
+			yield return sharedDir.Combine ("RequiresDynamicCodeAttribute.cs");
+			yield return sharedDir.Combine ("RequiresUnreferencedCodeAttribute.cs");
 		}
 
 		public virtual bool GetGenerateTargetFrameworkAttribute ()
