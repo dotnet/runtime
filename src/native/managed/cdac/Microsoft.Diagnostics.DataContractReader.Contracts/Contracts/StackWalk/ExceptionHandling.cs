@@ -179,4 +179,41 @@ internal partial class StackWalk_1 : IStackWalk
         return (exceptionInfo.StackLowBound < callerStackPointer) && (callerStackPointer <= exceptionInfo.StackHighBound);
     }
 
+    /// <summary>
+    /// Checks if the current frame is the throw-site frame during exception first-pass.
+    /// During first pass (UnwindHasStarted=0), the ExInfo's StackLowBound is set to the
+    /// SP of the frame that threw the exception. The legacy DAC does not report GC refs
+    /// from this frame during first pass.
+    /// </summary>
+    private bool IsAtFirstPassExceptionThrowSite(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+        if (handle.State is not StackWalkState.SW_FRAMELESS)
+            return false;
+
+        TargetPointer frameSP = handle.Context.StackPointer;
+
+        TargetPointer pExInfo = GetCurrentExceptionTracker(handle);
+        while (pExInfo != TargetPointer.Null)
+        {
+            Data.ExceptionInfo exInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(pExInfo);
+            pExInfo = exInfo.PreviousNestedInfo;
+
+            // First pass only (unwind has NOT started)
+            if ((exInfo.ExceptionFlags & (uint)ExceptionFlagsEnum.UnwindHasStarted) != 0)
+                continue;
+
+            // Check for empty range (ExInfo just created)
+            if (exInfo.StackLowBound == TargetPointer.PlatformMaxValue(_target)
+                && exInfo.StackHighBound == TargetPointer.Null)
+                continue;
+
+            // The throw-site frame's SP matches the ExInfo's StackLowBound
+            if (frameSP == exInfo.StackLowBound)
+                return true;
+        }
+
+        return false;
+    }
+
 }
