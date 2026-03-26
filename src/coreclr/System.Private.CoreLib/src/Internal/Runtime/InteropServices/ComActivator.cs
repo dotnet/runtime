@@ -707,9 +707,14 @@ namespace Internal.Runtime.InteropServices
         private const string LicenseRefTypeName = "System.ComponentModel.License&, System.ComponentModel.TypeConverter";
         private const string LicInfoHelperLicenseContextTypeName = "System.ComponentModel.LicenseManager+LicInfoHelperLicenseContext, System.ComponentModel.TypeConverter";
 
-        // RCW Activation
-        private object? _licContext;
-        private Type? _targetRcwType;
+        private readonly object _licContext;
+        private readonly Type _targetRcwType;
+
+        private LicenseInteropProxy(object licContext, Type targetRcwType)
+        {
+            _licContext = licContext;
+            _targetRcwType = targetRcwType;
+        }
 
         [UnsafeAccessor(UnsafeAccessorKind.Method)]
         private static extern void SetSavedLicenseKey(
@@ -735,7 +740,7 @@ namespace Internal.Runtime.InteropServices
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
         [return: UnsafeAccessorType(LicenseContextTypeName)]
-        private static extern object? GetCurrentContextInfo(
+        private static extern object GetCurrentContextInfo(
             [UnsafeAccessorType(LicenseInteropHelperTypeName)] object? licInteropHelper,
             Type type,
             out bool isDesignTime,
@@ -762,19 +767,6 @@ namespace Internal.Runtime.InteropServices
         private static extern bool Contains(
             [UnsafeAccessorType(LicInfoHelperLicenseContextTypeName)] object? licInfoHelperContext,
             string assemblyName);
-
-        [UnmanagedCallersOnly]
-        private static unsafe void Create(object* pResult, Exception* pException)
-        {
-            try
-            {
-                *pResult = new LicenseInteropProxy();
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
 
         // Determine if the type supports licensing
         public static bool HasLicense(Type type)
@@ -875,15 +867,15 @@ namespace Internal.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void GetCurrentContextInfo(LicenseInteropProxy* pProxy, MethodTable* pMT, bool* pIsDesignTime, ushort** pBstrKey, Exception* pException)
+        private static unsafe void GetCurrentContextInfoAndProxy(MethodTable* pMT, bool* pIsDesignTime, ushort** pBstrKey, object* pProxy, Exception* pException)
         {
             try
             {
                 RuntimeType targetRcwTypeMaybe = RuntimeTypeHandle.GetRuntimeType(pMT);
-                pProxy->_licContext = GetCurrentContextInfo(null, targetRcwTypeMaybe, out *pIsDesignTime, out string? key);
+                object licContext = GetCurrentContextInfo(null, targetRcwTypeMaybe, out *pIsDesignTime, out string? key);
 
-                pProxy->_targetRcwType = targetRcwTypeMaybe;
                 *pBstrKey = BStrStringMarshaller.ConvertToUnmanaged(key);
+                *pProxy = new LicenseInteropProxy(licContext, targetRcwTypeMaybe);
             }
             catch (Exception ex)
             {
@@ -892,7 +884,7 @@ namespace Internal.Runtime.InteropServices
         }
 
         // The CLR invokes this when instantiating a licensed COM
-        // object inside a designtime license context.
+        // object inside a design-time license context.
         // It's purpose is to save away the license key that the CLR
         // retrieved using RequestLicKey().
         [UnmanagedCallersOnly]
@@ -903,7 +895,7 @@ namespace Internal.Runtime.InteropServices
                 string? key = BStrStringMarshaller.ConvertToManaged(bstrKey);
                 if (key is not null)
                 {
-                    SetSavedLicenseKey(pProxy->_licContext!, pProxy->_targetRcwType!, key);
+                    SetSavedLicenseKey(pProxy->_licContext, pProxy->_targetRcwType, key);
                 }
             }
             catch (Exception ex)

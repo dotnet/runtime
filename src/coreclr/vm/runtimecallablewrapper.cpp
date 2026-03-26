@@ -128,19 +128,14 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
         {
             OBJECTREF pProxy;
         } gc;
-        gc.pProxy = NULL; // LicenseInteropProxy
-
+        gc.pProxy = NULL;
         GCPROTECT_BEGIN(gc);
 
-        // Create an instance of the object
-        UnmanagedCallersOnlyCaller createObj(METHOD__LICENSE_INTEROP_PROXY__CREATE);
-        createObj.InvokeThrowing(&gc.pProxy);
-
-        // Query the current licensing context
-        UnmanagedCallersOnlyCaller getCurrentContextInfo(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO);
+        // Create instance and query the current licensing context
+        UnmanagedCallersOnlyCaller getCurrentContextInfoAndProxy(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO_AND_PROXY);
 
         CLR_BOOL fDesignTime = FALSE;
-        getCurrentContextInfo.InvokeThrowing(&gc.pProxy, m_pClassMT, &fDesignTime, &bstrKey);
+        getCurrentContextInfoAndProxy.InvokeThrowing(m_pClassMT, &fDesignTime, &bstrKey, &gc.pProxy);
 
         if (fDesignTime)
         {
