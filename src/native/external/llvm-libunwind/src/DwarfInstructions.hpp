@@ -22,7 +22,6 @@
 #include "dwarf2.h"
 #include "libunwind_ext.h"
 
-
 namespace libunwind {
 
 
@@ -34,8 +33,10 @@ public:
   typedef typename A::pint_t pint_t;
   typedef typename A::sint_t sint_t;
 
-  static int stepWithDwarf(A &addressSpace, pint_t pc, pint_t fdeStart,
-                           R &registers, bool &isSignalFrame, bool stage2);
+  static int stepWithDwarf(A &addressSpace,
+                           typename R::link_hardened_reg_arg_t pc,
+                           pint_t fdeStart, R &registers, bool &isSignalFrame,
+                           bool stage2);
 
 private:
 
@@ -56,8 +57,7 @@ private:
                                    const R &registers,
                                    pint_t initialStackValue);
   static pint_t getSavedRegister(A &addressSpace, const R &registers,
-                                 pint_t cfa, const RegisterLocation &savedReg,
-                                 pint_t& location);
+                                 pint_t cfa, const RegisterLocation &savedReg);
   static double getSavedFloatRegister(A &addressSpace, const R &registers,
                                   pint_t cfa, const RegisterLocation &savedReg);
   static v128 getSavedVectorRegister(A &addressSpace, const R &registers,
@@ -65,9 +65,10 @@ private:
 
   static pint_t getCFA(A &addressSpace, const PrologInfo &prolog,
                        const R &registers) {
-    if (prolog.cfaRegister != 0)
-      return (pint_t)((sint_t)registers.getRegister((int)prolog.cfaRegister) +
-             prolog.cfaRegisterOffset);
+    if (prolog.cfaRegister != 0) {
+      uintptr_t cfaRegister = registers.getRegister((int)prolog.cfaRegister);
+      return (pint_t)(cfaRegister + prolog.cfaRegisterOffset);
+    }
     if (prolog.cfaExpression != 0)
       return evaluateExpression((pint_t)prolog.cfaExpression, addressSpace,
                                 registers, 0);
@@ -93,28 +94,24 @@ template <typename R> uint64_t getSparcWCookie(const R &, long) {
 template <typename A, typename R>
 typename A::pint_t DwarfInstructions<A, R>::getSavedRegister(
     A &addressSpace, const R &registers, pint_t cfa,
-    const RegisterLocation &savedReg,
-    typename A::pint_t& location) {
+    const RegisterLocation &savedReg) {
   switch (savedReg.location) {
   case CFI_Parser<A>::kRegisterInCFA:
-    location = cfa + (pint_t)savedReg.value;
-    return (pint_t)addressSpace.getP(location);
+    return (pint_t)addressSpace.getRegister(cfa + (pint_t)savedReg.value);
 
   case CFI_Parser<A>::kRegisterInCFADecrypt: // sparc64 specific
     return (pint_t)(addressSpace.getP(cfa + (pint_t)savedReg.value) ^
            getSparcWCookie(registers, 0));
 
   case CFI_Parser<A>::kRegisterAtExpression:
-    location = evaluateExpression((pint_t)savedReg.value, addressSpace,
-                                  registers, cfa);
-    return (pint_t)addressSpace.getP(location);
+    return (pint_t)addressSpace.getRegister(evaluateExpression(
+        (pint_t)savedReg.value, addressSpace, registers, cfa));
 
   case CFI_Parser<A>::kRegisterIsExpression:
-    location = 0;
     return evaluateExpression((pint_t)savedReg.value, addressSpace,
                               registers, cfa);
+
   case CFI_Parser<A>::kRegisterInRegister:
-    location = 0;
     return registers.getRegister((int)savedReg.value);
   case CFI_Parser<A>::kRegisterUndefined:
     return 0;
@@ -184,12 +181,11 @@ bool DwarfInstructions<A, R>::isReturnAddressSigned(A &addressSpace,
                                                     R registers, pint_t cfa,
                                                     PrologInfo &prolog) {
   pint_t raSignState;
-  pint_t location;
   auto regloc = prolog.savedRegisters[UNW_AARCH64_RA_SIGN_STATE];
   if (regloc.location == CFI_Parser<A>::kRegisterUnused)
     raSignState = static_cast<pint_t>(regloc.value);
   else
-    raSignState = getSavedRegister(addressSpace, registers, cfa, regloc, location);
+    raSignState = getSavedRegister(addressSpace, registers, cfa, regloc);
 
   // Only bit[0] is meaningful.
   return raSignState & 0x01;
@@ -201,12 +197,11 @@ bool DwarfInstructions<A, R>::isReturnAddressSignedWithPC(A &addressSpace,
                                                           pint_t cfa,
                                                           PrologInfo &prolog) {
   pint_t raSignState;
-  pint_t location;
   auto regloc = prolog.savedRegisters[UNW_AARCH64_RA_SIGN_STATE];
   if (regloc.location == CFI_Parser<A>::kRegisterUnused)
     raSignState = static_cast<pint_t>(regloc.value);
   else
-    raSignState = getSavedRegister(addressSpace, registers, cfa, regloc, location);
+    raSignState = getSavedRegister(addressSpace, registers, cfa, regloc);
 
   // Only bit[1] is meaningful.
   return raSignState & 0x02;
@@ -214,16 +209,16 @@ bool DwarfInstructions<A, R>::isReturnAddressSignedWithPC(A &addressSpace,
 #endif
 
 template <typename A, typename R>
-int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
-                                           pint_t fdeStart, R &registers,
-                                           bool &isSignalFrame, bool stage2) {
+int DwarfInstructions<A, R>::stepWithDwarf(
+    A &addressSpace, typename R::link_hardened_reg_arg_t pc, pint_t fdeStart,
+    R &registers, bool &isSignalFrame, bool stage2) {
   FDE_Info fdeInfo;
   CIE_Info cieInfo;
   if (CFI_Parser<A>::decodeFDE(addressSpace, fdeStart, &fdeInfo,
                                &cieInfo) == NULL) {
     PrologInfo prolog;
-    if (CFI_Parser<A>::parseFDEInstructions(addressSpace, fdeInfo, cieInfo, pc,
-                                            R::getArch(), &prolog)) {
+    if (CFI_Parser<A>::template parseFDEInstructions<R>(
+            addressSpace, fdeInfo, cieInfo, pc, R::getArch(), &prolog)) {
       // get pointer to cfa (architecture specific)
       pint_t cfa = getCFA(addressSpace, prolog, registers);
 
@@ -231,7 +226,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
       // __unw_step_stage2 is not used for cross unwinding, so we use
       // __aarch64__ rather than LIBUNWIND_TARGET_AARCH64 to make sure we are
       // building for AArch64 natively.
-#if 0 // defined(__aarch64__)
+#if defined(__aarch64__)
       if (stage2 && cieInfo.mteTaggedFrame) {
         pint_t sp = registers.getSP();
         pint_t p = sp;
@@ -269,10 +264,9 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
       //
       // We set the SP here to the CFA, allowing for it to be overridden
       // by a CFI directive later on.
-      newRegisters.setSP(cfa, 0);
+      newRegisters.setSP(cfa);
 
-      pint_t returnAddress = 0;
-      pint_t returnAddressLocation = 0;
+      typename R::reg_t returnAddress = 0;
       constexpr int lastReg = R::lastDwarfRegNum();
       static_assert(static_cast<int>(CFI_Parser<A>::kMaxRegisterNumber) >=
                         lastReg,
@@ -290,23 +284,13 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
             newRegisters.setVectorRegister(
                 i, getSavedVectorRegister(addressSpace, registers, cfa,
                                           prolog.savedRegisters[i]));
-          else if (i == (int)cieInfo.returnAddressRegister) {
+          else if (i == (int)cieInfo.returnAddressRegister)
             returnAddress = getSavedRegister(addressSpace, registers, cfa,
-                                             prolog.savedRegisters[i],
-                                             returnAddressLocation);
-            if (registers.validRegister(i)) {
-              newRegisters.setRegister(i, returnAddress, returnAddressLocation);
-            }
-          }
-          else if (registers.validRegister(i)) {
-            pint_t value;
-            pint_t location;
-            value = getSavedRegister(addressSpace, registers, cfa,
-                                     prolog.savedRegisters[i],
-                                     location);
-            
-            newRegisters.setRegister(i, value, location);
-          }
+                                             prolog.savedRegisters[i]);
+          else if (registers.validRegister(i))
+            newRegisters.setRegister(
+                i, getSavedRegister(addressSpace, registers, cfa,
+                                    prolog.savedRegisters[i]));
           else
             return UNW_EBADREG;
         } else if (i == (int)cieInfo.returnAddressRegister) {
@@ -318,7 +302,16 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
 
       isSignalFrame = cieInfo.isSignalFrame;
 
-#if defined(_LIBUNWIND_TARGET_AARCH64)
+#if defined(_LIBUNWIND_TARGET_AARCH64) &&                                      \
+    !defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
+      // There are two ways of return address signing: pac-ret (enabled via
+      // -mbranch-protection=pac-ret) and ptrauth-returns (enabled as part of
+      // Apple's arm64e or experimental pauthtest ABI on Linux). The code
+      // below handles signed RA for pac-ret, while ptrauth-returns uses
+      // different logic.
+      // TODO: unify logic for both cases, see
+      // https://github.com/llvm/llvm-project/issues/160110
+      //
       // If the target is aarch64 then the return address may have been signed
       // using the v8.3 pointer authentication extensions. The original
       // return address needs to be authenticated before the return address is
@@ -418,7 +411,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
 
       // Return address is address after call site instruction, so setting IP to
       // that does simulates a return.
-      newRegisters.setIP(returnAddress, returnAddressLocation);
+      newRegisters.setIP(returnAddress);
 
       // Simulate the step by replacing the register set with the new ones.
       registers = newRegisters;
