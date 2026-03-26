@@ -13,6 +13,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace Microsoft.Win32.SafeHandles
@@ -194,7 +195,7 @@ namespace Microsoft.Win32.SafeHandles
 
                     // Store the child's information into this Process object.
                     Debug.Assert(childPid >= 0);
-                    SafeProcessHandle processHandle = new SafeProcessHandle(childPid, waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle());
+                    SafeProcessHandle processHandle = new SafeProcessHandle(childPid, waitStateHolder._state.EnsureExitedEvent().SafeWaitHandle);
                     processHandle._waitStateHolder = waitStateHolder;
 
                     return processHandle;
