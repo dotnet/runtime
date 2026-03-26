@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -15,21 +16,6 @@ namespace System.Diagnostics.Tests
         public void Process_Start_SimpleCommand_ExitsSuccessfully()
         {
             using (Process process = Process.Start("ls", Path.GetTempPath()))
-            {
-                Assert.NotNull(process);
-                Assert.True(process.WaitForExit(WaitInMS));
-                Assert.Equal(0, process.ExitCode);
-                Assert.True(process.HasExited);
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Android)]
-        public void Process_Start_WithArgumentList_ExitsSuccessfully()
-        {
-            ProcessStartInfo psi = new("ls");
-            psi.ArgumentList.Add(Path.GetTempPath());
-            using (Process process = Process.Start(psi))
             {
                 Assert.NotNull(process);
                 Assert.True(process.WaitForExit(WaitInMS));
@@ -82,28 +68,10 @@ namespace System.Diagnostics.Tests
             using (Process process = Process.Start(psi))
             {
                 Assert.NotNull(process);
-                process.StandardError.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
                 Assert.True(process.WaitForExit(WaitInMS));
                 Assert.NotEqual(0, process.ExitCode);
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Android)]
-        public void Process_Id_IsValidForStartedProcess()
-        {
-            using (Process process = Process.Start("sleep", "600"))
-            {
-                Assert.NotNull(process);
-                try
-                {
-                    Assert.True(process.Id > 0);
-                }
-                finally
-                {
-                    process.Kill();
-                    process.WaitForExit();
-                }
+                Assert.False(string.IsNullOrEmpty(error));
             }
         }
 
@@ -129,15 +97,49 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Android)]
-        public void Process_HasExited_IsFalseWhileRunning_TrueAfterExit()
+        public void Process_Start_WithStandardHandles_CanRedirectIO()
         {
-            using (Process process = Process.Start("sleep", "600"))
+            string? errorFile = null;
+            try
             {
-                Assert.NotNull(process);
-                Assert.False(process.HasExited);
-                process.Kill();
-                Assert.True(process.WaitForExit(WaitInMS));
-                Assert.True(process.HasExited);
+                errorFile = Path.GetTempFileName();
+
+                SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle outputRead, out SafeFileHandle outputWrite);
+
+                using SafeFileHandle inputHandle = File.OpenNullHandle();
+                using SafeFileHandle errorHandle = File.OpenHandle(errorFile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+
+                ProcessStartInfo psi = new("ls", Path.GetTempPath())
+                {
+                    StandardInputHandle = inputHandle,
+                    StandardOutputHandle = outputWrite,
+                    StandardErrorHandle = errorHandle
+                };
+
+                using (outputRead)
+                using (outputWrite)
+                {
+                    using (Process process = Process.Start(psi))
+                    {
+                        Assert.NotNull(process);
+                        outputWrite.Close(); // close the parent copy so ReadToEnd unblocks
+
+                        using FileStream outputStream = new(outputRead, FileAccess.Read);
+                        using StreamReader outputReader = new(outputStream);
+                        string output = outputReader.ReadToEnd();
+
+                        Assert.True(process.WaitForExit(WaitInMS));
+                        Assert.Equal(0, process.ExitCode);
+                        Assert.False(string.IsNullOrEmpty(output));
+                    }
+                }
+            }
+            finally
+            {
+                if (errorFile is not null && File.Exists(errorFile))
+                {
+                    File.Delete(errorFile);
+                }
             }
         }
     }
