@@ -9478,6 +9478,11 @@ retry_emit:
                 m_ip += 4;
                 const uint8_t *nextIp = m_ip + n * 4;
                 m_pStackPointer--;
+
+                // Empty switch (n=0) is a no-op that just consumes the stack value.
+                if (n == 0)
+                    break;
+
                 InterpBasicBlock **targetBBTable = getAllocator(IMK_SwitchTable).allocate<InterpBasicBlock*>(n);
                 uint32_t *targetOffsets = getAllocator(IMK_SwitchTable).allocate<uint32_t>(n);
 

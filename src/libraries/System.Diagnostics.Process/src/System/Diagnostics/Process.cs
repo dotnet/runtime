@@ -1227,6 +1227,9 @@ namespace System.Diagnostics
         /// <summary>Additional optional configuration hook after a process ID is set.</summary>
         partial void ConfigureAfterProcessIdSet();
 
+        /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
+        private const int StreamBufferSize = 4096;
+
         /// <devdoc>
         ///    <para>
         ///       Starts a process specified by the <see cref='System.Diagnostics.Process.StartInfo'/> property of this <see cref='System.Diagnostics.Process'/>
@@ -1276,12 +1279,180 @@ namespace System.Diagnostics
                 }
             }
 
+            bool anyRedirection = startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError;
+            bool anyHandle = startInfo.StandardInputHandle is not null || startInfo.StandardOutputHandle is not null || startInfo.StandardErrorHandle is not null;
+            if (startInfo.UseShellExecute && (anyRedirection || anyHandle))
+            {
+                throw new InvalidOperationException(SR.CantRedirectStreams);
+            }
+
+            if (anyHandle)
+            {
+                if (startInfo.StandardInputHandle is not null && startInfo.RedirectStandardInput)
+                {
+                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
+                }
+                if (startInfo.StandardOutputHandle is not null && startInfo.RedirectStandardOutput)
+                {
+                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
+                }
+                if (startInfo.StandardErrorHandle is not null && startInfo.RedirectStandardError)
+                {
+                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
+                }
+
+                ValidateHandle(startInfo.StandardInputHandle, nameof(startInfo.StandardInputHandle));
+                ValidateHandle(startInfo.StandardOutputHandle, nameof(startInfo.StandardOutputHandle));
+                ValidateHandle(startInfo.StandardErrorHandle, nameof(startInfo.StandardErrorHandle));
+            }
+
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
 
             SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref s_cachedSerializationSwitch);
 
-            return StartCore(startInfo);
+            SafeFileHandle? parentInputPipeHandle = null;
+            SafeFileHandle? parentOutputPipeHandle = null;
+            SafeFileHandle? parentErrorPipeHandle = null;
+
+            SafeFileHandle? childInputPipeHandle = null;
+            SafeFileHandle? childOutputPipeHandle = null;
+            SafeFileHandle? childErrorPipeHandle = null;
+
+            try
+            {
+                if (!startInfo.UseShellExecute)
+                {
+                    // Windows supports creating non-inheritable pipe in atomic way.
+                    // When it comes to Unixes, it depends whether they support pipe2 sys-call or not.
+                    // If they don't, the pipe is created as inheritable and made non-inheritable with another sys-call.
+                    // Some process could be started in the meantime, so in order to prevent accidental handle inheritance,
+                    // a writer lock is used around the pipe creation code.
+
+                    bool requiresLock = anyRedirection && !SupportsAtomicNonInheritablePipeCreation;
+
+                    if (requiresLock)
+                    {
+                        ProcessUtils.s_processStartLock.EnterWriteLock();
+                    }
+
+                    try
+                    {
+                        if (startInfo.StandardInputHandle is not null)
+                        {
+                            childInputPipeHandle = startInfo.StandardInputHandle;
+                        }
+                        else if (startInfo.RedirectStandardInput)
+                        {
+                            SafeFileHandle.CreateAnonymousPipe(out childInputPipeHandle, out parentInputPipeHandle);
+                        }
+                        else if (!OperatingSystem.IsAndroid())
+                        {
+                            childInputPipeHandle = Console.OpenStandardInputHandle();
+                        }
+
+                        if (startInfo.StandardOutputHandle is not null)
+                        {
+                            childOutputPipeHandle = startInfo.StandardOutputHandle;
+                        }
+                        else if (startInfo.RedirectStandardOutput)
+                        {
+                            SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputPipeHandle, asyncRead: OperatingSystem.IsWindows());
+                        }
+                        else if (!OperatingSystem.IsAndroid())
+                        {
+                            childOutputPipeHandle = Console.OpenStandardOutputHandle();
+                        }
+
+                        if (startInfo.StandardErrorHandle is not null)
+                        {
+                            childErrorPipeHandle = startInfo.StandardErrorHandle;
+                        }
+                        else if (startInfo.RedirectStandardError)
+                        {
+                            SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorPipeHandle, asyncRead: OperatingSystem.IsWindows());
+                        }
+                        else if (!OperatingSystem.IsAndroid())
+                        {
+                            childErrorPipeHandle = Console.OpenStandardErrorHandle();
+                        }
+                    }
+                    finally
+                    {
+                        if (requiresLock)
+                        {
+                            ProcessUtils.s_processStartLock.ExitWriteLock();
+                        }
+                    }
+                }
+
+                if (!StartCore(startInfo, childInputPipeHandle, childOutputPipeHandle, childErrorPipeHandle))
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                parentInputPipeHandle?.Dispose();
+                parentOutputPipeHandle?.Dispose();
+                parentErrorPipeHandle?.Dispose();
+
+                throw;
+            }
+            finally
+            {
+                // We MUST close the child handles, otherwise the parent
+                // process will not receive EOF when the child process closes its handles.
+                // It's OK to do it for handles returned by Console.OpenStandard*Handle APIs,
+                // because these handles are not owned and won't be closed by Dispose.
+                // We don't dispose handles that were passed in
+                // by the caller via StartInfo.StandardInputHandle/OutputHandle/ErrorHandle.
+                if (startInfo.StandardInputHandle is null)
+                {
+                    childInputPipeHandle?.Dispose();
+                }
+                if (startInfo.StandardOutputHandle is null)
+                {
+                    childOutputPipeHandle?.Dispose();
+                }
+                if (startInfo.StandardErrorHandle is null)
+                {
+                    childErrorPipeHandle?.Dispose();
+                }
+            }
+
+            if (startInfo.RedirectStandardInput)
+            {
+                _standardInput = new StreamWriter(OpenStream(parentInputPipeHandle!, FileAccess.Write),
+                    startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
+                {
+                    AutoFlush = true
+                };
+            }
+            if (startInfo.RedirectStandardOutput)
+            {
+                _standardOutput = new StreamReader(OpenStream(parentOutputPipeHandle!, FileAccess.Read),
+                    startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+            if (startInfo.RedirectStandardError)
+            {
+                _standardError = new StreamReader(OpenStream(parentErrorPipeHandle!, FileAccess.Read),
+                    startInfo.StandardErrorEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+
+            return true;
+        }
+
+        private static void ValidateHandle(SafeFileHandle? handle, string paramName)
+        {
+            if (handle is not null)
+            {
+                if (handle.IsInvalid)
+                {
+                    throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
+                }
+                ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
+            }
         }
 
         /// <devdoc>

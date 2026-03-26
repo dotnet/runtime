@@ -21,18 +21,15 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
                                       const char* cwd,
-                                      int32_t redirectStdin,
-                                      int32_t redirectStdout,
-                                      int32_t redirectStderr,
                                       int32_t setCredentials,
                                       uint32_t userId,
                                       uint32_t groupId,
                                       uint32_t* groups,
                                       int32_t groupsLength,
                                       int32_t* childPid,
-                                      int32_t* stdinFd,
-                                      int32_t* stdoutFd,
-                                      int32_t* stderrFd)
+                                      int32_t stdinFd,
+                                      int32_t stdoutFd,
+                                      int32_t stderrFd)
 {
     return -1;
 }
