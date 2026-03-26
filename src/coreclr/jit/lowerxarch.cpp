@@ -5908,9 +5908,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicDotInnerMulSum(node);
         }
 
-        tmp1 = node->gtNext;
-        BlockRange().Remove(node);
-        return tmp1;
+        return node->gtNext;
     }
 
     if (simdSize == 32)
