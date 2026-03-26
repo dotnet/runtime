@@ -35,8 +35,6 @@ namespace Microsoft.Win32.SafeHandles
             handle.DangerousAddRef(ref _releaseRef);
         }
 
-        internal int ProcessId { get; }
-
         protected override bool ReleaseHandle()
         {
             if (_releaseRef)
@@ -45,6 +43,16 @@ namespace Microsoft.Win32.SafeHandles
                 _handle.DangerousRelease();
             }
             return true;
+        }
+
+        private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        {
+            _ = startInfo;
+            _ = stdinHandle;
+            _ = stdoutHandle;
+            _ = stderrHandle;
+
+            throw new NotImplementedException();
         }
     }
 }

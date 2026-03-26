@@ -12,6 +12,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -41,6 +43,51 @@ namespace Microsoft.Win32.SafeHandles
             : base(ownsHandle)
         {
             SetHandle(existingHandle);
+        }
+
+        internal int ProcessId { get; private set; }
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static SafeProcessHandle Start(ProcessStartInfo startInfo)
+        {
+            ArgumentNullException.ThrowIfNull(startInfo);
+            startInfo.ThrowIfInvalid(out bool anyRedirection);
+
+            if (anyRedirection)
+            {
+                // Process has .StandardInput, .StandardOutput, or .StandardError APIs that can express
+                // redirection of streams, but this API doesn't support it.
+                // The caller should use Process.Start(ProcessStartInfo) instead.
+                throw new InvalidOperationException("Redirection of streams is not supported by this API.");
+            }
+
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
+
+            SafeFileHandle? childInputHandle = startInfo.StandardInputHandle;
+            SafeFileHandle? childOutputHandle = startInfo.StandardOutputHandle;
+            SafeFileHandle? childErrorHandle = startInfo.StandardErrorHandle;
+
+            if (!startInfo.UseShellExecute)
+            {
+                if (childInputHandle is null && !OperatingSystem.IsAndroid())
+                {
+                    childInputHandle = Console.OpenStandardInputHandle();
+                }
+
+                if (childOutputHandle is null && !OperatingSystem.IsAndroid())
+                {
+                    childOutputHandle = Console.OpenStandardOutputHandle();
+                }
+
+                if (childErrorHandle is null && !OperatingSystem.IsAndroid())
+                {
+                    childErrorHandle = Console.OpenStandardErrorHandle();
+                }
+            }
+
+            return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle);
         }
     }
 }
