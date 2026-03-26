@@ -57,7 +57,7 @@ namespace Internal.JitInterface
 
         private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
         {
-            _asyncResumptionStub ??= ((CompilerTypeSystemContext)MethodBeingCompiled.Context).GetAsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+            _asyncResumptionStub ??= _compilation.TypeSystemContext.GetAsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
 
             entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
             return ObjectToHandle(_asyncResumptionStub);

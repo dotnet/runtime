@@ -223,13 +223,13 @@ namespace ILCompiler
                 => obj is AsyncResumptionStubKey other && Equals(other);
 
             public override int GetHashCode()
-                => TargetMethod.GetHashCode();
+                => System.HashCode.Combine(TargetMethod, OwningType);
         }
 
         private sealed class AsyncResumptionStubHashtable : LockFreeReaderHashtable<AsyncResumptionStubKey, AsyncResumptionStub>
         {
-            protected override int GetKeyHashCode(AsyncResumptionStubKey key) => key.TargetMethod.GetHashCode();
-            protected override int GetValueHashCode(AsyncResumptionStub value) => value.TargetMethod.GetHashCode();
+            protected override int GetKeyHashCode(AsyncResumptionStubKey key) => key.GetHashCode();
+            protected override int GetValueHashCode(AsyncResumptionStub value) => System.HashCode.Combine(value.TargetMethod, value.OwningType);
             protected override bool CompareKeyToValue(AsyncResumptionStubKey key, AsyncResumptionStub value)
                 => key.TargetMethod == value.TargetMethod && key.OwningType == value.OwningType;
             protected override bool CompareValueToValue(AsyncResumptionStub value1, AsyncResumptionStub value2)

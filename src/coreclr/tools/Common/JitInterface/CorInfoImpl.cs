@@ -703,7 +703,9 @@ namespace Internal.JitInterface
 #if !READYTORUN
             _debugInfo = null;
 #endif
+#if !READYTORUN
             _asyncResumptionStub = null;
+#endif
 
             _debugLocInfos = null;
             _debugVarInfos = null;
