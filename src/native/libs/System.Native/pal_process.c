@@ -274,6 +274,15 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             }
         }
 
+        // pthread_sigmask follows POSIX thread conventions: it returns an error number but does not set errno
+        result = pthread_sigmask(SIG_SETMASK, NULL, &current_mask);
+        if (result != 0)
+        {
+            posix_spawnattr_destroy(&attr);
+            errno = result;
+            return -1;
+        }
+
         // POSIX_SPAWN_SETSIGDEF to reset signal handlers to default
         // POSIX_SPAWN_SETSIGMASK to set the child's signal mask
         short flags = POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK;
@@ -281,8 +290,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         sigset_t current_mask;
         if ((result = posix_spawnattr_setflags(&attr, flags)) != 0
             || (result = posix_spawnattr_setsigdefault(&attr, &sigdefault_set)) != 0
-            || pthread_sigmask(SIG_SETMASK, NULL, &current_mask) != 0 // Set the child's signal mask to match the parent's current mask
-            || (result = posix_spawnattr_setsigmask(&attr, &current_mask)) != 0
+            || (result = posix_spawnattr_setsigmask(&attr, &current_mask)) != 0 // Set the child's signal mask to match the parent's current mask
             || (result = posix_spawn_file_actions_init(&file_actions)) != 0)
         {
             int saved_errno = result;
