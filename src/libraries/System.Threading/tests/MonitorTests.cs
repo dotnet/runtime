@@ -514,7 +514,7 @@ namespace System.Threading.Tests
         // Validates that reentrant Monitor.Wait calls from a SynchronizationContext
         // message pump do not steal each other's pulse signals.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123173", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126138", TestRuntimes.Mono)]
         public static void ReentrantWaitFromSyncContextTest()
         {
             // Since we set the SynchronizationContext for the current thread, we run
