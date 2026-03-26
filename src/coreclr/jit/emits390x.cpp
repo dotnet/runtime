@@ -10507,99 +10507,99 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         emitAttr elemsize;
         emitAttr datasize;
 	
-	case INS_br: 
-      assert(ins == INS_br);
-      op = emitInsCode(ins, fmt);
-	    S390_RR(dst, op, id->idReg1(), 0); 
-      break;
+        case INS_br:
+            assert(ins == INS_br);
+            op = emitInsCode(ins, fmt);
+            S390_RR(dst, op, id->idReg1(), 0);
+            break;
 
-	case INS_ret: 
-      assert(ins == INS_ret);
-      op = emitInsCode(ins, fmt);
-	    S390_RR(dst, op, 0xf, id->idReg1());
-      break;
+        case INS_ret:
+            assert(ins == INS_ret);
+            op = emitInsCode(ins, fmt);
+            S390_RR(dst, op, 0xf, id->idReg1());
+            break;
 
-	case INS_st:
-      imm = emitGetInsSC(id); //get instruction's constant value
-      assert((imm >= 0) && (imm <= 2047)); // 11 bit imm unsigned value
-      op = emitInsCode(ins, fmt);
-	    S390_RX_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
-      break;
+        case INS_st:
+            imm = emitGetInsSC(id); //get instruction's constant value
+            assert((imm >= 0) && (imm <= 2047)); // 11 bit imm unsigned value
+            op = emitInsCode(ins, fmt);
+            S390_RX_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            break;
 
-	case INS_stg:
-	    op = emitInsCode(ins, fmt);
-	    imm = emitGetInsSC(id);
-	    S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
-	    break;
+        case INS_stg:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            break;
 
-	case INS_stmg:
-	    op = emitInsCode(ins, fmt);
-	    imm = emitGetInsSC(id);
-	    S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), id->idReg3(), imm);
-	    break;
+        case INS_stmg:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), id->idReg3(), imm);
+            break;
 
-	case INS_lmg:
-	    op = emitInsCode(ins, fmt);
-	    imm = emitGetInsSC(id);
-	    S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), id->idReg3(), imm);
-	    break;
+        case INS_lmg:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            S390_RSY_a(dst, op, id->idReg1(), id->idReg2(), id->idReg3(), imm);
+            break;
 
-	case INS_lay:
-      op = emitInsCode(ins, fmt);
-      imm = emitGetInsSC(id);
-	    S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
-      break;
+        case INS_lay:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            break;
 
-	case INS_l:    
-      imm = emitGetInsSC(id); //get instruction's constant value
-      assert((imm >= 0) && (imm <= 2047)); // unsigned 11 bits
-      op = emitInsCode(ins, fmt);
-	    S390_RX_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
-	    break;
+        case INS_l:
+            imm = emitGetInsSC(id); //get instruction's constant value
+            assert((imm >= 0) && (imm <= 2047)); // unsigned 11 bits
+            op = emitInsCode(ins, fmt);
+            S390_RX_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            break;
 
-	case INS_lgr:
-	    op = emitInsCode(ins, fmt);
-	    S390_RRE(dst, op, id->idReg1(), id->idReg2());
-	    break;
+        case INS_lgr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
+            break;
 
-	case INS_lgfi: 
-      imm = emitGetInsSC(id);
-      op = emitInsCode(ins, fmt);
-	    S390_RIL_a(dst, op, id->idReg1(), imm);
-	    break;
+        case INS_lgfi:
+            imm = emitGetInsSC(id);
+            op = emitInsCode(ins, fmt);
+            S390_RIL_a(dst, op, id->idReg1(), imm);
+            break;
 
-  case INS_nop:
-      op = emitInsCode(ins, fmt);
-      S390_RR(dst, op, 0, 0); 
-      break;
+        case INS_nop:
+            op = emitInsCode(ins, fmt);
+            S390_RR(dst, op, 0, 0);
+            break;
 
-  case INS_ark:
-      op = emitInsCode(ins, fmt);
-      S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
-      break;
+        case INS_ark:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+            break;
 
-  case INS_nrk:
-      op = emitInsCode(ins, fmt);
-      S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
-      break;
+        case INS_nrk:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+            break;
 
-  case INS_ork:
-      op = emitInsCode(ins, fmt);
-      S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
-      break;
+        case INS_ork:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+            break;
 
-  case INS_xrk:
-      op = emitInsCode(ins, fmt);
-      S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
-      break;
+        case INS_xrk:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+            break;
 
-  case INS_ncrk:
-      op = emitInsCode(ins, fmt);
-      S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
-      break;
+        case INS_ncrk:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+            break;
 
-	default:
-	    _ASSERTE(!"NYI");
+        default:
+            _ASSERTE(!"NYI");
             break;
     }
 
