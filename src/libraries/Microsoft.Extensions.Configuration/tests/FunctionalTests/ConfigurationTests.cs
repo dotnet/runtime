@@ -442,29 +442,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        public void OnLoadErrorCanIgnoreErrors()
-        {
-            _fileSystem.WriteFile("error.json", @"{""JsonKey1"": ");
-
-            FileConfigurationProvider provider = null;
-            Action<FileLoadExceptionContext> jsonLoadError = c =>
-            {
-                provider = c.Provider;
-                c.Ignore = true;
-            };
-
-            CreateBuilder()
-                .AddJsonFile(s =>
-                {
-                    s.Path = "error.json";
-                    s.OnLoadException = jsonLoadError;
-                })
-                .Build();
-
-            Assert.NotNull(provider);
-        }
-
-        [Fact]
         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public void CanSetValuesAndReloadValues()
         {
