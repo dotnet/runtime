@@ -452,13 +452,25 @@ namespace Microsoft.Extensions.FileProviders.Physical
                             return;
                         }
 
-                        if (string.IsNullOrEmpty(_fileWatcher.Path))
+                        try
                         {
-                            _fileWatcher.Path = _root;
-                        }
+                            if (string.IsNullOrEmpty(_fileWatcher.Path))
+                            {
+                                _fileWatcher.Path = _root;
+                            }
 
-                        // Perf: Turn off the file monitoring if no files to monitor.
-                        _fileWatcher.EnableRaisingEvents = true;
+                            // Perf: Turn off the file monitoring if no files to monitor.
+                            _fileWatcher.EnableRaisingEvents = true;
+                        }
+                        catch (Exception ex) when (ex is ArgumentException or IOException)
+                        {
+                            // _root may have been deleted between the Directory.Exists check
+                            // and the property sets above. Fall back to watching for root creation.
+                            if (!Directory.Exists(_root))
+                            {
+                                EnsureRootCreationWatcher();
+                            }
+                        }
                     }
 #pragma warning restore CA1416
                 }
@@ -472,6 +484,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         [SupportedOSPlatform("maccatalyst")]
         private void EnsureRootCreationWatcher()
         {
+            PendingCreationWatcher? newWatcher = null;
+
             lock (_rootCreationWatcherLock)
             {
                 if (_rootCreationWatcher is { } existing && !existing.Token.IsCancellationRequested)
@@ -479,12 +493,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     return; // already watching
                 }
 
-                var newWatcher = new PendingCreationWatcher(_root);
-                _rootCreationWatcher = newWatcher;
+                _rootCreationWatcher?.Dispose();
 
-                // When _root is created, enable the main FileSystemWatcher.
-                newWatcher.Token.Register(_ => TryEnableFileSystemWatcher(), null);
+                newWatcher = new PendingCreationWatcher(_root);
+                _rootCreationWatcher = newWatcher;
             }
+
+            // Register outside the lock to avoid deadlocking with TryEnableFileSystemWatcher
+            // if the token is already cancelled (synchronous callback invocation).
+            newWatcher.Token.Register(_ => TryEnableFileSystemWatcher(), null);
         }
 
         private static string NormalizePath(string filter) => filter.Replace('\\', '/');
@@ -653,7 +670,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     }
 
                     // Start watching for the next expected directory.
-                    FileSystemWatcher newWatcher;
+                    FileSystemWatcher? newWatcher = null;
                     try
                     {
                         newWatcher = new FileSystemWatcher(watchDir)
@@ -668,6 +685,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     }
                     catch
                     {
+                        newWatcher?.Dispose();
                         _cts.Cancel();
                         return;
                     }
