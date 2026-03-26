@@ -6,7 +6,7 @@ namespace System
     internal static partial class ConsoleUtils
     {
         /// <summary>Whether to output ansi color strings.</summary>
-        private static volatile NullableBool s_emitAnsiColorCodes;
+        private static NullableBool s_emitAnsiColorCodes;
 
         /// <summary>Get whether to emit ANSI color codes.</summary>
         public static bool EmitAnsiColorCodes

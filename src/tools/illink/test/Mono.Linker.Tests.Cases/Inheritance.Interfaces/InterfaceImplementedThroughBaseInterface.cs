@@ -12,8 +12,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 {
     [SkipUnresolved(true)]
-    [SetupLinkerArgument("-a", "test.exe", "library")]
-    [SetupLinkerArgument("-a", "library.dll", "library")]
+    [SetupLinkerArgument("-a", "test", "library")]
+    [SetupLinkerArgument("-a", "library", "library")]
     [TestCaseRequirements(TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
     [Define("IL_ASSEMBLY_AVAILABLE")]
     [SetupCompileBefore("library.dll", new[] { "Dependencies/InterfaceImplementedThroughBaseInterface.il" })]

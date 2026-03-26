@@ -28,7 +28,7 @@ enum ID_OPS
 
 IF_DEF(NONE,          IS_NONE, NONE)
 IF_DEF(OPCODE,        IS_NONE, NONE) // <opcode>
-IF_DEF(BLOCK,         IS_NONE, NONE) // <opcode> <0x40>
+IF_DEF(BLOCK,         IS_NONE, NONE) // <opcode> <sig = 0x40>
 IF_DEF(RAW_ULEB128,   IS_NONE, NONE) // <ULEB128 immediate>
 IF_DEF(ULEB128,       IS_NONE, NONE) // <opcode> <ULEB128 immediate>
 IF_DEF(FUNCIDX,       IS_NONE, NONE) // <opcode> <ULEB128 immediate (function index reloc)>
@@ -41,6 +41,8 @@ IF_DEF(MEMARG,        IS_NONE, NONE) // <opcode> <memarg> (<align> <offset>)
 IF_DEF(LOCAL_DECL,    IS_NONE, NONE) // <ULEB128 immediate> <byte>
 IF_DEF(CALL_INDIRECT, IS_NONE, NONE) // <opcode> <ULEB128 immediate> <ULEB128 immediate>
 IF_DEF(MEMIDX_MEMIDX, IS_NONE, NONE) // <memory index> <memory index>
+IF_DEF(TRY_TABLE,     IS_NONE, NONE) // <opcode> <sig = 0x40> <len = 0x01>
+IF_DEF(CATCH_DECL,    IS_NONE, NONE) // <catch-type> <ULEB128 immediate (type reloc)> <ULEB128 immediate>
 
 #undef IF_DEF
 #endif // !DEFINE_ID_OPS

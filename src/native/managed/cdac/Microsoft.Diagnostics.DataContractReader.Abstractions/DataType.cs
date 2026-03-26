@@ -49,6 +49,8 @@ public enum DataType
     AssemblyBinder,
     PEImage,
     PEImageLayout,
+    WebcilHeader,
+    WebcilSectionHeader,
     CGrowableSymbolStream,
     ProbeExtensionResult,
     MethodTable,
@@ -87,6 +89,7 @@ public enum DataType
     Array,
     SyncBlock,
     SyncTableEntry,
+    ObjectHeader,
     InteropSyncBlockInfo,
     SyncBlockCache,
     InstantiatedMethodDesc,
@@ -156,6 +159,8 @@ public enum DataType
     RCW,
     CtxEntry,
     InterfaceEntry,
+    ComInterfaceEntry,
+    InternalComInterfaceDispatch,
 
 
     /* GC Data Types */

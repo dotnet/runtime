@@ -9,6 +9,7 @@ using System.Runtime.Serialization.Json;
 using System.Xml;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.CommandLine.Mvid;
+using Mono.Linker.Tests.Cases.CommandLine.Mvid.Individual;
 using Mono.Linker.Tests.Cases.Interop.PInvoke.Individual;
 using Mono.Linker.Tests.Cases.References.Individual;
 using Mono.Linker.Tests.Cases.Tracing.Individual;
@@ -199,6 +200,7 @@ namespace Mono.Linker.Tests.TestCases
         {
             var testCase = CreateIndividualCase(typeof(DeterministicMvidWorks));
             var result = Run(testCase, out TestRunner runner);
+            Check(result);
 
             var originalMvid = GetMvid(result.InputAssemblyPath);
             var firstOutputMvid = GetMvid(result.OutputAssemblyPath);
@@ -217,6 +219,7 @@ namespace Mono.Linker.Tests.TestCases
         {
             var testCase = CreateIndividualCase(typeof(NewMvidWorks));
             var result = Run(testCase, out TestRunner runner);
+            Check(result);
 
             var originalMvid = GetMvid(result.InputAssemblyPath);
             var firstOutputMvid = GetMvid(result.OutputAssemblyPath);
@@ -234,6 +237,7 @@ namespace Mono.Linker.Tests.TestCases
         {
             var testCase = CreateIndividualCase(typeof(RetainMvid));
             var result = Run(testCase, out TestRunner runner);
+            Check(result);
 
             var originalMvid = GetMvid(result.InputAssemblyPath);
             var firstOutputMvid = GetMvid(result.OutputAssemblyPath);
@@ -268,6 +272,11 @@ namespace Mono.Linker.Tests.TestCases
         {
             runner = new TestRunner(new ObjectFactory());
             return runner.Run(testCase);
+        }
+
+        protected virtual void Check(TrimmedTestCaseResult linkedResult)
+        {
+            new ResultChecker().Check(linkedResult);
         }
     }
 }

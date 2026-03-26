@@ -1630,11 +1630,11 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         blockRange = &LIR::AsRange(block);
         switchTree = blockRange->LastNode();
 
-#ifdef TARGET_WASM
+#if defined(TARGET_WASM)
         assert(switchTree->OperIs(GT_SWITCH));
 #else
         assert(switchTree->OperIs(GT_SWITCH_TABLE));
-#endif
+#endif // defined(TARGET_WASM)
     }
     else
     {
