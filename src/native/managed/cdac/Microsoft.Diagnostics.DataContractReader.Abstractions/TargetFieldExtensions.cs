@@ -144,6 +144,7 @@ public static class TargetFieldExtensions
         return target.ProcessedData.GetOrAdd<T>(pointer);
     }
 
+    [Conditional("DEBUG")]
     private static void AssertPrimitiveType<T>(Target.FieldInfo field, string fieldName)
         where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
@@ -152,6 +153,7 @@ public static class TargetFieldExtensions
             $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', reading as {typeof(T).Name}");
     }
 
+    [Conditional("DEBUG")]
     private static void AssertPointerType(Target.FieldInfo field, string fieldName)
     {
         Debug.Assert(

@@ -21,7 +21,7 @@ internal sealed class NativeCodeVersionNode : IData<NativeCodeVersionNode>
         {
             GCCoverageInfo = target.ReadPointerField(address, type, nameof(GCCoverageInfo));
         }
-        OptimizationTier = target.Read<uint>(address + (ulong)type.Fields[nameof(OptimizationTier)].Offset);
+        OptimizationTier = target.ReadField<uint>(address, type, nameof(OptimizationTier));
     }
 
     public TargetPointer Next { get; init; }

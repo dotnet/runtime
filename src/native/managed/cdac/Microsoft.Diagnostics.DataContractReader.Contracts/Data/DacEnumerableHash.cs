@@ -29,8 +29,8 @@ internal sealed class DacEnumerableHash
         _target = target;
         _type = type;
 
-        Buckets = _target.ReadPointer(address + (ulong)_type.Fields[nameof(Buckets)].Offset);
-        Count = _target.Read<uint>(address + (ulong)_type.Fields[nameof(Count)].Offset);
+        Buckets = _target.ReadPointerField(address, _type, nameof(Buckets));
+        Count = _target.ReadField<uint>(address, _type, nameof(Count));
 
         // read items in the hash table
         uint length = GetLength();
