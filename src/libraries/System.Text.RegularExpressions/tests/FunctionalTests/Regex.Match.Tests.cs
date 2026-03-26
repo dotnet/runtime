@@ -2657,9 +2657,10 @@ namespace System.Text.RegularExpressions.Tests
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 // Depth 2000 is large enough to trigger exponential blowup in the derivative
-                // computation if the engine lacks protection (2^2000 branches). For non-
-                // NonBacktracking engines this exercises ReduceLoops loop-collapsing. For
-                // NonBacktracking, unbounded loops (* and +) are rejected by CountSingletons
+                // computation if the engine lacks protection (2^2000 branches). These patterns
+                // use capturing groups, so ReduceLoops does not collapse the nesting (it only
+                // collapses non-capturing loops). The traditional engines handle them natively.
+                // For NonBacktracking, unbounded loops (* and +) are rejected by CountSingletons
                 // because the exponential estimate exceeds the safe-size threshold. Bounded
                 // loops ({0,1}) are accepted because Times(1, bodyCount) doesn't grow.
                 bool nb = RegexHelpers.IsNonBacktracking(engine);
