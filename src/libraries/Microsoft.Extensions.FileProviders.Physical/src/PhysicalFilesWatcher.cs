@@ -612,7 +612,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             public PendingCreationWatcher(string directory)
             {
                 Token = _cts.Token;
-                _targetDirectory = directory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                _targetDirectory = directory.TrimEnd(PathUtils.PathSeparators);
 
                 // Walk up to find the nearest existing ancestor.
                 string current = _targetDirectory;
@@ -640,8 +640,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
             private static string GetChildName(string existingAncestor, string target)
             {
                 string remaining = target.Substring(existingAncestor.Length)
-                    .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                int sep = remaining.IndexOfAny(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
+                    .TrimStart(PathUtils.PathSeparators);
+                int sep = remaining.IndexOfAny(PathUtils.PathSeparators);
                 return sep >= 0 ? remaining.Substring(0, sep) : remaining;
             }
 

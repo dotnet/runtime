@@ -23,8 +23,6 @@ namespace Microsoft.Extensions.FileProviders
     public class PhysicalFileProvider : IFileProvider, IDisposable
     {
         private const string PollingEnvironmentKey = "DOTNET_USE_POLLING_FILE_WATCHER";
-        private static readonly char[] _pathSeparators = new[]
-            {Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar};
 
         private readonly ExclusionFilters _filters;
 
@@ -264,7 +262,7 @@ namespace Microsoft.Extensions.FileProviders
             }
 
             // Relative paths starting with leading slashes are okay
-            subpath = subpath.TrimStart(_pathSeparators);
+            subpath = subpath.TrimStart(PathUtils.PathSeparators);
 
             // Absolute paths not permitted.
             if (Path.IsPathRooted(subpath))
@@ -309,7 +307,7 @@ namespace Microsoft.Extensions.FileProviders
                 }
 
                 // Relative paths starting with leading slashes are okay
-                subpath = subpath.TrimStart(_pathSeparators);
+                subpath = subpath.TrimStart(PathUtils.PathSeparators);
 
                 // Absolute paths not permitted.
                 if (Path.IsPathRooted(subpath))
@@ -356,7 +354,7 @@ namespace Microsoft.Extensions.FileProviders
             }
 
             // Relative paths starting with leading slashes are okay
-            filter = filter.TrimStart(_pathSeparators);
+            filter = filter.TrimStart(PathUtils.PathSeparators);
 
             return FileWatcher.CreateFileChangeToken(filter);
         }
