@@ -539,7 +539,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void LoadDataErrorRaisesOnLoadException()
         {
             const string FileName = $"{nameof(LoadDataErrorRaisesOnLoadException)}.json";
@@ -594,7 +593,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task ReloadDataErrorRaisesOnLoadException()
         {
             const string FileName = $"{nameof(ReloadDataErrorRaisesOnLoadException)}.json";
