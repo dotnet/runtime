@@ -296,6 +296,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXBW xmm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<short> ConvertToVector128Int16(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>   PMOVZXBW xmm1,         m64</para>
@@ -303,6 +304,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXBW xmm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<short> ConvertToVector128Int16(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>   PMOVSXBD xmm1,         m32</para>
@@ -310,6 +312,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXBD xmm1 {k1}{z}, m32</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> ConvertToVector128Int32(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>   PMOVZXBD xmm1,         m32</para>
@@ -317,6 +320,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXBD xmm1 {k1}{z}, m32</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> ConvertToVector128Int32(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>   PMOVSXWD xmm1,         m64</para>
@@ -324,6 +328,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXWD xmm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> ConvertToVector128Int32(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>   PMOVZXWD xmm1,         m64</para>
@@ -331,6 +336,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXWD xmm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> ConvertToVector128Int32(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>   PMOVSXBQ xmm1,         m16</para>
@@ -338,6 +344,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXBQ xmm1 {k1}{z}, m16</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> ConvertToVector128Int64(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>   PMOVZXBQ xmm1,         m16</para>
@@ -345,6 +352,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXBQ xmm1 {k1}{z}, m16</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> ConvertToVector128Int64(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>   PMOVSXWQ xmm1,         m32</para>
@@ -352,6 +360,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXWQ xmm1 {k1}{z}, m32</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> ConvertToVector128Int64(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>   PMOVZXWQ xmm1,         m32</para>
@@ -359,6 +368,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXWQ xmm1 {k1}{z}, m32</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> ConvertToVector128Int64(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>   PMOVSXDQ xmm1,         m64</para>
@@ -366,6 +376,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXDQ xmm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> ConvertToVector128Int64(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>   PMOVZXDQ xmm1,         m64</para>
@@ -373,6 +384,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVZXDQ xmm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> ConvertToVector128Int64(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -489,48 +501,56 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<sbyte> LoadAlignedVector128NonTemporal(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_stream_load_si128 (const __m128i* mem_addr)</para>
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<byte> LoadAlignedVector128NonTemporal(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_stream_load_si128 (const __m128i* mem_addr)</para>
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<short> LoadAlignedVector128NonTemporal(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_stream_load_si128 (const __m128i* mem_addr)</para>
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ushort> LoadAlignedVector128NonTemporal(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_stream_load_si128 (const __m128i* mem_addr)</para>
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> LoadAlignedVector128NonTemporal(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_stream_load_si128 (const __m128i* mem_addr)</para>
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> LoadAlignedVector128NonTemporal(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_stream_load_si128 (const __m128i* mem_addr)</para>
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> LoadAlignedVector128NonTemporal(long* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_stream_load_si128 (const __m128i* mem_addr)</para>
         ///   <para>   MOVNTDQA xmm1, m128</para>
         ///   <para>  VMOVNTDQA xmm1, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> LoadAlignedVector128NonTemporal(ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>

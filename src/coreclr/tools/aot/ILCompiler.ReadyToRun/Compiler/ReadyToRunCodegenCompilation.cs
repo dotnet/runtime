@@ -371,6 +371,8 @@ namespace ILCompiler
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
             if (nodeFactory.CrossModuleInlningInfo != null)
                 nodeFactory.CrossModuleInlningInfo.Initialize(SymbolNodeFactory);
+            if (nodeFactory.ImportReferenceProvider != null)
+                nodeFactory.ImportReferenceProvider.Initialize(SymbolNodeFactory);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;
@@ -525,7 +527,7 @@ namespace ILCompiler
                 componentGraph.AddRoot(componentFactory.Win32ResourcesNode, "Win32 resources");
             }
             componentGraph.ComputeMarkedNodes();
-            componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
+            componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode);
             ReadyToRunObjectWriter.EmitObject(
                 outputFile,
                 componentModule: inputModule,

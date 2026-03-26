@@ -52,6 +52,10 @@
 #include <stdio.h>
 #endif
 #include <unistd.h>
+#if defined(TARGET_SUNOS) && HAVE_GETDOMAINNAME
+// SunOS has getdomainname in libnsl but no header declaration
+extern int getdomainname(char *name, int namelen);
+#endif
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif

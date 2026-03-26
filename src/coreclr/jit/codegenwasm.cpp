@@ -325,7 +325,7 @@ unsigned CodeGen::findTargetDepth(BasicBlock* targetBlock)
         }
         else
         {
-            // blocks bind to end
+            // blocks and trys bind to end
             match = ii->End();
         }
 
@@ -335,8 +335,18 @@ unsigned CodeGen::findTargetDepth(BasicBlock* targetBlock)
         }
     }
 
+#ifdef DEBUG
     JITDUMP("Could not find " FMT_BB "[%u]%s in active control stack\n", targetBlock->bbNum, targetIndex,
             isBackedge ? " (backedge)" : "");
+    JITDUMP("Current stack is\n");
+
+    for (int i = 0; i < h; i++)
+    {
+        WasmInterval* const ii = wasmControlFlowStack->Top(i);
+        JITDUMPEXEC(ii->Dump());
+    }
+#endif
+
     assert(!"Can't find target in control stack");
 
     return ~0;
@@ -378,9 +388,68 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             {
                 GetEmitter()->emitIns_BlockTy(INS_loop);
             }
+            else if (interval->IsTry())
+            {
+                // Handle try_table emission here, since there may be blocks nested inside.
+                // (that is, we can't wait until we do codegen the block IR)
+                //
+                LIR::Range&    blockRange = LIR::AsRange(block);
+                GenTree* const jTrue      = blockRange.LastNode();
+                assert(jTrue->OperIs(GT_WASM_JEXCEPT));
+
+                // Empty stack sig, one catch clause
+                //
+                GetEmitter()->emitIns_Ty_I(INS_try_table, WasmValueType::Invalid, 1);
+
+                // Post-catch continuation dispatch block is the true target.
+                // False target should be the next block.
+                //
+                assert(block->GetFalseTarget() == block->Next());
+                BasicBlock* const target = block->GetTrueTarget();
+                unsigned          depth  = findTargetDepth(target);
+                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, depth, target);
+            }
             else
             {
-                GetEmitter()->emitIns_BlockTy(INS_block);
+                assert(interval->IsBlock());
+
+                bool isTryWrapper = false;
+
+#if FALSE
+                // TODO-WASM: block sig when we emit catch_ref
+
+                // If this interval exactly wraps a try, it represents the branch to the
+                // catch handlers. We need to emit an exnref block sig
+                //
+                // (TODO, perhaps ... detect this earlier and make it an interval property)
+                if ((wasmCursor + 1) < m_compiler->fgWasmIntervals->size())
+                {
+                    WasmInterval* nextInterval = m_compiler->fgWasmIntervals->at(wasmCursor + 1);
+                    if (nextInterval->IsTry())
+                    {
+                        // we should always see a wrapping block because of the
+                        // control flow added by fgWasmEhFlow
+                        //
+                        if ((nextInterval->Start() == interval->Start()) && (nextInterval->End() == interval->End()))
+                        {
+                            isTryWrapper = true;
+                        }
+                        else
+                        {
+                            assert(!"Expected block to wrap the try");
+                        }
+                    }
+                }
+#endif
+
+                if (isTryWrapper)
+                {
+                    GetEmitter()->emitIns_BlockTy(INS_block, WasmValueType::ExnRef);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_BlockTy(INS_block);
+                }
             }
 
             wasmCursor++;
@@ -644,12 +713,27 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genIntrinsic(treeNode->AsIntrinsic());
             break;
 
+        case GT_WASM_JEXCEPT:
+            // no codegen needed here.
+            break;
+
+        case GT_WASM_THROW_REF:
+            // TODO-WASM: enable when we emit catch_ref instead of catch_all
+            // GetEmitter()->emitIns(INS_throw_ref);
+            GetEmitter()->emitIns(INS_unreachable);
+            break;
+
         case GT_PINVOKE_PROLOG:
             // TODO-WASM-CQ re-establish the global stack pointer here?
             break;
 
         default:
 #ifdef DEBUG
+            if (JitConfig.JitWasmNyiToR2RUnsupported())
+            {
+                NYI_WASM("Opcode not implemented");
+            }
+
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
 #else
             NYI_WASM("Opcode not implemented");
@@ -1335,7 +1419,9 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, size, is64BitOp ? INT64_MIN : INT32_MIN);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_eq : INS_i32_eq);
 
-            GetEmitter()->emitIns(is64BitOp ? INS_i64_and : INS_i32_and);
+            // Wasm relops always produce i32 results
+            //
+            GetEmitter()->emitIns(INS_i32_and);
             genJumpToThrowHlpBlk(SCK_ARITH_EXCPN);
         }
     }
@@ -1404,9 +1490,9 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         icon = treeNode->AsIntConCommon();
         if (icon->ImmedValNeedsReloc(m_compiler))
         {
-            // WASM-TODO: Generate reloc for this handle
-            ins  = INS_I_const;
-            bits = 0;
+            GetEmitter()->emitAddressConstant((void*)icon->IntegralValue());
+            WasmProduceReg(treeNode);
+            return;
         }
         else
         {
@@ -1471,6 +1557,14 @@ void CodeGen::genCodeForShift(GenTree* tree)
     // TODO-WASM: Zero-extend the 2nd operand for shifts and rotates as needed when the 1st and 2nd operand are
     // different types. The shift operand width in IR is always TYP_INT; the WASM operations have the same widths
     // for both the shift and shiftee. So the shift may need to be extended (zero-extended) for TYP_LONG.
+
+    if (treeNode->TypeIs(TYP_LONG))
+    {
+        assert(treeNode->gtGetOp2()->TypeIs(TYP_INT));
+        // Zero-extend the shift amount to 64 bits for long shifts/rotates.
+        // Wasteful if the amount was a constant, perhaps we should contain it if so.
+        GetEmitter()->emitIns(INS_i64_extend_u_i32);
+    }
 
     instruction ins;
     switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
@@ -1816,6 +1910,8 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
     // Handle intrinsics that can be implemented by target-specific instructions
     instruction ins = INS_invalid;
 
+    bool canHaveMixedTypes = false;
+
     switch (PackIntrinsicAndType(treeNode->gtIntrinsicName, treeNode->TypeGet()))
     {
         case PackIntrinsicAndType(NI_System_Math_Abs, TYP_FLOAT):
@@ -1879,24 +1975,12 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             break;
 
         case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_INT):
-            ins = INS_i32_clz;
-            break;
         case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG):
-            ins = INS_i64_clz;
-            break;
-
         case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_INT):
-            ins = INS_i32_ctz;
-            break;
         case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG):
-            ins = INS_i64_ctz;
-            break;
-
         case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_INT):
-            ins = INS_i32_popcnt;
-            break;
         case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_LONG):
-            ins = INS_i64_popcnt;
+            canHaveMixedTypes = true;
             break;
 
         default:
@@ -1904,7 +1988,58 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             unreached();
     }
 
+    bool needsTruncation = false;
+    bool needsExtension  = false;
+
+    if (canHaveMixedTypes)
+    {
+        var_types treeType    = treeNode->TypeGet();
+        var_types operandType = genActualType(treeNode->gtGetOp1()->TypeGet());
+
+        needsTruncation = (operandType == TYP_LONG) && (treeType == TYP_INT);
+        needsExtension  = (operandType == TYP_INT) && (treeType == TYP_LONG);
+
+        switch (PackIntrinsicAndType(treeNode->gtIntrinsicName, operandType))
+        {
+            case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_INT):
+                ins = INS_i32_clz;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG):
+                ins = INS_i64_clz;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_INT):
+                ins = INS_i32_ctz;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG):
+                ins = INS_i64_ctz;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_INT):
+                ins = INS_i32_popcnt;
+                break;
+
+            case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_LONG):
+                ins = INS_i64_popcnt;
+                break;
+
+            default:
+                unreached();
+        }
+    }
+
     GetEmitter()->emitIns(ins);
+
+    if (needsTruncation)
+    {
+        GetEmitter()->emitIns(INS_i32_wrap_i64);
+    }
+    else if (needsExtension)
+    {
+        GetEmitter()->emitIns(INS_i64_extend_u_i32);
+    }
 
     WasmProduceReg(treeNode);
 }
@@ -1966,7 +2101,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     {
         var_types type = varDsc->GetRegisterType(tree);
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
-        GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(tree), tree->GetLclNum(), 0);
+        GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
         WasmProduceReg(tree);
     }
     else
@@ -2880,9 +3015,15 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// genEHCatchRet - Generate code for an EH catch return.
+//
+// Arguments:
+//    block -- the block with BBJ_EHCATCHRET that we need to generate code for
+//
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    NYI_WASM("genEHCatchRet");
+    // No codegen needed for Wasm
 }
 
 void CodeGen::genStructReturn(GenTree* treeNode)

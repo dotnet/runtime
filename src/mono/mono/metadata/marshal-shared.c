@@ -774,8 +774,10 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 
 	if (klass != mono_class_try_get_safehandle_class ()) {
 		if (mono_class_is_auto_layout (klass)) {
+			char *type_name = mono_type_full_name (m_class_get_byval_arg (klass));
 			char *msg = g_strdup_printf ("Type %s which is passed to unmanaged code must have a StructLayout attribute.",
-										 mono_type_full_name (m_class_get_byval_arg (klass)));
+										 type_name);
+			g_free (type_name);
 			mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 			return;
 		}
@@ -862,8 +864,10 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 				break;
 			case MONO_TYPE_GENERICINST:
 				if (!mono_type_generic_inst_is_valuetype (ftype)) {
+					char *type_name = mono_type_full_name (ftype);
 					char *msg = g_strdup_printf ("Generic type %s cannot be marshaled as field in a struct.",
-						mono_type_full_name (ftype));
+						type_name);
+					g_free (type_name);
 					mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 					break;
 				}
@@ -908,9 +912,13 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_ARRAY: {
+				char *klass_name = mono_type_full_name (m_class_get_byval_arg (klass));
+				char *field_type_name = mono_type_full_name (ftype);
 				char *msg = g_strdup_printf ("Type %s with field type %s cannot be marshaled as an unmanaged struct field.",
-					mono_type_full_name (m_class_get_byval_arg (klass)),
-					mono_type_full_name (ftype));
+					klass_name,
+					field_type_name);
+				g_free (klass_name);
+				g_free (field_type_name);
 				mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 				break;
 			}
