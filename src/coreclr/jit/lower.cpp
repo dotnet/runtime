@@ -10947,7 +10947,7 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
 
         if ((prevTree == nullptr) || !prevTree->OperIs(GT_STORE_LCL_FLD))
         {
-            break;
+            return;
         }
 
         GenTreeLclFld* prevStore = prevTree->AsLclFld();
@@ -11303,105 +11303,6 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
 #endif // TARGET_64BIT
 
     } while (true);
-
-    // After coalescing, if the store has a constant value, look ahead for a same-sized
-    // last-use read from the same local. If found, we can bypass the store+load entirely
-    // by replacing the load with the constant value and removing the store.
-    if (store->OperIs(GT_STORE_LCL_FLD) && store->Data()->OperIsConst() && store->Data()->IsCnsIntOrI() &&
-        !store->Data()->AsIntCon()->ImmedValNeedsReloc(m_compiler))
-    {
-        unsigned  lclNum    = store->GetLclNum();
-        unsigned  offset    = store->AsLclFld()->GetLclOffs();
-        var_types storeType = store->TypeGet();
-
-        GenTree*  scanNode  = store->gtNext;
-        const int scanLimit = 20;
-
-        for (int scanCount = 0; scanNode != nullptr && scanCount < scanLimit; scanCount++)
-        {
-            if (scanNode->OperIsConditionalJump() || scanNode->OperGet() == GT_JMP ||
-                scanNode->OperGet() == GT_RETURN || scanNode->OperGet() == GT_SWIFT_ERROR_RET)
-            {
-                break;
-            }
-
-            // Found a read from the same local, same offset, same size.
-            if (scanNode->OperIs(GT_LCL_VAR, GT_LCL_FLD) && scanNode->OperIsLocalRead() &&
-                scanNode->AsLclVarCommon()->GetLclNum() == lclNum &&
-                scanNode->AsLclVarCommon()->GetLclOffs() == offset)
-            {
-                unsigned readSize = genTypeSize(scanNode->TypeGet());
-                if (readSize == 0 && scanNode->TypeIs(TYP_STRUCT))
-                {
-                    readSize = scanNode->AsLclVarCommon()->GetLayout(m_compiler)->GetSize();
-                }
-
-                if (readSize != genTypeSize(storeType))
-                {
-                    break; // Size mismatch, can't bypass.
-                }
-                // Only bypass if this is the last use — either GTF_VAR_DEATH is set,
-                // or the local is do-not-enreg and we can verify no further reads.
-                bool isLastUse = ((scanNode->gtFlags & GTF_VAR_DEATH) != 0);
-                if (!isLastUse && m_compiler->lvaGetDesc(lclNum)->lvDoNotEnregister)
-                {
-                    // For untracked locals, scan forward to verify no more reads.
-                    isLastUse    = true;
-                    GenTree* chk = scanNode->gtNext;
-                    for (int chkCount = 0; chk != nullptr && chkCount < scanLimit; chkCount++)
-                    {
-                        if (chk->OperIsLocalRead() && chk->AsLclVarCommon()->GetLclNum() == lclNum)
-                        {
-                            isLastUse = false;
-                            break;
-                        }
-                        if (chk->OperIsLocalStore() && chk->AsLclVarCommon()->GetLclNum() == lclNum)
-                        {
-                            break; // redefined before next read = this was the last use
-                        }
-                        chk = chk->gtNext;
-                    }
-                }
-
-                if (isLastUse)
-                {
-                    JITDUMP("Bypassing constant store+load for V%02u [+%u]: replacing load with constant %lld\n",
-                            lclNum, offset, (int64_t)store->Data()->AsIntCon()->IconValue());
-
-                    // Create a new constant node and insert it in place of the load.
-                    ssize_t  constVal = store->Data()->AsIntCon()->IconValue();
-                    GenTree* newConst = m_compiler->gtNewIconNode(constVal, storeType);
-                    BlockRange().InsertAfter(scanNode, newConst);
-
-                    // Replace all uses of the load with the new constant.
-                    LIR::Use use;
-                    if (BlockRange().TryGetUse(scanNode, &use))
-                    {
-                        use.ReplaceWith(newConst);
-                    }
-
-                    // Remove the load node.
-                    BlockRange().Remove(scanNode);
-
-                    // The store is now dead (its value was forwarded to the load's user).
-                    // We leave it in place — removing it here would cause issues since
-                    // LowerStoreLocCommon is still processing this node. Later phases
-                    // or the register allocator can handle the dead store.
-                    break;
-                }
-                // Not the last use — stop scanning, can't bypass.
-                break;
-            }
-
-            // Stop at stores to the same local (would change the value).
-            if (scanNode->OperIsLocalStore() && scanNode->AsLclVarCommon()->GetLclNum() == lclNum)
-            {
-                break;
-            }
-
-            scanNode = scanNode->gtNext;
-        }
-    }
 
 #endif // TARGET_XARCH || TARGET_ARM64
 }
