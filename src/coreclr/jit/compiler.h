@@ -12436,9 +12436,7 @@ const instruction INS_SQRT = INS_vsqrt;
 const instruction        INS_MULADD = INS_madd;
 inline const instruction INS_BREAKPOINT_osHelper()
 {
-    // GDB needs the encoding of brk #0
-    // Windbg needs the encoding of brk #F000
-    return TargetOS::IsUnix ? INS_brk_unix : INS_brk_windows;
+    return INS_brk_unix;
 }
 #define INS_BREAKPOINT INS_BREAKPOINT_osHelper()
 

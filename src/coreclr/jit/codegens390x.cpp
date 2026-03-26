@@ -447,13 +447,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //            genCodeForDivMod(treeNode->AsOp());
 //            break;
 //
-//        case GT_OR:
-//        case GT_XOR:
-//        case GT_AND:
-//        case GT_AND_NOT:
-//            assert(varTypeIsIntegralOrI(treeNode));
-//
-//            FALLTHROUGH;
+        case GT_OR:
+        case GT_XOR:
+        case GT_AND:
+        case GT_AND_NOT:
+            assert(varTypeIsIntegralOrI(treeNode));
+
+            FALLTHROUGH;
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
@@ -4745,19 +4745,29 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_ADD:
             ins = INS_ark;
             break;
-        case GT_MUL:
-            ins = INS_mul;
+
+        case GT_SUB:
+            ins = INS_srk;
             break;
-#if 0
+
         case GT_AND:
-            ins = INS_and;
+            ins = INS_nrk;
+            break;
+        case GT_OR:
+            ins = INS_ork;
+            break;
+        case GT_XOR:
+            ins = INS_xrk;
             break;
         case GT_AND_NOT:
-            ins = INS_bic;
+            ins = INS_ncrk;
             break;
+        
         case GT_MUL:
             ins = INS_mul;
             break;
+
+#if 0
 #if !defined(USE_HELPERS_FOR_INT_DIV)
         case GT_DIV:
             ins = INS_sdiv;
@@ -4772,20 +4782,11 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_NOT:
             ins = INS_not;
             break;
-        case GT_OR:
-            ins = INS_orr;
-            break;
         case GT_RSH:
             ins = INS_asr;
             break;
         case GT_RSZ:
             ins = INS_lsr;
-            break;
-        case GT_SUB:
-            ins = INS_sub;
-	    break;
-        case GT_XOR:
-            ins = INS_eor;
             break;
         case GT_ROR:
             ins = INS_ror;
@@ -5156,8 +5157,6 @@ void CodeGen::genPushCalleeSavedRegisters()
 
 void CodeGen::genFnEpilog(BasicBlock* block)
 {
-    //_ASSERTE("!NYI");
-
 #ifdef DEBUG
     if (verbose)
         printf("*************** In genFnEpilog()\n");
