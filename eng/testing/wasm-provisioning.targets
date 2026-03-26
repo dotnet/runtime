@@ -69,6 +69,26 @@
     <_V8PlatformId>linux64</_V8PlatformId>
   </PropertyGroup>
 
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('macos'))">
+    <ChromeDirName>chrome-mac/Chromium.app/Contents/MacOS</ChromeDirName>
+    <ChromeDriverDirName>chromedriver_mac64</ChromeDriverDirName>
+    <ChromeBinaryName>Chromium</ChromeBinaryName>
+    <ChromeDriverBinaryName>chromedriver</ChromeDriverBinaryName>
+    <_ChromeOSPrefix>Mac_Arm</_ChromeOSPrefix>
+
+    <ChromeVersion>$(macos_ChromeVersion)</ChromeVersion>
+    <ChromeRevision>$(macos_ChromeRevision)</ChromeRevision>
+    <_ChromeBaseSnapshotUrl>$(macos_ChromeBaseSnapshotUrl)</_ChromeBaseSnapshotUrl>
+
+    <ChromeUrl>$(macos_ChromeBaseSnapshotUrl)/chrome-mac.zip</ChromeUrl>
+    <ChromeDriverUrl>$(macos_ChromeBaseSnapshotUrl)/chromedriver_mac64.zip</ChromeDriverUrl>
+
+    <V8Version>$(macos_V8Version)</V8Version>
+    <V8DirName>v8-$(macos_V8Version)</V8DirName>
+    <V8BinaryName>$(V8DirName).sh</V8BinaryName>
+    <_V8PlatformId>mac-arm64</_V8PlatformId>
+  </PropertyGroup>
+
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
     <ChromeDirName>chrome-win</ChromeDirName>
     <ChromeDriverDirName>chromedriver_win32</ChromeDriverDirName>
@@ -109,8 +129,8 @@
           AfterTargets="$(WasmProvisionAfterTarget)"
           Condition="(!Exists($(ChromeStampFile)) or !Exists($(ChromeBinaryPath))) and '$(InstallChromeForTests)' == 'true'">
 
-    <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows'))"
-           Text="Chrome provisioning only supported on Linux, and windows." />
+    <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows')) and !$([MSBuild]::IsOSPlatform('macos'))"
+           Text="Chrome provisioning only supported on Linux, Windows, and macOS." />
     <Error Condition="'$(ChromeVersion)' == ''"
            Text="No %24(ChromeVersion) set. This can be set in eng/testing/BrowserVersions.props" />
 
@@ -137,8 +157,8 @@
           AfterTargets="$(WasmProvisionAfterTarget)"
           Condition="(!Exists($(ChromeDriverStampFile)) or !Exists($(ChromeDriverBinaryPath))) and '$(InstallChromeForTests)' == 'true'">
 
-    <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows'))"
-           Text="ChromeDriver provisioning only supported on Linux, and windows." />
+    <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows')) and !$([MSBuild]::IsOSPlatform('macos'))"
+           Text="ChromeDriver provisioning only supported on Linux, Windows, and macOS." />
     <Error Condition="'$(ChromeVersion)' == ''"
            Text="No %24(ChromeVersion) set. This can be set in eng/testing/BrowserVersions.props" />
 
@@ -164,8 +184,8 @@
           AfterTargets="$(WasmProvisionAfterTarget)"
           Condition="(!Exists($(V8StampFile)) or !Exists($(V8BinaryPath))) and '$(InstallV8ForTests)' == 'true'">
 
-    <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows'))"
-           Text="V8 provisioning only supported on Linux, and windows." />
+    <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows')) and !$([MSBuild]::IsOSPlatform('macos'))"
+           Text="V8 provisioning only supported on Linux, Windows, and macOS." />
     <Error Condition="'$(V8Version)' == ''" Text="%24(V8Version) not set" />
     <Error Condition="'$(_V8PlatformId)' == ''" Text="%24(_V8PlatformId) not set, needed for constructing the snapshot url." />
 

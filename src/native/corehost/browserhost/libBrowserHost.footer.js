@@ -21,8 +21,9 @@ function libBrowserHostFactory() {
     let explicitDeps = [
         "wasm_load_icu_data",
         "BrowserHost_CreateHostContract",
-        "BrowserHost_InitializeCoreCLR",
-        "BrowserHost_ExecuteAssembly"
+        "BrowserHost_InitializeDotnet",
+        "BrowserHost_ExecuteAssembly",
+        "BrowserHost_ShutdownDotnet",
     ];
     let commonDeps = [
         "$DOTNET",

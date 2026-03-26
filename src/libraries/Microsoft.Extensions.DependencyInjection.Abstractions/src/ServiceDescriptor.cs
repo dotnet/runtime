@@ -245,6 +245,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Indicates whether the service is a keyed service.
         /// </summary>
+        [MemberNotNullWhen(true, nameof(ServiceKey))]
         public bool IsKeyedService => ServiceKey != null;
 
         /// <inheritdoc />

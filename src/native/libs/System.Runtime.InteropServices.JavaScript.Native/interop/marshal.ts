@@ -342,13 +342,14 @@ export function getSignatureMarshaler(signature: JSFunctionSignature, index: num
 }
 
 export function arrayElementSize(elementType: MarshalerType): number {
-    return elementType == MarshalerType.Byte ? 1
-        : elementType == MarshalerType.Int32 ? 4
-            : elementType == MarshalerType.Int52 ? 8
-                : elementType == MarshalerType.Double ? 8
-                    : elementType == MarshalerType.String ? JavaScriptMarshalerArgSize
-                        : elementType == MarshalerType.Object ? JavaScriptMarshalerArgSize
-                            : elementType == MarshalerType.JSObject ? JavaScriptMarshalerArgSize
-                                : -1;
+    if (elementType == MarshalerType.Byte) return 1;
+    if (elementType == MarshalerType.Int32) return 4;
+    if (elementType == MarshalerType.Int52) return 8;
+    if (elementType == MarshalerType.Single) return 4;
+    if (elementType == MarshalerType.Double) return 8;
+    if (elementType == MarshalerType.String) return JavaScriptMarshalerArgSize;
+    if (elementType == MarshalerType.Object) return JavaScriptMarshalerArgSize;
+    if (elementType == MarshalerType.JSObject) return JavaScriptMarshalerArgSize;
+    return -1;
 }
 

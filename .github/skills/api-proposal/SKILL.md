@@ -1,0 +1,388 @@
+---
+name: api-proposal
+description: Create prototype-backed API proposals for dotnet/runtime. Use when asked to draft an API proposal, write an api-suggestion issue, refine a vague API idea into a complete proposal, or improve a proposal marked api-needs-work. Covers the full pipeline from research through prototyping, ref source generation, and publishing. DO NOT USE FOR bug fixes, code review, performance benchmarking, or internal API changes that don't affect public surface area.
+---
+
+# API Proposal Skill
+
+Create complete, terse, and empirically grounded API proposals for dotnet/runtime. The output should have a high chance of passing the [API review process](https://github.com/dotnet/runtime/blob/main/docs/project/api-review-process.md).
+
+> **Prototype first, proposal second.** Proposals without working prototypes are speculative — they get sent back because reviewers can't verify the design works. The prototype IS the evidence.
+
+## When to Use This Skill
+
+Use this skill when:
+- Asked to propose a new API for dotnet/runtime
+- Given a vague API idea or incomplete sketch that needs to be turned into a complete proposal
+- Given an existing underdeveloped `api-suggestion` issue to refine
+- Asked to prototype an API and draft a proposal
+- Asked to "write an API proposal", "draft an api-suggestion", or "improve this proposal"
+
+## Core Principles
+
+1. **TERSENESS**: Proposals are reviewed live by humans during API review meetings who often lack prior context. Long text is counterproductive unless warranted by design complexity. Focus on WHAT problem and HOW to solve it.
+
+2. **Empirically grounded**: Build and test a working prototype BEFORE writing the proposal. The prototype validates the design, surfaces edge cases, and produces the exact API surface via ref source generation.
+
+3. **Claims backed by evidence**: Every motivating claim must have at least one concrete scenario. "This is useful" without showing *who* needs it and *how* they'd use it is the #1 reason proposals get sent back.
+
+4. **Context-driven depth**: The amount of supporting text should be proportional to how much **new information** the proposal introduces — not just API surface size. A small API introducing a novel concept needs more justification than a large API adding async counterparts to existing sync methods.
+
+## Common Pitfalls
+
+These are failure modes that LLM agents hit repeatedly when drafting proposals. Check your output against this list before publishing.
+
+- **Verbosity creep**: Writing 3 paragraphs of motivation when 3 sentences would suffice. Live reviewers have limited time per proposal — respect it.
+- **Invented scenarios**: Fabricating usage examples or motivation not grounded in real code patterns found during research. If you can't find real-world evidence, say so honestly rather than inventing it.
+- **Raw ref dump**: Pasting the entire `GenerateReferenceAssemblySource` output instead of curating it to show only the new/changed API surface. The proposal should be the *edited* API shape, not a build artifact.
+- **Non-compilable examples**: Usage examples that reference types, methods, or overloads that don't exist or have wrong signatures. Always verify examples against the prototype.
+- **Over-scoping risk sections**: Writing lengthy risk analyses for straightforward additions (e.g., a new overload with no ambiguity risk). Match depth to actual risk.
+- **Inventing design decisions**: Listing decisions that are obvious or self-evident just to fill the section. If the design is straightforward, say so or omit the section.
+
+## Modular Phases
+
+This skill has 6 phases. Each can run independently (e.g., "just draft the proposal from my existing prototype"). When running the full pipeline, execute in order.
+
+---
+
+### Phase 0: Gather Input & Assess Context
+
+1. **Accept input** in any form: issue URL, text description, API sketch, or vague idea.
+
+2. **If the input is an existing GitHub issue**, read it in full and identify:
+   - What sections are missing or underdeveloped
+   - Whether the proposed API surface is concrete or still vague
+   - Any reviewer feedback in comments (especially if `api-needs-work` label is present)
+
+3. **Identify the target**: namespace, area label, affected types, target library under `src/libraries/`.
+
+4. **Assess novelty**: Is this a well-understood pattern extension (async variant, new overload, casing option) or something introducing a novel concept? This determines the depth of the proposal.
+
+5. **Evaluate existing workarounds**: Before proceeding, research what users can do TODAY without this API.
+   - Present the workaround(s) to the user for evaluation
+   - Explain trade-offs: performance penalty? excessive boilerplate? bad practices?
+   - **This is a checkpoint**: If a workaround is acceptable, the user may decide to shelve the proposal
+   - Only proceed to prototyping if workarounds are genuinely insufficient
+
+6. **Search for prior proposals** on the same topic:
+   - Search dotnet/runtime issues for related proposals (e.g., `api-suggestion`, `api-needs-work`, or closed issues)
+   - If duplicates exist, surface them — don't block work, but note them for linking later
+   - Look for clues in reviewer feedback: what caused a prior proposal to be marked `api-needs-work`? Why was it closed or stalled? Learn from that history to avoid repeating the same mistakes
+
+7. Ask clarifying questions if the proposal is too vague to prototype.
+
+---
+
+### Phase 1: Research
+
+The skill contains baked-in examples and guidelines for writing good proposals (see [references/proposal-examples.md](references/proposal-examples.md) and [references/api-proposal-checklist.md](references/api-proposal-checklist.md)). The agent does NOT need to search for `api-approved` issues as templates — the baked-in references are sufficient. Phase 0's search for *related* issues on the same topic is a separate concern and is still required.
+
+**What the agent DOES at runtime:**
+
+1. **Read the Framework Design Guidelines digest** at `docs/coding-guidelines/framework-design-guidelines-digest.md`. Validate that proposed names follow the conventions.
+
+2. **Read existing APIs in the target namespace** to ensure consistency:
+   - Naming patterns (e.g., `TryX` pattern, `XAsync` pattern, overload shapes)
+   - Type hierarchies and interface implementations
+   - Parameter ordering conventions
+
+3. **Read the reference documentation for updating ref source** at `docs/coding-guidelines/updating-ref-source.md`.
+
+4. **Research existing usage** of the APIs being modified or extended. This is especially important when the proposal changes existing API behavior, adds overloads that could cause ambiguity, or has compatibility implications.
+   - **Search the local repo** (grep/ripgrep) for internal usage of the affected types and methods within dotnet/runtime. This is the most up-to-date source for how APIs are used within the framework itself.
+   - **Search [grep.app](https://grep.app)** for .NET code patterns in public repos to gauge ecosystem usage volume and discover common consumption patterns. This helps answer: "how widely is this API used today?" and "what patterns would benefit from the new API?"
+   - **Check [apisof.net](https://apisof.net)** for TFM and version availability of the affected APIs. This helps assess the API's reach and cross-platform surface.
+   - **What to look for**: usage volume and popularity, common calling patterns, code that might break with the proposed changes (overload resolution, behavioral changes), and code that would benefit from the new API.
+
+---
+
+### Phase 2: Prototype
+
+> **If the user already has a prototype**, ask for the published branch link and/or commit hash. Skip steps 1–3 below, but still run all steps in **Prototype Validation** against the provided branch/commit before proceeding to Phase 3.
+
+1. Create a new branch: `api-proposal/<short-name>`. The prototype must be kept as a **single commit** on this branch.
+   - Commit the initial prototype as a single commit.
+   - When addressing review feedback, amend the existing commit or squash locally and force-push so that the branch history remains a single commit.
+
+2. Implement the API surface with:
+   - Complete triple-slash XML documentation on all public members
+   - Proper `#if` guards for TFM-specific APIs
+
+3. Write comprehensive tests:
+   - Use `[Theory]` with `[InlineData]`/`[MemberData]` where applicable
+   - Cover edge cases, null inputs, boundary conditions
+   - Test any interaction with existing APIs
+
+4. **Search dotnet/runtime for adoption sites.** Before writing any proposal text, systematically search the entire local repo (grep/ripgrep) for every place the new API could or should be used. This serves two purposes: validating that the API shape works in diverse real-world contexts, and producing the adoption catalog required in the proposal (see Phase 4, section 6).
+
+   **What to search for:**
+   - Manual workarounds, verbose boilerplate, or older idioms that the new API directly replaces
+   - Call sites of the existing APIs being extended (e.g., if adding an overload, find every call to the current overloads)
+   - Patterns that would become simpler, more efficient, or more correct with the new API
+   - Third-party or test code within the repo that exercises the same scenario
+
+   **How to catalog results:**
+   - Record every hit with file path and a one-line description of how the new API applies
+   - Classify each site into one of three categories:
+     - **Updated**: Already converted in the prototype commit (pick a representative set of the most diverse and impactful sites)
+     - **Candidate**: Could be converted but was intentionally deferred (e.g., different area, risk of churn, needs area-owner review)
+     - **Inapplicable**: Initially matched the search but doesn't actually benefit from the new API (brief reason why)
+   - The catalog should be thorough — err on the side of listing too many sites rather than too few
+
+5. **Apply the new API at representative sites.** From the catalog above, convert a diverse, representative set of adoption sites in the prototype commit. Prioritize sites that exercise different aspects of the API (different overloads, edge cases, interaction with other APIs). The remaining "Candidate" sites are listed in the proposal but left unconverted.
+
+#### Prototype Validation (all steps required)
+
+> **Prerequisite:** Follow the build and test workflow in [`copilot-instructions.md`](/.github/copilot-instructions.md) — complete the baseline build, configure the environment, and use the component-specific workflow for the target library. All build and test steps below assume the baseline build has already succeeded.
+
+**Step 1: Build and test**
+
+Build the src and test projects, then run all tests for the target library using the workflow described in `copilot-instructions.md`. All tests must pass with zero failures.
+
+Building the test project separately is critical for detecting **source breaking changes** that ApiCompat won't catch:
+- New overloads/extension methods causing wrong method binding in existing code
+- New generic overloads causing overload resolution ambiguity
+- Pay attention to compilation **warnings**, not just errors
+
+**Step 2: Check TFM compatibility**
+
+Inspect the library's `.csproj` for `TargetFrameworks`. If it ships netstandard2.0 or net462 artifacts:
+- Verify the prototype compiles for ALL target frameworks, not just `$(NetCoreAppCurrent)`
+- Ensure .NET Core APIs form a **superset** of netstandard/netfx APIs
+- Use `#if` guards where types like `DateOnly`, `IParsable<T>` restrict parts of the surface to .NET Core
+- Failure to maintain superset relationship risks breaking changes on upgrade/type-forward
+
+**Step 3: Generate reference assembly source**
+
+```bash
+cd src/libraries/<LibraryName>/src
+dotnet msbuild /t:GenerateReferenceAssemblySource
+```
+
+For System.Runtime, use `dotnet build --no-incremental /t:GenerateReferenceAssemblySource`.
+
+This:
+- Produces the **exact public API diff** to use in the proposal
+- Validates that only intended APIs were added (no accidental public surface leakage)
+- The `ref/` folder changes **must be committed** as part of the prototype
+
+**The flow is**: vague input → working prototype → extract exact API surface from ref source → write the proposal. The prototype comes BEFORE the exact API proposal.
+
+---
+
+### Phase 3: Review (encapsulates code-review skill) — BLOCKING
+
+1. Invoke the **code-review** skill against the prototype diff.
+
+2. **All errors and warnings must be fixed** before proceeding to the draft phase.
+
+3. If the API change could affect performance (hot paths, allocations, new collection types), suggest running the **performance-benchmark** skill.
+
+4. Re-run tests after any review-driven changes to confirm nothing regressed.
+
+---
+
+### Phase 4: Draft Proposal
+
+**Core principle: TERSENESS.** Focus on WHAT problem and HOW to solve it. Do not generate long text unless the design complexity warrants it.
+
+Write the proposal matching the spirit of the [issue template](https://github.com/dotnet/runtime/blob/main/.github/ISSUE_TEMPLATE/02_api_proposal.yml). Skip inapplicable fields rather than filling them with "N/A".
+
+#### Proposal Structure
+
+**1. Background and motivation**
+
+- WHAT concrete user problem are we solving? Show scenario(s).
+- Reference prior art in other ecosystems where relevant.
+- Briefly summarize existing workarounds and why they are insufficient, but do not repeat the full Phase 0 analysis. Keep this section focused on the problem and the high-level rationale for a new API.
+- Link any related/duplicate proposals found during Phase 0 research inline (e.g., "Related: #12345, #67890").
+- If the proposal could naturally extend to neighboring APIs (e.g., "should this also apply to `ToHashSet`?"), note it here or in Alternative Designs.
+
+**2. API Proposal**
+
+The exact API surface, extracted from the `GenerateReferenceAssemblySource` output:
+
+- **New self-contained types**: Clean declaration format (no diff markers). Example:
+
+```csharp
+namespace System.Collections.Generic;
+
+public class PriorityQueue<TElement, TPriority>
+{
+    public PriorityQueue();
+    public PriorityQueue(IComparer<TPriority>? comparer);
+    public int Count { get; }
+    public void Enqueue(TElement element, TPriority priority);
+    public TElement Dequeue();
+    // ...
+}
+```
+
+- **Additions to existing types**: Prefer `csharp` blocks when the proposal only adds new members and doesn't need to show existing APIs for context. Mark the containing type `partial` to emphasize it has other public members:
+
+```csharp
+namespace System.Text.Json;
+
+public partial class JsonNamingPolicy
+{
+    public static JsonNamingPolicy SnakeLowerCase { get; }
+    public static JsonNamingPolicy SnakeUpperCase { get; }
+}
+```
+
+When existing members ARE needed for context (e.g., to show sibling overloads), comment out those existing members in the snippet and add a `// EXISTING` marker immediately above them. This makes it easy for the meeting chair to delete them when posting final approval notes:
+
+```csharp
+namespace System.Text.Json;
+
+public partial class JsonNamingPolicy
+{
+    // EXISTING
+    // public static JsonNamingPolicy CamelCase { get; }
+
+    public static JsonNamingPolicy SnakeLowerCase { get; }
+    public static JsonNamingPolicy SnakeUpperCase { get; }
+}
+```
+
+Rules:
+- **No implementation code.** Ever.
+- **No extensive XML docs.** Comments only as brief clarifications for the review board.
+- Naming must follow the [Framework Design Guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/framework-design-guidelines-digest.md).
+
+Include the prototype link at the bottom of this section: "Prototype: `https://github.com/<owner>/<repo>/commit/<sha>`"
+
+**3. API Usage**
+
+Realistic, compilable code examples demonstrating the primary scenarios. Number and depth should match the novelty of the API, not just its size. A simple new overload may need one example; a new collection type may need several showing different use patterns.
+
+**4. Alternative Designs**
+
+The agent has the burden of proof when claiming no viable alternatives exist. Show that alternatives were genuinely considered and explain why the proposed design is preferred. For nontrivial design decisions where reasonable alternatives exist, briefly explain the reasoning here. List format works well:
+
+- "Uses a quaternary heap instead of binary for better cache locality"
+- "Does not implement `IEnumerable` because elements cannot be efficiently enumerated in priority order"
+
+Include any unresolved design questions with tentative answers. Surfacing uncertainty is a feature, not a weakness. Example from PriorityQueue:
+- "Should we use `KeyValuePair` instead of tuples? — We will use tuple types."
+
+Omit this section entirely for straightforward additions with no meaningful alternatives.
+
+**5. Risks**
+
+The agent has the burden of proof when claiming absence of risks. Evaluate:
+- Binary breaking changes (caught by ApiCompat)
+- Source breaking changes (overload resolution, method binding)
+- Performance implications
+- TFM compatibility
+
+Write "No response" if there are genuinely no risks, matching the convention used in real `api-approved` issues. Do not inflate this section for straightforward additions.
+
+**6. Usage in dotnet/runtime**
+
+Include the full adoption catalog produced during Phase 2, step 4. This section demonstrates that the API is broadly useful across the runtime codebase and helps area owners discover conversion opportunities in their code.
+
+Format as a table or grouped list:
+
+```markdown
+#### Updated in prototype
+
+| File | Description |
+|------|-------------|
+| `src/libraries/System.Linq/src/System/Linq/Where.cs` | Replaced manual null-check + throw with `ArgumentNullException.ThrowIfNull` |
+| `src/libraries/System.Private.CoreLib/src/System/Collections/Generic/Queue.cs` | Replaced bounds-check boilerplate |
+
+#### Candidates for follow-up
+
+| File | Description | Why deferred |
+|------|-------------|--------------|
+| `src/coreclr/nativeaot/...` | Same pattern as above | Different area owner |
+| `src/mono/...` | Uses equivalent Mono-specific helper | Needs area-owner review |
+```
+
+- Every "Updated" and "Candidate" site from the Phase 2 catalog must appear here.
+- "Inapplicable" sites may be omitted from the proposal unless they illustrate an interesting design boundary (e.g., "this pattern looks like a match but isn't because X" — useful context for reviewers).
+- If no adoption sites were found beyond the target library itself, state that explicitly — it's a signal reviewers will want to see.
+
+#### After Drafting
+
+Present the complete draft to the user for review. Iterate based on feedback before publishing.
+
+---
+
+### Phase 5: Publish
+
+> **AI-generated content disclosure:** When posting any content to GitHub (issue body, PR body, comments) under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app — prepend a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. This applies to the initial proposal, iteration updates, and any follow-up comments posted on the user's behalf. Skip this if the user explicitly asks you to omit it.
+
+#### Step 1: Push and capture commit URL
+
+Commit prototype changes and push the branch to the user's fork (default) or ask for an alternative remote. Capture the commit URL for inclusion in the proposal (e.g., `https://github.com/<owner>/<repo>/commit/<sha>`).
+
+#### Step 2: Non-interactive mode (Copilot Coding Agent)
+
+If the agent cannot prompt the user for input (e.g., running as Copilot Coding Agent), automatically post the API proposal as a comment on the associated pull request:
+
+```bash
+gh pr comment <pr-number> --body-file proposal.md
+```
+
+Skip the interactive options below.
+
+#### Step 3: Interactive mode — offer publishing options
+
+Present the user with the following options. Which options appear depends on context:
+
+> **Note:** Always write the proposal text to a temporary file (e.g., `proposal.md`) and use `--body-file` instead of `--body` to avoid shell quoting/escaping issues with multi-line text.
+
+1. **Post as comment on existing issue/PR** — Only offer this when the user explicitly referenced an issue or PR in their original prompt.
+   ```bash
+   gh issue comment <number> --body-file proposal.md
+   # or
+   gh pr comment <number> --body-file proposal.md
+   ```
+
+2. **Create a new issue** — Always offer this option.
+   ```bash
+   gh issue create --label api-suggestion --title "[API Proposal]: <title>" --body-file proposal.md
+   ```
+   No area label — repo automation handles that.
+
+3. **Create a new draft PR with proposal in OP** — Always offer this option.
+   ```bash
+   gh pr create --draft --title "[API Proposal]: <title>" --body-file proposal.md
+   ```
+
+Include related issue links in the body for all options.
+
+---
+
+### Phase 6: Iterate
+
+When the user provides feedback **after** a proposal has been published and the prototype needs to change:
+
+#### Step 1: Update the prototype
+
+Apply the requested changes, then re-run the full **Phase 2 validation** (build, test, TFM compatibility, `GenerateReferenceAssemblySource`) and **Phase 3 review** (code-review skill) before proceeding.
+
+#### Step 2: Choose push strategy
+
+Before committing, ask the user which push strategy to use:
+
+1. **Incremental commit** — Push a new commit on top of the existing branch. Simple and safe, but the branch will have multiple commits instead of a single clean prototype commit.
+2. **New branch with amended commit** — Create a new branch (`api-proposal/<short-name>-v2`, `-v3`, etc.) with a single amended commit. The original branch is preserved.
+3. **Amend + force push** — Amend the commit in-place and force push to the current branch. Produces the cleanest result but rewrites history — prior commit URLs become invalid.
+
+#### Step 3: Update the published proposal
+
+After pushing, automatically edit the published proposal text (comment, issue, or PR body) to:
+
+- Update the **Prototype** link to the new commit URL.
+- Update the **API Proposal** section if the API surface changed (re-extract from ref source).
+- Append a brief iteration history at the bottom, listing prior prototype branches/commits for reference. Example:
+
+```markdown
+### Iteration History
+
+- **v1**: https://github.com/<owner>/<repo>/commit/<sha1> — initial prototype
+- **v2**: https://github.com/<owner>/<repo>/commit/<sha2> — added `comparer` overloads
+```

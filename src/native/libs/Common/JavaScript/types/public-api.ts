@@ -405,7 +405,12 @@ export type AssetBehaviors = SingleAssetBehaviors |
     /**
      * The javascript module that came from nuget package .
      */
-    | "js-module-library-initializer";
+    | "js-module-library-initializer"
+    /**
+     * Managed assembly packaged as Webcil v 1.0
+     */
+    | "webcil"
+    ;
 export declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.
@@ -459,12 +464,6 @@ export type RunAPIType = {
      * @param reason could be a string or an Error object.
      */
     exit: (code: number, reason?: any) => void;
-    /**
-     * Sets the environment variable for the "process"
-     * @param name
-     * @param value
-     */
-    setEnvironmentVariable: (name: string, value: string) => void;
     /**
      * Returns the [JSExport] methods of the assembly with the given name
      * @param assemblyName
@@ -723,9 +722,6 @@ export declare function exit(exitCode: number, reason?: any): void;
 
 export declare const dotnet: DotnetHostBuilder;
 
-declare global {
-    function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
-}
 export declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 

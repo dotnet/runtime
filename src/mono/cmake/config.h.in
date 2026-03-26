@@ -598,6 +598,9 @@
 /* byte order of target */
 #define TARGET_BYTE_ORDER @TARGET_BYTE_ORDER@
 
+/* default stack size for managed threads */
+#define MONO_DEFAULT_STACKSIZE @MONO_DEFAULT_STACKSIZE@
+
 /* wordsize of target */
 #define TARGET_SIZEOF_VOID_P @TARGET_SIZEOF_VOID_P@
 
@@ -739,7 +742,7 @@
 /* Enable System.WeakAttribute support */
 #cmakedefine ENABLE_WEAK_ATTR 1
 
-/* Enable WebCIL image loader */
+/* Enable Webcil image loader */
 #cmakedefine ENABLE_WEBCIL 1
 
 /* define if clockgettime exists */

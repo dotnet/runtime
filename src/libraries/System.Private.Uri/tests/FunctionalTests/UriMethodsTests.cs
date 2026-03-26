@@ -347,6 +347,9 @@ namespace System.PrivateUri.Tests
             yield return new object[] { new Uri("file://C:/path1/path2/file"), new Uri("http://domain.com"), false };
             yield return new object[] { new Uri("file://C:/path1/path2/file"), new Uri(@"\\server\path1\path2\file"), false };
 
+            // UNC paths that normalize to the same value as a regular file: URI
+            yield return new object[] { new Uri("\\\\\u202a"), new Uri("file:///"), true };
+
             // UNC share paths
             yield return new object[] { new Uri(@"\\server\sharepath\path\file"), new Uri(@"\\server\sharepath\path\file"), true };
             yield return new object[] { new Uri(@"\\server\sharepath\path\file"), new Uri(@"\\server1\sharepath\path\file"), false };

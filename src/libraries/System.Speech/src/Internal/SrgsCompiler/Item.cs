@@ -61,27 +61,28 @@ namespace System.Speech.Internal.SrgsCompiler
 
                     //Add a state before the start to be able to duplicate the graph
                     _startArc = InsertState(_startArc, _repeatProbability, Position.Before);
-                    State startState = _startArc.End;
+                    State? startState = _startArc.End;
 
                     // If _maxRepeat = Infinite, add epsilon transition loop back to the start of this
                     if (_maxRepeat == int.MaxValue && _minRepeat == 1)
                     {
-                        _endArc = InsertState(_endArc, 1.0f, Position.After);
+                        _endArc = InsertState(_endArc!, 1.0f, Position.After);
 
                         AddEpsilonTransition(_endArc.Start, startState, 1 - _repeatProbability);
                     }
                     else
                     {
-                        State currentStartState = startState;
+                        State? currentStartState = startState;
 
                         // For each additional repeat count, clone a new subgraph and connect with appropriate transitions.
                         for (uint cnt = 1; cnt < _maxRepeat && cnt < 255; cnt++)
                         {
                             // Prepare to clone a new subgraph matching the <item> content.
+                            System.Diagnostics.Debug.Assert(_endArc?.Start != null);
                             State newStartState = _backend.CreateNewState(_endArc.Start.Rule);
 
                             // Clone subgraphs and update CurrentEndState.
-                            State newEndState = _backend.CloneSubGraph(currentStartState, _endArc.Start, newStartState);
+                            State newEndState = _backend.CloneSubGraph(currentStartState!, _endArc.Start, newStartState);
 
                             // Connect the last state with the first state
                             //_endArc.Start.OutArcs.Add (_endArc);
@@ -117,6 +118,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     // but do not do it if the only transition is an epsilon
                     if (_minRepeat == 0 && (_startArc != _endArc || !_startArc.IsEpsilonTransition))
                     {
+                        System.Diagnostics.Debug.Assert(_endArc != null);
                         if (!_endArc.IsEpsilonTransition || _endArc.SemanticTagCount > 0)
                         {
                             _endArc = InsertState(_endArc, 1.0f, Position.After);
@@ -137,7 +139,7 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Private Methods
 
-        private void AddEpsilonTransition(State start, State end, float weight)
+        private void AddEpsilonTransition(State? start, State? end, float weight)
         {
             Arc epsilon = _backend.EpsilonTransition(weight);
             epsilon.Start = start;

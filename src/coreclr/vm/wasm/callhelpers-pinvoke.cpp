@@ -80,24 +80,20 @@ extern "C" {
     int32_t SystemNative_FSync (void *);
     int32_t SystemNative_FTruncate (void *, int64_t);
     int32_t SystemNative_FUTimens (void *, void *);
+    int32_t SystemNative_FcntlGetIsNonBlocking (void *, void *);
     int32_t SystemNative_FcntlSetFD (void *, int32_t);
     int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     void SystemNative_Free (void *);
     void SystemNative_FreeLibrary (void *);
-    int32_t SystemNative_GetAddressFamily (void *, int32_t, void *);
     double SystemNative_GetCpuUtilization (void *);
     int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
-    int32_t SystemNative_GetIPv4Address (void *, int32_t, void *);
-    int32_t SystemNative_GetIPv6Address (void *, int32_t, void *, int32_t, void *);
     void * SystemNative_GetLoadLibraryError ();
     int64_t SystemNative_GetLowResolutionTimestamp ();
     void SystemNative_GetNonCryptographicallySecureRandomBytes (void *, int32_t);
-    int32_t SystemNative_GetPort (void *, int32_t, void *);
     void * SystemNative_GetProcAddress (void *, void *);
-    int32_t SystemNative_GetSocketAddressSizes (void *, void *, void *, void *);
     int64_t SystemNative_GetSystemTimeAsTicks ();
     void * SystemNative_GetTimeZoneData (void *, void *);
     int64_t SystemNative_GetTimestamp ();
@@ -133,19 +129,17 @@ extern "C" {
     int64_t SystemNative_PReadV (void *, void *, int32_t, int64_t);
     int32_t SystemNative_PWrite (void *, void *, int32_t, int64_t);
     int64_t SystemNative_PWriteV (void *, void *, int32_t, int64_t);
+    int32_t SystemNative_Pipe (void *, int32_t);
     int32_t SystemNative_PosixFAdvise (void *, int64_t, int64_t, int32_t);
     int32_t SystemNative_Read (void *, void *, int32_t);
     int32_t SystemNative_ReadDir (void *, void *);
+    int32_t SystemNative_ReadFromNonblocking (void *, void *, int32_t);
     int32_t SystemNative_ReadLink (void *, void *, int32_t);
     void * SystemNative_Realloc (void *, void *);
     int32_t SystemNative_Rename (void *, void *);
     int32_t SystemNative_RmDir (void *);
     int32_t SystemNative_SchedGetCpu ();
-    int32_t SystemNative_SetAddressFamily (void *, int32_t, int32_t);
     void SystemNative_SetErrNo (int32_t);
-    int32_t SystemNative_SetIPv4Address (void *, int32_t, uint32_t);
-    int32_t SystemNative_SetIPv6Address (void *, int32_t, void *, int32_t, uint32_t);
-    int32_t SystemNative_SetPort (void *, int32_t, uint32_t);
     void * SystemNative_ShmOpen (void *, int32_t, int32_t);
     int32_t SystemNative_ShmUnlink (void *);
     int32_t SystemNative_Stat (void *, void *);
@@ -156,6 +150,7 @@ extern "C" {
     int32_t SystemNative_UTimensat (void *, void *);
     int32_t SystemNative_Unlink (void *);
     int32_t SystemNative_Write (void *, void *, int32_t);
+    int32_t SystemNative_WriteToNonblocking (void *, void *, int32_t);
 } // extern "C"
 
 static const Entry s_libSystem_Globalization_Native [] = {
@@ -223,28 +218,24 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_FChMod) // System.Private.CoreLib
     DllImportEntry(SystemNative_FChflags) // System.Private.CoreLib
     DllImportEntry(SystemNative_FLock) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FStat) // System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Private.CoreLib
+    DllImportEntry(SystemNative_FStat) // System.IO.Compression.ZipFile, System.Private.CoreLib
     DllImportEntry(SystemNative_FSync) // System.Private.CoreLib
     DllImportEntry(SystemNative_FTruncate) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_FUTimens) // System.Private.CoreLib
+    DllImportEntry(SystemNative_FcntlGetIsNonBlocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_FcntlSetFD) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
     DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetAddressFamily) // System.Net.Primitives
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.Private.CoreLib, System.Security.Cryptography
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives
-    DllImportEntry(SystemNative_GetIPv6Address) // System.Net.Primitives
     DllImportEntry(SystemNative_GetLoadLibraryError) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetLowResolutionTimestamp) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetPort) // System.Net.Primitives
     DllImportEntry(SystemNative_GetProcAddress) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetSocketAddressSizes) // System.Net.Primitives
     DllImportEntry(SystemNative_GetSystemTimeAsTicks) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetTimeZoneData) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetTimestamp) // System.Private.CoreLib
@@ -280,19 +271,17 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_PReadV) // System.Private.CoreLib
     DllImportEntry(SystemNative_PWrite) // System.Private.CoreLib
     DllImportEntry(SystemNative_PWriteV) // System.Private.CoreLib
+    DllImportEntry(SystemNative_Pipe) // System.Private.CoreLib
     DllImportEntry(SystemNative_PosixFAdvise) // System.Private.CoreLib
     DllImportEntry(SystemNative_Read) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadDir) // System.Private.CoreLib
+    DllImportEntry(SystemNative_ReadFromNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadLink) // System.Private.CoreLib
     DllImportEntry(SystemNative_Realloc) // System.Private.CoreLib
     DllImportEntry(SystemNative_Rename) // System.Private.CoreLib
     DllImportEntry(SystemNative_RmDir) // System.Private.CoreLib
     DllImportEntry(SystemNative_SchedGetCpu) // System.Private.CoreLib
-    DllImportEntry(SystemNative_SetAddressFamily) // System.Net.Primitives
     DllImportEntry(SystemNative_SetErrNo) // System.Private.CoreLib
-    DllImportEntry(SystemNative_SetIPv4Address) // System.Net.Primitives
-    DllImportEntry(SystemNative_SetIPv6Address) // System.Net.Primitives
-    DllImportEntry(SystemNative_SetPort) // System.Net.Primitives
     DllImportEntry(SystemNative_ShmOpen) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_ShmUnlink) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_Stat) // System.IO.Compression.ZipFile, System.Private.CoreLib
@@ -303,6 +292,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_UTimensat) // System.Private.CoreLib
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_Write) // System.Console, System.Private.CoreLib
+    DllImportEntry(SystemNative_WriteToNonblocking) // System.Private.CoreLib
 };
 
 static const Entry s_libSystem_Native_Browser [] = {
@@ -327,7 +317,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 8},
-    {"libSystem.Native", s_libSystem_Native, 97},
+    {"libSystem.Native", s_libSystem_Native, 92},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };

@@ -14,7 +14,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class TaskRtTests_Core
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTCSCompletionStateTests()
         {
             TaskCompletionSource<int> tcs = null;
@@ -70,7 +70,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTCSCompletionStateTests_SetCancel()
         {
             // Testing competing SetCancels
@@ -124,7 +124,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTCSCompletionStateTests_SetException()
         {
             TaskCompletionSource<int> tcs = null;
@@ -481,7 +481,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test "bare" overloads for Task<T> ctor, Task<T>.Factory.StartNew
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestTaskTConstruction_bare()
         {
             for (int i = 0; i < 2; i++)
@@ -543,7 +543,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test overloads for Task<T> ctor, Task<T>.Factory.StartNew that accept a CancellationToken
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestTaskTConstruction_ct()
         {
             for (int i = 0; i < 2; i++)
@@ -625,7 +625,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test overloads for Task<T> ctor, Task<T>.Factory.StartNew that accept a TaskCreationOptions param
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestTaskTConstruction_tco()
         {
             for (int i = 0; i < 2; i++)
@@ -689,7 +689,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test overloads for Task<T> ctor, Task<T>.Factory.StartNew that accept a CancellationToken and TaskCreationOptions
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestTaskTConstruction_ct_tco()
         {
             for (int i = 0; i < 2; i++)
@@ -829,7 +829,7 @@ namespace System.Threading.Tasks.Tests
                () => { Task<int>.Factory.StartNew((obj) => 42, new object(), CancellationToken.None, TaskCreationOptions.None, (TaskScheduler)null); });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunBasicTaskWithResultTest_PromiseTestsAndCancellation()
         {
             //
@@ -901,7 +901,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test the Task.RunSynchronously() API on external and internal threads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSynchronouslyTest()
         {
             Task.Factory.StartNew(delegate { CoreRunSynchronouslyTest(); }).Wait();
@@ -1003,7 +1003,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void CoreRunSynchronouslyTest_NegativeTests()
         {
             //Executing RunSynchronously() validations on external thread
@@ -1057,7 +1057,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Simply throws an exception from the task and ensures it is propagated.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskExceptionTest()
         {
             Task t = Task.Factory.StartNew(delegate { });
@@ -1131,7 +1131,7 @@ namespace System.Threading.Tasks.Tests
             return levels;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitAnyTests()
         {
             int numCores = Environment.ProcessorCount;
@@ -1171,7 +1171,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitAnyTests_Negative()
         {
             // test exceptions
@@ -1248,7 +1248,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // basic WaitAny validations with Cancellation token
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitAnyTests_WithCancellationTokenTests()
         {
             //Test stuck tasks + a cancellation token
@@ -1334,7 +1334,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // creates a large number of tasks and does WaitAll on them from a thread of the specified apartment state
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void RunTaskWaitAllTests()
         {
@@ -1580,7 +1580,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunLongRunningTaskTests()
         {
             TaskScheduler tm = TaskScheduler.Default;
@@ -1620,7 +1620,7 @@ namespace System.Threading.Tasks.Tests
         // Various tests to exercise the refactored Task class.
         // Create()==>Factory.StartNew(), Task and Task<TResult> ctors have been added,
         // and Task.Start() has been added.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunRefactoringTests()
         {
             int temp = 0;
@@ -1896,7 +1896,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunRefactoringTests_NegativeTests()
         {
             TaskCompletionSource<int> tr = new TaskCompletionSource<int>();
@@ -2015,7 +2015,7 @@ namespace System.Threading.Tasks.Tests
 
         // Test that TaskStatus values returned from Task.Status are what they should be.
         // TODO: Test WaitingToRun, Blocked.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskStatusTests()
         {
             Task t;
@@ -2197,7 +2197,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test that TaskStatus values returned from Task.Status are what they should be.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskStatusTests_NegativeTests()
         {
             Task t;
@@ -2383,7 +2383,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Just runs a task and waits on it.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitTest()
         {
             // wait on non-exceptional task
@@ -2431,7 +2431,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Just runs a task and waits on it.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitTest_NegativeTests()
         {
             string exceptionMsg = "myexception";
@@ -2525,7 +2525,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Just runs a task and waits on it.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskRecursiveWaitTest()
         {
             Task t2 = null;
@@ -2568,7 +2568,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Just runs a task and waits on it, using a timeout.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskWaitTimeoutTest()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -2590,7 +2590,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Just runs a task and waits on it, using a timeout.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskRecursiveWaitTimeoutTest()
         {
             ManualResetEvent taskStartedMRE = new ManualResetEvent(false);
@@ -2674,7 +2674,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunTaskCanceledExceptionTests()
         {
             TaskCanceledException tce = null;
@@ -2724,7 +2724,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(tse.Message.Equals(message), "RunTaskSchedulerExceptionTests:  Expected Message = message passed to ctor(string, ex)");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunAsyncWaitHandleTests()
         {
             // Start a task, but make sure that it does not complete

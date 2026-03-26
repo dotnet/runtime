@@ -1231,8 +1231,6 @@ public:
     // Only call this routine when you can guarantee there are no loads in progress.
     void ClearBinderContext();
 
-    static void ExceptionUnwind(Frame *pFrame);
-
     static void RaiseExitProcessEvent();
     Assembly* RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szName);
     Assembly* RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef);
@@ -1882,6 +1880,7 @@ struct cdac_data<SystemDomain>
 {
     static constexpr PTR_SystemDomain* SystemDomainPtr = &SystemDomain::m_pSystemDomain;
     static constexpr size_t GlobalLoaderAllocator = offsetof(SystemDomain, m_GlobalAllocator);
+    static constexpr size_t SystemAssembly = offsetof(SystemDomain, m_pSystemAssembly);
 };
 #endif // DACCESS_COMPILE
 

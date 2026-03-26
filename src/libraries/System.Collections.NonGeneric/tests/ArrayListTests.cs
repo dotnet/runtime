@@ -1148,7 +1148,7 @@ namespace System.Collections.Tests
                     int index = 0;
                     while (enumerator.MoveNext())
                     {
-                        Assert.StrictEqual(enumerator.Current, arrList2[index]);
+                        Assert.Equal(enumerator.Current, arrList2[index]);
                         index++;
                     }
                     enumerator.Reset();
@@ -1167,7 +1167,7 @@ namespace System.Collections.Tests
                 int index = 0;
                 while (enumerator.MoveNext())
                 {
-                    Assert.StrictEqual(enumerator.Current, arrList[index]);
+                    Assert.Equal(enumerator.Current, arrList[index]);
                     index++;
                 }
                 enumerator.Reset();
@@ -1229,7 +1229,7 @@ namespace System.Collections.Tests
                     for (int i = 0; i < tempArray.Length; i++)
                     {
                         enumerator.MoveNext();
-                        Assert.StrictEqual(tempArray[i], enumerator.Current);
+                        Assert.Equal(tempArray[i], enumerator.Current);
                     }
 
                     Assert.False(enumerator.MoveNext());
@@ -1244,7 +1244,7 @@ namespace System.Collections.Tests
                     for (int i = 1; i < tempArray.Length - 1; i++)
                     {
                         enumerator.MoveNext();
-                        Assert.StrictEqual(tempArray[i], enumerator.Current);
+                        Assert.Equal(tempArray[i], enumerator.Current);
                     }
 
                     Assert.False(enumerator.MoveNext());
@@ -2714,7 +2714,7 @@ namespace System.Collections.Tests
         private ArrayList _arrDaughter;
         private ArrayList _arrGrandDaughter;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void GetSyncRoot()
         {
             const int NumberOfElements = 100;
@@ -3004,7 +3004,7 @@ namespace System.Collections.Tests
         public ArrayList _arrList;
         public Hashtable _hash; // This will verify that threads will only add elements the num of times they are specified to
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Synchronized_ArrayList()
         {
             // Make 40 threads which add strHeroes to an ArrayList
@@ -3026,7 +3026,7 @@ namespace System.Collections.Tests
             Assert.Equal(workers.Length * s_synchronizedTestData.Length, _arrList.Count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Synchronized_IList()
         {
             int iNumberOfWorkers = 10;

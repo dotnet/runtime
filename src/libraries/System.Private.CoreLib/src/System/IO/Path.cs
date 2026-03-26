@@ -791,6 +791,7 @@ namespace System.IO
 
         private static ReadOnlySpan<byte> Base32Char => "abcdefghijklmnopqrstuvwxyz012345"u8;
 
+        [RequiresUnsafe]
         internal static unsafe void Populate83FileNameFromRandomBytes(byte* bytes, int byteCount, Span<char> chars)
         {
             // This method requires bytes of length 8 and chars of length 12.

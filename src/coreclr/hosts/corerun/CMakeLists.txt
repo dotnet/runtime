@@ -78,13 +78,13 @@ else()
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
                 -sINITIAL_MEMORY=134217728
-                -sMAXIMUM_MEMORY=2147483648
+                -sMAXIMUM_MEMORY=4294967296
                 -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
                 -sMODULARIZE=1
                 -sEXPORT_ES6=1
                 -sEXIT_RUNTIME=1
-                -sEXPORTED_RUNTIME_METHODS=CORERUN,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+                -sEXPORTED_RUNTIME_METHODS=CORERUN,ENV,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
                 -sEXPORTED_FUNCTIONS=_main,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
                 -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web

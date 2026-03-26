@@ -272,7 +272,7 @@ namespace System.Buffers.ArrayPool.Tests
             Assert.Equal(id, bt.GetHashCode());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(BytePoolInstances))]
         public static void CanRentManySizedBuffers(ArrayPool<byte> pool)
         {
@@ -350,7 +350,7 @@ namespace System.Buffers.ArrayPool.Tests
 
         public static bool Is64BitProcessAndRemoteExecutorSupported => PlatformDetection.Is64BitProcess && RemoteExecutor.IsSupported;
 
-        [ConditionalTheory(nameof(Is64BitProcessAndRemoteExecutorSupported))]
+        [ConditionalTheory(typeof(ArrayPoolUnitTests), nameof(Is64BitProcessAndRemoteExecutorSupported))]
         [InlineData(1024 * 1024 * 1024 - 1, true)]
         [InlineData(1024 * 1024 * 1024, true)]
         [InlineData(1024 * 1024 * 1024 + 1, false)]
@@ -561,7 +561,7 @@ namespace System.Buffers.ArrayPool.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(BytePoolInstances))]
         public static void UsePoolInParallel(ArrayPool<byte> pool)
         {

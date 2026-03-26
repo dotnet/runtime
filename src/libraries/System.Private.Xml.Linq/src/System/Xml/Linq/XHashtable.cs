@@ -371,7 +371,7 @@ namespace System.Xml.Linq
                         else
                         {
                             // Valid key, so compare keys
-                            if (count == keyCompare.Length && string.CompareOrdinal(key, index, keyCompare, 0, count) == 0)
+                            if (key.AsSpan(index, count).Equals(keyCompare, StringComparison.Ordinal))
                             {
                                 // Found match, so return true and matching entry in list
                                 entryIndex = currentIndex;
