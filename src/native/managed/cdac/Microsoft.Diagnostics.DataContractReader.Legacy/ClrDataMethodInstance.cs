@@ -255,9 +255,9 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                     validateIlOffsets ? localIlOffsetsPtr : null);
             }
 
-            Debug.ValidateHResult(hr, hrLocal);
+            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
 
-            if (hr == HResults.S_OK)
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
             {
                 if (validateOffsetsNeeded)
                 {
@@ -346,9 +346,9 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             uint mapNeededLocal;
             ClrDataILAddressMap[]? mapsLocal = mapLen > 0 ? new ClrDataILAddressMap[mapLen] : null;
             int hrLocal = _legacyImpl.GetILAddressMap(mapLen, &mapNeededLocal, mapsLocal);
-            Debug.ValidateHResult(hr, hrLocal);
+            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
 
-            if (hr == HResults.S_OK)
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
             {
                 Debug.Assert(mapNeeded == null || *mapNeeded == mapNeededLocal);
                 if (mapsLocal is not null)
