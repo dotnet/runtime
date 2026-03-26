@@ -316,12 +316,12 @@ namespace Wasm.Build.Tests
                 });
             }
 
-            // Publishing without WASM SDK is expected to fail
-            bool expectSuccess = useWasmSdk || !isPublish;
+            // Without WASM SDK, the project is a plain library with browser-wasm RID.
+            // It should build and publish successfully but won't produce a wasm app bundle.
             if (isPublish)
-                PublishProject(info, config, new PublishOptions(AssertAppBundle: useWasmSdk, ExpectSuccess: expectSuccess));
+                PublishProject(info, config, new PublishOptions(AssertAppBundle: useWasmSdk));
             else
-                BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk, ExpectSuccess: expectSuccess));
+                BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
 
             if (useWasmSdk)
             {
