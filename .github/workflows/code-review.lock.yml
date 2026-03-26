@@ -22,7 +22,7 @@
 #
 # Review pull request changes for correctness, performance, and consistency with project conventions
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"7f84227b06213ec31831335fb4cc2e40eb827273fac6455fc43725d476dedf06","compiler_version":"v0.63.1","strict":true,"agent_id":"copilot","agent_model":"claude-opus-4.6"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"e043c847ad74726d109d274e9ed21a414158170345fb99c1ff5455fb30a7f389","compiler_version":"v0.63.1","strict":true,"agent_id":"copilot","agent_model":"claude-opus-4.6"}
 
 name: "Code Review"
 "on":
@@ -52,12 +52,23 @@ name: "Code Review"
     # id: select-copilot-pat
     # name: Select Copilot token from pool
     # uses: ./.github/actions/select-copilot-pat
+  workflow_dispatch:
+    inputs:
+      aw_context:
+        default: ""
+        description: Agent caller context (used internally by Agentic Workflows).
+        required: false
+        type: string
+      pr_number:
+        description: Pull request number to review
+        required: true
+        type: number
 
 permissions: {}
 
 concurrency:
-  group: "gh-aw-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}"
   cancel-in-progress: true
+  group: code-review-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
 
 run-name: "Code Review"
 
@@ -146,6 +157,7 @@ jobs:
         env:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
           GH_AW_SAFE_OUTPUTS: ${{ runner.temp }}/gh-aw/safeoutputs/outputs.jsonl
+          GH_AW_EXPR_2697560F: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
           GH_AW_GITHUB_ACTOR: ${{ github.actor }}
           GH_AW_GITHUB_EVENT_COMMENT_ID: ${{ github.event.comment.id }}
           GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER: ${{ github.event.discussion.number }}
@@ -213,7 +225,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
-          GH_AW_GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+          GH_AW_EXPR_2697560F: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
         with:
           script: |
             const { setupGlobals } = require('${{ runner.temp }}/gh-aw/actions/setup_globals.cjs');
@@ -224,6 +236,7 @@ jobs:
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           GH_AW_PROMPT: /tmp/gh-aw/aw-prompts/prompt.txt
+          GH_AW_EXPR_2697560F: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
           GH_AW_GITHUB_ACTOR: ${{ github.actor }}
           GH_AW_GITHUB_EVENT_COMMENT_ID: ${{ github.event.comment.id }}
           GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER: ${{ github.event.discussion.number }}
@@ -244,6 +257,7 @@ jobs:
             return await substitutePlaceholders({
               file: process.env.GH_AW_PROMPT,
               substitutions: {
+                GH_AW_EXPR_2697560F: process.env.GH_AW_EXPR_2697560F,
                 GH_AW_GITHUB_ACTOR: process.env.GH_AW_GITHUB_ACTOR,
                 GH_AW_GITHUB_EVENT_COMMENT_ID: process.env.GH_AW_GITHUB_EVENT_COMMENT_ID,
                 GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER: process.env.GH_AW_GITHUB_EVENT_DISCUSSION_NUMBER,
@@ -586,7 +600,7 @@ jobs:
       - name: Execute GitHub Copilot CLI
         id: agentic_execution
         # Copilot CLI tool arguments (sorted):
-        timeout-minutes: 20
+        timeout-minutes: 30
         run: |
           set -o pipefail
           touch /tmp/gh-aw/agent-step-summary.md
@@ -977,7 +991,7 @@ jobs:
           GH_AW_LOCKDOWN_CHECK_FAILED: ${{ needs.activation.outputs.lockdown_check_failed }}
           GH_AW_GROUP_REPORTS: "false"
           GH_AW_FAILURE_REPORT_AS_ISSUE: "true"
-          GH_AW_TIMEOUT_MINUTES: "20"
+          GH_AW_TIMEOUT_MINUTES: "30"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
