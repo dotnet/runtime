@@ -354,9 +354,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             try
             {
-                FileSystemInfo fileSystemInfo = Directory.Exists(fullPath)
-                    ? new DirectoryInfo(fullPath)
-                    : new FileInfo(fullPath);
+                FileSystemInfo fileSystemInfo = new FileInfo(fullPath) is { Exists: true } fileInfo
+                    ? fileInfo
+                    : new DirectoryInfo(fullPath);
+
                 if (FileSystemInfoHelper.IsExcluded(fileSystemInfo, _filters))
                 {
                     return;
@@ -366,9 +367,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 ReportChangeForMatchedEntries(relativePath);
             }
             catch (Exception ex) when (
-                ex is IOException ||
-                ex is SecurityException ||
-                ex is UnauthorizedAccessException)
+                ex is IOException or SecurityException or UnauthorizedAccessException)
             {
                 // Swallow the exception.
             }
