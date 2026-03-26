@@ -339,11 +339,11 @@ namespace Microsoft.Extensions.FileProviders
         ///     <para>Globbing patterns are interpreted by <see cref="Microsoft.Extensions.FileSystemGlobbing.Matcher" />.</para>
         /// </summary>
         /// <param name="filter">
-        /// Filter string used to determine what files or folders to monitor. Example: **/*.cs, *.*,
-        /// subFolder/**/*.cshtml.
+        /// Filter string used to determine what files or directories to monitor. Example: **/*.cs, *.*,
+        /// subDirectory/**/*.cshtml.
         /// </param>
         /// <returns>
-        /// An <see cref="IChangeToken" /> that is notified when a file matching <paramref name="filter" /> is added,
+        /// An <see cref="IChangeToken" /> that is notified when a file or directory matching <paramref name="filter" /> is added,
         /// modified, or deleted. Returns a <see cref="NullChangeToken" /> if <paramref name="filter" /> has invalid filter
         /// characters or if <paramref name="filter" /> is an absolute path or outside the root directory specified in the
         /// constructor <see cref="PhysicalFileProvider(string)" />.

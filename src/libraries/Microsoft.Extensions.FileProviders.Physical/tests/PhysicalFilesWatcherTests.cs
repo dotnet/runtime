@@ -432,6 +432,47 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
+        [Theory]
+        [MemberData(nameof(WatcherModeData))]
+        public async Task CreateFileChangeToken_FiresWhenDirectoryIsCreated(bool useActivePolling)
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+
+            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling);
+
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("newdir");
+            Assert.False(token.HasChanged);
+
+            var tcs = new TaskCompletionSource<bool>();
+            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+
+            Directory.CreateDirectory(Path.Combine(root.Path, "newdir"));
+
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        }
+
+        [Fact]
+        // Hidden directories only make sense on Windows.
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task CreateFileChangeToken_DoesNotFireForHiddenDirectory()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            string dirPath = Path.Combine(root.Path, "hiddendir");
+            Directory.CreateDirectory(dirPath);
+            File.SetAttributes(dirPath, File.GetAttributes(dirPath) | FileAttributes.Hidden);
+
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(
+                root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false);
+
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("hiddendir");
+            Assert.False(token.HasChanged);
+
+            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "hiddendir"));
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(token.HasChanged, "Token must not fire for a hidden directory");
+        }
+
         private class TestPollingChangeToken : IPollingChangeToken
         {
             public int Id { get; set; }

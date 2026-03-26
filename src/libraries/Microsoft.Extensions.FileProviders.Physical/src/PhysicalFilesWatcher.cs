@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <paramref name="filter" />.
         /// </summary>
         /// <param name="filter">A globbing pattern for files and directories to watch.</param>
-        /// <returns>A change token for all files that match the filter.</returns>
+        /// <returns>A change token for all files and directories that match the filter.</returns>
         /// <remarks>
         /// Globbing patterns are relative to the root directory given in the constructor
         /// <see cref="PhysicalFilesWatcher(string, FileSystemWatcher, bool)" />. Globbing patterns
@@ -163,7 +163,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             return pattern.Contains('*') || IsDirectoryPath(pattern)
                 ? GetOrAddWildcardChangeToken(pattern)
-                // get rid of \. in Windows and ./ in UNIX's at the start of path file
+                // get rid of \. in Windows and ./ in UNIX's at the start of the path
                 : GetOrAddFilePathChangeToken(RemoveRelativePathSegment(pattern));
         }
 
@@ -350,7 +350,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             try
             {
-                var fileSystemInfo = new FileInfo(fullPath);
+                FileSystemInfo fileSystemInfo = Directory.Exists(fullPath)
+                    ? new DirectoryInfo(fullPath)
+                    : new FileInfo(fullPath);
                 if (FileSystemInfoHelper.IsExcluded(fileSystemInfo, _filters))
                 {
                     return;
