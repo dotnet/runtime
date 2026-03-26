@@ -290,7 +290,9 @@ foreach (var batchId in BatchIds)
 {
     string bid = batchId.ItemSpec;
     int count = counts.ContainsKey(bid) ? counts[bid] : 1;
-    int totalMinutes = Math.Max(10, count * 2);
+    // 20 minutes per suite to account for WASM startup overhead + test execution;
+    // minimum 30 minutes to handle the heaviest individual suites (e.g. Cryptography ~17m)
+    int totalMinutes = Math.Max(30, count * 20);
     var ts = TimeSpan.FromMinutes(totalMinutes);
 
     var helixItem = new TaskItem(ItemPrefix + "Batch-" + bid);
