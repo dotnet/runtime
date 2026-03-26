@@ -10600,7 +10600,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             op = emitInsCode(ins, fmt);
             S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
             break;
-        
+
         case INS_mul:
             op = emitInsCode(ins, fmt);
             S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
