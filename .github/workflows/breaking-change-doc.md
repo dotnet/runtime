@@ -76,6 +76,8 @@ if: |
 
 permissions:
   contents: read
+  pull-requests: read
+  issues: read
 
 tools:
   bash: ["pwsh", "gh"]

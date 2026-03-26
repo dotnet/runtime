@@ -142,7 +142,7 @@ try {
     # Unshallow if needed (GitHub Actions default is fetch-depth=1)
     $isShallow = git rev-parse --is-shallow-repository 2>$null
     if ($isShallow -eq "true") {
-        Write-Host "Shallow clone detected — fetching full history for tag/ancestry operations"
+        Write-Verbose "Shallow clone detected \u2014 fetching full history for tag/ancestry operations"
         git fetch --unshallow --tags 2>$null | Out-Null
     } else {
         git fetch --tags 2>$null | Out-Null

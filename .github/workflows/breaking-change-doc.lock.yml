@@ -22,7 +22,7 @@
 #
 # Generate breaking change documentation for merged PRs labeled needs-breaking-change-doc-created. Produces two markdown files (issue-draft.md and pr-comment.md) and optionally comments on the PR.
 #
-# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"7a4c8e0246f41ebcee996fc09a263552744bfa9110ef0fb5ff3db566eb8ce06a","compiler_version":"v0.63.0","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v3","frontmatter_hash":"501c50e9dd65369a7fa33f0ba56b0d91f08863305d1a362d642bb6bf684b135f","compiler_version":"v0.63.0","strict":true,"agent_id":"copilot"}
 
 name: "Breaking Change Documentation"
 "on":
@@ -300,6 +300,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: read
+      pull-requests: read
     env:
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       GH_AW_ASSETS_ALLOWED_EXTS: ""
