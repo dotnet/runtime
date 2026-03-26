@@ -15,6 +15,33 @@ LEAF_ENTRY GetCurrentSP, _TEXT
     jirl  $r0, $ra, 0
 LEAF_END GetCurrentSP, _TEXT
 
+// void SaveInterpCalleeSavedRegisters(CalleeSavedRegisters* regs, UINT64* fpRegs)
+// Saves callee-saved GP and FP registers into the provided buffers.
+// GP order: fp, ra, s0-s8
+// FP: f24-f31 (fs0-fs7)
+LEAF_ENTRY SaveInterpCalleeSavedRegisters, _TEXT
+    st.d  $fp,  $a0, 0
+    st.d  $ra,  $a0, 8
+    st.d  $s0,  $a0, 16
+    st.d  $s1,  $a0, 24
+    st.d  $s2,  $a0, 32
+    st.d  $s3,  $a0, 40
+    st.d  $s4,  $a0, 48
+    st.d  $s5,  $a0, 56
+    st.d  $s6,  $a0, 64
+    st.d  $s7,  $a0, 72
+    st.d  $s8,  $a0, 80
+    fst.d $f24, $a1, 0
+    fst.d $f25, $a1, 8
+    fst.d $f26, $a1, 16
+    fst.d $f27, $a1, 24
+    fst.d $f28, $a1, 32
+    fst.d $f29, $a1, 40
+    fst.d $f30, $a1, 48
+    fst.d $f31, $a1, 56
+    jirl  $r0, $ra, 0
+LEAF_END SaveInterpCalleeSavedRegisters, _TEXT
+
 //-----------------------------------------------------------------------------
 // The following Macros help in WRITE_BARRIER Implementations
 // WRITE_BARRIER_ENTRY
