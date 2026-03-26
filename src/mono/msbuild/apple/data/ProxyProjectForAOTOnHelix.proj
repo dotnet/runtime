@@ -98,7 +98,9 @@
 
   <!-- For NativeAOT library tests, add the test runner as an ILC input to provide the managed
        entrypoint required by splitinit, and add all published DLLs as ILC references so that
-       non-framework dependencies (xunit, test utilities, etc.) can be resolved. -->
+       non-framework dependencies (xunit, test utilities, etc.) can be resolved.
+       Root the test assembly and xunit framework assemblies so ILC does not trim test
+       types that are only reachable via reflection-based xunit discovery. -->
   <Target Name="_SetupNativeAOTLibraryTestInputs"
           AfterTargets="ComputeIlcCompileInputs"
           Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(IncludesTestRunner)' == 'true'">
@@ -106,6 +108,16 @@
       <IlcCompileInput Include="$(OriginalPublishDir)AppleTestRunner.dll" />
       <IlcReference Include="$(OriginalPublishDir)*.dll"
                     Exclude="$(OriginalPublishDir)AppleTestRunner.dll;$(OriginalPublishDir)$(AssemblyName).dll" />
+
+      <!-- Root the test assembly so all test types are preserved through trimming -->
+      <TrimmerRootAssembly Include="$(AssemblyName)" />
+      <TrimmerRootAssembly Include="AppleTestRunner" />
+
+      <!-- Root xunit framework assemblies required for reflection-based test discovery -->
+      <TrimmerRootAssembly Include="xunit.execution.dotnet" />
+      <TrimmerRootAssembly Include="xunit.core" />
+      <TrimmerRootAssembly Include="xunit.runner.utility.netcoreapp10" />
+      <TrimmerRootAssembly Include="Microsoft.DotNet.XUnitExtensions" />
     </ItemGroup>
   </Target>
 

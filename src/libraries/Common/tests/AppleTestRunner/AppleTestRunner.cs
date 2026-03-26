@@ -50,7 +50,15 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
             {
                 // NativeAOT: test assemblies are statically linked into the native binary,
                 // so there are no DLL files on disk. Discover them from loaded assemblies.
-                s_testAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+                Console.WriteLine("NativeAOT mode: discovering test assemblies from loaded assemblies.");
+                Assembly[] allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+                Console.WriteLine($"Loaded assemblies ({allAssemblies.Length}):");
+                foreach (Assembly a in allAssemblies)
+                {
+                    Console.WriteLine($"  {a.GetName().Name}");
+                }
+
+                s_testAssemblies = allAssemblies
                     .Where(a => a.GetName().Name?.EndsWith(".Tests") == true)
                     .ToList();
                 s_testLibs = s_testAssemblies.Select(a => a.GetName().Name!).ToList();
@@ -64,7 +72,15 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 
         if (s_testLibs.Count < 1)
         {
-            Console.WriteLine($"Test libs were not found (*.Tests.dll was not found in {Environment.CurrentDirectory})");
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                Console.WriteLine("No assemblies ending with '.Tests' were found among loaded assemblies.");
+            }
+            else
+            {
+                Console.WriteLine($"Test libs were not found (*.Tests.dll was not found in {Environment.CurrentDirectory})");
+            }
+
             return -1;
         }
 
