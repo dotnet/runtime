@@ -621,7 +621,7 @@ IniKey1=IniValue2");
 
             _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
 
-            await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event at time.");
+            await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
         }
 
         [Fact]
@@ -656,7 +656,7 @@ IniKey1=IniValue2");
                 // we need NoWait because Wait reads file under the hood and that is restricted in LockFileReading context
                 _fileSystem.WriteFileNoWait(FileName, @"{""JsonKey1"": ""JsonValue1Updated"" }");
 
-                await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event at time.");
+                await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
             }
         }
 

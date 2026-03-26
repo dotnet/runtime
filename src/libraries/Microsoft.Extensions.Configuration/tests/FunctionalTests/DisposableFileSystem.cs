@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         /// <summary>
-        /// Lock specified file for reading. However it can be still written and changes triggers FileSystemWatcher events.
+        /// Lock specified file for reading. However, it can still be written to, and changes trigger FileSystemWatcher events.
         /// </summary>
         /// <returns>IDisposable which removes lock on Dispose()</returns>
         public IDisposable LockFileReading(string path)
