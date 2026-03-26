@@ -2683,7 +2683,7 @@ namespace System.Text.RegularExpressions.Tests
                 // NonBacktracking rejects deeply nested unbounded capturing loops via the
                 // safe-size threshold — CountSingletons detects nested unbounded loops even
                 // through capture wrappers and the exponential estimate exceeds the threshold.
-                Assert.Throws<NotSupportedException>(() => new Regex(fullpattern, RegexOptions.NonBacktracking));
+                Assert.Throws<NotSupportedException>(() => new Regex(fullpattern, RegexHelpers.RegexOptionNonBacktracking));
                 return;
             }
 
