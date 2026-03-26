@@ -11379,8 +11379,9 @@ void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
                 break;
             }
 
-            // Only forward to integral reads (not struct reads wider than a register).
-            if (!varTypeIsIntegral(scanNode->TypeGet()) && !scanNode->TypeIs(TYP_STRUCT))
+            // Only forward to integral-typed reads. Struct-typed reads feed into
+            // STORE_BLK nodes that expect struct operands with specific layouts.
+            if (!varTypeIsIntegral(scanNode->TypeGet()))
             {
                 break;
             }
@@ -11391,9 +11392,8 @@ void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
             size_t readMask = (readSize >= sizeof(size_t)) ? ~(size_t)0 : ((size_t)1 << (readSize * BITS_PER_BYTE)) - 1;
             ssize_t forwardVal = (ssize_t)(((size_t)fullVal >> bitOffset) & readMask);
 
-            // For the forwarded constant, use the read's type if it's integral,
-            // otherwise use the store type.
-            var_types fwdType = varTypeIsIntegral(scanNode->TypeGet()) ? scanNode->TypeGet() : storeType;
+            // For the forwarded constant, use the actual register type.
+            var_types fwdType = varTypeIsIntegral(scanNode->TypeGet()) ? genActualType(scanNode->TypeGet()) : storeType;
 
             JITDUMP("Forwarding constant store [%06u] to load [%06u] for V%02u[+%u]: "
                     "store value 0x%llx, forwarded value 0x%llx (read offset +%u, size %u)\n",
