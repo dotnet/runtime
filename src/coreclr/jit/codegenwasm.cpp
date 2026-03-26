@@ -2862,10 +2862,12 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     bool      nullCheckSrc  = false;
     GenTree*  dest          = blkOp->Addr();
     GenTree*  src           = blkOp->Data();
-    regNumber destReg       = genConsumeReg(dest);
-    regNumber srcReg        = genConsumeReg(src);
+    regNumber destReg       = REG_NA;
+    regNumber srcReg        = REG_NA;
     unsigned  destOffset    = 0;
     unsigned  srcOffset     = 0;
+
+    genConsumeOperands(blkOp);
 
     // If the source is a byref or pointer it will be a GT_IND that we need to unwrap to extract the
     //  actual address we're loading from. Note that this does not apply to the destination.
@@ -2884,6 +2886,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         }
         assert(!src->isContained());
         assert(!isCopyBlk);
+        assert(isNativeOp);
     }
     else
     {
@@ -2907,6 +2910,10 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     {
         destReg = GetMultiUseOperandReg(dest);
     }
+    else
+    {
+        NYI_WASM("What should destReg be here?");
+    }
 
     if (nullCheckDest)
     {
@@ -2927,8 +2934,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         {
             assert(isCopyBlk);
             emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
-            emit->emitIns_I(INS_I_const, EA_PTRSIZE, srcOffset);
-            emit->emitIns(INS_I_add);
+            if (srcOffset != 0)
+            {
+                emit->emitIns_I(INS_I_const, EA_PTRSIZE, srcOffset);
+                emit->emitIns(INS_I_add);
+            }
         }
         GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
         GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
@@ -3011,6 +3021,8 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* blkOp)
     // TODO-WASM: In multi-threaded wasm we will need to generate a for loop that atomically zeroes one GC ref
     //  at a time. Right now we're single-threaded, so we can just use memory.fill.
     assert(!WASM_THREAD_SUPPORT);
+
+    // FIXME-WASM: We're missing a null check here.
 
     genConsumeOperands(blkOp);
     // Emit the value constant expected by the memory.fill opcode (zero)

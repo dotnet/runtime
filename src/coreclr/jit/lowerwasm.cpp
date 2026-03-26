@@ -26,7 +26,6 @@ static void SetMultiplyUsed(GenTree* node)
 {
     assert(varTypeIsEnregisterable(node));
     assert(!node->isContained());
-    // printf("Marked [%06u] as multiply-used.\n", Compiler::dspTreeID(node));
     node->gtLIRFlags |= LIR::Flags::MultiplyUsed;
 }
 
