@@ -1011,7 +1011,7 @@ namespace System
             if ((styles & NumberStyles.AllowLeadingSign) != 0)
             {
                 ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
-                if (value.Slice(index).StartsWith(negativeSign))
+                if (!negativeSign.IsEmpty && value.Slice(index).StartsWith(negativeSign))
                 {
                     isNegative = true;
                     index += negativeSign.Length;
@@ -1160,7 +1160,7 @@ namespace System
                 bool exponentIsNegative = false;
                 ReadOnlySpan<TChar> negSign = info.NegativeSignTChar<TChar>();
                 ReadOnlySpan<TChar> posSign = info.PositiveSignTChar<TChar>();
-                if (value.Slice(index).StartsWith(negSign))
+                if (!negSign.IsEmpty && value.Slice(index).StartsWith(negSign))
                 {
                     exponentIsNegative = true;
                     index += negSign.Length;
