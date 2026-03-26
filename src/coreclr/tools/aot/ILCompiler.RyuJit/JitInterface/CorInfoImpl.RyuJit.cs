@@ -901,10 +901,10 @@ namespace Internal.JitInterface
             MethodDesc invokeMethod = metadataType.GetMethod("Invoke"u8, null);
             Debug.Assert(invokeMethod is not null);
 
-            ParameterMetadata[] parameters = method.GetParameterMetadata();
+            var signature = method.Signature;
 
-            int invokeCount = invokeMethod.GetParameterMetadata().Length;
-            int paramCount = parameters.Length;
+            int invokeCount = invokeMethod.Signature.Length;
+            int paramCount = signature.Length;
             bool isStatic = method.Signature.IsStatic;
             if (!isStatic)
             {
@@ -919,7 +919,7 @@ namespace Internal.JitInterface
                 // we block delegates closed over null valuetypes since we'd just always NRE in the unboxing stub
                 if (isStatic)
                 {
-                    if (parameters.Length == 0 || method.Signature[0].IsValueType)
+                    if (paramCount == 0 || signature[0].IsValueType)
                     {
                         return null;
                     }
