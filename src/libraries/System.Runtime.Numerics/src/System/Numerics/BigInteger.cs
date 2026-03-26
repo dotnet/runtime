@@ -704,7 +704,7 @@ namespace System.Numerics
             else if (nint.Size == 4)
             {
                 _bits = new nuint[bits32.Length];
-                Array.Copy(bits32, _bits, bits32.Length);
+                Buffer.BlockCopy(bits32, 0, _bits, 0, bits32.Length * sizeof(uint));
             }
             else
             {
@@ -737,7 +737,7 @@ namespace System.Numerics
                 if (nint.Size == 4)
                 {
                     bits32 = new uint[_bits.Length];
-                    Array.Copy(_bits, bits32, _bits.Length);
+                    Buffer.BlockCopy(_bits, 0, bits32, 0, _bits.Length * sizeof(uint));
                 }
                 else
                 {
