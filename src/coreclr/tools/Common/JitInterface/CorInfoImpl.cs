@@ -717,7 +717,6 @@ namespace Internal.JitInterface
             _stashedInlinedMethods.Clear();
             _ilBodiesNeeded = null;
             _synthesizedPgoDependencies = null;
-            _resumptionStubFixupAdded = false;
 #endif
 
             _instantiationToJitVisibleInstantiation = null;
