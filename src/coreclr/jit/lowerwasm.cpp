@@ -229,8 +229,10 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     // in codegen, i.e. non-faulting destination combined with native opcode. Right now this adds some code
     // bloat due to creating a temporary for a destination that may only get used once.
     // We know trivially that we won't nullcheck a destination that is a local variable's address, so we can
-    // skip generating the temporary for that case.
-    // if (!dstAddr->OperIs(GT_LCL_ADDR))
+    // skip generating the temporary for that case. If we don't do this, we get an error during regalloc caused
+    // by RewriteLocalStackStore creating and lowering a block store too 'late' to mark the dstAddr as multiply
+    // used successfully.
+    if (!dstAddr->OperIs(GT_LCL_ADDR))
     {
         SetMultiplyUsed(dstAddr DEBUGARG("LowerBlockStore destination address"));
     }
