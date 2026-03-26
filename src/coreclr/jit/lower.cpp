@@ -11228,13 +11228,6 @@ bool Lowering::TryCoalesceNonConstStoreLclFld(GenTreeLclVarCommon* store,
 
         for (int scanCount = 0; scanNode != nullptr && scanCount < scanLimit; scanCount++)
         {
-            // Stop scanning at control flow boundaries.
-            if (scanNode->OperIsConditionalJump() || scanNode->OperGet() == GT_JMP ||
-                scanNode->OperGet() == GT_RETURN || scanNode->OperGet() == GT_SWIFT_ERROR_RET)
-            {
-                break;
-            }
-
             // Check for a local read from the same variable that overlaps our store range
             // at a wider width.
             if (scanNode->OperIsLocalRead() && scanNode->AsLclVarCommon()->GetLclNum() == currLclNum)
