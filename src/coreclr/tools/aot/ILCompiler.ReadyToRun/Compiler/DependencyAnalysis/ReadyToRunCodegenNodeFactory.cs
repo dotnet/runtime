@@ -244,7 +244,7 @@ namespace ILCompiler.DependencyAnalysis
 
             CreateNodeCaches();
 
-            ObjectInterner = new ObjectDataInterner(new CopiedMethodILDeduplicator(_copiedMethodIL.Values));
+            ObjectInterner = new ObjectDataInterner(new CopiedMethodILDeduplicator(() => _copiedMethodIL.Values));
 
             if (genericCycleBreadthCutoff >= 0 || genericCycleDepthCutoff >= 0)
             {

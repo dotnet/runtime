@@ -10,18 +10,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public sealed class CopiedMethodILDeduplicator : IObjectDataDeduplicator
     {
-        private readonly IEnumerable<CopiedMethodILNode> _nodes;
+        private readonly Func<IEnumerable<CopiedMethodILNode>> _nodesProvider;
 
-        public CopiedMethodILDeduplicator(IEnumerable<CopiedMethodILNode> nodes)
+        public CopiedMethodILDeduplicator(Func<IEnumerable<CopiedMethodILNode>> nodesProvider)
         {
-            _nodes = nodes;
+            _nodesProvider = nodesProvider;
         }
 
         public void DeduplicatePass(NodeFactory factory, Dictionary<ISymbolNode, ISymbolNode> previousSymbolRemapping, Dictionary<ISymbolNode, ISymbolNode> symbolRemapping)
         {
-            var hashSet = new HashSet<InternKey>(new InternComparer(factory));
+            var hashSet = new HashSet<InternKey>(new InternComparer());
 
-            foreach (CopiedMethodILNode node in _nodes)
+            foreach (CopiedMethodILNode node in _nodesProvider())
             {
                 var key = new InternKey(node, factory);
                 if (hashSet.TryGetValue(key, out InternKey existing))
@@ -39,24 +39,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             public CopiedMethodILNode Node { get; }
             public int HashCode { get; }
+            public byte[] Data { get; }
 
             public InternKey(CopiedMethodILNode node, NodeFactory factory)
             {
                 Node = node;
 
-                ObjectNode.ObjectData data = node.GetData(factory, relocsOnly: false);
+                Data = node.GetData(factory, relocsOnly: false).Data;
                 var hashCode = new HashCode();
-                hashCode.AddBytes(data.Data);
+                hashCode.AddBytes(Data);
                 HashCode = hashCode.ToHashCode();
             }
         }
 
         private sealed class InternComparer : IEqualityComparer<InternKey>
         {
-            private readonly NodeFactory _factory;
-
-            public InternComparer(NodeFactory factory) => _factory = factory;
-
             public int GetHashCode(InternKey key) => key.HashCode;
 
             public bool Equals(InternKey a, InternKey b)
@@ -64,10 +61,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (a.HashCode != b.HashCode)
                     return false;
 
-                ObjectNode.ObjectData aData = a.Node.GetData(_factory, relocsOnly: false);
-                ObjectNode.ObjectData bData = b.Node.GetData(_factory, relocsOnly: false);
-
-                return aData.Data.AsSpan().SequenceEqual(bData.Data);
+                return a.Data.AsSpan().SequenceEqual(b.Data);
             }
         }
     }

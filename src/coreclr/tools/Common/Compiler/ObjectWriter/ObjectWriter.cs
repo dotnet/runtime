@@ -400,11 +400,14 @@ namespace ILCompiler.ObjectWriter
 
                 ISymbolNode symbolNode = node as ISymbolNode;
 
-                ISymbolNode deduplicatedSymbolNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode);
-                if (deduplicatedSymbolNode != symbolNode)
+                if (symbolNode is not null)
                 {
-                    dumper?.ReportFoldedNode(_nodeFactory, node, deduplicatedSymbolNode);
-                    continue;
+                    ISymbolNode deduplicatedSymbolNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode);
+                    if (deduplicatedSymbolNode != symbolNode)
+                    {
+                        dumper?.ReportFoldedNode(_nodeFactory, node, deduplicatedSymbolNode);
+                        continue;
+                    }
                 }
 
                 ObjectData nodeContents = node.GetData(_nodeFactory);
