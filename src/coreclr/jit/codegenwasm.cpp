@@ -2101,7 +2101,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     {
         var_types type = varDsc->GetRegisterType(tree);
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
-        GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(tree), tree->GetLclNum(), 0);
+        GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
         WasmProduceReg(tree);
     }
     else
