@@ -214,7 +214,7 @@
 
   <!-- Prevent GenFacades from generating a type forwarder for RequiresUnsafeAttribute in partial
        facade assemblies. The polyfill defines this type locally as internal, and GenFacades would
-       otherwise generate a conflicting type forwarder to CoreLib. -->
+       otherwise generate a conflicting type forwarder to CoreLib (CS0436/CS0729). -->
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <GenFacadesOmitType Include="System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute" />
   </ItemGroup>
