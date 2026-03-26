@@ -11304,102 +11304,116 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
 
     } while (true);
 
-    // After coalescing, if the store has a constant value, look ahead for an overlapped read
-    // from the same local. If found, we can bypass the store+load entirely
-    // by replacing the load with the constant value.
-    if (store->OperIs(GT_STORE_LCL_FLD) && store->Data()->OperIsConst() && store->Data()->IsCnsIntOrI() &&
-        !store->Data()->AsIntCon()->ImmedValNeedsReloc(m_compiler) &&
-        !m_compiler->lvaVarAddrExposed(store->GetLclNum()))
-    {
-        unsigned  lclNum    = store->GetLclNum();
-        unsigned  offset    = store->AsLclFld()->GetLclOffs();
-        var_types storeType = store->TypeGet();
-        unsigned  storeSize = genTypeSize(storeType);
-
-        GenTree*  scanNode  = store->gtNext;
-        const int scanLimit = 20;
-
-        for (int scanCount = 0; (scanNode != nullptr) && (scanCount < scanLimit); scanCount++)
-        {
-            // Found a read from the same local that may overlap our store.
-            if (scanNode->OperIs(GT_LCL_VAR, GT_LCL_FLD) && scanNode->OperIsLocalRead() &&
-                scanNode->AsLclVarCommon()->GetLclNum() == lclNum)
-            {
-                unsigned readOffset = scanNode->AsLclVarCommon()->GetLclOffs();
-                unsigned readSize   = genTypeSize(scanNode->TypeGet());
-                if (readSize == 0 && scanNode->TypeIs(TYP_STRUCT))
-                {
-                    readSize = scanNode->AsLclVarCommon()->GetLayout(m_compiler)->GetSize();
-                }
-
-                // The read must be fully contained within the store's range.
-                if (readOffset < offset || (readOffset + readSize) > (offset + storeSize))
-                {
-                    break; // Read extends outside the store — can't forward.
-                }
-
-                // Only forward to integral reads (not struct reads wider than a register).
-                if (!varTypeIsIntegral(scanNode->TypeGet()) && !scanNode->TypeIs(TYP_STRUCT))
-                {
-                    break;
-                }
-
-                // Verify the stored value can reach the load — the store's data must be
-                // invariant between the store and the load (no intervening modifications).
-                if (!IsInvariantInRange(store->Data(), scanNode))
-                {
-                    break;
-                }
-
-                // Extract the portion of the constant that corresponds to the read.
-                ssize_t  fullVal   = store->Data()->AsIntCon()->IconValue();
-                unsigned bitOffset = (readOffset - offset) * BITS_PER_BYTE;
-                size_t   readMask =
-                    (readSize >= sizeof(size_t)) ? ~(size_t)0 : ((size_t)1 << (readSize * BITS_PER_BYTE)) - 1;
-                ssize_t forwardVal = (ssize_t)(((size_t)fullVal >> bitOffset) & readMask);
-
-                // For the forwarded constant, use the read's type if it's integral,
-                // otherwise use the store type.
-                var_types fwdType = varTypeIsIntegral(scanNode->TypeGet()) ? scanNode->TypeGet() : storeType;
-
-                JITDUMP("Forwarding constant store [%06u] to load [%06u] for V%02u[+%u]: "
-                        "store value 0x%llx, forwarded value 0x%llx (read offset +%u, size %u)\n",
-                        m_compiler->dspTreeID(store), m_compiler->dspTreeID(scanNode), lclNum, readOffset,
-                        (unsigned long long)(size_t)fullVal, (unsigned long long)(size_t)forwardVal, readOffset,
-                        readSize);
-
-                // Create a new constant node and insert it in place of the load.
-                // Mark it with GTF_ICON_STRUCT_INIT_VAL so that TryTransformStoreObjAsStoreInd
-                // uses it as-is instead of treating the low byte as a fill pattern.
-                GenTree* newConst = m_compiler->gtNewIconNode(forwardVal, fwdType);
-                newConst->gtFlags |= GTF_ICON_STRUCT_INIT_VAL;
-                BlockRange().InsertAfter(scanNode, newConst);
-
-                // Replace all uses of the load with the new constant.
-                LIR::Use use;
-                if (BlockRange().TryGetUse(scanNode, &use))
-                {
-                    use.ReplaceWith(newConst);
-                }
-
-                // Remove the load node.
-                BlockRange().Remove(scanNode);
-
-                // The store may not be dead, so we leave it in place.
-                break;
-            }
-
-            // Stop at stores to the same local (would change the value).
-            if (scanNode->OperIsLocalStore() && scanNode->AsLclVarCommon()->GetLclNum() == lclNum)
-            {
-                break;
-            }
-
-            scanNode = scanNode->gtNext;
-        }
-    }
+    TryForwardConstantStoreLclFld(store);
 
 #endif // TARGET_XARCH || TARGET_ARM64
+}
+
+//------------------------------------------------------------------------
+// TryForwardConstantStoreLclFld: After store coalescing/folding, if the resulting store
+//    writes a constant to a non-address-exposed local, look ahead for a load from the same
+//    local that is fully contained within the store's range. If found, replace the load with
+//    the appropriate portion of the constant value.
+//
+// Arguments:
+//    store - the GT_STORE_LCL_FLD node with a constant value
+//
+void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
+{
+    if (!store->OperIs(GT_STORE_LCL_FLD) || !store->Data()->IsCnsIntOrI() ||
+        store->Data()->AsIntCon()->ImmedValNeedsReloc(m_compiler) ||
+        m_compiler->lvaVarAddrExposed(store->GetLclNum()))
+    {
+        return;
+    }
+
+    unsigned  lclNum    = store->GetLclNum();
+    unsigned  offset    = store->AsLclFld()->GetLclOffs();
+    var_types storeType = store->TypeGet();
+    unsigned  storeSize = genTypeSize(storeType);
+
+    GenTree*  scanNode  = store->gtNext;
+    const int scanLimit = 20;
+
+    for (int scanCount = 0; (scanNode != nullptr) && (scanCount < scanLimit); scanCount++)
+    {
+        // Found a read from the same local that may overlap our store.
+        if (scanNode->OperIs(GT_LCL_VAR, GT_LCL_FLD) && scanNode->OperIsLocalRead() &&
+            scanNode->AsLclVarCommon()->GetLclNum() == lclNum)
+        {
+            unsigned readOffset = scanNode->AsLclVarCommon()->GetLclOffs();
+            unsigned readSize   = genTypeSize(scanNode->TypeGet());
+            if (readSize == 0 && scanNode->TypeIs(TYP_STRUCT))
+            {
+                readSize = scanNode->AsLclVarCommon()->GetLayout(m_compiler)->GetSize();
+            }
+
+            // The read must be fully contained within the store's range.
+            if (readOffset < offset || (readOffset + readSize) > (offset + storeSize))
+            {
+                break;
+            }
+
+            // Only forward to integral reads (not struct reads wider than a register).
+            if (!varTypeIsIntegral(scanNode->TypeGet()) && !scanNode->TypeIs(TYP_STRUCT))
+            {
+                break;
+            }
+
+            // Verify the stored value can reach the load — the store's data must be
+            // invariant between the store and the load (no intervening modifications).
+            if (!IsInvariantInRange(store->Data(), scanNode))
+            {
+                break;
+            }
+
+            // Extract the portion of the constant that corresponds to the read.
+            ssize_t  fullVal    = store->Data()->AsIntCon()->IconValue();
+            unsigned bitOffset  = (readOffset - offset) * BITS_PER_BYTE;
+            size_t   readMask   = (readSize >= sizeof(size_t))
+                                    ? ~(size_t)0
+                                    : ((size_t)1 << (readSize * BITS_PER_BYTE)) - 1;
+            ssize_t  forwardVal = (ssize_t)(((size_t)fullVal >> bitOffset) & readMask);
+
+            // For the forwarded constant, use the read's type if it's integral,
+            // otherwise use the store type.
+            var_types fwdType = varTypeIsIntegral(scanNode->TypeGet()) ? scanNode->TypeGet() : storeType;
+
+            JITDUMP("Forwarding constant store [%06u] to load [%06u] for V%02u[+%u]: "
+                    "store value 0x%llx, forwarded value 0x%llx (read offset +%u, size %u)\n",
+                    m_compiler->dspTreeID(store), m_compiler->dspTreeID(scanNode), lclNum, readOffset,
+                    (unsigned long long)(size_t)fullVal, (unsigned long long)(size_t)forwardVal,
+                    readOffset, readSize);
+
+            // Create a new constant node and insert it in place of the load.
+            // Mark it with GTF_ICON_STRUCT_INIT_VAL so that TryTransformStoreObjAsStoreInd
+            // uses it as-is instead of treating the low byte as a fill pattern.
+            GenTree* newConst = m_compiler->gtNewIconNode(forwardVal, fwdType);
+            newConst->gtFlags |= GTF_ICON_STRUCT_INIT_VAL;
+            BlockRange().InsertAfter(scanNode, newConst);
+
+            // Replace all uses of the load with the new constant.
+            LIR::Use use;
+            if (BlockRange().TryGetUse(scanNode, &use))
+            {
+                use.ReplaceWith(newConst);
+            }
+
+            // Remove the load node.
+            BlockRange().Remove(scanNode);
+
+            // The store may not be dead, so we leave it in place.
+            break;
+        }
+
+        // Stop at stores to the same local (would change the value).
+        if (scanNode->OperIsLocalStore() && scanNode->AsLclVarCommon()->GetLclNum() == lclNum)
+        {
+            break;
+        }
+
+        scanNode = scanNode->gtNext;
+    }
 }
 
 //------------------------------------------------------------------------
