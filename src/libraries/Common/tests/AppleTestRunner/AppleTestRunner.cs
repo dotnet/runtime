@@ -168,7 +168,16 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 
     protected override string? IgnoreFilesDirectory => null;
 
-    protected override string IgnoredTraitsFilePath => Path.Combine(AppContext.BaseDirectory, "xunit-excludes.txt");
+    // NativeAOT excludes .txt files from the app bundle (Xcode.cs predefinedExcludes),
+    // so xunit-excludes.txt may not be present. Return empty string to skip trait filtering.
+    protected override string IgnoredTraitsFilePath
+    {
+        get
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "xunit-excludes.txt");
+            return File.Exists(path) ? path : string.Empty;
+        }
+    }
 
     public string BundleIdentifier => "net.dot." + s_MainTestName;
 
