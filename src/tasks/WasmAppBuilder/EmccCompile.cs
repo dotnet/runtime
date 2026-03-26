@@ -209,19 +209,21 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 string tmpObjFile = Path.GetTempFileName();
                 try
                 {
-                    string command = $"\"{CompilerBinaryPath}\" {Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
+                    string args = $"{Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
                     var startTime = DateTime.Now;
 
                     // Log the command in a compact format which can be copy pasted
                     StringBuilder envStr = new StringBuilder(string.Empty);
                     foreach (var key in envVarsDict.Keys)
                         envStr.Append($"{key}={envVarsDict[key]} ");
-                    Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}{command}");
-                    (int exitCode, string output) = Utils.RunShellCommand(
+                    Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}\"{CompilerBinaryPath}\" {args}");
+                    (int exitCode, string output) = Utils.TryRunProcess(
                                                             Log,
-                                                            command,
+                                                            CompilerBinaryPath,
+                                                            args,
                                                             envVarsDict,
                                                             workingDir: Environment.CurrentDirectory,
+                                                            silent: false,
                                                             logStdErrAsMessage: true,
                                                             debugMessageImportance: messageImportance,
                                                             label: Path.GetFileName(srcFile));
