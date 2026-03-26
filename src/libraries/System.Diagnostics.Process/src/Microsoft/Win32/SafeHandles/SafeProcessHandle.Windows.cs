@@ -86,9 +86,10 @@ namespace Microsoft.Win32.SafeHandles
                     }
                 }
 
-                SafeProcessHandle procSH = new(shellExecuteInfo.hProcess);
-                Debug.Assert(!procSH.IsInvalid);
-                return procSH;
+                // From https://learn.microsoft.com/windows/win32/api/shellapi/ns-shellapi-shellexecuteinfow:
+                // "In some cases, such as when execution is satisfied through a DDE conversation, no handle will be returned."
+                // Process.Start will return false if the handle is invalid.
+                return new SafeProcessHandle(shellExecuteInfo.hProcess);
             }
         }
 

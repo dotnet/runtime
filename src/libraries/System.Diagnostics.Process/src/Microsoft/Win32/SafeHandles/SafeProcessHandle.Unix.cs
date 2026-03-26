@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
@@ -23,8 +26,22 @@ namespace Microsoft.Win32.SafeHandles
         // Process.{Safe}Handle to initialize and use a WaitHandle to successfully use it on
         // Unix as well to wait for the process to complete.
 
+        /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
+        internal ProcessWaitState.Holder? _waitStateHolder;
+
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
+
+        private SafeProcessHandle(int processId, bool usesTerminal) : base(ownsHandle: true)
+        {
+            ProcessId = processId;
+
+            // Ensure we'll reap this process.
+            _waitStateHolder = new ProcessWaitState.Holder(processId, isNewChild: true, usesTerminal);
+            _handle = _waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
+            _handle.DangerousAddRef(ref _releaseRef);
+            SetHandle(_handle.DangerousGetHandle());
+        }
 
         internal SafeProcessHandle(int processId, SafeWaitHandle handle) :
             this(handle.DangerousGetHandle(), ownsHandle: true)
@@ -40,6 +57,8 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Debug.Assert(_handle != null);
                 _handle.DangerousRelease();
+
+                _waitStateHolder?.Dispose();
             }
             return true;
         }
@@ -109,7 +128,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
 
                 // use default program to open file/url
-                filename = GetPathToOpenFile();
+                filename = Process.GetPathToOpenFile();
                 argv = ProcessUtils.ParseArgv(startInfo, filename, ignoreArguments: true);
 
                 return ForkAndExecProcess(
@@ -142,9 +161,11 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (string.IsNullOrEmpty(resolvedFilename))
             {
-                Interop.ErrorInfo errno = Interop.Error.ENOENT.Info();
-                throw ProcessUtils.CreateExceptionForErrorStartingProcess(errno.GetErrorMessage(), errno.RawErrno, startInfo.FileName, cwd);
+                Interop.ErrorInfo error = Interop.Error.ENOENT.Info();
+                throw ProcessUtils.CreateExceptionForErrorStartingProcess(error.GetErrorMessage(), error.RawErrno, startInfo.FileName, cwd);
             }
+
+            int childPid, errno;
 
             // Lock to avoid races with OnSigChild
             // By using a ReaderWriterLock we allow multiple processes to start concurrently.
@@ -156,54 +177,41 @@ namespace Microsoft.Win32.SafeHandles
                     ProcessUtils.ConfigureTerminalForChildProcesses(1);
                 }
 
-                int childPid;
-
                 // Invoke the shim fork/execve routine.  It will fork a child process,
                 // map the provided file handles onto the appropriate stdin/stdout/stderr
                 // descriptors, and execve to execute the requested process.  The shim implementation
                 // is used to fork/execve as executing managed code in a forked process is not safe (only
                 // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
-                int errno = Interop.Sys.ForkAndExecProcess(
+                errno = Interop.Sys.ForkAndExecProcess(
                     resolvedFilename, argv, envp, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle);
-
-                if (errno == 0)
-                {
-                    // Ensure we'll reap this process.
-                    // note: SetProcessId will set this if we don't set it first.
-                    _waitStateHolder = new ProcessWaitState.Holder(childPid, isNewChild: true, usesTerminal);
-
-                    // Store the child's information into this Process object.
-                    Debug.Assert(childPid >= 0);
-                    SetProcessId(childPid);
-                    SetProcessHandle(new SafeProcessHandle(_processId, GetSafeWaitHandle()));
-
-                    return true;
-                }
-                else
-                {
-                    if (!throwOnNoExec &&
-                        new Interop.ErrorInfo(errno).Error == Interop.Error.ENOEXEC)
-                    {
-                        return false;
-                    }
-
-                    throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
-                }
             }
             finally
             {
                 ProcessUtils.s_processStartLock.ExitReadLock();
+            }
 
-                if (_waitStateHolder == null && usesTerminal)
+            if (errno != 0)
+            {
+                if (usesTerminal)
                 {
                     // We failed to launch a child that could use the terminal.
                     ProcessUtils.s_processStartLock.EnterWriteLock();
                     ProcessUtils.ConfigureTerminalForChildProcesses(-1);
                     ProcessUtils.s_processStartLock.ExitWriteLock();
                 }
+
+                if (!throwOnNoExec &&
+                    new Interop.ErrorInfo(errno).Error == Interop.Error.ENOEXEC)
+                {
+                    return InvalidHandle;
+                }
+
+                throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
             }
+
+            return new SafeProcessHandle(childPid, usesTerminal);
         }
     }
 }
