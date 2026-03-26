@@ -116,7 +116,8 @@ namespace System.Reflection
             }
 
             // Resolve the core assembly now
-            _coreTypes = new CoreTypes(this, coreAssemblyName);
+            _coreAssembly = LoadCoreAssembly(coreAssemblyName);
+            _coreTypes = new CoreTypes(_coreAssembly, coreAssemblyName);
         }
 
         /// <summary>
@@ -240,7 +241,7 @@ namespace System.Reflection
         ///   type, the necessary constructor or any of the parameter types of the constructor, the MetadataLoadContext will not throw. It will omit the pseudo-custom
         ///   attribute from the list of returned attributes.
         /// </summary>
-        public Assembly? CoreAssembly
+        public Assembly CoreAssembly
         {
             get
             {
