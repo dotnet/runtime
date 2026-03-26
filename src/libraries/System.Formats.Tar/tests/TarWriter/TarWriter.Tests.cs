@@ -60,6 +60,19 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new TarWriter(archiveStream, (TarEntryFormat)int.MaxValue));
         }
 
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Constructor_Options_Format(TarEntryFormat format)
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+            TarWriterOptions options = new TarWriterOptions() { Format = format };
+            using TarWriter writer = new TarWriter(archiveStream, options, leaveOpen: true);
+            Assert.Equal(format, writer.Format);
+        }
+
         [Fact]
         public void Constructors_UnwritableStream_Throws()
         {

@@ -1531,11 +1531,84 @@ namespace System.StubHelpers
 
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void GetIEnumeratorToEnumVariantMarshaler(object* pResult, Exception* pException)
         {
             try
             {
                 *pResult = GetIEnumeratorToEnumVariantMarshaler();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        private const int DispatchExPropertyCanRead = 1;
+        private const int DispatchExPropertyCanWrite = 2;
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe int GetDispatchExPropertyFlags(PropertyInfo* pMemberInfo, Exception* pException)
+        {
+            try
+            {
+                int result = 0;
+                PropertyInfo property = *pMemberInfo;
+                if (property.CanRead)
+                {
+                    result |= DispatchExPropertyCanRead;
+                }
+
+                if (property.CanWrite)
+                {
+                    result |= DispatchExPropertyCanWrite;
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return 0;
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe int CallICustomQueryInterface(ICustomQueryInterface* pObject, Guid* pIid, IntPtr* ppObject, Exception* pException)
+        {
+            try
+            {
+                return (int)(*pObject).GetInterface(ref *pIid, out *ppObject);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return 0;
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void InvokeConnectionPointProviderMethod(
+            object* pProvider,
+            delegate*<object, object?, void> providerMethodEntryPoint,
+            object* pDelegate,
+            delegate*<object, object?, nint, void> delegateCtorMethodEntryPoint,
+            object* pSubscriber,
+            nint pEventMethodCodePtr,
+            Exception* pException)
+        {
+            try
+            {
+                // Construct the delegate before invoking the provider method.
+                delegateCtorMethodEntryPoint(*pDelegate, *pSubscriber, pEventMethodCodePtr);
+
+                providerMethodEntryPoint(*pProvider, *pDelegate);
             }
             catch (Exception ex)
             {
