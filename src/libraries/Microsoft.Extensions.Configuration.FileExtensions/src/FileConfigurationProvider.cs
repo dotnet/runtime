@@ -102,16 +102,17 @@ namespace Microsoft.Extensions.Configuration
                     }
                     catch (Exception ex)
                     {
-                        throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
+                        if (reload)
+                        {
+                            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                        }
+                        throw ex;
                     }
                 }
                 catch (Exception ex)
                 {
-                    if (reload)
-                    {
-                        Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-                    }
-                    HandleException(ExceptionDispatchInfo.Capture(ex));
+                    var exception = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
+                    HandleException(ExceptionDispatchInfo.Capture(exception));
                 }
             }
             // REVIEW: Should we raise this in the base as well / instead?
