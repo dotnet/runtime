@@ -235,6 +235,9 @@ namespace System.Text.RegularExpressions.Tests
             // nesting level, so at depth 15+ the estimate exceeds the default 10,000 threshold.
             // Build: (?:(?:(?:a)*)*?)* ... with alternating greedy/lazy quantifiers at each level
             {
+                // 20 levels → 2^20 = 1,048,576 estimated singletons, well above the 10,000
+                // default threshold. 15 would be the minimum to exceed threshold (2^15 = 32,768)
+                // but 20 provides margin.
                 const int depth = 20;
                 var sb = new StringBuilder();
                 for (int i = 0; i < depth; i++)
@@ -249,6 +252,31 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
                 RegexNode tree = RegexParser.Parse(sb.ToString(), options, CultureInfo.CurrentCulture).Root;
+                SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
+                yield return new object[] { rootNode };
+            }
+
+            // Deeply nested capturing loops also cause exponential blowup. CountSingletons
+            // looks through Concat/Effect wrappers (captures) to detect nested unbounded loops.
+            // Build: ((((a)*)*)...)*  at depth 20 with capturing groups
+            {
+                // Same reasoning as above: 20 levels → estimated singletons well above threshold.
+                const int depth = 20;
+                var sb = new StringBuilder();
+                for (int i = 0; i < depth; i++)
+                {
+                    sb.Append('(');
+                }
+
+                sb.Append('a');
+                for (int i = 0; i < depth; i++)
+                {
+                    sb.Append(")*");
+                }
+
+                // Use default options (not ExplicitCapture) so groups are capturing
+                RegexOptions capturingOptions = RegexOptions.NonBacktracking;
+                RegexNode tree = RegexParser.Parse(sb.ToString(), capturingOptions, CultureInfo.CurrentCulture).Root;
                 SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
                 yield return new object[] { rootNode };
             }

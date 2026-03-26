@@ -2319,16 +2319,19 @@ namespace System.Text.RegularExpressions.Symbolic
                         {
                             int bodyCount = _left.CountSingletons();
 
-                            // When an unbounded loop's body is itself an unbounded loop, the derivative
-                            // computation creates a 2-way Alternate at each nesting level (because the
-                            // Concat derivative branches when its left side is nullable). This means
-                            // the per-character derivative cost doubles with each such nesting level.
-                            // Account for this so that the NFA size estimate catches deeply nested
-                            // patterns that would cause exponential blowup.
+                            // When an unbounded loop's body contains another unbounded loop, the
+                            // derivative computation creates a 2-way Alternate at each nesting level
+                            // (because the Concat derivative branches when its left side is nullable).
+                            // This means the per-character derivative cost doubles with each such
+                            // nesting level. Account for this so that the NFA size estimate catches
+                            // deeply nested patterns that would cause exponential blowup.
                             // Note: RegexNode.ReduceLoops already collapses same-laziness non-capturing
                             // nested loops before the symbolic engine sees them, so this multiplier
                             // primarily fires for patterns with captures or mixed laziness.
-                            if (_left._kind == SymbolicRegexNodeKind.Loop && _left._upper == int.MaxValue)
+                            // For capturing patterns like ((a)*)*, the inner loop is wrapped in
+                            // Concat(CaptureStart, Concat(Loop, CaptureEnd)), so we search through
+                            // structural wrappers to find nested unbounded loops.
+                            if (ContainsNestedUnboundedLoop(_left))
                             {
                                 return Times(2, bodyCount);
                             }
@@ -2360,6 +2363,33 @@ namespace System.Text.RegularExpressions.Symbolic
                     // All the other nodes contribute 0 to the overall count
                     // because they contain no children and therefore no singletons
                     return 0;
+            }
+        }
+
+        /// <summary>
+        /// Checks whether a node contains an unbounded loop (Loop with _upper == int.MaxValue)
+        /// reachable through structural wrappers (Concat, Effect, DisableBacktrackingSimulation).
+        /// Used by CountSingletons to detect nested unbounded loops even when captures or other
+        /// structural nodes are interposed between the loops.
+        /// </summary>
+        private static bool ContainsNestedUnboundedLoop(SymbolicRegexNode<TSet> node)
+        {
+            switch (node._kind)
+            {
+                case SymbolicRegexNodeKind.Loop:
+                    return node._upper == int.MaxValue;
+
+                case SymbolicRegexNodeKind.Concat:
+                    Debug.Assert(node._left is not null && node._right is not null);
+                    return ContainsNestedUnboundedLoop(node._left) || ContainsNestedUnboundedLoop(node._right);
+
+                case SymbolicRegexNodeKind.Effect:
+                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                    Debug.Assert(node._left is not null);
+                    return ContainsNestedUnboundedLoop(node._left);
+
+                default:
+                    return false;
             }
         }
 
