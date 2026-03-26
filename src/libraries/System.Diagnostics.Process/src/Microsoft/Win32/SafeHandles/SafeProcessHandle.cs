@@ -47,6 +47,16 @@ namespace Microsoft.Win32.SafeHandles
 
         internal int ProcessId { get; private set; }
 
+        /// <summary>
+        /// Starts a process using the specified <see cref="ProcessStartInfo"/>.
+        /// </summary>
+        /// <param name="startInfo">The process start information.</param>
+        /// <returns>A <see cref="SafeProcessHandle"/> representing the started process.</returns>
+        /// <remarks>
+        /// On Windows, when <see cref="ProcessStartInfo.UseShellExecute"/> is <see langword="true"/>,
+        /// the process is started using ShellExecuteEx. In some cases, such as when execution
+        /// is satisfied through a DDE conversation, the returned handle will be invalid.
+        /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -58,9 +68,10 @@ namespace Microsoft.Win32.SafeHandles
             if (anyRedirection)
             {
                 // Process has .StandardInput, .StandardOutput, or .StandardError APIs that can express
-                // redirection of streams, but this API doesn't support it.
-                // The caller should use Process.Start(ProcessStartInfo) instead.
-                throw new InvalidOperationException("Redirection of streams is not supported by this API.");
+                // redirection of streams, but SafeProcessHandle doesn't.
+                // The caller can provide handles via the StandardInputHandle, StandardOutputHandle,
+                // and StandardErrorHandle properties.
+                throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
             }
 
             SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);

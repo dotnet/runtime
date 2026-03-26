@@ -114,7 +114,7 @@ namespace System.Diagnostics
 #pragma warning restore IDE0060
 
         /// <summary>Gets execution path</summary>
-        private static string GetPathToOpenFile()
+        internal static string GetPathToOpenFile()
         {
             throw new PlatformNotSupportedException();
         }

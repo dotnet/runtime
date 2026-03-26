@@ -20,23 +20,6 @@ namespace System.Diagnostics
         private bool _haveResponding;
         private bool _responding;
 
-        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
-        {
-            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle);
-
-            if (startedProcess.IsInvalid)
-            {
-                return false;
-            }
-
-            SetProcessHandle(startedProcess);
-            if (!startInfo.UseShellExecute)
-            {
-                SetProcessId(startedProcess.ProcessId);
-            }
-            return true;
-        }
-
         private string GetMainWindowTitle()
         {
             IntPtr handle = MainWindowHandle;

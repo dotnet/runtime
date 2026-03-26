@@ -159,6 +159,13 @@ namespace System.Diagnostics
             GetWaitState();
         }
 
+        partial void ConfigureAfterProcessStart(SafeProcessHandle safeProcessHandle)
+        {
+            // Transfer the ownership of the wait state holder from the SafeProcessHandle to the Process,
+            // so that the Process can track it and ensure it gets cleaned up when the Process is disposed.
+            _waitStateHolder = Interlocked.Exchange(ref safeProcessHandle._waitStateHolder, null);
+        }
+
         /// <devdoc>
         ///     Make sure we are watching for a process exit.
         /// </devdoc>
@@ -354,24 +361,6 @@ namespace System.Diagnostics
             EnsureState(State.HaveNonExitedId | State.IsLocal);
             return new SafeProcessHandle(_processId, GetSafeWaitHandle());
         }
-
-        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
-        {
-            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle);
-
-            if (startedProcess.IsInvalid)
-            {
-                return false;
-            }
-
-            SetProcessHandle(startedProcess);
-            if (!startInfo.UseShellExecute)
-            {
-                SetProcessId(startedProcess.ProcessId);
-            }
-            return true;
-        }
-
 
         /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
         private ProcessWaitState.Holder? _waitStateHolder;
