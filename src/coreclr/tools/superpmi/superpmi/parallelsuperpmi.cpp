@@ -23,6 +23,13 @@
 // that cause build breaks.
 std::string ConvertToUtf8(const WCHAR* str);
 
+// Platform-specific process handle type.
+#ifdef TARGET_UNIX
+typedef pid_t SpmiProcessHandle;
+#else
+typedef HANDLE SpmiProcessHandle;
+#endif // TARGET_UNIX
+
 #define MAX_LOG_LINE_SIZE 0x1000 // 4 KB
 
 volatile bool closeRequested = false; // global variable to communicate CTRL+C between threads.
@@ -610,80 +617,243 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
     return spmiArgs;
 }
 
+//-------------------------------------------------------------
+// RegisterCtrlHandler: Installs the Ctrl-C / SIGINT handler.
+//
+static bool RegisterCtrlHandler()
+{
+#ifdef TARGET_UNIX
+    signal(SIGINT, PosixCtrlHandler);
+    return true;
+#else
+    if (!SetConsoleCtrlHandler(CtrlHandler, TRUE))
+    {
+        LogError("Failed to set control handler.");
+        return false;
+    }
+    return true;
+#endif // TARGET_UNIX
+}
+
+//-------------------------------------------------------------
+// GetTempFolderPath: Gets the path to the temporary folder.
+//
+static bool GetTempFolderPath(char* tempPath)
+{
+#ifdef TARGET_UNIX
+    const char* tmpDir = getenv("TMPDIR");
+    if (tmpDir == nullptr)
+        tmpDir = "/tmp";
+    snprintf(tempPath, MAX_PATH, "%s/", tmpDir);
+    return true;
+#else
+    if (!GetTempPath(MAX_PATH, tempPath))
+    {
+        LogError("Failed to get path to temp folder.");
+        return false;
+    }
+    return true;
+#endif // TARGET_UNIX
+}
+
+//-------------------------------------------------------------
+// GetDefaultWorkerCount: Returns the default number of worker processes
+// (the number of online processors, capped at MAXIMUM_WAIT_OBJECTS on Windows).
+//
+static int GetDefaultWorkerCount()
+{
+#ifdef TARGET_UNIX
+    long nprocs = sysconf(_SC_NPROCESSORS_ONLN);
+    return (nprocs > 0) ? (int)nprocs : 1;
+#else
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+
+    int count = (int)sysinfo.dwNumberOfProcessors;
+
+    // If we ever execute on a machine which has more than MAXIMUM_WAIT_OBJECTS(64) CPU cores
+    // we still can't spawn more than the max supported by WaitForMultipleObjects()
+    if (count > MAXIMUM_WAIT_OBJECTS)
+        count = MAXIMUM_WAIT_OBJECTS;
+
+    return count;
+#endif // TARGET_UNIX
+}
+
+//-------------------------------------------------------------
+// GetCurrentExePath: Fills `path` with the full path of the running executable.
+//
+static bool GetCurrentExePath(char* path)
+{
+#ifdef TARGET_UNIX
+    char* exePath = minipal_getexepath();
+    if (exePath == nullptr)
+    {
+        LogError("Failed to get current exe path.");
+        return false;
+    }
+    strncpy(path, exePath, MAX_PATH - 1);
+    path[MAX_PATH - 1] = '\0';
+    free(exePath);
+    return true;
+#else
+    if (!GetModuleFileName(NULL, path, MAX_PATH))
+    {
+        LogError("Failed to get current exe path.");
+        return false;
+    }
+    return true;
+#endif // TARGET_UNIX
+}
+
+//-------------------------------------------------------------
+// OpenWorkerOutputFiles: Opens the stdout and stderr redirect files for one worker.
+//
+static bool OpenWorkerOutputFiles(PerWorkerData& wd, int workerIndex)
+{
+#ifdef TARGET_UNIX
+    LogDebug("stdout %i=%s", workerIndex, wd.stdOutputPath);
+    wd.hStdOutput = open(wd.stdOutputPath, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
+    if (wd.hStdOutput == -1)
+    {
+        LogError("Unable to open '%s'. errno=%d", wd.stdOutputPath, errno);
+        return false;
+    }
+
+    LogDebug("stderr %i=%s", workerIndex, wd.stdErrorPath);
+    wd.hStdError = open(wd.stdErrorPath, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
+    if (wd.hStdError == -1)
+    {
+        LogError("Unable to open '%s'. errno=%d", wd.stdErrorPath, errno);
+        return false;
+    }
+#else
+    SECURITY_ATTRIBUTES sa;
+    sa.nLength              = sizeof(sa);
+    sa.lpSecurityDescriptor = NULL;
+    sa.bInheritHandle       = TRUE; // Let newly created stdout/stderr handles be inherited.
+
+    LogDebug("stdout %i=%s", workerIndex, wd.stdOutputPath);
+    wd.hStdOutput = CreateFileA(wd.stdOutputPath, GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS,
+                                FILE_ATTRIBUTE_NORMAL, NULL);
+    if (wd.hStdOutput == INVALID_HANDLE_VALUE)
+    {
+        LogError("Unable to open '%s'. GetLastError()=%u", wd.stdOutputPath, GetLastError());
+        return false;
+    }
+
+    LogDebug("stderr %i=%s", workerIndex, wd.stdErrorPath);
+    wd.hStdError = CreateFileA(wd.stdErrorPath, GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS,
+                               FILE_ATTRIBUTE_NORMAL, NULL);
+    if (wd.hStdError == INVALID_HANDLE_VALUE)
+    {
+        LogError("Unable to open '%s'. GetLastError()=%u", wd.stdErrorPath, GetLastError());
+        return false;
+    }
+#endif // TARGET_UNIX
+    return true;
+}
+
+//-------------------------------------------------------------
+// CloseWorkerOutputFiles: Closes the stdout and stderr redirect files for one worker.
+//
+static void CloseWorkerOutputFiles(PerWorkerData& wd)
+{
+#ifdef TARGET_UNIX
+    close(wd.hStdOutput);
+    close(wd.hStdError);
+#else
+    CloseHandle(wd.hStdOutput);
+    CloseHandle(wd.hStdError);
+#endif // TARGET_UNIX
+}
+
+//-------------------------------------------------------------
+// WaitForWorkerProcesses: Waits for all worker processes to finish.
+//
+// Returns an int array of per-worker exit codes (caller must free with FreeWorkerExitCodes),
+// or nullptr on Windows (exit codes are retrieved lazily via GetWorkerExitCode).
+//
+static int* WaitForWorkerProcesses(SpmiProcessHandle* handles, int count)
+{
+#ifdef TARGET_UNIX
+    int* exitCodes = new int[count];
+    for (int i = 0; i < count; i++)
+    {
+        int status;
+        if (waitpid(handles[i], &status, 0) == -1)
+        {
+            LogError("waitpid failed for child %d: %s", i, strerror(errno));
+            exitCodes[i] = -1;
+        }
+        else if (WIFEXITED(status))
+        {
+            exitCodes[i] = WEXITSTATUS(status);
+        }
+        else
+        {
+            // Terminated by a signal (e.g., OOM killer).
+            exitCodes[i] = -1;
+        }
+    }
+    return exitCodes;
+#else
+    WaitForMultipleObjects(count, handles, true, INFINITE);
+    return nullptr;
+#endif // TARGET_UNIX
+}
+
+//-------------------------------------------------------------
+// GetWorkerExitCode: Retrieves the exit code for one worker.
+//
+// Returns true and sets exitCode on success; returns false if the exit code is unavailable.
+//
+static bool GetWorkerExitCode(SpmiProcessHandle* handles, int* exitCodes, int workerIndex, unsigned& exitCode)
+{
+#ifdef TARGET_UNIX
+    if (exitCodes[workerIndex] == -1)
+        return false;
+    exitCode = (unsigned)exitCodes[workerIndex];
+    return true;
+#else
+    DWORD code;
+    if (!GetExitCodeProcess(handles[workerIndex], &code))
+        return false;
+    exitCode = (unsigned)code;
+    return true;
+#endif // TARGET_UNIX
+}
+
+//-------------------------------------------------------------
+// FreeWorkerExitCodes: Frees the array returned by WaitForWorkerProcesses.
+//
+static void FreeWorkerExitCodes(int* exitCodes)
+{
+#ifdef TARGET_UNIX
+    delete[] exitCodes;
+#endif // TARGET_UNIX
+}
+
 int doParallelSuperPMI(CommandLine::Options& o)
 {
     HRESULT     hr = E_FAIL;
     SimpleTimer st;
     st.Start();
 
-#ifdef TARGET_UNIX
-    // Register a SIGINT handler so Ctrl-C sets closeRequested gracefully.
-    signal(SIGINT, PosixCtrlHandler);
-#else
-    // Register a ConsoleCtrlHandler
-    if (!SetConsoleCtrlHandler(CtrlHandler, TRUE))
-    {
-        LogError("Failed to set control handler.");
+    if (!RegisterCtrlHandler())
         return 1;
-    }
-#endif // TARGET_UNIX
 
     char tempPath[MAX_PATH];
-#ifdef TARGET_UNIX
-    {
-        const char* tmpDir = getenv("TMPDIR");
-        if (tmpDir == nullptr)
-            tmpDir = "/tmp";
-        snprintf(tempPath, MAX_PATH, "%s/", tmpDir);
-    }
-#else
-    if (!GetTempPath(MAX_PATH, tempPath))
-    {
-        LogError("Failed to get path to temp folder.");
+    if (!GetTempFolderPath(tempPath))
         return 1;
-    }
-#endif // TARGET_UNIX
 
     if (o.workerCount <= 0)
-    {
-        // Use the default value which is the number of processors on the machine.
-#ifdef TARGET_UNIX
-        long nprocs   = sysconf(_SC_NPROCESSORS_ONLN);
-        o.workerCount = (nprocs > 0) ? (int)nprocs : 1;
-#else
-        SYSTEM_INFO sysinfo;
-        GetSystemInfo(&sysinfo);
-
-        o.workerCount = sysinfo.dwNumberOfProcessors;
-
-        // If we ever execute on a machine which has more than MAXIMUM_WAIT_OBJECTS(64) CPU cores
-        // we still can't spawn more than the max supported by WaitForMultipleObjects()
-        if (o.workerCount > MAXIMUM_WAIT_OBJECTS)
-            o.workerCount = MAXIMUM_WAIT_OBJECTS;
-#endif // TARGET_UNIX
-    }
+        o.workerCount = GetDefaultWorkerCount();
 
     // Obtain the path of the current executable, which we will use to spawn ourself.
     char* spmiFilename = new char[MAX_PATH];
-#ifdef TARGET_UNIX
-    {
-        char* exePath = minipal_getexepath();
-        if (exePath == nullptr)
-        {
-            LogError("Failed to get current exe path.");
-            return 1;
-        }
-        strncpy(spmiFilename, exePath, MAX_PATH - 1);
-        spmiFilename[MAX_PATH - 1] = '\0';
-        free(exePath);
-    }
-#else
-    if (!GetModuleFileName(NULL, spmiFilename, MAX_PATH))
-    {
-        LogError("Failed to get current exe path.");
+    if (!GetCurrentExePath(spmiFilename))
         return 1;
-    }
-#endif // TARGET_UNIX
 
     char* spmiArgs = ConstructChildProcessArgs(o);
 
@@ -727,12 +897,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
     cmdLine[0] = '\0';
     int bytesWritten;
 
-#ifdef TARGET_UNIX
-    pid_t* hProcesses = new pid_t[o.workerCount];
-#else
-    HANDLE* hProcesses = new HANDLE[o.workerCount];
-#endif // TARGET_UNIX
-
+    SpmiProcessHandle* hProcesses = new SpmiProcessHandle[o.workerCount];
     for (int i = 0; i < o.workerCount; i++)
     {
         bytesWritten = sprintf_s(cmdLine, MAX_CMDLINE_SIZE, "%s -stride %d %d", spmiFilename, i + 1, o.workerCount);
@@ -753,90 +918,19 @@ int doParallelSuperPMI(CommandLine::Options& o)
 
         bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -v ewmin %s", spmiArgs);
 
-#ifdef TARGET_UNIX
-        LogDebug("stdout %i=%s", i, wd.stdOutputPath);
-        wd.hStdOutput = open(wd.stdOutputPath, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
-        if (wd.hStdOutput == -1)
-        {
-            LogError("Unable to open '%s'. errno=%d", wd.stdOutputPath, errno);
+        if (!OpenWorkerOutputFiles(wd, i))
             return -1;
-        }
-
-        LogDebug("stderr %i=%s", i, wd.stdErrorPath);
-        wd.hStdError = open(wd.stdErrorPath, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
-        if (wd.hStdError == -1)
-        {
-            LogError("Unable to open '%s'. errno=%d", wd.stdErrorPath, errno);
-            return -1;
-        }
-#else
-        SECURITY_ATTRIBUTES sa;
-        sa.nLength              = sizeof(sa);
-        sa.lpSecurityDescriptor = NULL;
-        sa.bInheritHandle       = TRUE; // Let newly created stdout/stderr handles be inherited.
-
-        LogDebug("stdout %i=%s", i, wd.stdOutputPath);
-        wd.hStdOutput = CreateFileA(wd.stdOutputPath, GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS,
-                                    FILE_ATTRIBUTE_NORMAL, NULL);
-        if (wd.hStdOutput == INVALID_HANDLE_VALUE)
-        {
-            LogError("Unable to open '%s'. GetLastError()=%u", wd.stdOutputPath, GetLastError());
-            return -1;
-        }
-
-        LogDebug("stderr %i=%s", i, wd.stdErrorPath);
-        wd.hStdError = CreateFileA(wd.stdErrorPath, GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS,
-                                   FILE_ATTRIBUTE_NORMAL, NULL);
-        if (wd.hStdError == INVALID_HANDLE_VALUE)
-        {
-            LogError("Unable to open '%s'. GetLastError()=%u", wd.stdErrorPath, GetLastError());
-            return -1;
-        }
-#endif // TARGET_UNIX
 
         // Create a SuperPMI worker process and redirect its output to file
         if (!StartProcess(cmdLine, wd.hStdOutput, wd.hStdError, &hProcesses[i]))
-        {
             return -1;
-        }
     }
 
-#ifdef TARGET_UNIX
-    // Wait for all child processes and collect their exit codes.
-    int* exitCodes = new int[o.workerCount];
-    for (int i = 0; i < o.workerCount; i++)
-    {
-        int status;
-        if (waitpid(hProcesses[i], &status, 0) == -1)
-        {
-            LogError("waitpid failed for child %d: %s", i, strerror(errno));
-            exitCodes[i] = -1;
-        }
-        else if (WIFEXITED(status))
-        {
-            exitCodes[i] = WEXITSTATUS(status);
-        }
-        else
-        {
-            // Terminated by a signal (e.g., OOM killer).
-            exitCodes[i] = -1;
-        }
-    }
-#else
-    WaitForMultipleObjects(o.workerCount, hProcesses, true, INFINITE);
-#endif // TARGET_UNIX
+    int* exitCodes = WaitForWorkerProcesses(hProcesses, o.workerCount);
 
     // Close stdout/stderr
     for (int i = 0; i < o.workerCount; i++)
-    {
-#ifdef TARGET_UNIX
-        close(perWorkerData[i].hStdOutput);
-        close(perWorkerData[i].hStdError);
-#else
-        CloseHandle(perWorkerData[i].hStdOutput);
-        CloseHandle(perWorkerData[i].hStdError);
-#endif // TARGET_UNIX
-    }
+        CloseWorkerOutputFiles(perWorkerData[i]);
 
     SpmiResult result = SpmiResult::Success;
 
@@ -846,13 +940,8 @@ int doParallelSuperPMI(CommandLine::Options& o)
         // Mainly, if any child returns non-zero, we want to return non-zero, to indicate failure.
         for (int i = 0; i < o.workerCount; i++)
         {
-#ifdef TARGET_UNIX
-            int  exitCodeTmp = exitCodes[i];
-            bool ok          = (exitCodeTmp != -1);
-#else
-            DWORD exitCodeTmp;
-            bool  ok = GetExitCodeProcess(hProcesses[i], &exitCodeTmp) != FALSE;
-#endif // TARGET_UNIX
+            unsigned exitCodeTmp;
+            bool     ok = GetWorkerExitCode(hProcesses, exitCodes, i, exitCodeTmp);
             if (ok)
             {
                 SpmiResult childResult = (SpmiResult)exitCodeTmp;
@@ -868,7 +957,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
 
                 default:
                     // We may get here for OOM-killed, for example.
-                    LogError("Child process %d exited with code %u", i, (unsigned)exitCodeTmp);
+                    LogError("Child process %d exited with code %u", i, exitCodeTmp);
                     childResult = SpmiResult::GeneralFailure;
                     break;
                 }
@@ -952,9 +1041,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
         LogVerbose("Total time: %fms", st.GetMilliseconds());
     }
 
-#ifdef TARGET_UNIX
-    delete[] exitCodes;
-#endif // TARGET_UNIX
+    FreeWorkerExitCodes(exitCodes);
 
     if (!o.skipCleanup)
     {
