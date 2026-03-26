@@ -12,7 +12,7 @@
     </type>
   </assembly>
   <!-- The following attributes are only necessary when debugging is supported -->
-  <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">
+  <assembly fullname="*" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">
     <type fullname="System.Diagnostics.DebuggableAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
@@ -42,13 +42,13 @@
     </type>
   </assembly>
 
-  <assembly fullname="System.Private.CoreLib" feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="false">
+  <assembly fullname="*" feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="false">
     <type fullname="System.Reflection.Metadata.MetadataUpdateHandlerAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
   </assembly>
 
-  <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
+  <assembly fullname="*" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
     <type fullname="System.Diagnostics.Tracing.EventSourceAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
@@ -70,7 +70,7 @@
   </assembly>
 
   <!-- The following attributes are only necessary when COM is supported -->
-  <assembly fullname="System.Private.CoreLib" feature="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" featurevalue="false">
+  <assembly fullname="*" feature="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" featurevalue="false">
     <type fullname="System.Runtime.InteropServices.ClassInterfaceAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>

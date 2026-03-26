@@ -70,6 +70,9 @@
       <!-- Reflection.Emit doesn't work with native AOT -->
       <NativeAotIncompatible>true</NativeAotIncompatible>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="MetadataUpdateHandlerTrimmed.cs">
+      <DisabledFeatureSwitches>System.Reflection.Metadata.MetadataUpdater.IsSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolFalse.cs">
