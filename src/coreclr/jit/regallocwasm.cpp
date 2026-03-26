@@ -557,6 +557,9 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 
     LIR::ReadOnlyRange storeRange(store, store);
     m_compiler->GetLowering()->LowerRange(m_currentBlock, storeRange);
+
+    // FIXME-WASM: Should we be doing this here?
+    // CollectReferencesForNode(store);
 }
 
 //------------------------------------------------------------------------
