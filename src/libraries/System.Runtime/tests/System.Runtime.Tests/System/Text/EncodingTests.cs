@@ -30,7 +30,7 @@ namespace System.Text.Tests
             Assert.Throws<NotSupportedException>(() => Encoding.GetEncoding(codePage, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))] // Moq uses Reflection.Emit
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
         [MemberData(nameof(DisallowedEncodings))]
 #pragma warning disable xUnit1026 // Theory methods should use all of their parameters
         public void GetEncoding_FromProvider_ByCodePage_WithDisallowedEncoding_Throws(string encodingName, int codePage)
@@ -60,7 +60,7 @@ namespace System.Text.Tests
             Assert.Throws<NotSupportedException>(() => Encoding.GetEncoding(encodingName, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))] // Moq uses Reflection.Emit
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
         [MemberData(nameof(DisallowedEncodings))]
         public void GetEncoding_FromProvider_ByEncodingName_WithDisallowedEncoding_Throws(string encodingName, int codePage)
         {
@@ -89,7 +89,7 @@ namespace System.Text.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))] // Moq uses Reflection.Emit
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
         [MemberData(nameof(DisallowedEncodings))]
         public void GetEncodings_FromProvider_DoesNotContainDisallowedEncodings(string encodingName, int codePage)
         {

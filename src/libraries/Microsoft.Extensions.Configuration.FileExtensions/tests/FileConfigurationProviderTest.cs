@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
     public class FileConfigurationProviderTest
     {
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void ProviderDisposesChangeTokenRegistration()
         {
             var changeToken = new ConfigurationRootTest.ChangeToken();
@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
         };
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52319", TestPlatforms.Android)]
         public void ProviderThrowsInvalidDataExceptionWhenLoadFails()
         {
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ProviderThrowsInvalidDataExceptionInput))]
         public void ProviderThrowsFileNotFoundExceptionWhenNotFound(string physicalPath)
         {
@@ -93,7 +93,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             Assert.Contains(physicalPath, exception.Message);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ProviderThrowsInvalidDataExceptionInput))]
         public void ProviderThrowsDirectoryNotFoundExceptionWhenNotFound(string physicalPath)
         {

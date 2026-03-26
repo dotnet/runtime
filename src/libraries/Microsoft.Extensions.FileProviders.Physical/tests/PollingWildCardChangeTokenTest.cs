@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
     public class PollingWildCardChangeTokenTest
     {
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void HasChanged_ReturnsFalseIfNoFilesExist()
         {
             // Arrange
@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void HasChanged_ReturnsFalseIfFilesDoNotChange()
         {
             // Arrange
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void HasChanged_ReturnsTrueIfNewFilesWereAdded()
         {
             // Arrange
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void HasChanged_ReturnsTrueIfFilesWereRemoved()
         {
             // Arrange
@@ -116,7 +116,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void HasChanged_ReturnsTrueIfFilesWereModified()
         {
             // Arrange
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void HasChanged_ReturnsTrueIfFileWasModifiedButRetainedAnOlderTimestamp()
         {
             // Arrange
