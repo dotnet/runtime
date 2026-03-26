@@ -25,6 +25,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Url\Base64UrlDecoder.cs" Link="System\Buffers\Text\Base64Url\Base64UrlDecoder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Url\Base64UrlEncoder.cs" Link="System\Buffers\Text\Base64Url\Base64UrlEncoder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Url\Base64UrlValidator.cs" Link="System\Buffers\Text\Base64Url\Base64UrlValidator.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs" Link="System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

@@ -25,6 +25,8 @@ internal class TestPlaceholderTarget : Target
     internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
 
     private readonly ReadFromTargetDelegate _dataReader;
+    private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
     public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null, (string Name, string Value)[] globalStrings = null)
     {
@@ -159,7 +161,23 @@ internal class TestPlaceholderTarget : Target
     }
     public override void WriteBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
 
-    public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
+    public override string ReadUtf8String(ulong address, bool strict = false)
+    {
+        // Read bytes until we find the null terminator
+        ulong end = address;
+        while (Read<byte>(end) != 0)
+        {
+            end += sizeof(byte);
+        }
+
+        int length = (int)(end - address);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = new byte[length];
+        ReadBuffer(address, span);
+        return strict ? strictUTF8Encoding.GetString(span) : looseUTF8Encoding.GetString(span);
+    }
     public override string ReadUtf16String(ulong address)
     {
         // Read characters until we find the null terminator
