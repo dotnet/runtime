@@ -2374,23 +2374,37 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private static bool ContainsNestedUnboundedLoop(SymbolicRegexNode<TSet> node)
         {
-            switch (node._kind)
+            Stack<SymbolicRegexNode<TSet>> stack = new();
+            stack.Push(node);
+
+            while (stack.Count > 0)
             {
-                case SymbolicRegexNodeKind.Loop:
-                    return node._upper == int.MaxValue;
+                SymbolicRegexNode<TSet> current = stack.Pop();
 
-                case SymbolicRegexNodeKind.Concat:
-                    Debug.Assert(node._left is not null && node._right is not null);
-                    return ContainsNestedUnboundedLoop(node._left) || ContainsNestedUnboundedLoop(node._right);
+                switch (current._kind)
+                {
+                    case SymbolicRegexNodeKind.Loop:
+                        if (current._upper == int.MaxValue)
+                        {
+                            return true;
+                        }
+                        break;
 
-                case SymbolicRegexNodeKind.Effect:
-                case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
-                    Debug.Assert(node._left is not null);
-                    return ContainsNestedUnboundedLoop(node._left);
+                    case SymbolicRegexNodeKind.Concat:
+                        Debug.Assert(current._left is not null && current._right is not null);
+                        stack.Push(current._right);
+                        stack.Push(current._left);
+                        break;
 
-                default:
-                    return false;
+                    case SymbolicRegexNodeKind.Effect:
+                    case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                        Debug.Assert(current._left is not null);
+                        stack.Push(current._left);
+                        break;
+                }
             }
+
+            return false;
         }
 
         // In case of overflow in m+n, return int.MaxValue

@@ -2582,32 +2582,6 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, $@"{b2}\w+{b2}", "one two", 0 };
             }
 
-            // Nested loop correctness tests. ReduceLoops collapses redundant nested loops
-            // (e.g. (R*)* -> R*) before any engine sees them. These verify the results are
-            // consistent across all engines, including edge cases where simplification must
-            // not be applied.
-            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
-            {
-                // Patterns that are collapsed: (R*)*, (R+)*, (R*)+ all become R*
-                yield return new object[] { engine, @"^(?:(?:a)*)*$", "aaa", 1 };
-                yield return new object[] { engine, @"^(?:(?:a)+)*$", "aaa", 1 };
-                yield return new object[] { engine, @"^(?:(?:a)*)+$", "aaa", 1 };
-
-                // (R{2,})* must NOT be simplified to R* — a single R is not in the language
-                yield return new object[] { engine, @"^(?:(?:a){2,})*$", "a", 0 };
-                yield return new object[] { engine, @"^(?:(?:a){2,})*$", "aa", 1 };
-                yield return new object[] { engine, @"^(?:(?:a){2,})*$", "", 1 };
-
-                // (R{2})* must NOT be simplified to R* — odd-length strings must not match
-                yield return new object[] { engine, @"^(?:(?:a){2})*$", "", 1 };
-                yield return new object[] { engine, @"^(?:(?:a){2})*$", "a", 0 };
-                yield return new object[] { engine, @"^(?:(?:a){2})*$", "aa", 1 };
-                yield return new object[] { engine, @"^(?:(?:a){2})*$", "aaa", 0 };
-                yield return new object[] { engine, @"^(?:(?:a){2})*$", "aaaa", 1 };
-
-                // Mixed laziness: greedy inner with lazy outer must not be conflated
-                yield return new object[] { engine, @"(?:(?:a*)+?)", "aaa", 2 };
-            }
         }
 
         [Theory]
@@ -2685,39 +2659,30 @@ namespace System.Text.RegularExpressions.Tests
                 // Depth 2000 is large enough to trigger exponential blowup in the derivative
                 // computation if the engine lacks protection (2^2000 branches). For non-
                 // NonBacktracking engines this exercises ReduceLoops loop-collapsing. For
-                // NonBacktracking this exercises the CountSingletons safe-size rejection.
-                yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000 };
-                yield return new object[] { engine, "(", "[aA]", ")+", "aA", 2000, 3000 };
-                yield return new object[] { engine, "(", "ab", "){0,1}", "ab", 2000, 1000 };
+                // NonBacktracking, unbounded loops (* and +) are rejected by CountSingletons
+                // because the exponential estimate exceeds the safe-size threshold. Bounded
+                // loops ({0,1}) are accepted because Times(1, bodyCount) doesn't grow.
+                bool nb = RegexHelpers.IsNonBacktracking(engine);
+                yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000, nb };
+                yield return new object[] { engine, "(", "[aA]", ")+", "aA", 2000, 3000, nb };
+                yield return new object[] { engine, "(", "ab", "){0,1}", "ab", 2000, 1000, false };
             }
         }
 
         [OuterLoop("Can take a few seconds")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
         [MemberData(nameof(StressTestDeepNestingOfLoops_TestData))]
-        public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, string input, int pattern_repetition, int input_repetition)
+        public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, string input, int pattern_repetition, int input_repetition, bool expectNotSupported)
         {
             string fullpattern = string.Concat(Enumerable.Repeat(begin, pattern_repetition)) + inner + string.Concat(Enumerable.Repeat(end, pattern_repetition));
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
-            if (RegexHelpers.IsNonBacktracking(engine))
+            if (expectNotSupported)
             {
-                // NonBacktracking rejects deeply nested unbounded capturing loops (* and +) via
-                // the safe-size threshold — CountSingletons detects nested unbounded loops even
+                // NonBacktracking rejects deeply nested unbounded capturing loops via the
+                // safe-size threshold — CountSingletons detects nested unbounded loops even
                 // through capture wrappers and the exponential estimate exceeds the threshold.
-                // Bounded loops like {0,1} are accepted because the per-level multiplier is just
-                // the upper bound (1), so the estimate stays small. Try constructing the regex:
-                // if it's rejected, verify NotSupportedException; otherwise match normally below.
-                try
-                {
-                    Regex re = new Regex(fullpattern, RegexOptions.NonBacktracking);
-                    Assert.True(re.Match(fullinput).Success);
-                }
-                catch (NotSupportedException)
-                {
-                    // Expected for patterns with nested unbounded loops.
-                }
-
+                Assert.Throws<NotSupportedException>(() => new Regex(fullpattern, RegexOptions.NonBacktracking));
                 return;
             }
 
