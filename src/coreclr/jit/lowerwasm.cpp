@@ -227,10 +227,10 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     // TODO-WASM-CQ: Identify the specific cases where we can skip doing this and still generate valid code
     // in codegen, i.e. non-faulting destination combined with native opcode. Right now this adds some code
     // bloat due to creating a temporary for a destination that may only get used once.
+    // We know trivially that we won't nullcheck a destination that is a local variable's address, so we can
+    // skip generating the temporary for that case.
     if (!dstAddr->OperIs(GT_LCL_ADDR))
     {
-        // It's necessary to skip doing this for local addresses to avoid mysterious failures in temporary
-        // register allocation later on
         SetMultiplyUsed(dstAddr);
     }
 
