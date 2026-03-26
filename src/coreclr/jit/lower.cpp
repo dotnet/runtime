@@ -11351,8 +11351,11 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                         (int64_t)store->Data()->AsIntCon()->IconValue());
 
                     // Create a new constant node and insert it in place of the load.
+                    // Mark it with GTF_ICON_STRUCT_INIT_VAL so that TryTransformStoreObjAsStoreInd
+                    // uses it as-is instead of treating the low byte as a fill pattern.
                     ssize_t  constVal = store->Data()->AsIntCon()->IconValue();
                     GenTree* newConst = m_compiler->gtNewIconNode(constVal, storeType);
+                    newConst->gtFlags |= GTF_ICON_STRUCT_INIT_VAL;
                     BlockRange().InsertAfter(scanNode, newConst);
 
                     // Replace all uses of the load with the new constant.
@@ -12366,11 +12369,21 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
             src = src->gtGetOp1();
         }
 
-        uint8_t  initVal = static_cast<uint8_t>(src->AsIntCon()->IconValue());
-        GenTree* cnsVec  = m_compiler->gtNewConWithPattern(regType, initVal);
-        BlockRange().InsertAfter(src, cnsVec);
-        BlockRange().Remove(src);
-        blkNode->SetData(cnsVec);
+        // If the constant was produced by store-load bypass (GTF_ICON_STRUCT_INIT_VAL),
+        // it already holds the complete struct value — don't reinterpret the low byte
+        // as a fill pattern.
+        if ((src->gtFlags & GTF_ICON_STRUCT_INIT_VAL) != 0)
+        {
+            src->ChangeType(regType);
+        }
+        else
+        {
+            uint8_t  initVal = static_cast<uint8_t>(src->AsIntCon()->IconValue());
+            GenTree* cnsVec  = m_compiler->gtNewConWithPattern(regType, initVal);
+            BlockRange().InsertAfter(src, cnsVec);
+            BlockRange().Remove(src);
+            blkNode->SetData(cnsVec);
+        }
     }
     else if (varTypeIsStruct(src))
     {
