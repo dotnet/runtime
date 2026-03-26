@@ -13,9 +13,6 @@
     <MergedWrapperProjectReference Remove="taskbased-asyncfibonacci-without-yields.csproj" />
     <MergedWrapperProjectReference Remove="valuetaskbased-asyncfibonacci-without-yields.csproj" />
     <MergedWrapperProjectReference Remove="valuetaskbased-asynfibonacci-with-yields.csproj" />
-
-    <!-- Remove helper library (not a test) -->
-    <MergedWrapperProjectReference Remove="helper.csproj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
