@@ -85,8 +85,9 @@ namespace System.Globalization
         /// <c>0x</c> (or <c>0X</c>) is a required hexadecimal indicator,
         /// <c>hexSignificand</c> is one of <c>hh</c>, <c>hh.</c>, <c>hh.hh</c>, or <c>.hh</c>
         /// (where <c>hh</c> represents one or more hexadecimal digits), and
-        /// <c>pExponent</c> is a required <c>p</c> (or <c>P</c>) followed by an optional sign and one or
-        /// more decimal digits representing a power-of-2 exponent.
+        /// <c>pExponent</c> is a required <c>p</c> (or <c>P</c>) followed by an optional sign (<c>+</c> or <c>-</c>)
+        /// and one or more decimal digits specifying a base-2 exponent (the significand is multiplied by
+        /// 2 raised to this power).
         /// </summary>
         /// <remarks>
         /// <para>

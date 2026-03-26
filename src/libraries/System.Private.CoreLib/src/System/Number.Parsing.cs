@@ -1016,6 +1016,11 @@ namespace System
                     isNegative = true;
                     index += negativeSign.Length;
                 }
+                else if (info.AllowHyphenDuringParsing() && TChar.CastToUInt32(value[index]) == '-')
+                {
+                    isNegative = true;
+                    index++;
+                }
                 else
                 {
                     ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
@@ -1139,7 +1144,8 @@ namespace System
                 return false;
             }
 
-            // Parse the power-of-2 exponent (p or P followed by decimal digits)
+            // Parse the exponent: 'p' or 'P' followed by optional sign and decimal digits.
+            // The decimal value specifies a base-2 exponent (value is multiplied by 2 raised to this power).
             int binaryExponent = 0;
             if (index < value.Length && ((TChar.CastToUInt32(value[index]) | 0x20) == 'p'))
             {
@@ -1157,6 +1163,11 @@ namespace System
                 {
                     exponentIsNegative = true;
                     index += negSign.Length;
+                }
+                else if (info.AllowHyphenDuringParsing() && TChar.CastToUInt32(value[index]) == '-')
+                {
+                    exponentIsNegative = true;
+                    index++;
                 }
                 else if (!posSign.IsEmpty && value.Slice(index).StartsWith(posSign))
                 {
@@ -1201,7 +1212,7 @@ namespace System
             }
             else
             {
-                // Power-of-2 exponent is required
+                // Exponent indicator (p/P) is required
                 return false;
             }
 
