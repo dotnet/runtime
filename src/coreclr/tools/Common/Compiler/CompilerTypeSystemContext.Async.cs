@@ -217,23 +217,23 @@ namespace ILCompiler
             }
 
             public bool Equals(AsyncResumptionStubKey other)
-                => TargetMethod == other.TargetMethod && OwningType == other.OwningType;
+                => TargetMethod == other.TargetMethod;
 
             public override bool Equals(object obj)
                 => obj is AsyncResumptionStubKey other && Equals(other);
 
             public override int GetHashCode()
-                => System.HashCode.Combine(TargetMethod, OwningType);
+                => TargetMethod.GetHashCode();
         }
 
         private sealed class AsyncResumptionStubHashtable : LockFreeReaderHashtable<AsyncResumptionStubKey, AsyncResumptionStub>
         {
             protected override int GetKeyHashCode(AsyncResumptionStubKey key) => key.GetHashCode();
-            protected override int GetValueHashCode(AsyncResumptionStub value) => System.HashCode.Combine(value.TargetMethod, value.OwningType);
+            protected override int GetValueHashCode(AsyncResumptionStub value) => value.TargetMethod.GetHashCode();
             protected override bool CompareKeyToValue(AsyncResumptionStubKey key, AsyncResumptionStub value)
-                => key.TargetMethod == value.TargetMethod && key.OwningType == value.OwningType;
+                => key.TargetMethod == value.TargetMethod;
             protected override bool CompareValueToValue(AsyncResumptionStub value1, AsyncResumptionStub value2)
-                => value1.TargetMethod == value2.TargetMethod && value1.OwningType == value2.OwningType;
+                => value1.TargetMethod == value2.TargetMethod;
             protected override AsyncResumptionStub CreateValueFromKey(AsyncResumptionStubKey key)
                 => new AsyncResumptionStub(key.TargetMethod, key.OwningType);
         }
