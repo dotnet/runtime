@@ -2984,12 +2984,11 @@ static OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT* pNativeEnum)
     }
     CONTRACTL_END;
 
-    OBJECTREF retObjRef;
-
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENUMERATORTOENUMVARIANTMARSHALER__INTERNALMARSHALNATIVETOMANAGED);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0]  = PTR_TO_ARGHOLDER(pNativeEnum);
-    CALL_MANAGED_METHOD_RETREF(retObjRef, OBJECTREF, args);
+    OBJECTREF retObjRef = NULL;
+    GCPROTECT_BEGIN(retObjRef);
+    UnmanagedCallersOnlyCaller internalMarshalNativeToManaged(METHOD__ENUMERATORTOENUMVARIANTMARSHALER__INTERNALMARSHALNATIVETOMANAGED);
+    internalMarshalNativeToManaged.InvokeThrowing((INT_PTR)pNativeEnum, &retObjRef);
+    GCPROTECT_END();
 
     return retObjRef;
 }

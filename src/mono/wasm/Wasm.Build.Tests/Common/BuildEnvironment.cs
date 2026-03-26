@@ -28,6 +28,7 @@ namespace Wasm.Build.Tests
         public bool UseWebcil { get; init; }
         public bool IsWorkloadWithMultiThreadingForDefaultFramework { get; init; }
         public bool IsMonoRuntime { get; init; }
+        public bool IsCoreClrRuntime { get; init; }
         public bool IsRunningOnCI => EnvironmentVariables.IsRunningOnCI;
 
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
@@ -112,8 +113,9 @@ namespace Wasm.Build.Tests
                             $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
             }
 
-            UseWebcil = EnvironmentVariables.UseWebcil && EnvironmentVariables.RuntimeFlavor != "CoreCLR"; // TODO-WASM: CoreCLR support for Webcil https://github.com/dotnet/runtime/issues/120248
+            UseWebcil = EnvironmentVariables.UseWebcil;
             IsMonoRuntime = EnvironmentVariables.RuntimeFlavor == "Mono";
+            IsCoreClrRuntime = EnvironmentVariables.RuntimeFlavor == "CoreCLR";
 
             if (EnvironmentVariables.BuiltNuGetsPath is null || !Directory.Exists(EnvironmentVariables.BuiltNuGetsPath))
                 throw new Exception($"Cannot find 'BUILT_NUGETS_PATH={EnvironmentVariables.BuiltNuGetsPath}'");
@@ -141,7 +143,7 @@ namespace Wasm.Build.Tests
                 EnvVars["WasmFingerprintAssets"] = "false";
             }
 
-            if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+            if (IsCoreClrRuntime)
             {
                 EnvVars["WasmTestSupport"] = "true";
                 EnvVars["WasmTestExitOnUnhandledError"] = "true";

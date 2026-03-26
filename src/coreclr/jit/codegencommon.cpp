@@ -1961,7 +1961,25 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
             m_compiler->compGetHelperFtn((CorInfoHelpFunc)i);
         }
     }
-#endif
+
+#if defined(TARGET_WASM)
+    // Allow the JIT to fail R2R at this point, so we can skip over methods
+    // that compile without assert but then have Wasm validation errors
+    //
+    static ConfigMethodRange JitR2RUnsupportedRange;
+    JitR2RUnsupportedRange.EnsureInit(JitConfig.JitR2RUnsupportedRange());
+    assert(!JitR2RUnsupportedRange.Error());
+    const unsigned hash    = m_compiler->impInlineRoot()->info.compMethodHash();
+    const bool     inRange = !JitR2RUnsupportedRange.IsEmpty() && JitR2RUnsupportedRange.Contains(hash);
+
+    if (inRange)
+    {
+        JITDUMP("Failing R2R codegen because of JitR2RUnsupportedRange. Hash is 0x%08x, range is ", hash);
+        JITDUMPEXEC(JitR2RUnsupportedRange.Dump());
+        implReadyToRunUnsupported();
+    }
+#endif // defined(TARGET_WASM)
+#endif // DEBUG
 }
 
 //----------------------------------------------------------------------
@@ -4138,7 +4156,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
         //
         const var_types lclTyp  = varDsc->GetStackSlotHomeType();
         const emitAttr  size    = emitActualTypeSize(lclTyp);
-        const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
+        const int       stkOffs = m_compiler->lvaOSRLocalTier0FrameOffset(lclNum) + fieldOffset;
 
 #if defined(TARGET_AMD64)
 

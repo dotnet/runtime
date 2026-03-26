@@ -16,67 +16,6 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
-        private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
-        private const string EnableServerAiaDownloadsCtxSwitch = "System.Net.Security.EnableServerAiaDownloads";
-        private const string EnableServerAiaDownloadsEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_ENABLESERVERAIADOWNLOADS";
-
-        private static volatile int s_disableTlsResume = -1;
-        private static volatile int s_enableServerAiaDownloads = -1;
-
-        internal static bool DisableTlsResume
-        {
-            get
-            {
-                int disableTlsResume = s_disableTlsResume;
-                if (disableTlsResume != -1)
-                {
-                    return disableTlsResume != 0;
-                }
-
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(DisableTlsResumeCtxSwitch, out bool value))
-                {
-                    s_disableTlsResume = value ? 1 : 0;
-                }
-                else
-                {
-                    // AppContext switch wasn't used. Check the environment variable.
-                    s_disableTlsResume =
-                        Environment.GetEnvironmentVariable(DisableTlsResumeEnvironmentVariable) is string envVar &&
-                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
-                }
-
-                return s_disableTlsResume != 0;
-            }
-        }
-
-        internal static bool EnableServerAiaDownloads
-        {
-            get
-            {
-                int enableServerAiaDownloads = s_enableServerAiaDownloads;
-                if (enableServerAiaDownloads != -1)
-                {
-                    return enableServerAiaDownloads != 0;
-                }
-
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(EnableServerAiaDownloadsCtxSwitch, out bool value))
-                {
-                    s_enableServerAiaDownloads = value ? 1 : 0;
-                }
-                else
-                {
-                    // AppContext switch wasn't used. Check the environment variable.
-                    s_enableServerAiaDownloads =
-                        Environment.GetEnvironmentVariable(EnableServerAiaDownloadsEnvironmentVariable) is string envVar &&
-                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
-                }
-
-                return s_enableServerAiaDownloads != 0;
-            }
-        }
 
 
         private SafeFreeCredentials? _credentialsHandle;
@@ -1123,7 +1062,7 @@ namespace System.Net.Security
                         chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
                         chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
 
-                        if (_sslAuthenticationOptions.IsServer && !EnableServerAiaDownloads)
+                        if (_sslAuthenticationOptions.IsServer && !LocalAppContextSwitches.EnableServerAiaDownloads)
                         {
                             chain.ChainPolicy.DisableCertificateDownloads = true;
                         }

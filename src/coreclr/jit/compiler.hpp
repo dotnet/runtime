@@ -3324,7 +3324,7 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 }
 
 //------------------------------------------------------------------------
-// IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
+// IsValidLclAddr: Can the given local address be represented as "LCL_ADDR"?
 //
 // Local address nodes cannot point beyond the local and can only store
 // 16 bits worth of offset.
@@ -3334,17 +3334,70 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 //    offset - The address' offset
 //
 // Return Value:
-//    Whether "LCL_FLD_ADDR<lclNum> [+offset]" would be valid IR.
+//    Whether "LCL_ADDR<lclNum> [+offset]" would be valid IR.
 //
 inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
 {
 #ifdef TARGET_ARM64
-    if (varTypeHasUnknownSize(lvaGetDesc(lclNum)))
+    if (lvaIsUnknownSizeLocal(lclNum))
     {
-        return false;
+        return (offset == 0);
     }
 #endif
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
+}
+
+//------------------------------------------------------------------------
+// IsEntireAccess: Is the access to a local entire?
+//
+// The access is entire when the size of the access is equivalent to the size
+// of the local, and the access address is equivalent to the local address
+// (offset == 0).
+//
+// Arguments:
+//    lclNum - The local's number
+//    offset - The access offset
+//    accessSize - The size of the access (may be unknown at compile-time)
+//
+// Return Value:
+//     True is the access is entire by the definition above, else false.
+//
+inline bool Compiler::IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize accessSize)
+{
+    return (lvaLclValueSize(lclNum) == accessSize) && (offset == 0);
+}
+
+//------------------------------------------------------------------------
+// IsWideAccess: Is the access to a local wide?
+//
+// An access is wide when the access overflows the end of the local. If the
+// access size is unknown, the access is assumed wide if it is not entire.
+//
+// Arguments:
+//    lclNum - The local's number
+//    offset - The access offset
+//    accessSize - The size of the access (may be unknown at compile-time)
+//
+// Return Value:
+//     True is the access is wide by the definition above, else false.
+//
+inline bool Compiler::IsWideAccess(unsigned lclNum, unsigned offset, ValueSize accessSize)
+{
+    assert(!accessSize.IsNull());
+    if (accessSize.IsExact())
+    {
+        ClrSafeInt<uint32_t> extent = ClrSafeInt<uint32_t>(offset) + ClrSafeInt<uint32_t>(accessSize.GetExact());
+        // The access is wide if:
+        // * The offset computation overflows uint16_t.
+        // * The address at `offset + accessSize - 1`, (the last byte of the access) is out of bounds of the local.
+        return extent.IsOverflow() || !FitsIn<uint16_t>(extent.Value()) || !IsValidLclAddr(lclNum, extent.Value() - 1);
+    }
+    else
+    {
+        // If we don't know the size of the access or the local at compile time, we assume any access overflows if
+        // it is not an entire access to the local.
+        return !IsEntireAccess(lclNum, offset, accessSize);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -4382,6 +4435,8 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
+        case GT_WASM_THROW_REF:
+        case GT_WASM_JEXCEPT:
             return VisitResult::Continue;
 
             // Unary operators with an optional operand
@@ -5227,12 +5282,139 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
     return BasicBlockVisit::Continue;
 }
 
+//------------------------------------------------------------------------
+// fgVisitBlocksInTryAwareLoopAwareRPO: Visit the blocks in 'dfsTree' in reverse post-order,
+// but ensure try regions (for try/catch) and loop bodies are visited before their successors.
+// Where these conflict, give priority to try regions.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Parameters:
+//   dfsTree    - The DFS tree of the flow graph
+//   tryRegions - A collection of the try regions in the flow graph
+//   loops      - A collection of the loops in the flow graph
+//   func       - Callback functor that operates on a BasicBlock*
+//
+// Returns:
+//   A postorder traversal with compact loop bodies.
+//
+template <typename TFunc>
+void Compiler::fgVisitBlocksInTryAwareLoopAwareRPO(FlowGraphDfsTree*      dfsTree,
+                                                   FlowGraphTryRegions*   tryRegions,
+                                                   FlowGraphNaturalLoops* loops,
+                                                   TFunc                  func)
+{
+    assert(dfsTree != nullptr);
+    assert(loops != nullptr);
+    assert(tryRegions != nullptr);
+
+    // We will start by visiting blocks in reverse post-order.
+    // If we encounter the header of a loop, we will visit the loop's remaining blocks next
+    // to keep the loop body compact in the visitation order.
+    // We have to do this recursively to handle nested loops.
+    // Since the presence of loops implies we will try to visit some blocks more than once,
+    // we need to track visited blocks.
+    struct TryAwareLoopAwareVisitor
+    {
+        BitVecTraits           traits;
+        BitVec                 visitedBlocks;
+        FlowGraphTryRegions*   tryRegions;
+        FlowGraphNaturalLoops* loops;
+        TFunc                  func;
+
+        TryAwareLoopAwareVisitor(FlowGraphDfsTree*      dfsTree,
+                                 FlowGraphTryRegions*   tryRegions,
+                                 FlowGraphNaturalLoops* loops,
+                                 TFunc                  func)
+            : traits(dfsTree->PostOrderTraits())
+            , visitedBlocks(BitVecOps::MakeEmpty(&traits))
+            , tryRegions(tryRegions)
+            , loops(loops)
+            , func(func)
+        {
+        }
+
+        void VisitBlock(BasicBlock* block)
+        {
+            if (BitVecOps::TryAddElemD(&traits, visitedBlocks, block->bbPostorderNum))
+            {
+                func(block);
+
+                FlowGraphTryRegion* const tryRegion = tryRegions->GetTryRegionByHeader(block);
+                if ((tryRegion != nullptr) && tryRegion->HasCatchHandler())
+                {
+                    tryRegion->VisitTryRegionBlocksReversePostOrder([&](BasicBlock* block) {
+                        VisitBlock(block);
+                        return BasicBlockVisit::Continue;
+                    });
+                }
+
+                FlowGraphNaturalLoop* const loop = loops->GetLoopByHeader(block);
+                if (loop != nullptr)
+                {
+                    loop->VisitLoopBlocksReversePostOrder([&](BasicBlock* block) {
+                        VisitBlock(block);
+                        return BasicBlockVisit::Continue;
+                    });
+                }
+            }
+        }
+    };
+
+    if (tryRegions->NumTryCatchRegions() == 0)
+    {
+        fgVisitBlocksInLoopAwareRPO(dfsTree, loops, func);
+        return;
+    }
+
+    // Add no-loop special case here?
+    //
+    TryAwareLoopAwareVisitor visitor(dfsTree, tryRegions, loops, func);
+    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+    {
+        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+        visitor.VisitBlock(block);
+    }
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphTryRegion::VisitTryRegionBlocksReversePostOrder: Visit all of the
+// try region's blocks in reverse post order.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//    BasicBlockVisit that indicated whether the visit was aborted by the
+//    callback or whether all blocks were visited.
+//
+// Notes:
+//   FlowGraphTryRegion does not currently use a "compressed BV" like loops do.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphTryRegion::VisitTryRegionBlocksReversePostOrder(TFunc func)
+{
+    BitVecTraits            traits  = m_regions->GetBlockBitVecTraits();
+    FlowGraphDfsTree* const dfsTree = m_regions->GetDfsTree();
+    bool                    result  = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
+        assert(index < dfsTree->GetPostOrderCount());
+        return func(dfsTree->GetPostOrder(index)) == BasicBlockVisit::Continue;
+    });
+
+    return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
+}
+
 //-----------------------------------------------------------
 // gtComplexityExceeds: Check if a tree exceeds a specified complexity limit.
 //
 // Type parameters:
 //   TFunc - Callback functor type
-
+//
 // Arguments:
 //    tree              - The tree to check
 //    limit             - complexity limit

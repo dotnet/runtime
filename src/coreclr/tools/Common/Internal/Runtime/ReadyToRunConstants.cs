@@ -188,6 +188,7 @@ namespace Internal.ReadyToRunConstants
         Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
 
         ContinuationLayout = 0x37, /* Layout of an async method continuation type */
+        ResumptionStubEntryPoint = 0x38, /* Entry point of an async method resumption stub */
 
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
@@ -233,6 +234,10 @@ namespace Internal.ReadyToRunConstants
         ThrowNullRef                = 0x25,
         ThrowDivZero                = 0x26,
         ThrowExact                  = 0x27,
+        ThrowArgument               = 0x28,
+        ThrowArgumentOutOfRange     = 0x29,
+        ThrowPlatformNotSupported   = 0x2A,
+        ThrowNotImplemented         = 0x2B,
 
         // Write barriers
         WriteBarrier                = 0x30,
@@ -355,9 +360,9 @@ namespace Internal.ReadyToRunConstants
 
         GetCurrentManagedThreadId   = 0x112,
 
-        AllocContinuation           = 0x113,
-        AllocContinuationClass      = 0x114,
-        AllocContinuationMethod     = 0x115,
+        AllocContinuation              = 0x113,
+        AllocContinuationClass         = 0x114,
+        AllocContinuationMethod        = 0x115,
 
         InitClass                   = 0x116,
         InitInstClass               = 0x117,
@@ -370,11 +375,6 @@ namespace Internal.ReadyToRunConstants
 
         // Marker to be used in asserts.
         FirstFakeHelper,
-
-        ThrowArgumentOutOfRange,
-        ThrowArgument,
-        ThrowPlatformNotSupported,
-        ThrowNotImplemented,
 
         DebugBreak,
 
