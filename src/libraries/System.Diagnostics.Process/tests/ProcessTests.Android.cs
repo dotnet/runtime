@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Android)]
-        public void Process_Start_SimpleCommand_ExitsSuccessfully()
+        public void Process_Start_InheritedIO_ExitsSuccessfully()
         {
             using (Process process = Process.Start("ls", Path.GetTempPath()))
             {
@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Android)]
-        public void Process_Start_CaptureStdout_ReadsOutput()
+        public void Process_Start_RedirectedStandardOutput_ReadsOutput()
         {
             ProcessStartInfo psi = new("ls", Path.GetTempPath())
             {
@@ -99,11 +99,9 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Android)]
         public void Process_Start_WithStandardHandles_CanRedirectIO()
         {
-            string? errorFile = null;
+            string errorFile = Path.GetTempFileName();
             try
             {
-                errorFile = Path.GetTempFileName();
-
                 SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle outputRead, out SafeFileHandle outputWrite);
 
                 using SafeFileHandle inputHandle = File.OpenNullHandle();
@@ -136,7 +134,7 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                if (errorFile is not null && File.Exists(errorFile))
+                if (File.Exists(errorFile))
                 {
                     File.Delete(errorFile);
                 }
