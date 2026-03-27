@@ -10930,6 +10930,14 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
             return;
         }
 
+        // For address-exposed locals, the wider merged store may not be as atomic
+        // as the individual narrower stores. Skip coalescing to match the
+        // atomicity guarantees of LowerStoreIndirCoalescing.
+        if (m_compiler->lvaVarAddrExposed(currLclNum))
+        {
+            break;
+        }
+
         // Make sure the current node's tree range is closed (no unexpected interleaved nodes).
         bool               isClosedRange = false;
         LIR::ReadOnlyRange currRange     = BlockRange().GetTreeRange(store, &isClosedRange);
@@ -11277,6 +11285,17 @@ bool Lowering::TryCoalesceNonConstStoreLclFld(GenTreeLclVarCommon* store,
         return false;
     }
 
+    // Removing the previous store moves it past the current store's data evaluation.
+    // This is unsafe if the data tree has side effects or references the same local.
+    if ((currValue->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+    {
+        return false;
+    }
+    if ((prevValue->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+    {
+        return false;
+    }
+
     var_types prevType = prevStore->TypeGet();
     JITDUMP("Coalescing two non-const GT_STORE_LCL_FLD stores via shift+OR:\n");
     JITDUMP("  Previous store: V%02u [+%u] %s\n", currLclNum, prevOffset, varTypeName(prevType));
@@ -11303,6 +11322,7 @@ bool Lowering::TryCoalesceNonConstStoreLclFld(GenTreeLclVarCommon* store,
     {
         GenTree* castLow = m_compiler->gtNewCastNode(newType, lowValue, true, newType);
         BlockRange().InsertBefore(store, castLow);
+        LowerNode(castLow);
         lowValue = castLow;
     }
 
@@ -11310,6 +11330,7 @@ bool Lowering::TryCoalesceNonConstStoreLclFld(GenTreeLclVarCommon* store,
     {
         GenTree* castHigh = m_compiler->gtNewCastNode(newType, highValue, true, newType);
         BlockRange().InsertBefore(store, castHigh);
+        LowerNode(castHigh);
         highValue = castHigh;
     }
 
@@ -11317,10 +11338,12 @@ bool Lowering::TryCoalesceNonConstStoreLclFld(GenTreeLclVarCommon* store,
     GenTree* shiftAmount = m_compiler->gtNewIconNode((ssize_t)shiftBits);
     GenTree* shifted     = m_compiler->gtNewOperNode(GT_LSH, newType, highValue, shiftAmount);
     BlockRange().InsertBefore(store, shiftAmount, shifted);
+    LowerNode(shifted);
 
     // OR the low and shifted-high values.
     GenTree* combined = m_compiler->gtNewOperNode(GT_OR, newType, lowValue, shifted);
     BlockRange().InsertBefore(store, combined);
+    LowerNode(combined);
 
     // Update the current store to use the combined value at the lower offset.
     unsigned newOffset = min(prevOffset, currOffset);
@@ -11414,6 +11437,20 @@ void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
             unsigned bitOffset = (readOffset - offset) * BITS_PER_BYTE;
             size_t readMask = (readSize >= sizeof(size_t)) ? ~(size_t)0 : ((size_t)1 << (readSize * BITS_PER_BYTE)) - 1;
             ssize_t forwardVal = (ssize_t)(((size_t)fullVal >> bitOffset) & readMask);
+
+            // For signed small types, sign-extend the extracted value to match
+            // the GT_LCL_FLD load semantics.
+            var_types loadType = scanNode->TypeGet();
+            if (varTypeIsIntegral(loadType) && varTypeIsSmall(loadType) && !varTypeIsUnsigned(loadType) &&
+                readSize < sizeof(ssize_t))
+            {
+                unsigned loadBits = readSize * BITS_PER_BYTE;
+                ssize_t  signBit  = (ssize_t)1 << (loadBits - 1);
+                if ((forwardVal & signBit) != 0)
+                {
+                    forwardVal |= ~(((ssize_t)1 << loadBits) - 1);
+                }
+            }
 
             // For the forwarded constant, use the actual register type.
             var_types fwdType = varTypeIsIntegral(scanNode->TypeGet()) ? genActualType(scanNode->TypeGet()) : storeType;
