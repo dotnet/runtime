@@ -39,6 +39,11 @@ public class AndroidAppBuilderTask : Task
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
+    /// Additional native source files to compile alongside monodroid.c
+    /// </summary>
+    public ITaskItem[] ExtraNativeSources { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// Prefer FullAOT mode for Emulator over JIT
     /// </summary>
     public bool ForceAOT { get; set; }
@@ -140,6 +145,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.IsLibraryMode = IsLibraryMode;
         apkBuilder.NativeDependencies = NativeDependencies;
         apkBuilder.ExtraLinkerArguments = ExtraLinkerArguments;
+        apkBuilder.ExtraNativeSources = ExtraNativeSources;
         apkBuilder.RuntimeFlavor = RuntimeFlavor;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(RuntimeIdentifier, MainLibraryFileName, RuntimeHeaders);
 

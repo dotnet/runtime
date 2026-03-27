@@ -24,8 +24,6 @@
 #include <sys/system_properties.h>
 #include <sys/mman.h>
 #include <assert.h>
-#include <setjmp.h>
-#include <signal.h>
 #include <unistd.h>
 
 /********* exported symbols *********/
@@ -47,12 +45,6 @@ Java_net_dot_MonoRunner_freeNativeResources (JNIEnv* env, jobject thiz);
 // called from C#
 void
 invoke_external_native_api (void (*callback)(void));
-
-int
-test_crash_chaining (void);
-
-void
-test_crash_chaining_install_pre_mono_handler (void);
 
 /********* implementation *********/
 
@@ -304,11 +296,6 @@ mono_droid_runtime_init (const char* executable, int local_date_time_offset)
     mono_set_signal_chaining (true);
     mono_set_crash_chaining (true);
 
-    // Install the crash chaining test handler before mono_jit_init
-    // only when the crash chaining test is running.
-    if (getenv("TEST_CRASH_CHAINING"))
-        test_crash_chaining_install_pre_mono_handler();
-
     if (wait_for_debugger) {
         char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556" };
         mono_jit_parse_options (1, options);
@@ -479,110 +466,4 @@ invoke_external_native_api (void (*callback)(void))
 {
     if (callback)
         callback();
-}
-
-/*
- * Test for crash chaining: verify that mono_handle_native_crash does not
- * reset SIGABRT to SIG_DFL when crash_chaining is enabled.
- *
- * Strategy:
- *   1. Install a custom SIGSEGV handler that saves Mono's handler and
- *      checks whether SIGABRT is still handled (not SIG_DFL).
- *   2. Trigger a SIGSEGV from a non-JIT native function.
- *   3. Mono chains to our handler (because signal_chaining is enabled).
- *   4. Our handler checks SIGABRT disposition and reports the result.
- *
- * Returns 0 on success, non-zero on failure.
- */
-static volatile sig_atomic_t g_test_crash_chain_result = -1;
-static volatile sig_atomic_t g_test_sigabrt_received = 0;
-static sigjmp_buf g_test_jmpbuf;
-
-__attribute__((noinline))
-static void do_test_crash(void)
-{
-    volatile int *ptr = 0;
-    *ptr = 42;
-}
-
-static void
-test_sigabrt_handler(int signum)
-{
-    (void)signum;
-    g_test_sigabrt_received = 1;
-}
-
-/**
- * Pre-Mono SIGSEGV handler installed before mono_jit_init. Mono's
- * signal chaining saves this handler and calls it via mono_chain_signal
- * when a native crash occurs.
- *
- * After Mono's crash diagnostics (mono_handle_native_crash) run, this
- * handler verifies that SIGABRT was not reset to SIG_DFL. Without the
- * fix, mono_handle_native_crash unconditionally resets SIGABRT to
- * SIG_DFL, so raise(SIGABRT) kills the process (the test crashes).
- * With the fix, SIGABRT retains Mono's handler, and we can catch the
- * raised SIGABRT with a temporary handler (the test passes).
- */
-static void
-test_pre_mono_sigsegv_handler(int signum, siginfo_t *info, void *context)
-{
-    (void)signum;
-    (void)info;
-    (void)context;
-
-    // By the time Mono chains to us, mono_handle_native_crash has
-    // already run. Check if SIGABRT was reset to SIG_DFL.
-    struct sigaction current_abrt;
-    sigaction(SIGABRT, NULL, &current_abrt);
-
-    if (current_abrt.sa_handler == SIG_DFL) {
-        // Bug: SIGABRT is SIG_DFL. Demonstrate the failure by raising
-        // SIGABRT — just like a FORTIFY abort on another thread would.
-        // This kills the process (test crashes).
-        raise(SIGABRT);
-        _exit(1); // unreachable
-    }
-
-    // SIGABRT is still handled — the fix works. Install a temporary
-    // catcher and raise SIGABRT to prove it's actually catchable.
-    struct sigaction tmp_abrt = { .sa_handler = test_sigabrt_handler };
-    sigaction(SIGABRT, &tmp_abrt, NULL);
-
-    g_test_sigabrt_received = 0;
-    raise(SIGABRT);
-
-    sigaction(SIGABRT, &current_abrt, NULL);
-
-    g_test_crash_chain_result = g_test_sigabrt_received ? 0 : 1;
-
-    // Jump back to test_crash_chaining to report the result.
-    siglongjmp(g_test_jmpbuf, 1);
-}
-
-void
-test_crash_chaining_install_pre_mono_handler(void)
-{
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_sigaction = test_pre_mono_sigsegv_handler;
-    sa.sa_flags = SA_SIGINFO;
-    sigemptyset(&sa.sa_mask);
-    sigaction(SIGSEGV, &sa, NULL);
-}
-
-int
-test_crash_chaining(void)
-{
-    g_test_crash_chain_result = -1;
-    if (sigsetjmp(g_test_jmpbuf, 1) == 0) {
-        do_test_crash();
-    }
-
-    if (g_test_crash_chain_result == -1) {
-        LOG_ERROR("test_crash_chaining: handler was not called");
-        return 3;
-    }
-
-    return g_test_crash_chain_result;
 }

@@ -13,6 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AndroidEnv Include="TEST_CRASH_CHAINING" Value="1" />
+    <ExtraAppNativeSources Include="test_crash_chaining.c" />
   </ItemGroup>
 </Project>
