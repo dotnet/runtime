@@ -1,7 +1,7 @@
-# Validation Checks — Step 6 Details
+# Validation Checks
 
 ```bash
-python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines.md --report logs/test-report-<timestamp>.md --log logs/ci-pipeline-monitor-<timestamp>.log
+python scripts/validate_results.py --db scripts/monitor.db [--pipelines pipelines.md] [--report logs/test-report-<timestamp>.md] [--log logs/ci-pipeline-monitor-<timestamp>.log]
 ```
 
 Runs 24 checks before the report is considered done:
@@ -13,29 +13,25 @@ has test_results, all console logs fetched, all test_results triaged.
 every failure has at least one pipeline and one test.
 
 **Data Quality:** no empty error_message/test_name in failures,
-no duplicate failure groups.
+every failure has non-empty error_message.
 
-**Content Accuracy:** error_message text appears verbatim in the
-corresponding console log file (catches fabricated messages), exit_code
-in test_results matches the exit code parsed from the console log (catches
-overwrite bugs), all test_results sharing a failure_id have consistent
-error patterns (catches wrong grouping of unrelated failures),
-every failure has console_log_url populated, error_message is a managed
-.NET exception not native debugger output (catches extracting from wrong
-section of log), NEW failures do not share the same error pattern as
-failures already matched to a GitHub issue (catches missed issue matches
-when the issue covers multiple test names in its body), NEW failures are
-verified against GitHub Search API using the full test name to confirm no
-matching issue exists (catches the LLM skipping or fabricating searches),
-every line in error_message and stack_trace appears as a complete line in
-the console log (catches mid-line truncation where a line is cut off before
-its end).
+**Content Accuracy:** error_message in the failures table appears verbatim
+in the source console log file (identified by source_test_result_id),
+exit_code in test_results matches the exit code parsed from the console
+log, every failure has console_log_url populated, error_message is a
+managed .NET exception not native debugger output (catches extracting
+from wrong section of log), NEW failures do not share the same error
+pattern (error_message + first stack_trace line) as failures already
+matched to a GitHub issue (catches missed issue matches), NEW failures
+are verified against GitHub Search API (via `gh api`) using the full
+test name to confirm no matching issue exists, every line in
+error_message and stack_trace appears as a complete line in the console
+log (catches mid-line truncation).
 
 **Report Sanity** (if `--report` provided): report is non-empty, failure
 count matches DB, all failing pipelines mentioned.
 
 **Debug Log** (if `--log` provided): log file is non-empty, contains all
-required step headers (STEP 1 through STEP 5), contains SUMMARY section.
-
-If any check fails, fix the issue and re-run. Do NOT publish the report
-until all checks pass.
+required step headers (Load Pipeline Definitions, Fetch Latest Builds,
+Extract Failed Tests, Fetch Helix Console Logs, Triage, Validate DB,
+Generate Report), contains SUMMARY section.

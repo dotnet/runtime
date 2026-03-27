@@ -1,11 +1,12 @@
-# Triage Workflow — Step 3 Detailed Instructions
+# Triage Workflow — Detailed Instructions
 
 **Input:** `test_results` table — every individual failure with its exit code,
 `console_log_path` (path to the full Helix console log file on disk), and
 API-provided `error_message`/`stack_trace` where available (populated by
-Step 2). Some rows already have useful error/stack from the API; others have
-empty values (crashes, timeouts, generic Helix messages) and need the LLM
-to extract from the console log.
+`extract_failed_tests.py` and `fetch_helix_logs.py`). Some rows already
+have useful error/stack from the API; others have empty values (crashes,
+timeouts, generic Helix messages) and need the LLM to extract from the
+console log.
 
 **⚠️ INSERT into `monitor.db` immediately after triaging each failure group.**
 

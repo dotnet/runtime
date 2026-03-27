@@ -1,4 +1,4 @@
-"""Step 1 + Step 2 (deterministic): Setup DB and fetch pipeline build status.
+"""Setup DB and fetch pipeline build status (deterministic).
 
 Creates monitor.db with the full schema, fetches the latest build for each
 pipeline from the ADO Builds API (no auth), and populates the pipelines table.
