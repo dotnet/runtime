@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         private static PhysicalFilesWatcher CreateWatcher(string rootPath, bool useActivePolling)
         {
-            FileSystemWatcher? fsw = useActivePolling ? null : new FileSystemWatcher(rootPath);
+            FileSystemWatcher? fsw = useActivePolling ? null : new FileSystemWatcher();
             var watcher = new PhysicalFilesWatcher(rootPath, fsw, pollForChanges: useActivePolling);
             if (useActivePolling)
             {
@@ -58,6 +58,59 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
                 token = physicalFilesWatcher.CreateFileChangeToken("..");
                 Assert.IsType<NullChangeToken>(token);
             }
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task Constructor_AcceptsFswWithPathAboveRoot()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            string subDir = Path.Combine(root.Path, "sub");
+            Directory.CreateDirectory(subDir);
+
+            // FSW watches root.Path which is above subDir
+            using var fsw = new FileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(subDir, fsw, pollForChanges: false);
+
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("file.txt");
+            var tcs = new TaskCompletionSource<bool>();
+            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+
+            File.WriteAllText(Path.Combine(subDir, "file.txt"), string.Empty);
+
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task Constructor_AcceptsFswWithPathBelowRoot()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            string subDir = Path.Combine(root.Path, "sub");
+            Directory.CreateDirectory(subDir);
+
+            // FSW watches subDir which is below root.Path
+            using var fsw = new FileSystemWatcher(subDir);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fsw, pollForChanges: false);
+
+            // A file directly under root (but not under subDir) should not trigger the token,
+            // because the FSW only watches subDir.
+            IChangeToken rootFileToken = physicalFilesWatcher.CreateFileChangeToken("rootfile.txt");
+            var rootFileTcs = new TaskCompletionSource<bool>();
+            rootFileToken.RegisterChangeCallback(_ => rootFileTcs.TrySetResult(true), null);
+
+            File.WriteAllText(Path.Combine(root.Path, "rootfile.txt"), string.Empty);
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(rootFileTcs.Task.IsCompleted, "Token must not fire for a file outside the FSW's watched path");
+
+            // A file under subDir should trigger its token.
+            IChangeToken subFileToken = physicalFilesWatcher.CreateFileChangeToken("sub/file.txt");
+            var subFileTcs = new TaskCompletionSource<bool>();
+            subFileToken.RegisterChangeCallback(_ => subFileTcs.TrySetResult(true), null);
+
+            File.WriteAllText(Path.Combine(subDir, "file.txt"), string.Empty);
+
+            await subFileTcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         [Fact]

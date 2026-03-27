@@ -105,6 +105,16 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 }
 #endif
 
+                string fswPath = fileSystemWatcher.Path;
+                if (fswPath.Length > 0 &&
+                    !_root.StartsWith(fswPath, StringComparison.OrdinalIgnoreCase) &&
+                    !fswPath.StartsWith(_root, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new ArgumentException(
+                        $"The FileSystemWatcher path '{fswPath}' must be empty, equal to, an ancestor of, or a descendant of the root '{root}'.",
+                        nameof(fileSystemWatcher));
+                }
+
                 _fileWatcher = fileSystemWatcher;
                 _fileWatcher.IncludeSubdirectories = true;
                 _fileWatcher.Created += OnChanged;
