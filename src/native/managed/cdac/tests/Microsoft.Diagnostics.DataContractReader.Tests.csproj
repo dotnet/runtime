@@ -10,6 +10,8 @@
     <Compile Remove="DumpTests\**" />
     <!-- StressTests contains debuggee console apps and scripts, not unit tests -->
     <Compile Remove="StressTests\**" />
+    <!-- GCStressTests is a separate test project with its own csproj and debuggees -->
+    <Compile Remove="GCStressTests\**" />
   </ItemGroup>
 
   <Import Project="..\..\subproject.props" />

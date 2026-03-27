@@ -49,23 +49,12 @@ internal partial class StackWalk_1 : IStackWalk
         bool IsActiveFrame = false) : IStackDataFrameHandle
     { }
 
-    private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData, bool skipActiveICFOnce = false)
+    private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData)
     {
         public IPlatformAgnosticContext Context { get; set; } = context;
         public StackWalkState State { get; set; } = state;
         public FrameIterator FrameIter { get; set; } = frameIter;
         public ThreadData ThreadData { get; set; } = threadData;
-
-        // When an active InlinedCallFrame is processed as SW_FRAME without advancing
-        // the FrameIterator, the same Frame would be re-encountered by
-        // CheckForSkippedFrames. This one-shot flag tells CheckForSkippedFrames to
-        // advance past it once, preventing a duplicate SW_SKIPPED_FRAME yield.
-        //
-        // Must be false for ClrDataStackWalk (which needs exact DAC frame parity)
-        // and true for WalkStackReferences (which matches native DacStackReferenceWalker
-        // behavior of not re-enumerating the same InlinedCallFrame).
-        public bool SkipActiveICFOnce { get; } = skipActiveICFOnce;
-        public bool SkipCurrentFrameInCheck { get; set; }
 
 
         // Track isFirst exactly like native CrawlFrame::isFirst in StackFrameIterator.
@@ -163,7 +152,7 @@ internal partial class StackWalk_1 : IStackWalk
             yield break;
         }
 
-        StackWalkData stackWalkData = new(context, state, frameIterator, threadData, skipActiveICFOnce: skipInitialFrames);
+        StackWalkData stackWalkData = new(context, state, frameIterator, threadData);
 
         yield return stackWalkData.ToDataFrame();
         stackWalkData.AdvanceIsFirst();
@@ -566,13 +555,6 @@ internal partial class StackWalk_1 : IStackWalk
                             // Invoke the GC callback for this crawlframe (to keep any dynamic methods alive) but do not report its references.
                             gcFrame.ShouldCrawlFrameReportGCReferences = false;
                         }
-                        else if (IsAtFirstPassExceptionThrowSite(handle))
-                        {
-                            // During first-pass exception handling, the throw-site frame is
-                            // being dispatched. The legacy DAC does not report GC refs from
-                            // this frame during first pass. Suppress to match DAC behavior.
-                            gcFrame.ShouldCrawlFrameReportGCReferences = false;
-                        }
                     }
 
                     stop = true;
@@ -626,27 +608,24 @@ internal partial class StackWalk_1 : IStackWalk
                 }
                 break;
             case StackWalkState.SW_SKIPPED_FRAME:
-                // Skipped Frames still need UpdateContextFromFrame if they restore
-                // a context (e.g., SoftwareExceptionFrame, ResumableFrame). The native
-                // StackFrameIterator always calls UpdateRegDisplay for these frames.
-                handle.FrameIter.UpdateContextFromFrame(handle.Context);
+                // Native SFITER_SKIPPED_FRAME_FUNCTION: advance past the frame, then
+                // check for MORE skipped frames before transitioning to FRAMELESS.
+                // This prevents yielding the managed method multiple times between
+                // consecutive skipped frames.
                 handle.FrameIter.Next();
+                if (CheckForSkippedFrames(handle))
+                {
+                    // More skipped frames — stay in SW_SKIPPED_FRAME, don't go through UpdateState
+                    handle.State = StackWalkState.SW_SKIPPED_FRAME;
+                    return true;
+                }
+                // No more skipped frames — fall through to UpdateState which will set SW_FRAMELESS
                 break;
             case StackWalkState.SW_FRAME:
                 handle.FrameIter.UpdateContextFromFrame(handle.Context);
                 if (!handle.FrameIter.IsInlineCallFrameWithActiveCall())
                 {
                     handle.FrameIter.Next();
-                }
-                else
-                {
-                    // Active InlinedCallFrame: FrameIter was NOT advanced. The next
-                    // CheckForSkippedFrames would re-encounter this same Frame and
-                    // create a spurious SW_SKIPPED_FRAME -> SW_FRAMELESS duplicate.
-                    // Only applies to WalkStackReferences path — ClrDataStackWalk
-                    // must yield Frames in the same order as the legacy DAC.
-                    if (handle.SkipActiveICFOnce)
-                        handle.SkipCurrentFrameInCheck = true;
                 }
                 break;
             case StackWalkState.SW_ERROR:
@@ -698,19 +677,6 @@ internal partial class StackWalk_1 : IStackWalk
         if (!handle.FrameIter.IsValid())
         {
             return false;
-        }
-
-        // If the current Frame was already processed as SW_FRAME (e.g., an active
-        // InlinedCallFrame that wasn't advanced), skip it once to avoid a duplicate
-        // SW_SKIPPED_FRAME -> SW_FRAMELESS yield for the same managed IP.
-        if (handle.SkipCurrentFrameInCheck)
-        {
-            handle.SkipCurrentFrameInCheck = false;
-            handle.FrameIter.Next();
-            if (!handle.FrameIter.IsValid())
-            {
-                return false;
-            }
         }
 
         // get the caller context

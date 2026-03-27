@@ -855,7 +855,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 
     // When DOTNET_GCStressCdacStep > 1, skip most stress points (both cDAC verification
     // and StressHeap) to reduce overhead.
-    if (CdacGcStress::IsInitialized() && CdacGcStress::ShouldSkipStressPoint())
+    if (CdacStress::IsInitialized() && CdacStress::ShouldSkipStressPoint())
     {
         if(pThread->HasPendingGCStressInstructionUpdate())
             UpdateGCStressInstructionWithoutGC();
@@ -1198,7 +1198,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // When DOTNET_GCStressCdacStep > 1, skip most stress points (both cDAC verification
     // and StressHeap) to reduce overhead. We still restore the instruction since the
     // breakpoint must be removed regardless.
-    if (CdacGcStress::IsInitialized() && CdacGcStress::ShouldSkipStressPoint())
+    if (CdacStress::IsInitialized() && CdacStress::ShouldSkipStressPoint())
     {
         if(pThread->HasPendingGCStressInstructionUpdate())
             UpdateGCStressInstructionWithoutGC();

@@ -191,6 +191,8 @@ internal partial class MockDescriptors
             new(nameof(Data.ExceptionInfo.CSFEHClause), DataType.pointer),
             new(nameof(Data.ExceptionInfo.CSFEnclosingClause), DataType.pointer),
             new(nameof(Data.ExceptionInfo.CallerOfActualHandlerFrame), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.ClauseForCatchHandlerStartPC), DataType.uint32),
+            new(nameof(Data.ExceptionInfo.ClauseForCatchHandlerEndPC), DataType.uint32),
         ]
     };
 
@@ -211,6 +213,8 @@ internal partial class MockDescriptors
             new(nameof(Data.Thread.LastThrownObject), DataType.pointer),
             new(nameof(Data.Thread.LinkNext), DataType.pointer),
             new(nameof(Data.Thread.ExceptionTracker), DataType.pointer),
+            new(nameof(Data.Thread.DebuggerFilterContext), DataType.pointer),
+            new(nameof(Data.Thread.ProfilerFilterContext), DataType.pointer),
             new(nameof(Data.Thread.ThreadLocalDataPtr), DataType.pointer),
             new(nameof(Data.Thread.UEWatsonBucketTrackerBuckets), DataType.pointer),
             new(nameof(Data.Thread.DebuggerFilterContext), DataType.pointer),
