@@ -1566,37 +1566,6 @@ namespace System.StubHelpers
             }
         }
 
-        private const int DispatchExPropertyCanRead = 1;
-        private const int DispatchExPropertyCanWrite = 2;
-
-        [SupportedOSPlatform("windows")]
-        [UnmanagedCallersOnly]
-        [RequiresUnsafe]
-        private static unsafe int GetDispatchExPropertyFlags(PropertyInfo* pMemberInfo, Exception* pException)
-        {
-            try
-            {
-                int result = 0;
-                PropertyInfo property = *pMemberInfo;
-                if (property.CanRead)
-                {
-                    result |= DispatchExPropertyCanRead;
-                }
-
-                if (property.CanWrite)
-                {
-                    result |= DispatchExPropertyCanWrite;
-                }
-
-                return result;
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-                return 0;
-            }
-        }
-
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
@@ -1822,6 +1791,7 @@ namespace System.StubHelpers
     internal static class CultureInfoMarshaler
     {
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void GetCurrentCulture(bool bUICulture, object* pResult, Exception* pException)
         {
             try
@@ -1837,6 +1807,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void SetCurrentCulture(bool bUICulture, Globalization.CultureInfo* pValue, Exception* pException)
         {
             try
@@ -1853,6 +1824,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void CreateCultureInfo(int culture, object* pResult, Exception* pException)
         {
             try
@@ -1898,6 +1870,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void ConvertToManaged(int oleColor, object* pResult, Exception* pException)
         {
             try
@@ -1911,6 +1884,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void ConvertToNative(object* pSrcObj, int* pResult, Exception* pException)
         {
             try
