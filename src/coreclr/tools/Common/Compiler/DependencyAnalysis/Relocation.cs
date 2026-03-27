@@ -656,6 +656,12 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                     DwarfHelper.WritePaddedSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
                     return;
+                case RelocType.WASM_TABLE_INDEX_U32:
+                    *(uint*)location = checked((uint)value);
+                    return;
+                case RelocType.WASM_TABLE_INDEX_U64:
+                    *(ulong*)location = checked((ulong)value);
+                    return;
 
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);

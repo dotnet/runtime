@@ -714,18 +714,18 @@ namespace ILCompiler.ObjectWriter
         {
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
 
-            WebcilSection? webcilSection = null;
+            WebcilSection? curSectionAsWebcil = null;
             uint webcilVirtualStart = 0;
             if (_sections[sectionIndex] is WebcilSection curSection)
             {
-                webcilSection = curSection;
+                curSectionAsWebcil = curSection;
                 webcilVirtualStart = curSection.Header.VirtualAddress;
             }
 
             // If we have a webcil section, we expect it to have a nonzero section start. This is because for webcil,
             // we should have written the webcil header and each of the section headers (always non-zero size) before any
             // section contents
-            Debug.Assert(webcilSection is null || sectionStart != 0);
+            Debug.Assert(curSectionAsWebcil is null || sectionStart != 0);
 
             foreach (SymbolicRelocation reloc in relocs)
             {
@@ -739,23 +739,22 @@ namespace ILCompiler.ObjectWriter
 
                 // The virtual address of the relocation we are resolving
                 uint virtualRelocOffset = 0;
+                if (curSectionAsWebcil is not null)
+                {
+                    virtualRelocOffset = webcilVirtualStart + (uint)reloc.Offset;
+                    Debug.Assert(IsWithinSection(virtualRelocOffset, curSectionAsWebcil));
+                }
 
                 // The virtual address of the symbol this relocation refers to
                 uint virtualSymbolImageOffset = 0;
-
                 WebcilSection? symbolWebcilSection = null;
 
                 // TODO-Wasm: Enforce the below boolean as an assert once we are emitting proper Wasm code
                 // relocs for all code containing nodes
                 // ---> bool betweenWebcilSections = false;
-                if (webcilSection is not null && _sections[definedSymbol.SectionIndex] is WebcilSection targetSection)
+                if (_sections[definedSymbol.SectionIndex] is WebcilSection targetSection)
                 {
-                    // ---> betweenWebcilSections = true;
                     symbolWebcilSection = targetSection;
-
-                    virtualRelocOffset = webcilVirtualStart + (uint)reloc.Offset;
-                    Debug.Assert(IsWithinSection(virtualRelocOffset, webcilSection));
-
                     virtualSymbolImageOffset = symbolWebcilSection.Header.VirtualAddress + (uint)definedSymbol.Value;
                     Debug.Assert(IsWithinSection(virtualSymbolImageOffset, symbolWebcilSection));
                 }
@@ -813,12 +812,42 @@ namespace ILCompiler.ObjectWriter
                             break;
                         case RelocType.WASM_MEMORY_ADDR_SLEB:
                         {
-                            // WASM-TODO actually implement this
+                            // These relocs should be for cases of the form:
+                            //  global.get __image_base
+                            //  i32.const <reloc>
+                            //  i32.add
+                            // so reloc represents an offset relative to image base. 
+                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset);
                             break;
                         }
                         case RelocType.WASM_TABLE_INDEX_U32:
+                        case RelocType.WASM_TABLE_INDEX_U64:
+                        case RelocType.WASM_TABLE_INDEX_SLEB:
                         {
-                            // WASM-TODO actually implement this
+                            if (_uniqueSymbols.TryGetValue(reloc.SymbolName.ToString(), out int index))
+                            {
+                                // Here, we are effectively writing a table offset relative to the table_base.
+                                // These will need to be fixed up by the runtime after load by adding __image_function_pointer_base
+                                Relocation.WriteValue(reloc.Type, pData, index);
+                            }
+                            else
+                            {
+                                throw new InvalidDataException($"Table index for signature symbol definition '{reloc.SymbolName}' not found");
+                            }
+                            break;
+                        }
+                        case RelocType.WASM_FUNCTION_INDEX_LEB:
+                        {
+                            if (_uniqueSymbols.TryGetValue(reloc.SymbolName.ToString(), out int index))
+                            {
+                                // These are module-local function pointer indices, so we can simply write out the assigned function index
+                                // for this particular symbol
+                                Relocation.WriteValue(reloc.Type, pData, index);
+                            }
+                            else
+                            {
+                                throw new InvalidDataException($"Table index for signature symbol definition '{reloc.SymbolName}' not found");
+                            }
                             break;
                         }
                         default:
