@@ -82,8 +82,6 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
     public interface IActivityListener
     {
         public string? Name { get; }
-        public bool Enabled { get; }
-        public bool ShouldListenTo(System.Diagnostics.ActivitySource activitySource);
         public System.Diagnostics.ActivitySamplingResult SampleUsingParentId(ref System.Diagnostics.ActivityCreationOptions<string> options);
         public System.Diagnostics.ActivitySamplingResult Sample(ref System.Diagnostics.ActivityCreationOptions<System.Diagnostics.ActivityContext> options);
         public void ActivityStarted(System.Diagnostics.Activity activity);

@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
     /// <summary>
     /// Extension methods for <see cref="ITracingBuilder"/> to add or clear <see cref="IActivityListener"/> registrations.
     /// </summary>
-    public static partial class ActivityBuilderExtensions
+    public static partial class TracingBuilderExtensions
     {
         /// <summary>
         /// Registers a new <see cref="IActivityListener"/> of type <typeparamref name="T"/>.

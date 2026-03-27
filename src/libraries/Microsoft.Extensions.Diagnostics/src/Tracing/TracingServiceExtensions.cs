@@ -5,13 +5,14 @@ using System;
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// Extension methods for setting up tracing services in an <see cref="IServiceCollection" />.
     /// </summary>
-    public static class TracingServiceExtensions
+    public static class ActivityServiceExtensions
     {
         /// <summary>
         /// Adds tracing services to the specified <see cref="IServiceCollection" />.
@@ -25,6 +26,8 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddOptions();
 
             services.TryAddSingleton<IActivitySourceFactory, DefaultActivitySourceFactory>();
+            services.AddOptions<NoOpOptions>().ValidateOnStart();
+            services.TryAddSingleton<IConfigureOptions<NoOpOptions>, SubscriptionActivator>();
             services.TryAddSingleton<IActivityListenerConfigurationFactory, ActivityListenerConfigurationFactory>();
 
             return services;
@@ -51,6 +54,18 @@ namespace Microsoft.Extensions.DependencyInjection
         private sealed class TracingBuilder(IServiceCollection services) : ITracingBuilder
         {
             public IServiceCollection Services { get; } = services;
+        }
+
+        private sealed class NoOpOptions
+        {
+        }
+
+        private sealed class SubscriptionActivator(IActivitySourceFactory factory) : IConfigureOptions<NoOpOptions>
+        {
+            public void Configure(NoOpOptions options)
+            {
+                _ = factory.GetHashCode(); // Force the creation of the default activity source and registration of the default listener.
+            }
         }
     }
 }

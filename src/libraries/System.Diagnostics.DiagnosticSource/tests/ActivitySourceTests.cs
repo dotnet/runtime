@@ -89,7 +89,7 @@ namespace System.Diagnostics.Tests
         {
             RemoteExecutor.Invoke(() => {
                 using ActivityListener listener = new ActivityListener();
-                Assert.Null(listener.Name);
+                Assert.Equal(string.Empty, listener.Name);
 
                 using ActivityListener namedListener = new ActivityListener("named-listener");
                 Assert.Equal("named-listener", namedListener.Name);
@@ -97,46 +97,28 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestEnabledListenerAndSourceBehavior()
+        public void TestUpdateActivityListenerUpdatesListenerState()
         {
             RemoteExecutor.Invoke(() => {
-                using ActivitySource source = new ActivitySource("EnabledStateSource");
-
+                using ActivitySource source = new ActivitySource("ListenerUpdateSource");
                 Assert.False(source.HasListeners());
-                Assert.False(source.Enabled);
 
-                using ActivityListener disabledListener = new ActivityListener
-                {
-                    Enabled = false,
-                    ShouldListenTo = activitySource => object.ReferenceEquals(source, activitySource),
-                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
-                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
-                };
-
-                ActivitySource.AddActivityListener(disabledListener);
-
-                Assert.False(source.HasListeners());
-                Assert.False(source.Enabled);
-                Assert.Null(source.StartActivity("disabled-listener"));
-
+                bool shouldListen = true;
                 int startedCount = 0;
                 int stoppedCount = 0;
 
-                using ActivityListener enabledListener = new ActivityListener
+                using ActivityListener listener = new ActivityListener
                 {
-                    ShouldListenTo = activitySource => object.ReferenceEquals(source, activitySource),
+                    ShouldListenTo = activitySource => shouldListen && object.ReferenceEquals(source, activitySource),
                     ActivityStarted = _ => startedCount++,
                     ActivityStopped = _ => stoppedCount++,
                     Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
                     SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
                 };
 
-                ActivitySource.AddActivityListener(enabledListener);
-
+                ActivitySource.AddActivityListener(listener);
                 Assert.True(source.HasListeners());
-                Assert.True(source.Enabled);
-
-                using (Activity? activity = source.StartActivity("enabled-listener"))
+                using (Activity? activity = source.StartActivity("enabled"))
                 {
                     Assert.NotNull(activity);
                     Assert.Equal(1, startedCount);
@@ -146,11 +128,10 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(1, startedCount);
                 Assert.Equal(1, stoppedCount);
 
-                enabledListener.Enabled = false;
-
+                shouldListen = false;
+                ActivitySource.UpdateActivityListener(listener);
                 Assert.False(source.HasListeners());
-                Assert.False(source.Enabled);
-                Assert.Null(source.StartActivity("disabled-after-attach"));
+                Assert.Null(source.StartActivity("disabled"));
                 Assert.Equal(1, startedCount);
                 Assert.Equal(1, stoppedCount);
             }).Dispose();

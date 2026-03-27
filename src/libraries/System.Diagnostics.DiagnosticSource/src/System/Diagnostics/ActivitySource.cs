@@ -341,30 +341,12 @@ namespace System.Diagnostics
         /// <summary>
         /// Dispose the ActivitySource object and remove the current instance from the global list. empty the listeners list too.
         /// </summary>
-        public void Dispose()
-        {
-            if (_listeners is not null)
-            {
-                lock (_listeners)
-                {
-                    _listeners.EnumWithAction((listener, obj) =>
-                    {
-                        ((ActivityListener)listener).ListenerDetached?.Invoke((ActivitySource)obj);
-                    }, this);
-
-                    _listeners = null;
-                }
-            }
-
-            s_activeSources.Remove(this);
-        }
+        public void Dispose() => Dispose(true);
 
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing)
-            {
-                Dispose();
-            }
+            _listeners = null;
+            s_activeSources.Remove(this);
         }
 
         /// <summary>

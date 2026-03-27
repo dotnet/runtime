@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
     /// <summary>
     /// Extension methods for <see cref="ITracingBuilder"/> to configure tracing rules.
     /// </summary>
-    public static partial class ActivityBuilderExtensions
+    public static partial class TracingBuilderExtensions
     {
         /// <summary>
         /// Sets whether all activities are enabled for the given activity source and all registered listeners.

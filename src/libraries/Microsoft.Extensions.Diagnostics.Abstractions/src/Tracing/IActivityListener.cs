@@ -49,11 +49,5 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
         /// <param name="exception">The exception being recorded.</param>
         /// <param name="tags">Tags associated with the exception.</param>
         void ActivityExceptionRecorded(Activity activity, Exception exception, ref TagList tags);
-
-        /// <summary>
-        /// Called when the listener is detached from an activity source, either because the source is being disposed or the listener is being removed.
-        /// </summary>
-        /// <param name="activitySource">The activity source from which the listener is detached.</param>
-        void ListenerDetached(ActivitySource activitySource);
     }
 }

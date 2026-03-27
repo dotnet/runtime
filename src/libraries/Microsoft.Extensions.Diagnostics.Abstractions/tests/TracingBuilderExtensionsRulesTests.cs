@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             builder.SetEnabled(activitySourceName, enabled: true);
 
             var container = services.BuildServiceProvider();
-            var options = container.GetRequiredService<IOptions<ActivityOptions>>();
+            var options = container.GetRequiredService<IOptions<TracingOptions>>();
             var instance = options.Value;
             var rule = Assert.Single(instance.Rules);
             Assert.Equal(activitySourceName, rule.ActivitySourceName);
@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             builder.SetEnabled("source", "listener", ActivitySourceScope.Local, enabled: false);
 
             var container = services.BuildServiceProvider();
-            var options = container.GetRequiredService<IOptions<ActivityOptions>>();
+            var options = container.GetRequiredService<IOptions<TracingOptions>>();
             var instance = options.Value;
             var rule = Assert.Single(instance.Rules);
             Assert.Equal("source", rule.ActivitySourceName);
@@ -62,11 +62,11 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         {
             var services = new ServiceCollection();
             services.AddOptions();
-            services.Configure<ActivityOptions>(options =>
+            services.Configure<TracingOptions>(options =>
             options.SetEnabled(activitySourceName, enabled: true));
 
             var container = services.BuildServiceProvider();
-            var options = container.GetRequiredService<IOptions<ActivityOptions>>();
+            var options = container.GetRequiredService<IOptions<TracingOptions>>();
             var instance = options.Value;
             var rule = Assert.Single(instance.Rules);
             Assert.Equal(activitySourceName, rule.ActivitySourceName);
@@ -80,11 +80,11 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         {
             var services = new ServiceCollection();
             services.AddOptions();
-            services.Configure<ActivityOptions>(options =>
+            services.Configure<TracingOptions>(options =>
                 options.SetEnabled("source", "listener", ActivitySourceScope.Global, enabled: false));
 
             var container = services.BuildServiceProvider();
-            var options = container.GetRequiredService<IOptions<ActivityOptions>>();
+            var options = container.GetRequiredService<IOptions<TracingOptions>>();
             var instance = options.Value;
             var rule = Assert.Single(instance.Rules);
             Assert.Equal("source", rule.ActivitySourceName);
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             builder.Enable("source", "listener", ActivitySourceScope.Local);
 
             var container = services.BuildServiceProvider();
-            var options = container.GetRequiredService<IOptions<ActivityOptions>>();
+            var options = container.GetRequiredService<IOptions<TracingOptions>>();
             var instance = options.Value;
             var rule = Assert.Single(instance.Rules);
             Assert.True(rule.Enabled);
@@ -119,13 +119,13 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             builder.Disable("source", "listener", ActivitySourceScope.Local);
 
             var container = services.BuildServiceProvider();
-            var options = container.GetRequiredService<IOptions<ActivityOptions>>();
+            var options = container.GetRequiredService<IOptions<TracingOptions>>();
             var instance = options.Value;
             var rule = Assert.Single(instance.Rules);
             Assert.False(rule.Enabled);
         }
 
-        private class FakeBuilder(IServiceCollection services) : IActivityBuilder
+        private class FakeBuilder(IServiceCollection services) : ITracingBuilder
         {
             public IServiceCollection Services { get; } = services;
         }

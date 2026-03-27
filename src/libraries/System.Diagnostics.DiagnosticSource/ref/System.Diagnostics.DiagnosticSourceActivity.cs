@@ -312,7 +312,6 @@ namespace System.Diagnostics
         public System.Diagnostics.SampleActivity<string>? SampleUsingParentId { get { throw null; } set { } }
         public System.Diagnostics.SampleActivity<ActivityContext>? Sample { get { throw null; } set { } }
         public void Dispose() { throw null; }
-        public Action<ActivitySource>? ListenerDetached { get; set; }
     }
     public abstract class DistributedContextPropagator
     {

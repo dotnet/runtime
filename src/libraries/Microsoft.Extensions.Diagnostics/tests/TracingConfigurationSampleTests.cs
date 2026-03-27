@@ -14,6 +14,8 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 {
     public class TracingConfigurationSampleTests
     {
+        private const string SampleListenerName = nameof(SampleActivityListener);
+
         [Fact]
         public void EnabledRuleAllowsActivityCreation()
         {
@@ -21,6 +23,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["EnabledTracing:Default"] = "true",
+                    [$"{SampleListenerName}:EnabledTracing:Default"] = "true",
                 })
                 .Build();
 
@@ -47,6 +50,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["EnabledTracing:Default"] = "true",
+                    [$"{SampleListenerName}:EnabledTracing:Default"] = "true",
                 })
                 .Build();
 
@@ -120,6 +124,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                     ["EnabledGlobalTracing:Demo.ScopeSource:Default"] = "true",
                     ["EnabledLocalTracing:Demo.ScopeSource:Default"] = "false",
                     ["EnabledLocalTracing:Demo.LocalOnlySource:Default"] = "true",
+                    [$"{SampleListenerName}:EnabledTracing:Default"] = "true",
                 })
                 .Build();
 
@@ -190,6 +195,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         {
             var options = new TracingOptions();
             options.Rules.Add(new TracingRule(activitySourceName, listenerName: null, enabled));
+            options.Rules.Add(new TracingRule(activitySourceName, listenerName: SampleListenerName, enabled));
             return options;
         }
 
@@ -208,11 +214,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
         public sealed class SampleActivityListener : IActivityListener
         {
-            public string Name => "SampleActivityListener";
-
-            public bool Enabled => true;
-
-            public bool ShouldListenTo(ActivitySource activitySource) => true;
+            public string Name => SampleListenerName;
 
             public ActivitySamplingResult SampleUsingParentId(ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded;
 
@@ -255,7 +257,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 CurrentValue = options;
                 foreach (Action<TracingOptions, string?> callback in _callbacks.ToArray())
                 {
-                    callback(options, Options.DefaultName);
+                    callback(options, Options.Options.DefaultName);
                 }
             }
 

@@ -76,10 +76,5 @@ namespace System.Diagnostics
         /// Dispose will unregister this <see cref="ActivityListener"/> object from listening to <see cref="Activity"/> events.
         /// </summary>
         public void Dispose() => ActivitySource.DetachListener(this);
-
-        /// <summary>
-        /// Set or get the callback used to listen to the <see cref="ActivitySource"/> detach event.
-        /// </summary>
-        public Action<ActivitySource>? ListenerDetached { get; set; }
     }
 }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Diagnostics.Configuration
@@ -87,6 +88,9 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
 
         public void Dispose()
         {
+            List<ActivityListenerRegistration> listenerRegistrations;
+            List<FactoryActivitySource> sources;
+
             lock (_cachedSources)
             {
                 if (_disposed)
@@ -96,22 +100,21 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
 
                 _disposed = true;
                 _changeTokenRegistration?.Dispose();
-                foreach (ActivityListenerRegistration registration in _listenerRegistrations)
-                {
-                    registration.Dispose();
-                }
-
+                listenerRegistrations = [.. _listenerRegistrations];
                 _listenerRegistrations.Clear();
 
-                foreach (List<FactoryActivitySource> sourceList in _cachedSources.Values)
-                {
-                    foreach (FactoryActivitySource source in sourceList)
-                    {
-                        source.Release();
-                    }
-                }
-
+                sources = [.. _cachedSources.Values.SelectMany(static sourceList => sourceList)];
                 _cachedSources.Clear();
+            }
+
+            foreach (ActivityListenerRegistration registration in listenerRegistrations)
+            {
+                registration.Dispose();
+            }
+
+            foreach (FactoryActivitySource source in sources)
+            {
+                source.Release();
             }
         }
 
@@ -134,7 +137,6 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
             private readonly IActivityListener _listener;
             private readonly DefaultActivitySourceFactory _activitySourceFactory;
             private readonly object _lock = new();
-            private readonly HashSet<Activity> _activeActivities = new();
             private readonly ActivityListener _activityListener;
             private IList<TracingRule> _rules = Array.Empty<TracingRule>();
             private bool _disposed;
@@ -158,12 +160,6 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
 
             public void Dispose()
             {
-                _activityListener.Dispose();
-                _activeActivities.Clear();
-            }
-
-            public void UpdateRules(IList<TracingRule> rules)
-            {
                 lock (_lock)
                 {
                     if (_disposed)
@@ -171,14 +167,31 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
                         return;
                     }
 
-                    _rules = rules;
+                    _disposed = true;
+                    _activityListener.Dispose();
+                    _rules = Array.Empty<TracingRule>();
+                }
+            }
+
+            public void UpdateRules(IList<TracingRule> rules)
+            {
+                ArgumentNullException.ThrowIfNull(rules);
+
+                lock (_lock)
+                {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+
+                    Volatile.Write(ref _rules, rules);
                     ActivitySource.UpdateActivityListener(_activityListener);
                 }
             }
 
             private bool ShouldListenTo(ActivitySource activitySource)
             {
-                return IsEnabled(activitySource) && IsEnabled(activitySource, _listener.Name);
+                return IsEnabled(activitySource) && IsEnabled(activitySource, _listener.Name ?? string.Empty);
             }
 
             private bool IsEnabled(ActivitySource activitySource, string listenerName = "")
@@ -190,7 +203,8 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
             private TracingRule? GetMostSpecificRule(string activitySourceName, string listenerName, bool isLocalScope)
             {
                 TracingRule? best = null;
-                foreach (TracingRule rule in _rules)
+                IList<TracingRule> rules = Volatile.Read(ref _rules);
+                foreach (TracingRule rule in rules)
                 {
                     if (RuleMatches(rule, activitySourceName, listenerName, isLocalScope)
                         && IsMoreSpecific(rule, best, isLocalScope))
