@@ -30,7 +30,16 @@ for zipFile in "$BATCH_DIR"/*.zip; do
     echo "========================= BEGIN $suiteName ============================="
 
     mkdir -p "$suiteDir"
-    unzip -q -o "$zipFile" -d "$suiteDir"
+    if ! unzip -q -o "$zipFile" -d "$suiteDir"; then
+        echo "ERROR: Failed to extract $zipFile"
+        FAIL_COUNT=$((FAIL_COUNT + 1))
+        SUITE_NAMES+=("$suiteName")
+        SUITE_EXIT_CODES+=("1")
+        SUITE_DURATIONS+=("0")
+        SUITE_COUNT=$((SUITE_COUNT + 1))
+        rm -rf "$suiteDir"
+        continue
+    fi
 
     export HELIX_WORKITEM_UPLOAD_ROOT="$ORIGINAL_UPLOAD_ROOT/$suiteName"
     mkdir -p "$HELIX_WORKITEM_UPLOAD_ROOT"
@@ -45,6 +54,8 @@ for zipFile in "$BATCH_DIR"/*.zip; do
     endTime=$(date +%s)
 
     popd >/dev/null
+
+    rm -rf "$suiteDir"
 
     duration=$((endTime - startTime))
 
@@ -62,6 +73,9 @@ for zipFile in "$BATCH_DIR"/*.zip; do
 
     echo "========================= END $suiteName ==============================="
 done
+
+# Restore so Helix post-commands write artifacts to the expected root
+export HELIX_WORKITEM_UPLOAD_ROOT="$ORIGINAL_UPLOAD_ROOT"
 
 echo ""
 echo "=== Batch Summary ==="

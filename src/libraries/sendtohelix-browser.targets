@@ -189,7 +189,6 @@
       <Using Namespace="System" />
       <Using Namespace="System.Collections.Generic" />
       <Using Namespace="System.IO" />
-      <Using Namespace="System.Linq" />
       <Code Type="Fragment" Language="cs">
 <![CDATA[
 if (BatchSize <= 0) BatchSize = 10;
@@ -412,16 +411,15 @@ TimedItems = result.ToArray();
   <Target Name="_AddBatchedWorkItemsForLibraryTests"
           Condition="'$(IsRunningLibraryTests)' == 'true' and '$(WasmBatchLibraryTests)' == 'true'">
 
-    <!-- Collect all test ZIPs the same way the non-batched path does -->
+    <!-- Collect all test ZIPs (batching only runs for Chrome, see WasmBatchLibraryTests condition) -->
     <ItemGroup>
-      <_WasmBatchWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"  Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'WasmTestOnFirefox'" />
-      <_WasmBatchWorkItem Include="$(TestArchiveRoot)chromeonly/**/*.zip"   Condition="'$(Scenario)' == 'WasmTestOnChrome'" />
+      <_WasmBatchWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" />
+      <_WasmBatchWorkItem Include="$(TestArchiveRoot)chromeonly/**/*.zip" />
     </ItemGroup>
 
     <!-- Sample apps have different runners (no RunTests.sh), keep them as individual work items -->
     <ItemGroup>
-      <_WasmBatchSampleZip Condition="'$(Scenario)' == 'WasmTestOnV8'"       Include="$(TestArchiveRoot)runonly/**/*.Console.V8.*.Sample.zip" />
-      <_WasmBatchSampleZip Condition="'$(Scenario)' == 'WasmTestOnChrome'"   Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
+      <_WasmBatchSampleZip Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
 
       <HelixWorkItem Include="@(_WasmBatchSampleZip -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
@@ -451,13 +449,14 @@ TimedItems = result.ToArray();
       <_WasmUniqueBatchId Include="@(_WasmBatchId->Distinct())" />
     </ItemGroup>
 
-    <!-- Stage each batch: copy ZIPs and the runner script into a per-batch directory -->
+    <!-- Clean stale batch staging from previous runs, then create fresh directories -->
+    <RemoveDir Directories="$(IntermediateOutputPath)helix-batches/" />
     <MakeDir Directories="$(IntermediateOutputPath)helix-batches/batch-%(_WasmUniqueBatchId.Identity)/" />
     <Copy SourceFiles="@(_WasmGroupedItem)" DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(BatchId)/" />
     <Copy SourceFiles="$(RepositoryEngineeringDir)testing/WasmBatchRunner.sh"
           DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(_WasmUniqueBatchId.Identity)/" />
 
-    <!-- Compute per-batch timeout: 2 minutes per suite, minimum 10 minutes -->
+    <!-- Compute per-batch timeout: 20 minutes per suite, minimum 30 minutes -->
     <_ComputeBatchTimeout GroupedItems="@(_WasmGroupedItem)" BatchIds="@(_WasmUniqueBatchId)"
                           ItemPrefix="$(WorkItemPrefix)" BatchOutputDir="$(IntermediateOutputPath)helix-batches/">
       <Output TaskParameter="TimedItems" ItemName="_WasmTimedBatchItem" />
