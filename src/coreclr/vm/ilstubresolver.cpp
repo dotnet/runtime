@@ -112,25 +112,46 @@ ILStubResolver::GetLocalSig()
         m_pCompileTimeState->m_ILHeader.cbLocalVarSig);
 }
 
-OBJECTHANDLE ILStubResolver::ConstructStringLiteral(mdToken token)
+STRINGREF* ILStubResolver::ConstructStringLiteral(mdToken token)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(FALSE);
-    return (OBJECTHANDLE)NULL;
+
+    GCX_COOP();
+
+    STRINGREF* string = NULL;
+    STRINGREF strRef = GetStringLiteral(token);
+
+    GCPROTECT_BEGIN(strRef);
+
+    if (strRef != NULL)
+    {
+        string = GetDynamicMethod()->GetLoaderAllocator()->GetOrInternString(&strRef);
+    }
+
+    GCPROTECT_END();
+
+    return string;
 }
 
 BOOL ILStubResolver::IsValidStringRef(mdToken metaTok)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(FALSE);
-    return FALSE;
+
+    return TypeFromToken(metaTok) == mdtString && metaTok <= m_pCompileTimeState->m_tokenLookupMap.GetMaxUserStringToken();
 }
 
 STRINGREF ILStubResolver::GetStringLiteral(mdToken metaTok)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(FALSE);
+#ifndef DACCESS_COMPILE
+    SString& str = m_pCompileTimeState->m_tokenLookupMap.LookupUserString(metaTok);
+
+    LPCWSTR unicodeStr = str.GetUnicode();
+    return StringObject::NewString(unicodeStr, str.GetCount());
+#else
+    DacNotImpl();
     return NULL;
+#endif
 }
 
 void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)

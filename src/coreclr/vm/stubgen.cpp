@@ -1636,6 +1636,11 @@ void ILCodeStream::EmitLDSFLDA(int token)
     WRAPPER_NO_CONTRACT;
     Emit(CEE_LDSFLDA, 1, token);
 }
+void ILCodeStream::EmitLDSTR(SString str)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_LDSTR, 1, m_pOwner->GetUserStringToken(std::move(str)));
+}
 void ILCodeStream::EmitLDTOKEN(int token)
 {
     WRAPPER_NO_CONTRACT;
@@ -3256,6 +3261,12 @@ int ILStubLinker::GetToken(FieldDesc* pFD, mdToken typeSignature)
 {
     STANDARD_VM_CONTRACT;
     return m_tokenMap.GetToken(pFD, typeSignature);
+}
+
+int ILStubLinker::GetUserStringToken(SString s)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetUserStringToken(std::move(s));
 }
 
 int ILStubLinker::GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)

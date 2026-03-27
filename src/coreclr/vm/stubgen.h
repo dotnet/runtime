@@ -11,6 +11,7 @@
 #define __STUBGEN_H__
 
 #include "stublink.h"
+#include "sstring.h"
 
 struct ILStubEHClause;
 class ILStubLinker;
@@ -314,6 +315,7 @@ public:
         m_memberRefs.Set(pSrc->m_memberRefs);
         m_methodSpecs.Set(pSrc->m_methodSpecs);
         m_typeSpecs.Set(pSrc->m_typeSpecs);
+        m_userStrings.Set(pSrc->m_userStrings);
     }
 
     TypeHandle LookupTypeDef(mdToken token)
@@ -417,6 +419,22 @@ public:
         PCCOR_SIGNATURE pSig = (PCCOR_SIGNATURE)sigData.Ptr();
         DWORD cbSig = static_cast<DWORD>(sigData.Size());
         return SigPointer(pSig, cbSig);
+    }
+
+    SString& LookupUserString(mdToken token)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_ANY;
+            GC_NOTRIGGER;
+            PRECONDITION(RidFromToken(token) - 1 < m_userStrings.GetCount());
+            PRECONDITION(RidFromToken(token) != 0);
+            PRECONDITION(TypeFromToken(token) == mdtString);
+        }
+        CONTRACTL_END;
+
+        return m_userStrings[static_cast<COUNT_T>(RidFromToken(token) - 1)];
     }
 
     mdToken GetToken(TypeHandle th)
@@ -528,6 +546,34 @@ public:
         return token;
     }
 
+    mdToken GetUserStringToken(SString str)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_ANY;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        mdToken token = TokenFromRid(m_userStrings.GetCount(), mdtString)+1;
+        m_userStrings.Append(std::move(str));
+        return token;
+    }
+
+    mdToken GetMaxUserStringToken()
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_ANY;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END;
+
+        return TokenFromRid(m_userStrings.GetCount(), mdtString);
+    }
+
 protected:
     mdToken GetTypeSpecWorker(TypeSpecEntry** entry)
     {
@@ -621,6 +667,7 @@ protected:
     uint32_t                                       m_nextAvailableRid;
     CQuickBytesSpecifySize<TOKEN_LOOKUP_MAP_SIZE>  m_qbEntries;
     SArray<CQuickBytesSpecifySize<16>, FALSE>      m_signatures;
+    SArray<SString, FALSE>                         m_userStrings;
     SArray<MemberRefEntry, FALSE>                  m_memberRefs;
     SArray<MethodSpecEntry, FALSE>                 m_methodSpecs;
     SArray<TypeSpecEntry, FALSE>                   m_typeSpecs;
@@ -798,6 +845,7 @@ protected:
     int GetToken(TypeHandle th, mdToken typeSignature);
     int GetToken(FieldDesc* pFD);
     int GetToken(FieldDesc* pFD, mdToken typeSignature);
+    int GetUserStringToken(SString str);
     int GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig);
     DWORD NewLocal(CorElementType typ = ELEMENT_TYPE_I);
     DWORD NewLocal(LocalDesc loc);
@@ -975,6 +1023,7 @@ public:
     void EmitLDOBJ      (int token);
     void EmitLDSFLD     (int token);
     void EmitLDSFLDA    (int token);
+    void EmitLDSTR      (SString str);
     void EmitLDTOKEN    (int token);
     void EmitLEAVE      (ILCodeLabel* pCodeLabel);
     void EmitLOCALLOC   ();
