@@ -1682,34 +1682,23 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
         else if (!isNoMetadata)
         {
-            throw new InvalidOperationException("Failed to get metadata for method");
+            return false;
         }
 
         return !isNoMetadata && isMiNoOptimization;
     }
 
-    private bool IsJitOptimizationDisabledForAllMethodsInChunk(MethodDescHandle methodDescHandle)
+    private bool IsJitOptimizationDisabledForModule(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
         MethodTable methodTable = GetOrCreateMethodTable(methodDesc);
         ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(methodTable.Module);
-        DebuggerAssemblyControlFlags debuggerInfoBits = _target.Contracts.Loader.GetDebuggerInfoBits(moduleHandle);
-        DebuggerControlFlag corDebuggerControlFlags = (DebuggerControlFlag)_target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.CORDebuggerControlFlags));
-        TargetPointer eeConfigPtr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.EEConfig));
-        Data.EEConfig eeConfig = _target.ProcessedData.GetOrAdd<Data.EEConfig>(eeConfigPtr);
-
-        bool corDebuggerAllowJITOpts = debuggerInfoBits.HasFlag(DebuggerAssemblyControlFlags.DACF_ALLOW_JIT_OPTS)
-            || (corDebuggerControlFlags.HasFlag(DebuggerControlFlag.DBCF_ALLOW_JIT_OPT)
-                && !debuggerInfoBits.HasFlag(DebuggerAssemblyControlFlags.DACF_USER_OVERRIDE));
-        bool profilerDisabledOptimizations = _target.Contracts.Loader.GetFlags(moduleHandle).HasFlag(ModuleFlags.ProfilerDisableOpt);
-        bool areJITOptimizationsDisabled = !corDebuggerAllowJITOpts || profilerDisabledOptimizations;
-
-        return eeConfig.JitMinOpts || eeConfig.GenDebuggable || areJITOptimizationsDisabled;
+        return _target.Contracts.Loader.GetFlags(moduleHandle).HasFlag(ModuleFlags.AllMethodsJitOptimizationDisabled);
     }
 
     bool IRuntimeTypeSystem.IsJitOptimizationDisabled(MethodDescHandle methodDescHandle)
     {
-        return IsJitOptimizationDisabledForAllMethodsInChunk(methodDescHandle) || IsJitOptimizationDisabledForSpecificMethod(methodDescHandle);
+        return IsJitOptimizationDisabledForModule(methodDescHandle) || IsJitOptimizationDisabledForSpecificMethod(methodDescHandle);
     }
 
     NativeCodeVersionOptimizationTier IRuntimeTypeSystem.GetInitialOptimizationTier(MethodDescHandle methodDescHandle)

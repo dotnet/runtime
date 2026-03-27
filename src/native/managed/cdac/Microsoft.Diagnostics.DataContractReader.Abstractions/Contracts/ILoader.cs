@@ -23,6 +23,7 @@ public enum ModuleFlags
     EditAndContinue = 0x8,          // Edit and Continue is enabled for this module
     ReflectionEmit = 0x40,          // Reflection.Emit was used to create this module
     ProfilerDisableOpt = 0x80,      // Profiler disabled JIT optimizations when module was loaded
+    AllMethodsJitOptimizationDisabled = 0x00200000, // Precomputed: JIT optimization is disabled for all methods in this module
 }
 
 [Flags]

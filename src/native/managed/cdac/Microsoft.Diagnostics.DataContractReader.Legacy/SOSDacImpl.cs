@@ -4806,18 +4806,23 @@ public sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface4
 
     #region ISOSDacInterface5
-    int ISOSDacInterface5.GetTieredVersions(ClrDataAddress methodDesc, int rejitId, DacpTieredVersionData* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs)
+    int ISOSDacInterface5.GetTieredVersions(
+        ClrDataAddress methodDesc,
+        int rejitId,
+        [In, MarshalUsing(CountElementName = nameof(cNativeCodeAddrs)), Out] DacpTieredVersionData[]? nativeCodeAddrs,
+        int cNativeCodeAddrs,
+        int* pcNativeCodeAddrs)
     {
-        if (methodDesc == 0 || cNativeCodeAddrs == 0 || pcNativeCodeAddrs == null)
-        {
-            return HResults.E_INVALIDARG;
-        }
-
-        *pcNativeCodeAddrs = 0;
         int hr = HResults.S_OK;
-#if FEATURE_REJIT
         try
         {
+            if (methodDesc == 0 || cNativeCodeAddrs == 0 || pcNativeCodeAddrs == null || nativeCodeAddrs is null)
+            {
+                throw new ArgumentException();
+            }
+
+            *pcNativeCodeAddrs = 0;
+
             ILoader loader = _target.Contracts.Loader;
             ICodeVersions codeVersions = _target.Contracts.CodeVersions;
             IReJIT rejitContract = _target.Contracts.ReJIT;
@@ -4830,8 +4835,8 @@ public sealed unsafe partial class SOSDacImpl
 
             IRuntimeTypeSystem runtimeTypeSystemContract = _target.Contracts.RuntimeTypeSystem;
             MethodDescHandle methodDescHandle = runtimeTypeSystemContract.GetMethodDescHandle(methodDescPtr);
-            TargetPointer modulePtr = runtimeTypeSystemContract.GetModule(methodDescHandle);
-            ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+            TargetPointer modulePtr = runtimeTypeSystemContract.GetModule(runtimeTypeSystemContract.GetTypeHandle(runtimeTypeSystemContract.GetMethodTable(methodDescHandle)));
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
 
             TargetPointer r2rImageBase = TargetPointer.Null;
             TargetPointer r2rImageEnd = TargetPointer.Null;
@@ -4840,8 +4845,8 @@ public sealed unsafe partial class SOSDacImpl
             {
                 r2rImageEnd = r2rImageBase + r2rSize;
             }
-            ClrDataAddress r2rImageBaseAddr = r2rImageBase.toClrDataAddress(_target);
-            ClrDataAddress r2rImageEndAddr = r2rImageEnd.toClrDataAddress(_target);
+            ClrDataAddress r2rImageBaseAddr = r2rImageBase.ToClrDataAddress(_target);
+            ClrDataAddress r2rImageEndAddr = r2rImageEnd.ToClrDataAddress(_target);
 
             int count = 0;
             foreach (NativeCodeVersionHandle nativeCodeVersionHandle in codeVersions.GetNativeCodeVersions(methodDescPtr, ilCodeVersionHandle))
@@ -4901,6 +4906,11 @@ public sealed unsafe partial class SOSDacImpl
 
             *pcNativeCodeAddrs = count;
         }
+        catch (NotImplementedException)
+        {
+            // ReJIT contract not available — feature not active in the target runtime
+            return HResults.S_OK;
+        }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
@@ -4908,11 +4918,28 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl5 is not null)
         {
-            int hrLocal = _legacyImpl5.GetTieredVersions(methodDesc, rejitId, nativeCodeAddrs, cNativeCodeAddrs, pcNativeCodeAddrs);
+            var legacyBuffer = new DacpTieredVersionData[cNativeCodeAddrs];
+            int legacyCount;
+            int hrLocal = _legacyImpl5.GetTieredVersions(methodDesc, rejitId, legacyBuffer, cNativeCodeAddrs, &legacyCount);
             Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(*pcNativeCodeAddrs == legacyCount, $"cDAC count: {*pcNativeCodeAddrs}, DAC count: {legacyCount}");
+                if (nativeCodeAddrs is not null)
+                {
+                    for (int i = 0; i < *pcNativeCodeAddrs; i++)
+                    {
+                        Debug.Assert(nativeCodeAddrs[i].nativeCodeAddr == legacyBuffer[i].nativeCodeAddr,
+                            $"[{i}] cDAC nativeCodeAddr: 0x{(ulong)nativeCodeAddrs[i].nativeCodeAddr:x}, DAC: 0x{(ulong)legacyBuffer[i].nativeCodeAddr:x}");
+                        Debug.Assert(nativeCodeAddrs[i].nativeCodeVersionNodePtr == legacyBuffer[i].nativeCodeVersionNodePtr,
+                            $"[{i}] cDAC nodePtr: 0x{(ulong)nativeCodeAddrs[i].nativeCodeVersionNodePtr:x}, DAC: 0x{(ulong)legacyBuffer[i].nativeCodeVersionNodePtr:x}");
+                        Debug.Assert(nativeCodeAddrs[i].optimizationTier == legacyBuffer[i].optimizationTier,
+                            $"[{i}] cDAC tier: {nativeCodeAddrs[i].optimizationTier}, DAC: {legacyBuffer[i].optimizationTier}");
+                    }
+                }
+            }
         }
 #endif // DEBUG
-#endif // FEATURE_REJIT
         return hr;
     }
     #endregion ISOSDacInterface5
