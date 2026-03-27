@@ -123,7 +123,51 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         => _legacyModule is not null ? _legacyModule.EndEnumDataByName(handle) : HResults.E_NOTIMPL;
 
     int IXCLRDataModule.GetName(uint bufLen, uint* nameLen, char* name)
-        => _legacyModule is not null ? _legacyModule.GetName(bufLen, nameLen, name) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int E_INSUFFICIENT_BUFFER = unchecked((int)0x8007007A);
+        try
+        {
+            if (nameLen != null)
+                *nameLen = 0;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(_address);
+            if (!loader.TryGetSimpleName(handle, out string result))
+                throw new ArgumentException("Module does not have a simple name");
+
+            uint nameLenLocal = 0;
+            OutputBufferHelpers.CopyStringToBuffer(name, bufLen, &nameLenLocal, result);
+            if (nameLen != null)
+                *nameLen = nameLenLocal;
+            // throw on insufficient buffer
+            if (nameLenLocal > bufLen)
+                throw Marshal.GetExceptionForHR(E_INSUFFICIENT_BUFFER)!;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyModule is not null)
+        {
+            char[] nameLocal = new char[bufLen];
+            uint nameLenLocal;
+            int hrLocal;
+            fixed (char* ptr = nameLocal)
+            {
+                hrLocal = _legacyModule.GetName(bufLen, &nameLenLocal, ptr);
+            }
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(nameLen == null || *nameLen == nameLenLocal);
+                Debug.Assert(name == null || new ReadOnlySpan<char>(nameLocal, 0, (int)nameLenLocal - 1).SequenceEqual(new string(name)));
+            }
+        }
+#endif
+        return hr;
+    }
     int IXCLRDataModule.GetFileName(uint bufLen, uint* nameLen, char* name)
     {
         try

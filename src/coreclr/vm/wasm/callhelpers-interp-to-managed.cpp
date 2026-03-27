@@ -271,6 +271,12 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_IND(0), ARG_IND(1), ARG_I32(2), ARG_IND(3));
     }
 
+    static void CallFunc_IND_IND_IND_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
+        *((int32_t*)pRet) = (*fptr)(ARG_IND(0), ARG_IND(1), ARG_IND(2));
+    }
+
     static void CallFunc_Void_RetI64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         int64_t (*fptr)() = (int64_t (*)())pcode;
@@ -281,6 +287,12 @@ namespace
     {
         int64_t (*fptr)(int32_t) = (int64_t (*)(int32_t))pcode;
         *((int64_t*)pRet) = (*fptr)(ARG_I32(0));
+    }
+
+    static void CallFunc_I32_I32_I32_RetI64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    {
+        int64_t (*fptr)(int32_t, int32_t, int32_t) = (int64_t (*)(int32_t, int32_t, int32_t))pcode;
+        *((int64_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2));
     }
 
     static void CallFunc_I32_I32_I32_I64_RetI64(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -457,10 +469,10 @@ namespace
         (*fptr)(ARG_IND(0), ARG_IND(1));
     }
 
-    static void CallFunc_IND_IND_I32_I32_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    static void CallFunc_IND_IND_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
-        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG_IND(1), ARG_I32(2), ARG_I32(3), ARG_I32(4));
+        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_IND(0), ARG_IND(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6));
     }
 }
 
@@ -507,8 +519,10 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "inni", (void*)&CallFunc_IND_IND_I32_RetI32 },
     { "innii", (void*)&CallFunc_IND_IND_I32_I32_RetI32 },
     { "innin", (void*)&CallFunc_IND_IND_I32_IND_RetI32 },
+    { "innn", (void*)&CallFunc_IND_IND_IND_RetI32 },
     { "l", (void*)&CallFunc_Void_RetI64 },
     { "li", (void*)&CallFunc_I32_RetI64 },
+    { "liii", (void*)&CallFunc_I32_I32_I32_RetI64 },
     { "liiil", (void*)&CallFunc_I32_I32_I32_I64_RetI64 },
     { "lil", (void*)&CallFunc_I32_I64_RetI64 },
     { "lili", (void*)&CallFunc_I32_I64_I32_RetI64 },
@@ -538,7 +552,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "vniiiiii", (void*)&CallFunc_IND_I32_I32_I32_I32_I32_I32_RetVoid },
     { "vniiiiiiiiiii", (void*)&CallFunc_IND_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetVoid },
     { "vnn", (void*)&CallFunc_IND_IND_RetVoid },
-    { "vnniii", (void*)&CallFunc_IND_IND_I32_I32_I32_RetVoid }
+    { "vnniiiii", (void*)&CallFunc_IND_IND_I32_I32_I32_I32_I32_RetVoid }
 };
 
 const size_t g_wasmThunksCount = sizeof(g_wasmThunks) / sizeof(g_wasmThunks[0]);

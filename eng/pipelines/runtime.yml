@@ -965,6 +965,17 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
+
+      # WebAssembly CoreCLR - smoke tests only on Firefox and V8
+      - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          alwaysRun: ${{ variables.isRollingBuild }}
+          shouldRunSmokeOnly: 'true'
+          nameSuffix: _SmokeFirefoxV8
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          scenarios:
             - WasmTestOnFirefox
             - WasmTestOnV8
 
@@ -1140,9 +1151,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-            # - ios_arm64
-            # - tvos_arm64
+            - ios_arm64
+            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1187,9 +1197,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-            # - ios_arm64
-            # - tvos_arm64
+            - ios_arm64
+            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1234,9 +1243,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-            # - ios_arm64
-            # - tvos_arm64
+            - ios_arm64
+            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange

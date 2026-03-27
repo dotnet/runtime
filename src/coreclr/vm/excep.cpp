@@ -2353,7 +2353,12 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
 #endif // ALIGN_ACCESS
 
         default:
+#ifdef TARGET_WINDOWS
             return kSEHException;
+#else
+            _ASSERTE(!"Expected to be unreachable");
+            return kException;
+#endif // TARGET_WINDOWS
     }
 }
 
@@ -3430,7 +3435,7 @@ CreateCrashDumpIfEnabled(bool stackoverflow)
     {
         if (stackoverflow)
         {
-            HandleHolder createDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET Stack overflow create dump"));
+            HandleHolder createDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET SO Dumper"));
             if (createDumpThreadHandle != INVALID_HANDLE_VALUE)
             {
                 // Wait for the dump to be generated
@@ -4698,30 +4703,6 @@ LONG ThreadBaseExceptionAppDomainFilter(EXCEPTION_POINTERS *pExceptionInfo, PVOI
     return InternalUnhandledExceptionFilter_Worker(pExceptionInfo);
 }
 
-// Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
-// in the native code.
-LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
-{
-    CallOutFilterParam *pParam = static_cast<CallOutFilterParam *>(pv);
-
-    _ASSERTE(pParam && (pParam->OneShot == TRUE || pParam->OneShot == FALSE));
-
-    if (pParam->OneShot == TRUE)
-    {
-        pParam->OneShot = FALSE;
-
-        // Replace whatever SEH exception is in flight, with an SEHException derived from
-        // CLRException.  But if the exception already looks like one of ours, let it
-        // go past since LastThrownObject should already represent it.
-        if ((!IsComPlusException(pExceptionInfo->ExceptionRecord)) &&
-            (pExceptionInfo->ExceptionRecord->ExceptionCode != EXCEPTION_MSVC))
-            PAL_CPP_THROW(SEHException *, new SEHException(pExceptionInfo->ExceptionRecord,
-                                                           pExceptionInfo->ContextRecord));
-    }
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
-
 //==========================================================================
 // Convert the format string used by sprintf to the format used by String.Format.
 // Using the managed formatting routine avoids bogus access violations
@@ -5109,23 +5090,6 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
     }
 
     return result;
-}
-
-LONG FilterAccessViolation(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    if (pExceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
-        return EXCEPTION_EXECUTE_HANDLER;
-
-    return EXCEPTION_CONTINUE_SEARCH;
 }
 
 /*
@@ -7031,7 +6995,9 @@ bool DebugIsEECxxExceptionPointer(void* pv)
 
         HRException             boilerplate1;
         COMException            boilerplate2;
+#ifdef TARGET_WINDOWS
         SEHException            boilerplate3;
+#endif // TARGET_WINDOWS
 
         // clrex.h
 
@@ -7056,7 +7022,9 @@ bool DebugIsEECxxExceptionPointer(void* pv)
         {
             *((TADDR*)&boilerplate1),
             *((TADDR*)&boilerplate2),
+#ifdef TARGET_WINDOWS
             *((TADDR*)&boilerplate3),
+#endif // TARGET_WINDOWS
             *((TADDR*)&boilerplate4),
             *((TADDR*)&boilerplate5),
             *((TADDR*)&boilerplate6),
