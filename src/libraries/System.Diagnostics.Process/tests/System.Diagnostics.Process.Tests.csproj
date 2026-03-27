@@ -38,6 +38,7 @@
     <Compile Include="ProcessWaitingTests.cs" />
     <Compile Include="RemotelyInvokable.cs" />
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="SafeProcessHandleTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="ProcessModuleTests.Windows.cs" />
