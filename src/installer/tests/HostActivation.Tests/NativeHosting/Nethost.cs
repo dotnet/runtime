@@ -357,6 +357,120 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
+        [Theory]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        public void GetHostFxrPath_StaticNativeHost_DotNetRootEnvironment(bool useAssemblyPath, bool isValid)
+        {
+            string dotNetRoot = isValid ? Path.Combine(sharedState.ValidInstallRoot, "dotnet") : sharedState.InvalidInstallRoot;
+            CommandResult result = Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} {(useAssemblyPath ? sharedState.TestAssemblyPath : string.Empty)}")
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(dotNetRoot)
+                .Execute();
+
+            result.Should().HaveStdErrContaining("Using environment variable");
+
+            if (isValid)
+            {
+                result.Should().Pass()
+                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+            }
+            else
+            {
+                result.Should().Fail()
+                    .And.ExitWith(1)
+                    .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
+                    .And.HaveStdErrContaining($"The required library {HostFxrName} could not be found");
+            }
+        }
+
+        [Theory]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        public void GetHostFxrPath_StaticNativeHost_DotNetRootParameter(bool useAssemblyPath, bool isValid)
+        {
+            string dotNetRoot = isValid ? Path.Combine(sharedState.ValidInstallRoot, "dotnet") : sharedState.InvalidInstallRoot;
+            CommandResult result = Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} {(useAssemblyPath ? sharedState.TestAssemblyPath : "nullptr")} {dotNetRoot}")
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(null)
+                .Execute();
+
+            result.Should().HaveStdErrContaining("Using dotnet root parameter");
+
+            if (isValid)
+            {
+                result.Should().Pass()
+                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+            }
+            else
+            {
+                result.Should().Fail()
+                    .And.ExitWith(1)
+                    .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
+                    .And.HaveStdErrContaining($"[{Path.Combine(dotNetRoot, "host", "fxr")}] does not exist");
+            }
+        }
+
+        [Theory]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        public void GetHostFxrPath_StaticNativeHost_GlobalInstallation(bool useRegisteredLocation, bool isValid)
+        {
+            CommandResult result;
+            string installLocation = Path.Combine(isValid ? sharedState.ValidInstallRoot : sharedState.InvalidInstallRoot, "dotnet");
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(sharedState.StaticNativeHostPath))
+            {
+                if (useRegisteredLocation)
+                {
+                    registeredInstallLocationOverride.SetInstallLocation((HostTestContext.BuildArchitecture, installLocation));
+                }
+
+                result = Command.Create(sharedState.StaticNativeHostPath, GetHostFxrPath)
+                    .EnableTracingAndCaptureOutputs()
+                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                    .EnvironmentVariable(
+                        Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
+                        useRegisteredLocation ? sharedState.InvalidInstallRoot : installLocation)
+                    .DotNetRoot(null)
+                    .Execute();
+            }
+
+            result.Should().HaveUsedGlobalInstallLocation(installLocation);
+            if (useRegisteredLocation)
+                result.Should().HaveUsedRegisteredInstallLocation(installLocation);
+
+            if (isValid)
+            {
+                result.Should().Pass()
+                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
+            }
+            else
+            {
+                result.Should().Fail()
+                    .And.ExitWith(1)
+                    .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
+                    .And.HaveStdErrContaining($"The required library {HostFxrName} could not be found");
+            }
+        }
+
+        [Fact]
+        public void GetHostFxrPath_StaticNativeHost_InvalidParameters()
+        {
+            Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} [error]")
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(null)
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.InvalidArgFailure.ToString("x")}")
+                .And.HaveStdErrContaining("Invalid size for get_hostfxr_parameters");
+        }
+
         public class SharedTestState : SharedTestStateBase
         {
             public string HostFxrPath { get; }
@@ -366,6 +480,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string TestAssemblyPath { get; }
 
             public string ProductHostFxrPath { get; }
+
+            public string StaticNativeHostPath { get; }
 
             public SharedTestState()
             {
@@ -385,6 +501,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 Directory.CreateDirectory(productDir);
                 ProductHostFxrPath = Path.Combine(productDir, HostFxrName);
                 File.Copy(Binaries.HostFxr.FilePath, ProductHostFxrPath);
+
+                // Copy over the static native host - this executable has nethost statically linked,
+                // so it does not require the nethost shared library at runtime.
+                StaticNativeHostPath = Path.Combine(BaseDirectory, Binaries.StaticNativeHost.FileName);
+                File.Copy(Binaries.StaticNativeHost.FilePath, StaticNativeHostPath);
+
+                // Enable test-only behaviour on the static native host binary.
+                // Since nethost is statically linked, the test-only marker is embedded in the executable itself.
+                _ = TestOnlyProductBehavior.Enable(StaticNativeHostPath);
             }
 
             private string CreateHostFxr(string destinationDirectory)
