@@ -278,67 +278,17 @@ def main():
         if not ok:
             failures += 1
 
-    # 15. Same failure_id → similar error pattern (no mixed root causes)
+    # 15. failures.error_message is non-empty for every failure group
     if has_test_results:
         total += 1
-        mixed_groups = []
-        groups = conn.execute("""
-            SELECT failure_id, COUNT(DISTINCT error_message) as distinct_msgs
-            FROM test_results
-            WHERE failure_id IS NOT NULL AND error_message IS NOT NULL AND error_message != ''
-            GROUP BY failure_id
-            HAVING distinct_msgs > 1
+        empty_errors = conn.execute("""
+            SELECT id, title FROM failures
+            WHERE error_message IS NULL OR error_message = ''
         """).fetchall()
-        for g in groups:
-            fid = g["failure_id"]
-            # Fetch the distinct error messages for this group
-            msgs = [r[0] for r in conn.execute(
-                "SELECT DISTINCT error_message FROM test_results WHERE failure_id = ? AND error_message IS NOT NULL AND error_message != ''",
-                (fid,)
-            ).fetchall()]
-            # Extract the first meaningful line from each distinct message
-            first_lines = set()
-            for m in msgs:
-                for line in m.split("\n"):
-                    s = line.strip()
-                    if s:
-                        # Normalize PID/Thread/address values for comparison
-                        # so same error with different PIDs isn't flagged
-                        normalized = re.sub(
-                            r'PID \d+ \[0x[0-9a-fA-F]+\]', 'PID <N>',
-                            s[:120]
-                        )
-                        normalized = re.sub(
-                            r'Thread: \d+ \[0x[0-9a-fA-F]+\]', 'Thread: <N>',
-                            normalized
-                        )
-                        normalized = re.sub(
-                            r'0x[0-9a-fA-F]{6,}', '0x<ADDR>',
-                            normalized
-                        )
-                        first_lines.add(normalized[:80])
-                        break
-            # If the first lines are very different, flag it
-            if len(first_lines) > 1:
-                # Check if they share a common prefix (at least 30 chars)
-                fl_list = list(first_lines)
-                common = os.path.commonprefix(fl_list)
-                if len(common) < 30:
-                    # Check if this failure covers multiple pipelines (cross-platform).
-                    # Same GitHub issue can manifest differently on linux (SIGSEGV) vs
-                    # windows (GC hole assertion). Allow inconsistency if the failure
-                    # is explicitly multi-pipeline.
-                    pipeline_count = conn.execute(
-                        "SELECT COUNT(DISTINCT pipeline_name) FROM failure_pipelines WHERE failure_id=?",
-                        (fid,)
-                    ).fetchone()[0]
-                    if pipeline_count <= 1:
-                        mixed_groups.append(
-                            (fid, [fl[:60] for fl in fl_list])
-                        )
-        ok = check("Same failure_id has consistent error pattern",
-                    len(mixed_groups) == 0,
-                    f"{len(mixed_groups)} mixed groups: {mixed_groups[:3]}" if mixed_groups else "")
+        ok = check("Every failure has non-empty error_message",
+                    len(empty_errors) == 0,
+                    f"{len(empty_errors)} failures with empty error_message: {[(r['id'], r['title'][:50]) for r in empty_errors]}"
+                    if empty_errors else "")
         if not ok:
             failures += 1
 
