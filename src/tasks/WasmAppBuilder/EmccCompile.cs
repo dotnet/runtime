@@ -223,7 +223,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     string processPath = CompilerBinaryPath;
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        args = $"/c \"{CompilerBinaryPath}\" {args}";
+                        args = $"/c \"\"{CompilerBinaryPath}\" {args}\"";
                         processPath = "cmd";
                     }
 
