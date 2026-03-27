@@ -822,6 +822,8 @@ namespace ILCompiler.ObjectWriter
                             //  global.get __image_base
                             //  i32.load memidx=<>, <reloc>
                             // So, the relocated address value should always represent an offset relative to image base. 
+                            // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
+                            // flag mapping
                             Debug.Assert(virtualSymbolImageOffset != 0);
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset);
                             break;
