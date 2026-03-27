@@ -104,6 +104,9 @@ namespace Microsoft.Extensions.Configuration
                     {
                         if (reload)
                         {
+                            // We reset Data only for exceptions from Load. For possibly transient
+                            // IOExceptions from OpenRead caught by the outer catch, we do not reset
+                            // it, preserving the original configuration.
                             Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
                         }
                         string filePath = file.PhysicalPath ?? Source.Path ?? file.Name;
@@ -112,7 +115,6 @@ namespace Microsoft.Extensions.Configuration
                 }
                 catch (Exception ex)
                 {
-                    // For IO errors from OpenRead, Data is intentionally preserved to keep last-known-good config
                     HandleException(ExceptionDispatchInfo.Capture(ex));
                 }
             }
