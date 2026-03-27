@@ -603,6 +603,7 @@ IniKey1=IniValue2");
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task ReloadIoErrorRaisesOnLoadException()
         {
             const string FileName = $"{nameof(ReloadIoErrorRaisesOnLoadException)}.json";
