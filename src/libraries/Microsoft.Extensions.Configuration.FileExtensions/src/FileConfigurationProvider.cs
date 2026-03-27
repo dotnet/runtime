@@ -55,12 +55,14 @@ namespace Microsoft.Extensions.Configuration
 
         private void Load(bool reload)
         {
+            bool updated = false;
             IFileInfo? file = Source.FileProvider?.GetFileInfo(Source.Path ?? string.Empty);
             if (file == null || !file.Exists)
             {
                 if (Source.Optional || reload) // Always optional on reload
                 {
                     Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                    updated = true;
                 }
                 else
                 {
@@ -99,6 +101,7 @@ namespace Microsoft.Extensions.Configuration
                     try
                     {
                         Load(stream);
+                        updated = true;
                     }
                     catch (Exception ex)
                     {
@@ -108,6 +111,7 @@ namespace Microsoft.Extensions.Configuration
                             // IOExceptions from OpenRead caught by the outer catch, we do not reset
                             // it, preserving the original configuration.
                             Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                            updated = true;
                         }
                         string filePath = file.PhysicalPath ?? Source.Path ?? file.Name;
                         throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, filePath), ex);
@@ -118,8 +122,11 @@ namespace Microsoft.Extensions.Configuration
                     HandleException(ExceptionDispatchInfo.Capture(ex));
                 }
             }
-            // REVIEW: Should we raise this in the base as well / instead?
-            OnReload();
+            if (updated)
+            {
+                // REVIEW: Should we raise this in the base as well / instead?
+                OnReload();
+            }
         }
 
         /// <summary>
