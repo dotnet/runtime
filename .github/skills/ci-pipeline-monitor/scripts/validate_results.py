@@ -336,38 +336,41 @@ def main():
     # 16c. NEW failures should not share error pattern with matched failures
     # If a failure marked NEW has the same error signature as another failure
     # that IS matched to a GitHub issue, it likely should share that issue
-    # (the LLM missed the match). Uses first 3 non-empty lines to capture
-    # exception type AND crash site (distinguishes same-type exceptions).
+    # (the LLM missed the match). Signature = first 3 non-empty error_message
+    # lines + first non-empty stack_trace line (crash site) to distinguish
+    # same-exception-type failures with different root causes.
     total += 1
-    matched_patterns = {}
-    for r in conn.execute("""
-        SELECT id, github_issue_number, error_message FROM failures
-        WHERE github_issue_number IS NOT NULL AND error_message IS NOT NULL
-    """):
+
+    def _build_sig(error_message, stack_trace):
         sig_lines = []
-        for line in (r["error_message"] or "").split("\n"):
+        for line in (error_message or "").split("\n"):
             s = line.strip()
             if s:
                 sig_lines.append(s[:120])
                 if len(sig_lines) >= 3:
                     break
-        sig = "\n".join(sig_lines)
+        for line in (stack_trace or "").split("\n"):
+            s = line.strip()
+            if s:
+                sig_lines.append(s[:120])
+                break
+        return "\n".join(sig_lines)
+
+    matched_patterns = {}
+    for r in conn.execute("""
+        SELECT id, github_issue_number, error_message, stack_trace FROM failures
+        WHERE github_issue_number IS NOT NULL AND error_message IS NOT NULL
+    """):
+        sig = _build_sig(r["error_message"], r["stack_trace"])
         if sig:
             matched_patterns[sig] = r["github_issue_number"]
 
     suspect_new = []
     for r in conn.execute("""
-        SELECT id, title, error_message FROM failures
+        SELECT id, title, error_message, stack_trace FROM failures
         WHERE github_issue_number IS NULL AND error_message IS NOT NULL
     """):
-        sig_lines = []
-        for line in (r["error_message"] or "").split("\n"):
-            s = line.strip()
-            if s:
-                sig_lines.append(s[:120])
-                if len(sig_lines) >= 3:
-                    break
-        sig = "\n".join(sig_lines)
+        sig = _build_sig(r["error_message"], r["stack_trace"])
         if sig and sig in matched_patterns:
             suspect_new.append((r["id"], r["title"], f"matches #{matched_patterns[sig]}"))
     ok = check("NEW failures don't share error pattern with matched failures",
