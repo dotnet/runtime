@@ -70,6 +70,11 @@ namespace System.Numerics.Tests
             yield return new object[] { largeNegativeBigInt1, new BigInteger(123), BigInteger.Parse("-" + LargePositiveBigIntMinusSmallNegativeBigIntString) };
             yield return new object[] { largeNegativeBigInt1, new BigInteger(-123), BigInteger.Parse("-" + LargePositiveBigIntMinusSmallPositiveBigIntString) };
 
+            // 64-bit nuint boundaries (borrow across limb boundary on 64-bit platforms)
+            yield return new object[] { BigInteger.Parse("18446744073709551616"), BigInteger.One, BigInteger.Parse("18446744073709551615") };
+            yield return new object[] { BigInteger.One << 256, BigInteger.One, (BigInteger.One << 256) - 1 };
+            yield return new object[] { BigInteger.One << 512, BigInteger.One, (BigInteger.One << 512) - 1 };
+
             // Very large - very large
             yield return new object[]
             {

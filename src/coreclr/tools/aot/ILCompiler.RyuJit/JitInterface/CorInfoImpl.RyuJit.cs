@@ -34,7 +34,6 @@ namespace Internal.JitInterface
 
         private RyuJitCompilation _compilation;
         private MethodDebugInformation _debugInfo;
-        private MethodDesc _asyncResumptionStub;
         private MethodCodeNode _methodCodeNode;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
@@ -57,10 +56,10 @@ namespace Internal.JitInterface
 
         private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
         {
-            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+            MethodDesc asyncResumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
 
-            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
-            return ObjectToHandle(_asyncResumptionStub);
+            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(asyncResumptionStub));
+            return ObjectToHandle(asyncResumptionStub);
         }
 
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)

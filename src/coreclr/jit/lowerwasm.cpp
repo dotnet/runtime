@@ -336,6 +336,23 @@ void Lowering::LowerRotate(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// LowerIndexAddr: Lowers a GT_INDEX_ADDR node
+//
+// Mark operands that need multiple uses for exception-inducing checks.
+//
+// Arguments:
+//    indexAddr - the node to be lowered
+//
+void Lowering::LowerIndexAddr(GenTreeIndexAddr* indexAddr)
+{
+    if (indexAddr->IsBoundsChecked())
+    {
+        SetMultiplyUsed(indexAddr->Arr());
+        SetMultiplyUsed(indexAddr->Index());
+    }
+}
+
+//------------------------------------------------------------------------
 // ContainCheckCallOperands: Determine whether operands of a call should be contained.
 //
 // Arguments:

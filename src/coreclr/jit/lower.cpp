@@ -690,6 +690,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerCnsMask(node->AsMskCon());
 #endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
 
+#if defined(TARGET_WASM)
+        case GT_INDEX_ADDR:
+            LowerIndexAddr(node->AsIndexAddr());
+            break;
+#endif // defined(TARGET_WASM)
+
         default:
             break;
     }
