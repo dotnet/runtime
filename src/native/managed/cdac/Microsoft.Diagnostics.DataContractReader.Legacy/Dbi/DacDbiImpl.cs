@@ -1324,28 +1324,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly)
     {
+        // Module::GetDomainAssembly() reads m_pDomainAssembly which is not in the cDAC
+        // data descriptor. Fall back to legacy until the field is added.
         *pVmDomainAssembly = 0;
-        int hr = HResults.S_OK;
-        try
-        {
-            // In modern .NET, Module and DomainAssembly are the same object
-            *pVmDomainAssembly = vmModule;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong daLocal;
-            int hrLocal = _legacy.GetDomainAssemblyFromModule(vmModule, &daLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pVmDomainAssembly == daLocal, $"cDAC: {*pVmDomainAssembly:x}, DAC: {daLocal:x}");
-        }
-#endif
-        return hr;
+        return _legacy is not null ? _legacy.GetDomainAssemblyFromModule(vmModule, pVmDomainAssembly) : HResults.E_NOTIMPL;
     }
 
     public int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState)
