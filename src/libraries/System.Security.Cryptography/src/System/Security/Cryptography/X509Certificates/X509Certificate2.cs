@@ -891,7 +891,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The public key was invalid, or otherwise could not be imported.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public MLDsa? GetMLDsaPublicKey()
         {
             MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(GetKeyAlgorithm());
@@ -914,7 +913,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   An error occurred accessing the private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public MLDsa? GetMLDsaPrivateKey()
         {
             MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(GetKeyAlgorithm());
@@ -947,7 +945,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="InvalidOperationException">
         ///   The certificate already has an associated private key.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public X509Certificate2 CopyWithPrivateKey(MLDsa privateKey)
         {
             ArgumentNullException.ThrowIfNull(privateKey);
