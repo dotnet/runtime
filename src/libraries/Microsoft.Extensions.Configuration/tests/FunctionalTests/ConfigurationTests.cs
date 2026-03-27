@@ -531,16 +531,18 @@ IniKey1=IniValue2");
                 c.Ignore = true;
             };
 
-            using var cfgRoot = CreateBuilder()
+            IConfigurationRoot cfgRoot = CreateBuilder()
                 .AddJsonFile(s =>
                 {
                     s.Path = FileName;
                     s.OnLoadException = jsonLoadError;
                 })
-                .Build() as IDisposable;
+                .Build();
+            using IDisposable cfgRootDisposable = cfgRoot as IDisposable;
 
             Assert.NotNull(failingProvider);
             Assert.IsType<InvalidDataException>(failureException);
+            Assert.Null(cfgRoot["JsonKey1"]);
         }
 
         [Fact]
@@ -562,16 +564,18 @@ IniKey1=IniValue2");
                     c.Ignore = true;
                 };
 
-                using var cfgRoot = CreateBuilder()
+                IConfigurationRoot cfgRoot = CreateBuilder()
                     .AddJsonFile(s =>
                     {
                         s.Path = FileName;
                         s.OnLoadException = jsonLoadError;
                     })
-                    .Build() as IDisposable;
+                    .Build();
+                using IDisposable cfgRootDisposable = cfgRoot as IDisposable;
 
                 Assert.NotNull(failingProvider);
                 Assert.IsType<IOException>(failureException);
+                Assert.Null(cfgRoot["JsonKey1"]);
             }
         }
 
@@ -592,24 +596,29 @@ IniKey1=IniValue2");
                 c.Ignore = true;
             };
 
-            using var cfgRoot = CreateBuilder()
+            IConfigurationRoot cfgRoot = CreateBuilder()
                 .AddJsonFile(s =>
                 {
                     s.Path = FileName;
                     s.OnLoadException = jsonLoadError;
                     s.ReloadOnChange = true;
                 })
-                .Build() as IDisposable;
+                .Build();
+            using IDisposable cfgRootDisposable = cfgRoot as IDisposable;
 
             // No error should be triggered so far.
             Assert.Null(failingProvider);
             Assert.Null(failureException);
+            Assert.Equal("JsonValue1", cfgRoot["JsonKey1"]);
 
             _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
 
             await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
 
             Assert.IsType<InvalidDataException>(failureException);
+
+            // Check that value was removed from config
+            Assert.Null(cfgRoot["JsonKey1"]);
         }
 
         [Fact]
@@ -630,17 +639,21 @@ IniKey1=IniValue2");
                 c.Ignore = true;
             };
 
-            using var cfgRoot = CreateBuilder()
+            IConfigurationRoot cfgRoot = CreateBuilder()
                 .AddJsonFile(s =>
                 {
                     s.Path = FileName;
                     s.OnLoadException = jsonLoadError;
                     s.ReloadOnChange = true;
                 })
-                .Build() as IDisposable;
+                .Build();
+            using IDisposable cfgRootDisposable = cfgRoot as IDisposable;
 
             // No error should be triggered so far.
             Assert.Null(failingProvider);
+            Assert.Null(failureException);
+            Assert.Equal("JsonValue1", cfgRoot["JsonKey1"]);
+
 
             using (_fileSystem.LockFileReading(FileName))
             {
@@ -649,6 +662,9 @@ IniKey1=IniValue2");
 
                 await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
                 Assert.IsType<IOException>(failureException);
+
+                // IO error on reload do not invalidate existing config, yet value is not updated
+                Assert.Equal("JsonValue1", cfgRoot["JsonKey1"]);
             }
         }
 
