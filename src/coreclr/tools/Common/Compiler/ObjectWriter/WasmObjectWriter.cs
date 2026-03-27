@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -66,23 +67,36 @@ namespace ILCompiler.ObjectWriter
             _uniqueSignatures.Add(mangledName, _uniqueSignatures.Count);
         }
 
-        private protected override void RecordMethodDeclaration(INodeWithTypeSignature node, MethodDesc desc)
+        private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
-            WriteSignatureIndexForFunction(desc);
+            WasmLowering.LoweringFlags flags = WasmLowering.LoweringFlags.None;
+            if (node.HasGenericContextArg)
+            {
+                flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
+            }
+            if (node.IsAsyncCall)
+            {
+                flags |= WasmLowering.LoweringFlags.IsAsyncCall;
+            }
+            if (node.IsUnmanagedCallersOnly)
+            {
+                flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
+            }
+            WriteSignatureIndexForFunction(node.Signature, flags, node);
 
             _uniqueSymbols.Add(node.GetMangledName(_nodeFactory.NameMangler), _methodCount);
             _methodCount++;
         }
 
-        private void WriteSignatureIndexForFunction(MethodDesc desc)
+        private void WriteSignatureIndexForFunction(MethodSignature managedSignature, WasmLowering.LoweringFlags flags, ISymbolNode node)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
 
-            WasmFuncType signature = Internal.JitInterface.WasmLowering.GetSignature(desc);
+            WasmFuncType signature = WasmLowering.GetSignature(managedSignature, flags);
             Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_uniqueSignatures.TryGetValue(key, out int signatureIndex))
             {
-                throw new InvalidOperationException($"Signature index of {key} not found for function: {desc.GetName()}");
+                throw new InvalidOperationException($"Signature index of {key} not found for function: {node.ToString()}");
             }
 
             writer.WriteULEB128((ulong)signatureIndex);
@@ -416,6 +430,16 @@ namespace ILCompiler.ObjectWriter
                                 throw new InvalidDataException($"Type signature symbol definition '{reloc.SymbolName}' not found");
                             }
 
+                            break;
+                        }
+                        case RelocType.WASM_MEMORY_ADDR_SLEB:
+                        {
+                            // WASM-TODO actually implement this
+                            break;
+                        }
+                        case RelocType.WASM_TABLE_INDEX_U32:
+                        {
+                            // WASM-TODO actually implement this
                             break;
                         }
                         default:
