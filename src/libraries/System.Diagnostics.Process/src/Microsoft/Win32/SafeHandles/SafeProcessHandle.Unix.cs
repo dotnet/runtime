@@ -63,6 +63,9 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
+        // On Unix, we don't use process descriptors yet, so we can't get PID.
+        private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
+
         internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
