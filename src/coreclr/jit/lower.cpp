@@ -11380,10 +11380,38 @@ void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
             }
 
             // Only forward to integral-typed reads. Struct-typed reads have specific
-            // ABI and layout requirements that a bare CNS_INT cannot satisfy.
+            // ABI and layout requirements that a bare CNS_INT cannot always satisfy.
+            // On 64-bit, allow struct reads whose layout fits in a register, unless
+            // the read feeds a PUTARG_STK (where struct vs int ABI may differ).
             if (!varTypeIsIntegral(scanNode->TypeGet()))
             {
-                break;
+#ifdef TARGET_64BIT
+                if (scanNode->TypeIs(TYP_STRUCT))
+                {
+                    ClassLayout* layout = scanNode->AsLclVarCommon()->GetLayout(m_compiler);
+                    if (layout == nullptr || layout->GetRegisterType() == TYP_UNDEF)
+                    {
+                        break;
+                    }
+                    // Only allow struct forwarding for structs >= 4 bytes. Smaller structs
+                    // have ABI complications (e.g., promoted STORE_BLK decomposition).
+                    if (layout->GetSize() < 4)
+                    {
+                        break;
+                    }
+                    // PUTARG_STK: struct vs int may differ in calling convention.
+                    LIR::Use checkUse;
+                    if (BlockRange().TryGetUse(scanNode, &checkUse) &&
+                        checkUse.User()->OperIs(GT_PUTARG_STK))
+                    {
+                        break;
+                    }
+                }
+                else
+#endif
+                {
+                    break;
+                }
             }
 
             // Extract the portion of the constant that corresponds to the read.
