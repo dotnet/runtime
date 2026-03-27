@@ -45,7 +45,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => _legacy is not null ? _legacy.CheckDbiVersion(pVersion) : HResults.E_NOTIMPL;
 
     public int FlushCache()
-        => _legacy is not null ? _legacy.FlushCache() : HResults.E_NOTIMPL;
+    {
+        _target.Flush();
+        return _legacy is not null ? _legacy.FlushCache() : HResults.S_OK;
+    }
 
     public int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts)
         => _legacy is not null ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts) : HResults.E_NOTIMPL;
@@ -139,9 +142,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            Contracts.ILoader loader = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmDomainAssembly));
-            *vmAssembly = loader.GetAssembly(handle).Value;
+            // DomainAssembly is a tiny struct with a single field: PTR_Assembly m_pAssembly at offset 0.
+            // So vmDomainAssembly points to a pointer to the Assembly.
+            *vmAssembly = _target.ReadPointer(new TargetPointer(vmDomainAssembly)).Value;
         }
         catch (System.Exception ex)
         {
@@ -316,8 +319,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
+            // DomainAssembly has a single field: PTR_Assembly m_pAssembly at offset 0.
+            // Then Assembly::GetModule() returns m_pModule.
+            TargetPointer assemblyPtr = _target.ReadPointer(new TargetPointer(vmDomainAssembly));
             Contracts.ILoader loader = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmDomainAssembly));
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(assemblyPtr);
             *pModule = loader.GetModule(handle).Value;
         }
         catch (System.Exception ex)
@@ -747,31 +753,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int HasTypeParams(ulong vmTypeHandle, Interop.BOOL* pResult)
-    {
-        *pResult = Interop.BOOL.FALSE;
-        int hr = HResults.S_OK;
-        try
-        {
-            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle th = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
-            *pResult = rts.HasTypeParam(th) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.HasTypeParams(vmTypeHandle, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
-        return hr;
-    }
+        => _legacy is not null ? _legacy.HasTypeParams(vmTypeHandle, pResult) : HResults.E_NOTIMPL;
 
     public int GetClassInfo(ulong vmAppDomain, ulong thExact, nint pData)
         => _legacy is not null ? _legacy.GetClassInfo(vmAppDomain, thExact, pData) : HResults.E_NOTIMPL;

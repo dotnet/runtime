@@ -17,7 +17,11 @@ internal readonly struct Debugger_1 : IDebugger
     bool IDebugger.TryGetDebuggerData(out DebuggerData data)
     {
         data = default;
-        TargetPointer debuggerPtr = _target.ReadGlobalPointer(Constants.Globals.Debugger);
+        TargetPointer debuggerPtrPtr = _target.ReadGlobalPointer(Constants.Globals.Debugger);
+        if (debuggerPtrPtr == TargetPointer.Null)
+            return false;
+
+        TargetPointer debuggerPtr = _target.ReadPointer(debuggerPtrPtr);
         if (debuggerPtr == TargetPointer.Null)
             return false;
 

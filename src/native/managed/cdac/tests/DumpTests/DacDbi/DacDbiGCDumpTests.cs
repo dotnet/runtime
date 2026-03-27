@@ -79,7 +79,7 @@ public class DacDbiGCDumpTests : DumpTestBase
         bool contractValid = gc.GetGCStructuresValid();
         Assert.Equal(contractValid, heapInfo.areGCStructuresValid == Interop.BOOL.TRUE);
 
-        int heapCount = gc.GetGCHeapCount();
-        Assert.Equal((uint)heapCount, heapInfo.numHeaps);
+        uint heapCount = gc.GetGCHeapCount();
+        Assert.Equal(heapCount, heapInfo.numHeaps);
     }
 }
