@@ -270,6 +270,13 @@ void emitter::emitIns_Call(EmitCallType          callType,
     _ASSERTE(!"NYI POWERPC64");
 }
 
+// emitIns_valid_imm_for_li: Check if immediate fits in li instruction
+bool emitter::emitIns_valid_imm_for_li(ssize_t imm)
+{
+    // li can encode 16-bit signed immediate
+    return (imm >= -32768 && imm <= 32767);
+}
+
 void emitter::emitIns_R_I(instruction ins,
                           emitAttr    attr,
                           regNumber   reg,
@@ -279,7 +286,13 @@ void emitter::emitIns_R_I(instruction ins,
                               DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
     //TODO POWERPC64 vikas
-    _ASSERTE(!"NYI POWERPC64");
+    //_ASSERTE(!"NYI POWERPC64");
+    
+    instrDesc* id = emitNewInstrCns(attr, imm);
+
+    id->idIns(ins);
+    id->idReg1(reg);
+    appendToCurIG(id);
 }
 
 /*****************************************************************************
@@ -312,7 +325,7 @@ void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 
 void emitter::emitIns(instruction ins)
 {
-    instrDesc* id = emitNewInstr(EA_4BYTE);
+    instrDesc* id = emitNewInstr(EA_8BYTE);
 
     id->idIns(ins);
 

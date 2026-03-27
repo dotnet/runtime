@@ -32,6 +32,13 @@ INST(nop,         "nop",          0,      IF_SN_0A,  	0xD503201F)
 INST(push,        "push",         0,      IUM_RD, 	0x0030FE)
 INST(pop,         "pop",          0,      IUM_WR, 	0x00008E)
 INST(blr,         "blr",          0,      IF_SN_0A,     0x4E800020)
+INST(li,    	  "li",    	  0, 	  D_FORM,   	0x38000000)  // addi with RA=0
+INST(lis,   	  "lis",   	  0, 	  D_FORM,   	0x3C000000)  // addis with RA=0
+INST(ori,   	  "ori",   	  0, 	  D_FORM,   	0x60000000)
+INST(oris,  	  "oris",  	  0, 	  D_FORM,   	0x64000000)
+INST(sldi,  	  "sldi",  	  0, 	  MD_FORM,  	0x78000000)  // rldicr
+INST(cmpdi,  	  "cmpdi",  	  0, 	  D_FORM,   	0x2C200000)  // cmpi with L=1
+
 // clang-format on
 /*****************************************************************************/
 #undef INST

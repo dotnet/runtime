@@ -161,7 +161,7 @@ void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
-
+bool emitIns_valid_imm_for_li(ssize_t imm);
 
 
 

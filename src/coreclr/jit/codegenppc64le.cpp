@@ -174,6 +174,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genProduceReg(treeNode);
 	    break;
 
+	case GT_IND:
+	    genCodeForIndir(treeNode->AsIndir());
+
         default:
 	    abort();
     }
@@ -824,8 +827,47 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
                                      regNumber      reg,                                     ssize_t        imm,
                                      insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
-    //_ASSERTE("!NYI");
-    abort();
+    // reg cannot be a FP register
+    assert(!genIsValidFloatReg(reg));
+
+    if (!compiler->opts.compReloc)
+    {
+        size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
+    }
+
+    if (EA_IS_RELOC(size))
+    {
+        abort();
+    }
+    else if (imm == 0)
+    {
+        // Zero: li reg, 0
+	GetEmitter()->emitIns_R_I(INS_li, size, reg, 0, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+    }
+    else if (GetEmitter()->emitIns_valid_imm_for_li(imm))
+    {
+	// 16-bit signed immediate: li reg, imm
+	GetEmitter()->emitIns_R_I(INS_li, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+    }
+    else
+    {
+	// For larger immediates, use multiple instructions
+	// This is a simplified version - full implementation will be in emitOutputInstr
+	if (size == EA_4BYTE)
+	{
+	    // 32-bit: lis + ori
+	    GetEmitter()->emitIns_R_I(INS_li, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	    GetEmitter()->emitIns_R_I(INS_ori, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	}
+	else //EA_8BYTE
+	{
+	    GetEmitter()->emitIns_R_I(INS_li, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	    GetEmitter()->emitIns_R_I(INS_ori, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	    GetEmitter()->emitIns_R_I(INS_sldi, size, reg, 32, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	    GetEmitter()->emitIns_R_I(INS_oris, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	    GetEmitter()->emitIns_R_I(INS_ori, size, reg, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+	}
+    }
 }
 
 //-----------------------------------------------------------------------------------
