@@ -11379,34 +11379,11 @@ void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
                 break;
             }
 
-            // Only forward to integral-typed reads, or struct reads that fit in a register.
-            // Struct reads that feed promoted STORE_LCL_FLD(P) nodes cannot accept a bare
-            // CNS_INT because the promoted store decomposes into per-field stores.
+            // Only forward to integral-typed reads. Struct-typed reads have specific
+            // ABI and layout requirements that a bare CNS_INT cannot satisfy.
             if (!varTypeIsIntegral(scanNode->TypeGet()))
             {
-                if (!scanNode->TypeIs(TYP_STRUCT))
-                {
-                    break;
-                }
-                ClassLayout* layout = scanNode->AsLclVarCommon()->GetLayout(m_compiler);
-                if (layout == nullptr || layout->GetRegisterType() == TYP_UNDEF)
-                {
-                    break;
-                }
-                // Check if the load's user is a promoted store or block copy — can't forward.
-                LIR::Use checkUse;
-                if (BlockRange().TryGetUse(scanNode, &checkUse))
-                {
-                    GenTree* user = checkUse.User();
-                    if (user->OperIs(GT_STORE_BLK))
-                    {
-                        break;
-                    }
-                    if (user->OperIsLocalStore() && m_compiler->lvaGetDesc(user->AsLclVarCommon())->lvPromoted)
-                    {
-                        break;
-                    }
-                }
+                break;
             }
 
             // Extract the portion of the constant that corresponds to the read.
