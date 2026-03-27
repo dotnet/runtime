@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -183,6 +184,7 @@ namespace System.Runtime.CompilerServices
         public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct => IsReferenceOrContainsReferences<T>();
 
         [Intrinsic]
+        [RequiresUnsafe]
         internal static unsafe void SetNextCallGenericContext(void* value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
         [Intrinsic]

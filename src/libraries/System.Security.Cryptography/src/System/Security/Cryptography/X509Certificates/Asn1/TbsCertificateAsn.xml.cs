@@ -9,11 +9,31 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
+    file static class SharedTbsCertificateAsn
+    {
+        internal static ReadOnlySpan<byte> DefaultVersion => [0x02, 0x01, 0x00];
+
+#if DEBUG
+        static SharedTbsCertificateAsn()
+        {
+            TbsCertificateAsn decoded = default;
+            ValueAsnReader reader;
+
+            reader = new ValueAsnReader(SharedTbsCertificateAsn.DefaultVersion, AsnEncodingRules.DER);
+
+            if (!reader.TryReadInt32(out decoded.Version))
+            {
+                reader.ThrowIfNotEmpty();
+            }
+
+            reader.ThrowIfNotEmpty();
+        }
+#endif
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct TbsCertificateAsn
     {
-        private static ReadOnlySpan<byte> DefaultVersion => [0x02, 0x01, 0x00];
-
         internal int Version;
         internal ReadOnlyMemory<byte> SerialNumber;
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn SignatureAlgorithm;
@@ -24,23 +44,6 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         internal ReadOnlyMemory<byte>? IssuerUniqueId;
         internal ReadOnlyMemory<byte>? SubjectUniqueId;
         internal System.Security.Cryptography.Asn1.X509ExtensionAsn[]? Extensions;
-
-#if DEBUG
-        static TbsCertificateAsn()
-        {
-            TbsCertificateAsn decoded = default;
-            ValueAsnReader reader;
-
-            reader = new ValueAsnReader(DefaultVersion, AsnEncodingRules.DER);
-
-            if (!reader.TryReadInt32(out decoded.Version))
-            {
-                reader.ThrowIfNotEmpty();
-            }
-
-            reader.ThrowIfNotEmpty();
-        }
-#endif
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -58,7 +61,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
                 tmp.WriteInteger(Version);
 
-                if (!tmp.EncodedValueEquals(DefaultVersion))
+                if (!tmp.EncodedValueEquals(SharedTbsCertificateAsn.DefaultVersion))
                 {
                     writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                     tmp.CopyTo(writer);
@@ -197,7 +200,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
             else
             {
-                defaultReader = new ValueAsnReader(DefaultVersion, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(SharedTbsCertificateAsn.DefaultVersion, AsnEncodingRules.DER);
 
                 if (!defaultReader.TryReadInt32(out decoded.Version))
                 {

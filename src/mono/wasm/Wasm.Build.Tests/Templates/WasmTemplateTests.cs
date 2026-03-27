@@ -348,6 +348,10 @@ namespace Wasm.Build.Tests
             if (emitTypeScriptDts)
             {
                 Assert.True(fileExists, $"dotnet.d.ts should be created at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+
+                // Rebuild with -question to verify the build stays incremental after
+                // dotnet.d.ts is copied to wwwroot (see https://github.com/dotnet/runtime/issues/124729).
+                BuildProject(info, config, new BuildOptions(UseCache: false, AssertAppBundle: false, ExtraMSBuildArgs: "-question"));
             }
             else
             {

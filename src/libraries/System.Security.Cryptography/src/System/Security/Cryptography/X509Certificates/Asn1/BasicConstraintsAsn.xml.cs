@@ -8,25 +8,28 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates.Asn1
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct BasicConstraintsAsn
+    file static class SharedBasicConstraintsAsn
     {
-        private static ReadOnlySpan<byte> DefaultCA => [0x01, 0x01, 0x00];
-
-        internal bool CA;
-        internal int? PathLengthConstraint;
+        internal static ReadOnlySpan<byte> DefaultCA => [0x01, 0x01, 0x00];
 
 #if DEBUG
-        static BasicConstraintsAsn()
+        static SharedBasicConstraintsAsn()
         {
             BasicConstraintsAsn decoded = default;
             ValueAsnReader reader;
 
-            reader = new ValueAsnReader(DefaultCA, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(SharedBasicConstraintsAsn.DefaultCA, AsnEncodingRules.DER);
             decoded.CA = reader.ReadBoolean();
             reader.ThrowIfNotEmpty();
         }
 #endif
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct BasicConstraintsAsn
+    {
+        internal bool CA;
+        internal int? PathLengthConstraint;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -44,7 +47,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);
                 tmp.WriteBoolean(CA);
 
-                if (!tmp.EncodedValueEquals(DefaultCA))
+                if (!tmp.EncodedValueEquals(SharedBasicConstraintsAsn.DefaultCA))
                 {
                     tmp.CopyTo(writer);
                 }
@@ -110,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
             else
             {
-                defaultReader = new ValueAsnReader(DefaultCA, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(SharedBasicConstraintsAsn.DefaultCA, AsnEncodingRules.DER);
                 decoded.CA = defaultReader.ReadBoolean();
             }
 

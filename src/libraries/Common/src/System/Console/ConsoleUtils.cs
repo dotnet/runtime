@@ -5,47 +5,57 @@ namespace System
 {
     internal static partial class ConsoleUtils
     {
-        /// <summary>Whether to output ansi color strings.</summary>
-        private static volatile NullableBool s_emitAnsiColorCodes;
+        /// <summary>Whether to output ANSI color strings.</summary>
+        private static NullableBool s_emitAnsiColorCodes;
 
         /// <summary>Get whether to emit ANSI color codes.</summary>
         public static bool EmitAnsiColorCodes
         {
             get
             {
-                // The flag starts at Undefined.  If it's no longer Undefined, it's False or True.
+                // The flag starts at Undefined. If it's no longer Undefined, it's False or True.
                 NullableBool emitAnsiColorCodes = s_emitAnsiColorCodes;
-                if (emitAnsiColorCodes != NullableBool.Undefined)
+                if (emitAnsiColorCodes is not NullableBool.Undefined)
                 {
-                    return emitAnsiColorCodes == NullableBool.True;
+                    return emitAnsiColorCodes is NullableBool.True;
                 }
 
-                // We've not yet computed whether to emit codes or not.  Do so now.  We may race with
+                // We've not yet computed whether to emit codes or not. We may race with
                 // other threads, and that's ok; this is idempotent unless someone is currently changing
                 // the value of the relevant environment variables, in which case behavior here is undefined.
-
-                // By default, we emit ANSI color codes if output isn't redirected, and suppress them if output is redirected.
-                bool enabled = !Console.IsOutputRedirected;
-
-                if (enabled)
-                {
-                    // We subscribe to the informal standard from https://no-color.org/.  If we'd otherwise emit
-                    // ANSI color codes but the NO_COLOR environment variable is set, disable emitting them.
-                    enabled = Environment.GetEnvironmentVariable("NO_COLOR") is null;
-                }
-                else
-                {
-                    // We also support overriding in the other direction.  If we'd otherwise avoid emitting color
-                    // codes but the DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION environment variable is
-                    // set to 1 or true, enable color.
-                    string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION");
-                    enabled = envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
-                }
+                // By default, we emit ANSI color codes if output isn't redirected and it's not overridden
+                // by environment variables.
+                bool enabled = GetColorOverrideFromEnvironment() ?? !Console.IsOutputRedirected;
 
                 // Store and return the computed answer.
                 s_emitAnsiColorCodes = enabled ? NullableBool.True : NullableBool.False;
                 return enabled;
             }
+        }
+
+        /// <summary>
+        /// Checks FORCE_COLOR, DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION, and NO_COLOR environment variables.
+        /// Returns <see langword="true"/> to force color on, <see langword="false"/> to force color off,
+        /// or <see langword="null"/> if no override is set.
+        /// </summary>
+        internal static bool? GetColorOverrideFromEnvironment()
+        {
+            // Per https://force-color.org/, FORCE_COLOR forces ANSI color output when set to a non-empty value.
+            // DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is treated as a legacy alias for the same behavior.
+            // These take highest priority and override all other checks.
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("FORCE_COLOR")) ||
+                !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION")))
+            {
+                return true;
+            }
+
+            // Per https://no-color.org/, NO_COLOR overrides and disables ANSI color output when set to a non-empty value.
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NO_COLOR")))
+            {
+                return false;
+            }
+
+            return null;
         }
     }
 }
