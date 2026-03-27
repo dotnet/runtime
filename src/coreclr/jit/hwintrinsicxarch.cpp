@@ -3398,67 +3398,29 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 else
                 {
-                    GenTreeVecCon* minCns = varTypeIsSigned(simdBaseType) ? gtNewVconNode(retType) : nullptr;
+                    assert(varTypeIsLong(simdBaseType));
+
                     GenTreeVecCon* maxCns = gtNewVconNode(retType);
 
-                    switch (simdBaseType)
+                    // This does a clamp which is defined as: Min(Max(value, min), max), which means
+                    // that we do a max computation for signed only. Unsigned already has a shared
+                    // lower bound of 0.
+
+                    if (simdBaseType == TYP_LONG)
                     {
-                        case TYP_SHORT:
-                        {
-                            minCns->EvaluateBroadcastInPlace<int16_t>(INT8_MIN);
-                            maxCns->EvaluateBroadcastInPlace<int16_t>(INT8_MAX);
-                            break;
-                        }
+                        GenTreeVecCon* minCns = gtNewVconNode(retType);
 
-                        case TYP_USHORT:
-                        {
-                            maxCns->EvaluateBroadcastInPlace<uint16_t>(UINT8_MAX);
-                            break;
-                        }
+                        minCns->EvaluateBroadcastInPlace<int64_t>(INT32_MIN);
+                        maxCns->EvaluateBroadcastInPlace<int64_t>(INT32_MAX);
 
-                        case TYP_INT:
-                        {
-                            minCns->EvaluateBroadcastInPlace<int32_t>(INT16_MIN);
-                            maxCns->EvaluateBroadcastInPlace<int32_t>(INT16_MAX);
-                            break;
-                        }
-
-                        case TYP_UINT:
-                        {
-                            maxCns->EvaluateBroadcastInPlace<uint32_t>(UINT16_MAX);
-                            break;
-                        }
-
-                        case TYP_LONG:
-                        {
-                            minCns->EvaluateBroadcastInPlace<int64_t>(INT32_MIN);
-                            maxCns->EvaluateBroadcastInPlace<int64_t>(INT32_MAX);
-                            break;
-                        }
-
-                        case TYP_ULONG:
-                        {
-                            maxCns->EvaluateBroadcastInPlace<uint64_t>(UINT32_MAX);
-                            break;
-                        }
-
-                        default:
-                        {
-                            unreached();
-                        }
-                    }
-
-                    // This does a clamp which is defined as: Min(Max(value, min), max)
-                    // which means that we do a max computation if a minimum constant is specified
-                    // There will be none specified for unsigned to unsigned narrowing since
-                    // they share a lower bound (0) and will already be correct.
-
-                    if (minCns != nullptr)
-                    {
                         op1 = gtNewSimdMinMaxNode(retType, op1, minCns, simdBaseType, simdSize, /* isMax */ true,
                                                   /* isMagnitude */ false, /* isNumber */ false);
                         op2 = gtNewSimdMinMaxNode(retType, op2, gtCloneExpr(minCns), simdBaseType, simdSize,
                                                   /* isMax */ true, /* isMagnitude */ false, /* isNumber */ false);
+                    }
+                    else
+                    {
+                        maxCns->EvaluateBroadcastInPlace<uint64_t>(UINT32_MAX);
                     }
 
                     op1 = gtNewSimdMinMaxNode(retType, op1, maxCns, simdBaseType, simdSize, /* isMax */ false,

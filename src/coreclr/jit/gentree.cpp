@@ -30363,7 +30363,10 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(Compiler* co
                 }
             }
         }
+    }
 
+    if (isSaturating != nullptr)
+    {
         *isSaturating = false;
     }
 
