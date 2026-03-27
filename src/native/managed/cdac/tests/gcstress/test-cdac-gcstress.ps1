@@ -123,10 +123,38 @@ New-Item -ItemType Directory -Force $testDir | Out-Null
 
 $testSource = @"
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
+
+// -------------------------------------------------------------------
+// Comprehensive cDAC GC stress test exercising many frame types
+// -------------------------------------------------------------------
+
+interface IKeepAlive
+{
+    object GetRef();
+}
+
+class BoxHolder : IKeepAlive
+{
+    object _value;
+    public BoxHolder() { _value = new object(); }
+    public BoxHolder(object v) { _value = v; }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public object GetRef() => _value;
+}
+
+struct LargeStruct
+{
+    public object A, B, C, D;
+}
 
 class CdacGcStressTest
 {
+    // 1. Basic allocation — the original test
     [MethodImpl(MethodImplOptions.NoInlining)]
     static object AllocAndHold()
     {
@@ -139,6 +167,7 @@ class CdacGcStressTest
         return o;
     }
 
+    // 2. Deep recursion — many managed frames
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void NestedCall(int depth)
     {
@@ -148,14 +177,296 @@ class CdacGcStressTest
         GC.KeepAlive(o);
     }
 
+    // 3. Try/catch — funclet frames (catch handler is a funclet on AMD64)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TryCatchScenario()
+    {
+        object before = new object();
+        try
+        {
+            object inside = new object();
+            ThrowHelper();
+            GC.KeepAlive(inside);
+        }
+        catch (InvalidOperationException ex)
+        {
+            object inCatch = new object();
+            GC.KeepAlive(ex);
+            GC.KeepAlive(inCatch);
+        }
+        GC.KeepAlive(before);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void ThrowHelper()
+    {
+        throw new InvalidOperationException("test exception");
+    }
+
+    // 4. Try/finally — finally funclet
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void TryFinallyScenario()
+    {
+        object outerRef = new object();
+        try
+        {
+            object innerRef = new object();
+            GC.KeepAlive(innerRef);
+        }
+        finally
+        {
+            object finallyRef = new object();
+            GC.KeepAlive(finallyRef);
+        }
+        GC.KeepAlive(outerRef);
+    }
+
+    // 5. Nested exception handling — funclet within funclet parent
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void NestedExceptionScenario()
+    {
+        object a = new object();
+        try
+        {
+            object b = new object();
+            try
+            {
+                object c = new object();
+                throw new ArgumentException("inner");
+            }
+            catch (ArgumentException ex1)
+            {
+                GC.KeepAlive(ex1);
+                throw new InvalidOperationException("outer", ex1);
+            }
+            finally
+            {
+                object d = new object();
+                GC.KeepAlive(d);
+            }
+        }
+        catch (InvalidOperationException ex2)
+        {
+            GC.KeepAlive(ex2);
+        }
+        GC.KeepAlive(a);
+    }
+
+    // 6. Filter funclet (when clause via helper)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void FilterExceptionScenario()
+    {
+        object holder = new object();
+        try
+        {
+            throw new ArgumentException("filter-test");
+        }
+        catch (ArgumentException ex) when (FilterCheck(ex))
+        {
+            GC.KeepAlive(ex);
+        }
+        GC.KeepAlive(holder);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool FilterCheck(Exception ex)
+    {
+        object filterLocal = new object();
+        GC.KeepAlive(filterLocal);
+        return ex.Message.Contains("filter");
+    }
+
+    // 7. Generic methods — different instantiations
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static T GenericAlloc<T>() where T : new()
+    {
+        T val = new T();
+        object marker = new object();
+        GC.KeepAlive(marker);
+        return val;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void GenericScenario()
+    {
+        var o = GenericAlloc<object>();
+        var l = GenericAlloc<List<int>>();
+        var s = GenericAlloc<BoxHolder>();
+        GC.KeepAlive(o);
+        GC.KeepAlive(l);
+        GC.KeepAlive(s);
+    }
+
+    // 8. Interface dispatch — virtual calls through interface
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void InterfaceDispatchScenario()
+    {
+        IKeepAlive holder = new BoxHolder(new int[] { 42, 43 });
+        object r = holder.GetRef();
+        GC.KeepAlive(holder);
+        GC.KeepAlive(r);
+    }
+
+    // 9. Delegate invocation
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void DelegateScenario()
+    {
+        object captured = new object();
+        Func<object> fn = () =>
+        {
+            GC.KeepAlive(captured);
+            return new object();
+        };
+        object result = fn();
+        GC.KeepAlive(result);
+        GC.KeepAlive(fn);
+    }
+
+    // 10. Struct with object references on stack
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void StructWithRefsScenario()
+    {
+        LargeStruct ls;
+        ls.A = new object();
+        ls.B = "struct-string";
+        ls.C = new int[] { 10, 20 };
+        ls.D = new BoxHolder(ls.A);
+        GC.KeepAlive(ls.A);
+        GC.KeepAlive(ls.B);
+        GC.KeepAlive(ls.C);
+        GC.KeepAlive(ls.D);
+    }
+
+    // 11. Pinned references via GCHandle
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void PinnedScenario()
+    {
+        byte[] buffer = new byte[64];
+        GCHandle pin = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+        try
+        {
+            object other = new object();
+            GC.KeepAlive(other);
+            GC.KeepAlive(buffer);
+        }
+        finally
+        {
+            pin.Free();
+        }
+    }
+
+    // 12. Multiple threads — concurrent stack walks
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void MultiThreadScenario()
+    {
+        ManualResetEventSlim ready = new ManualResetEventSlim(false);
+        ManualResetEventSlim go = new ManualResetEventSlim(false);
+        Thread t = new Thread(() =>
+        {
+            object threadLocal = new object();
+            ready.Set();
+            go.Wait();
+            NestedCall(5);
+            GC.KeepAlive(threadLocal);
+        });
+        t.Start();
+        ready.Wait();
+        go.Set();
+
+        // Main thread also does work concurrently
+        NestedCall(3);
+        t.Join();
+    }
+
+    // 13. Many live references — stress GC slot reporting
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void ManyLiveRefsScenario()
+    {
+        object r0 = new object();
+        object r1 = new object();
+        object r2 = new object();
+        object r3 = new object();
+        object r4 = new object();
+        object r5 = new object();
+        object r6 = new object();
+        object r7 = new object();
+        string r8 = "live-string";
+        int[] r9 = new int[10];
+        List<object> r10 = new List<object> { r0, r1, r2 };
+        object[] r11 = new object[] { r3, r4, r5, r6, r7 };
+
+        GC.KeepAlive(r0); GC.KeepAlive(r1);
+        GC.KeepAlive(r2); GC.KeepAlive(r3);
+        GC.KeepAlive(r4); GC.KeepAlive(r5);
+        GC.KeepAlive(r6); GC.KeepAlive(r7);
+        GC.KeepAlive(r8); GC.KeepAlive(r9);
+        GC.KeepAlive(r10); GC.KeepAlive(r11);
+    }
+
+    // 14. P/Invoke transition — native frame on stack
+    [DllImport("kernel32.dll")]
+    static extern uint GetCurrentThreadId();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void PInvokeScenario()
+    {
+        object before = new object();
+        uint tid = GetCurrentThreadId();
+        object after = new object();
+        GC.KeepAlive(before);
+        GC.KeepAlive(after);
+    }
+
+    // 15. Exception rethrow — stack trace preservation
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RethrowScenario()
+    {
+        object outerRef = new object();
+        try
+        {
+            try
+            {
+                throw new ApplicationException("rethrow-test");
+            }
+            catch (ApplicationException)
+            {
+                object catchRef = new object();
+                GC.KeepAlive(catchRef);
+                throw; // rethrow preserves original stack
+            }
+        }
+        catch (ApplicationException ex)
+        {
+            GC.KeepAlive(ex);
+        }
+        GC.KeepAlive(outerRef);
+    }
+
     static int Main()
     {
-        Console.WriteLine("Starting cDAC GC Stress test...");
-        for (int i = 0; i < 5; i++)
+        Console.WriteLine("Starting comprehensive cDAC GC Stress test...");
+
+        for (int i = 0; i < 3; i++)
         {
+            Console.WriteLine($"  Iteration {i + 1}/3");
+
             AllocAndHold();
-            NestedCall(3);
+            NestedCall(5);
+            TryCatchScenario();
+            TryFinallyScenario();
+            NestedExceptionScenario();
+            FilterExceptionScenario();
+            GenericScenario();
+            InterfaceDispatchScenario();
+            DelegateScenario();
+            StructWithRefsScenario();
+            PinnedScenario();
+            MultiThreadScenario();
+            ManyLiveRefsScenario();
+            PInvokeScenario();
+            RethrowScenario();
         }
+
         Console.WriteLine("cDAC GC Stress test completed successfully.");
         return 100;
     }
@@ -172,12 +483,16 @@ if (-not $cscPath) { Write-Error "Could not find csc.dll in .dotnet SDK"; exit 1
 $sysRuntime  = Join-Path $coreRoot "System.Runtime.dll"
 $sysConsole  = Join-Path $coreRoot "System.Console.dll"
 $sysCoreLib  = Join-Path $coreRoot "System.Private.CoreLib.dll"
+$sysThread   = Join-Path $coreRoot "System.Threading.dll"
+$sysInterop  = Join-Path $coreRoot "System.Runtime.InteropServices.dll"
 
 & $dotnetExe exec $cscPath.FullName `
-    "/out:$testDll" /target:exe /nologo `
+    "/out:$testDll" /target:exe /nologo /unsafe `
     "/r:$sysRuntime" `
     "/r:$sysConsole" `
     "/r:$sysCoreLib" `
+    "/r:$sysThread" `
+    "/r:$sysInterop" `
     $testCs
 if ($LASTEXITCODE -ne 0) { Write-Error "Test compilation failed"; exit 1 }
 

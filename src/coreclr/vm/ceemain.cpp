@@ -210,7 +210,7 @@
 #include "genanalysis.h"
 
 #ifdef HAVE_GCCOVER
-#include "cdacgcstress.h"
+#include "cdacstress.h"
 #endif
 
 HRESULT EEStartup();
@@ -967,9 +967,9 @@ void EEStartupHelper()
 
 #ifdef HAVE_GCCOVER
         MethodDesc::Init();
-        if (GCStress<cfg_any>::IsEnabled() && (g_pConfig->GetGCStressLevel() & EEConfig::GCSTRESS_CDAC))
+        if (CdacStress::IsEnabled())
         {
-            CdacGcStress::Initialize();
+            CdacStress::Initialize();
         }
 #endif
 
@@ -1253,7 +1253,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Start);
 
 #ifdef HAVE_GCCOVER
-        CdacGcStress::Shutdown();
+        CdacStress::Shutdown();
 #endif
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)

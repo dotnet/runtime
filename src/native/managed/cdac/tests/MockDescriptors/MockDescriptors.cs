@@ -213,6 +213,8 @@ internal partial class MockDescriptors
             new(nameof(Data.Thread.ExceptionTracker), DataType.pointer),
             new(nameof(Data.Thread.ThreadLocalDataPtr), DataType.pointer),
             new(nameof(Data.Thread.UEWatsonBucketTrackerBuckets), DataType.pointer),
+            new(nameof(Data.Thread.DebuggerFilterContext), DataType.pointer),
+            new(nameof(Data.Thread.ProfilerFilterContext), DataType.pointer),
         ]
     };
 

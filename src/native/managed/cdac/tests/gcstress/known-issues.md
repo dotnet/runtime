@@ -1,113 +1,57 @@
 # cDAC Stack Reference Walking — Known Issues
 
-This document tracks known gaps and differences between the cDAC's stack reference
-enumeration (`ISOSDacInterface::GetStackReferences`) and the runtime's GC root scanning.
+This document tracks known gaps between the cDAC's stack reference enumeration
+and the legacy DAC's `GetStackReferences`.
 
-## GC Stress Test Results
+## Current Test Results
 
-With `DOTNET_GCStress=0x24` (instruction-level JIT stress + cDAC verification):
-- ~25,000 PASS / ~125 FAIL out of ~25,100 stress points (99.5% pass rate)
+Using `DOTNET_CdacStress` with cDAC-vs-DAC comparison:
 
-## Known Issues
+| Mode | Non-EH debuggees (6) | ExceptionHandling |
+|------|-----------------------|-------------------|
+| INSTR (0x8 + GCStress=0x4, step=10) | 0 failures | 0-2 failures |
+| ALLOC+UNIQUE (0x5) | 0 failures | 4 failures |
+| Walk comparison (0x20, IP+SP) | 0 mismatches | N/A |
 
-### 1. Dynamic Method / IL Stub GC Refs Not Enumerated
+## Known Issue: cDAC Cannot Unwind Through Native Frames
 
-**Severity**: Low — matches legacy DAC behavior
-**Affected methods**: `dynamicclass::InvokeStub_*` (reflection invoke stubs), LCG methods
-**Pattern**: `cDAC < RT` (diff=-1), always missing `RT[0]` register ref
+**Severity**: Low — only affects live-process stress testing during active
+exception first-pass dispatch. Does not affect dump analysis where the thread
+is suspended with a consistent Frame chain.
 
-The cDAC (and legacy DAC) cannot resolve code blocks for methods in RangeList-based
-code heaps (HostCodeHeap). Both `EEJitManager::JitCodeToMethodInfo` and the cDAC's
-`FindMethodCode` return failure for `RANGE_SECTION_RANGELIST` sections. This means
-GcInfo cannot be decoded for these methods, and their GC refs are not reported.
+**Pattern**: `cDAC < DAC` (cDAC reports 4 refs, DAC reports 10-13).
+ExceptionHandling debuggee only, 4 deterministic occurrences per run.
 
-The runtime's `GcStackCrawlCallBack` reports additional refs from these methods
-because it processes them through the Frame chain (`ResumableFrame`, `InlinedCallFrame`)
-which has access to the register state.
+**Root cause**: The cDAC's `AMD64Unwinder.Unwind` (and equivalents for other
+architectures) can only unwind **managed** frames — it checks
+`ExecutionManager.GetCodeBlockHandle(IP)` first and returns false if the IP
+is not in a managed code range. This means it cannot unwind through native
+runtime frames (allocation helpers, EH dispatch code, etc.).
 
-This is a pre-existing gap in the DAC's diagnostic API, not a cDAC regression.
+When the allocation stress point fires during exception first-pass dispatch:
 
-**Follow-up**: Implement RangeList-based code lookup in the cDAC's ExecutionManager.
-This requires reading the `HostCodeHeap` linked list and matching IPs to code headers
-within dynamic code heaps.
+1. The thread's `m_pFrame` is `FRAME_TOP` (no explicit Frames in the chain
+   because the InlinedCallFrame/SoftwareExceptionFrame have been popped or
+   not yet pushed at that point in the EH dispatch sequence)
+2. The initial IP is in native code (allocation helper)
+3. The cDAC attempts to unwind through native frames but
+   `GetCodeBlockHandle` returns null for native IPs → unwind fails
+4. With no Frames and no ability to unwind, the walk stops early
 
-### 2. Frame Context Restoration Causes Duplicate Walks
+The legacy DAC's `DacStackReferenceWalker::WalkStack` succeeds because
+`StackWalkFrames` calls `VirtualUnwindToFirstManagedCallFrame` which uses
+OS-level unwind (`RtlVirtualUnwind` on Windows, `PAL_VirtualUnwind` on Unix)
+that can unwind ANY native frame using PE `.pdata`/`.xdata` sections.
 
-**Severity**: Low — mitigated by dedup in stress tool
-**Pattern**: `cDAC > RT` (diff=+1 to +3), same Address/Object from two Source IPs
-
-When a non-leaf Frame's `UpdateContextFromFrame` restores a managed IP that was
-already walked from the initial context (or will be walked via normal unwinding),
-the same managed frame gets walked twice at different offsets. This produces
-duplicate GC slot reports.
-
-The stress tool's `DeduplicateRefs` filter removes stack-based duplicates
-(same Address/Object/Flags), but register-based duplicates (Address=0) with
-different Source IPs are not caught.
-
-**Mitigations in place**:
-- `callerSP` Frame skip in `CreateStackWalk` (prevents most leaf-level duplicates)
-- `SkipCurrentFrameInCheck` for active `InlinedCallFrame` (prevents ICF re-encounter)
-- `DeduplicateRefs` in stress tool (removes stack-based duplicates)
-
-**Follow-up**: Track walked method address ranges in the cDAC's stack walker and
-suppress duplicate `SW_FRAMELESS` yields for methods already visited.
-
-### 3. PromoteCallerStack Not Implemented for Stub Frames
-
-**Severity**: Low — not currently manifesting in GC stress tests
-**Affected frames**: `StubDispatchFrame`, `ExternalMethodFrame`, `CallCountingHelperFrame`,
-`DynamicHelperFrame`, `CLRToCOMMethodFrame`
-
-These Frame types call `PromoteCallerStack` / `PromoteCallerStackUsingGCRefMap`
-to report method arguments from the transition block. The cDAC's `ScanFrameRoots`
-is a no-op for these frame types.
-
-This gap doesn't manifest in GC stress testing because stub frame arguments are
-not the source of the current count differences. However, it IS a DAC parity gap —
-the legacy DAC reports these refs via `Frame::GcScanRoots`.
-
-**Follow-up**: Port `GCRefMapDecoder` to managed code and implement
-`PromoteCallerStackUsingGCRefMap` in `ScanFrameRoots`. Prototype implementation
-exists (stashed as "PromoteCallerStack implementation + GCRefMapDecoder").
-
-### 4. Funclet Parent Frame Flags Not Consumed
-
-**Severity**: Low — only affects exception handling scenarios
-**Flags**: `ShouldParentToFuncletSkipReportingGCReferences`,
-`ShouldParentFrameUseUnwindTargetPCforGCReporting`,
-`ShouldParentToFuncletReportSavedFuncletSlots`
-
-The `Filter` method computes these flags for funclet parent frames, but
-`WalkStackReferences` does not act on them. This could cause:
-- Double-reporting of slots already reported by a funclet
-- Using the wrong IP for GC liveness lookup on catch/finally parent frames
-- Missing callee-saved register slots from unwound funclets
-
-**Follow-up**: Wire up `ParentOfFuncletStackFrame` flag to `EnumGcRefs`.
-Requires careful validation — an initial attempt caused 253 regressions
-because `Filter` sets the flag too aggressively.
-
-### 5. Interior Stack Pointers
-
-**Severity**: Informational — handled in stress tool
-**Pattern**: cDAC reports interior pointers whose Object is a stack address
-
-The runtime's `PromoteCarefully` (siginfo.cpp) filters out interior pointers
-whose object value is a stack address. These are callee-saved register values
-(RSP/RBP) that GcInfo marks as live interior slots but don't point to managed
-heap objects. The cDAC reports all GcInfo slots faithfully.
-
-**Mitigation**: The stress tool's `FilterInteriorStackRefs` removes these
-before comparison, matching the runtime's behavior.
-
-### 6. forceReportingWhileSkipping State Machine Incomplete
-
-**Severity**: Low — theoretical gap
-**Location**: `StackWalk_1.cs` Filter method
-
-The `ForceGcReportingStage` state machine transitions `Off → LookForManagedFrame
-→ LookForMarkerFrame` but never transitions back to `Off`. The native code checks
-if the caller IP is within `DispatchManagedException` / `RhThrowEx` to deactivate.
-
-**Follow-up**: Implement marker frame detection.
+**Possible fixes**:
+1. **Ensure Frames are always available** — change the runtime to keep
+   an explicit Frame pushed during allocation points within EH dispatch.
+   The cDAC cannot do OS-level native unwind (it operates on dumps where
+   `RtlVirtualUnwind` is not available). The Frame chain is the only
+   mechanism the cDAC has for transitioning through native code to reach
+   managed frames. If `m_pFrame = FRAME_TOP` when the IP is native, the
+   cDAC cannot proceed.
+2. **Accept as known limitation** — these failures only occur during
+   live-process stress testing at a narrow window during EH first-pass
+   dispatch. In dumps, the exception state is frozen and the Frame chain
+   is consistent.

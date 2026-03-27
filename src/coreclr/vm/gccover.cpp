@@ -24,7 +24,7 @@
 #include "gccover.h"
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
-#include "cdacgcstress.h"
+#include "cdacstress.h"
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM)
 #include "gcinfodecoder.h"
@@ -888,11 +888,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // Do the actual stress work
     //
 
-    // Verify cDAC stack references before triggering the GC (while refs haven't moved).
-    if (CdacGcStress::IsInitialized())
-    {
-        CdacGcStress::VerifyAtStressPoint(pThread, regs);
-    }
+    CdacStress::MaybeVerify<cdac_on_instr>(pThread, regs);
 
     // BUG(github #10318) - when not using allocation contexts, the alloc lock
     // must be acquired here. Until fixed, this assert prevents random heap corruption.
@@ -1202,13 +1198,9 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // Do the actual stress work
     //
 
-    // Verify cDAC stack references before triggering the GC (while refs haven't moved).
-    if (CdacGcStress::IsInitialized())
-    {
-        CdacGcStress::VerifyAtStressPoint(pThread, regs);
-    }
+    CdacStress::MaybeVerify<cdac_on_instr>(pThread, regs);
 
-    // BUG(github #10318) - when not using allocation contexts, the alloc lock
+    // BUG(github #10318)- when not using allocation contexts, the alloc lock
     // must be acquired here. Until fixed, this assert prevents random heap corruption.
     assert(GCHeapUtilities::UseThreadAllocationContexts());
     GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
