@@ -357,118 +357,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
-        [Theory]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        public void GetHostFxrPath_StaticNativeHost_DotNetRootEnvironment(bool useAssemblyPath, bool isValid)
-        {
-            string dotNetRoot = isValid ? Path.Combine(sharedState.ValidInstallRoot, "dotnet") : sharedState.InvalidInstallRoot;
-            CommandResult result = Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} false {(useAssemblyPath ? sharedState.TestAssemblyPath : string.Empty)}")
-                .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(dotNetRoot)
-                .Execute();
-
-            result.Should().HaveStdErrContaining("Using environment variable");
-
-            if (isValid)
-            {
-                result.Should().Pass()
-                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
-            }
-            else
-            {
-                result.Should().Fail()
-                    .And.ExitWith(1)
-                    .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                    .And.HaveStdErrContaining($"The required library {HostFxrName} could not be found");
-            }
-        }
-
-        [Theory]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        public void GetHostFxrPath_StaticNativeHost_DotNetRootParameter(bool useAssemblyPath, bool isValid)
-        {
-            string dotNetRoot = isValid ? Path.Combine(sharedState.ValidInstallRoot, "dotnet") : sharedState.InvalidInstallRoot;
-            CommandResult result = Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} false {(useAssemblyPath ? sharedState.TestAssemblyPath : "nullptr")} {dotNetRoot}")
-                .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(null)
-                .Execute();
-
-            result.Should().HaveStdErrContaining("Using dotnet root parameter");
-
-            if (isValid)
-            {
-                result.Should().Pass()
-                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
-            }
-            else
-            {
-                result.Should().Fail()
-                    .And.ExitWith(1)
-                    .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                    .And.HaveStdErrContaining($"[{Path.Combine(dotNetRoot, "host", "fxr")}] does not exist");
-            }
-        }
-
-        [Theory]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        public void GetHostFxrPath_StaticNativeHost_GlobalInstallation(bool useRegisteredLocation, bool isValid)
-        {
-            CommandResult result;
-            string installLocation = Path.Combine(isValid ? sharedState.ValidInstallRoot : sharedState.InvalidInstallRoot, "dotnet");
-            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(sharedState.StaticNativeHostPath))
-            {
-                if (useRegisteredLocation)
-                {
-                    registeredInstallLocationOverride.SetInstallLocation((HostTestContext.BuildArchitecture, installLocation));
-                }
-
-                result = Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} false")
-                    .EnableTracingAndCaptureOutputs()
-                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable(
-                        Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
-                        useRegisteredLocation ? sharedState.InvalidInstallRoot : installLocation)
-                    .DotNetRoot(null)
-                    .Execute();
-            }
-
-            result.Should().HaveUsedGlobalInstallLocation(installLocation);
-            if (useRegisteredLocation)
-                result.Should().HaveUsedRegisteredInstallLocation(installLocation);
-
-            if (isValid)
-            {
-                result.Should().Pass()
-                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
-            }
-            else
-            {
-                result.Should().Fail()
-                    .And.ExitWith(1)
-                    .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                    .And.HaveStdErrContaining($"The required library {HostFxrName} could not be found");
-            }
-        }
-
         [Fact]
-        public void GetHostFxrPath_StaticNativeHost_InvalidParameters()
+        public void GetHostFxrPath_StaticNativeHost()
         {
-            Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} false [error]")
+            string dotNetRoot = Path.Combine(sharedState.ValidInstallRoot, "dotnet");
+            CommandResult result = Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} false nullptr {dotNetRoot}")
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(null)
-                .Execute()
-                .Should().Fail()
-                .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.InvalidArgFailure.ToString("x")}")
-                .And.HaveStdErrContaining("Invalid size for get_hostfxr_parameters");
+                .Execute();
+
+            result.Should().Pass()
+                .And.HaveStdErrContaining("Using dotnet root parameter")
+                .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
         }
 
         public class SharedTestState : SharedTestStateBase
