@@ -263,19 +263,6 @@ namespace System.Threading.RateLimiting
                         aggregateExceptions.Add(ex);
                     }
                 }
-                // ChainedRateLimiter is a special case: it has to invoke replenish on its children
-                else if (rateLimiter.Value.Value is ChainedRateLimiter chainedRateLimiter)
-                {
-                    try
-                    {
-                        chainedRateLimiter.TryReplenish();
-                    }
-                    catch (Exception ex)
-                    {
-                        aggregateExceptions ??= [];
-                        aggregateExceptions.Add(ex);
-                    }
-                }
             }
 
             foreach (RateLimiter limiter in _limitersToDispose)
