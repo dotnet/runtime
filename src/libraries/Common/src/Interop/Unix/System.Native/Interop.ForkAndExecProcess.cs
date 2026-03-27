@@ -91,8 +91,8 @@ internal static partial class Interop
             }
 
             // Allocate a single block: pointer array (count + 1 for null terminator) followed by string data.
-            nuint pointersByteLength = (nuint)(count + 1) * (nuint)sizeof(byte*);
-            byte* block = (byte*)NativeMemory.Alloc(pointersByteLength + (nuint)totalByteLength);
+            nuint pointersByteLength = checked((nuint)(count + 1) * (nuint)sizeof(byte*));
+            byte* block = (byte*)NativeMemory.Alloc(checked(pointersByteLength + (nuint)totalByteLength));
             arrPtr = (byte**)block;
 
             // Set the null terminator for the pointer array.
