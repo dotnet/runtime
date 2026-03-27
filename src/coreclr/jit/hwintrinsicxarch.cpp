@@ -1825,21 +1825,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(varTypeIsLong(simdBaseType));
 
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(this, simdBaseType, TYP_DOUBLE, simdSize);
+
+            if (intrinsic != NI_Illegal)
             {
-                if (simdSize == 64)
-                {
-                    intrinsic = NI_AVX512_ConvertToVector512Double;
-                }
-                else if (simdSize == 32)
-                {
-                    intrinsic = NI_AVX512_ConvertToVector256Double;
-                }
-                else
-                {
-                    assert(simdSize == 16);
-                    intrinsic = NI_AVX512_ConvertToVector128Double;
-                }
                 op1     = impSIMDPopStack();
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseType, simdSize);
             }
@@ -1916,41 +1905,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(varTypeIsInt(simdBaseType));
-            intrinsic = NI_Illegal;
-            if (simdBaseType == TYP_INT)
-            {
-                switch (simdSize)
-                {
-                    case 16:
-                        intrinsic = NI_X86Base_ConvertToVector128Single;
-                        break;
-                    case 32:
-                        intrinsic = NI_AVX_ConvertToVector256Single;
-                        break;
-                    case 64:
-                        intrinsic = NI_AVX512_ConvertToVector512Single;
-                        break;
-                    default:
-                        unreached();
-                }
-            }
-            else if (simdBaseType == TYP_UINT && compOpportunisticallyDependsOn(InstructionSet_AVX512))
-            {
-                switch (simdSize)
-                {
-                    case 16:
-                        intrinsic = NI_AVX512_ConvertToVector128Single;
-                        break;
-                    case 32:
-                        intrinsic = NI_AVX512_ConvertToVector256Single;
-                        break;
-                    case 64:
-                        intrinsic = NI_AVX512_ConvertToVector512Single;
-                        break;
-                    default:
-                        unreached();
-                }
-            }
+
+            intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(this, simdBaseType, TYP_FLOAT, simdSize);
+
             if (intrinsic != NI_Illegal)
             {
                 op1     = impSIMDPopStack();
@@ -3341,115 +3298,68 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
+                var_types narrowType = TYP_UNDEF;
+
+                switch (simdBaseType)
+                {
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                    {
+                        narrowType = TYP_BYTE;
+                        break;
+                    }
+
+                    case TYP_INT:
+                    case TYP_UINT:
+                    {
+                        narrowType = TYP_SHORT;
+                        break;
+                    }
+
+                    case TYP_LONG:
+                    case TYP_ULONG:
+                    {
+                        narrowType = TYP_INT;
+                        break;
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        narrowType = TYP_FLOAT;
+                        break;
+                    }
+
+                    default:
+                        unreached();
+                }
+
+                if (varTypeIsUnsigned(simdBaseType))
+                {
+                    narrowType = varTypeToUnsigned(narrowType);
+                }
+
                 if (simdBaseType == TYP_DOUBLE)
                 {
                     // gtNewSimdNarrowNode uses the base type of the return for the simdBaseType
-                    retNode = gtNewSimdNarrowNode(retType, op1, op2, TYP_FLOAT, simdSize);
+                    retNode = gtNewSimdNarrowNode(retType, op1, op2, narrowType, simdSize);
+                    break;
                 }
                 else if ((simdSize == 16) && ((simdBaseType == TYP_SHORT) || (simdBaseType == TYP_INT)))
                 {
                     // PackSignedSaturate uses the base type of the return for the simdBaseType
-                    simdBaseType = (simdBaseType == TYP_SHORT) ? TYP_BYTE : TYP_SHORT;
-
                     intrinsic = NI_X86Base_PackSignedSaturate;
-                    retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
+                    retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, narrowType, simdSize);
+                    break;
                 }
-                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+
+                bool isSaturating = false;
+                intrinsic =
+                    GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(this, simdBaseType, narrowType, simdSize,
+                                                                         /* preferSaturating */ true, &isSaturating);
+
+                if (isSaturating)
                 {
-                    if ((simdSize == 32) || (simdSize == 64))
-                    {
-                        if (simdSize == 32)
-                        {
-                            intrinsic = NI_Vector256_ToVector512Unsafe;
-
-                            op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op1, intrinsic, simdBaseType, simdSize);
-                            op1 = gtNewSimdWithUpperNode(TYP_SIMD64, op1, op2, simdBaseType, simdSize * 2);
-                        }
-
-                        switch (simdBaseType)
-                        {
-                            case TYP_SHORT:
-                            {
-                                intrinsic = NI_AVX512_ConvertToVector256SByteWithSaturation;
-                                break;
-                            }
-
-                            case TYP_USHORT:
-                            {
-                                intrinsic = NI_AVX512_ConvertToVector256ByteWithSaturation;
-                                break;
-                            }
-
-                            case TYP_INT:
-                            {
-                                intrinsic = NI_AVX512_ConvertToVector256Int16WithSaturation;
-                                break;
-                            }
-
-                            case TYP_UINT:
-                            {
-                                intrinsic = NI_AVX512_ConvertToVector256UInt16WithSaturation;
-                                break;
-                            }
-
-                            case TYP_LONG:
-                            {
-                                intrinsic = NI_AVX512_ConvertToVector256Int32WithSaturation;
-                                break;
-                            }
-
-                            case TYP_ULONG:
-                            {
-                                intrinsic = NI_AVX512_ConvertToVector256UInt32WithSaturation;
-                                break;
-                            }
-
-                            default:
-                            {
-                                unreached();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        assert(simdSize == 16);
-                        intrinsic = NI_Vector128_ToVector256Unsafe;
-
-                        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, intrinsic, simdBaseType, simdSize);
-                        op1 = gtNewSimdWithUpperNode(TYP_SIMD32, op1, op2, simdBaseType, simdSize * 2);
-
-                        switch (simdBaseType)
-                        {
-                            case TYP_USHORT:
-                            {
-                                intrinsic = NI_AVX512_ConvertToVector128ByteWithSaturation;
-                                break;
-                            }
-
-                            case TYP_UINT:
-                            {
-                                intrinsic = NI_AVX512_ConvertToVector128UInt16WithSaturation;
-                                break;
-                            }
-
-                            case TYP_LONG:
-                            {
-                                intrinsic = NI_AVX512_ConvertToVector128Int32WithSaturation;
-                                break;
-                            }
-
-                            case TYP_ULONG:
-                            {
-                                intrinsic = NI_AVX512_ConvertToVector128UInt32WithSaturation;
-                                break;
-                            }
-
-                            default:
-                            {
-                                unreached();
-                            }
-                        }
-                    }
+                    assert(intrinsic != NI_Illegal);
 
                     if (simdSize == 64)
                     {
@@ -3460,14 +3370,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     }
                     else
                     {
+                        assert((simdSize == 16) || (simdSize == 32));
+
+                        var_types      widenType = (simdSize == 32) ? TYP_SIMD64 : TYP_SIMD32;
+                        NamedIntrinsic widenIntrinsic =
+                            (simdSize == 32) ? NI_Vector256_ToVector512Unsafe : NI_Vector128_ToVector256Unsafe;
+
+                        op1 = gtNewSimdHWIntrinsicNode(widenType, op1, widenIntrinsic, simdBaseType, simdSize);
+                        op1 = gtNewSimdWithUpperNode(widenType, op1, op2, simdBaseType, simdSize * 2);
+
                         retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseType, simdSize * 2);
                     }
                 }
                 else
                 {
-                    // gtNewSimdNarrowNode uses the base type of the return for the simdBaseType
-                    var_types narrowSimdBaseType;
-
                     GenTreeVecCon* minCns = varTypeIsSigned(simdBaseType) ? gtNewVconNode(retType) : nullptr;
                     GenTreeVecCon* maxCns = gtNewVconNode(retType);
 
@@ -3477,15 +3393,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         {
                             minCns->EvaluateBroadcastInPlace<int16_t>(INT8_MIN);
                             maxCns->EvaluateBroadcastInPlace<int16_t>(INT8_MAX);
-
-                            narrowSimdBaseType = TYP_BYTE;
                             break;
                         }
 
                         case TYP_USHORT:
                         {
                             maxCns->EvaluateBroadcastInPlace<uint16_t>(UINT8_MAX);
-                            narrowSimdBaseType = TYP_UBYTE;
                             break;
                         }
 
@@ -3493,15 +3406,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         {
                             minCns->EvaluateBroadcastInPlace<int32_t>(INT16_MIN);
                             maxCns->EvaluateBroadcastInPlace<int32_t>(INT16_MAX);
-
-                            narrowSimdBaseType = TYP_SHORT;
                             break;
                         }
 
                         case TYP_UINT:
                         {
                             maxCns->EvaluateBroadcastInPlace<uint32_t>(UINT16_MAX);
-                            narrowSimdBaseType = TYP_USHORT;
                             break;
                         }
 
@@ -3509,15 +3419,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         {
                             minCns->EvaluateBroadcastInPlace<int64_t>(INT32_MIN);
                             maxCns->EvaluateBroadcastInPlace<int64_t>(INT32_MAX);
-
-                            narrowSimdBaseType = TYP_INT;
                             break;
                         }
 
                         case TYP_ULONG:
                         {
                             maxCns->EvaluateBroadcastInPlace<uint64_t>(UINT32_MAX);
-                            narrowSimdBaseType = TYP_UINT;
                             break;
                         }
 
@@ -3545,7 +3452,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     op2 = gtNewSimdMinMaxNode(retType, op2, gtCloneExpr(maxCns), simdBaseType, simdSize,
                                               /* isMax */ false, /* isMagnitude */ false, /* isNumber */ false);
 
-                    retNode = gtNewSimdNarrowNode(retType, op1, op2, narrowSimdBaseType, simdSize);
+                    // gtNewSimdNarrowNode uses the base type of the return for the simdBaseType
+                    retNode = gtNewSimdNarrowNode(retType, op1, op2, narrowType, simdSize);
                 }
             }
             break;
