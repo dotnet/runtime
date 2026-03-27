@@ -1089,28 +1089,28 @@ namespace System.Text.RegularExpressions
                         if (node.Kind == RegexNodeKind.Alternate)
                         {
                             node = ExtractCommonSuffixNode(node);
-                        }
-                        if (node.Kind == RegexNodeKind.Alternate)
-                        {
-                            node = ExtractCommonPrefixNode(node);
-                        }
-                        if (node.Kind == RegexNodeKind.Alternate)
-                        {
-                            node = RemoveRedundantEmptiesAndNothings(node);
-
-                            // If the alternation is actually just a ? or ?? in disguise, transform it accordingly.
-                            //     (a|) becomes a?
-                            //     (|a) becomes a??
-                            // Such "optional" nodes are processed more efficiently, including being able to be better coalesced with surrounding nodes.
-                            if (node.Kind is RegexNodeKind.Alternate && node.ChildCount() == 2)
+                            if (node.Kind == RegexNodeKind.Alternate)
                             {
-                                if (node.Child(1).Kind is RegexNodeKind.Empty)
+                                node = ExtractCommonPrefixNode(node);
+                                if (node.Kind == RegexNodeKind.Alternate)
                                 {
-                                    node = node.Child(0).MakeQuantifier(lazy: false, min: 0, max: 1);
-                                }
-                                else if (node.Child(0).Kind is RegexNodeKind.Empty)
-                                {
-                                    node = node.Child(1).MakeQuantifier(lazy: true, min: 0, max: 1);
+                                    node = RemoveRedundantEmptiesAndNothings(node);
+
+                                    // If the alternation is actually just a ? or ?? in disguise, transform it accordingly.
+                                    //     (a|) becomes a?
+                                    //     (|a) becomes a??
+                                    // Such "optional" nodes are processed more efficiently, including being able to be better coalesced with surrounding nodes.
+                                    if (node.Kind is RegexNodeKind.Alternate && node.ChildCount() == 2)
+                                    {
+                                        if (node.Child(1).Kind is RegexNodeKind.Empty)
+                                        {
+                                            node = node.Child(0).MakeQuantifier(lazy: false, min: 0, max: 1);
+                                        }
+                                        else if (node.Child(0).Kind is RegexNodeKind.Empty)
+                                        {
+                                            node = node.Child(1).MakeQuantifier(lazy: true, min: 0, max: 1);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1338,8 +1338,10 @@ namespace System.Text.RegularExpressions
 
             // This function optimizes out common trailing anchor nodes from alternation branches.
             // e.g. \d{5}$|\d{5}-\d{4}$ => (?:\d{5}|\d{5}-\d{4})$
-            // This is valuable because it exposes the trailing anchor to optimizations like
-            // TrailingAnchor_FixedLength that can jump directly to a position near the end of input.
+            // This is restricted to anchors only because suffix extraction of non-anchor nodes
+            // (One, Set, loops, etc.) would interfere with EliminateEndingBacktracking: moving the
+            // alternation from the tail position prevents it from being wrapped in Atomic, and also
+            // disrupts greedy/lazy branch merging (e.g. a?b|a??b).
             static RegexNode ExtractCommonSuffixNode(RegexNode alternation)
             {
                 Debug.Assert(alternation.Kind == RegexNodeKind.Alternate);

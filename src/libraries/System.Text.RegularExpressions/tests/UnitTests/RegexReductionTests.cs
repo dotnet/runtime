@@ -698,6 +698,12 @@ namespace System.Text.RegularExpressions.Tests
         // After alternation prefix extraction, optional patterns should differ from non-optional
         [InlineData("(?i)(?:ab|abc)d", "(?i)abcd")]
         [InlineData("(?:[ab][0-9]|[ab])x", "[ab][0-9]x")]
+        // Suffix extraction should not merge branches with different trailing anchors
+        [InlineData(@"abc$|xyz\z", @"(?:abc|xyz)$")]
+        // Suffix extraction should not extract non-anchor trailing nodes (would interfere with auto-atomization)
+        [InlineData(@"abcx|defx", @"(?:abc|def)x")]
+        [InlineData(@"ab\d+|cd\d+", @"(?:ab|cd)\d+")]
+        [InlineData(@"a?b|a??b", @"(?:a?|a??)b")]
         public void PatternsReduceDifferently(string actual, string expected)
         {
             // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.
