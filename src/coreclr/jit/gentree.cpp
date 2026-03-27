@@ -2592,7 +2592,7 @@ void CallArgs::ResetFinalArgsAndABIInfo()
  *  Returns non-zero if the two trees are identical.
  */
 
-bool GenTree::Compare(GenTree* op1, GenTree* op2, bool swapOK)
+bool GenTree::Compare(GenTree* op1, GenTree* op2, bool swapOK, bool ignoreIndFlags)
 {
     genTreeOps oper;
     unsigned   kind;
@@ -2773,9 +2773,12 @@ AGAIN:
                 return false;
             }
 
-            if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
+            if (!ignoreIndFlags)
             {
-                return false;
+                if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
+                {
+                    return false;
+                }
             }
         }
 
@@ -2915,14 +2918,14 @@ AGAIN:
 
         if (op1->AsOp()->gtOp2)
         {
-            if (!Compare(op1->AsOp()->gtOp1, op2->AsOp()->gtOp1, swapOK))
+            if (!Compare(op1->AsOp()->gtOp1, op2->AsOp()->gtOp1, swapOK, ignoreIndFlags))
             {
                 if (swapOK && OperIsCommutative(oper) &&
                     ((op1->AsOp()->gtOp1->gtFlags | op1->AsOp()->gtOp2->gtFlags | op2->AsOp()->gtOp1->gtFlags |
                       op2->AsOp()->gtOp2->gtFlags) &
                      GTF_ALL_EFFECT) == 0)
                 {
-                    if (Compare(op1->AsOp()->gtOp1, op2->AsOp()->gtOp2, swapOK))
+                    if (Compare(op1->AsOp()->gtOp1, op2->AsOp()->gtOp2, swapOK, ignoreIndFlags))
                     {
                         op1 = op1->AsOp()->gtOp2;
                         op2 = op2->AsOp()->gtOp1;

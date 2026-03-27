@@ -2079,7 +2079,7 @@ public:
 
     //---------------------------------------------------------------------
 
-    static bool Compare(GenTree* op1, GenTree* op2, bool swapOK = false);
+    static bool Compare(GenTree* op1, GenTree* op2, bool swapOK = false, bool ignoreIndFlags = false);
 
     //---------------------------------------------------------------------
 

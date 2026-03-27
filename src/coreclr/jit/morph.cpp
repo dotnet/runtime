@@ -10714,11 +10714,24 @@ GenTree* Compiler::fgOptimizeBitwiseOr(GenTreeOp* orOp)
     GenTree* op1 = orOp->gtGetOp1();
     GenTree* op2 = orOp->gtGetOp2();
 
+    // TODO: We are missing something that reorders operations if it allows the transformation to kick in.
+    // E.g `foo | ((flags & 256) | (flags & 512))` works but `(foo | (flags & 256)) | (flags & 512)` doesnt.
+    // See https://github.com/llvm/llvm-project/blob/c4847d250bf958eaa7415fa7d480d17f8132719b/llvm/lib/Transforms/InstCombine/InstructionCombining.cpp#L500
+
     // Fold "(cmp & x) | (cmp & y)" to "cmp & (x | y)".
     if (varTypeIsIntegralOrI(orOp) && op1->OperIs(GT_AND) && op2->OperIs(GT_AND))
     {
-        if (GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1()))
+        if (GenTree::Compare(op1->gtGetOp1(), op2->gtGetOp1(), false, true))
         {
+            // TODO: Add missing volatile check to catch e.g: (flags & 256) | (Volatile.Read(ref flags) & 512).
+            // Volatile INDs are expressed through `GTF_ORDER_SIDEEFF`, but checking for that unnecessarily
+            // pessimizes many other cases so it's not wanted.
+            // See https://discord.com/channels/143867839282020352/312132327348240384/1487216542906061034
+            if ((op2->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS)) != 0)
+            {
+                return nullptr;
+            }
+
             orOp->ChangeOper(GT_AND, GenTree::ValueNumberUpdate::PRESERVE_VN);
             orOp->AsOp()->gtOp1 = op1->gtGetOp1();
             orOp->AsOp()->gtOp2 = gtNewOperNode(GT_OR, orOp->TypeGet(), op1->gtGetOp2(), op2->gtGetOp2());
