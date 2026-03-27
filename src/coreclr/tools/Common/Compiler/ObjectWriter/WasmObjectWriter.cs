@@ -825,7 +825,7 @@ namespace ILCompiler.ObjectWriter
                             // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
                             // flag mapping
                             Debug.Assert(virtualSymbolImageOffset != 0);
-                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset);
+                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
                             break;
                         }
                         case RelocType.WASM_TABLE_INDEX_U32:
