@@ -1606,11 +1606,11 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     struct {
         OBJECTREF pNewException;
         STRINGREF pNewFileString;
-        STRINGREF pNewFusionLogString;
+        STRINGREF pNewRequestingChain;
     } gc;
     gc.pNewException = NULL;
     gc.pNewFileString = NULL;
-    gc.pNewFusionLogString = NULL;
+    gc.pNewRequestingChain = NULL;
     GCPROTECT_BEGIN(gc);
 
     gc.pNewFileString = StringObject::NewString(m_name);
@@ -1620,7 +1620,7 @@ OBJECTREF EEFileLoadException::CreateThrowable()
 
     if (!m_requestingAssemblyName.IsEmpty())
     {
-        gc.pNewFusionLogString = StringObject::NewString(m_requestingAssemblyName);
+        gc.pNewRequestingChain = StringObject::NewString(m_requestingAssemblyName);
 
         MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
                                 COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_Int_RetVoid);
@@ -1632,7 +1632,7 @@ OBJECTREF EEFileLoadException::CreateThrowable()
             ARG_SLOT args[] = {
                 ObjToArgSlot(gc.pNewException),
                 ObjToArgSlot(gc.pNewFileString),
-                ObjToArgSlot(gc.pNewFusionLogString),
+                ObjToArgSlot(gc.pNewRequestingChain),
                 (ARG_SLOT) m_hr
             };
 
@@ -1749,14 +1749,13 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
                         if (pGrandParent == NULL || pGrandParent == pWalkAssembly)
                             break;
 
-                        // Skip system assemblies (System.Private.CoreLib etc.)
-                        if (!pGrandParent->IsSystem())
-                        {
-                            StackSString grandParentName;
-                            pGrandParent->GetDisplayName(grandParentName);
-                            requestingChain.Append(W("\n"));
-                            requestingChain.Append(grandParentName);
-                        }
+                        StackSString grandParentName;
+                        pGrandParent->GetDisplayName(grandParentName);
+                        requestingChain.Append(W("\n ---> "));
+                        requestingChain.Append(grandParentName);
+
+                        if (pGrandParent->IsSystem())
+                            break;
 
                         pWalkAssembly = pGrandParent;
                         depth++;
