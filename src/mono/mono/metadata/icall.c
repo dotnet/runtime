@@ -6136,7 +6136,7 @@ ves_icall_System_Delegate_CreateShared_internal (MonoQCallTypeHandle type_handle
 	MonoObjectHandle delegate = mono_object_new_handle (delegate_class, error);
 	return_val_if_nok (error, NULL_HANDLE);
 
-	mono_delegate_ctor (delegate, NULL, ptr, NULL, error);
+	mono_delegate_ctor (delegate, NULL_HANDLE, ptr, NULL, error);
 	return_val_if_nok (error, NULL_HANDLE);
 	return delegate;
 }
