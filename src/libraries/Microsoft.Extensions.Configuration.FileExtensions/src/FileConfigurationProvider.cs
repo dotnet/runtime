@@ -93,19 +93,29 @@ namespace Microsoft.Extensions.Configuration
                     return fileInfo.CreateReadStream();
                 }
 
-                using Stream stream = OpenRead(file);
                 try
                 {
-                    Load(stream);
+                    using Stream stream = OpenRead(file);
+                    try
+                    {
+                        Load(stream);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (reload)
+                        {
+                            // We reset Data only for exceptions from Load. For possibly transient
+                            // IOExceptions from OpenRead caught by the outer catch, we do not reset
+                            // it, preserving the original configuration.
+                            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                        }
+                        string filePath = file.PhysicalPath ?? Source.Path ?? file.Name;
+                        throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, filePath), ex);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    if (reload)
-                    {
-                        Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-                    }
-                    var exception = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
-                    HandleException(ExceptionDispatchInfo.Capture(exception));
+                    HandleException(ExceptionDispatchInfo.Capture(ex));
                 }
             }
             // REVIEW: Should we raise this in the base as well / instead?
@@ -122,6 +132,9 @@ namespace Microsoft.Extensions.Configuration
         /// <exception cref="InvalidDataException">An exception was thrown by the concrete implementation of the
         /// <see cref="Load()"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
         /// if you need more control over the exception.</exception>
+        /// <exception cref="IOException">An exception was thrown when opening the file. Use the source
+        /// <see cref="FileConfigurationSource.OnLoadException"/> callback if you need more control over the
+        /// exception.</exception>
         public override void Load()
         {
             Load(reload: false);

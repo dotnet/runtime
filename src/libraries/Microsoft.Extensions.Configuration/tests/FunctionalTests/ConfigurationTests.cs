@@ -100,7 +100,7 @@ CommonKey3:CommonKey4=IniValue6";
 
             Assert.Throws<FileNotFoundException>(() => configurationBuilder.Build());
         }
-        
+
         [Fact]
         public void CanHandleExceptionIfFileNotFound()
         {
@@ -442,29 +442,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        public void OnLoadErrorCanIgnoreErrors()
-        {
-            _fileSystem.WriteFile("error.json", @"{""JsonKey1"": ");
-
-            FileConfigurationProvider provider = null;
-            Action<FileLoadExceptionContext> jsonLoadError = c =>
-            {
-                provider = c.Provider;
-                c.Ignore = true;
-            };
-
-            CreateBuilder()
-                .AddJsonFile(s =>
-                {
-                    s.Path = "error.json";
-                    s.OnLoadException = jsonLoadError;
-                })
-                .Build();
-
-            Assert.NotNull(provider);
-        }
-
-        [Fact]
         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public void CanSetValuesAndReloadValues()
         {
@@ -536,6 +513,143 @@ IniKey1=IniValue2");
                 "Notification failed for updating after error.");
 
             Assert.Equal("JsonValue2", config["JsonKey1"]);
+        }
+
+        [Fact]
+        public void LoadDataErrorRaisesOnLoadException()
+        {
+            const string FileName = $"{nameof(LoadDataErrorRaisesOnLoadException)}.json";
+
+            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
+
+            FileConfigurationProvider failingProvider = null;
+            Exception failureException = null;
+            Action<FileLoadExceptionContext> jsonLoadError = c =>
+            {
+                failureException = c.Exception;
+                failingProvider = c.Provider;
+                c.Ignore = true;
+            };
+
+            using var cfgRoot = CreateBuilder()
+                .AddJsonFile(s =>
+                {
+                    s.Path = FileName;
+                    s.OnLoadException = jsonLoadError;
+                })
+                .Build() as IDisposable;
+
+            Assert.NotNull(failingProvider);
+            Assert.IsType<InvalidDataException>(failureException);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void LoadIoErrorRaisesOnLoadException()
+        {
+            const string FileName = $"{nameof(LoadIoErrorRaisesOnLoadException)}.json";
+
+            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
+
+            using (_fileSystem.LockFileReading(FileName))
+            {
+                FileConfigurationProvider failingProvider = null;
+                Exception failureException = null;
+                Action<FileLoadExceptionContext> jsonLoadError = c =>
+                {
+                    failureException = c.Exception;
+                    failingProvider = c.Provider;
+                    c.Ignore = true;
+                };
+
+                using var cfgRoot = CreateBuilder()
+                    .AddJsonFile(s =>
+                    {
+                        s.Path = FileName;
+                        s.OnLoadException = jsonLoadError;
+                    })
+                    .Build() as IDisposable;
+
+                Assert.NotNull(failingProvider);
+                Assert.IsType<IOException>(failureException);
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
+        public async Task ReloadDataErrorRaisesOnLoadException()
+        {
+            const string FileName = $"{nameof(ReloadDataErrorRaisesOnLoadException)}.json";
+
+            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
+
+            FileConfigurationProvider failingProvider = null;
+            Exception failureException = null;
+            Action<FileLoadExceptionContext> jsonLoadError = c =>
+            {
+                failureException = c.Exception;
+                failingProvider = c.Provider;
+                c.Ignore = true;
+            };
+
+            using var cfgRoot = CreateBuilder()
+                .AddJsonFile(s =>
+                {
+                    s.Path = FileName;
+                    s.OnLoadException = jsonLoadError;
+                    s.ReloadOnChange = true;
+                })
+                .Build() as IDisposable;
+
+            // No error should be triggered so far.
+            Assert.Null(failingProvider);
+            Assert.Null(failureException);
+
+            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
+
+            await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
+
+            Assert.IsType<InvalidDataException>(failureException);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
+        public async Task ReloadIoErrorRaisesOnLoadException()
+        {
+            const string FileName = $"{nameof(ReloadIoErrorRaisesOnLoadException)}.json";
+
+            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
+
+            FileConfigurationProvider failingProvider = null;
+            Exception failureException = null;
+            Action<FileLoadExceptionContext> jsonLoadError = c =>
+            {
+                failureException = c.Exception;
+                failingProvider = c.Provider;
+                c.Ignore = true;
+            };
+
+            using var cfgRoot = CreateBuilder()
+                .AddJsonFile(s =>
+                {
+                    s.Path = FileName;
+                    s.OnLoadException = jsonLoadError;
+                    s.ReloadOnChange = true;
+                })
+                .Build() as IDisposable;
+
+            // No error should be triggered so far.
+            Assert.Null(failingProvider);
+
+            using (_fileSystem.LockFileReading(FileName))
+            {
+                // we need NoWait because Wait reads file under the hood and that is restricted in LockFileReading context
+                _fileSystem.WriteFileNoWait(FileName, @"{""JsonKey1"": ""JsonValue1Updated"" }");
+
+                await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
+                Assert.IsType<IOException>(failureException);
+            }
         }
 
         [Fact]
@@ -689,7 +803,7 @@ IniKey1=IniValue2");
             Assert.Equal("IniValue1", config["Key"]);
             Assert.True(token.HasChanged);
         }
-        
+
         [Theory]
         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         [InlineData(false)]

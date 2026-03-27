@@ -1,0 +1,800 @@
+From cbb97be0a3f2e91ad8074e24a178e86797552046 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Wed, 25 Mar 2026 15:04:53 +0100
+Subject: [PATCH 01/15] Forward IO exceptions to OnLoadException
+
+---
+ .../src/FileConfigurationProvider.cs           | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+index f84ed8ead309ef..7627ef070e6763 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+@@ -93,10 +93,21 @@ static Stream OpenRead(IFileInfo fileInfo)
+                     return fileInfo.CreateReadStream();
+                 }
+ 
+-                using Stream stream = OpenRead(file);
+                 try
+                 {
+-                    Load(stream);
++                    using Stream stream = OpenRead(file);
++                    try
++                    {
++                        Load(stream);
++                    }
++                    catch (Exception ex)
++                    {
++                        if (reload)
++                        {
++                            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
++                        }
++                        throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
++                    }
+                 }
+                 catch (Exception ex)
+                 {
+@@ -104,8 +115,7 @@ static Stream OpenRead(IFileInfo fileInfo)
+                     {
+                         Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                     }
+-                    var exception = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
+-                    HandleException(ExceptionDispatchInfo.Capture(exception));
++                    HandleException(ExceptionDispatchInfo.Capture(ex));
+                 }
+             }
+             // REVIEW: Should we raise this in the base as well / instead?
+
+From 64d03ea90fc735cf8f469cb82f1be59a067be590 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Wed, 25 Mar 2026 16:39:30 +0100
+Subject: [PATCH 02/15] Removed duplicate Data dict recreation
+
+---
+ .../src/FileConfigurationProvider.cs                          | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+index 7627ef070e6763..c6a5bc7c3d465d 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+@@ -102,10 +102,6 @@ static Stream OpenRead(IFileInfo fileInfo)
+                     }
+                     catch (Exception ex)
+                     {
+-                        if (reload)
+-                        {
+-                            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+-                        }
+                         throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
+                     }
+                 }
+
+From 018c6f6196dbf43be8fe8cd1db028098e1e1f18a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 17:02:23 +0100
+Subject: [PATCH 03/15] Add tests
+
+---
+ .../FunctionalTests/ConfigurationTests.cs     | 127 +++++++++++++++++-
+ .../FunctionalTests/DisposableFileSystem.cs   |  23 +++-
+ 2 files changed, 147 insertions(+), 3 deletions(-)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+index f6bbb5adc056e5..aa54608224e677 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+@@ -100,7 +100,7 @@ public void ThrowsOnFileNotFoundWhenNotIgnored()
+ 
+             Assert.Throws<FileNotFoundException>(() => configurationBuilder.Build());
+         }
+-        
++
+         [Fact]
+         public void CanHandleExceptionIfFileNotFound()
+         {
+@@ -538,6 +538,129 @@ await WaitForChange(
+             Assert.Equal("JsonValue2", config["JsonKey1"]);
+         }
+ 
++        [Fact]
++        [PlatformSpecific(TestPlatforms.Windows)]
++        public void LoadDataErrorRaisesOnLoadException()
++        {
++            const string FileName = $"{nameof(LoadDataErrorRaisesOnLoadException)}.json";
++
++            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
++
++            FileConfigurationProvider failingProvider = null;
++            Action<FileLoadExceptionContext> jsonLoadError = c =>
++            {
++                failingProvider = c.Provider;
++                c.Ignore = true;
++            };
++
++            CreateBuilder()
++                .AddJsonFile(s =>
++                {
++                    s.Path = FileName;
++                    s.OnLoadException = jsonLoadError;
++                })
++                .Build();
++
++            Assert.NotNull(failingProvider);
++        }
++
++        [Fact]
++        [PlatformSpecific(TestPlatforms.Windows)]
++        public void LoadIoErrorRaisesOnLoadException()
++        {
++            const string FileName = $"{nameof(LoadIoErrorRaisesOnLoadException)}.json";
++
++            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
++
++            using (_fileSystem.LockFileReading(FileName))
++            {
++                FileConfigurationProvider failingProvider = null;
++                Action<FileLoadExceptionContext> jsonLoadError = c =>
++                {
++                    failingProvider = c.Provider;
++                    c.Ignore = true;
++                };
++
++                CreateBuilder()
++                    .AddJsonFile(s =>
++                    {
++                        s.Path = FileName;
++                        s.OnLoadException = jsonLoadError;
++                    })
++                    .Build();
++
++                Assert.NotNull(failingProvider);
++            }
++        }
++
++        [Fact]
++        [PlatformSpecific(TestPlatforms.Windows)]
++        public async Task ReloadDataErrorRaisesOnLoadException()
++        {
++            const string FileName = $"{nameof(ReloadDataErrorRaisesOnLoadException)}.json";
++
++            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
++
++            FileConfigurationProvider failingProvider = null;
++            Action<FileLoadExceptionContext> jsonLoadError = c =>
++            {
++                failingProvider = c.Provider;
++                c.Ignore = true;
++            };
++
++            CreateBuilder()
++                .AddJsonFile(s =>
++                {
++                    s.Path = FileName;
++                    s.OnLoadException = jsonLoadError;
++                    s.ReloadOnChange = true;
++                })
++                .Build();
++
++            // No error should be triggered so far.
++            Assert.Null(failingProvider);
++
++            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
++
++            await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event at time.");
++        }
++
++        [Fact]
++        [PlatformSpecific(TestPlatforms.Windows)]
++        public async Task ReloadIoErrorRaisesOnLoadException()
++        {
++            const string FileName = $"{nameof(ReloadIoErrorRaisesOnLoadException)}.json";
++
++            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
++
++            FileConfigurationProvider failingProvider = null;
++            Action<FileLoadExceptionContext> jsonLoadError = c =>
++            {
++                failingProvider = c.Provider;
++                c.Ignore = true;
++            };
++
++            CreateBuilder()
++                .AddJsonFile(s =>
++                {
++                    s.Path = FileName;
++                    s.OnLoadException = jsonLoadError;
++                    s.ReloadOnChange = true;
++                })
++                .Build();
++
++            // No error should be triggered so far.
++            Assert.Null(failingProvider);
++
++            using (_fileSystem.LockFileReading(FileName))
++            {
++                // we need NoWait because Wait reads file under the hood and that is restricted in LockFileReading context
++                _fileSystem.WriteFileNoWait(FileName, @"{""JsonKey1"": ""JsonValue1Updated"" }");
++
++                await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event at time.");
++            }
++        }
++
+         [Fact]
+         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
+         public async Task TouchingFileWillReload()
+@@ -689,7 +812,7 @@ await WaitForChange(
+             Assert.Equal("IniValue1", config["Key"]);
+             Assert.True(token.HasChanged);
+         }
+-        
++
+         [Theory]
+         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
+         [InlineData(false)]
+diff --git a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/DisposableFileSystem.cs b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/DisposableFileSystem.cs
+index 0c16295d5be547..a5729d88a4eb39 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/DisposableFileSystem.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/DisposableFileSystem.cs
+@@ -48,7 +48,7 @@ public DisposableFileSystem WriteFile(string path, string text = "temp", bool ab
+                 ? path
+                 : Path.Combine(RootPath, path);
+ 
+-            File.WriteAllText(fullPath, text);
++            WriteFileNoWait(path, text, absolute);
+ 
+             WaitForFileSystem(
+                 () => File.ReadAllText(fullPath).Length == text.Length,
+@@ -57,6 +57,17 @@ public DisposableFileSystem WriteFile(string path, string text = "temp", bool ab
+             return this;
+         }
+ 
++        public DisposableFileSystem WriteFileNoWait(string path, string text = "temp", bool absolute = false)
++        {
++            var fullPath = absolute
++                ? path
++                : Path.Combine(RootPath, path);
++
++            File.WriteAllText(fullPath, text);
++
++            return this;
++        }
++
+         public DisposableFileSystem DeleteFile(string path, bool absolute = false)
+         {
+             var fullPath = absolute
+@@ -91,6 +102,16 @@ public DisposableFileSystem CreateFiles(params string[] fileRelativePaths)
+             return this;
+         }
+ 
++        /// <summary>
++        /// Lock specified file for reading. However it can be still written and changes triggers FileSystemWatcher events.
++        /// </summary>
++        /// <returns>IDisposable which removes lock on Dispose()</returns>
++        public IDisposable LockFileReading(string path)
++        {
++            var fullPath = Path.Combine(RootPath, path);
++            return new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Write);
++        }
++
+         public void Dispose()
+         {
+             try
+
+From a6e7d92fbfc9e2a4259d46ed9e3417c00a0c5651 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 17:41:06 +0100
+Subject: [PATCH 04/15] Throw alaways InvalidDataException and clear Data only
+ on data error.
+
+---
+ .../src/FileConfigurationProvider.cs                | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+index c6a5bc7c3d465d..36284df36c9883 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+@@ -102,16 +102,17 @@ static Stream OpenRead(IFileInfo fileInfo)
+                     }
+                     catch (Exception ex)
+                     {
+-                        throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
++                        if (reload)
++                        {
++                            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
++                        }
++                        throw ex;
+                     }
+                 }
+                 catch (Exception ex)
+                 {
+-                    if (reload)
+-                    {
+-                        Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+-                    }
+-                    HandleException(ExceptionDispatchInfo.Capture(ex));
++                    var exception = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
++                    HandleException(ExceptionDispatchInfo.Capture(exception));
+                 }
+             }
+             // REVIEW: Should we raise this in the base as well / instead?
+
+From 7e072769d598c3617f6f6977c33f9481e55f1cae Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 17:41:24 +0100
+Subject: [PATCH 05/15] Improve test attributes assignment.
+
+---
+ .../tests/FunctionalTests/ConfigurationTests.cs                | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+index aa54608224e677..04a65c65bc50ea 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+@@ -539,7 +539,6 @@ await WaitForChange(
+         }
+ 
+         [Fact]
+-        [PlatformSpecific(TestPlatforms.Windows)]
+         public void LoadDataErrorRaisesOnLoadException()
+         {
+             const string FileName = $"{nameof(LoadDataErrorRaisesOnLoadException)}.json";
+@@ -594,7 +593,7 @@ public void LoadIoErrorRaisesOnLoadException()
+         }
+ 
+         [Fact]
+-        [PlatformSpecific(TestPlatforms.Windows)]
++        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
+         public async Task ReloadDataErrorRaisesOnLoadException()
+         {
+             const string FileName = $"{nameof(ReloadDataErrorRaisesOnLoadException)}.json";
+
+From afaa6a4736b503f78b136028db08b9eab1eedf07 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 17:58:16 +0100
+Subject: [PATCH 06/15] Fix typos
+
+---
+ .../tests/FunctionalTests/ConfigurationTests.cs               | 4 ++--
+ .../tests/FunctionalTests/DisposableFileSystem.cs             | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+index 04a65c65bc50ea..fe2958c470f3bd 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+@@ -621,7 +621,7 @@ public async Task ReloadDataErrorRaisesOnLoadException()
+ 
+             _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
+ 
+-            await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event at time.");
++            await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
+         }
+ 
+         [Fact]
+@@ -656,7 +656,7 @@ public async Task ReloadIoErrorRaisesOnLoadException()
+                 // we need NoWait because Wait reads file under the hood and that is restricted in LockFileReading context
+                 _fileSystem.WriteFileNoWait(FileName, @"{""JsonKey1"": ""JsonValue1Updated"" }");
+ 
+-                await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event at time.");
++                await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
+             }
+         }
+ 
+diff --git a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/DisposableFileSystem.cs b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/DisposableFileSystem.cs
+index a5729d88a4eb39..b5bd0c1968bda9 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/DisposableFileSystem.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/DisposableFileSystem.cs
+@@ -103,7 +103,7 @@ public DisposableFileSystem CreateFiles(params string[] fileRelativePaths)
+         }
+ 
+         /// <summary>
+-        /// Lock specified file for reading. However it can be still written and changes triggers FileSystemWatcher events.
++        /// Lock specified file for reading. However, it can still be written to, and changes trigger FileSystemWatcher events.
+         /// </summary>
+         /// <returns>IDisposable which removes lock on Dispose()</returns>
+         public IDisposable LockFileReading(string path)
+
+From 0a76a86b95c14b595bb8df0c81563a481f796950 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 17:58:52 +0100
+Subject: [PATCH 07/15] Change exception back to rpopagating IOException
+ directly and improve file path formatting logic.
+
+---
+ .../src/FileConfigurationProvider.cs                       | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+index 36284df36c9883..eafa07ce155920 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+@@ -106,13 +106,13 @@ static Stream OpenRead(IFileInfo fileInfo)
+                         {
+                             Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                         }
+-                        throw ex;
++                        string filePath = Source.Path ?? file.Name;
++                        throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, filePath), ex);
+                     }
+                 }
+                 catch (Exception ex)
+                 {
+-                    var exception = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
+-                    HandleException(ExceptionDispatchInfo.Capture(exception));
++                    HandleException(ExceptionDispatchInfo.Capture(ex));
+                 }
+             }
+             // REVIEW: Should we raise this in the base as well / instead?
+@@ -129,6 +129,7 @@ static Stream OpenRead(IFileInfo fileInfo)
+         /// <exception cref="InvalidDataException">An exception was thrown by the concrete implementation of the
+         /// <see cref="Load()"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
+         /// if you need more control over the exception.</exception>
++        /// <exception cref="IOException">An exception was thrown when opening file.</exception>
+         public override void Load()
+         {
+             Load(reload: false);
+
+From 4a972f642fffb98f500139f583c7d3f521c95824 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 18:10:40 +0100
+Subject: [PATCH 08/15] Fix missing PhysicalPath in error string shown file
+ name selection
+
+---
+ .../src/FileConfigurationProvider.cs                            | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+index eafa07ce155920..e1563f4c043112 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+@@ -106,7 +106,7 @@ static Stream OpenRead(IFileInfo fileInfo)
+                         {
+                             Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                         }
+-                        string filePath = Source.Path ?? file.Name;
++                        string filePath = file.PhysicalPath ?? Source.Path ?? file.Name;
+                         throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, filePath), ex);
+                     }
+                 }
+
+From 7096d714b217c6c6d9bf52efec002fa055a8da4e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 18:13:02 +0100
+Subject: [PATCH 09/15] Improve comment.
+
+---
+ .../src/FileConfigurationProvider.cs                          | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+index e1563f4c043112..af5fbb728fc3f6 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+@@ -129,7 +129,9 @@ static Stream OpenRead(IFileInfo fileInfo)
+         /// <exception cref="InvalidDataException">An exception was thrown by the concrete implementation of the
+         /// <see cref="Load()"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
+         /// if you need more control over the exception.</exception>
+-        /// <exception cref="IOException">An exception was thrown when opening file.</exception>
++        /// <exception cref="IOException">An exception was thrown when opening the file. Use the source
++        /// <see cref="FileConfigurationSource.OnLoadException"/> callback if you need more control over the
++        /// exception.</exception>
+         public override void Load()
+         {
+             Load(reload: false);
+
+From a77d5ca49ed98da5807744ce5a64e39a8db4a087 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Thu, 26 Mar 2026 18:25:52 +0100
+Subject: [PATCH 10/15] Remove duplicate test.
+
+---
+ .../FunctionalTests/ConfigurationTests.cs     | 23 -------------------
+ 1 file changed, 23 deletions(-)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+index fe2958c470f3bd..913ec1424cf83e 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+@@ -441,29 +441,6 @@ public void OnLoadErrorWillBeCalledOnIniLoadError()
+             Assert.NotNull(provider);
+         }
+ 
+-        [Fact]
+-        public void OnLoadErrorCanIgnoreErrors()
+-        {
+-            _fileSystem.WriteFile("error.json", @"{""JsonKey1"": ");
+-
+-            FileConfigurationProvider provider = null;
+-            Action<FileLoadExceptionContext> jsonLoadError = c =>
+-            {
+-                provider = c.Provider;
+-                c.Ignore = true;
+-            };
+-
+-            CreateBuilder()
+-                .AddJsonFile(s =>
+-                {
+-                    s.Path = "error.json";
+-                    s.OnLoadException = jsonLoadError;
+-                })
+-                .Build();
+-
+-            Assert.NotNull(provider);
+-        }
+-
+         [Fact]
+         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
+         public void CanSetValuesAndReloadValues()
+
+From 6f9e61c0919b1738a3eda54c2a2c54b127f22fc8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Fri, 27 Mar 2026 11:39:02 +0100
+Subject: [PATCH 11/15] Add missing ActiveIssue attribute to possibly flaky
+ test.
+
+---
+ .../tests/FunctionalTests/ConfigurationTests.cs                  | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+index 913ec1424cf83e..746e9599517a10 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+@@ -603,6 +603,7 @@ public async Task ReloadDataErrorRaisesOnLoadException()
+ 
+         [Fact]
+         [PlatformSpecific(TestPlatforms.Windows)]
++        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
+         public async Task ReloadIoErrorRaisesOnLoadException()
+         {
+             const string FileName = $"{nameof(ReloadIoErrorRaisesOnLoadException)}.json";
+
+From af033ee89916d9cd43171f71bb7f56b64fa45ae0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Fri, 27 Mar 2026 11:40:30 +0100
+Subject: [PATCH 12/15] Add comment recommended by Copilot
+
+---
+ .../src/FileConfigurationProvider.cs                             | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+index af5fbb728fc3f6..b08c6c26179d3a 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+@@ -112,6 +112,7 @@ static Stream OpenRead(IFileInfo fileInfo)
+                 }
+                 catch (Exception ex)
+                 {
++                    // For IO errors from OpenRead, Data is intentionally preserved to keep last-known-good config
+                     HandleException(ExceptionDispatchInfo.Capture(ex));
+                 }
+             }
+
+From 2ce4531653cadac653d27a20f18f8d8e77c56133 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Fri, 27 Mar 2026 11:48:37 +0100
+Subject: [PATCH 13/15] Check for type of observed exception.
+
+---
+ .../tests/FunctionalTests/ConfigurationTests.cs    | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+index 746e9599517a10..04c2f047216a9d 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+@@ -523,8 +523,10 @@ public void LoadDataErrorRaisesOnLoadException()
+             _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
+ 
+             FileConfigurationProvider failingProvider = null;
++            Exception failureException = null;
+             Action<FileLoadExceptionContext> jsonLoadError = c =>
+             {
++                failureException = c.Exception;
+                 failingProvider = c.Provider;
+                 c.Ignore = true;
+             };
+@@ -538,6 +540,7 @@ public void LoadDataErrorRaisesOnLoadException()
+                 .Build();
+ 
+             Assert.NotNull(failingProvider);
++            Assert.IsType<InvalidDataException>(failureException);
+         }
+ 
+         [Fact]
+@@ -551,8 +554,10 @@ public void LoadIoErrorRaisesOnLoadException()
+             using (_fileSystem.LockFileReading(FileName))
+             {
+                 FileConfigurationProvider failingProvider = null;
++                Exception failureException = null;
+                 Action<FileLoadExceptionContext> jsonLoadError = c =>
+                 {
++                    failureException = c.Exception;
+                     failingProvider = c.Provider;
+                     c.Ignore = true;
+                 };
+@@ -566,6 +571,7 @@ public void LoadIoErrorRaisesOnLoadException()
+                     .Build();
+ 
+                 Assert.NotNull(failingProvider);
++                Assert.IsType<IOException>(failureException);
+             }
+         }
+ 
+@@ -578,8 +584,10 @@ public async Task ReloadDataErrorRaisesOnLoadException()
+             _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
+ 
+             FileConfigurationProvider failingProvider = null;
++            Exception failureException = null;
+             Action<FileLoadExceptionContext> jsonLoadError = c =>
+             {
++                failureException = c.Exception;
+                 failingProvider = c.Provider;
+                 c.Ignore = true;
+             };
+@@ -595,10 +603,13 @@ public async Task ReloadDataErrorRaisesOnLoadException()
+ 
+             // No error should be triggered so far.
+             Assert.Null(failingProvider);
++            Assert.Null(failureException);
+ 
+             _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
+ 
+             await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
++
++            Assert.IsType<InvalidDataException>(failureException);
+         }
+ 
+         [Fact]
+@@ -611,8 +622,10 @@ public async Task ReloadIoErrorRaisesOnLoadException()
+             _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
+ 
+             FileConfigurationProvider failingProvider = null;
++            Exception failureException = null;
+             Action<FileLoadExceptionContext> jsonLoadError = c =>
+             {
++                failureException = c.Exception;
+                 failingProvider = c.Provider;
+                 c.Ignore = true;
+             };
+@@ -635,6 +648,7 @@ public async Task ReloadIoErrorRaisesOnLoadException()
+                 _fileSystem.WriteFileNoWait(FileName, @"{""JsonKey1"": ""JsonValue1Updated"" }");
+ 
+                 await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
++                Assert.IsType<IOException>(failureException);
+             }
+         }
+ 
+
+From e0df1e8f51974a68f234fd05870453a75e9933a7 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Fri, 27 Mar 2026 11:56:30 +0100
+Subject: [PATCH 14/15] Dispose IConfigurationRoot
+
+---
+ .../tests/FunctionalTests/ConfigurationTests.cs  | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+index 04c2f047216a9d..14d35d184b8bc2 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration/tests/FunctionalTests/ConfigurationTests.cs
+@@ -531,13 +531,13 @@ public void LoadDataErrorRaisesOnLoadException()
+                 c.Ignore = true;
+             };
+ 
+-            CreateBuilder()
++            using var cfgRoot = CreateBuilder()
+                 .AddJsonFile(s =>
+                 {
+                     s.Path = FileName;
+                     s.OnLoadException = jsonLoadError;
+                 })
+-                .Build();
++                .Build() as IDisposable;
+ 
+             Assert.NotNull(failingProvider);
+             Assert.IsType<InvalidDataException>(failureException);
+@@ -562,13 +562,13 @@ public void LoadIoErrorRaisesOnLoadException()
+                     c.Ignore = true;
+                 };
+ 
+-                CreateBuilder()
++                using var cfgRoot = CreateBuilder()
+                     .AddJsonFile(s =>
+                     {
+                         s.Path = FileName;
+                         s.OnLoadException = jsonLoadError;
+                     })
+-                    .Build();
++                    .Build() as IDisposable;
+ 
+                 Assert.NotNull(failingProvider);
+                 Assert.IsType<IOException>(failureException);
+@@ -592,14 +592,14 @@ public async Task ReloadDataErrorRaisesOnLoadException()
+                 c.Ignore = true;
+             };
+ 
+-            CreateBuilder()
++            using var cfgRoot = CreateBuilder()
+                 .AddJsonFile(s =>
+                 {
+                     s.Path = FileName;
+                     s.OnLoadException = jsonLoadError;
+                     s.ReloadOnChange = true;
+                 })
+-                .Build();
++                .Build() as IDisposable;
+ 
+             // No error should be triggered so far.
+             Assert.Null(failingProvider);
+@@ -630,14 +630,14 @@ public async Task ReloadIoErrorRaisesOnLoadException()
+                 c.Ignore = true;
+             };
+ 
+-            CreateBuilder()
++            using var cfgRoot = CreateBuilder()
+                 .AddJsonFile(s =>
+                 {
+                     s.Path = FileName;
+                     s.OnLoadException = jsonLoadError;
+                     s.ReloadOnChange = true;
+                 })
+-                .Build();
++                .Build() as IDisposable;
+ 
+             // No error should be triggered so far.
+             Assert.Null(failingProvider);
+
+From e667aeef65627fecb4772980ad513bbfe9edb579 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20=C5=BD=C5=AFrek?=
+ <188900745+mrek-msft@users.noreply.github.com>
+Date: Fri, 27 Mar 2026 12:18:20 +0100
+Subject: [PATCH 15/15] Update comment and its location based on Copilot hints
+
+---
+ .../src/FileConfigurationProvider.cs                          | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+index b08c6c26179d3a..86d948d759d2f6 100644
+--- a/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
++++ b/src/libraries/Microsoft.Extensions.Configuration.FileExtensions/src/FileConfigurationProvider.cs
+@@ -104,6 +104,9 @@ static Stream OpenRead(IFileInfo fileInfo)
+                     {
+                         if (reload)
+                         {
++                            // We reset Data only for exceptions from Load. For possibly transient
++                            // IOExceptions from OpenRead caught by the outer catch, we do not reset
++                            // it, preserving the original configuration.
+                             Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                         }
+                         string filePath = file.PhysicalPath ?? Source.Path ?? file.Name;
+@@ -112,7 +115,6 @@ static Stream OpenRead(IFileInfo fileInfo)
+                 }
+                 catch (Exception ex)
+                 {
+-                    // For IO errors from OpenRead, Data is intentionally preserved to keep last-known-good config
+                     HandleException(ExceptionDispatchInfo.Capture(ex));
+                 }
+             }
