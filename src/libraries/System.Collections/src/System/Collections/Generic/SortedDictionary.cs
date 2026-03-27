@@ -69,14 +69,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            if (keyValuePair.Value == null)
-            {
-                return node.Item.Value == null;
-            }
-            else
-            {
-                return EqualityComparer<TValue>.Default.Equals(node.Item.Value, keyValuePair.Value);
-            }
+            return EqualityComparer<TValue>.Default.Equals(node.Item.Value, keyValuePair.Value);
         }
 
         bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> keyValuePair)
