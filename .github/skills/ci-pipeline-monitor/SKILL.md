@@ -42,8 +42,8 @@ Use these scripts — do NOT write ad-hoc replacements.
 | `setup_and_fetch_builds.py` | 2 | Creates `monitor.db` (including `test_results` table), fetches latest build for every pipeline, populates `pipelines` table. |
 | `extract_failed_tests.py` | 3 | Reads failing pipelines from DB. Calls AzDO Test Results API for each failing build. INSERTs one row per failed test method into `test_results` (test_name, run_name, pipeline_name, Helix info, console URL, **error_message, stack_trace from API**). Strips `.WorkItemExecution` suffix. Skips generic "Helix Work Item failed" messages (stores empty — agent fills from console log). Requires `ADO_TOKEN` env var or `az cli`. |
 | `fetch_helix_logs.py` | 3 | Fetches Helix console logs, saves full log files to `helix-logs/` directory, UPDATEs each `test_results` row with `exit_code` and `console_log_path`. No auth needed. |
-| `generate_report.py` | 6 | Reads `monitor.db`, generates report to `logs/` directory. Pure formatting — no judgment. |
-| `validate_results.py` | 7 | Validates `monitor.db` completeness and integrity before publishing. 21+ checks: data completeness, referential integrity, data quality, content accuracy, report sanity, debug log completeness. Exits 1 on failure. |
+| `validate_results.py` | 5 | Validates `monitor.db` completeness and integrity. 24 checks: data completeness, referential integrity, data quality, content accuracy, debug log completeness. Exits 1 on failure. |
+| `generate_report.py` | 6 | Reads `monitor.db`, generates report to `logs/` directory. Pure formatting — no judgment. Run only after DB validation passes. |
 
 **End-to-end pipeline:**
 ```bash
@@ -61,22 +61,25 @@ export ADO_TOKEN=$(az account get-access-token --resource "499b84ac-1321-427f-aa
 python scripts/extract_failed_tests.py --db scripts/monitor.db
 python scripts/fetch_helix_logs.py --db scripts/monitor.db
 
-# Steps 4: Triage (agent — non-deterministic)
+# Step 4: Triage (agent — non-deterministic)
 # Agent reads test_results table, classifies (exit code + error message),
 # groups by root cause, searches GitHub, populates failures table,
 # UPDATEs test_results.failure_id for every row
 
-# Step 5: Generate report (deterministic)
-python scripts/generate_report.py --db scripts/monitor.db
+# Step 5: Validate DB before report (deterministic)
+python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines.md --log logs/ci-pipeline-monitor-*.log
+# Step 5a: If validation fails, fix issues in DB, re-validate ONCE.
+# If still failing, log WARN in debug log and proceed.
 
-# Step 6: Validate before publishing (deterministic)
-python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines.md --report logs/test-report-*.md --log logs/ci-pipeline-monitor-*.log
+# Step 6: Generate report (deterministic — only after DB is clean)
+python scripts/generate_report.py --db scripts/monitor.db
 ```
 
 ## Database Schema
 
 Created by `setup_and_fetch_builds.py`. Populated by scripts (Steps 2-3) and
-agent (Step 4). Read by `generate_report.py` (Step 5).
+agent (Step 4). Validated by `validate_results.py` (Step 5). Read by
+`generate_report.py` (Step 6).
 
 ```sql
 CREATE TABLE pipelines (
@@ -252,27 +255,56 @@ For detailed triage instructions, see [`references/triage-workflow.md`](referenc
 **⚠️ Validation:** After all triage: `SELECT COUNT(*) FROM test_results WHERE failure_id IS NULL` must be 0.
 
 
-### Step 5: Generate Report (deterministic — scripted)
+### Step 5: Validate DB (deterministic — scripted)
+
+```bash
+python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines.md --log logs/ci-pipeline-monitor-<timestamp>.log
+```
+
+Runs 24 checks across data completeness, referential integrity, data quality,
+and content accuracy. Exits 1 on failure.
+
+For the full list of checks, see [`references/validation-checks.md`](references/validation-checks.md).
+
+### Step 5a: Fix Validation Failures (one retry)
+
+If any checks fail after Step 5:
+
+1. **Read the validator output** — each FAIL line includes the specific
+   test_results IDs, failure IDs, or field names that failed.
+
+2. **For each fixable failure** (e.g., truncated stack trace, missing
+   error_message):
+   - Look up the test_results row in the DB
+   - Re-read the console log file at `console_log_path`
+   - UPDATE the corrected field in the DB
+
+3. **Re-run the validator once:**
+   ```bash
+   python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines.md --log <log_path>
+   ```
+
+4. **If a check still fails after retry**, log it as a WARN in the debug
+   log with clickable links and move on:
+   ```
+   [WARN] Validation retry failed — <check description>
+     Pipeline: [<name> <build_number>](<ado_test_results_tab_url>)
+     Console Log: [Console Log](<helix_url>)
+     Field: <field_name>, failure_id=<N>
+   ```
+
+**Do NOT retry more than once.** Log the WARN and proceed to report
+generation. Some failures (e.g., LLM output truncation) may not be
+fixable programmatically.
+
+### Step 6: Generate Report (deterministic — scripted)
 
 ```bash
 python scripts/generate_report.py --db scripts/monitor.db
 ```
 
-Reads DB, outputs report following `report-template.md`. Review for correctness.
-
-### Step 6: Validate Report (deterministic — scripted)
-
-```bash
-python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines.md --report logs/test-report-<timestamp>.md --log logs/ci-pipeline-monitor-<timestamp>.log
-```
-
-Runs 24 checks across data completeness, referential integrity, data quality,
-content accuracy, report sanity, and debug log structure. Exits 1 on failure.
-
-For the full list of checks, see [`references/validation-checks.md`](references/validation-checks.md).
-
-If any check fails, fix the issue and re-run. Do NOT publish the report
-until all checks pass.
+Reads DB, outputs report following `report-template.md`. Only run after
+DB validation (Step 5/5a) is complete so the report is generated once.
 
 ### Step 7: Bisect Regressions (agent — on request)
 
@@ -299,8 +331,9 @@ until all checks pass.
 | 1 | `powershell`, `edit` | Resolve def IDs via AzDO API, update `pipelines.md` |
 | 2-3 | `powershell` | Run scripts |
 | 4 | `powershell`, `github-mcp-server-search_issues`, `github-mcp-server-issue_read` | Read logs, search GitHub, INSERT failures |
-| 5 | `powershell` | Run `generate_report.py` |
-| 6 | `powershell` | Run `validate_results.py` |
+| 5 | `powershell` | Run `validate_results.py` |
+| 5a | `powershell`, `view` | Fix validation failures, re-validate once |
+| 6 | `powershell` | Run `generate_report.py` |
 | 7 | `github-mcp-server-list_commits`, `get_commit`, `search_pull_requests`, `get_file_contents` | Trace regressions |
 
 File I/O tools (`view`, `edit`, `create`, `grep`, `glob`) always allowed.

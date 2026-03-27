@@ -642,7 +642,15 @@ def main():
 
             # 21. Debug log contains all required step headers
             total += 1
-            required_steps = ["STEP 1:", "STEP 2a:", "STEP 2b:", "STEP 3:", "STEP 4:", "STEP 5:"]
+            required_steps = [
+                "Load Pipeline Definitions",
+                "Fetch Latest Builds",
+                "Extract Failed Tests",
+                "Fetch Helix Console Logs",
+                "Triage",
+                "Validate DB",
+                "Generate Report",
+            ]
             missing_steps = [s for s in required_steps if s not in log_text]
             ok = check("Debug log contains all step headers",
                         len(missing_steps) == 0,

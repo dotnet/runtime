@@ -19,7 +19,7 @@ Branch:     refs/heads/main
 ================================================================================
 
 ================================================================================
-STEP 1: Load Pipeline Definitions
+Load Pipeline Definitions
 ================================================================================
 
 [HH:mm:ss] Reading pipelines.md...
@@ -27,7 +27,7 @@ STEP 1: Load Pipeline Definitions
 [HH:mm:ss] Skipped: <pipeline1> (private), <pipeline2> (private)
 
 ================================================================================
-STEP 2: Fetch Latest Builds
+Fetch Latest Builds
 ================================================================================
 
 [HH:mm:ss] Fetching builds for <N> pipelines (7 parallel per batch)...
@@ -51,7 +51,7 @@ STEP 2: Fetch Latest Builds
 [HH:mm:ss] Failing pipelines: <pipeline1>, <pipeline2>, ...
 
 ================================================================================
-STEP 2a: Extract Failed Tests via Test Results API
+Extract Failed Tests via Test Results API
 ================================================================================
 
 [HH:mm:ss] Obtaining Azure CLI bearer token...
@@ -95,7 +95,7 @@ STEP 2a: Extract Failed Tests via Test Results API
 [HH:mm:ss] Unique test names: <M>
 
 ================================================================================
-STEP 2b: Fetch Helix Console Logs → helix-logs/
+Fetch Helix Console Logs → helix-logs/
 ================================================================================
 
 [HH:mm:ss] Running: python scripts/fetch_helix_logs.py --db scripts/monitor.db
@@ -113,7 +113,7 @@ STEP 2b: Fetch Helix Console Logs → helix-logs/
 [HH:mm:ss] Remaining with console_log_path IS NULL: <should be 0>
 
 ================================================================================
-STEP 2f (if needed): Fallback — Build Log Parsing
+Fallback — Build Log Parsing (if needed)
 ================================================================================
 
 [HH:mm:ss] Test Results API failed for <pipeline> — falling back to log parsing
@@ -127,7 +127,7 @@ STEP 2f (if needed): Fallback — Build Log Parsing
            → Full log (<N> lines), found <M> errors
 
 ================================================================================
-STEP 3: Triage — Read Console Logs + Classify + Group + Search GitHub
+Triage — Read Console Logs + Classify + Group + Search GitHub
 ================================================================================
 
 [HH:mm:ss] Starting triage. test_results rows with failure_id IS NULL: <N>
@@ -153,7 +153,7 @@ STEP 3: Triage — Read Console Logs + Classify + Group + Search GitHub
 ... (repeat passes as needed)
 
 [HH:mm:ss] Decision: Matched to issue #<N> / Flagged as NEW
-[HH:mm:ss] INSERT INTO failures (id=<id>, title="...", ...)
+[HH:mm:ss] INSERT INTO failures (id=<id>, title="...", source_test_result_id=<id>, ...)
 [HH:mm:ss] INSERT INTO failure_pipelines (<K> rows)
 [HH:mm:ss] INSERT INTO failure_tests (<K> rows)
 [HH:mm:ss] UPDATE test_results SET failure_id=<id> WHERE id IN (<ids>)
@@ -170,25 +170,34 @@ STEP 3: Triage — Read Console Logs + Classify + Group + Search GitHub
            - <K3> failures → NEW (no issue)
 
 ================================================================================
-STEP 4: Populate Summary Tables
+Validate DB
 ================================================================================
 
-[HH:mm:ss] INSERT INTO github_issues: <N> rows (<K> known, <J> new)
-[HH:mm:ss] INSERT INTO action_items: <N> rows (priority 1-<N>)
+[HH:mm:ss] Running: python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines.md --log logs/ci-pipeline-monitor-<timestamp>.log
+[HH:mm:ss] <X>/<Y> checks passed
 
 ================================================================================
-STEP 5: Generate Report
+Fix Validation Failures (if any — one retry)
+================================================================================
+
+[HH:mm:ss] Fixing <N> validation failures...
+[HH:mm:ss] Re-reading console log for failure_id=<N>, test_results id=<id>
+[HH:mm:ss] UPDATE failures SET stack_trace=<corrected> WHERE id=<N>
+[HH:mm:ss] Re-running validator...
+[HH:mm:ss] <X>/<Y> checks passed
+
+// If a check still fails after retry:
+[WARN] Validation retry failed — <check description>
+  Pipeline: [<name> <build_number>](<ado_test_results_tab_url>)
+  Console Log: [Console Log](<helix_url>)
+  Field: <field_name>, failure_id=<N>
+
+================================================================================
+Generate Report
 ================================================================================
 
 [HH:mm:ss] Running: python scripts/generate_report.py --db scripts/monitor.db
 [HH:mm:ss] Report generated: logs/test-report-<timestamp>.md
-
-================================================================================
-STEP 5.5: Validate
-================================================================================
-
-[HH:mm:ss] Running: python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines.md --report logs/test-report-<timestamp>.md
-[HH:mm:ss] <X>/<Y> checks passed
 
 ================================================================================
 SUMMARY
