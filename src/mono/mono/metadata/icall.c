@@ -6124,6 +6124,23 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoQCallTypeHandle type_hand
 	return delegate;
 }
 
+MonoObjectHandle
+ves_icall_System_Delegate_CreateShared_internal (MonoQCallTypeHandle type_handle, gpointer ptr, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *delegate_class = mono_class_from_mono_type_internal (type);
+
+	mono_class_init_checked (delegate_class, error);
+	return_val_if_nok (error, NULL_HANDLE);
+
+	MonoObjectHandle delegate = mono_object_new_handle (delegate_class, error);
+	return_val_if_nok (error, NULL_HANDLE);
+
+	mono_delegate_ctor (delegate, NULL, ptr, NULL, error);
+	return_val_if_nok (error, NULL_HANDLE);
+	return delegate;
+}
+
 MonoMulticastDelegateHandle
 ves_icall_System_Delegate_AllocDelegateLike_internal (MonoDelegateHandle delegate, MonoError *error)
 {

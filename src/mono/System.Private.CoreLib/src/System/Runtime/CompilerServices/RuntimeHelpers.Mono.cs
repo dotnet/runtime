@@ -140,9 +140,7 @@ namespace System.Runtime.CompilerServices
 
             Debug.Assert(typeof(TDelegate).IsAssignableTo(typeof(Delegate)));
 
-            // TODO: impl
-            TDelegate newDelegate = null!;
-
+            TDelegate newDelegate = Delegate.CreateShared<TDelegate>(method);
             return Interlocked.CompareExchange(ref storage, newDelegate, null) ?? newDelegate;
         }
 

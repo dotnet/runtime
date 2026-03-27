@@ -559,11 +559,59 @@ namespace System
             return source.GetType() == value.GetType();
         }
 
+        internal static TDelegate CreateShared<TDelegate>(nint ptr) where TDelegate : Delegate
+        {
+            RuntimeType rtType = (RuntimeType)typeof(TDelegate);
+            TDelegate del = Unsafe.As<TDelegate?>(CreateShared_internal(new QCallTypeHandle(ref rtType), ptr)) ?? throw new NotSupportedException();
+
+            MethodInfo methodBase = del.Method;
+            MethodInfo invokeMethod = typeof(TDelegate).GetMethod("Invoke") ?? throw new NotSupportedException();
+
+            ReadOnlySpan<ParameterInfo> parameters = methodBase.GetParametersAsSpan();
+
+            int invokeCount = invokeMethod.GetParametersAsSpan().Length;
+            int paramCount = parameters.Length;
+            bool isStatic = methodBase.IsStatic;
+            if (!isStatic)
+            {
+                paramCount++; // count 'this'
+            }
+
+            bool isOpen = invokeCount == paramCount;
+
+            // reject cases needing valid instances
+            if (!isOpen)
+            {
+                // we block delegates closed over null valuetypes since we'd just always NRE in the unboxing stub
+                if (isStatic)
+                {
+                    if (parameters.Length == 0 || parameters[0].ParameterType.IsValueType)
+                    {
+                        throw new NotSupportedException();
+                    }
+                }
+                else
+                {
+                    Type? declaringType = methodBase.DeclaringType;
+                    // reject instance methods on static types, those require proper targets
+                    if (declaringType is null || declaringType.IsValueType || declaringType.IsGenericType)
+                    {
+                        throw new NotSupportedException();
+                    }
+                }
+            }
+
+            return del;
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private protected static extern MulticastDelegate AllocDelegateLike_internal(Delegate d);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Delegate? CreateDelegate_internal(QCallTypeHandle type, object? target, MethodInfo info, bool throwOnBindFailure);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern Delegate? CreateShared_internal(QCallTypeHandle type, nint ptr);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern MethodInfo GetVirtualMethod_internal();
