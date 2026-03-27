@@ -365,7 +365,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         public void GetHostFxrPath_StaticNativeHost_DotNetRootEnvironment(bool useAssemblyPath, bool isValid)
         {
             string dotNetRoot = isValid ? Path.Combine(sharedState.ValidInstallRoot, "dotnet") : sharedState.InvalidInstallRoot;
-            CommandResult result = Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} {(useAssemblyPath ? sharedState.TestAssemblyPath : string.Empty)}")
+            CommandResult result = Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} false {(useAssemblyPath ? sharedState.TestAssemblyPath : string.Empty)}")
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(dotNetRoot)
                 .Execute();
@@ -394,7 +394,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         public void GetHostFxrPath_StaticNativeHost_DotNetRootParameter(bool useAssemblyPath, bool isValid)
         {
             string dotNetRoot = isValid ? Path.Combine(sharedState.ValidInstallRoot, "dotnet") : sharedState.InvalidInstallRoot;
-            CommandResult result = Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} {(useAssemblyPath ? sharedState.TestAssemblyPath : "nullptr")} {dotNetRoot}")
+            CommandResult result = Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} false {(useAssemblyPath ? sharedState.TestAssemblyPath : "nullptr")} {dotNetRoot}")
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(null)
                 .Execute();
@@ -431,7 +431,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     registeredInstallLocationOverride.SetInstallLocation((HostTestContext.BuildArchitecture, installLocation));
                 }
 
-                result = Command.Create(sharedState.StaticNativeHostPath, GetHostFxrPath)
+                result = Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} false")
                     .EnableTracingAndCaptureOutputs()
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .EnvironmentVariable(
@@ -462,7 +462,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void GetHostFxrPath_StaticNativeHost_InvalidParameters()
         {
-            Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} [error]")
+            Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} false [error]")
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(null)
                 .Execute()
