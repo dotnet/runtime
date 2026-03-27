@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -217,9 +218,18 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     foreach (var key in envVarsDict.Keys)
                         envStr.Append($"{key}={envVarsDict[key]} ");
                     Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}\"{CompilerBinaryPath}\" {args}");
+
+                    // On Windows, the emsdk ships emcc.bat to invoke emcc. Use 'cmd' to execute the batch file.
+                    string processPath = CompilerBinaryPath;
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        args = $"/c \"{CompilerBinaryPath}\" {args}";
+                        processPath = "cmd";
+                    }
+
                     (int exitCode, string output) = Utils.TryRunProcess(
                                                             Log,
-                                                            CompilerBinaryPath,
+                                                            processPath,
                                                             args,
                                                             envVarsDict,
                                                             workingDir: Environment.CurrentDirectory,
