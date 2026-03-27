@@ -41,6 +41,13 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             return watcher;
         }
 
+        private static Task WhenChanged(IChangeToken token)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+            return tcs.Task;
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void CreateFileChangeToken_DoesNotAllowPathsAboveRoot()
@@ -73,12 +80,11 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             using var physicalFilesWatcher = new PhysicalFilesWatcher(subDir, fsw, pollForChanges: false);
 
             IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("file.txt");
-            var tcs = new TaskCompletionSource<bool>();
-            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+            Task changed = WhenChanged(token);
 
             File.WriteAllText(Path.Combine(subDir, "file.txt"), string.Empty);
 
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            await changed.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         [Fact]
@@ -96,21 +102,19 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             // A file directly under root (but not under subDir) should not trigger the token,
             // because the FSW only watches subDir.
             IChangeToken rootFileToken = physicalFilesWatcher.CreateFileChangeToken("rootfile.txt");
-            var rootFileTcs = new TaskCompletionSource<bool>();
-            rootFileToken.RegisterChangeCallback(_ => rootFileTcs.TrySetResult(true), null);
+            Task rootFileChanged = WhenChanged(rootFileToken);
 
             File.WriteAllText(Path.Combine(root.Path, "rootfile.txt"), string.Empty);
             await Task.Delay(WaitTimeForTokenToFire);
-            Assert.False(rootFileTcs.Task.IsCompleted, "Token must not fire for a file outside the FSW's watched path");
+            Assert.False(rootFileChanged.IsCompleted, "Token must not fire for a file outside the FSW's watched path");
 
             // A file under subDir should trigger its token.
             IChangeToken subFileToken = physicalFilesWatcher.CreateFileChangeToken("sub/file.txt");
-            var subFileTcs = new TaskCompletionSource<bool>();
-            subFileToken.RegisterChangeCallback(_ => subFileTcs.TrySetResult(true), null);
+            Task subFileChanged = WhenChanged(subFileToken);
 
             File.WriteAllText(Path.Combine(subDir, "file.txt"), string.Empty);
 
-            await subFileTcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            await subFileChanged.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         [Fact]
@@ -312,18 +316,17 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("missingdir/file.txt");
 
-            var tcs = new TaskCompletionSource<bool>();
-            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+            Task changed = WhenChanged(token);
 
             // Create the missing directory – the token must NOT fire yet
             Directory.CreateDirectory(missingDir);
             await Task.Delay(WaitTimeForTokenToFire);
-            Assert.False(tcs.Task.IsCompleted, "Token must not fire when only the parent directory is created");
+            Assert.False(changed.IsCompleted, "Token must not fire when only the parent directory is created");
 
             // Create the actual file – now the token must fire
             File.WriteAllText(targetFile, string.Empty);
 
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            await changed.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         [Theory]
@@ -339,23 +342,22 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("level1/level2/file.txt");
 
-            var tcs = new TaskCompletionSource<bool>();
-            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+            Task changed = WhenChanged(token);
 
             // Create level1 – token must NOT fire
             Directory.CreateDirectory(level1);
             await Task.Delay(WaitTimeForTokenToFire);
-            Assert.False(tcs.Task.IsCompleted, "Token must not fire when level1 is created");
+            Assert.False(changed.IsCompleted, "Token must not fire when level1 is created");
 
             // Create level2 – token must NOT fire
             Directory.CreateDirectory(level2);
             await Task.Delay(WaitTimeForTokenToFire);
-            Assert.False(tcs.Task.IsCompleted, "Token must not fire when level2 is created");
+            Assert.False(changed.IsCompleted, "Token must not fire when level2 is created");
 
             // Create the target file – now the token must fire exactly once
             File.WriteAllText(targetFile, string.Empty);
 
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            await changed.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         [Theory]
@@ -369,13 +371,12 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("dir/file.txt");
 
-            var tcs = new TaskCompletionSource<bool>();
-            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+            Task changed = WhenChanged(token);
 
             // Create the directory — token must NOT fire
             Directory.CreateDirectory(dir);
             await Task.Delay(WaitTimeForTokenToFire);
-            Assert.False(tcs.Task.IsCompleted, "Token must not fire when dir is created");
+            Assert.False(changed.IsCompleted, "Token must not fire when dir is created");
 
             // Delete the directory
             Directory.Delete(dir);
@@ -384,12 +385,12 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             // Recreate the directory — token must NOT fire
             Directory.CreateDirectory(dir);
             await Task.Delay(WaitTimeForTokenToFire);
-            Assert.False(tcs.Task.IsCompleted, "Token must not fire when dir is recreated without the file");
+            Assert.False(changed.IsCompleted, "Token must not fire when dir is recreated without the file");
 
             // Create the target file — now the token must fire
             File.WriteAllText(Path.Combine(dir, "file.txt"), string.Empty);
 
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            await changed.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         [Fact]
@@ -406,26 +407,24 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             // Delete the root directory — the token should fire
             Directory.Delete(rootPath, recursive: true);
-            var deleteTcs = new TaskCompletionSource<bool>();
-            token.RegisterChangeCallback(_ => deleteTcs.TrySetResult(true), null);
-            await deleteTcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            Task deleted = WhenChanged(token);
+            await deleted.WaitAsync(TimeSpan.FromSeconds(30));
             Assert.True(token.HasChanged, "Token should fire when the root directory is deleted");
 
             // Re-watch the same file — root is now missing, so this goes through PendingCreationWatcher
             IChangeToken token2 = physicalFilesWatcher.GetOrAddFilePathChangeToken("file.txt");
 
-            var tcs = new TaskCompletionSource<bool>();
-            token2.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+            Task changed = WhenChanged(token2);
 
             // Recreate the root — token must not fire yet
             Directory.CreateDirectory(rootPath);
             await Task.Delay(WaitTimeForTokenToFire);
-            Assert.False(tcs.Task.IsCompleted, "Token must not fire when only the root directory is recreated");
+            Assert.False(changed.IsCompleted, "Token must not fire when only the root directory is recreated");
 
             // Create the target file — now the token must fire
             File.WriteAllText(Path.Combine(rootPath, "file.txt"), string.Empty);
 
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(15));
+            await changed.WaitAsync(TimeSpan.FromSeconds(15));
         }
 
         [Theory]
@@ -445,18 +444,17 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             Assert.NotNull(token);
             Assert.False(token.HasChanged);
 
-            var tcs = new TaskCompletionSource<bool>();
-            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+            Task changed = WhenChanged(token);
 
             // Recreate the root — token must not fire yet (no matching file)
             Directory.CreateDirectory(rootPath);
             await Task.Delay(WaitTimeForTokenToFire);
-            Assert.False(tcs.Task.IsCompleted, "Token must not fire when only the root directory is recreated");
+            Assert.False(changed.IsCompleted, "Token must not fire when only the root directory is recreated");
 
             // Create a matching file — now the token must fire
             File.WriteAllText(Path.Combine(rootPath, "config.json"), "{}");
 
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            await changed.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         [Theory]
@@ -473,18 +471,17 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             Assert.NotNull(token);
             Assert.False(token.HasChanged);
 
-            var tcs = new TaskCompletionSource<bool>();
-            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+            Task changed = WhenChanged(token);
 
             // Create the missing directory - token must not fire yet
             Directory.CreateDirectory(missingDir);
             await Task.Delay(WaitTimeForTokenToFire);
-            Assert.False(tcs.Task.IsCompleted, "Token must not fire when only the prefix directory is created");
+            Assert.False(changed.IsCompleted, "Token must not fire when only the prefix directory is created");
 
             // Create a matching file — now the token must fire
             File.WriteAllText(Path.Combine(missingDir, "app.json"), "{}");
 
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            await changed.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         [Theory]
@@ -498,12 +495,11 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("newdir");
             Assert.False(token.HasChanged);
 
-            var tcs = new TaskCompletionSource<bool>();
-            token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
+            Task changed = WhenChanged(token);
 
             Directory.CreateDirectory(Path.Combine(root.Path, "newdir"));
 
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            await changed.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         [Fact]
