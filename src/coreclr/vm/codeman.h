@@ -476,8 +476,7 @@ class CodeHeap
     friend struct ::cdac_data<CodeHeap>;
 
 public:
-    // Identifies the concrete type of the heap. Stored in the base class so
-    // the cDAC can read it without relying on vtable pointer comparisons.
+    // [cDAC] [ExecutionManager] : Contract depends on these values.
     enum class CodeHeapType : uint8_t
     {
         LoaderCodeHeap  = 0,

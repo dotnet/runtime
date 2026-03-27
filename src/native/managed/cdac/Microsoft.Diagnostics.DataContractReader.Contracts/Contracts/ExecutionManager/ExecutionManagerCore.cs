@@ -383,28 +383,18 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         };
     }
 
-    Contracts.CodeHeapType IExecutionManager.GetCodeHeapType(TargetPointer codeHeapAddress)
+    ICodeHeapInfo IExecutionManager.GetCodeHeapInfo(TargetPointer codeHeapAddress)
     {
         Data.CodeHeap codeHeap = _target.ProcessedData.GetOrAdd<Data.CodeHeap>(codeHeapAddress);
         return (CodeHeapType)codeHeap.HeapType switch
         {
-            CodeHeapType.LoaderCodeHeap => Contracts.CodeHeapType.LoaderCodeHeap,
-            CodeHeapType.HostCodeHeap   => Contracts.CodeHeapType.HostCodeHeap,
-            _                           => Contracts.CodeHeapType.UnknownCodeHeap,
+            CodeHeapType.LoaderCodeHeap => new Contracts.LoaderCodeHeapInfo(
+                _target.ProcessedData.GetOrAdd<Data.LoaderCodeHeap>(codeHeapAddress).LoaderHeap),
+            CodeHeapType.HostCodeHeap => new Contracts.HostCodeHeapInfo(
+                _target.ProcessedData.GetOrAdd<Data.HostCodeHeap>(codeHeapAddress).BaseAddress,
+                _target.ProcessedData.GetOrAdd<Data.HostCodeHeap>(codeHeapAddress).CurrentAddress),
+            _ => throw new InvalidOperationException($"Unknown code heap type {codeHeap.HeapType} at address 0x{codeHeapAddress.Value:x}"),
         };
-    }
-
-    TargetPointer IExecutionManager.GetLoaderCodeHeapInfo(TargetPointer codeHeapAddress)
-    {
-        Data.LoaderCodeHeap loaderCodeHeap = _target.ProcessedData.GetOrAdd<Data.LoaderCodeHeap>(codeHeapAddress);
-        return loaderCodeHeap.LoaderHeap;
-    }
-
-    void IExecutionManager.GetHostCodeHeapInfo(TargetPointer codeHeapAddress, out TargetPointer baseAddress, out TargetPointer currentAddress)
-    {
-        Data.HostCodeHeap hostCodeHeap = _target.ProcessedData.GetOrAdd<Data.HostCodeHeap>(codeHeapAddress);
-        baseAddress = hostCodeHeap.BaseAddress;
-        currentAddress = hostCodeHeap.CurrentAddress;
     }
 
     List<TargetPointer> IExecutionManager.GetCodeHeapList()

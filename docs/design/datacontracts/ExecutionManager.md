@@ -45,15 +45,8 @@ struct CodeBlockHandle
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
     // Gets information about the EEJitManager: its address, code type, and head of the code heap list.
     JitManagerInfo GetEEJitManagerInfo();
-
-    // Gets the type of the code heap at the given address.
-    CodeHeapType GetCodeHeapType(TargetPointer codeHeapAddress);
-    // Gets the address of the embedded LoaderHeap within a LoaderCodeHeap object.
-    // Only valid when GetCodeHeapType returns CodeHeapType.LoaderCodeHeap.
-    TargetPointer GetLoaderCodeHeapInfo(TargetPointer codeHeapAddress);
-    // Gets the base and current committed addresses of a HostCodeHeap object.
-    // Only valid when GetCodeHeapType returns CodeHeapType.HostCodeHeap.
-    void GetHostCodeHeapInfo(TargetPointer codeHeapAddress, out TargetPointer baseAddress, out TargetPointer currentAddress);
+    // Returns information about the code heap at the given address.
+    ICodeHeapInfo GetCodeHeapInfo(TargetPointer codeHeapAddress);
     // Walks the linked list of CodeHeapListNodes starting from the EEJitManager's AllCodeHeaps head
     // and returns the Heap pointer from each node.
     List<TargetPointer> GetCodeHeapList();
@@ -75,12 +68,20 @@ public struct JitManagerInfo
 ```
 
 ```csharp
-public enum CodeHeapType : byte
+public interface ICodeHeapInfo { }
+
+public sealed class LoaderCodeHeapInfo : ICodeHeapInfo
 {
-    LoaderCodeHeap  = 0,
-    HostCodeHeap    = 1,
-    UnknownCodeHeap = 0xff,
+    public TargetPointer LoaderHeapAddress { get; }
 }
+
+public sealed class HostCodeHeapInfo : ICodeHeapInfo
+{
+    public TargetPointer BaseAddress { get; }
+    public TargetPointer CurrentAddress { get; }
+}
+
+public sealed class UnknownCodeHeapInfo : ICodeHeapInfo {}
 ```
 
 ```csharp
@@ -137,7 +138,7 @@ Data descriptors used:
 | `CodeHeapListNode` | `MapBase` | Start of the map - start address rounded down based on OS page size |
 | `CodeHeapListNode` | `HeaderMap` | Bit array used to find the start of methods - relative to `MapBase` |
 | `CodeHeapListNode` | `Heap` | Pointer to the `CodeHeap` object managed by this node |
-| `CodeHeap` | `HeapType` | `uint8` discriminant identifying the concrete heap type (`CodeHeapType` enum: `LoaderCodeHeap`=0, `HostCodeHeap`=1, `UnknownCodeHeap`=0xff) |
+| `CodeHeap` | `HeapType` | `uint8` discriminant identifying the concrete heap type (mirrors native `CodeHeap::CodeHeapType` enum: 0=Loader, 1=Host) |
 | `LoaderCodeHeap` | `LoaderHeap` | Offset of the embedded `ExplicitControlLoaderHeap` within the `LoaderCodeHeap` object; adding this to the object's base address yields the loader heap address |
 | `HostCodeHeap` | `BaseAddress` | Pointer to the base of the committed memory region |
 | `HostCodeHeap` | `CurrentAddress` | Pointer to the last available committed byte in the region |
@@ -504,27 +505,18 @@ JitManagerInfo IExecutionManager.GetEEJitManagerInfo()
     };
 }
 
-CodeHeapType IExecutionManager.GetCodeHeapType(TargetPointer codeHeapAddress)
+ICodeHeapInfo IExecutionManager.GetCodeHeapInfo(TargetPointer codeHeapAddress)
 {
     byte heapType = Target.Read<byte>(codeHeapAddress + /* CodeHeap::HeapType offset */);
     return heapType switch
     {
-        0 /* LoaderCodeHeap */  => CodeHeapType.LoaderCodeHeap,
-        1 /* HostCodeHeap */    => CodeHeapType.HostCodeHeap,
-        _                       => CodeHeapType.UnknownCodeHeap,
+        0 /* LoaderCodeHeap */ => new LoaderCodeHeapInfo(
+            codeHeapAddress + /* LoaderCodeHeap::LoaderHeap offset */),
+        1 /* HostCodeHeap */ => new HostCodeHeapInfo(
+            Target.ReadPointer(codeHeapAddress + /* HostCodeHeap::BaseAddress offset */),
+            Target.ReadPointer(codeHeapAddress + /* HostCodeHeap::CurrentAddress offset */)),
+        _ => new UnknownCodeHeapInfo(),
     };
-}
-
-TargetPointer IExecutionManager.GetLoaderCodeHeapInfo(TargetPointer codeHeapAddress)
-{
-    return codeHeapAddress + /* LoaderCodeHeap::LoaderHeap offset */;
-}
-
-void IExecutionManager.GetHostCodeHeapInfo(TargetPointer codeHeapAddress,
-    out TargetPointer baseAddress, out TargetPointer currentAddress)
-{
-    baseAddress = Target.ReadPointer(codeHeapAddress + /* HostCodeHeap::BaseAddress offset */);
-    currentAddress = Target.ReadPointer(codeHeapAddress + /* HostCodeHeap::CurrentAddress offset */);
 }
 
 List<TargetPointer> IExecutionManager.GetCodeHeapList()

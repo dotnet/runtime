@@ -11,8 +11,6 @@ internal sealed class LoaderCodeHeap : IData<LoaderCodeHeap>
     public LoaderCodeHeap(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.LoaderCodeHeap);
-        // m_LoaderHeap is an embedded struct, not a pointer. Its address is the base address
-        // of the LoaderCodeHeap object plus the field's offset within the object.
         LoaderHeap = address + (ulong)type.Fields[nameof(LoaderHeap)].Offset;
     }
 

@@ -29,9 +29,7 @@ public sealed class ExecutionManager_1 : IExecutionManager
     public TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetRelativeOffset(codeInfoHandle);
     public List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetExceptionClauses(codeInfoHandle);
     public JitManagerInfo GetEEJitManagerInfo() => _executionManagerCore.GetEEJitManagerInfo();
-    public CodeHeapType GetCodeHeapType(TargetPointer codeHeapAddress) => _executionManagerCore.GetCodeHeapType(codeHeapAddress);
-    public TargetPointer GetLoaderCodeHeapInfo(TargetPointer codeHeapAddress) => _executionManagerCore.GetLoaderCodeHeapInfo(codeHeapAddress);
-    public void GetHostCodeHeapInfo(TargetPointer codeHeapAddress, out TargetPointer baseAddress, out TargetPointer currentAddress) => _executionManagerCore.GetHostCodeHeapInfo(codeHeapAddress, out baseAddress, out currentAddress);
+    public ICodeHeapInfo GetCodeHeapInfo(TargetPointer codeHeapAddress) => _executionManagerCore.GetCodeHeapInfo(codeHeapAddress);
     public List<TargetPointer> GetCodeHeapList() => _executionManagerCore.GetCodeHeapList();
     public void Flush() => _executionManagerCore.Flush();
 }

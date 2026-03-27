@@ -883,18 +883,16 @@ public sealed unsafe partial class SOSDacImpl
                 for (; i < heaps.Count && i < count; i++)
                 {
                     codeHeaps[i] = default;
-                    TargetPointer heap = heaps[i];
-                    switch (em.GetCodeHeapType(heap))
+                    switch (em.GetCodeHeapInfo(heaps[i]))
                     {
-                        case Contracts.CodeHeapType.LoaderCodeHeap:
+                        case Contracts.LoaderCodeHeapInfo loader:
                             codeHeaps[i].codeHeapType = DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_LOADER;
-                            codeHeaps[i].LoaderHeap = em.GetLoaderCodeHeapInfo(heap).ToClrDataAddress(_target);
+                            codeHeaps[i].LoaderHeap = loader.LoaderHeapAddress.ToClrDataAddress(_target);
                             break;
-                        case Contracts.CodeHeapType.HostCodeHeap:
+                        case Contracts.HostCodeHeapInfo host:
                             codeHeaps[i].codeHeapType = DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_HOST;
-                            em.GetHostCodeHeapInfo(heap, out TargetPointer baseAddr, out TargetPointer currentAddr);
-                            codeHeaps[i].baseAddr    = baseAddr.ToClrDataAddress(_target);
-                            codeHeaps[i].currentAddr = currentAddr.ToClrDataAddress(_target);
+                            codeHeaps[i].baseAddr    = host.BaseAddress.ToClrDataAddress(_target);
+                            codeHeaps[i].currentAddr = host.CurrentAddress.ToClrDataAddress(_target);
                             break;
                         default:
                             codeHeaps[i].codeHeapType = DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_UNKNOWN;

@@ -544,8 +544,8 @@ internal partial class MockDescriptors
             MockMemorySpace.HeapFragment heapFragment = _allocator.Allocate(allocSize, "LoaderCodeHeap");
             Builder.AddHeapFragment(heapFragment);
             Span<byte> data = Builder.BorrowAddressRange(heapFragment.Address, (int)allocSize);
-            data[codeHeapTyInfo.Fields[nameof(Data.CodeHeap.HeapType)].Offset] = (byte)Contracts.CodeHeapType.LoaderCodeHeap;
-            // No pointer is written: GetLoaderCodeHeapInfo returns heapAddress + LoaderHeap.Offset
+            data[codeHeapTyInfo.Fields[nameof(Data.CodeHeap.HeapType)].Offset] = 0; // LoaderCodeHeap (codeman.h)
+            // No pointer is written: LoaderCodeHeapInfo.LoaderHeapAddress returns heapAddress + LoaderHeap.Offset
             // because m_LoaderHeap is an embedded struct, not a pointer.
             return heapFragment.Address;
         }
@@ -563,7 +563,7 @@ internal partial class MockDescriptors
             int pointerSize = Builder.TargetTestHelpers.PointerSize;
             Span<byte> data = Builder.BorrowAddressRange(heapFragment.Address, (int)allocSize);
 
-            data[codeHeapTyInfo.Fields[nameof(Data.CodeHeap.HeapType)].Offset] = (byte)Contracts.CodeHeapType.HostCodeHeap;
+            data[codeHeapTyInfo.Fields[nameof(Data.CodeHeap.HeapType)].Offset] = 1; // HostCodeHeap (codeman.h)
             Builder.TargetTestHelpers.WritePointer(data.Slice(hostTyInfo.Fields[nameof(Data.HostCodeHeap.BaseAddress)].Offset, pointerSize), baseAddress);
             Builder.TargetTestHelpers.WritePointer(data.Slice(hostTyInfo.Fields[nameof(Data.HostCodeHeap.CurrentAddress)].Offset, pointerSize), currentAddress);
             return heapFragment.Address;

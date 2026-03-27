@@ -42,12 +42,33 @@ public struct JitManagerInfo
     public TargetPointer HeapListAddress;
 }
 
-public enum CodeHeapType : byte
+public interface ICodeHeapInfo
 {
-    LoaderCodeHeap  = 0,
-    HostCodeHeap    = 1,
-    UnknownCodeHeap = 0xff,
 }
+
+public sealed class LoaderCodeHeapInfo : ICodeHeapInfo
+{
+    public TargetPointer LoaderHeapAddress { get; }
+
+    public LoaderCodeHeapInfo(TargetPointer loaderHeapAddress)
+    {
+        LoaderHeapAddress = loaderHeapAddress;
+    }
+}
+
+public sealed class HostCodeHeapInfo : ICodeHeapInfo
+{
+    public TargetPointer BaseAddress { get; }
+    public TargetPointer CurrentAddress { get; }
+
+    public HostCodeHeapInfo(TargetPointer baseAddress, TargetPointer currentAddress)
+    {
+        BaseAddress = baseAddress;
+        CurrentAddress = currentAddress;
+    }
+}
+
+public sealed class UnknownCodeHeapInfo : ICodeHeapInfo {}
 
 public interface IExecutionManager : IContract
 {
@@ -66,9 +87,7 @@ public interface IExecutionManager : IContract
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
-    CodeHeapType GetCodeHeapType(TargetPointer codeHeapAddress) => throw new NotImplementedException();
-    TargetPointer GetLoaderCodeHeapInfo(TargetPointer codeHeapAddress) => throw new NotImplementedException();
-    void GetHostCodeHeapInfo(TargetPointer codeHeapAddress, out TargetPointer baseAddress, out TargetPointer currentAddress) => throw new NotImplementedException();
+    ICodeHeapInfo GetCodeHeapInfo(TargetPointer codeHeapAddress) => throw new NotImplementedException();
     List<TargetPointer> GetCodeHeapList() => throw new NotImplementedException();
 }
 
