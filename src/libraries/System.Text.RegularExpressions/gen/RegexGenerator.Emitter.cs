@@ -1606,9 +1606,10 @@ namespace System.Text.RegularExpressions.Generator
             // "doneLabel" is simply the final return location from the TryMatchAtCurrentPosition method that will undo any captures and exit, signaling to
             // the calling scan loop that nothing was matched.
 
-            // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
-            // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.
-            const int MaxUnrollSize = 16;
+            // Limit for unrolling vs creating a loop. Benchmarking shows vectorized operations
+            // (e.g. ContainsAnyExcept) beat unrolled scalar checks at counts above ~4-8, so
+            // we unroll up to/including this threshold and use a loop with vectorization beyond it.
+            const int MaxUnrollSize = 7;
 
             RegexOptions options = rm.Options;
             RegexTree regexTree = rm.Tree;
