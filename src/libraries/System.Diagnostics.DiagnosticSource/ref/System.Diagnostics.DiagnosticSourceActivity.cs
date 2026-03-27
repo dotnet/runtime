@@ -302,9 +302,7 @@ namespace System.Diagnostics
     public delegate void ExceptionRecorder(System.Diagnostics.Activity activity, System.Exception exception, ref System.Diagnostics.TagList tags);
     public sealed class ActivityListener : IDisposable
     {
-        public ActivityListener(string? name = null) { throw null; }
         public ActivityListener() { throw null; }
-        public string Name { get { throw null; } }
         public System.Action<System.Diagnostics.Activity>? ActivityStarted { get { throw null; } set { } }
         public System.Action<System.Diagnostics.Activity>? ActivityStopped { get { throw null; } set { } }
         public System.Diagnostics.ExceptionRecorder? ExceptionRecorder { get { throw null; } set { } }

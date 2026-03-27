@@ -12,14 +12,14 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// Extension methods for setting up tracing services in an <see cref="IServiceCollection" />.
     /// </summary>
-    public static class ActivityServiceExtensions
+    public static class TracingServiceExtensions
     {
         /// <summary>
         /// Adds tracing services to the specified <see cref="IServiceCollection" />.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
-        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
-        public static IServiceCollection AddTracing(this IServiceCollection services)
+        /// <returns>The <see cref="ITracingBuilder"/> so that additional calls can be chained.</returns>
+        public static ITracingBuilder AddTracing(this IServiceCollection services)
         {
             ArgumentNullException.ThrowIfNull(services);
 
@@ -28,9 +28,9 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton<IActivitySourceFactory, DefaultActivitySourceFactory>();
             services.AddOptions<NoOpOptions>().ValidateOnStart();
             services.TryAddSingleton<IConfigureOptions<NoOpOptions>, SubscriptionActivator>();
-            services.TryAddSingleton<IActivityListenerConfigurationFactory, ActivityListenerConfigurationFactory>();
+            services.TryAddSingleton<ActivityListenerConfigurationFactory>();
 
-            return services;
+            return new TracingBuilder(services);
         }
 
         /// <summary>
@@ -38,17 +38,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
         /// <param name="configure">A callback to configure the <see cref="ITracingBuilder"/>.</param>
-        /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
-        public static IServiceCollection AddTracing(this IServiceCollection services, Action<ITracingBuilder> configure)
+        /// <returns>The <see cref="ITracingBuilder"/> so that additional calls can be chained.</returns>
+        public static ITracingBuilder AddTracing(this IServiceCollection services, Action<ITracingBuilder> configure)
         {
             ArgumentNullException.ThrowIfNull(configure);
 
-            services.AddTracing();
-
-            var builder = new TracingBuilder(services);
+            var builder = services.AddTracing();
             configure(builder);
-
-            return services;
+            return builder;
         }
 
         private sealed class TracingBuilder(IServiceCollection services) : ITracingBuilder

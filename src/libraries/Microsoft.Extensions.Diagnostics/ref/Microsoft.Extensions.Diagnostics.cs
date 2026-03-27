@@ -8,10 +8,10 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMetrics(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMetrics(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder> configure) { throw null; }
     }
-    public static class ActivityServiceExtensions
+    public static class TracingServiceExtensions
     {
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddTracing(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddTracing(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Microsoft.Extensions.Diagnostics.Configuration.ITracingBuilder> configure) { throw null; }
+        public static Microsoft.Extensions.Diagnostics.Configuration.ITracingBuilder AddTracing(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
+        public static Microsoft.Extensions.Diagnostics.Configuration.ITracingBuilder AddTracing(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Microsoft.Extensions.Diagnostics.Configuration.ITracingBuilder> configure) { throw null; }
     }
 }
 namespace Microsoft.Extensions.Diagnostics.Metrics
@@ -31,16 +31,9 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 }
 namespace Microsoft.Extensions.Diagnostics.Configuration
 {
-    public static class ActivityBuilderExtensions
+    public static class TracingBuilderExtensions
     {
         public static ITracingBuilder AddConfiguration(this ITracingBuilder builder, Microsoft.Extensions.Configuration.IConfiguration configuration) => throw null!;
-    }
-}
-namespace Microsoft.Extensions.Diagnostics.Configuration
-{
-    public interface IActivityListenerConfigurationFactory
-    {
-        Microsoft.Extensions.Configuration.IConfiguration GetConfiguration(string listenerName);
     }
 }
 namespace Microsoft.Extensions.Diagnostics.Metrics.Configuration

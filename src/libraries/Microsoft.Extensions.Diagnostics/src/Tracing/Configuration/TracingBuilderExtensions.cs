@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
     /// <summary>
     /// Extensions for <see cref="ITracingBuilder"/> for enabling tracing based on <see cref="IConfiguration"/>.
     /// </summary>
-    public static class ActivityBuilderExtensions
+    public static class TracingBuilderExtensions
     {
         /// <summary>
         /// Reads tracing configuration from the provided <see cref="IConfiguration"/> section and configures

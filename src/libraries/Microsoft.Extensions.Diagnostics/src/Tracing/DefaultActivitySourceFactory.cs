@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
             {
                 _listener = listener ?? throw new ArgumentNullException(nameof(listener));
                 _activitySourceFactory = activitySourceFactory ?? throw new ArgumentNullException(nameof(activitySourceFactory));
-                _activityListener = new ActivityListener(_listener.Name)
+                _activityListener = new ActivityListener()
                 {
                     ShouldListenTo = ShouldListenTo,
                     SampleUsingParentId = listener.SampleUsingParentId,
@@ -191,7 +191,7 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
 
             private bool ShouldListenTo(ActivitySource activitySource)
             {
-                return IsEnabled(activitySource) && IsEnabled(activitySource, _listener.Name ?? string.Empty);
+                return IsEnabled(activitySource) && IsEnabled(activitySource, _listener.Name);
             }
 
             private bool IsEnabled(ActivitySource activitySource, string listenerName = "")

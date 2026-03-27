@@ -31,6 +31,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .AddTracing(builder => builder
                     .AddListener<SampleActivityListener>()
                     .AddConfiguration(configuration))
+                .Services
                 .Configure<TracingOptions>(options =>
                     options.Rules.Add(new TracingRule("Demo.Source", listenerName: null, enabled: true)))
                 .BuildServiceProvider();
@@ -58,6 +59,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .AddTracing(builder => builder
                     .AddListener<SampleActivityListener>()
                     .AddConfiguration(configuration))
+                .Services
                 .Configure<TracingOptions>(options =>
                     options.Rules.Add(new TracingRule("Demo.Source", listenerName: null, enabled: false)))
                 .BuildServiceProvider();
@@ -73,9 +75,11 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         {
             using var serviceProvider = new ServiceCollection()
                 .AddTracing()
+                .Services
                 .BuildServiceProvider();
 
-            var factory = serviceProvider.GetService<IActivityListenerConfigurationFactory>();
+            Type factoryType = GetActivityListenerConfigurationFactoryType();
+            var factory = serviceProvider.GetService(factoryType);
             Assert.NotNull(factory);
         }
 
@@ -104,15 +108,22 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .AddTracing(builder => builder
                     .AddConfiguration(configuration1)
                     .AddConfiguration(configuration2))
+                .Services
                 .BuildServiceProvider();
 
-            var factory = serviceProvider.GetRequiredService<IActivityListenerConfigurationFactory>();
-            var mergedConfiguration = factory.GetConfiguration(listenerName);
+            Type factoryType = GetActivityListenerConfigurationFactoryType();
+            object factory = serviceProvider.GetRequiredService(factoryType);
+            object? mergedConfigurationObject = factoryType.GetMethod("GetConfiguration")!.Invoke(factory, [listenerName]);
+            Assert.NotNull(mergedConfigurationObject);
+            IConfiguration mergedConfiguration = (IConfiguration)mergedConfigurationObject;
 
             Assert.Equal("true", mergedConfiguration["EnabledTracing:SourceA"]);
             Assert.Equal("true", mergedConfiguration["EnabledTracing:SourceB"]);
             Assert.Equal("false", mergedConfiguration["EnabledTracing:SourceC"]);
         }
+
+        private static Type GetActivityListenerConfigurationFactoryType()
+            => typeof(TracingServiceExtensions).Assembly.GetType("Microsoft.Extensions.Diagnostics.Configuration.ActivityListenerConfigurationFactory", throwOnError: true)!;
 
         [Fact]
         public void ScopeConfigurationMatchesSampleBehavior()
@@ -132,6 +143,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
                 .AddTracing(builder => builder
                     .AddListener<SampleActivityListener>()
                     .AddConfiguration(configuration))
+                .Services
                 .BuildServiceProvider();
 
             serviceProvider.GetRequiredService<IStartupValidator>().Validate();
@@ -161,6 +173,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
             using var serviceProvider = new ServiceCollection()
                 .AddTracing(builder => builder.AddConfiguration(configuration))
+                .Services
                 .BuildServiceProvider();
 
             var options = serviceProvider.GetRequiredService<IOptions<TracingOptions>>().Value;
@@ -175,6 +188,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
 
             using var serviceProvider = new ServiceCollection()
                 .AddTracing(builder => builder.AddListener<SampleActivityListener>())
+                .Services
                 .AddSingleton<IOptionsMonitor<TracingOptions>>(optionsMonitor)
                 .BuildServiceProvider();
 
@@ -216,9 +230,9 @@ namespace Microsoft.Extensions.Diagnostics.Tests
         {
             public string Name => SampleListenerName;
 
-            public ActivitySamplingResult SampleUsingParentId(ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded;
+            public SampleActivity<string>? SampleUsingParentId => static (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded;
 
-            public ActivitySamplingResult Sample(ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
+            public SampleActivity<ActivityContext>? Sample => static (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
 
             public void ActivityStarted(Activity activity)
             {

@@ -14,21 +14,25 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
         /// <summary>
         /// Gets the listener name used by tracing rules.
         /// </summary>
-        string? Name { get; }
+        string Name { get; }
 
         /// <summary>
-        /// Decides whether to create and sample an activity when a parent ID is available.
+        /// Gets the callback used to decide whether to create and sample an activity when a parent ID is available.
         /// </summary>
-        /// <param name="options">The activity creation options.</param>
-        /// <returns>The sampling decision.</returns>
-        ActivitySamplingResult SampleUsingParentId(ref ActivityCreationOptions<string> options);
+        /// <value>
+        /// The sampling callback to invoke for parent ID-based creation options.
+        /// If <see langword="null"/>, this listener does not participate in sampling for parent ID-based creation.
+        /// </value>
+        SampleActivity<string>? SampleUsingParentId { get; }
 
         /// <summary>
-        /// Decides whether to create and sample an activity when a parent context is available.
+        /// Gets the callback used to decide whether to create and sample an activity when a parent context is available.
         /// </summary>
-        /// <param name="options">The activity creation options.</param>
-        /// <returns>The sampling decision.</returns>
-        ActivitySamplingResult Sample(ref ActivityCreationOptions<ActivityContext> options);
+        /// <value>
+        /// The sampling callback to invoke for parent context-based creation options.
+        /// If <see langword="null"/>, this listener does not participate in sampling for parent context-based creation.
+        /// </value>
+        SampleActivity<ActivityContext>? Sample { get; }
 
         /// <summary>
         /// Called when an activity starts.

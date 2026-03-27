@@ -27,6 +27,21 @@ namespace Microsoft.Extensions.Diagnostics.Configuration
         }
 
         /// <summary>
+        /// Registers a new <see cref="IActivityListener"/> of type <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">The implementation type of the listener.</typeparam>
+        /// <param name="builder">The <see cref="ITracingBuilder"/>.</param>
+        /// <param name="factory">A factory function to create the listener instance.</param>
+        /// <returns>Returns the original <see cref="ITracingBuilder"/> for chaining.</returns>
+        public static ITracingBuilder AddListener<T>(this ITracingBuilder builder, Func<IServiceProvider, T> factory) where T : class, IActivityListener
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(factory);
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IActivityListener, T>(factory));
+            return builder;
+        }
+
+        /// <summary>
         /// Registers a new <see cref="IActivityListener"/> instance.
         /// </summary>
         /// <param name="listener">The listener instance.</param>

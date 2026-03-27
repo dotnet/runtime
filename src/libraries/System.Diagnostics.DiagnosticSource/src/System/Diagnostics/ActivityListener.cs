@@ -23,24 +23,9 @@ namespace System.Diagnostics
         /// <summary>
         /// Construct a new <see cref="ActivityListener"/> object to start listening to the <see cref="Activity"/> events.
         /// </summary>
-        /// <param name="name">The optional listener name.</param>
-        public ActivityListener(string? name = null)
-        {
-            Name = name ?? string.Empty;
-        }
-
-        /// <summary>
-        /// Construct a new <see cref="ActivityListener"/> object to start listening to the <see cref="Activity"/> events.
-        /// </summary>
         public ActivityListener()
-            : this(name: null)
         {
         }
-
-        /// <summary>
-        /// Gets the listener name.
-        /// </summary>
-        public string Name { get; }
 
         /// <summary>
         /// Set or get the callback used to listen to the <see cref="Activity"/> start event.

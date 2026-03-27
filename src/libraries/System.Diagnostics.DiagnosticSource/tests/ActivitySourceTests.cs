@@ -85,18 +85,6 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestActivityListenerNameConstructor()
-        {
-            RemoteExecutor.Invoke(() => {
-                using ActivityListener listener = new ActivityListener();
-                Assert.Equal(string.Empty, listener.Name);
-
-                using ActivityListener namedListener = new ActivityListener("named-listener");
-                Assert.Equal("named-listener", namedListener.Name);
-            }).Dispose();
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestUpdateActivityListenerUpdatesListenerState()
         {
             RemoteExecutor.Invoke(() => {

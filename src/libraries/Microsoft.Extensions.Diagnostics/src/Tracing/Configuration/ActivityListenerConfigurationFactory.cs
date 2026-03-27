@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.Diagnostics.Configuration
 {
-    internal sealed class ActivityListenerConfigurationFactory : IActivityListenerConfigurationFactory
+    internal sealed class ActivityListenerConfigurationFactory
     {
         private readonly IEnumerable<TracingConfiguration> _configurations;
 
