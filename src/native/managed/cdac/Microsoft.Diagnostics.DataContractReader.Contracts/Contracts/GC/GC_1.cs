@@ -506,7 +506,7 @@ internal readonly struct GC_1 : IGC
     IReadOnlyList<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
     {
         List<GCMemoryRegionData> regions = new();
-        uint handleSegmentSize = _target.ReadGlobal<uint>(Constants.Globals.HandleSegmentSize);
+        uint handleSegmentSize = _handleSegmentSize;
         uint tableCount = GetGCType() switch
         {
             GCType.Workstation => 1,
@@ -516,7 +516,7 @@ internal readonly struct GC_1 : IGC
 
         int maxRegions = MaxHandleTableRegions;
         TargetPointer handleTableMap = _target.ReadGlobalPointer(Constants.Globals.HandleTableMap);
-        while (handleTableMap != TargetPointer.Null && maxRegions >= 0)
+        while (handleTableMap != TargetPointer.Null && maxRegions > 0)
         {
             Data.HandleTableMap map = _target.ProcessedData.GetOrAdd<Data.HandleTableMap>(handleTableMap);
             foreach (TargetPointer bucketPtr in map.BucketsPtr)
@@ -537,6 +537,7 @@ internal readonly struct GC_1 : IGC
 
                     TargetPointer segmentPtr = handleTable.SegmentList;
                     TargetPointer firstSegment = segmentPtr;
+                    int segmentIterations = MaxSegmentListIterations;
                     do
                     {
                         Data.TableSegment segment = _target.ProcessedData.GetOrAdd<Data.TableSegment>(segmentPtr);
@@ -547,7 +548,7 @@ internal readonly struct GC_1 : IGC
                             Heap = (int)j,
                         });
                         segmentPtr = segment.NextSegment;
-                    } while (segmentPtr != TargetPointer.Null && segmentPtr != firstSegment);
+                    } while (segmentPtr != TargetPointer.Null && segmentPtr != firstSegment && --segmentIterations > 0);
                 }
             }
             handleTableMap = map.Next;
