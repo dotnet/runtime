@@ -531,13 +531,13 @@ IniKey1=IniValue2");
                 c.Ignore = true;
             };
 
-            CreateBuilder()
+            using var cfgRoot = CreateBuilder()
                 .AddJsonFile(s =>
                 {
                     s.Path = FileName;
                     s.OnLoadException = jsonLoadError;
                 })
-                .Build();
+                .Build() as IDisposable;
 
             Assert.NotNull(failingProvider);
             Assert.IsType<InvalidDataException>(failureException);
@@ -562,13 +562,13 @@ IniKey1=IniValue2");
                     c.Ignore = true;
                 };
 
-                CreateBuilder()
+                using var cfgRoot = CreateBuilder()
                     .AddJsonFile(s =>
                     {
                         s.Path = FileName;
                         s.OnLoadException = jsonLoadError;
                     })
-                    .Build();
+                    .Build() as IDisposable;
 
                 Assert.NotNull(failingProvider);
                 Assert.IsType<IOException>(failureException);
@@ -592,14 +592,14 @@ IniKey1=IniValue2");
                 c.Ignore = true;
             };
 
-            CreateBuilder()
+            using var cfgRoot = CreateBuilder()
                 .AddJsonFile(s =>
                 {
                     s.Path = FileName;
                     s.OnLoadException = jsonLoadError;
                     s.ReloadOnChange = true;
                 })
-                .Build();
+                .Build() as IDisposable;
 
             // No error should be triggered so far.
             Assert.Null(failingProvider);
@@ -630,14 +630,14 @@ IniKey1=IniValue2");
                 c.Ignore = true;
             };
 
-            CreateBuilder()
+            using var cfgRoot = CreateBuilder()
                 .AddJsonFile(s =>
                 {
                     s.Path = FileName;
                     s.OnLoadException = jsonLoadError;
                     s.ReloadOnChange = true;
                 })
-                .Build();
+                .Build() as IDisposable;
 
             // No error should be triggered so far.
             Assert.Null(failingProvider);
