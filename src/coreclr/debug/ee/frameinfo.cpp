@@ -801,9 +801,8 @@ void FrameInfo::InitForM2UInternalFrame(CrawlFrame * pCF)
 void FrameInfo::InitForU2MInternalFrame(CrawlFrame * pCF)
 {
     _ASSERTE(pCF != NULL);
-    MethodDesc * pMDHint = NULL;
 
-    InitFromStubHelper(pCF, pMDHint, STUBFRAME_U2M);
+    InitFromStubHelper(pCF, NULL, STUBFRAME_U2M);
     InitForScratchFrameInfo();
 }
 
