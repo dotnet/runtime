@@ -20,6 +20,27 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
+        private int _processId = -1;
+
+        /// <summary>
+        /// Gets the process ID.
+        /// </summary>
+        public int ProcessId
+        {
+            get
+            {
+                Validate();
+
+                if (_processId == -1)
+                {
+                    _processId = GetProcessIdCore();
+                }
+
+                return _processId;
+
+            }
+            private set => _processId = value;
+        }
 
         /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeHandle" />.
@@ -44,8 +65,6 @@ namespace Microsoft.Win32.SafeHandles
         {
             SetHandle(existingHandle);
         }
-
-        internal int ProcessId { get; private set; }
 
         /// <summary>
         /// Starts a process using the specified <see cref="ProcessStartInfo"/>.
@@ -99,6 +118,14 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle);
+        }
+
+        private void Validate()
+        {
+            if (IsInvalid)
+            {
+                throw new InvalidOperationException(SR.InvalidProcessHandle);
+            }
         }
     }
 }

@@ -280,5 +280,7 @@ namespace Microsoft.Win32.SafeHandles
             procSH.ProcessId = (int)processInfo.dwProcessId;
             return procSH;
         }
+
+        private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
     }
 }
