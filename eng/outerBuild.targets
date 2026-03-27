@@ -12,32 +12,4 @@
     </MSBuild>
   </Target>
 
-  <!-- Finds the best non-PNSE target framework in this cross-targeting project that targets NetCoreAppCurrent
-       (with or without a platform suffix).  Called from GetDocFileFromNonPNSEBuild in inner PNSE builds to
-       locate a sibling target framework whose doc XML can be reused. -->
-  <Target Name="GetDocumentationTargetFramework"
-          DependsOnTargets="_ComputeTargetFrameworkItems"
-          Returns="@(_BestDocTF)">
-
-    <!-- Ask each inner-build target framework whether it is a suitable doc candidate. -->
-    <MSBuild Projects="@(_InnerBuildProjects)"
-             Targets="GetDocumentationCandidateTargetFramework"
-             BuildInParallel="$(BuildInParallel)">
-      <Output ItemName="_DocCandidateTFs" TaskParameter="TargetOutputs" />
-    </MSBuild>
-
-    <!-- Select the first candidate. -->
-    <PropertyGroup>
-      <_AllDocCandidates>@(_DocCandidateTFs)</_AllDocCandidates>
-      <_FirstDocCandidate Condition="'$(_AllDocCandidates)' != ''">$(_AllDocCandidates.Split(';')[0].Trim())</_FirstDocCandidate>
-    </PropertyGroup>
-
-    <Error Condition="'$(_FirstDocCandidate)' == '' and '$(SuppressPlatformNotSupportedAssemblyDocXmlError)' != 'true'"
-           Text="$(MSBuildProjectName): Could not find a non-PNSE target framework targeting $(NetCoreAppCurrent) to use as the documentation source for PNSE builds. Set 'SuppressPlatformNotSupportedAssemblyDocXmlError=true' to suppress this error." />
-
-    <ItemGroup Condition="'$(_FirstDocCandidate)' != ''">
-      <_BestDocTF Include="$(_FirstDocCandidate)" />
-    </ItemGroup>
-  </Target>
-
 </Project>

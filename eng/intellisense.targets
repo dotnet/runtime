@@ -5,6 +5,14 @@
     <!-- Set IsPlatformNotSupportedAssembly when GeneratePlatformNotSupportedAssemblyMessage is set so it can flow through
          AdditionalTargetFrameworkInfoProperty to the outer build for doc XML discovery. -->
     <IsPlatformNotSupportedAssembly Condition="'$(IsPlatformNotSupportedAssembly)' == '' and '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">true</IsPlatformNotSupportedAssembly>
+    <!-- IsCandidateCompilerGeneratedDocFile is set to $(TargetFramework) for inner builds that can serve as the doc
+         source for PNSE sibling builds: the TF must be compatible with NetCoreAppCurrent and not itself be PNSE.
+         Storing the TF name as the value (instead of 'true') lets the outer build extract it from
+         AdditionalPropertiesFromProject via a regex without extra per-TF MSBuild calls. -->
+    <IsCandidateCompilerGeneratedDocFile
+      Condition="'$(TargetFramework)' != '' and
+                 '$(GeneratePlatformNotSupportedAssemblyMessage)' == '' and
+                 $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))">$(TargetFramework)</IsCandidateCompilerGeneratedDocFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true'">
@@ -34,9 +42,12 @@
 
   <ItemGroup>
     <PackageDownload Include="Microsoft.Private.Intellisense" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
-    <!-- Flow IsPlatformNotSupportedAssembly to the outer build via AdditionalTargetFrameworkInfoProperty so that
-         the outer build can identify which target frameworks are PNSE when selecting a doc source. -->
+    <!-- Flow IsPlatformNotSupportedAssembly and IsCandidateCompilerGeneratedDocFile to the outer build via
+         AdditionalTargetFrameworkInfoProperty so that GetTargetFrameworks can identify which TF to use as the
+         doc source for PNSE builds. IsCandidateCompilerGeneratedDocFile is set to the TF name so the outer
+         build can extract it from AdditionalPropertiesFromProject via a simple regex. -->
     <AdditionalTargetFrameworkInfoProperty Include="IsPlatformNotSupportedAssembly" />
+    <AdditionalTargetFrameworkInfoProperty Include="IsCandidateCompilerGeneratedDocFile" />
   </ItemGroup>
 
   <!-- Warn if the docs team provided package doesn't have an intellisense file for a given library and the library explicitly
@@ -83,49 +94,67 @@
     </ItemGroup>
   </Target>
 
-  <!-- Returns this target framework if it is a suitable candidate to provide doc XML to a PNSE sibling build:
-       it must target NetCoreAppCurrent (with or without a platform suffix) and must not itself be a PNSE assembly. -->
-  <Target Name="GetDocumentationCandidateTargetFramework"
-          Returns="@(_DocCandidateTF)">
-    <ItemGroup Condition="'$(IsPlatformNotSupportedAssembly)' != 'true' and
-                          ('$(TargetFramework)' == '$(NetCoreAppCurrent)' or
-                           $([System.String]::Copy('$(TargetFramework)').StartsWith('$(NetCoreAppCurrent)-')))">
-      <_DocCandidateTF Include="$(TargetFramework)" />
-    </ItemGroup>
-  </Target>
-
   <!-- Returns the DocFileItem for this build after preparing it (e.g. copying from the intellisense package). -->
   <Target Name="GetDocFileItemPath"
           DependsOnTargets="ChangeDocumentationFileForPackaging"
           Returns="@(DocFileItem)">
   </Target>
 
-  <!-- For PNSE builds that opt out of compiler-generated doc XML, find a non-PNSE sibling target framework,
-       build it (getting only its doc file), and use that doc file for this PNSE build.  This avoids the poor
-       intellisense that results from the auto-generated PNSE stubs. -->
+  <!-- For PNSE builds that opt out of compiler-generated doc XML, calls GetTargetFrameworks on the outer build to
+       identify the first compatible non-PNSE sibling target framework via IsCandidateCompilerGeneratedDocFile in
+       AdditionalPropertiesFromProject, then adds a ProjectReference to that sibling.  The ProjectReference ensures
+       the sibling is built (and its doc file prepared) before GetDocFileFromNonPNSEBuild retrieves it. -->
+  <Target Name="AddPNSEDocSourceProjectReference"
+          BeforeTargets="ResolveProjectReferences"
+          Condition="'$(IsPlatformNotSupportedAssembly)' == 'true' and
+                     '$(UseCompilerGeneratedDocXmlFile)' != 'true' and
+                     '$(IsCrossTargetingBuild)' != 'true'">
+
+    <!-- GetTargetFrameworks is the standard outer-build target that aggregates per-TF metadata collected via
+         AdditionalTargetFrameworkInfoProperty, including IsCandidateCompilerGeneratedDocFile. -->
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Targets="GetTargetFrameworks"
+             RemoveProperties="TargetFramework">
+      <Output ItemName="_PNSEDocTFResult" TaskParameter="TargetOutputs" />
+    </MSBuild>
+
+    <PropertyGroup>
+      <_PNSEDocAdditionalProps>@(_PNSEDocTFResult->'%(AdditionalPropertiesFromProject)')</_PNSEDocAdditionalProps>
+      <!-- IsCandidateCompilerGeneratedDocFile is stored as the TF name for qualifying TFs, so a simple regex
+           finds the first non-empty value, which is the candidate TF name. -->
+      <_PNSEDocSourceTF>$([System.Text.RegularExpressions.Regex]::Match('$(_PNSEDocAdditionalProps)', 'IsCandidateCompilerGeneratedDocFile="([^"]+)"').Groups[1].Value)</_PNSEDocSourceTF>
+    </PropertyGroup>
+
+    <Error Condition="'$(_PNSEDocSourceTF)' == '' and '$(SuppressPlatformNotSupportedAssemblyDocXmlError)' != 'true'"
+           Text="$(MSBuildProjectName): Could not find a compatible non-PNSE target framework to use as the documentation source for PNSE builds. Set 'SuppressPlatformNotSupportedAssemblyDocXmlError=true' to suppress this error." />
+
+    <!-- A private ProjectReference to the same project with the candidate TF ensures the sibling is fully built
+         (including its doc file) before GetDocFileFromNonPNSEBuild copies it. -->
+    <ItemGroup Condition="'$(_PNSEDocSourceTF)' != ''">
+      <ProjectReference Include="$(MSBuildProjectFullPath)">
+        <SetTargetFramework>TargetFramework=$(_PNSEDocSourceTF)</SetTargetFramework>
+        <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        <Private>false</Private>
+      </ProjectReference>
+    </ItemGroup>
+  </Target>
+
+  <!-- For PNSE builds that opt out of compiler-generated doc XML, retrieves the doc file from the non-PNSE sibling
+       TF (identified by AddPNSEDocSourceProjectReference) and uses it as this build's doc file.  The sibling is
+       already built via the ProjectReference added by AddPNSEDocSourceProjectReference. -->
   <Target Name="GetDocFileFromNonPNSEBuild"
+          DependsOnTargets="AddPNSEDocSourceProjectReference"
           Condition="'$(IsPlatformNotSupportedAssembly)' == 'true' and
                      '$(UseCompilerGeneratedDocXmlFile)' != 'true' and
                      '$(IsCrossTargetingBuild)' != 'true'"
           BeforeTargets="CopyFilesToOutputDirectory;DocumentationProjectOutputGroup">
 
-    <!-- Call the outer (cross-targeting) build to identify the best non-PNSE candidate target framework. -->
-    <MSBuild Projects="$(MSBuildProjectFullPath)"
-             Targets="GetDocumentationTargetFramework"
-             RemoveProperties="TargetFramework">
-      <Output ItemName="_PNSEDocTFItems" TaskParameter="TargetOutputs" />
-    </MSBuild>
-
-    <PropertyGroup>
-      <!-- GetDocumentationTargetFramework returns exactly one item, so no semicolons in the expansion. -->
-      <_PNSEDocTF>@(_PNSEDocTFItems)</_PNSEDocTF>
-    </PropertyGroup>
-
-    <!-- Call GetDocFileItemPath on the non-PNSE sibling target framework to retrieve its prepared doc file. -->
+    <!-- GetDocFileItemPath on the sibling is a fast no-rebuild call because the sibling was already built via the
+         ProjectReference added by AddPNSEDocSourceProjectReference. -->
     <MSBuild Projects="$(MSBuildProjectFullPath)"
              Targets="GetDocFileItemPath"
-             Properties="TargetFramework=$(_PNSEDocTF)"
-             Condition="'$(_PNSEDocTF)' != ''">
+             Properties="TargetFramework=$(_PNSEDocSourceTF)"
+             Condition="'$(_PNSEDocSourceTF)' != ''">
       <Output ItemName="_DocFileItemFromSibling" TaskParameter="TargetOutputs" />
     </MSBuild>
 
