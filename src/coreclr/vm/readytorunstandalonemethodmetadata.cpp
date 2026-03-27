@@ -20,32 +20,10 @@ class ReadyToRunStandaloneMethodMetadataHelper
     Module* pModule;
     IMDInternalImport* pMDImport;
 
-    static COR_ILMETHOD* GetILHeaderForStandaloneMetadata(MethodDesc *pMD)
-    {
-        // For runtime-async methods with miAsync in metadata, the runtime marks the original
-        // MethodDesc as a thunk (IsAsyncThunkMethod() == true, MayHaveILHeader() == false).
-        // However, the IL body is still present at the method's RVA in the PE — the "thunk"
-        // designation controls execution flow, not metadata layout.
-        //
-        // This method is called when the runtime resolves a CHECK_IL_BODY / VERIFY_IL_BODY
-        // fixup emitted by crossgen2's ILBodyFixupSignature. On the crossgen2 side, the fixup
-        // encodes the EcmaMethod (which has the IL) as the signatureMethod. At runtime,
-        // ZapSig::DecodeMethod resolves the MethodDef token back to the original MethodDesc,
-        // which is the async thunk. We need to read the IL from its RVA despite
-        // MayHaveILHeader() returning false.
-        if (!pMD->MayHaveILHeader())
-        {
-            _ASSERTE(pMD->IsAsyncThunkMethod());
-            _ASSERTE(pMD->GetRVA() != 0);
-            return PTR_COR_ILMETHOD(pMD->GetModule()->GetIL(pMD->GetRVA()));
-        }
-        return pMD->GetILHeader();
-    }
-
 public:
 
     ReadyToRunStandaloneMethodMetadataHelper(MethodDesc *pMD, SArray<uint32_t> *pTypeRefTokenStreamInput) :
-        header(GetILHeaderForStandaloneMetadata(pMD), pMD->GetMDImport(), NULL),
+        header(pMD->GetILHeader(), pMD->GetMDImport(), NULL),
         currentILStreamIterator(0),
         pTypeRefTokenStream(pTypeRefTokenStreamInput),
         pModule(pMD->GetModule()),
