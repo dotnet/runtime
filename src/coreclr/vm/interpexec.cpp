@@ -1260,7 +1260,7 @@ SWITCH_OPCODE:
                     InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
 
                     int32_t bypassOpcode = 0;
-                    
+
                     // After debugger callback, check if bypass was set on the thread context
                     if (pThreadContext->HasBypass(ip, &bypassOpcode))
                     {
@@ -3207,6 +3207,11 @@ SWITCH_OPCODE:
                             ip = pFrame->startIp->GetByteCodes();
                             pThreadContext->pStackPointer = stack + pMethod->allocaSize;
                             break;
+                        }
+                        else if (isOpenVirtual)
+                        {
+                            callArgsOffset += INTERP_STACK_SLOT_SIZE;
+                            goto CALL_INTERP_METHOD;
                         }
                     }
 
