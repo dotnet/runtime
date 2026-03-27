@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -13,7 +14,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         internal static unsafe int ForkAndExecProcess(
-            string filename, string[] argv, string[] envp, string? cwd,
+            string filename, string[] argv, KeyValuePair<string, string>[] envp, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd, bool shouldThrow = true)
         {
@@ -44,7 +45,7 @@ internal static partial class Interop
                 }
 
                 AllocNullTerminatedArray(argv, ref argvPtr);
-                AllocNullTerminatedArray(envp, ref envpPtr);
+                AllocNullTerminatedEnvpArray(envp, ref envpPtr);
                 fixed (uint* pGroups = groups)
                 {
                     result = ForkAndExecProcess(
@@ -98,6 +99,43 @@ internal static partial class Interop
                 Debug.Assert(bytesWritten == byteLength);
 
                 arrPtr[i][bytesWritten] = (byte)'\0'; // null terminate
+            }
+        }
+
+        private static unsafe void AllocNullTerminatedEnvpArray(KeyValuePair<string, string>[] arr, ref byte** arrPtr)
+        {
+            nuint arrLength = (nuint)arr.Length + 1; // +1 is for null termination
+
+            // Allocate the unmanaged array to hold each string pointer.
+            // It needs to have an extra element to null terminate the array.
+            // Zero the memory so that if any of the individual string allocations fails,
+            // we can loop through the array to free any that succeeded.
+            // The last element will remain null.
+            arrPtr = (byte**)NativeMemory.AllocZeroed(arrLength, (nuint)sizeof(byte*));
+
+            // Now encode each key=value pair directly to unmanaged memory, avoiding
+            // an intermediate managed "key=value" string allocation.
+            for (int i = 0; i < arr.Length; i++)
+            {
+                string key = arr[i].Key;
+                string value = arr[i].Value;
+
+                int keyByteLength = Encoding.UTF8.GetByteCount(key);
+                int valueByteLength = Encoding.UTF8.GetByteCount(value);
+                int totalByteLength = keyByteLength + 1 + valueByteLength; // +1 for '='
+
+                arrPtr[i] = (byte*)NativeMemory.Alloc((nuint)totalByteLength + 1); // +1 for null termination
+
+                Span<byte> buffer = new Span<byte>(arrPtr[i], totalByteLength);
+                int bytesWritten = Encoding.UTF8.GetBytes(key, buffer);
+                Debug.Assert(bytesWritten == keyByteLength);
+
+                buffer[bytesWritten] = (byte)'=';
+
+                int valueBytesWritten = Encoding.UTF8.GetBytes(value, buffer.Slice(bytesWritten + 1));
+                Debug.Assert(valueBytesWritten == valueByteLength);
+
+                arrPtr[i][totalByteLength] = (byte)'\0'; // null terminate
             }
         }
 

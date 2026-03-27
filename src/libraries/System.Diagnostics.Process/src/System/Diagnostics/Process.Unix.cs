@@ -370,7 +370,7 @@ namespace System.Diagnostics
             string? filename;
             string[] argv;
 
-            string[] envp = CreateEnvp(startInfo);
+            KeyValuePair<string, string>[] envp = CreateEnvp(startInfo);
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
@@ -450,7 +450,7 @@ namespace System.Diagnostics
 
         private bool ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
-            string[] envp, string? cwd, bool setCredentials, uint userId,
+            KeyValuePair<string, string>[] envp, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
             SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
             bool usesTerminal, bool throwOnNoExec = true)
@@ -566,16 +566,16 @@ namespace System.Diagnostics
         /// <summary>Converts the environment variables information from a ProcessStartInfo into an envp array.</summary>
         /// <param name="psi">The ProcessStartInfo.</param>
         /// <returns>The envp array.</returns>
-        private static string[] CreateEnvp(ProcessStartInfo psi)
+        private static KeyValuePair<string, string>[] CreateEnvp(ProcessStartInfo psi)
         {
-            var envp = new string[psi.Environment.Count];
+            var envp = new KeyValuePair<string, string>[psi.Environment.Count];
             int index = 0;
             foreach (KeyValuePair<string, string?> pair in psi.Environment)
             {
                 // Ignore null values for consistency with Environment.SetEnvironmentVariable
-                if (pair.Value != null)
+                if (pair.Value is not null)
                 {
-                    envp[index++] = pair.Key + "=" + pair.Value;
+                    envp[index++] = new KeyValuePair<string, string>(pair.Key, pair.Value);
                 }
             }
             // Resize the array in case we skipped some entries
