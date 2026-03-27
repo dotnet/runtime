@@ -10,8 +10,6 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
-
-
 namespace Build.Tasks
 {
     public class ComputeManagedAssembliesToCompileToNative : Task
@@ -81,6 +79,13 @@ namespace Build.Tasks
             set;
         }
 
+        [Output]
+        public ITaskItem[] ManagedAssemblies
+        {
+            get;
+            set;
+        }
+
         /// <summary>
         /// CoreCLR runtime pack files (apphost, native assets, managed assemblies replaced by NativeAOT equivalents)
         /// that should be removed from the publish output and replaced with NativeAOT runtime pack assemblies.
@@ -94,6 +99,7 @@ namespace Build.Tasks
 
         public override bool Execute()
         {
+            var managedAssemblies = new List<ITaskItem>();
             var runtimePackFilesToSkipPublish = new List<ITaskItem>();
             var satelliteAssemblies = new List<ITaskItem>();
             var nativeAotFrameworkAssembliesToUse = new Dictionary<string, ITaskItem>();
@@ -141,23 +147,23 @@ namespace Build.Tasks
                 {
                     // If the assembly is part of the Microsoft.NETCore.App.Runtime runtime pack, we want to swap it with the corresponding package from the NativeAOT SDK.
                     // Otherwise we want to use the assembly the user has referenced.
-                    if (!isFromRuntimePack)
+                    if (isFromRuntimePack)
                     {
-                        // The assembly was overridden by an OOB package through standard .NET SDK conflict resolution.
-                        // Don't swap to the NativeAOT version; the user's version stays in
-                        // ResolvedFileToPublish and will be picked up as an ILC input via
-                        // its PostprocessAssembly=true metadata.
+                        if (assemblyFileName == "System.Private.CoreLib.dll" && GetFileVersion(itemSpec).CompareTo(GetFileVersion(frameworkItem.ItemSpec)) > 0)
+                        {
+                            // Validate that we aren't trying to use an older NativeAOT package against a newer non-NativeAOT runtime pack.
+                            // That's not supported.
+                            Log.LogError($"Overriding System.Private.CoreLib.dll with a newer version is not supported. Attempted to use {itemSpec} instead of {frameworkItem.ItemSpec}.");
+                        }
+
+                        runtimePackFilesToSkipPublish.Add(taskItem);
                         continue;
                     }
-                    else if (assemblyFileName == "System.Private.CoreLib.dll" && GetFileVersion(itemSpec).CompareTo(GetFileVersion(frameworkItem.ItemSpec)) > 0)
-                    {
-                        // Validate that we aren't trying to use an older NativeAOT package against a newer non-NativeAOT runtime pack.
-                        // That's not supported.
-                        Log.LogError($"Overriding System.Private.CoreLib.dll with a newer version is not supported. Attempted to use {itemSpec} instead of {frameworkItem.ItemSpec}.");
-                    }
 
-                    runtimePackFilesToSkipPublish.Add(taskItem);
-                    continue;
+                    // The assembly was overridden by an OOB package through standard .NET SDK conflict resolution.
+                    // Don't swap to the NativeAOT version; the user's version stays in
+                    // ResolvedFileToPublish and should continue through managed assembly
+                    // classification below.
                 }
 
                 // Only classify files that the SDK has identified as managed runtime assemblies.
@@ -170,31 +176,19 @@ namespace Build.Tasks
 
                 // Check if this is a satellite assembly by reading its culture metadata.
                 // Non-managed files are silently skipped as a safety measure.
-                try
+                if (ManagedAssemblyUtilities.TryGetAssemblyCulture(itemSpec, out string culture)
+                    && (culture == "" || culture.Equals("neutral", StringComparison.OrdinalIgnoreCase)))
                 {
-                    using (FileStream moduleStream = File.OpenRead(itemSpec))
-                    using (var module = new PEReader(moduleStream))
-                    {
-                        if (module.HasMetadata)
-                        {
-                            MetadataReader moduleMetadataReader = module.GetMetadataReader();
-                            if (moduleMetadataReader.IsAssembly)
-                            {
-                                string culture = moduleMetadataReader.GetString(moduleMetadataReader.GetAssemblyDefinition().Culture);
-
-                                if (culture != "" && !culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    satelliteAssemblies.Add(taskItem);
-                                }
-                            }
-                        }
-                    }
+                    managedAssemblies.Add(taskItem);
                 }
-                catch (BadImageFormatException)
+                else if (culture != ""
+                    && !culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
                 {
+                    satelliteAssemblies.Add(taskItem);
                 }
             }
 
+            ManagedAssemblies = managedAssemblies.ToArray();
             RuntimePackFilesToSkipPublish = runtimePackFilesToSkipPublish.ToArray();
             SatelliteAssemblies = satelliteAssemblies.ToArray();
 
@@ -204,6 +198,40 @@ namespace Build.Tasks
             {
                 var versionInfo = FileVersionInfo.GetVersionInfo(path);
                 return new Version(versionInfo.FileMajorPart, versionInfo.FileMinorPart, versionInfo.FileBuildPart, versionInfo.FilePrivatePart);
+            }
+        }
+    }
+
+    internal static class ManagedAssemblyUtilities
+    {
+        public static bool TryGetAssemblyCulture(string filePath, out string culture)
+        {
+            try
+            {
+                using (FileStream moduleStream = File.OpenRead(filePath))
+                using (var module = new PEReader(moduleStream))
+                {
+                    if (!module.HasMetadata)
+                    {
+                        culture = string.Empty;
+                        return false;
+                    }
+
+                    MetadataReader moduleMetadataReader = module.GetMetadataReader();
+                    if (!moduleMetadataReader.IsAssembly)
+                    {
+                        culture = string.Empty;
+                        return false;
+                    }
+
+                    culture = moduleMetadataReader.GetString(moduleMetadataReader.GetAssemblyDefinition().Culture);
+                    return true;
+                }
+            }
+            catch (BadImageFormatException)
+            {
+                culture = string.Empty;
+                return false;
             }
         }
     }

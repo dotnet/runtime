@@ -14,4 +14,26 @@
     <Compile Include="Program.cs" />
   </ItemGroup>
 
+  <Target Name="InjectBogusIlcReference"
+          BeforeTargets="_ComputeAssembliesToCompileToNative">
+    <PropertyGroup>
+      <_BogusIlcReferencePath>$(IntermediateOutputPath)BogusReference.dll</_BogusIlcReferencePath>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <!-- Generate a text file with a .dll extension so the regression still proves PE validation matters. -->
+    <WriteLinesToFile File="$(_BogusIlcReferencePath)"
+                      Lines="This is not a PE file."
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(_BogusIlcReferencePath)">
+        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+        <PostprocessAssembly>true</PostprocessAssembly>
+        <RelativePath>BogusReference.dll</RelativePath>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
 </Project>

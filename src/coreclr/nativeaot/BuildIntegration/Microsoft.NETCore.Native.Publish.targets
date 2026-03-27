@@ -6,7 +6,17 @@
           DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);_ComputeAssembliesToCompileToNative;_PrepareTrimConfiguration">
 
     <ItemGroup>
-      <_IlcManagedInputAssemblies Include="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true'" />
+      <_ValidatedIlcManagedAssemblies Include="@(_ManagedResolvedAssembliesToPublish)" />
+      <_ValidatedIlcManagedAssemblies Include="@(DefaultFrameworkAssemblies)" />
+    </ItemGroup>
+
+    <!-- Reattach the final ResolvedFileToPublish metadata to the PE-validated managed set so
+         trim-mode handling and publish-file removal operate on the same item shape the SDK uses. -->
+    <JoinItems Left="@(_ValidatedIlcManagedAssemblies)" Right="@(ResolvedFileToPublish->WithMetadataValue('PostprocessAssembly', 'true'))" RightMetadata="*">
+      <Output TaskParameter="JoinResult" ItemName="_IlcManagedInputAssemblies" />
+    </JoinItems>
+
+    <ItemGroup>
       <IlcReference Include="@(_IlcManagedInputAssemblies)" />
       <IlcSatelliteAssembly Include="@(_SatelliteAssembliesToPublish)" />
       <IlcSatelliteAssembly Include="@(IntermediateSatelliteAssembliesWithTargetPath)" />
@@ -107,6 +117,7 @@
       SdkAssemblies="@(PrivateSdkAssemblies)"
       FrameworkAssemblies="@(FrameworkAssemblies)">
 
+      <Output TaskParameter="ManagedAssemblies" ItemName="_ManagedResolvedAssembliesToPublish" />
       <Output TaskParameter="SatelliteAssemblies" ItemName="_SatelliteAssembliesToPublish" />
       <Output TaskParameter="RuntimePackFilesToSkipPublish" ItemName="_RuntimePackFilesToSkipPublish" />
     </ComputeManagedAssembliesToCompileToNative>
