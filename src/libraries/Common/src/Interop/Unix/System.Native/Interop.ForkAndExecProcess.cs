@@ -14,11 +14,12 @@ internal static partial class Interop
     internal static partial class Sys
     {
         internal static unsafe int ForkAndExecProcess(
-            string filename, string[] argv, KeyValuePair<string, string>[] envp, string? cwd,
+            string filename, string[] argv, IDictionary<string, string?> env, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd, bool shouldThrow = true)
         {
             byte** argvPtr = null, envpPtr = null;
+            byte* envpBlock = null;
             int result = -1;
 
             bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
@@ -45,7 +46,7 @@ internal static partial class Interop
                 }
 
                 AllocNullTerminatedArray(argv, ref argvPtr);
-                AllocNullTerminatedEnvpArray(envp, ref envpPtr);
+                AllocNullTerminatedEnvpArray(env, ref envpPtr, ref envpBlock);
                 fixed (uint* pGroups = groups)
                 {
                     result = ForkAndExecProcess(
@@ -57,7 +58,8 @@ internal static partial class Interop
             }
             finally
             {
-                FreeArray(envpPtr, envp.Length);
+                NativeMemory.Free(envpBlock);
+                NativeMemory.Free(envpPtr);
                 FreeArray(argvPtr, argv.Length);
 
                 if (stdinRefAdded)
@@ -102,40 +104,60 @@ internal static partial class Interop
             }
         }
 
-        private static unsafe void AllocNullTerminatedEnvpArray(KeyValuePair<string, string>[] arr, ref byte** arrPtr)
+        private static unsafe void AllocNullTerminatedEnvpArray(IDictionary<string, string?> env, ref byte** arrPtr, ref byte* dataBlock)
         {
-            nuint arrLength = (nuint)arr.Length + 1; // +1 is for null termination
-
-            // Allocate the unmanaged array to hold each string pointer.
-            // It needs to have an extra element to null terminate the array.
-            // Zero the memory so that if any of the individual string allocations fails,
-            // we can loop through the array to free any that succeeded.
-            // The last element will remain null.
-            arrPtr = (byte**)NativeMemory.AllocZeroed(arrLength, (nuint)sizeof(byte*));
-
-            // Now encode each key=value pair directly to unmanaged memory, avoiding
-            // an intermediate managed "key=value" string allocation.
-            for (int i = 0; i < arr.Length; i++)
+            // First pass: count entries with non-null values and compute total buffer size.
+            int count = 0;
+            int totalByteLength = 0;
+            foreach (KeyValuePair<string, string?> pair in env)
             {
-                string key = arr[i].Key;
-                string value = arr[i].Value;
+                if (pair.Value is not null)
+                {
+                    // Each entry will be: UTF8(key) + '=' + UTF8(value) + '\0'
+                    totalByteLength += Encoding.UTF8.GetByteCount(pair.Key) + 1 + Encoding.UTF8.GetByteCount(pair.Value) + 1;
+                    count++;
+                }
+            }
 
-                int keyByteLength = Encoding.UTF8.GetByteCount(key);
-                int valueByteLength = Encoding.UTF8.GetByteCount(value);
-                int totalByteLength = keyByteLength + 1 + valueByteLength; // +1 for '='
+            // Allocate the pointer array with null termination.
+            arrPtr = (byte**)NativeMemory.AllocZeroed((nuint)count + 1, (nuint)sizeof(byte*));
 
-                arrPtr[i] = (byte*)NativeMemory.Alloc((nuint)totalByteLength + 1); // +1 for null termination
+            // Allocate a single contiguous block for all key=value\0 strings.
+            dataBlock = totalByteLength > 0 ? (byte*)NativeMemory.Alloc((nuint)totalByteLength) : null;
 
-                Span<byte> buffer = new Span<byte>(arrPtr[i], totalByteLength);
-                int bytesWritten = Encoding.UTF8.GetBytes(key, buffer);
-                Debug.Assert(bytesWritten == keyByteLength);
+            // Second pass: encode each key=value pair directly into the buffer.
+            int entryIndex = 0;
+            byte* current = dataBlock;
+            int remainingBytes = totalByteLength;
+            foreach (KeyValuePair<string, string?> pair in env)
+            {
+                if (pair.Value is not null)
+                {
+                    if ((uint)entryIndex >= (uint)count)
+                    {
+                        // More entries than expected; the collection was concurrently modified.
+                        throw new InvalidOperationException();
+                    }
 
-                buffer[bytesWritten] = (byte)'=';
+                    arrPtr[entryIndex] = current;
 
-                int valueBytesWritten = Encoding.UTF8.GetBytes(value, buffer.Slice(bytesWritten + 1));
-                Debug.Assert(valueBytesWritten == valueByteLength);
+                    Span<byte> buffer = new Span<byte>(current, remainingBytes);
+                    int keyBytes = Encoding.UTF8.GetBytes(pair.Key, buffer);
+                    buffer[keyBytes] = (byte)'=';
+                    int valueBytes = Encoding.UTF8.GetBytes(pair.Value, buffer.Slice(keyBytes + 1));
+                    current[keyBytes + 1 + valueBytes] = (byte)'\0';
 
-                arrPtr[i][totalByteLength] = (byte)'\0'; // null terminate
+                    int entryLength = keyBytes + 1 + valueBytes + 1;
+                    current += entryLength;
+                    remainingBytes -= entryLength;
+                    entryIndex++;
+                }
+            }
+
+            // If the counts or sizes don't match, the collection was concurrently modified.
+            if (entryIndex != count || remainingBytes != 0)
+            {
+                throw new InvalidOperationException();
             }
         }
 
