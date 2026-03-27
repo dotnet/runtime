@@ -16,7 +16,7 @@
 
 #ifdef HAVE_GCCOVER
 
-#include "CdacStress.h"
+#include "cdacstress.h"
 #include "../../native/managed/cdac/inc/cdac_reader.h"
 #include "../../debug/datadescriptor-shared/inc/contract-descriptor.h"
 #include <xclrdata.h>
@@ -72,7 +72,7 @@ static CrstStatic       s_cdacLock;       // Serializes cDAC access from concurr
 
 // Unique-stack filtering: hash set of previously seen stack traces.
 // Protected by s_cdacLock (already held during VerifyAtStressPoint).
-static const int UNIQUE_STACK_DEPTH = 8; // Number of return addresses to hash
+
 static SHash<NoRemoveSHashTraits<SetSHashTraits<SIZE_T>>>* s_seenStacks = nullptr;
 
 // Thread-local reentrancy guard — prevents infinite recursion when
@@ -863,10 +863,11 @@ static void CompareStackWalks(Thread* pThread, PCONTEXT regs)
 
             if (cdacIP != dacIP || cdacSP != dacSP)
             {
-                fprintf(s_logFile, "  [WALK_MISMATCH] Frame %d: Context differs cDAC_IP=0x%llx cDAC_SP=0x%llx DAC_IP=0x%llx DAC_SP=0x%llx\n",
-                    frameIdx,
-                    (unsigned long long)cdacIP, (unsigned long long)cdacSP,
-                    (unsigned long long)dacIP, (unsigned long long)dacSP);
+                if (s_logFile)
+                    fprintf(s_logFile, "  [WALK_MISMATCH] Frame %d: Context differs cDAC_IP=0x%llx cDAC_SP=0x%llx DAC_IP=0x%llx DAC_SP=0x%llx\n",
+                        frameIdx,
+                        (unsigned long long)cdacIP, (unsigned long long)cdacSP,
+                        (unsigned long long)dacIP, (unsigned long long)dacSP);
                 mismatch = true;
             }
         }

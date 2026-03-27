@@ -59,7 +59,7 @@ trigger point.
 
 ### How it works
 
-When `DOTNET_GCStress=0x24` (0x20 cDAC + 0x4 instruction JIT), at each stress point:
+When `DOTNET_CdacStress` is set, at each configured stress point:
 1. The cDAC is loaded in-process and enumerates stack GC references via `GetStackReferences`
 2. The runtime enumerates the same references via `StackWalkFrames` + `GcStackCrawlCallBack`
 3. The tool compares the two sets and reports mismatches
@@ -67,27 +67,27 @@ When `DOTNET_GCStress=0x24` (0x20 cDAC + 0x4 instruction JIT), at each stress po
 ### Usage
 
 ```bash
-DOTNET_GCStress=0x24 DOTNET_GCStressCdacLogFile=results.txt corerun test.dll
+DOTNET_CdacStress=0x11 DOTNET_CdacStressLogFile=results.txt corerun test.dll
 ```
 
 Configuration variables:
-- `DOTNET_GCStress=0x24` — Enable instruction-level GC stress + cDAC verification
-- `DOTNET_GCStressCdacFailFast=1` — Assert on mismatch (default: log and continue)
-- `DOTNET_GCStressCdacLogFile=<path>` — Write detailed results to a log file
+- `DOTNET_CdacStress=0x11` — Enable alloc-point cDAC verification (see [StressTests README](tests/StressTests/README.md) for all flags)
+- `DOTNET_CdacStressFailFast=1` — Assert on mismatch (default: log and continue)
+- `DOTNET_CdacStressLogFile=<path>` — Write detailed results to a log file
 
 ### Files
 
 | File | Location | Purpose |
 |------|----------|---------|
-| `cdacgcstress.h/cpp` | `src/coreclr/vm/` | In-process cDAC loading and comparison |
-| `test-cdac-gcstress.ps1` | `src/native/managed/cdac/tests/gcstress/` | Build and test script |
-| `known-issues.md` | `src/native/managed/cdac/tests/gcstress/` | Documented gaps |
+| `cdacstress.h/cpp` | `src/coreclr/vm/` | In-process cDAC loading and comparison |
+| `RunStressTests.ps1` | `src/native/managed/cdac/tests/StressTests/` | Build and test script |
+| `known-issues.md` | `src/native/managed/cdac/tests/StressTests/` | Documented gaps |
 
 ### Known limitations
 
-See [tests/gcstress/known-issues.md](tests/gcstress/known-issues.md) for the full list.
-Key gaps include dynamic method (IL Stub) GC refs, frame duplication on deep stacks,
-and unimplemented `PromoteCallerStack` for stub frames. Current pass rate: ~99.7%.
+See [tests/StressTests/known-issues.md](tests/StressTests/known-issues.md) for the full list.
+Key gaps include explicit frame GC root scanning (ScanFrameRoots) for stub frames.
+Current pass rate: ~99.5%.
 
 ## Contract specifications
 

@@ -9,8 +9,8 @@ Using `DOTNET_CdacStress` with cDAC-vs-DAC comparison:
 
 | Mode | Non-EH debuggees (6) | ExceptionHandling |
 |------|-----------------------|-------------------|
-| INSTR (0x8 + GCStress=0x4, step=10) | 0 failures | 0-2 failures |
-| ALLOC+UNIQUE (0x5) | 0 failures | 4 failures |
+| INSTR (0x4 + GCStress=0x4, step=10) | 0 failures | 0-2 failures |
+| ALLOC+UNIQUE (0x101) | 0 failures | 4 failures |
 | Walk comparison (0x20, IP+SP) | 0 mismatches | N/A |
 
 ## Known Issue: cDAC Cannot Unwind Through Native Frames
