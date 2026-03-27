@@ -38,9 +38,11 @@ steps:
 
     $queue = switch ("$(osGroup)_$(archType)") {
         "windows_x64"  { "$(helix_windows_x64)" }
+        "windows_x86"  { "$(helix_windows_x64)" }
         "windows_arm64" { "$(helix_windows_arm64)" }
         "linux_x64"    { "$(helix_linux_x64_oldest)" }
         "linux_arm64"  { "$(helix_linux_arm64_oldest)" }
+        "linux_arm"    { "$(helix_linux_arm32_oldest)" }
         "osx_x64"     { "$(helix_macos_x64)" }
         "osx_arm64"   { "$(helix_macos_arm64)" }
         default        { Write-Error "Unsupported platform: $(osGroup)_$(archType)"; exit 1 }
