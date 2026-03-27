@@ -1103,10 +1103,10 @@ void CodeGen::genIntToFloatCast(GenTree* tree)
     assert(tree->OperIs(GT_CAST));
     assert(!tree->gtOverflow());
 
-    GenTreeCast * cast     = tree->AsCast();
-    var_types     toType   = tree->TypeGet();
-    var_types     fromType = genActualType(cast->CastOp()->TypeGet());
-    instruction   ins      = INS_none;
+    GenTreeCast* cast     = tree->AsCast();
+    var_types    toType   = tree->TypeGet();
+    var_types    fromType = genActualType(cast->CastOp()->TypeGet());
+    instruction  ins      = INS_none;
 
     genConsumeOperands(cast);
 
