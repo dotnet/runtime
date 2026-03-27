@@ -1088,25 +1088,29 @@ namespace System.Text.RegularExpressions
                         node = ExtractCommonPrefixText(node);
                         if (node.Kind == RegexNodeKind.Alternate)
                         {
+                            node = ExtractCommonSuffixNode(node);
+                        }
+                        if (node.Kind == RegexNodeKind.Alternate)
+                        {
                             node = ExtractCommonPrefixNode(node);
-                            if (node.Kind == RegexNodeKind.Alternate)
-                            {
-                                node = RemoveRedundantEmptiesAndNothings(node);
+                        }
+                        if (node.Kind == RegexNodeKind.Alternate)
+                        {
+                            node = RemoveRedundantEmptiesAndNothings(node);
 
-                                // If the alternation is actually just a ? or ?? in disguise, transform it accordingly.
-                                //     (a|) becomes a?
-                                //     (|a) becomes a??
-                                // Such "optional" nodes are processed more efficiently, including being able to be better coalesced with surrounding nodes.
-                                if (node.Kind is RegexNodeKind.Alternate && node.ChildCount() == 2)
+                            // If the alternation is actually just a ? or ?? in disguise, transform it accordingly.
+                            //     (a|) becomes a?
+                            //     (|a) becomes a??
+                            // Such "optional" nodes are processed more efficiently, including being able to be better coalesced with surrounding nodes.
+                            if (node.Kind is RegexNodeKind.Alternate && node.ChildCount() == 2)
+                            {
+                                if (node.Child(1).Kind is RegexNodeKind.Empty)
                                 {
-                                    if (node.Child(1).Kind is RegexNodeKind.Empty)
-                                    {
-                                        node = node.Child(0).MakeQuantifier(lazy: false, min: 0, max: 1);
-                                    }
-                                    else if (node.Child(0).Kind is RegexNodeKind.Empty)
-                                    {
-                                        node = node.Child(1).MakeQuantifier(lazy: true, min: 0, max: 1);
-                                    }
+                                    node = node.Child(0).MakeQuantifier(lazy: false, min: 0, max: 1);
+                                }
+                                else if (node.Child(0).Kind is RegexNodeKind.Empty)
+                                {
+                                    node = node.Child(1).MakeQuantifier(lazy: true, min: 0, max: 1);
                                 }
                             }
                         }
@@ -1325,6 +1329,106 @@ namespace System.Text.RegularExpressions
                     var newConcat = new RegexNode(RegexNodeKind.Concatenate, alternation.Options);
                     newConcat.AddChild(required);
                     newConcat.AddChild(newAlternate);
+                    alternation.ReplaceChild(startingIndex, newConcat);
+                    children.RemoveRange(startingIndex + 1, endingIndex - startingIndex - 1);
+                }
+
+                return alternation.ReplaceNodeIfUnnecessary();
+            }
+
+            // This function optimizes out common trailing anchor nodes from alternation branches.
+            // e.g. \d{5}$|\d{5}-\d{4}$ => (?:\d{5}|\d{5}-\d{4})$
+            // This is valuable because it exposes the trailing anchor to optimizations like
+            // TrailingAnchor_FixedLength that can jump directly to a position near the end of input.
+            static RegexNode ExtractCommonSuffixNode(RegexNode alternation)
+            {
+                Debug.Assert(alternation.Kind == RegexNodeKind.Alternate);
+                Debug.Assert(alternation.Children is List<RegexNode> { Count: >= 2 });
+                var children = (List<RegexNode>)alternation.Children;
+
+                // Only process left-to-right suffixes.
+                if ((alternation.Options & RegexOptions.RightToLeft) != 0)
+                {
+                    return alternation;
+                }
+
+                for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
+                {
+                    // Only handle the case where each branch ends with the same anchor.
+                    // A branch may be either a Concatenation (get its last child) or a single node.
+                    RegexNode startingNode = children[startingIndex];
+                    RegexNode required = startingNode.Kind == RegexNodeKind.Concatenate ? startingNode.Child(startingNode.ChildCount() - 1) : startingNode;
+                    switch (required.Kind)
+                    {
+                        case RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.Bol
+                             or RegexNodeKind.End or RegexNodeKind.EndZ or RegexNodeKind.Eol
+                             or RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary
+                             or RegexNodeKind.NonBoundary or RegexNodeKind.NonECMABoundary:
+                            break;
+
+                        default:
+                            continue;
+                    }
+
+                    // Only handle the case where each branch ends with the exact same node value
+                    int endingIndex = startingIndex + 1;
+                    for (; endingIndex < children.Count; endingIndex++)
+                    {
+                        RegexNode endingNode = children[endingIndex];
+                        RegexNode other = endingNode.Kind == RegexNodeKind.Concatenate ? endingNode.Child(endingNode.ChildCount() - 1) : endingNode;
+                        if (required.Kind != other.Kind ||
+                            required.Options != other.Options ||
+                            required.M != other.M ||
+                            required.N != other.N ||
+                            required.Ch != other.Ch ||
+                            required.Str != other.Str)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (endingIndex - startingIndex <= 1)
+                    {
+                        // Nothing to extract from this starting index.
+                        continue;
+                    }
+
+                    // Remove the suffix node from every branch, adding it to a new alternation
+                    var newAlternate = new RegexNode(RegexNodeKind.Alternate, alternation.Options);
+                    for (int i = startingIndex; i < endingIndex; i++)
+                    {
+                        if (children[i].Kind == RegexNodeKind.Concatenate)
+                        {
+                            var childChildren = (List<RegexNode>)children[i].Children!;
+                            childChildren.RemoveAt(childChildren.Count - 1);
+                            RegexNode branch = children[i].Reduce();
+                            newAlternate.AddChild(branch);
+                        }
+                        else
+                        {
+                            // The entire branch was the extracted suffix; what remains is Empty.
+                            newAlternate.AddChild(new RegexNode(RegexNodeKind.Empty, children[i].Options));
+                        }
+                    }
+
+                    // Reduce the new alternation so its children are fully optimized
+                    // (e.g. single-letter branches get merged into character classes).
+                    RegexNode newAlternateReduced = newAlternate.Reduce();
+
+                    // If this alternation is wrapped as atomic, we need to do the same for the new alternation.
+                    if (newAlternateReduced.Kind == RegexNodeKind.Alternate &&
+                        alternation.Parent is RegexNode { Kind: RegexNodeKind.Atomic })
+                    {
+                        var atomic = new RegexNode(RegexNodeKind.Atomic, alternation.Options);
+                        atomic.AddChild(newAlternateReduced);
+                        newAlternateReduced = atomic;
+                    }
+
+                    // Now create a concatenation of the new alternation with the suffix node,
+                    // and replace all of the branches in this alternation with that new concatenation.
+                    var newConcat = new RegexNode(RegexNodeKind.Concatenate, alternation.Options);
+                    newConcat.AddChild(newAlternateReduced);
+                    newConcat.AddChild(required);
                     alternation.ReplaceChild(startingIndex, newConcat);
                     children.RemoveRange(startingIndex + 1, endingIndex - startingIndex - 1);
                 }
