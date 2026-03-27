@@ -73,7 +73,7 @@ namespace System.IO
         /// The default is simple matching where '*' is always 0 or more characters and '?' is a single character.</remarks>
         public MatchType MatchType { get; set; }
 
-	/// <summary>
+	    /// <summary>
         /// Gets or sets the case matching behavior for file name pattern matching.
         /// </summary>
         /// <remarks>
