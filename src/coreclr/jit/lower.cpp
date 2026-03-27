@@ -10955,7 +10955,7 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
         // Must be the same local variable.
         if (prevStore->GetLclNum() != currLclNum)
         {
-            return;
+            break;
         }
 
         // Both stores must be the same type.
@@ -11021,14 +11021,14 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
                 }
             }
 
-            return;
+            break;
         }
 
         // The offsets must be adjacent (differ by exactly the type size).
         unsigned prevOffset = prevStore->GetLclOffs();
         if (abs((int)prevOffset - (int)currOffset) != (int)genTypeSize(currType))
         {
-            return;
+            break;
         }
 
         GenTree* currValue = store->Data();
@@ -11039,7 +11039,7 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
         LIR::ReadOnlyRange prevRange         = BlockRange().GetTreeRange(prevStore, &isPrevClosedRange);
         if (!isPrevClosedRange)
         {
-            return;
+            break;
         }
 
         bool isCurrConst = currValue->OperIsConst() &&
@@ -11379,11 +11379,34 @@ void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
                 break;
             }
 
-            // Only forward to integral-typed reads. Struct-typed reads feed into
-            // STORE_BLK nodes that expect struct operands with specific layouts.
+            // Only forward to integral-typed reads, or struct reads that fit in a register.
+            // Struct reads that feed promoted STORE_LCL_FLD(P) nodes cannot accept a bare
+            // CNS_INT because the promoted store decomposes into per-field stores.
             if (!varTypeIsIntegral(scanNode->TypeGet()))
             {
-                break;
+                if (!scanNode->TypeIs(TYP_STRUCT))
+                {
+                    break;
+                }
+                ClassLayout* layout = scanNode->AsLclVarCommon()->GetLayout(m_compiler);
+                if (layout == nullptr || layout->GetRegisterType() == TYP_UNDEF)
+                {
+                    break;
+                }
+                // Check if the load's user is a promoted store or block copy — can't forward.
+                LIR::Use checkUse;
+                if (BlockRange().TryGetUse(scanNode, &checkUse))
+                {
+                    GenTree* user = checkUse.User();
+                    if (user->OperIs(GT_STORE_BLK))
+                    {
+                        break;
+                    }
+                    if (user->OperIsLocalStore() && m_compiler->lvaGetDesc(user->AsLclVarCommon())->lvPromoted)
+                    {
+                        break;
+                    }
+                }
             }
 
             // Extract the portion of the constant that corresponds to the read.
@@ -11400,24 +11423,20 @@ void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
                     m_compiler->dspTreeID(store), m_compiler->dspTreeID(scanNode), lclNum, readOffset,
                     (unsigned long long)(size_t)fullVal, (unsigned long long)(size_t)forwardVal, readOffset, readSize);
 
-            // Create a new constant node and insert it in place of the load.
-            // Mark it with GTF_ICON_STRUCT_INIT_VAL so that TryTransformStoreObjAsStoreInd
-            // uses it as-is instead of treating the low byte as a fill pattern.
-            GenTree* newConst = m_compiler->gtNewIconNode(forwardVal, fwdType);
-            newConst->gtFlags |= GTF_ICON_STRUCT_INIT_VAL;
-            BlockRange().InsertAfter(scanNode, newConst);
-
-            // Replace all uses of the load with the new constant.
+            // Replace the load with a new constant, if the load has a user.
             LIR::Use use;
             if (BlockRange().TryGetUse(scanNode, &use))
             {
+                // Create a new constant node and insert it in place of the load.
+                // Mark it with GTF_ICON_STRUCT_INIT_VAL so that TryTransformStoreObjAsStoreInd
+                // uses it as-is instead of treating the low byte as a fill pattern.
+                GenTree* newConst = m_compiler->gtNewIconNode(forwardVal, fwdType);
+                newConst->gtFlags |= GTF_ICON_STRUCT_INIT_VAL;
+                BlockRange().InsertAfter(scanNode, newConst);
                 use.ReplaceWith(newConst);
+                BlockRange().Remove(scanNode);
             }
 
-            // Remove the load node.
-            BlockRange().Remove(scanNode);
-
-            // The store may not be dead, so we leave it in place.
             break;
         }
 
@@ -12407,6 +12426,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         {
             BlockRange().Remove(src);
             src = src->gtGetOp1();
+            blkNode->SetData(src);
         }
 
         // If the constant was produced by store-load bypass (GTF_ICON_STRUCT_INIT_VAL),
