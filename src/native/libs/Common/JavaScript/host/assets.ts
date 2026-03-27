@@ -93,7 +93,7 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
 }
 
 export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr): boolean {
-    const path = _ems_.UTF8ToString(pathPtr);
+    const path = _ems_.UTF8ArrayToString(_ems_.dotnetApi.localHeapViewU8(), pathPtr as any);
     const assembly = loadedAssemblies.get(path);
     if (assembly) {
         _ems_.HEAPU32[outDataStartPtr as any >>> 2] = assembly.ptr;
@@ -155,17 +155,22 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
 export async function instantiateWasm(wasmPromise: Promise<Response>, imports: WebAssembly.Imports): Promise<{ instance: WebAssembly.Instance; module: WebAssembly.Module; }> {
     let instance: WebAssembly.Instance;
     let module: WebAssembly.Module;
-    const res = await checkResponseOk(wasmPromise);
-    if (!hasInstantiateStreaming || !res.isStreamingOk) {
-        const data = await res.arrayBuffer();
-        module = await WebAssembly.compile(data);
-        instance = await WebAssembly.instantiate(module, imports);
-    } else {
-        const instantiated = await WebAssembly.instantiateStreaming(wasmPromise, imports);
-        instance = instantiated.instance;
-        module = instantiated.module;
+    try {
+        const res = await checkResponseOk(wasmPromise);
+        if (!hasInstantiateStreaming || !res.isStreamingOk) {
+            const data = await res.arrayBuffer();
+            module = await WebAssembly.compile(data);
+            instance = await WebAssembly.instantiate(module, imports);
+        } else {
+            const instantiated = await WebAssembly.instantiateStreaming(wasmPromise, imports);
+            instance = instantiated.instance;
+            module = instantiated.module;
+        }
+        return { instance, module };
+    } catch (err) {
+        _ems_.dotnetApi.exit(1, err);
+        throw err;
     }
-    return { instance, module };
 
     async function checkResponseOk(wasmPromise: Promise<Response> | undefined): Promise<Response & { isStreamingOk?: boolean }> {
         _ems_.dotnetAssert.check(wasmPromise, "WASM binary promise was not initialized");
