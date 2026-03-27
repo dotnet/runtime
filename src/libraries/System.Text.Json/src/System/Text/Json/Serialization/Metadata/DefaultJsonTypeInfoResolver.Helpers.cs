@@ -330,31 +330,7 @@ namespace System.Text.Json.Serialization.Metadata
             return numberHandlingAttribute?.UnmappedMemberHandling;
         }
 
-        internal static bool IsTupleType(Type type)
-        {
-            if (!type.IsGenericType)
-            {
-                return false;
-            }
-
-            Type genericDef = type.GetGenericTypeDefinition();
-            return genericDef == typeof(ValueTuple<>) ||
-                   genericDef == typeof(ValueTuple<,>) ||
-                   genericDef == typeof(ValueTuple<,,>) ||
-                   genericDef == typeof(ValueTuple<,,,>) ||
-                   genericDef == typeof(ValueTuple<,,,,>) ||
-                   genericDef == typeof(ValueTuple<,,,,,>) ||
-                   genericDef == typeof(ValueTuple<,,,,,,>) ||
-                   genericDef == typeof(ValueTuple<,,,,,,,>) ||
-                   genericDef == typeof(Tuple<>) ||
-                   genericDef == typeof(Tuple<,>) ||
-                   genericDef == typeof(Tuple<,,>) ||
-                   genericDef == typeof(Tuple<,,,>) ||
-                   genericDef == typeof(Tuple<,,,,>) ||
-                   genericDef == typeof(Tuple<,,,,,>) ||
-                   genericDef == typeof(Tuple<,,,,,,>) ||
-                   genericDef == typeof(Tuple<,,,,,,,>);
-        }
+        internal static bool IsTupleType(Type type) => JsonHelpers.IsTupleType(type);
 
         /// <summary>
         /// Flattens tuple properties so that Item1-Item7 + Rest becomes Item1-ItemN with

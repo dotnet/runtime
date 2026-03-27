@@ -2291,7 +2291,7 @@ namespace System.Text.Json.SourceGeneration
             /// <summary>
             /// Flattens System.Tuple elements by walking the Rest type argument chain.
             /// </summary>
-            private static void FlattenReferenceTupleElements(ITypeSymbol type, string prefix, List<(ITypeSymbol, string)> elements)
+            private void FlattenReferenceTupleElements(ITypeSymbol type, string prefix, List<(ITypeSymbol, string)> elements)
             {
                 if (type is not INamedTypeSymbol { IsGenericType: true } namedType)
                 {
@@ -2361,7 +2361,7 @@ namespace System.Text.Json.SourceGeneration
                 return parameters;
             }
 
-            private static void FlattenReferenceTupleTypes(ITypeSymbol type, List<ITypeSymbol> types)
+            private void FlattenReferenceTupleTypes(ITypeSymbol type, List<ITypeSymbol> types)
             {
                 if (type is not INamedTypeSymbol { IsGenericType: true } namedType)
                 {
@@ -2390,17 +2390,14 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private static bool IsReferenceTupleType(ITypeSymbol type)
+            private bool IsReferenceTupleType(ITypeSymbol type)
             {
                 if (type is not INamedTypeSymbol { IsGenericType: true } namedType)
                 {
                     return false;
                 }
 
-                INamedTypeSymbol def = namedType.ConstructedFrom;
-                return def.ContainingNamespace?.ToDisplayString() == "System" &&
-                       def.Name == "Tuple" &&
-                       def.Arity >= 1 && def.Arity <= 8;
+                return _knownSymbols.IsReferenceTupleType(namedType);
             }
 
             private readonly struct TypeToGenerate
