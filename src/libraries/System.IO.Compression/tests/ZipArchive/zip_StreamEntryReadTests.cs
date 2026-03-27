@@ -33,7 +33,7 @@ namespace System.IO.Compression.Tests
 
             for (int i = 0; i < expectedContents.Length; i++)
             {
-                ZipForwardReadEntry entry = async
+                ZipForwardReadEntry? entry = async
                     ? await reader.GetNextEntryAsync()
                     : reader.GetNextEntry();
 
@@ -46,7 +46,7 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(expectedContents[i], decompressed);
             }
 
-            ZipForwardReadEntry end = async
+            ZipForwardReadEntry? end = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
             Assert.Null(end);
@@ -64,7 +64,7 @@ namespace System.IO.Compression.Tests
 
             for (int i = 0; i < expectedContents.Length; i++)
             {
-                ZipForwardReadEntry entry = async
+                ZipForwardReadEntry? entry = async
                     ? await reader.GetNextEntryAsync()
                     : reader.GetNextEntry();
 
@@ -89,7 +89,7 @@ namespace System.IO.Compression.Tests
 
             for (int i = 0; i < expectedContents.Length; i++)
             {
-                ZipForwardReadEntry entry = async
+                ZipForwardReadEntry? entry = async
                     ? await reader.GetNextEntryAsync()
                     : reader.GetNextEntry();
 
@@ -130,14 +130,14 @@ namespace System.IO.Compression.Tests
             using MemoryStream archiveStream = new(zipBytes);
             using ZipStreamReader reader = new(archiveStream);
 
-            ZipForwardReadEntry entry = async
+            ZipForwardReadEntry? entry = async
                 ? await reader.GetNextEntryAsync(copyData: true)
                 : reader.GetNextEntry(copyData: true);
 
             Assert.NotNull(entry);
             Assert.NotNull(entry.DataStream);
 
-            ZipForwardReadEntry next = async
+            ZipForwardReadEntry? next = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
             Assert.NotNull(next);
@@ -156,7 +156,7 @@ namespace System.IO.Compression.Tests
             using MemoryStream archiveStream = new(zipBytes);
             using ZipStreamReader reader = new(archiveStream);
 
-            ZipForwardReadEntry first = async
+            ZipForwardReadEntry? first = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
             Assert.NotNull(first);
@@ -167,7 +167,7 @@ namespace System.IO.Compression.Tests
             else
                 first.DataStream!.Read(partial);
 
-            ZipForwardReadEntry second = async
+            ZipForwardReadEntry? second = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
 
@@ -187,7 +187,7 @@ namespace System.IO.Compression.Tests
             using MemoryStream archiveStream = new(zipBytes);
             using ZipStreamReader reader = new(archiveStream);
 
-            ZipForwardReadEntry first = async
+            ZipForwardReadEntry? first = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
             Assert.NotNull(first);
@@ -198,7 +198,7 @@ namespace System.IO.Compression.Tests
             else
                 first.DataStream!.Read(partial);
 
-            ZipForwardReadEntry second = async
+            ZipForwardReadEntry? second = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
 
@@ -217,7 +217,7 @@ namespace System.IO.Compression.Tests
 
             using ZipStreamReader reader = new(ms);
 
-            ZipForwardReadEntry entry = async
+            ZipForwardReadEntry? entry = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
 
@@ -245,7 +245,7 @@ namespace System.IO.Compression.Tests
             ms.Position = 0;
             using ZipStreamReader reader = new(ms);
 
-            ZipForwardReadEntry entry = async
+            ZipForwardReadEntry? entry = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
 
@@ -267,7 +267,7 @@ namespace System.IO.Compression.Tests
             bool foundEncrypted = false;
             bool foundUnencrypted = false;
 
-            ZipForwardReadEntry entry;
+            ZipForwardReadEntry? entry;
             while ((entry = async ? await reader.GetNextEntryAsync() : reader.GetNextEntry()) is not null)
             {
                 if (entry.IsEncrypted)
@@ -304,7 +304,7 @@ namespace System.IO.Compression.Tests
             using MemoryStream archiveStream = new(zipBytes);
             ZipStreamReader reader = new(archiveStream);
 
-            ZipForwardReadEntry entry = async
+            ZipForwardReadEntry? entry = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
 
@@ -332,7 +332,7 @@ namespace System.IO.Compression.Tests
             ms.Position = 0;
             using ZipStreamReader reader = new(ms);
 
-            ZipForwardReadEntry entry = async
+            ZipForwardReadEntry? entry = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
 
@@ -369,7 +369,7 @@ namespace System.IO.Compression.Tests
             ms.Position = 0;
             using ZipStreamReader reader = new(ms, entryNameEncoding: Encoding.UTF8, leaveOpen: true);
 
-            ZipForwardReadEntry entry = async
+            ZipForwardReadEntry? entry = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
 
@@ -387,13 +387,13 @@ namespace System.IO.Compression.Tests
             using ZipStreamReader reader = new(archiveStream);
 
             // Skip first entry
-            ZipForwardReadEntry first = async
+            ZipForwardReadEntry? first = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
             Assert.NotNull(first);
 
             // Read second entry fully
-            ZipForwardReadEntry second = async
+            ZipForwardReadEntry? second = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
             Assert.NotNull(second);
@@ -401,13 +401,13 @@ namespace System.IO.Compression.Tests
             Assert.Equal(s_mediumContent, data);
 
             // Skip third entry
-            ZipForwardReadEntry third = async
+            ZipForwardReadEntry? third = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
             Assert.NotNull(third);
 
             // Confirm end
-            ZipForwardReadEntry end = async
+            ZipForwardReadEntry? end = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
             Assert.Null(end);
@@ -423,7 +423,7 @@ namespace System.IO.Compression.Tests
             ZipStreamReader reader = new(archiveStream);
 
             // Read one entry to ensure the reader was functional.
-            ZipForwardReadEntry entry = async
+            ZipForwardReadEntry? entry = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
             Assert.NotNull(entry);
@@ -456,7 +456,7 @@ namespace System.IO.Compression.Tests
             // Read first entry with copyData: true — exercises the path that
             // eagerly decompresses, copies into a MemoryStream, then reads the
             // data descriptor to validate CRC.
-            ZipForwardReadEntry first = async
+            ZipForwardReadEntry? first = async
                 ? await reader.GetNextEntryAsync(copyData: true)
                 : reader.GetNextEntry(copyData: true);
 
@@ -465,7 +465,7 @@ namespace System.IO.Compression.Tests
 
             // Advance to the next entry to confirm the stream position is correct
             // after consuming the data descriptor.
-            ZipForwardReadEntry second = async
+            ZipForwardReadEntry? second = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
             Assert.NotNull(second);
@@ -539,7 +539,7 @@ namespace System.IO.Compression.Tests
             using MemoryStream archiveStream = new(zipBytes);
             using ZipStreamReader reader = new(archiveStream);
 
-            ZipForwardReadEntry entry = async
+            ZipForwardReadEntry? entry = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
 
@@ -572,7 +572,7 @@ namespace System.IO.Compression.Tests
             using MemoryStream archiveStream = new(zipBytes);
             using ZipStreamReader reader = new(archiveStream);
 
-            ZipForwardReadEntry entry = async
+            ZipForwardReadEntry? entry = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
 
@@ -607,7 +607,7 @@ namespace System.IO.Compression.Tests
             using MemoryStream archiveStream = new(zipBytes);
             using ZipStreamReader reader = new(archiveStream);
 
-            ZipForwardReadEntry entry = async
+            ZipForwardReadEntry? entry = async
                 ? await reader.GetNextEntryAsync()
                 : reader.GetNextEntry();
 

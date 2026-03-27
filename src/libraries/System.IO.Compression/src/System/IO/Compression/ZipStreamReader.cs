@@ -109,7 +109,7 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
             return null;
         }
 
-        if (!headerBytes.StartsWith(ZipLocalFileHeader.SignatureConstantBytes))
+        if (!headerBytes.AsSpan().StartsWith(ZipLocalFileHeader.SignatureConstantBytes))
         {
             _reachedEnd = true;
             return null;
@@ -130,8 +130,10 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
             (ZipCompressionMethod)compressionMethod, compressedSize, uncompressedSize,
             crc32, hasDataDescriptor, isEncrypted, out CrcValidatingReadStream? crcStream);
 
+        Stream? originalDataStream = null;
         if (copyData && dataStream is not null)
         {
+            originalDataStream = dataStream;
             MemoryStream ms = new();
             dataStream.CopyTo(ms);
             ms.Position = 0;
@@ -147,6 +149,10 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         {
             ReadDataDescriptor(entry, crcStream);
         }
+
+        // Dispose the original decompression/CRC stream after copying (and after
+        // reading the data descriptor when applicable) to release inflater resources.
+        originalDataStream?.Dispose();
 
         if (!copyData)
         {

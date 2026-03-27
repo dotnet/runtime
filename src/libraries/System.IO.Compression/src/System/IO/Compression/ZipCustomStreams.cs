@@ -208,12 +208,13 @@ namespace System.IO.Compression
         public override void Flush()
         {
             ThrowIfDisposed();
+            _baseStream.Flush();
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            return Task.CompletedTask;
+            return _baseStream.FlushAsync(cancellationToken);
         }
 
         protected override void Dispose(bool disposing)
@@ -724,7 +725,7 @@ namespace System.IO.Compression
             _remaining = length;
         }
 
-        public override bool CanRead => !_isDisposed;
+        public override bool CanRead => !_isDisposed && _baseStream.CanRead;
         public override bool CanSeek => false;
         public override bool CanWrite => false;
         public override long Length => throw new NotSupportedException();
@@ -735,11 +736,19 @@ namespace System.IO.Compression
             set => throw new NotSupportedException();
         }
 
+        private void ThrowIfDisposed()
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(GetType().ToString(), SR.HiddenStreamName);
+        }
+
         public override int Read(byte[] buffer, int offset, int count)
             => Read(buffer.AsSpan(offset, count));
 
         public override int Read(Span<byte> buffer)
         {
+            ThrowIfDisposed();
+
             if (_remaining <= 0)
             {
                 return 0;
@@ -761,6 +770,8 @@ namespace System.IO.Compression
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
+
             if (_remaining <= 0)
             {
                 return 0;
