@@ -817,6 +817,7 @@ namespace ILCompiler.ObjectWriter
                             //  i32.const <reloc>
                             //  i32.add
                             // so reloc represents an offset relative to image base. 
+                            Debug.Assert(virtualSymbolImageOffset != 0);
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset);
                             break;
                         }
@@ -824,31 +825,22 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_TABLE_INDEX_U64:
                         case RelocType.WASM_TABLE_INDEX_SLEB:
                         {
-                            if (_uniqueSymbols.TryGetValue(reloc.SymbolName.ToString(), out int index))
-                            {
-                                // Here, we are effectively writing a table offset relative to the table_base.
-                                // These will need to be fixed up by the runtime after load by adding __image_function_pointer_base
-                                // TODO-WASM: We need to emit these for fixup with an addend at runtime
-                                Relocation.WriteValue(reloc.Type, pData, index);
-                            }
-                            else
-                            {
-                                throw new InvalidDataException($"Table index for signature symbol definition '{reloc.SymbolName}' not found");
-                            }
+                            bool exists = _uniqueSymbols.TryGetValue(reloc.SymbolName.ToString(), out int index);
+                            Debug.Assert(exists, $"Table index for signature symbol definition '{reloc.SymbolName}' not found");
+
+                            // Here, we are effectively writing a table offset relative to the table_base.
+                            // These will need to be fixed up by the runtime after load by adding __image_function_pointer_base
+                            // TODO-WASM: We need to emit these for fixup with an addend at runtime
+                            Relocation.WriteValue(reloc.Type, pData, index);
                             break;
                         }
                         case RelocType.WASM_FUNCTION_INDEX_LEB:
                         {
-                            if (_uniqueSymbols.TryGetValue(reloc.SymbolName.ToString(), out int index))
-                            {
-                                // These are module-local function pointer indices, so we can simply write out the assigned function index
-                                // for this particular symbol
-                                Relocation.WriteValue(reloc.Type, pData, index);
-                            }
-                            else
-                            {
-                                throw new InvalidDataException($"Table index for signature symbol definition '{reloc.SymbolName}' not found");
-                            }
+                            bool exists = _uniqueSymbols.TryGetValue(reloc.SymbolName.ToString(), out int index);
+                            Debug.Assert(exists, $"Table index for signature symbol definition '{reloc.SymbolName}' not found");
+                            // These are module-local function pointer indices, so we can simply write out the assigned function index
+                            // for this particular symbol
+                            Relocation.WriteValue(reloc.Type, pData, index);
                             break;
                         }
                         default:
