@@ -114,6 +114,7 @@ parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="s
 parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
 parser.add_argument("--tiering_test", dest="tiering_test", action="store_true", default=False)
 parser.add_argument("--run_nativeaot_tests", dest="run_nativeaot_tests", action="store_true", default=False)
+parser.add_argument("--tree", dest="tree", default=None, help="Only run tests under the specified subtree (e.g. JIT/Regression).")
 
 ################################################################################
 # Globals
@@ -575,6 +576,9 @@ def call_msbuild(args):
     if args.limited_core_dumps:
         command += ["/p:LimitedCoreDumps=true"]
 
+    if args.tree:
+        command += ["/p:TestSubtree=%s" % args.tree]
+
     print(" ".join(command))
 
     sys.stdout.flush() # flush output before creating sub-process
@@ -1018,6 +1022,11 @@ def setup_args(args):
                               "run_nativeaot_tests",
                               lambda arg: True,
                               "Error setting run_nativeaot_tests")
+
+    coreclr_setup_args.verify(args,
+                              "tree",
+                              lambda arg: True,
+                              "Error setting tree")
 
     coreclr_setup_args.verify(args,
                               "interpreter",
