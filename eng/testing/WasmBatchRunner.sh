@@ -30,11 +30,13 @@ for zipFile in "$BATCH_DIR"/*.zip; do
     echo "========================= BEGIN $suiteName ============================="
 
     mkdir -p "$suiteDir"
-    if ! unzip -q -o "$zipFile" -d "$suiteDir"; then
-        echo "ERROR: Failed to extract $zipFile"
+    unzip -q -o "$zipFile" -d "$suiteDir"
+    unzipExitCode=$?
+    if [[ $unzipExitCode -ne 0 ]]; then
+        echo "ERROR: Failed to extract $zipFile (exit code: $unzipExitCode)"
         FAIL_COUNT=$((FAIL_COUNT + 1))
         SUITE_NAMES+=("$suiteName")
-        SUITE_EXIT_CODES+=("1")
+        SUITE_EXIT_CODES+=("$unzipExitCode")
         SUITE_DURATIONS+=("0")
         SUITE_COUNT=$((SUITE_COUNT + 1))
         rm -rf "$suiteDir"

@@ -468,6 +468,8 @@ TimedItems = result.ToArray();
                   Overwrite="true" />
 
     <!-- Build a batch-specific HelixCommand that runs WasmBatchRunner.sh instead of RunTests.sh -->
+    <Error Condition="!$(HelixCommand.Contains('./RunTests.sh'))"
+           Text="WasmBatchLibraryTests: expected HelixCommand to contain './RunTests.sh'. Got: $(HelixCommand)" />
     <PropertyGroup>
       <_WasmBatchHelixCommand>$(HelixCommand.Replace('./RunTests.sh', 'chmod +x WasmBatchRunner.sh &amp;&amp; ./WasmBatchRunner.sh'))</_WasmBatchHelixCommand>
     </PropertyGroup>
