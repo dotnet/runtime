@@ -53,9 +53,17 @@ namespace System.Text.RegularExpressions.Generator
             // Convert each spec to a RegexMethod (re-parsing the regex to obtain the full
             // RegexTree/AnalysisResults needed by the emitter). This re-parse is fast and only
             // happens on incremental cache misses.
+            // Sort specs deterministically to ensure stable ID assignment and output ordering.
             Dictionary<string, string[]> requiredHelpers = new();
             List<(RegexMethodSpec Spec, RegexMethod Method)> methods = new();
-            foreach (RegexMethodSpec methodSpec in spec.RegexMethods)
+            foreach (RegexMethodSpec methodSpec in spec.RegexMethods
+                .OrderBy(m => m.DeclaringType.Namespace, StringComparer.Ordinal)
+                .ThenBy(m => m.DeclaringType.Name, StringComparer.Ordinal)
+                .ThenBy(m => m.MemberName, StringComparer.Ordinal)
+                .ThenBy(m => m.Pattern, StringComparer.Ordinal)
+                .ThenBy(m => (int)m.Options)
+                .ThenBy(m => m.MatchTimeout)
+                .ThenBy(m => m.CultureName, StringComparer.Ordinal))
             {
                 RegexType regexType = ConvertRegexTypeSpecToRegexType(methodSpec.DeclaringType);
 
