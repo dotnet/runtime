@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -16,7 +17,6 @@ using Internal.TypeSystem;
 using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
-
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 
 namespace ILCompiler.ObjectWriter
@@ -187,7 +187,7 @@ namespace ILCompiler.ObjectWriter
                 definedSymbol.SectionIndex == sectionIndex)
             {
                 // Resolve the relocation to already defined symbol and write it into data
-                fixed (byte *pData = data)
+                fixed (byte* pData = data)
                 {
                     // RyuJIT generates the Thumb bit in the addend and we also get it from
                     // the symbol value. The AAELF ABI specification defines the R_ARM_THM_JUMP24
@@ -332,11 +332,13 @@ namespace ILCompiler.ObjectWriter
         {
             SortedSet<Utf8String> undefinedSymbolSet = new SortedSet<Utf8String>();
             foreach (var relocationList in _sectionIndexToRelocations)
-            foreach (var symbolicRelocation in relocationList)
             {
-                if (!_definedSymbols.ContainsKey(symbolicRelocation.SymbolName))
+                foreach (var symbolicRelocation in relocationList)
                 {
-                    undefinedSymbolSet.Add(symbolicRelocation.SymbolName);
+                    if (!_definedSymbols.ContainsKey(symbolicRelocation.SymbolName))
+                    {
+                        undefinedSymbolSet.Add(symbolicRelocation.SymbolName);
+                    }
                 }
             }
             return undefinedSymbolSet;
@@ -379,11 +381,10 @@ namespace ILCompiler.ObjectWriter
             List<ChecksumsToCalculate> checksumRelocations = [];
             foreach (DependencyNode depNode in nodes)
             {
-
                 // TODO-WASM: emit symbol ranges properly when code and data are separated
                 // Right now we still need to determine placements for some traditionally text-placed nodes,
                 // such as DebugDirectoryEntryNode and AssemblyStubNode
-                if (depNode is ISymbolRangeNode symbolRange && LayoutMode == CodeDataLayout.Unified)
+                if (depNode is ISymbolRangeNode symbolRange)
                 {
                     symbolRangeNodes.Add(symbolRange);
                     continue;
@@ -436,12 +437,10 @@ namespace ILCompiler.ObjectWriter
                 // R2R records the thumb bit in the addend when needed, so we don't have to do it here.
                 long thumbBit = 0;
 #endif
-
                 if (node is WasmTypeNode signature)
                 {
                     RecordMethodSignature(signature);
                 }
-
 
                 if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
                 {
