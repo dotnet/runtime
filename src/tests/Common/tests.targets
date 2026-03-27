@@ -111,8 +111,6 @@
        A separate target handles IL-CG2 R2R cache staleness.
        ========================================================================= -->
 
-  <Import Project="$(MSBuildThisFileDirectory)CoreRootArtifacts.targets" />
-
   <Target Name="_ComputeCoreRootFileMappings"
           DependsOnTargets="_ComputeCoreRootArtifactSources"
           Condition="'$(SkipCoreRootFreshnessCheck)' != 'true' and
@@ -152,7 +150,7 @@
 
     <!-- Update unmapped list after libraries managed -->
     <ItemGroup>
-      <_UnmappedRootFile Remove="@(_CoreRootFileMapping->'$(_CoreRootDir)%(Filename)%(Extension)')" />
+      <_UnmappedRootFile Remove="@(_CoreRootFileMapping->'%(CoreRootFile)')" />
     </ItemGroup>
 
     <!-- Libraries native -->
