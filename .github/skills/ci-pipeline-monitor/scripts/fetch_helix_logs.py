@@ -1,7 +1,7 @@
 """Fetch Helix console logs and save full log files to disk.
 
 Usage:
-    python fetch_helix_logs.py <failures.json> [--db monitor.db] [--logdir helix-logs]
+    python fetch_helix_logs.py --db monitor.db [--logdir helix-logs]
 
 Downloads the full Helix console log for each failed test and saves it as a
 file in the log directory.  The script only extracts the exit code (a simple
@@ -10,16 +10,10 @@ the ADO API by extract_failed_tests.py; the LLM reads these console log
 files during triage to enrich/complete entries where the API returned
 generic or empty error info (crashes, timeouts).
 
-When --db is provided:
-    - Reads test_results rows where console_log_path IS NULL
-    - Fetches each console log, saves to --logdir
-    - UPDATEs each test_results row with exit_code and console_log_path
-
-When --db is NOT provided:
-    - Reads the JSON input file (output from extract_failed_tests.py)
-    - Outputs JSON to stdout with file paths
+Reads test_results rows where console_log_path IS NULL, fetches each
+console log, saves to --logdir, and UPDATEs each test_results row with
+exit_code and console_log_path.
 """
-import json
 import hashlib
 import os
 import re
@@ -108,7 +102,6 @@ def process_from_db(db_path, logdir):
 
     print(f"  {len(url_to_ids)} unique console URLs to fetch", file=sys.stderr)
 
-    results = {}
     for url, entries in url_to_ids.items():
         first = entries[0]
         filename = make_log_filename(first['pipeline_name'], first['test_name'], url)
@@ -126,18 +119,10 @@ def process_from_db(db_path, logdir):
                     (log_data['exit_code'], log_data['path'], entry['id'])
                 )
             conn.commit()
-            results[first['test_name']] = {
-                'url': url,
-                'path': log_data['path'],
-                'exit_code': log_data['exit_code'],
-                'total_lines': log_data['total_lines'],
-                'rows_updated': len(entries),
-            }
             print(f"  OK: {log_data['total_lines']} lines, exit={log_data['exit_code']}, "
                   f"saved to {log_data['path']}, updated {len(entries)} rows", file=sys.stderr)
         except socket.timeout as e:
             error_type = "timeout"
-            results[first['test_name']] = {'url': url, 'error': str(e)}
             print(f"  TIMEOUT: {e}", file=sys.stderr)
             conn.execute(
                 "INSERT INTO data_collection_errors (step, pipeline_name, build_id, error_type, detail) VALUES (?, ?, ?, ?, ?)",
@@ -146,7 +131,6 @@ def process_from_db(db_path, logdir):
             conn.commit()
         except Exception as e:
             error_type = "timeout" if "timed out" in str(e).lower() else "download_failed"
-            results[first['test_name']] = {'url': url, 'error': str(e)}
             print(f"  ERROR: {e}", file=sys.stderr)
             conn.execute(
                 "INSERT INTO data_collection_errors (step, pipeline_name, build_id, error_type, detail) VALUES (?, ?, ?, ?, ?)",
@@ -155,68 +139,12 @@ def process_from_db(db_path, logdir):
             conn.commit()
 
     conn.close()
-    return results
-
-
-def process_from_json(input_path, logdir):
-    """Read failures from JSON, fetch logs, save to disk, return results."""
-    with open(input_path) as f:
-        content = f.read()
-        if '[' in content:
-            idx = content.index('[')
-            failures = json.loads(content[idx:])
-        else:
-            failures = json.loads(content)
-
-    # Deduplicate by console_log_url
-    url_to_entries = {}
-    for entry in failures:
-        url = entry.get('console_log_url', '')
-        if url and url not in url_to_entries:
-            url_to_entries[url] = entry
-
-    results = {}
-    for url, info in url_to_entries.items():
-        name = info['test_name']
-        pipeline = info.get('pipeline_name', '')
-        run = info.get('run_name', '')
-        filename = make_log_filename(pipeline, name, url)
-        out_path = os.path.join(logdir, filename)
-
-        print(f'Fetching {name}...', file=sys.stderr)
-        try:
-            log_data = fetch_and_save(url, out_path)
-            results[name] = {
-                'pipeline_name': pipeline,
-                'run_name': run,
-                'url': url,
-                'path': log_data['path'],
-                'total_lines': log_data['total_lines'],
-                'exit_code': log_data['exit_code'],
-            }
-            print(f'  OK: {log_data["total_lines"]} lines, exit={log_data["exit_code"]}, '
-                  f'saved to {log_data["path"]}', file=sys.stderr)
-        except Exception as e:
-            results[name] = {
-                'pipeline_name': pipeline,
-                'run_name': run,
-                'url': url,
-                'error': str(e),
-            }
-            print(f'  ERROR: {e}', file=sys.stderr)
-
-    return results
 
 
 def main():
     args = sys.argv[1:]
-    if not args:
-        print("Usage: python fetch_helix_logs.py <failures.json> [--db monitor.db] [--logdir helix-logs]",
-              file=sys.stderr)
-        sys.exit(1)
 
     # Parse args
-    input_file = None
     db_path = None
     logdir = None
 
@@ -229,8 +157,12 @@ def main():
             logdir = args[i + 1]
             i += 2
         else:
-            input_file = args[i]
             i += 1
+
+    if not db_path:
+        print("Usage: python fetch_helix_logs.py --db monitor.db [--logdir helix-logs]",
+              file=sys.stderr)
+        sys.exit(1)
 
     # Default logdir: helix-logs/ next to scripts/
     if logdir is None:
@@ -238,16 +170,7 @@ def main():
         logdir = os.path.join(os.path.dirname(script_dir), 'helix-logs')
 
     os.makedirs(logdir, exist_ok=True)
-
-    if db_path:
-        results = process_from_db(db_path, logdir)
-    elif input_file:
-        results = process_from_json(input_file, logdir)
-    else:
-        print("ERROR: Provide either --db or an input JSON file", file=sys.stderr)
-        sys.exit(1)
-
-    print(json.dumps(results, indent=2))
+    process_from_db(db_path, logdir)
 
 
 if __name__ == '__main__':

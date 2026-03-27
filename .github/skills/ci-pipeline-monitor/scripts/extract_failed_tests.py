@@ -1,21 +1,19 @@
 """Extract failed test results from AzDO Test Results API.
 
 Usage:
-    python extract_failed_tests.py <build_id> [<build_id> ...]
-    python extract_failed_tests.py --json-input builds.json [--db monitor.db]
+    python extract_failed_tests.py --db monitor.db
 
 Requires: ADO_TOKEN env var or az cli logged in.
 
-When --db is provided, INSERTs one row per failed test into the test_results
-table (pipeline_name, build_id, run_name, test_name, helix info, console URL,
-error_message, stack_trace).
+Reads failing pipelines from the pipelines table in monitor.db, calls the
+AzDO Test Results API for each, and INSERTs one row per failed test method
+into the test_results table (pipeline_name, build_id, run_name, test_name,
+helix info, console URL, error_message, stack_trace).
 
 The API returns errorMessage and stackTrace for most xUnit test failures.
 For crashes/timeouts that kill the Helix work item, the API returns a generic
 "The Helix Work Item failed..." message — these are stored as empty so the
 LLM can extract the real error from the console log during triage.
-
-Output: JSON array to stdout with one entry per failed test.
 """
 import argparse
 import json
@@ -230,26 +228,17 @@ def insert_into_db(db_path, failures):
 
 def main():
     parser = argparse.ArgumentParser(description="Extract failed tests from AzDO Test Results API")
-    parser.add_argument("build_ids", nargs="*", type=int, help="Build IDs to query")
-    parser.add_argument("--json-input", help="JSON file with failing builds (from setup_and_fetch_builds.py)")
-    parser.add_argument("--db", help="Path to monitor.db — if provided, INSERTs into test_results table")
+    parser.add_argument("--db", required=True, help="Path to monitor.db — reads failing pipelines, INSERTs into test_results table")
     args = parser.parse_args()
 
-    # Parse build IDs with pipeline names
-    builds = []  # list of (build_id, pipeline_name)
-    if args.json_input:
-        with open(args.json_input, "r") as f:
-            data = json.load(f)
-        for item in data:
-            if isinstance(item, int):
-                builds.append((item, "unknown"))
-            elif isinstance(item, dict):
-                builds.append((item["build_id"], item.get("name", "unknown")))
-    elif args.build_ids:
-        builds = [(bid, "unknown") for bid in args.build_ids]
-    else:
-        parser.print_help()
-        sys.exit(1)
+    # Read failing builds from DB
+    conn = sqlite3.connect(args.db)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        "SELECT name, build_id FROM pipelines WHERE result IN ('failed', 'partiallySucceeded') ORDER BY name"
+    ).fetchall()
+    builds = [(r["build_id"], r["name"]) for r in rows]
+    conn.close()
 
     token = get_token()
     if not token:
@@ -274,22 +263,17 @@ def main():
 
     print(f"Total: {len(all_failures)} failed tests from {len(builds)} builds", file=sys.stderr)
 
-    # Insert into DB if requested
-    if args.db:
-        insert_into_db(args.db, all_failures)
-        if collection_errors:
-            conn = sqlite3.connect(args.db)
-            for e in collection_errors:
-                conn.execute(
-                    "INSERT INTO data_collection_errors (step, pipeline_name, build_id, error_type, detail) VALUES (?, ?, ?, ?, ?)",
-                    (e["step"], e["pipeline_name"], e["build_id"], e["error_type"], e["detail"])
-                )
-            conn.commit()
-            conn.close()
-            print(f"Recorded {len(collection_errors)} data collection error(s)", file=sys.stderr)
-
-    # Output JSON to stdout
-    json.dump(all_failures, sys.stdout, indent=2)
+    insert_into_db(args.db, all_failures)
+    if collection_errors:
+        conn = sqlite3.connect(args.db)
+        for e in collection_errors:
+            conn.execute(
+                "INSERT INTO data_collection_errors (step, pipeline_name, build_id, error_type, detail) VALUES (?, ?, ?, ?, ?)",
+                (e["step"], e["pipeline_name"], e["build_id"], e["error_type"], e["detail"])
+            )
+        conn.commit()
+        conn.close()
+        print(f"Recorded {len(collection_errors)} data collection error(s)", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -58,7 +58,7 @@ STEP 2a: Extract Failed Tests via Test Results API
 [HH:mm:ss] GET az account get-access-token --resource "499b84ac-1321-427f-aa17-267ca6975798"
            → Token obtained (length=<N>, expires=<time>)
 
-[HH:mm:ss] Running: python scripts/extract_failed_tests.py --json-input failing_builds.json --db scripts/monitor.db
+[HH:mm:ss] Running: python scripts/extract_failed_tests.py --db scripts/monitor.db
 [HH:mm:ss] Dispatching <N> sub-agents for <F> failing pipelines...
 
 --- Sub-agent 1: <pipeline1>, <pipeline2>, <pipeline3> ---
@@ -98,7 +98,7 @@ STEP 2a: Extract Failed Tests via Test Results API
 STEP 2b: Fetch Helix Console Logs → helix-logs/
 ================================================================================
 
-[HH:mm:ss] Running: python scripts/fetch_helix_logs.py failed_tests.json --db scripts/monitor.db
+[HH:mm:ss] Running: python scripts/fetch_helix_logs.py --db scripts/monitor.db
 [HH:mm:ss] Found <N> test_results rows needing log download
 [HH:mm:ss]   <M> unique console URLs to fetch
 

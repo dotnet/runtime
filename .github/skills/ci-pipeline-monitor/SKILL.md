@@ -39,8 +39,8 @@ Use these scripts — do NOT write ad-hoc replacements.
 
 | Script | Step | What it does |
 |--------|------|-------------|
-| `setup_and_fetch_builds.py` | 2 | Creates `monitor.db` (including `test_results` table), fetches latest build for every pipeline, populates `pipelines` table. Outputs failing builds JSON to stdout. |
-| `extract_failed_tests.py` | 3 | Calls AzDO Test Results API for each failing build. INSERTs one row per failed test method into `test_results` (test_name, run_name, pipeline_name, Helix info, console URL, **error_message, stack_trace from API**). Strips `.WorkItemExecution` suffix. Skips generic "Helix Work Item failed" messages (stores empty — agent fills from console log). Requires `ADO_TOKEN` env var or `az cli`. |
+| `setup_and_fetch_builds.py` | 2 | Creates `monitor.db` (including `test_results` table), fetches latest build for every pipeline, populates `pipelines` table. |
+| `extract_failed_tests.py` | 3 | Reads failing pipelines from DB. Calls AzDO Test Results API for each failing build. INSERTs one row per failed test method into `test_results` (test_name, run_name, pipeline_name, Helix info, console URL, **error_message, stack_trace from API**). Strips `.WorkItemExecution` suffix. Skips generic "Helix Work Item failed" messages (stores empty — agent fills from console log). Requires `ADO_TOKEN` env var or `az cli`. |
 | `fetch_helix_logs.py` | 3 | Fetches Helix console logs, saves full log files to `helix-logs/` directory, UPDATEs each `test_results` row with `exit_code` and `console_log_path`. No auth needed. |
 | `generate_report.py` | 6 | Reads `monitor.db`, generates report to `logs/` directory. Pure formatting — no judgment. |
 | `validate_results.py` | 7 | Validates `monitor.db` completeness and integrity before publishing. 21+ checks: data completeness, referential integrity, data quality, content accuracy, report sanity, debug log completeness. Exits 1 on failure. |
@@ -54,12 +54,12 @@ cd .github/skills/ci-pipeline-monitor
 # resolves missing def IDs via AzDO Definitions API, updates pipelines.md
 
 # Step 2: Fetch latest builds (deterministic)
-python scripts/setup_and_fetch_builds.py --pipelines pipelines.md --db scripts/monitor.db > failing_builds.json
+python scripts/setup_and_fetch_builds.py --pipelines pipelines.md --db scripts/monitor.db
 
 # Step 3: Extract failed tests + fetch logs (deterministic)
 export ADO_TOKEN=$(az account get-access-token --resource "499b84ac-1321-427f-aa17-267ca6975798" --query accessToken -o tsv)
-python scripts/extract_failed_tests.py --json-input failing_builds.json --db scripts/monitor.db > failed_tests.json
-python scripts/fetch_helix_logs.py failed_tests.json --db scripts/monitor.db
+python scripts/extract_failed_tests.py --db scripts/monitor.db
+python scripts/fetch_helix_logs.py --db scripts/monitor.db
 
 # Steps 4: Triage (agent — non-deterministic)
 # Agent reads test_results table, classifies (exit code + error message),
@@ -202,7 +202,7 @@ Do NOT re-resolve IDs that are already populated with a numeric value.
 ### Step 2: Fetch Latest Builds (deterministic — scripted)
 
 ```bash
-python scripts/setup_and_fetch_builds.py --pipelines pipelines.md --db scripts/monitor.db > failing_builds.json
+python scripts/setup_and_fetch_builds.py --pipelines pipelines.md --db scripts/monitor.db
 ```
 
 Creates DB, fetches latest build per pipeline, populates `pipelines` table,
@@ -211,8 +211,8 @@ outputs failing build IDs.
 ### Step 3: Extract Failed Tests and Fetch Logs (deterministic — scripted)
 
 ```bash
-python scripts/extract_failed_tests.py --json-input failing_builds.json --db scripts/monitor.db > failed_tests.json
-python scripts/fetch_helix_logs.py failed_tests.json --db scripts/monitor.db
+python scripts/extract_failed_tests.py --db scripts/monitor.db
+python scripts/fetch_helix_logs.py --db scripts/monitor.db
 ```
 
 Extracts individual failed test methods and downloads their full Helix console

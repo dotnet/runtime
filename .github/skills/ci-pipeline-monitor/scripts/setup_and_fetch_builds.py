@@ -10,10 +10,8 @@ Output:
     - Creates/overwrites monitor.db with all tables
     - Populates the pipelines table with latest build status
     - Prints summary to stderr
-    - Outputs JSON to stdout with failing build IDs (for piping to extract_failed_tests.py)
 """
 import argparse
-import json
 import os
 import re
 import sqlite3
@@ -177,7 +175,6 @@ def main():
     print(f"Created {args.db} with schema", file=sys.stderr)
 
     # Step 2: Fetch builds and populate pipelines table
-    failing_builds = []
     passed = failed = skipped = 0
 
     for p in pipelines:
@@ -220,7 +217,6 @@ def main():
                 (name, build_id, build_number, result)
             )
             failed += 1
-            failing_builds.append({"name": name, "build_id": build_id, "build_number": build_number})
             print(f"  FAIL  {name} — build {build_id} ({result})", file=sys.stderr)
         else:
             conn.execute(
@@ -236,10 +232,6 @@ def main():
     # Summary
     total = passed + failed + skipped
     print(f"\nSummary: {total} pipelines — {passed} passed, {failed} failed, {skipped} skipped", file=sys.stderr)
-    print(f"Failing builds: {[b['build_id'] for b in failing_builds]}", file=sys.stderr)
-
-    # Output failing builds as JSON to stdout (for piping)
-    json.dump(failing_builds, sys.stdout, indent=2)
 
 
 if __name__ == "__main__":
