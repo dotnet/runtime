@@ -46,12 +46,6 @@ namespace Mono.Linker.Tests.TestCases
             Run(testCase);
         }
 
-        [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.MultiAssemblyTests))]
-        public void MultiAssemblyTests(TestCase testCase)
-        {
-            Run(testCase);
-        }
-
         [TestCaseSource(typeof(TestDatabase), nameof(TestDatabase.CodegenAnnotationTests))]
         public void CodegenAnnotationTests(TestCase testCase)
         {

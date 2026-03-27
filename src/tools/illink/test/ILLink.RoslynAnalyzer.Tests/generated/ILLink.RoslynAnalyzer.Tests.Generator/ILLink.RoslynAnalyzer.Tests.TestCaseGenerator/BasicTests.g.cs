@@ -10,12 +10,6 @@ namespace ILLink.RoslynAnalyzer.Tests
         protected override string TestSuiteName => "Basic";
 
         [Fact]
-        public Task Calli()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
         public Task ComplexNestedClassesHasUnusedRemoved()
         {
             return RunTest(allowMissingWarnings: true);
@@ -28,67 +22,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task ExceptionRegions()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task FieldRVA()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task FieldSignature()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task FieldsOfEnum()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task Finalizer()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task First()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task FunctionPointer()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task GenericParameters()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task GenericType()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
         public Task InitializerForArrayIsKept()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task InstanceFields()
         {
             return RunTest(allowMissingWarnings: true);
         }
@@ -100,43 +34,13 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task InterfaceCalls()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
         public Task InterfaceMethodImplementedOnBaseClassDoesNotGetStripped()
         {
             return RunTest(allowMissingWarnings: true);
         }
 
         [Fact]
-        public Task InterfaceOrder()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task LibraryModeTest()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
         public Task LinkerHandlesRefFields()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task MethodSpecSignature()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task MultiDimArraySignature()
         {
             return RunTest(allowMissingWarnings: true);
         }
@@ -155,30 +59,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 
         [Fact]
         public Task NeverInstantiatedTypeWithOverridesFromObject()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task Resources()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task Switch()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task TypeOf()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task TypeSpecSignature()
         {
             return RunTest(allowMissingWarnings: true);
         }
@@ -293,12 +173,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 
         [Fact]
         public Task UsedStructIsKept()
-        {
-            return RunTest(allowMissingWarnings: true);
-        }
-
-        [Fact]
-        public Task VirtualMethods()
         {
             return RunTest(allowMissingWarnings: true);
         }

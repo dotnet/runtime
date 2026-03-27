@@ -49,11 +49,6 @@ namespace Mono.Linker.Tests.TestCases
             return NUnitCasesBySuiteName("CodegenAnnotation");
         }
 
-        public static IEnumerable<TestCaseData> MultiAssemblyTests()
-        {
-            return NUnitCasesBySuiteName("MultiAssembly");
-        }
-
         public static IEnumerable<TestCaseData> CommandLineTests()
         {
             return NUnitCasesBySuiteName("CommandLine");
