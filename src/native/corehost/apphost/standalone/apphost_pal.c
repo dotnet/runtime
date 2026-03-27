@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <dlfcn.h>
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <sys/stat.h>

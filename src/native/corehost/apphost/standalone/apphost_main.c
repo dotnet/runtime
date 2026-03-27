@@ -157,11 +157,6 @@ static int exe_start(const int argc, const char* argv[])
         return AppHostExeNotBoundFailure;
     }
 
-    if ('/' != '/')
-    {
-        utils_replace_char(embedded_app_name, '/', '/');
-    }
-
     if (strchr(embedded_app_name, '/') != NULL)
     {
         requires_hostfxr_startupinfo_interface = true;

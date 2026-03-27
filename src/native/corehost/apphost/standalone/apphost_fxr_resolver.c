@@ -47,12 +47,6 @@ static bool collect_directory_entry(const char* entry_name, void* ctx)
     return true; // continue iteration
 }
 
-static void free_string_entry(void* data)
-{
-    char* str = *(char**)data;
-    free(str);
-}
-
 static bool get_latest_fxr(const char* fxr_root, char* out_fxr_path, size_t out_fxr_path_len)
 {
     trace_info("Reading fx resolver directory=[%s]", fxr_root);
