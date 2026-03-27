@@ -934,8 +934,11 @@ namespace ILCompiler.ObjectWriter
                             break;
                         case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                         {
-                            long targetAddress = symbolImageOffset + addend;
-                            long delta = (targetAddress - (long)(relocOffset & ~0xfff) + ((targetAddress & 0x800) << 1));
+                            if (addend != 0)
+                            {
+                                throw new NotSupportedException();
+                            }
+                            long delta = ((long)symbolImageOffset - (long)(relocOffset & ~0xfff) + ((long)(symbolImageOffset & 0x800) << 1));
                             Relocation.WriteValue(reloc.Type, pData, delta);
                             break;
                         }
@@ -944,8 +947,11 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I:
                         case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S:
                         {
-                            long targetAddress = symbolImageOffset + addend;
-                            long delta = targetAddress - (long)relocOffset;
+                            if (addend != 0)
+                            {
+                                throw new NotSupportedException();
+                            }
+                            long delta = (long)symbolImageOffset - (long)relocOffset;
                             Relocation.WriteValue(reloc.Type, pData, delta);
                             break;
                         }

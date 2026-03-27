@@ -578,6 +578,14 @@ namespace Internal.JitInterface
             {
                 return true;
             }
+            // Runtime-async methods produce relocations with non-zero addends that the RISC-V
+            // PEObjectWriter cannot resolve (PutRiscV64AuipcCombo requires zero-initialized
+            // offset fields). Skip compilation and let the runtime JIT these methods.
+            if ((methodNeedingCode.IsAsync || methodNeedingCode.IsAsyncVariant() || methodNeedingCode.IsCompilerGeneratedILBodyForAsync())
+                && methodNeedingCode.Context.Target.Architecture == TargetArchitecture.RiscV64)
+            {
+                return true;
+            }
             if (ShouldCodeNotBeCompiledIntoFinalImage(instructionSetSupport, methodNeedingCode))
             {
                 return true;
