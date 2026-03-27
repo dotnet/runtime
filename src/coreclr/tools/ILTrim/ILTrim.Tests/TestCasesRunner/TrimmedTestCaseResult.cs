@@ -9,6 +9,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
     partial class TrimmedTestCaseResult
     {
         public readonly NPath OutputAssemblyPath;
+        public readonly TrimmingCustomizations Customizations;
+        public readonly int ExitCode;
 
         public TrimmedTestCaseResult(
             TestCase testCase,
@@ -30,6 +32,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
             MetadataProvider = metadataProvider;
             CompilationResult = compilationResult;
             Logger = logger;
+            Customizations = customizations ?? new TrimmingCustomizations();
+            ExitCode = trimmingResults.ExitCode;
         }
     }
 }

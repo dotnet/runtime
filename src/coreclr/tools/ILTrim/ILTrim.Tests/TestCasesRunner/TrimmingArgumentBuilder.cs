@@ -93,10 +93,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
         }
 
-        public virtual void AddKeepTypeForwarderOnlyAssemblies(string value)
-        {
-        }
-
         public virtual void AddLinkSymbols(string value)
         {
         }
@@ -167,8 +163,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             if (options.AssembliesAction != null)
             {
-                foreach (var (action, assembly) in options.AssembliesAction)
-                    AddAssemblyAction(action, assembly);
+                foreach (var entry in options.AssembliesAction)
+                    AddAssemblyAction(entry.Key, entry.Value);
             }
 
             IgnoreDescriptors(options.IgnoreDescriptors);
@@ -179,9 +175,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (!string.IsNullOrEmpty(options.Il8n))
                 AddIl8n(options.Il8n);
 #endif
-
-            if (!string.IsNullOrEmpty(options.KeepTypeForwarderOnlyAssemblies))
-                AddKeepTypeForwarderOnlyAssemblies(options.KeepTypeForwarderOnlyAssemblies);
 
             if (!string.IsNullOrEmpty(options.LinkSymbols))
                 AddLinkSymbols(options.LinkSymbols);

@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,7 +36,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 StripDescriptors = GetOptionAttributeValue(nameof(StripDescriptorsAttribute), true),
                 StripSubstitutions = GetOptionAttributeValue(nameof(StripSubstitutionsAttribute), true),
                 StripLinkAttributes = GetOptionAttributeValue(nameof(StripLinkAttributesAttribute), true),
+#if !ILTRIM
                 DumpDependencies = GetOptionAttribute(nameof(DumpDependenciesAttribute)),
+#endif
             };
 
             foreach (var assemblyAction in _testCaseTypeDefinition.CustomAttributes.Where(attr => attr.AttributeType.Name == nameof(SetupLinkerActionAttribute)))
@@ -102,6 +105,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             return tclo;
         }
 
+#if !ILTRIM
         public virtual void CustomizeTrimming(TrimmingDriver linker, TrimmingCustomizations customizations)
         {
             if (!_testCaseTypeDefinition.CustomAttributes.Any(a => a.AttributeType.IsTypeOf<SkipKeptItemsValidationAttribute>())
@@ -145,6 +149,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             return false;
         }
+#endif
 
         public virtual IEnumerable<SourceAndDestinationPair> GetResponseFiles()
         {

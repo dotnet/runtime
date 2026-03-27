@@ -5,5 +5,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
     public struct TrimmingResults
     {
+        public int ExitCode { get; }
+        public TrimmingResults(int exitCode) => ExitCode = exitCode;
     }
 }
