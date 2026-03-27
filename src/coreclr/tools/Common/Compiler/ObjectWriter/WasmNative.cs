@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter.WasmInstructions;
+using System.Buffers.Binary;
+using System.IO;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -195,4 +197,43 @@ namespace ILCompiler.ObjectWriter
         public int EncodeRelocations(Span<Relocation> buffer) => 0;
         public int EncodeSize() => 2 + _initExpr.EncodeSize();
     }
+
+#if READYTORUN
+    public enum WasmNativeRelocKind : byte
+    {
+        ADD_TABLE_BASE_OFFSET_SLEB = 1,
+        ADD_TABLE_BASE_OFFSET_U32 = 2,
+        ADD_TABLE_BASE_OFFSET_U64 = 3,
+    }
+    public class WasmNativeReloc
+    {
+        WasmNativeRelocKind Kind;
+        ulong Offset;
+
+        public WasmNativeReloc(WasmNativeRelocKind kind, ulong offset)
+        {
+            Kind = kind;
+            Offset = offset;
+        }
+
+        // These relocs are encoded as [kind, reloc offset]. For R2R, these should only be used
+        // for adding an offset to a function pointer in the function table, so the target of the relocation is implicitly the function table base.
+        public int Encode(Span<byte> buffer, int targetPointerSize = 4)
+        {
+            buffer[0] = (byte)Kind;
+            switch (targetPointerSize)
+            {
+                case 4:
+                    BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(1), checked((uint)Offset));
+                    break;
+                case 8:
+                    BinaryPrimitives.WriteUInt64LittleEndian(buffer.Slice(1), Offset);
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
+            return 0;
+        }
+    }
+#endif
 }
