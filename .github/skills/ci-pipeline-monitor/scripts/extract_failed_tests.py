@@ -246,20 +246,13 @@ def main():
         sys.exit(1)
 
     all_failures = []
-    collection_errors = []
     zero_result_pipelines = []
     for build_id, pipeline_name in builds:
         print(f"Fetching failed tests for build {build_id} ({pipeline_name})...", file=sys.stderr)
         failures, error = fetch_failed_tests(build_id, pipeline_name, token)
         print(f"  Found {len(failures)} failed tests", file=sys.stderr)
         if error:
-            collection_errors.append({
-                "step": "extract_tests",
-                "pipeline_name": pipeline_name,
-                "build_id": build_id,
-                "error_type": error["error_type"],
-                "detail": error["detail"]
-            })
+            print(f"  WARNING: {error['error_type']}: {error['detail']}", file=sys.stderr)
         if len(failures) == 0:
             zero_result_pipelines.append(pipeline_name)
         all_failures.extend(failures)
@@ -278,15 +271,6 @@ def main():
     if zero_result_pipelines:
         conn.commit()
         print(f"Marked {len(zero_result_pipelines)} pipelines as skipped (0 test failures from API)", file=sys.stderr)
-
-    if collection_errors:
-        for e in collection_errors:
-            conn.execute(
-                "INSERT INTO data_collection_errors (step, pipeline_name, build_id, error_type, detail) VALUES (?, ?, ?, ?, ?)",
-                (e["step"], e["pipeline_name"], e["build_id"], e["error_type"], e["detail"])
-            )
-        conn.commit()
-        print(f"Recorded {len(collection_errors)} data collection error(s)", file=sys.stderr)
 
     conn.close()
 

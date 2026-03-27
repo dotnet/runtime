@@ -72,7 +72,8 @@ python scripts/validate_results.py --db scripts/monitor.db --pipelines pipelines
 # If still failing, log WARN in debug log and proceed.
 
 # Step 6: Generate report (deterministic — only after DB is clean)
-python scripts/generate_report.py --db scripts/monitor.db
+# Pass --validation-warnings if Step 5a had unresolved failures
+python scripts/generate_report.py --db scripts/monitor.db [--validation-warnings]
 ```
 
 ## Database Schema
@@ -146,18 +147,6 @@ CREATE TABLE failure_tests (
     pipeline_name   TEXT NOT NULL,
     run_name        TEXT NOT NULL,
     test_name       TEXT NOT NULL
-);
-
--- Tracks API timeouts and download failures during data collection.
--- Surfaced in the "Data Collection Warnings" section of the report.
-CREATE TABLE data_collection_errors (
-    id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    step              TEXT NOT NULL,         -- 'extract_tests' or 'fetch_logs'
-    pipeline_name     TEXT NOT NULL,
-    build_id          INTEGER,
-    error_type        TEXT NOT NULL,         -- 'no_results', 'download_failed', etc.
-    detail            TEXT,
-    created_at        TEXT DEFAULT (datetime('now'))
 );
 ```
 
@@ -300,7 +289,11 @@ fixable programmatically.
 ### Step 6: Generate Report (deterministic — scripted)
 
 ```bash
+# If validation passed (Step 5/5a exit code 0):
 python scripts/generate_report.py --db scripts/monitor.db
+
+# If validation had unresolved warnings (Step 5/5a exit code 1):
+python scripts/generate_report.py --db scripts/monitor.db --validation-warnings
 ```
 
 Reads DB, outputs report following `report-template.md`. Only run after

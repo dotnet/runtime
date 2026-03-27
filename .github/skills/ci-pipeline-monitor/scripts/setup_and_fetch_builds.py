@@ -85,16 +85,6 @@ CREATE TABLE IF NOT EXISTS test_results (
     failure_id        INTEGER,
     FOREIGN KEY (failure_id) REFERENCES failures(id)
 );
-
-CREATE TABLE IF NOT EXISTS data_collection_errors (
-    id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    step              TEXT NOT NULL,         -- 'extract_tests' or 'fetch_logs'
-    pipeline_name     TEXT NOT NULL,
-    build_id          INTEGER,
-    error_type        TEXT NOT NULL,         -- 'timeout', 'http_error', 'request_failed'
-    detail            TEXT,
-    created_at        TEXT DEFAULT (datetime('now'))
-);
 """
 
 
