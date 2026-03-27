@@ -205,6 +205,8 @@ namespace ILCompiler
                     }
                     catch (BadImageFormatException)
                     {
+                        if (!throwOnFailureToLoad)
+                            return null;
                         ThrowHelper.ThrowBadImageFormatException(ExceptionStringID.BadImageFormatFileName, filePath);
                     }
                 }
