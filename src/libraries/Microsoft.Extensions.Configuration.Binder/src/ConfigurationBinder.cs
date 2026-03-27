@@ -223,7 +223,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (options.ErrorOnUnknownConfiguration)
             {
-                HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
+                HashSet<string> propertyNames = new(modelProperties.Select(GetPropertyName),
                     StringComparer.OrdinalIgnoreCase);
 
                 List<string>? missingPropertyNames = null;
