@@ -73,6 +73,31 @@ namespace System.Globalization
         Float = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign |
                    AllowDecimalPoint | AllowExponent,
 
+        /// <summary>
+        /// Indicates that the <see cref="AllowLeadingWhite"/>, <see cref="AllowTrailingWhite"/>,
+        /// <see cref="AllowLeadingSign"/>, <see cref="AllowDecimalPoint"/>, <see cref="AllowExponent"/>,
+        /// and <see cref="AllowHexSpecifier"/> styles are used.
+        /// This is a composite number style used for parsing hexadecimal floating-point values
+        /// based on the syntax defined in IEEE 754:2008 §5.12.3:
+        /// <code>
+        ///   [sign] 0x hexSignificand pExponent
+        /// </code>
+        /// where <c>sign</c> is an optional <c>+</c> or <c>-</c>,
+        /// <c>0x</c> (or <c>0X</c>) is a required hexadecimal indicator,
+        /// <c>hexSignificand</c> is one of <c>hh</c>, <c>hh.</c>, <c>hh.hh</c>, or <c>.hh</c>
+        /// (where <c>hh</c> represents one or more hexadecimal digits), and
+        /// <c>pExponent</c> is a required <c>p</c> (or <c>P</c>) followed by an optional sign (<c>+</c> or <c>-</c>)
+        /// and one or more decimal digits specifying an exponent in the radix of the floating-point format
+        /// (for binary types such as <see cref="float"/> and <see cref="double"/>,
+        /// the significand is multiplied by 2 raised to this power).
+        /// </summary>
+        /// <remarks>
+        /// Note that unlike <see cref="HexNumber"/> for integer types (which rejects a "0x"/"0X" prefix),
+        /// <see cref="HexFloat"/> requires the prefix. This difference exists because the
+        /// IEEE 754 hex float grammar (e.g., <c>0x1.921fb54442d18p+1</c>) naturally includes the prefix.
+        /// </remarks>
+        HexFloat = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowDecimalPoint | AllowExponent | AllowHexSpecifier,
+
         Currency = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowTrailingSign |
                    AllowParentheses | AllowDecimalPoint | AllowThousands | AllowCurrencySymbol,
 

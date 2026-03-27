@@ -4988,9 +4988,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
 #ifdef TARGET_WASM
-    // Transform any strongly connected components into reducible flow.
+    // Make EH continuation flow explicit
+    //
+    DoPhase(this, PHASE_WASM_EH_FLOW, &Compiler::fgWasmEhFlow);
+
+    // Clean up unreachable blocks.
     //
     DoPhase(this, PHASE_DFS_BLOCKS_WASM, &Compiler::fgDfsBlocksAndRemove);
+
+    // Transform any strongly connected components into reducible flow.
+    //
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
 #endif
 

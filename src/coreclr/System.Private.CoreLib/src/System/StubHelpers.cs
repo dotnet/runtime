@@ -319,6 +319,21 @@ namespace System.StubHelpers
             }
         }
 
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe IntPtr ConvertToNative(string* pStr, Exception* pException)
+        {
+            try
+            {
+                return ConvertToNative(*pStr, IntPtr.Zero);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return default;
+            }
+        }
+
         internal static unsafe string? ConvertToManaged(IntPtr bstr)
         {
             if (IntPtr.Zero == bstr)
@@ -359,6 +374,19 @@ namespace System.StubHelpers
                 }
 
                 return ret;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void ConvertToManaged(IntPtr bstr, string* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = ConvertToManaged(bstr);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
 
@@ -1503,11 +1531,53 @@ namespace System.StubHelpers
 
         [SupportedOSPlatform("windows")]
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void GetIEnumeratorToEnumVariantMarshaler(object* pResult, Exception* pException)
         {
             try
             {
                 *pResult = GetIEnumeratorToEnumVariantMarshaler();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe int CallICustomQueryInterface(ICustomQueryInterface* pObject, Guid* pIid, IntPtr* ppObject, Exception* pException)
+        {
+            try
+            {
+                return (int)(*pObject).GetInterface(ref *pIid, out *ppObject);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return 0;
+            }
+        }
+
+        [SupportedOSPlatform("windows")]
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void InvokeConnectionPointProviderMethod(
+            object* pProvider,
+            delegate*<object, object?, void> providerMethodEntryPoint,
+            object* pDelegate,
+            delegate*<object, object?, nint, void> delegateCtorMethodEntryPoint,
+            object* pSubscriber,
+            nint pEventMethodCodePtr,
+            Exception* pException)
+        {
+            try
+            {
+                // Construct the delegate before invoking the provider method.
+                delegateCtorMethodEntryPoint(*pDelegate, *pSubscriber, pEventMethodCodePtr);
+
+                providerMethodEntryPoint(*pProvider, *pDelegate);
             }
             catch (Exception ex)
             {
@@ -1693,6 +1763,7 @@ namespace System.StubHelpers
     internal static class CultureInfoMarshaler
     {
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void GetCurrentCulture(bool bUICulture, object* pResult, Exception* pException)
         {
             try
@@ -1708,6 +1779,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void SetCurrentCulture(bool bUICulture, Globalization.CultureInfo* pValue, Exception* pException)
         {
             try
@@ -1724,6 +1796,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void CreateCultureInfo(int culture, object* pResult, Exception* pException)
         {
             try
@@ -1769,6 +1842,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void ConvertToManaged(int oleColor, object* pResult, Exception* pException)
         {
             try
@@ -1782,6 +1856,7 @@ namespace System.StubHelpers
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void ConvertToNative(object* pSrcObj, int* pResult, Exception* pException)
         {
             try
