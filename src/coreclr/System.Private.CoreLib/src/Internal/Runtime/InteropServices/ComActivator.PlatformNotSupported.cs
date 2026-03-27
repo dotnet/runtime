@@ -4,9 +4,11 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace Internal.Runtime.InteropServices
 {
+    [SupportedOSPlatform("windows")]
     internal static class ComActivator
     {
         /// <summary>
