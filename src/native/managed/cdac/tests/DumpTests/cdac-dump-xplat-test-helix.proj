@@ -52,20 +52,38 @@
   </ItemGroup>
 
   <!--
-    Build test commands: one xunit invocation per source platform.
+    Helix work item command lines, following patterns in helixpublishwitharcade.proj.
 
-    Windows uses & (run next regardless of exit code).
-    Unix uses ; (same semantics — run next regardless of exit code).
-    The XUnit reporter reads the XML results to determine pass/fail,
-    so the command exit code does not need to be non-zero on failure.
+    Encoding: %25 encodes literal % for Windows env vars (e.g., %25ERRORLEVEL%25).
+    Bare $VAR is safe — MSBuild only interprets $(…) with parens.
   -->
-  <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
-    <_TestCommands>@(_SourcePlatform->'set "CDAC_DUMP_ROOT=%HELIX_WORKITEM_PAYLOAD%\dumps\%(Identity)" &amp; %HELIX_CORRELATION_PAYLOAD%\dotnet.exe exec --runtimeconfig %HELIX_WORKITEM_PAYLOAD%\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile %HELIX_WORKITEM_PAYLOAD%\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json %HELIX_WORKITEM_PAYLOAD%\tests\xunit.console.dll %HELIX_WORKITEM_PAYLOAD%\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults_%(Identity).xml -nologo', ' &amp; ')</_TestCommands>
+
+  <PropertyGroup>
+    <_HelixCommandFile>$(DumpTestsPayload)/HelixCommand.txt</_HelixCommandFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' != 'windows'">
-    <_TestCommands>@(_SourcePlatform->'CDAC_DUMP_ROOT=$HELIX_WORKITEM_PAYLOAD/dumps/%(Identity) $HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/xunit.console.dll $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults_%(Identity).xml -nologo', ' %3B ')</_TestCommands>
-  </PropertyGroup>
+  <!--
+    Run xunit once per source platform. Target batching (Outputs) keeps each
+    platform's commands grouped. All platforms run regardless of prior failures;
+    the XUnit reporter reads the XML results to determine pass/fail.
+  -->
+  <Target Name="_AddPerPlatformCommands"
+          Outputs="%(_SourcePlatform.Identity)">
+    <ItemGroup>
+      <!-- Windows: set CDAC_DUMP_ROOT, run xunit -->
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="echo === Running tests against %(_SourcePlatform.Identity) dumps ===" />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="set &quot;CDAC_DUMP_ROOT=%25HELIX_WORKITEM_PAYLOAD%25\dumps\%(_SourcePlatform.Identity)&quot;" />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="%25HELIX_CORRELATION_PAYLOAD%25\dotnet.exe exec --runtimeconfig %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json %25HELIX_WORKITEM_PAYLOAD%25\tests\xunit.console.dll %25HELIX_WORKITEM_PAYLOAD%25\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults_%(_SourcePlatform.Identity).xml -nologo" />
+      <!-- Unix: run xunit with inline env var -->
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+          Include="echo '=== Running tests against %(_SourcePlatform.Identity) dumps ==='" />
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+          Include="CDAC_DUMP_ROOT=$HELIX_WORKITEM_PAYLOAD/dumps/%(_SourcePlatform.Identity) $HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/xunit.console.dll $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults_%(_SourcePlatform.Identity).xml -nologo" />
+    </ItemGroup>
+  </Target>
 
   <!-- Pre-commands -->
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">
@@ -76,13 +94,19 @@
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
   </PropertyGroup>
 
-  <!-- Single work item: run tests against dumps from all source platforms -->
-  <ItemGroup>
-    <HelixWorkItem Include="CdacXPlatDumpTests">
-      <PayloadDirectory>$(DumpTestsPayload)</PayloadDirectory>
-      <Command>$(_TestCommands)</Command>
-      <Timeout>$(WorkItemTimeout)</Timeout>
-    </HelixWorkItem>
-  </ItemGroup>
+  <!-- Write _HelixCommandLines to file and read back as the work item Command (see helixpublishwitharcade.proj). -->
+  <Target Name="_CreateHelixWorkItems"
+          DependsOnTargets="_AddPerPlatformCommands"
+          BeforeTargets="CoreTest">
+    <WriteLinesToFile File="$(_HelixCommandFile)" Lines="@(_HelixCommandLines)" Overwrite="true" />
+
+    <ItemGroup>
+      <HelixWorkItem Include="CdacXPlatDumpTests">
+        <PayloadDirectory>$(DumpTestsPayload)</PayloadDirectory>
+        <Command>$([System.IO.File]::ReadAllText('$(_HelixCommandFile)'))</Command>
+        <Timeout>$(WorkItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
 
 </Project>
