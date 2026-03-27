@@ -38,17 +38,21 @@ def fetch_and_save(url, out_path):
     total = len(lines)
 
     # --- Extract exit code only (simple pattern match) ---
-    exit_code = None
+    exit_codes = []
     for line in lines:
         m = re.search(r'exit code[:\s]+(-?\d+)', line, re.IGNORECASE)
         if m:
-            exit_code = int(m.group(1))
+            exit_codes.append(int(m.group(1)))
         m2 = re.search(r'_commandExitCode=(\d+)', line)
         if m2:
-            exit_code = int(m2.group(1))
+            exit_codes.append(int(m2.group(1)))
         m3 = re.search(r'Exit Code:(\d+)', line)
         if m3:
-            exit_code = int(m3.group(1))
+            exit_codes.append(int(m3.group(1)))
+
+    # Prefer first non-zero exit code (actual test crash) over trailing
+    # zero from XUnitLogChecker or Helix wrapper cleanup.
+    exit_code = next((c for c in exit_codes if c != 0), exit_codes[-1] if exit_codes else None)
 
     return {
         'total_lines': total,
