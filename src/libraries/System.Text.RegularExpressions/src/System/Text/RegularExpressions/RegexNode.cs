@@ -542,6 +542,68 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Capture:
                     case RegexNodeKind.Concatenate when !rtl:
                         RegexNode existingChild = node.Child(node.ChildCount() - 1);
+
+                        // If the last child of a Concatenate is not a backtracking construct but an Alternate
+                        // (or conditional) exists earlier with trailing nodes after it, distribute those trailing
+                        // nodes into each branch to make the Alternate the last child, enabling atomic wrapping.
+                        // e.g. (?:abc|def)$ => (?:abc$|def$) which then becomes (?>abc$|def$)
+                        // e.g. (?:a*|b*)b => (?:a*b|b*b) which then becomes (?>a*b|b*b)
+                        if (node.Kind == RegexNodeKind.Concatenate &&
+                            existingChild.Kind is not (RegexNodeKind.Alternate or RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional or RegexNodeKind.Loop or RegexNodeKind.Lazyloop) &&
+                            node.Parent is not { Kind: RegexNodeKind.Atomic })
+                        {
+                            RegexNode? distributed = DistributeTrailingNodesToEnableAtomicity(node);
+                            if (distributed is not null)
+                            {
+                                // Distribution succeeded. 'distributed' is the Alternate that now contains
+                                // the trailing nodes in each of its branches. It's either still the last
+                                // child of 'node' (if other children remain) or 'node' was replaced entirely.
+                                existingChild = distributed;
+
+                                // Wrap in atomic since the alternate is now in tail position.
+                                var atomic = new RegexNode(RegexNodeKind.Atomic, existingChild.Options);
+                                atomic.AddChild(existingChild);
+
+                                if (node.ChildCount() == 0)
+                                {
+                                    // The concat was fully consumed (it only had the Alternate + trailing).
+                                    // Replace the concat with the atomic wrapper in its parent.
+                                    RegexNode? parent = node.Parent;
+                                    if (parent is not null)
+                                    {
+                                        int parentChildCount = parent.ChildCount();
+                                        for (int ci = 0; ci < parentChildCount; ci++)
+                                        {
+                                            if (ReferenceEquals(parent.Child(ci), node))
+                                            {
+                                                atomic.Parent = parent;
+                                                if (parent.Children is List<RegexNode> parentList)
+                                                {
+                                                    parentList[ci] = atomic;
+                                                }
+                                                else
+                                                {
+                                                    parent.Children = atomic;
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // The concat still has other children. The Alternate is already removed;
+                                    // add the atomic wrapper as the new last child.
+                                    var concatList = (List<RegexNode>)node.Children!;
+                                    atomic.Parent = node;
+                                    concatList.Add(atomic);
+                                }
+
+                                node = existingChild;
+                                continue;
+                            }
+                        }
+
                         if ((existingChild.Kind is RegexNodeKind.Alternate or RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional or RegexNodeKind.Loop or RegexNodeKind.Lazyloop) &&
                             node.Parent is not { Kind: RegexNodeKind.Atomic }) // validate grandparent isn't atomic
                         {
@@ -613,6 +675,132 @@ namespace System.Text.RegularExpressions
 
                 break;
             }
+        }
+
+        /// <summary>
+        /// If a Concatenate's last child is not a backtracking construct but an Alternate exists
+        /// earlier followed by trailing nodes, distributes the trailing nodes into each branch
+        /// of the Alternate, making it the last child. This enables EliminateEndingBacktracking to then
+        /// wrap the Alternate in Atomic.
+        /// e.g. (?:abc|def)$ => (?:abc$|def$)
+        /// e.g. (?:a*|b*)b => (?:a*b|b*b)
+        /// </summary>
+        /// <returns>The distributed Alternate node if distribution was performed; otherwise null.</returns>
+        private static RegexNode? DistributeTrailingNodesToEnableAtomicity(RegexNode concat)
+        {
+            Debug.Assert(concat.Kind == RegexNodeKind.Concatenate);
+
+            int childCount = concat.ChildCount();
+            Debug.Assert(childCount >= 2);
+
+            // Walk backward from the second-to-last child to find an Alternate.
+            // Conditionals are excluded because they have a condition child at index 0
+            // that should not have trailing nodes appended to it.
+            for (int i = childCount - 2; i >= 0; i--)
+            {
+                RegexNode child = concat.Child(i);
+
+                if (child.Kind is RegexNodeKind.Alternate)
+                {
+                    int trailingCount = childCount - 1 - i;
+                    int branches = child.ChildCount();
+
+                    // Heuristic: limit distribution to keep code size increase reasonable.
+                    // Each trailing node is duplicated into each branch, so the total
+                    // extra nodes is trailingCount * (branches - 1).
+                    if (trailingCount > 4 || (long)trailingCount * branches > 20)
+                    {
+                        return null;
+                    }
+
+                    // Collect trailing nodes.
+                    var trailingNodes = new RegexNode[trailingCount];
+                    for (int j = 0; j < trailingCount; j++)
+                    {
+                        trailingNodes[j] = concat.Child(i + 1 + j);
+                    }
+
+                    // Append copies of trailing nodes to each branch of the alternation.
+                    for (int b = 0; b < branches; b++)
+                    {
+                        RegexNode branch = child.Child(b);
+
+                        if (branch.Kind == RegexNodeKind.Concatenate)
+                        {
+                            // Branch is already a concatenation: append trailing nodes directly.
+                            var branchChildren = (List<RegexNode>)branch.Children!;
+                            for (int j = 0; j < trailingCount; j++)
+                            {
+                                RegexNode copy = CloneNode(trailingNodes[j]);
+                                copy.Parent = branch;
+                                branchChildren.Add(copy);
+                            }
+                        }
+                        else
+                        {
+                            // Wrap branch + trailing nodes in a new concatenation.
+                            var newBranch = new RegexNode(RegexNodeKind.Concatenate, concat.Options);
+                            var newBranchChildren = new List<RegexNode>(1 + trailingCount) { branch };
+                            branch.Parent = newBranch;
+                            for (int j = 0; j < trailingCount; j++)
+                            {
+                                RegexNode copy = CloneNode(trailingNodes[j]);
+                                copy.Parent = newBranch;
+                                newBranchChildren.Add(copy);
+                            }
+                            newBranch.Children = newBranchChildren;
+                            child.UnsafeReplaceChild(b, newBranch);
+                            newBranch.Parent = child;
+                        }
+                    }
+
+                    // Remove the Alternate and trailing nodes from the concat.
+                    // The caller is responsible for re-inserting the Alternate (wrapped in Atomic) if needed.
+                    var concatChildren = (List<RegexNode>)concat.Children!;
+                    concatChildren.RemoveRange(i, trailingCount + 1);
+
+                    return child;
+                }
+
+                // Don't look past other backtracking constructs (loops).
+                if (child.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop)
+                {
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Creates a deep copy of a RegexNode tree.</summary>
+        private static RegexNode CloneNode(RegexNode node)
+        {
+            var clone = new RegexNode(node.Kind, node.Options);
+            clone.Ch = node.Ch;
+            clone.Str = node.Str;
+            clone.M = node.M;
+            clone.N = node.N;
+
+            int childCount = node.ChildCount();
+            if (childCount == 1)
+            {
+                RegexNode childClone = CloneNode(node.Child(0));
+                childClone.Parent = clone;
+                clone.Children = childClone;
+            }
+            else if (childCount > 1)
+            {
+                var children = new List<RegexNode>(childCount);
+                for (int ci = 0; ci < childCount; ci++)
+                {
+                    RegexNode childClone = CloneNode(node.Child(ci));
+                    childClone.Parent = clone;
+                    children.Add(childClone);
+                }
+                clone.Children = children;
+            }
+
+            return clone;
         }
 
         /// <summary>
