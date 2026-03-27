@@ -326,6 +326,7 @@ namespace System.Text.RegularExpressions.Generator
                 Pattern = pattern,
                 Options = regexOptions,
                 MatchTimeout = matchTimeout,
+                CultureName = effectiveCultureName,
                 Tree = treeSpec,
                 LimitedSupportReason = limitedSupportReason,
                 CompilationData = compilationData,

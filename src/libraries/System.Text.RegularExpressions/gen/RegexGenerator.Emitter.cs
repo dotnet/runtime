@@ -59,8 +59,8 @@ namespace System.Text.RegularExpressions.Generator
             {
                 RegexType regexType = ConvertRegexTypeSpecToRegexType(methodSpec.DeclaringType);
 
-                CultureInfo culture = methodSpec.Tree?.CultureName is not null
-                    ? CultureInfo.GetCultureInfo(methodSpec.Tree.CultureName)
+                CultureInfo culture = methodSpec.CultureName is not null
+                    ? CultureInfo.GetCultureInfo(methodSpec.CultureName)
                     : CultureInfo.InvariantCulture;
                 RegexTree regexTree = RegexParser.Parse(methodSpec.Pattern, methodSpec.Options | RegexOptions.Compiled, culture);
                 AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
@@ -70,7 +70,7 @@ namespace System.Text.RegularExpressions.Generator
                     regexTree, analysis, methodSpec.CompilationData);
 
                 (string Pattern, RegexOptions Options, int? Timeout, string? CultureName) key =
-                    (regexMethod.Pattern, regexMethod.Options, regexMethod.MatchTimeout, methodSpec.Tree?.CultureName);
+                    (regexMethod.Pattern, regexMethod.Options, regexMethod.MatchTimeout, methodSpec.CultureName);
                 if (emittedExpressions.TryGetValue(key, out RegexMethod? implementation))
                 {
                     regexMethod.IsDuplicate = true;

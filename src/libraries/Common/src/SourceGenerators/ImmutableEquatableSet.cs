@@ -5,30 +5,31 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.Numerics.Hashing;
 
 namespace SourceGenerators
 {
     /// <summary>
-    /// Provides an immutable set implementation which implements structural equality.
+    /// Provides an immutable set implementation which implements structural equality
+    /// and guarantees deterministic enumeration order via a sorted backing array.
     /// </summary>
     [DebuggerDisplay("Count = {Count}")]
     public sealed class ImmutableEquatableSet<T> :
         IEquatable<ImmutableEquatableSet<T>>,
         IReadOnlyCollection<T>
-        where T : IEquatable<T>
+        where T : IEquatable<T>, IComparable<T>
     {
         public static ImmutableEquatableSet<T> Empty { get; } = new([]);
 
-        private readonly HashSet<T> _values;
+        private readonly T[] _values;
 
-        private ImmutableEquatableSet(HashSet<T> values)
+        private ImmutableEquatableSet(T[] values)
         {
             _values = values;
         }
 
-        public int Count => _values.Count;
-        public bool Contains(T item) => _values.Contains(item);
+        public int Count => _values.Length;
+        public bool Contains(T item) => Array.BinarySearch(_values, item) >= 0;
 
         public bool Equals(ImmutableEquatableSet<T>? other)
         {
@@ -42,20 +43,7 @@ namespace SourceGenerators
                 return true;
             }
 
-            if (_values.Count != other._values.Count)
-            {
-                return false;
-            }
-
-            foreach (T value in _values)
-            {
-                if (!other._values.Contains(value))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return ((ReadOnlySpan<T>)_values).SequenceEqual(other._values);
         }
 
         public override bool Equals(object? obj)
@@ -66,25 +54,36 @@ namespace SourceGenerators
             int hash = 0;
             foreach (T value in _values)
             {
-                hash ^= value is null ? 0 : value.GetHashCode();
+                hash = HashHelpers.Combine(hash, value is null ? 0 : value.GetHashCode());
             }
 
             return hash;
         }
 
-        public HashSet<T>.Enumerator GetEnumerator() => _values.GetEnumerator();
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => _values.GetEnumerator();
+        public ImmutableEquatableArray<T>.Enumerator GetEnumerator() => new ImmutableEquatableArray<T>.Enumerator(_values);
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => ((IEnumerable<T>)_values).GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
 
-        internal static ImmutableEquatableSet<T> UnsafeCreateFromHashSet(HashSet<T> values)
-            => new(values);
+        internal static ImmutableEquatableSet<T> Create(IEnumerable<T> values)
+        {
+            HashSet<T> set = new(values);
+            if (set.Count == 0)
+            {
+                return Empty;
+            }
+
+            T[] array = new T[set.Count];
+            set.CopyTo(array);
+            Array.Sort(array);
+
+            return new(array);
+        }
     }
 
     internal static class ImmutableEquatableSet
     {
-        public static ImmutableEquatableSet<T> ToImmutableEquatableSet<T>(this IEnumerable<T> values) where T : IEquatable<T>
-            => values is ICollection<T> { Count: 0 }
-                ? ImmutableEquatableSet<T>.Empty
-                : ImmutableEquatableSet<T>.UnsafeCreateFromHashSet(new(values));
+        public static ImmutableEquatableSet<T> ToImmutableEquatableSet<T>(this IEnumerable<T> values)
+            where T : IEquatable<T>, IComparable<T>
+            => ImmutableEquatableSet<T>.Create(values);
     }
 }
