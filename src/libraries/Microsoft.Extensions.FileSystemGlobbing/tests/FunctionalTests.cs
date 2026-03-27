@@ -978,5 +978,33 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
 
             AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
         }
+
+        [Fact]
+        public void StemIsCorrectForRecursiveWildcardWithSiblingDirectories()
+        {
+            var matcher = new Matcher();
+            matcher.AddInclude("sys*/**/*.dll");
+
+            var files = new[]
+            {
+                "system32/drivers/acpi.dll",
+                "system32/drivers/usb.dll",
+                "system32/config/sam.dll",
+                "system32/config/security.dll",
+            };
+
+            var results = matcher.Match("./", files);
+
+            var actual = results.Files.Select(f => f.Stem);
+            var expected = new[]
+            {
+                "drivers/acpi.dll",
+                "drivers/usb.dll",
+                "config/sam.dll",
+                "config/security.dll",
+            };
+
+            AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
+        }
     }
 }
