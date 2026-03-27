@@ -228,6 +228,9 @@ internal partial class StackWalk_1 : IStackWalk
             }
             catch (System.Exception ex)
             {
+                // Per-frame exceptions are intentionally swallowed to provide partial results
+                // rather than failing the entire stack walk. This matches the resilience model
+                // of the legacy DAC. Callers can detect incomplete results by comparing counts.
                 Debug.WriteLine($"Exception during WalkStackReferences at IP=0x{gcFrame.Frame.Context.InstructionPointer:X}: {ex.GetType().Name}: {ex.Message}");
             }
         }

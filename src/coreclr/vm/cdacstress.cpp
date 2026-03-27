@@ -269,8 +269,8 @@ bool CdacStress::Initialize()
     }
     else
     {
-        // Legacy: GCSTRESS_CDAC maps to allocation-point verification
-        s_cdacStressLevel = CDACSTRESS_ALLOC;
+        // Legacy: GCSTRESS_CDAC maps to allocation-point + reference verification
+        s_cdacStressLevel = CDACSTRESS_ALLOC | CDACSTRESS_REFS;
     }
 
     // Load mscordaccore_universal from next to coreclr
@@ -932,6 +932,8 @@ static bool CompareRefSets(StackRef* refsA, int countA, StackRef* refsB, int cou
         return false;
     if (countA == 0)
         return true;
+    if (countA > MAX_COLLECTED_REFS)
+        return false;
 
     bool matched[MAX_COLLECTED_REFS] = {};
 
@@ -1010,9 +1012,6 @@ void CdacStress::VerifyAtAllocPoint()
     // Reentrancy guard: allocations inside VerifyAtStressPoint (e.g., SArray)
     // would trigger this function again, causing deadlock on s_cdacLock.
     if (t_inVerification)
-        return;
-
-    if (ShouldSkipStressPoint())
         return;
 
     Thread* pThread = GetThreadNULLOk();
@@ -1100,14 +1099,20 @@ void CdacStress::VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
 
     StackRef runtimeRefsBuf[MAX_COLLECTED_REFS];
     int runtimeCount = 0;
-    CollectRuntimeStackRefs(pThread, regs, runtimeRefsBuf, &runtimeCount);
+    bool haveRuntime = CollectRuntimeStackRefs(pThread, regs, runtimeRefsBuf, &runtimeCount);
 
-    if (!haveCdac)
+    if (!haveCdac || !haveRuntime)
     {
         InterlockedIncrement(&s_verifySkip);
         if (s_logFile != nullptr)
-            fprintf(s_logFile, "[SKIP] Thread=0x%x IP=0x%p - cDAC GetStackReferences failed\n",
-                osThreadId, (void*)GetIP(regs));
+        {
+            if (!haveCdac)
+                fprintf(s_logFile, "[SKIP] Thread=0x%x IP=0x%p - cDAC GetStackReferences failed\n",
+                    osThreadId, (void*)GetIP(regs));
+            else
+                fprintf(s_logFile, "[SKIP] Thread=0x%x IP=0x%p - runtime CollectRuntimeStackRefs overflowed\n",
+                    osThreadId, (void*)GetIP(regs));
+        }
         return;
     }
 
