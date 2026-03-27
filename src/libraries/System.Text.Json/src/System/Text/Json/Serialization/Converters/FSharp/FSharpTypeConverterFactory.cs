@@ -78,8 +78,6 @@ namespace System.Text.Json.Serialization.Converters
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         private static JsonConverter CreateFSharpUnionConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             FSharpCoreReflectionProxy proxy = FSharpCoreReflectionProxy.Instance;

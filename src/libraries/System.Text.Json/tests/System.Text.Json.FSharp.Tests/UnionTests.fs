@@ -54,6 +54,24 @@ type UnionWithRefField = WithRef of obj:RefObj | WithoutRef
 
 type WrapperWithSharedRef = { First: UnionWithRefField; Second: UnionWithRefField }
 
+// UseNullAsTrueValue DU (custom option-like type where the None case is null at runtime)
+[<CompilationRepresentation(CompilationRepresentationFlags.UseNullAsTrueValue)>]
+type UseNullUnion<'T> = UseNullNone | UseNullSome of value:'T
+
+// Struct DU with overlapping fields (cases sharing field name+type)
+[<Struct>]
+type StructOverlapUnion = OverlapNothing | OverlapIntA of x:int | OverlapIntB of x:int * y:string
+
+// Struct DU with unit-of-measure erased overlapping fields
+[<Measure>] type meter
+
+[<Struct>]
+type StructMeasureOverlapUnion = MeasureNothing | MeasureScalar of x:int | MeasureRect of x:int<meter> * y:int<meter>
+
+// Mutually recursive DU types
+type TreeNode = TreeLeaf of value:int | TreeBranch of children:Forest
+and Forest = EmptyForest | NonEmptyForest of head:TreeNode * tail:Forest
+
 // -- Serialization Tests --
 
 [<Fact>]
@@ -597,3 +615,86 @@ let ``Fieldless struct union serializes as string with ReferenceHandler.Preserve
     let options = JsonSerializerOptions(ReferenceHandler = ReferenceHandler.Preserve)
     let json = JsonSerializer.Serialize(StructPoint, options)
     Assert.Equal("\"StructPoint\"", json)
+
+// -- UseNullAsTrueValue Tests --
+
+[<Fact>]
+let ``UseNullAsTrueValue None case serializes as null`` () =
+    let json = JsonSerializer.Serialize<UseNullUnion<int>>(UseNullNone)
+    Assert.Equal("null", json)
+
+[<Fact>]
+let ``UseNullAsTrueValue Some case roundtrips`` () =
+    let value = UseNullSome 42
+    let json = JsonSerializer.Serialize(value)
+    Assert.Equal("""{"$type":"UseNullSome","value":42}""", json)
+    let result = JsonSerializer.Deserialize<UseNullUnion<int>>(json)
+    Assert.Equal(value, result)
+
+[<Fact>]
+let ``UseNullAsTrueValue null JSON deserializes as None case`` () =
+    let result = JsonSerializer.Deserialize<UseNullUnion<int>>("null")
+    Assert.True(obj.ReferenceEquals(result :> obj, null))
+
+[<Fact>]
+let ``UseNullAsTrueValue string form deserializes as None case`` () =
+    let result = JsonSerializer.Deserialize<UseNullUnion<int>>(""" "UseNullNone" """)
+    Assert.True(obj.ReferenceEquals(result :> obj, null))
+
+// -- Struct DU with Overlapping Fields Tests --
+
+[<Fact>]
+let ``Struct DU with overlapping fields roundtrips`` () =
+    let a = OverlapIntA 42
+    let jsonA = JsonSerializer.Serialize(a)
+    Assert.Equal("""{"$type":"OverlapIntA","x":42}""", jsonA)
+    let resultA = JsonSerializer.Deserialize<StructOverlapUnion>(jsonA)
+    Assert.Equal(a, resultA)
+
+    let b = OverlapIntB(99, "hello")
+    let jsonB = JsonSerializer.Serialize(b)
+    Assert.Equal("""{"$type":"OverlapIntB","x":99,"y":"hello"}""", jsonB)
+    let resultB = JsonSerializer.Deserialize<StructOverlapUnion>(jsonB)
+    Assert.Equal(b, resultB)
+
+    let n = OverlapNothing
+    let jsonN = JsonSerializer.Serialize(n)
+    Assert.Equal("\"OverlapNothing\"", jsonN)
+    let resultN = JsonSerializer.Deserialize<StructOverlapUnion>(jsonN)
+    Assert.Equal(n, resultN)
+
+[<Fact>]
+let ``Struct DU with measure-erased overlapping fields roundtrips`` () =
+    let a = MeasureScalar 42
+    let jsonA = JsonSerializer.Serialize(a)
+    let resultA = JsonSerializer.Deserialize<StructMeasureOverlapUnion>(jsonA)
+    Assert.Equal(a, resultA)
+
+    let b = MeasureRect(LanguagePrimitives.Int32WithMeasure<meter> 10, LanguagePrimitives.Int32WithMeasure<meter> 20)
+    let jsonB = JsonSerializer.Serialize(b)
+    let resultB = JsonSerializer.Deserialize<StructMeasureOverlapUnion>(jsonB)
+    Assert.Equal(b, resultB)
+
+// -- Mutually Recursive DU Types Tests --
+
+[<Fact>]
+let ``Mutually recursive DU types roundtrip`` () =
+    let tree = TreeBranch(NonEmptyForest(TreeLeaf 1, NonEmptyForest(TreeBranch(NonEmptyForest(TreeLeaf 2, EmptyForest)), EmptyForest)))
+    let json = JsonSerializer.Serialize(tree)
+    let result = JsonSerializer.Deserialize<TreeNode>(json)
+    Assert.Equal(tree, result)
+
+    let forest = NonEmptyForest(TreeLeaf 3, EmptyForest)
+    let jsonF = JsonSerializer.Serialize(forest)
+    let resultF = JsonSerializer.Deserialize<Forest>(jsonF)
+    Assert.Equal(forest, resultF)
+
+// -- F# Collection Regression Test --
+
+[<Fact>]
+let ``F# list serializes as JSON array not as DU`` () =
+    let values = [1; 2; 3]
+    let json = JsonSerializer.Serialize(values)
+    Assert.Equal("[1,2,3]", json)
+    let result = JsonSerializer.Deserialize<int list>(json)
+    Assert.True((values = result))
