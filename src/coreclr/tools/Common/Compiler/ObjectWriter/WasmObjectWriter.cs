@@ -810,13 +810,18 @@ namespace ILCompiler.ObjectWriter
                             long fileOffset = symbolWebcilSection.Header.PointerToRawData + definedSymbol.Value;
                             Relocation.WriteValue(reloc.Type, pData, fileOffset + addend);
                             break;
+                        case RelocType.WASM_MEMORY_ADDR_LEB:
                         case RelocType.WASM_MEMORY_ADDR_SLEB:
                         {
                             // These relocs should be for cases of the form:
                             //  global.get __image_base
                             //  i32.const <reloc>
                             //  i32.add
-                            // so reloc represents an offset relative to image base. 
+                            // i32.load 0
+                            // OR:
+                            //  global.get __image_base
+                            //  i32.load memidx=<>, <reloc>
+                            // So, the relocated address value should always represent an offset relative to image base. 
                             Debug.Assert(virtualSymbolImageOffset != 0);
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset);
                             break;
