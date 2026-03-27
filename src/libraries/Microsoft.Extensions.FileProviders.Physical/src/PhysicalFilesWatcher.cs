@@ -520,19 +520,25 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 }
             }
 
-            // After enabling the FSW following a root-missing period, check for entries that
-            // were created before the watcher was active. Without this, files created between
-            // _root appearing and the FSW being enabled would be missed.
-            if (justEnabledAfterRootCreated)
-            {
-                ReportExistingWatchedEntries();
-            }
-
-            // Call outside the lock — EnsureRootCreationWatcher may invoke Token.Register,
-            // which can fire synchronously and re-enter TryEnableFileSystemWatcher.
             if (needsRootWatcher)
             {
+                // Call outside the lock — EnsureRootCreationWatcher may invoke Token.Register,
+                // which can fire synchronously and re-enter TryEnableFileSystemWatcher.
                 EnsureRootCreationWatcher();
+            }
+            else if (justEnabledAfterRootCreated)
+            {
+                // After enabling the FSW following a root-missing period, check for entries that
+                // were created before the watcher was active. Without this, files created between
+                // _root appearing and the FSW being enabled would be missed.
+
+                ReportExistingWatchedEntries();
+
+                lock (_rootCreationWatcherLock)
+                {
+                    _rootCreationWatcher?.Dispose();
+                    _rootCreationWatcher = null;
+                }
             }
 #pragma warning restore CA1416
         }
