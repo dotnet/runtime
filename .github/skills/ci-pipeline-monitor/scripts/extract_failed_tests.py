@@ -247,6 +247,7 @@ def main():
 
     all_failures = []
     collection_errors = []
+    zero_result_pipelines = []
     for build_id, pipeline_name in builds:
         print(f"Fetching failed tests for build {build_id} ({pipeline_name})...", file=sys.stderr)
         failures, error = fetch_failed_tests(build_id, pipeline_name, token)
@@ -259,21 +260,35 @@ def main():
                 "error_type": error["error_type"],
                 "detail": error["detail"]
             })
+        if len(failures) == 0:
+            zero_result_pipelines.append(pipeline_name)
         all_failures.extend(failures)
 
     print(f"Total: {len(all_failures)} failed tests from {len(builds)} builds", file=sys.stderr)
 
+    conn = sqlite3.connect(args.db)
     insert_into_db(args.db, all_failures)
+
+    # Mark pipelines with 0 test results as skipped
+    for name in zero_result_pipelines:
+        conn.execute(
+            "UPDATE pipelines SET result = 'skipped', skip_reason = 'Build reported failed but Test Results API returned 0 test method failures' WHERE name = ?",
+            (name,)
+        )
+    if zero_result_pipelines:
+        conn.commit()
+        print(f"Marked {len(zero_result_pipelines)} pipelines as skipped (0 test failures from API)", file=sys.stderr)
+
     if collection_errors:
-        conn = sqlite3.connect(args.db)
         for e in collection_errors:
             conn.execute(
                 "INSERT INTO data_collection_errors (step, pipeline_name, build_id, error_type, detail) VALUES (?, ?, ?, ?, ?)",
                 (e["step"], e["pipeline_name"], e["build_id"], e["error_type"], e["detail"])
             )
         conn.commit()
-        conn.close()
         print(f"Recorded {len(collection_errors)} data collection error(s)", file=sys.stderr)
+
+    conn.close()
 
 
 if __name__ == "__main__":
