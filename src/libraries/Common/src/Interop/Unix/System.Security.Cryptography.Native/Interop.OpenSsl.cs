@@ -888,7 +888,10 @@ internal static partial class Interop
             X509Chain chain = new X509Chain();
             if (options.CertificateChainPolicy is not null)
             {
-                chain.ChainPolicy = options.CertificateChainPolicy;
+                // Clone to avoid mutating the options-level policy with intermediates
+                // from this handshake, which would cause unbounded ExtraStore growth
+                // across renegotiations.
+                chain.ChainPolicy = options.CertificateChainPolicy.Clone();
             }
             X509Certificate2? certificate = null;
             SafeSslHandle sslHandle = (SafeSslHandle)options.SslStream!._securityContext!;

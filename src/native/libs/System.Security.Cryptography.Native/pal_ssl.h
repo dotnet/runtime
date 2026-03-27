@@ -131,7 +131,7 @@ typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* session);
 // the function pointer for keylog
 typedef void (*SslCtxSetKeylogCallback)(const SSL* ssl, const char *line);
 
-// the function for remote certificate validation..
+// the function pointer for remote certificate validation.
 typedef int32_t (*SslCtxCertValidationCallback)(SSL* ssl, X509_STORE_CTX* store);
 
 /*
