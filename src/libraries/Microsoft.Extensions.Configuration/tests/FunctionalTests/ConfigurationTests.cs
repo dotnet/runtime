@@ -523,8 +523,10 @@ IniKey1=IniValue2");
             _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
 
             FileConfigurationProvider failingProvider = null;
+            Exception failureException = null;
             Action<FileLoadExceptionContext> jsonLoadError = c =>
             {
+                failureException = c.Exception;
                 failingProvider = c.Provider;
                 c.Ignore = true;
             };
@@ -538,6 +540,7 @@ IniKey1=IniValue2");
                 .Build();
 
             Assert.NotNull(failingProvider);
+            Assert.IsType<InvalidDataException>(failureException);
         }
 
         [Fact]
@@ -551,8 +554,10 @@ IniKey1=IniValue2");
             using (_fileSystem.LockFileReading(FileName))
             {
                 FileConfigurationProvider failingProvider = null;
+                Exception failureException = null;
                 Action<FileLoadExceptionContext> jsonLoadError = c =>
                 {
+                    failureException = c.Exception;
                     failingProvider = c.Provider;
                     c.Ignore = true;
                 };
@@ -566,6 +571,7 @@ IniKey1=IniValue2");
                     .Build();
 
                 Assert.NotNull(failingProvider);
+                Assert.IsType<IOException>(failureException);
             }
         }
 
@@ -578,8 +584,10 @@ IniKey1=IniValue2");
             _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
 
             FileConfigurationProvider failingProvider = null;
+            Exception failureException = null;
             Action<FileLoadExceptionContext> jsonLoadError = c =>
             {
+                failureException = c.Exception;
                 failingProvider = c.Provider;
                 c.Ignore = true;
             };
@@ -595,10 +603,13 @@ IniKey1=IniValue2");
 
             // No error should be triggered so far.
             Assert.Null(failingProvider);
+            Assert.Null(failureException);
 
             _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
 
             await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
+
+            Assert.IsType<InvalidDataException>(failureException);
         }
 
         [Fact]
@@ -611,8 +622,10 @@ IniKey1=IniValue2");
             _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
 
             FileConfigurationProvider failingProvider = null;
+            Exception failureException = null;
             Action<FileLoadExceptionContext> jsonLoadError = c =>
             {
+                failureException = c.Exception;
                 failingProvider = c.Provider;
                 c.Ignore = true;
             };
@@ -635,6 +648,7 @@ IniKey1=IniValue2");
                 _fileSystem.WriteFileNoWait(FileName, @"{""JsonKey1"": ""JsonValue1Updated"" }");
 
                 await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
+                Assert.IsType<IOException>(failureException);
             }
         }
 
