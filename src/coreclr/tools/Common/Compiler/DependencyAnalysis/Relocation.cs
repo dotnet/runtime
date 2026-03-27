@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
     public struct Relocation
     {
         // NOTE: Keep in sync with emitwasm.cpp
-        private const int WASM_PADDED_RELOC_SIZE_32 = 5;
+        public const int WASM_PADDED_RELOC_SIZE_32 = 5;
 
         public readonly RelocType RelocType;
         public readonly int Offset;
@@ -760,6 +760,8 @@ namespace ILCompiler.DependencyAnalysis
                     return GetRiscV64AuipcCombo((uint*)location, isStype);
                 case RelocType.WASM_FUNCTION_INDEX_LEB:
                 case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_TABLE_INDEX_U32:
+                case RelocType.WASM_TABLE_INDEX_U64:
                 case RelocType.WASM_TYPE_INDEX_LEB:
                 case RelocType.WASM_GLOBAL_INDEX_LEB:
                     // These wasm relocs do not have offsets, just targets
