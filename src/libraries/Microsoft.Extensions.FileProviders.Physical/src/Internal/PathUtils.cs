@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
         internal static bool HasInvalidFilterChars(string path) =>
             path.AsSpan().ContainsAny(_invalidFilterChars);
 
-        internal static char[] PathSeparators =>
+        internal static readonly char[] PathSeparators =
             [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
 
         internal static string EnsureTrailingSlash(string path)
