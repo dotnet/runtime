@@ -59,13 +59,28 @@ namespace System.Threading.RateLimiting
             ThrowIfDisposed();
 
             bool replenished = false;
+            List<Exception>? exceptions = null;
             foreach (ReplenishingRateLimiter limiter in _replenishingLimiters)
             {
-                if (limiter.TryReplenish())
+                try
                 {
-                    replenished = true;
+                    if (limiter.TryReplenish())
+                    {
+                        replenished = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    exceptions ??= new List<Exception>();
+                    exceptions.Add(ex);
                 }
             }
+
+            if (exceptions is not null)
+            {
+                throw new AggregateException(exceptions);
+            }
+
             return replenished;
         }
 
