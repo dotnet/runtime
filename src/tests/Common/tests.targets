@@ -43,7 +43,9 @@
   <Target Name="PrepareTestsToRun"
           DependsOnTargets="FindBuildAllTestsAsStandaloneRunnerScripts;FindMergedTestDirectories">
     <Error  Text="Tests must be built to do a test run."
-            Condition="'@(StandaloneRunnerScripts)' == '' and '@(MergedTestWrapperScripts)' == ''" />
+            Condition="'$(TestSubtree)' == '' and '@(StandaloneRunnerScripts)' == '' and '@(MergedTestWrapperScripts)' == ''" />
+    <Error  Text="No tests found under subtree '$(TestSubtree)'. Verify the path is relative to the test output directory (e.g. JIT/Regression)."
+            Condition="'$(TestSubtree)' != '' and '@(StandaloneRunnerScripts)' == '' and '@(MergedTestWrapperScripts)' == ''" />
     <Error  Text="Cannot run tests when both StandaloneRunnerScripts and MergedTestWrapperScripts are present. Either build the test tree as normal (merged runner) or with BuildAllTestsAsStandalone=true."
             Condition="'@(StandaloneRunnerScripts)' != '' and '@(MergedTestWrapperScripts)' != ''" />
   </Target>
