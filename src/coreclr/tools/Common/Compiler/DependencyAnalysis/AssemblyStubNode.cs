@@ -22,17 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         protected virtual bool IsVisibleFromManagedCode => true;
 
-        public override ObjectNodeSection GetSection(NodeFactory factory)
-        {
-            if (factory.Target.IsWasm)
-            {
-                // TODO-Wasm: Change section placement here once we have adapted these nodes
-                // to emit the proper wasm structure (including per-call type signatures)
-                return ObjectNodeSection.ReadOnlyDataSection;
-            }
-
-            return ObjectNodeSection.TextSection;
-        }
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
 
         public override bool StaticDependenciesAreComputed => true;
 

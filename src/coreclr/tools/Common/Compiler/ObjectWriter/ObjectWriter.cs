@@ -560,8 +560,7 @@ namespace ILCompiler.ObjectWriter
                 if (startNode is null)
                 {
                     // Emit empty symbol ranges as an empty symbol at the end of the text section.
-                    var writer = _nodeFactory.Target.IsWasm ? GetOrCreateSection(ObjectNodeSection.ReadOnlyDataSection) :
-                        GetOrCreateSection(ObjectNodeSection.TextSection);
+                    var writer = GetOrCreateSection(ObjectNodeSection.TextSection);
                     writer.EmitSymbolDefinition(GetMangledName(range));
                     continue;
                 }
