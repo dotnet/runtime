@@ -1376,7 +1376,7 @@ namespace System.Text.Json.SourceGeneration
                     NumberHandling = numberHandling,
                     ObjectCreationHandling = objectCreationHandling,
                     Order = order,
-                    HasJsonInclude = hasJsonInclude,
+                    HasJsonInclude = hasJsonInclude && !hasJsonIncludeButIsInaccessible, // TODO: remove inaccessibility check once https://github.com/dotnet/runtime/issues/124889 is complete (tracking: https://github.com/dotnet/runtime/issues/88519)
                     CanUseUnsafeAccessors = _knownSymbols.UnsafeAccessorAttributeType is not null
                         && memberInfo.ContainingType is not INamedTypeSymbol { IsGenericType: true },
                     IsExtensionData = isExtensionData,

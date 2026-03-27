@@ -462,7 +462,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void InitOnlyProperties_ExposesSetterDelegate()
+        public virtual void InitOnlyProperties_ExposesSetterDelegate()
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(ClassWithJsonIncludePrivateInitOnlyProperties));
 
@@ -481,7 +481,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty))]
-        public void NonPublicInitOnlyJsonIncludeProperties_HaveNoAssociatedParameterInfo(Type type)
+        public virtual void NonPublicInitOnlyJsonIncludeProperties_HaveNoAssociatedParameterInfo(Type type)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type);
 
@@ -492,7 +492,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void PrivateJsonIncludeProperties_ExposesGetterAndSetterDelegates()
+        public virtual void PrivateJsonIncludeProperties_ExposesGetterAndSetterDelegates()
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(ClassWithPrivateJsonIncludeProperties_Roundtrip));
 
@@ -506,7 +506,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void PrivateJsonIncludeGetterOnly_ExposesGetterDelegate()
+        public virtual void PrivateJsonIncludeGetterOnly_ExposesGetterDelegate()
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(ClassWithJsonIncludePrivateGetterProperties));
 
@@ -529,7 +529,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty))]
-        public void NonPublicJsonIncludeMembers_ExposeGetterAndSetterDelegates(Type type)
+        public virtual void NonPublicJsonIncludeMembers_ExposeGetterAndSetterDelegates(Type type)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type);
 
@@ -539,7 +539,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void MixedAccessibilityJsonIncludeProperties_AllExposeGetterAndSetterDelegates()
+        public virtual void MixedAccessibilityJsonIncludeProperties_AllExposeGetterAndSetterDelegates()
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(ClassWithMixedAccessibilityJsonIncludeProperties));
             Assert.Equal(4, typeInfo.Properties.Count);
@@ -552,7 +552,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void StructWithPrivateJsonIncludeProperties_ExposesGetterAndSetterDelegates()
+        public virtual void StructWithPrivateJsonIncludeProperties_ExposesGetterAndSetterDelegates()
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(StructWithJsonIncludePrivateProperties));
 
