@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 {
     /// <summary>
     /// Watches a physical file system for changes and triggers events on
-    /// <see cref="IChangeToken" /> when files are created, change, renamed, or deleted.
+    /// <see cref="IChangeToken" /> when files or directories are created, changed, renamed, or deleted.
     /// </summary>
     public class PhysicalFilesWatcher : IDisposable
     {
@@ -36,8 +36,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private readonly ExclusionFilters _filters;
 
         // A single non-recursive watcher used when _root does not exist.
-        // Watches for _root to be created, then fires to signal re-registration.
-        // We made sure that browser/iOS/tvOS never uses FileSystemWatcher so this is always null on those platforms.
+        // Watches for _root to be created, then enables the main FileSystemWatcher.
         private PendingCreationWatcher? _rootCreationWatcher;
         private readonly object _rootCreationWatcherLock = new();
         private bool _rootWasUnavailable;
@@ -461,7 +460,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         _wildcardTokenLookup.IsEmpty &&
                         _fileWatcher.EnableRaisingEvents)
                     {
-                        // Perf: Turn off the file monitoring if no files to monitor.
+                        // Perf: Turn off the file monitoring if no files or directories to monitor.
                         _fileWatcher.EnableRaisingEvents = false;
                     }
                 }
