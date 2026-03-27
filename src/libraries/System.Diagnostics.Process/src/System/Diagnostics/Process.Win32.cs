@@ -20,20 +20,19 @@ namespace System.Diagnostics
         private bool _haveResponding;
         private bool _responding;
 
-        private bool StartCore(ProcessStartInfo startInfo)
+        private static bool SupportsAtomicNonInheritablePipeCreation => true;
+
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             return startInfo.UseShellExecute
                 ? StartWithShellExecuteEx(startInfo)
-                : StartWithCreateProcess(startInfo);
+                : StartWithCreateProcess(startInfo, stdinHandle, stdoutHandle, stderrHandle);
         }
 
         private unsafe bool StartWithShellExecuteEx(ProcessStartInfo startInfo)
         {
             if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
                 throw new InvalidOperationException(SR.CantStartAsUser);
-
-            if (startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError)
-                throw new InvalidOperationException(SR.CantRedirectStreams);
 
             if (startInfo.StandardInputEncoding != null)
                 throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
