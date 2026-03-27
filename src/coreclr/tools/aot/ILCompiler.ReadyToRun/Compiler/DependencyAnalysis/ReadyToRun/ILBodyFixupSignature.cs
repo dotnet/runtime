@@ -13,6 +13,8 @@ using Internal.ReadyToRunConstants;
 using Internal.CorConstants;
 using Internal.JitInterface;
 
+using ILCompiler.ReadyToRun.TypeSystem;
+
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     /// <summary>
@@ -47,6 +49,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public ILBodyFixupSignature(ReadyToRunFixupKind fixupKind, EcmaMethod ilMethod, MethodDesc signatureMethod)
         {
             Debug.Assert(signatureMethod.IsMethodDefinition);
+            Debug.Assert(signatureMethod.GetPrimaryMethodDesc() == ilMethod);
             _fixupKind = fixupKind;
             _ilMethod = ilMethod;
             _signatureMethod = signatureMethod;
@@ -69,26 +72,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             completeListOfSigs.MergeSort(new ObjectNodeComparer(CompilerComparer.Instance));
             foreach (var ilbodyFixupSig in completeListOfSigs)
             {
-                ilbodyFixupSig.GetILModuleToken(factory);
-                ilbodyFixupSig.GetSignatureModuleToken(factory);
+                ilbodyFixupSig.GetModuleToken(factory);
             }
         }
 
-        private ModuleToken GetILModuleToken(NodeFactory factory)
+        private ModuleToken GetModuleToken(NodeFactory factory)
         {
             if (factory.CompilationModuleGroup.VersionsWithMethodBody(_ilMethod))
                 return new ModuleToken(_ilMethod.Module, _ilMethod.Handle);
             else
                 return new ModuleToken(factory.ManifestMetadataTable._mutableModule, factory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(_ilMethod.GetTypicalMethodDefinition()).Value);
-        }
-
-        private ModuleToken GetSignatureModuleToken(NodeFactory factory)
-        {
-            MethodDesc typicalMethod = _signatureMethod.GetTypicalMethodDefinition();
-            if (typicalMethod is EcmaMethod ecmaMethod && factory.CompilationModuleGroup.VersionsWithMethodBody(ecmaMethod))
-                return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
-            else
-                return new ModuleToken(factory.ManifestMetadataTable._mutableModule, factory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(typicalMethod).Value);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -99,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                ModuleToken moduleToken = GetILModuleToken(factory);
+                ModuleToken moduleToken = GetModuleToken(factory);
 
                 IEcmaModule targetModule = moduleToken.Module;
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
@@ -118,8 +111,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     dataBuilder.EmitTypeSignature(typeRef, innerContext);
                 }
 
-                ModuleToken signatureToken = GetSignatureModuleToken(factory);
-                MethodWithToken method = new MethodWithToken(_signatureMethod.GetTypicalMethodDefinition(), signatureToken, null, unboxing: false, context: null);
+                MethodWithToken method = new MethodWithToken(_signatureMethod.GetTypicalMethodDefinition(), moduleToken, null, unboxing: false, context: null);
                 dataBuilder.EmitMethodSignature(method, enforceDefEncoding: false, enforceOwningType: false, innerContext, false);
             }
 
