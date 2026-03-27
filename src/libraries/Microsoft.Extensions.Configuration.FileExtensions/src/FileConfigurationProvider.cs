@@ -112,6 +112,7 @@ namespace Microsoft.Extensions.Configuration
                 }
                 catch (Exception ex)
                 {
+                    // For IO errors from OpenRead, Data is intentionally preserved to keep last-known-good config
                     HandleException(ExceptionDispatchInfo.Capture(ex));
                 }
             }
