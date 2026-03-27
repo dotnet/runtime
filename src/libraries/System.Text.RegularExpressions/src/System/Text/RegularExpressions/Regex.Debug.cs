@@ -49,7 +49,28 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException();
             }
 
-            return srmFactory._matcher.SampleMatches(k, randomseed);
+            // The NFA-based sampler may occasionally produce inputs that don't actually
+            // match (e.g. when anchors like $ appear inside alternations). Validate each
+            // candidate with IsMatch and retry with a different seed if needed.
+            const int MaxAttempts = 5;
+            var results = new List<string>(k);
+            for (int attempt = 0; attempt < MaxAttempts && results.Count < k; attempt++)
+            {
+                foreach (string input in srmFactory._matcher.SampleMatches(k - results.Count, randomseed + attempt))
+                {
+                    if (IsMatch(input) && results.Count < k)
+                    {
+                        results.Add(input);
+                    }
+                }
+            }
+
+            if (results.Count != k)
+            {
+                throw new InvalidOperationException($"SampleMatches could only generate {results.Count} of {k} requested matching inputs after {MaxAttempts} attempts.");
+            }
+
+            return results;
         }
 
         /// <summary>
