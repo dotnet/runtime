@@ -1097,11 +1097,42 @@ void CodeGen::genFloatToIntCast(GenTree* tree)
 //
 // Notes:
 //    Handles casts from TYP_INT/TYP_LONG to TYP_FLOAT/TYP_DOUBLE.
-//    Currently not implemented (NYI_WASM).
 //
 void CodeGen::genIntToFloatCast(GenTree* tree)
 {
-    NYI_WASM("genIntToFloatCast");
+    assert(tree->OperIs(GT_CAST));
+    assert(!tree->gtOverflow());
+
+    GenTreeCast * cast     = tree->AsCast();
+    var_types     toType   = tree->TypeGet();
+    var_types     fromType = genActualType(cast->CastOp()->TypeGet());
+    instruction   ins      = INS_none;
+
+    genConsumeOperands(cast);
+
+    switch (PackTypes(toType, fromType))
+    {
+        case PackTypes(TYP_FLOAT, TYP_INT):
+            ins = cast->IsUnsigned() ? INS_f32_convert_u_i32 : INS_f32_convert_s_i32;
+            break;
+        case PackTypes(TYP_DOUBLE, TYP_INT):
+            ins = cast->IsUnsigned() ? INS_f64_convert_u_i32 : INS_f64_convert_s_i32;
+            break;
+        case PackTypes(TYP_FLOAT, TYP_LONG):
+            ins = cast->IsUnsigned() ? INS_f32_convert_u_i64 : INS_f32_convert_s_i64;
+            break;
+        case PackTypes(TYP_DOUBLE, TYP_LONG):
+            ins = cast->IsUnsigned() ? INS_f64_convert_u_i64 : INS_f64_convert_s_i64;
+            break;
+        default:
+            unreached();
+    }
+
+    if (ins != INS_none)
+    {
+        GetEmitter()->emitIns(ins);
+    }
+    WasmProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
