@@ -490,9 +490,9 @@ void Lowering::AfterLowerBlocks()
         Compiler*             m_compiler;
         ArrayStack<GenTree**> m_stack;
         unsigned              m_minimumTempLclNum;
-        Temporary*            m_availableTemps[static_cast<unsigned>(WasmValueType::Count)] = {};
-        Temporary*            m_unusedTempNodes                                             = nullptr;
-        bool                  m_anyChanges                                                  = false;
+        Temporary*            m_availableTemps[TYP_COUNT] = {};
+        Temporary*            m_unusedTempNodes           = nullptr;
+        bool                  m_anyChanges                = false;
 
     public:
         Stackifier(Lowering* lower)
@@ -638,7 +638,7 @@ void Lowering::AfterLowerBlocks()
             assert(varTypeIsEnregisterable(type));
 
             unsigned   lclNum;
-            Temporary* local = Remove(&m_availableTemps[static_cast<unsigned>(ActualTypeToWasmValueType(type))]);
+            Temporary* local = Remove(&m_availableTemps[genActualType(type)]);
             if (local != nullptr)
             {
                 lclNum = local->LclNum;
@@ -682,7 +682,7 @@ void Lowering::AfterLowerBlocks()
             local->LclNum = lclNum;
 
             JITDUMP("Temporary V%02u is now free and can be re-used\n", lclNum);
-            Append(&m_availableTemps[static_cast<unsigned>(ActualTypeToWasmValueType(node->TypeGet()))], local);
+            Append(&m_availableTemps[genActualType(node->TypeGet())], local);
         }
 
         Temporary* Remove(Temporary** pTemps)
