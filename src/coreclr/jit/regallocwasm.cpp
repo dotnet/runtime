@@ -394,9 +394,9 @@ void WasmRegAlloc::CollectReferencesForLclHeap(GenTreeOp* lclHeapNode)
 }
 
 //------------------------------------------------------------------------
-// CollectReferencesForIndexAddr: Collect virtual register references for a INDEX_ADDR.
+// CollectReferencesForIndexAddr: Collect virtual register references for an INDEX_ADDR.
 //
-// Reserves internal register for bounds-checked INDEX_ADDR operations
+// Reserves temporary registers for bounds-checked INDEX_ADDR operations
 //
 // Arguments:
 //    indexAddrNode - The INDEX_ADDR node
