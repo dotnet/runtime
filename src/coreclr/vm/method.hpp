@@ -2849,7 +2849,9 @@ public:
         StubDelegateInvokeMethod = 18,
 
         StubAsyncResume = 19,
-        StubLast = 20
+
+        StubCLRToCOMEvent = 20,
+        StubLast = 21
     };
 
     enum Flag : DWORD
@@ -2971,7 +2973,8 @@ public:
         bool isStepThrough = false;
 
         ILStubType type = GetILStubType();
-        isStepThrough = type == StubUnboxingIL || type == StubInstantiating;
+
+        isStepThrough = type == StubUnboxingIL || type == StubInstantiating || type == StubCLRToCOMEvent;
 
         return isStepThrough;
     }
