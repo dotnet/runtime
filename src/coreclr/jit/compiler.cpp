@@ -4857,6 +4857,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // update the flowgraph if we modified it during the optimization phase
                 //
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
+
+                // Clean up unreachable blocks.
+                //
+                DoPhase(this, PHASE_OPT_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
             }
 
             // Iterate if requested, resetting annotations first.
