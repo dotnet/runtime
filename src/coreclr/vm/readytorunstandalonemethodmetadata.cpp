@@ -20,10 +20,25 @@ class ReadyToRunStandaloneMethodMetadataHelper
     Module* pModule;
     IMDInternalImport* pMDImport;
 
+    static COR_ILMETHOD* GetILHeaderForStandaloneMetadata(MethodDesc *pMD)
+    {
+        // For runtime-async methods with miAsync in metadata, the runtime marks the original
+        // MethodDesc as a thunk (IsAsyncThunkMethod() == true, MayHaveILHeader() == false).
+        // However, the IL body check fixup needs to validate the original IL from metadata,
+        // which is still present at the method's RVA. Bypass MayHaveILHeader() for this case.
+        if (!pMD->MayHaveILHeader())
+        {
+            _ASSERTE(pMD->IsAsyncThunkMethod());
+            _ASSERTE(pMD->GetRVA() != 0);
+            return PTR_COR_ILMETHOD(pMD->GetModule()->GetIL(pMD->GetRVA()));
+        }
+        return pMD->GetILHeader();
+    }
+
 public:
 
     ReadyToRunStandaloneMethodMetadataHelper(MethodDesc *pMD, SArray<uint32_t> *pTypeRefTokenStreamInput) :
-        header(pMD->GetILHeader(), pMD->GetMDImport(), NULL),
+        header(GetILHeaderForStandaloneMetadata(pMD), pMD->GetMDImport(), NULL),
         currentILStreamIterator(0),
         pTypeRefTokenStream(pTypeRefTokenStreamInput),
         pModule(pMD->GetModule()),
