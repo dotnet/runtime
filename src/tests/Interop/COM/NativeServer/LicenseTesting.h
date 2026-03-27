@@ -31,7 +31,10 @@ public:
         : _lic{ TP_SysAllocString(lic) }
     {
         if (s_DenyLicense)
+        {
+            CoreClrBStrFree(_lic);
             throw CLASS_E_NOTLICENSED;
+        }
     }
 
     ~LicenseTesting()
