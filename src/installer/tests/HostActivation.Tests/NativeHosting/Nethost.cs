@@ -361,7 +361,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         public void GetHostFxrPath_StaticNativeHost()
         {
             string dotNetRoot = Path.Combine(sharedState.ValidInstallRoot, "dotnet");
-            CommandResult result = Command.Create(sharedState.StaticNativeHostPath, $"{GetHostFxrPath} false nullptr {dotNetRoot}")
+            CommandResult result = Command.Create(sharedState.NativeHostStaticPath, $"{GetHostFxrPath} false nullptr {dotNetRoot}")
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(null)
                 .Execute();
@@ -381,7 +381,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public string ProductHostFxrPath { get; }
 
-            public string StaticNativeHostPath { get; }
+            public string NativeHostStaticPath { get; }
 
             public SharedTestState()
             {
@@ -404,12 +404,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 // Copy over the static native host - this executable has nethost statically linked,
                 // so it does not require the nethost shared library at runtime.
-                StaticNativeHostPath = Path.Combine(BaseDirectory, Binaries.StaticNativeHost.FileName);
-                File.Copy(Binaries.StaticNativeHost.FilePath, StaticNativeHostPath);
+                NativeHostStaticPath = Path.Combine(BaseDirectory, Binaries.NativeHostStatic.FileName);
+                File.Copy(Binaries.NativeHostStatic.FilePath, NativeHostStaticPath);
 
                 // Enable test-only behaviour on the static native host binary.
                 // Since nethost is statically linked, the test-only marker is embedded in the executable itself.
-                _ = TestOnlyProductBehavior.Enable(StaticNativeHostPath);
+                _ = TestOnlyProductBehavior.Enable(NativeHostStaticPath);
             }
 
             private string CreateHostFxr(string destinationDirectory)

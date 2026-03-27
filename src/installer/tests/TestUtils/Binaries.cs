@@ -82,9 +82,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, FileName);
         }
 
-        public static class StaticNativeHost
+        public static class NativeHostStatic
         {
-            public static string FileName = GetExeName("static_nativehost");
+            public static string FileName = GetExeName("nativehost_static");
             public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, FileName);
         }
 
