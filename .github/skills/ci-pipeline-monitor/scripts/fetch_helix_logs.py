@@ -85,7 +85,7 @@ def process_from_db(db_path, logdir):
     # Get rows that haven't had their console log fetched yet.
     # console_log_path IS NULL means not yet processed.
     rows = conn.execute(
-        """SELECT id, pipeline_name, run_name, test_name, console_log_url
+        """SELECT id, pipeline_name, build_id, run_name, test_name, console_log_url
            FROM test_results
            WHERE console_log_path IS NULL AND console_log_url IS NOT NULL AND console_log_url != ''"""
     ).fetchall()
@@ -101,6 +101,7 @@ def process_from_db(db_path, logdir):
         url_to_ids[url].append({
             'id': row['id'],
             'pipeline_name': row['pipeline_name'],
+            'build_id': row['build_id'],
             'run_name': row['run_name'],
             'test_name': row['test_name'],
         })
@@ -140,7 +141,7 @@ def process_from_db(db_path, logdir):
             print(f"  TIMEOUT: {e}", file=sys.stderr)
             conn.execute(
                 "INSERT INTO data_collection_errors (step, pipeline_name, build_id, error_type, detail) VALUES (?, ?, ?, ?, ?)",
-                ("fetch_logs", first['pipeline_name'], 0, error_type, f"Console log download timed out: {e}")
+                ("fetch_logs", first['pipeline_name'], first['build_id'], error_type, f"Console log download timed out: {e}")
             )
             conn.commit()
         except Exception as e:
@@ -149,7 +150,7 @@ def process_from_db(db_path, logdir):
             print(f"  ERROR: {e}", file=sys.stderr)
             conn.execute(
                 "INSERT INTO data_collection_errors (step, pipeline_name, build_id, error_type, detail) VALUES (?, ?, ?, ?, ?)",
-                ("fetch_logs", first['pipeline_name'], 0, error_type, str(e))
+                ("fetch_logs", first['pipeline_name'], first['build_id'], error_type, str(e))
             )
             conn.commit()
 
