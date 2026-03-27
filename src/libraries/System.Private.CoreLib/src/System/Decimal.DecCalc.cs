@@ -677,7 +677,7 @@ PosRem:
                             default:
                                 goto case 4;
 #endif
-                            }
+                        }
                         result[hiRes] = quotient;
                         // If first quotient was 0, update hiRes.
                         //
@@ -750,10 +750,10 @@ ThrowOverflow:
                 uint high = result[hiRes];
                 (quotient, remainder) = Math.DivRem(high, power);
                 for (uint i = hiRes - 1; (int)i >= 0; i--)
-                    {
+                {
 #if TARGET_64BIT
-                        ulong num = result[i] + ((ulong)remainder << 32);
-                        remainder = (uint)num - (result[i] = (uint)(num / power)) * power;
+                    ulong num = result[i] + ((ulong)remainder << 32);
+                    remainder = (uint)num - (result[i] = (uint)(num / power)) * power;
 #else
                     // 32-bit RyuJIT doesn't convert 64-bit division by constant into multiplication by reciprocal. Do half-width divisions instead.
                     Debug.Assert(power <= ushort.MaxValue);
@@ -902,7 +902,7 @@ ThrowOverflow:
                 if (resHi == powerOvfl[curScale - 1].Hi && resMidLo > powerOvfl[curScale - 1].MidLo)
                     curScale--;
 
-            HaveScale:
+                HaveScale:
                 // curScale = largest power of 10 we can scale by without overflow,
                 // curScale < 9.  See if this is enough to make scale factor
                 // positive if it isn't already.
@@ -1994,7 +1994,7 @@ ReturnZero:
                             break;
                         }
 
-                    HaveScale:
+                        HaveScale:
                         power = UInt32Powers10[curScale];
                         scale += curScale;
 
@@ -2072,7 +2072,7 @@ ReturnZero:
                                 break;
                             }
 
-                        HaveScale64:
+                            HaveScale64:
                             power = UInt32Powers10[curScale];
                             scale += curScale;
 
@@ -2143,7 +2143,7 @@ ReturnZero:
                                 break;
                             }
 
-                        HaveScale96:
+                            HaveScale96:
                             power = UInt32Powers10[curScale];
                             scale += curScale;
 
