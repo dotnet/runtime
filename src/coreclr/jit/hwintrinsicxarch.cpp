@@ -3344,11 +3344,25 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     retNode = gtNewSimdNarrowNode(retType, op1, op2, narrowType, simdSize);
                     break;
                 }
-                else if ((simdSize == 16) && ((simdBaseType == TYP_SHORT) || (simdBaseType == TYP_INT)))
+                else if (((simdSize == 16) || (simdSize == 32)) && varTypeIsSmall(narrowType))
                 {
-                    // PackSignedSaturate uses the base type of the return for the simdBaseType
-                    intrinsic = NI_X86Base_PackSignedSaturate;
-                    retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, narrowType, simdSize);
+                    if (simdSize == 32)
+                    {
+                        // Pack instructions use the base type of the return for the simdBaseType
+                        intrinsic =
+                            varTypeIsUnsigned(narrowType) ? NI_AVX2_PackUnsignedSaturate : NI_AVX2_PackSignedSaturate;
+
+                        op1     = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, narrowType, simdSize);
+                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, gtNewIconNode(SHUFFLE_WYZX),
+                                                           NI_AVX2_Permute4x64, TYP_LONG, simdSize);
+                    }
+                    else
+                    {
+                        intrinsic = varTypeIsUnsigned(narrowType) ? NI_X86Base_PackUnsignedSaturate
+                                                                  : NI_X86Base_PackSignedSaturate;
+
+                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, narrowType, simdSize);
+                    }
                     break;
                 }
 
