@@ -12,7 +12,6 @@
   <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))
     and '$(RuntimeAsyncSupported)' == 'true'
     and '$(UseRuntimeAsync)' != 'false'">
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
   <PropertyGroup>
