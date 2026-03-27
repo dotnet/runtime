@@ -129,3 +129,47 @@ public class CovariantReturns
         }
     }
 }
+
+namespace AsyncMicro
+{
+    public class Program
+    {
+        [Fact]
+        static void TestPrRepro()
+        {
+            Derived2 test = new();
+            Test(test).GetAwaiter().GetResult();
+        }
+
+        private static async Task Test(Base b)
+        {
+            await b.Foo();
+        }
+
+        public class Base
+        {
+            public virtual async Task Foo()
+            {
+                Console.WriteLine("Task< Base.Foo");
+            }
+        }
+
+        public class Derived : Base
+        {
+            public override async Task<int> Foo()
+            {
+                Console.WriteLine("Task<int> Derived.Foo");
+                return 123;
+            }
+        }
+
+        public class Derived2 : Derived
+        {
+            public override async Task<int> Foo()
+            {
+                Console.WriteLine("Task<int> Derived2.Foo");
+                return await base.Foo();
+            }
+        }
+    }
+}
