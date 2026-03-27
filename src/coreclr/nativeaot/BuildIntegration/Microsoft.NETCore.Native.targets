@@ -376,7 +376,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Encoding="utf-8" Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' != 'Static'" />
     <Exec Command="&quot;$(CppLinker)&quot; @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;"
       Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' != 'Static'"
-      ContinueOnError="ErrorAndContinue"
+      IgnoreExitCode="true"
       CustomWarningRegularExpression="$(IlcCppLinkerCustomWarningRegularExpression)">
       <Output TaskParameter="ExitCode" PropertyName="_WinLinkerExitCode" />
     </Exec>
