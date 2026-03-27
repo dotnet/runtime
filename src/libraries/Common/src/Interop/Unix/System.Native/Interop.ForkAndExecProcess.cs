@@ -19,7 +19,6 @@ internal static partial class Interop
             out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd, bool shouldThrow = true)
         {
             byte** argvPtr = null, envpPtr = null;
-            byte* envpBlock = null;
             int result = -1;
 
             bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
@@ -46,7 +45,7 @@ internal static partial class Interop
                 }
 
                 AllocNullTerminatedArray(argv, ref argvPtr);
-                AllocNullTerminatedEnvpArray(env, ref envpPtr, ref envpBlock);
+                AllocNullTerminatedEnvpArray(env, ref envpPtr);
                 fixed (uint* pGroups = groups)
                 {
                     result = ForkAndExecProcess(
@@ -58,9 +57,8 @@ internal static partial class Interop
             }
             finally
             {
-                NativeMemory.Free(envpBlock);
                 NativeMemory.Free(envpPtr);
-                FreeArray(argvPtr, argv.Length);
+                NativeMemory.Free(argvPtr);
 
                 if (stdinRefAdded)
                     stdinFd!.DangerousRelease();
@@ -77,34 +75,48 @@ internal static partial class Interop
             int setUser, uint userId, uint groupId, uint* groups, int groupsLength,
             out int lpChildPid, int stdinFd, int stdoutFd, int stderrFd);
 
+        /// <summary>
+        /// Allocates a single native memory block containing both a null-terminated pointer array
+        /// and the UTF-8 encoded string data for the given array of strings.
+        /// </summary>
         private static unsafe void AllocNullTerminatedArray(string[] arr, ref byte** arrPtr)
         {
-            nuint arrLength = (nuint)arr.Length + 1; // +1 is for null termination
+            int count = arr.Length;
 
-            // Allocate the unmanaged array to hold each string pointer.
-            // It needs to have an extra element to null terminate the array.
-            // Zero the memory so that if any of the individual string allocations fails,
-            // we can loop through the array to free any that succeeded.
-            // The last element will remain null.
-            arrPtr = (byte**)NativeMemory.AllocZeroed(arrLength, (nuint)sizeof(byte*));
-
-            // Now copy each string to unmanaged memory referenced from the array.
-            // We need the data to be an unmanaged, null-terminated array of UTF8-encoded bytes.
-            for (int i = 0; i < arr.Length; i++)
+            // First pass: compute total byte length of all strings.
+            int totalByteLength = 0;
+            foreach (string str in arr)
             {
-                string str = arr[i];
-
-                int byteLength = Encoding.UTF8.GetByteCount(str);
-                arrPtr[i] = (byte*)NativeMemory.Alloc((nuint)byteLength + 1); //+1 for null termination
-
-                int bytesWritten = Encoding.UTF8.GetBytes(str, new Span<byte>(arrPtr[i], byteLength));
-                Debug.Assert(bytesWritten == byteLength);
-
-                arrPtr[i][bytesWritten] = (byte)'\0'; // null terminate
+                totalByteLength += Encoding.UTF8.GetByteCount(str) + 1; // +1 for null terminator
             }
+
+            // Allocate a single block: pointer array (count + 1 for null terminator) followed by string data.
+            nuint pointersByteLength = (nuint)(count + 1) * (nuint)sizeof(byte*);
+            byte* block = (byte*)NativeMemory.Alloc(pointersByteLength + (nuint)totalByteLength);
+            arrPtr = (byte**)block;
+
+            // Set the null terminator for the pointer array.
+            arrPtr[count] = null;
+
+            Span<byte> data = new Span<byte>(block + pointersByteLength, totalByteLength);
+            int dataOffset = 0;
+            for (int i = 0; i < count; i++)
+            {
+                arrPtr[i] = block + pointersByteLength + (nuint)dataOffset;
+
+                int bytesWritten = Encoding.UTF8.GetBytes(arr[i], data.Slice(dataOffset));
+                data[dataOffset + bytesWritten] = (byte)'\0';
+                dataOffset += bytesWritten + 1;
+            }
+
+            Debug.Assert(dataOffset == totalByteLength);
         }
 
-        private static unsafe void AllocNullTerminatedEnvpArray(IDictionary<string, string?> env, ref byte** arrPtr, ref byte* dataBlock)
+        /// <summary>
+        /// Allocates a single native memory block containing both a null-terminated pointer array
+        /// and the UTF-8 encoded "key=value\0" data for all non-null entries in the environment dictionary.
+        /// </summary>
+        private static unsafe void AllocNullTerminatedEnvpArray(IDictionary<string, string?> env, ref byte** arrPtr)
         {
             // First pass: count entries with non-null values and compute total buffer size.
             int count = 0;
@@ -113,67 +125,43 @@ internal static partial class Interop
             {
                 if (pair.Value is not null)
                 {
-                    // Each entry will be: UTF8(key) + '=' + UTF8(value) + '\0'
+                    // Each entry: UTF8(key) + '=' + UTF8(value) + '\0'
                     totalByteLength += Encoding.UTF8.GetByteCount(pair.Key) + 1 + Encoding.UTF8.GetByteCount(pair.Value) + 1;
                     count++;
                 }
             }
 
-            // Allocate the pointer array with null termination.
-            arrPtr = (byte**)NativeMemory.AllocZeroed((nuint)count + 1, (nuint)sizeof(byte*));
+            // Allocate a single block: pointer array (count + 1 for null terminator) followed by string data.
+            nuint pointersByteLength = (nuint)(count + 1) * (nuint)sizeof(byte*);
+            byte* block = (byte*)NativeMemory.Alloc(pointersByteLength + (nuint)totalByteLength);
+            arrPtr = (byte**)block;
 
-            // Allocate a single contiguous block for all key=value\0 strings.
-            dataBlock = totalByteLength > 0 ? (byte*)NativeMemory.Alloc((nuint)totalByteLength) : null;
+            // Set the null terminator for the pointer array.
+            arrPtr[count] = null;
 
             // Second pass: encode each key=value pair directly into the buffer.
+            // Span bounds checking on the data portion will throw if the collection was concurrently modified.
+            Span<byte> data = new Span<byte>(block + pointersByteLength, totalByteLength);
             int entryIndex = 0;
-            byte* current = dataBlock;
-            int remainingBytes = totalByteLength;
+            int dataOffset = 0;
             foreach (KeyValuePair<string, string?> pair in env)
             {
                 if (pair.Value is not null)
                 {
-                    if ((uint)entryIndex >= (uint)count)
-                    {
-                        // More entries than expected; the collection was concurrently modified.
-                        throw new InvalidOperationException();
-                    }
+                    arrPtr[entryIndex] = block + pointersByteLength + (nuint)dataOffset;
 
-                    arrPtr[entryIndex] = current;
+                    int keyBytes = Encoding.UTF8.GetBytes(pair.Key, data.Slice(dataOffset));
+                    data[dataOffset + keyBytes] = (byte)'=';
+                    int valueBytes = Encoding.UTF8.GetBytes(pair.Value, data.Slice(dataOffset + keyBytes + 1));
+                    data[dataOffset + keyBytes + 1 + valueBytes] = (byte)'\0';
 
-                    Span<byte> buffer = new Span<byte>(current, remainingBytes);
-                    int keyBytes = Encoding.UTF8.GetBytes(pair.Key, buffer);
-                    buffer[keyBytes] = (byte)'=';
-                    int valueBytes = Encoding.UTF8.GetBytes(pair.Value, buffer.Slice(keyBytes + 1));
-                    current[keyBytes + 1 + valueBytes] = (byte)'\0';
-
-                    int entryLength = keyBytes + 1 + valueBytes + 1;
-                    current += entryLength;
-                    remainingBytes -= entryLength;
+                    dataOffset += keyBytes + 1 + valueBytes + 1;
                     entryIndex++;
                 }
             }
 
-            // If the counts or sizes don't match, the collection was concurrently modified.
-            if (entryIndex != count || remainingBytes != 0)
-            {
-                throw new InvalidOperationException();
-            }
-        }
-
-        private static unsafe void FreeArray(byte** arr, int length)
-        {
-            if (arr != null)
-            {
-                // Free each element of the array
-                for (int i = 0; i < length; i++)
-                {
-                    NativeMemory.Free(arr[i]);
-                }
-
-                // And then the array itself
-                NativeMemory.Free(arr);
-            }
+            Debug.Assert(entryIndex == count);
+            Debug.Assert(dataOffset == totalByteLength);
         }
     }
 }
