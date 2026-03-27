@@ -111,6 +111,12 @@
        A separate target handles IL-CG2 R2R cache staleness.
        ========================================================================= -->
 
+  <!-- Needed here because build.proj imports tests.targets without Common/Directory.Build.targets,
+       so _ComputeCoreRootArtifactSources would not be available otherwise.
+       MSBuild silently ignores the duplicate when both importers are active (MSB4011). -->
+  <Import Project="$(MSBuildThisFileDirectory)CoreRootArtifacts.targets"
+          Condition="'$(_CoreRootArtifactsImported)' != 'true'" />
+
   <Target Name="_ComputeCoreRootFileMappings"
           DependsOnTargets="_ComputeCoreRootArtifactSources"
           Condition="'$(SkipCoreRootFreshnessCheck)' != 'true' and

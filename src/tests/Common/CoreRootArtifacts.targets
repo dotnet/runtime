@@ -8,6 +8,10 @@
       CheckCoreRootFreshness (tests.targets) - to verify Core_Root freshness
   -->
 
+  <PropertyGroup>
+    <_CoreRootArtifactsImported>true</_CoreRootArtifactsImported>
+  </PropertyGroup>
+
   <ItemDefinitionGroup>
     <RunTimeArtifactsIncludeFolders>
       <IncludeSubFolders>false</IncludeSubFolders>
