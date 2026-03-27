@@ -2447,6 +2447,26 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_Sve_CreateWhileLessThanOrEqualMaskUInt16:
                     case NI_Sve_CreateWhileLessThanOrEqualMaskUInt32:
                     case NI_Sve_CreateWhileLessThanOrEqualMaskUInt64:
+                    case NI_Sve2_CreateWhileGreaterThanMaskByte:
+                    case NI_Sve2_CreateWhileGreaterThanMaskDouble:
+                    case NI_Sve2_CreateWhileGreaterThanMaskInt16:
+                    case NI_Sve2_CreateWhileGreaterThanMaskInt32:
+                    case NI_Sve2_CreateWhileGreaterThanMaskInt64:
+                    case NI_Sve2_CreateWhileGreaterThanMaskSByte:
+                    case NI_Sve2_CreateWhileGreaterThanMaskSingle:
+                    case NI_Sve2_CreateWhileGreaterThanMaskUInt16:
+                    case NI_Sve2_CreateWhileGreaterThanMaskUInt32:
+                    case NI_Sve2_CreateWhileGreaterThanMaskUInt64:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskByte:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskDouble:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt16:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt32:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt64:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskSByte:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskSingle:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt16:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt32:
+                    case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt64:
                         retNode->AsHWIntrinsic()->SetAuxiliaryType(JitType2PreciseVarType(sigReader.op1JitType));
                         break;
 
