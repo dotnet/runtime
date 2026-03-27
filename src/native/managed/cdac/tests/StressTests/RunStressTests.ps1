@@ -48,10 +48,10 @@
     Skip baseline verification steps.
 
 .EXAMPLE
-    ./test-cdac-gcstress.ps1 -SkipBuild
-    ./test-cdac-gcstress.ps1 -Debuggee BasicAlloc -SkipBuild
-    ./test-cdac-gcstress.ps1 -CdacStress 0x74 -GCStress 0x4       # Full comparison with GCStress
-    ./test-cdac-gcstress.ps1 -CdacStress 0x114 -SkipBuild          # Unique IPs only
+    ./RunStressTests.ps1 -SkipBuild
+    ./RunStressTests.ps1 -Debuggee BasicAlloc -SkipBuild
+    ./RunStressTests.ps1 -CdacStress 0x74 -GCStress 0x4       # Full comparison with GCStress
+    ./RunStressTests.ps1 -CdacStress 0x114 -SkipBuild          # Unique IPs only
 #>
 param(
     [ValidateSet("Checked", "Debug")]
@@ -171,20 +171,16 @@ if (!(Test-Path (Join-Path $coreRoot $cdacDll))) {
 # Step 2: Build debuggees
 # ---------------------------------------------------------------------------
 Write-Host ">>> Step 2: Building debuggees..." -ForegroundColor Yellow
-$firstDebuggee = $true
 foreach ($d in $selectedDebuggees) {
     $csproj = Get-ChildItem (Join-Path $debuggeesDir $d) -Filter "*.csproj" | Select-Object -First 1
-    # Only restore on the first debuggee build — they share the same TFM/dependencies
-    $restoreFlag = if ($firstDebuggee) { @() } else { @("--no-restore") }
-    & $dotnetExe build $csproj.FullName -c Release --nologo -v q @restoreFlag
+    & $dotnetExe build $csproj.FullName -c Release --nologo -v q
     if ($LASTEXITCODE -ne 0) { Write-Error "Failed to build debuggee '$d'"; exit 1 }
     Write-Host "  Built $d" -ForegroundColor DarkGray
-    $firstDebuggee = $false
 }
 
 # Helper: find the debuggee DLL in the build output
 function Find-DebuggeeDll([string]$name) {
-    $binDir = Join-Path $repoRoot "artifacts" "bin" "GCStressTests" $name "Release"
+    $binDir = Join-Path $repoRoot "artifacts" "bin" "StressTests" $name "Release"
     if (!(Test-Path $binDir)) {
         # Fall back to checking the project output directly
         $projDir = Join-Path $debuggeesDir $name

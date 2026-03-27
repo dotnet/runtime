@@ -6,7 +6,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <OutputPath>$(ArtifactsBinDir)GCStressTests\$(MSBuildProjectName)\$(Configuration)\</OutputPath>
+    <OutputPath>$(ArtifactsBinDir)StressTests\$(MSBuildProjectName)\$(Configuration)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
     <!-- Debuggees are simple test apps — suppress style analyzers -->
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
