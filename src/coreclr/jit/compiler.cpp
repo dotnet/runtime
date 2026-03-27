@@ -4867,6 +4867,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 if (!opts.optRepeat || (opts.optRepeatIteration == opts.optRepeatCount))
                 {
                     DoPhase(this, PHASE_OPT_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
+                    fgInvalidateDfsTree();
                 }
             }
 
