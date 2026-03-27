@@ -789,8 +789,16 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
+      <Output TaskParameter="PassThroughCandidates" ItemName="_WasmPublishFrameworkCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebcil>
+
+    <!-- Remove pass-throughs from webcil candidates so each file is classified exactly once:
+         webcil-converted files → Computed (per-project in obj/webcil/publish/)
+         pass-through files → Framework (materialized per-project by UpdatePackageStaticWebAssets) -->
+    <ItemGroup>
+      <_NewWebcilPublishStaticWebAssetsCandidates Remove="@(_WasmPublishFrameworkCandidates)" />
+    </ItemGroup>
 
     <!-- _NewWebcilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
          Remove them and call DefineStaticWebAssets so that they can get re-computed appropriately.
@@ -802,6 +810,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <!-- Set per-item ContentRoot so each asset's Identity matches its actual file on disk.
            Clear stale Fingerprint/Integrity so DefineStaticWebAssets recomputes from the actual file. -->
       <_NewWebcilPublishStaticWebAssetsCandidatesNoMetadata Update="@(_NewWebcilPublishStaticWebAssetsCandidatesNoMetadata)" ContentRoot="%(RootDir)%(Directory)" />
+      <_WasmPublishFrameworkCandidates Update="@(_WasmPublishFrameworkCandidates)" ContentRoot="%(RootDir)%(Directory)" RemoveMetadata="Integrity;Fingerprint" />
       <_PromotedWasmPublishStaticWebAssets Update="@(_PromotedWasmPublishStaticWebAssets)" ContentRoot="%(RootDir)%(Directory)" Fingerprint="" Integrity="" />
       <!-- Satellite (Culture) promoted assets are Related assets whose RelatedAsset points to a build-time path
            that doesn't match any publish-time candidate. Promote them to Primary so DefineStaticWebAssets
@@ -813,9 +822,46 @@ Copyright (c) .NET Foundation. All rights reserved.
         RelatedAsset="" />
     </ItemGroup>
 
+    <!-- Webcil-converted publish assets are per-project (Computed) — no materialization needed. -->
     <DefineStaticWebAssets CandidateAssets="@(_NewWebcilPublishStaticWebAssetsCandidatesNoMetadata);@(_PromotedWasmPublishStaticWebAssets)">
       <Output TaskParameter="Assets" ItemName="_NewWebcilPublishStaticWebAssets" />
     </DefineStaticWebAssets>
+
+    <!-- Pass-through files need Framework materialization during publish, same as build.
+         Without this, multi-client hosted WASM projects crash on duplicate Identity in
+         DiscoverPrecompressedAssets when shared runtime pack files (dotnet.js.map, ICU data)
+         resolve to the same NuGet cache path from both clients. -->
+    <DefineStaticWebAssets
+      CandidateAssets="@(_WasmPublishFrameworkCandidates)"
+      SourceId="$(PackageId)"
+      SourceType="Framework"
+      AssetKind="Publish"
+      AssetRole="Primary"
+      CopyToOutputDirectory="Never"
+      CopyToPublishDirectory="PreserveNewest"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
+      FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
+      BasePath="$(StaticWebAssetBasePath)"
+    >
+      <Output TaskParameter="Assets" ItemName="_WasmPublishFrameworkAssets" />
+    </DefineStaticWebAssets>
+
+    <UpdatePackageStaticWebAssets
+      Assets="@(_WasmPublishFrameworkAssets)"
+      IntermediateOutputPath="$(IntermediateOutputPath)"
+      ProjectPackageId="$(PackageId)"
+      ProjectBasePath="$(StaticWebAssetBasePath)"
+    >
+      <Output TaskParameter="UpdatedAssets" ItemName="_WasmPublishMaterializedFrameworkAssets" />
+    </UpdatePackageStaticWebAssets>
+
+    <!-- Materialized publish framework assets need AssetMode=All so they flow through
+         project references to the server project for publish output. -->
+    <ItemGroup>
+      <_WasmPublishMaterializedFrameworkAssets Update="@(_WasmPublishMaterializedFrameworkAssets)"
+        AssetMode="All" CopyToPublishDirectory="PreserveNewest" />
+      <_NewWebcilPublishStaticWebAssets Include="@(_WasmPublishMaterializedFrameworkAssets)" />
+    </ItemGroup>
 
     <DefineStaticWebAssetEndpoints
       CandidateAssets="@(_NewWebcilPublishStaticWebAssets)"

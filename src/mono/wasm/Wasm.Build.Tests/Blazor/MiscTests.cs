@@ -178,4 +178,83 @@ public class MiscTests : BlazorWasmTestBase
         Assert.Contains(client1Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
         Assert.Contains(client2Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
     }
+
+    [Theory]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void MultiClientHostedPublish(Configuration config)
+    {
+        // Test that two Blazor WASM client projects can be published by a single server project
+        // without duplicate static web asset Identity collisions during publish.
+        // This validates the Framework SourceType materialization in the PUBLISH path
+        // (ProcessPublishFilesForWasm), complementing MultiClientHostedBuild which tests build only.
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "multi_pub");
+
+        string rootDir = Path.GetDirectoryName(_projectDir)!;
+        string client1Dir = _projectDir;
+        string client2Dir = Path.Combine(rootDir, "App2");
+        string serverDir = Path.Combine(rootDir, "Server");
+
+        // Duplicate App as App2 with a different StaticWebAssetBasePath
+        Utils.DirectoryCopy(client1Dir, client2Dir);
+        string client2Csproj = Path.Combine(client2Dir, "BlazorBasicTestApp.csproj");
+        File.Move(client2Csproj, Path.Combine(client2Dir, "BlazorBasicTestApp2.csproj"));
+        client2Csproj = Path.Combine(client2Dir, "BlazorBasicTestApp2.csproj");
+
+        AddItemsPropertiesToProject(Path.Combine(client1Dir, "BlazorBasicTestApp.csproj"),
+            extraProperties: "<StaticWebAssetBasePath>client1</StaticWebAssetBasePath>");
+        AddItemsPropertiesToProject(client2Csproj,
+            extraProperties: "<StaticWebAssetBasePath>client2</StaticWebAssetBasePath><RootNamespace>BlazorBasicTestApp</RootNamespace>");
+
+        // Create a minimal server project that references both clients
+        Directory.CreateDirectory(serverDir);
+        string serverCsproj = Path.Combine(serverDir, "Server.csproj");
+        File.WriteAllText(serverCsproj, $"""
+            <Project Sdk="Microsoft.NET.Sdk.Web">
+              <PropertyGroup>
+                <TargetFramework>{DefaultTargetFrameworkForBlazor}</TargetFramework>
+                <Nullable>enable</Nullable>
+                <ImplicitUsings>enable</ImplicitUsings>
+              </PropertyGroup>
+              <ItemGroup>
+                <ProjectReference Include="..\App\BlazorBasicTestApp.csproj" />
+                <ProjectReference Include="..\App2\BlazorBasicTestApp2.csproj" />
+              </ItemGroup>
+            </Project>
+            """);
+        File.WriteAllText(Path.Combine(serverDir, "Program.cs"), """
+            var builder = WebApplication.CreateBuilder(args);
+            var app = builder.Build();
+            app.UseStaticFiles();
+            app.Run();
+            """);
+
+        // Publish the server project — this transitively publishes both WASM clients.
+        // Without Framework materialization in the publish path, this crashes with
+        // duplicate Identity for shared runtime pack files (dotnet.js.map, ICU data, etc.)
+        // in DiscoverPrecompressedAssets.
+        string logPath = Path.Combine(s_buildEnv.LogRootPath, info.ProjectName, $"{info.ProjectName}-multi-pub.binlog");
+        using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(serverDir);
+        CommandResult result = cmd
+            .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+            .ExecuteWithCapturedOutput("publish", $"-p:Configuration={config}", $"-bl:{logPath}")
+            .EnsureSuccessful();
+
+        // Verify both clients produced publish output with framework files
+        string publishDir = Path.Combine(serverDir, "bin", config.ToString(), DefaultTargetFrameworkForBlazor, "publish");
+        string client1Publish = Path.Combine(publishDir, "wwwroot", "client1", "_framework");
+        string client2Publish = Path.Combine(publishDir, "wwwroot", "client2", "_framework");
+
+        Assert.True(Directory.Exists(client1Publish), $"Client1 publish framework dir missing: {client1Publish}");
+        Assert.True(Directory.Exists(client2Publish), $"Client2 publish framework dir missing: {client2Publish}");
+
+        // Both should have dotnet.js and dotnet.native.wasm (verifies framework files were materialized per-client)
+        var client1Files = Directory.GetFiles(client1Publish);
+        var client2Files = Directory.GetFiles(client2Publish);
+        Assert.Contains(client1Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
+        Assert.Contains(client2Files, f => Path.GetFileName(f).StartsWith("dotnet.") && f.EndsWith(".js"));
+        Assert.Contains(client1Files, f => Path.GetFileName(f).Contains("dotnet.native") && f.EndsWith(".wasm"));
+        Assert.Contains(client2Files, f => Path.GetFileName(f).Contains("dotnet.native") && f.EndsWith(".wasm"));
+    }
 }
