@@ -134,7 +134,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static TDelegate CreateSharedDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
+        private static TDelegate CreateSharedDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
         {
             ArgumentNullException.ThrowIfNull(method);
 

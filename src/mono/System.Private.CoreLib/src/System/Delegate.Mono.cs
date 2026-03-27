@@ -559,7 +559,7 @@ namespace System
             return source.GetType() == value.GetType();
         }
 
-        internal static TDelegate CreateShared<TDelegate>(nint ptr) where TDelegate : Delegate
+        internal static TDelegate CreateShared<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TDelegate>(nint ptr) where TDelegate : Delegate
         {
             RuntimeType rtType = (RuntimeType)typeof(TDelegate);
             TDelegate del = Unsafe.As<TDelegate?>(CreateShared_internal(new QCallTypeHandle(ref rtType), ptr)) ?? throw new NotSupportedException();
