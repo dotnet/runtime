@@ -74,7 +74,7 @@ static bool get_latest_fxr(const char* fxr_root, char* out_fxr_path, size_t out_
     uint32_t count = dn_vector_size(dir_entries);
     for (uint32_t i = 0; i < count; i++)
     {
-        char* dir_path = *(char**)dn_vector_at(dir_entries, i);
+        char* dir_path = *(char**)dn_vector_at(dir_entries, sizeof(char*), i);
 
         trace_info("Considering fxr version=[%s]...", dir_path);
 
@@ -93,7 +93,7 @@ static bool get_latest_fxr(const char* fxr_root, char* out_fxr_path, size_t out_
     // Free all collected strings
     for (uint32_t i = 0; i < count; i++)
     {
-        char* str = *(char**)dn_vector_at(dir_entries, i);
+        char* str = *(char**)dn_vector_at(dir_entries, sizeof(char*), i);
         free(str);
     }
     dn_vector_free(dir_entries);

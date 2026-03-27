@@ -6,6 +6,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 // Keep in sync with DotNetRootOptions.SearchLocation in HostWriter.cs
 // and fxr_resolver.h

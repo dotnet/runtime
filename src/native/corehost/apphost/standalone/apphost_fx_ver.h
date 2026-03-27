@@ -5,6 +5,7 @@
 #define APPHOST_FX_VER_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 // Simplified SemVer 2.0 version structure for C
 typedef struct fx_ver

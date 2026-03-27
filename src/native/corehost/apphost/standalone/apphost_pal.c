@@ -4,12 +4,14 @@
 #include "apphost_pal.h"
 #include "apphost_trace.h"
 
+#include <ctype.h>
 #include <dlfcn.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <sys/stat.h>
 #include <minipal/getexepath.h>
+#include "config.h"
 
 #if !HAVE_DIRENT_D_TYPE
 #define DT_UNKNOWN 0
@@ -180,6 +182,22 @@ void pal_readdir_onlydirectories(const char* path, pal_readdir_callback_fn callb
     closedir(dir);
 }
 
+#define TEST_ONLY_MARKER "d38cc827-e34f-4453-9df4-1e796e9f1d07"
+
+// Retrieves environment variable which is only used for testing.
+// This will return the value of the variable only if the product binary is stamped
+// with test-only marker.
+static bool test_only_getenv(const char* name, char* recv, size_t recv_len)
+{
+    enum { EMBED_SIZE = sizeof(TEST_ONLY_MARKER) / sizeof(TEST_ONLY_MARKER[0]) };
+    volatile static char embed[EMBED_SIZE] = TEST_ONLY_MARKER;
+
+    if (embed[0] != 'e')
+        return false;
+
+    return pal_getenv(name, recv, recv_len);
+}
+
 static bool get_install_location_from_file(const char* file_path, bool* file_found, char* install_location, size_t install_location_len)
 {
     *file_found = true;
@@ -221,6 +239,13 @@ const char* pal_get_dotnet_self_registered_config_location(char* buf, size_t buf
     const char* config_location = "/etc/dotnet";
     const char* arch_name;
 
+    // ***Used only for testing***
+    char environment_install_location_override[APPHOST_PATH_MAX];
+    if (test_only_getenv("_DOTNET_TEST_INSTALL_LOCATION_PATH", environment_install_location_override, sizeof(environment_install_location_override)))
+    {
+        config_location = environment_install_location_override;
+    }
+
 #if defined(TARGET_AMD64)
     arch_name = "x64";
 #elif defined(TARGET_X86)
@@ -243,13 +268,33 @@ const char* pal_get_dotnet_self_registered_config_location(char* buf, size_t buf
     arch_name = _STRINGIFY(CURRENT_ARCH_NAME);
 #endif
 
-    snprintf(buf, buf_len, "%s/install_location_%s", config_location, arch_name);
+    // Need to use a lowercase version of the arch name
+    char arch_lower[32];
+    size_t arch_len = strlen(arch_name);
+    if (arch_len >= sizeof(arch_lower))
+        arch_len = sizeof(arch_lower) - 1;
+    for (size_t i = 0; i < arch_len; i++)
+        arch_lower[i] = (char)tolower((unsigned char)arch_name[i]);
+    arch_lower[arch_len] = '\0';
+
+    snprintf(buf, buf_len, "%s/install_location_%s", config_location, arch_lower);
     return buf;
 }
 
 bool pal_get_dotnet_self_registered_dir(char* recv, size_t recv_len)
 {
     recv[0] = '\0';
+
+    //  ***Used only for testing***
+    char environment_override[APPHOST_PATH_MAX];
+    if (test_only_getenv("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH", environment_override, sizeof(environment_override)))
+    {
+        size_t len = strlen(environment_override);
+        if (len < recv_len)
+            memcpy(recv, environment_override, len + 1);
+        return true;
+    }
+    //  ***************************
 
     char arch_specific_path[APPHOST_PATH_MAX];
     pal_get_dotnet_self_registered_config_location(arch_specific_path, sizeof(arch_specific_path));
@@ -292,6 +337,17 @@ bool pal_get_dotnet_self_registered_dir(char* recv, size_t recv_len)
 
 bool pal_get_default_installation_dir(char* recv, size_t recv_len)
 {
+    //  ***Used only for testing***
+    char environment_override[APPHOST_PATH_MAX];
+    if (test_only_getenv("_DOTNET_TEST_DEFAULT_INSTALL_PATH", environment_override, sizeof(environment_override)))
+    {
+        size_t len = strlen(environment_override);
+        if (len < recv_len)
+            memcpy(recv, environment_override, len + 1);
+        return true;
+    }
+    //  ***************************
+
 #if defined(TARGET_OSX)
     const char* default_dir = "/usr/local/share/dotnet";
 #elif defined(TARGET_FREEBSD)
