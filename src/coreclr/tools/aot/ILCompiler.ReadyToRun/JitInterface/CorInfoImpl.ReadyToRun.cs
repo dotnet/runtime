@@ -535,7 +535,7 @@ namespace Internal.JitInterface
             throw new NotSupportedException();
         }
 
-        public static bool ShouldSkipCompilation(InstructionSetSupport instructionSetSupport, MethodDesc methodNeedingCode)
+        public static bool ShouldSkipCompilation(InstructionSetSupport instructionSetSupport, MethodDesc methodNeedingCode, ReadyToRunCodegenCompilation compilation = null)
         {
             bool targetAllowsRuntimeCodeGeneration = ((ReadyToRunCompilerContext)methodNeedingCode.Context).TargetAllowsRuntimeCodeGeneration;
             if (methodNeedingCode.IsAggressiveOptimization && targetAllowsRuntimeCodeGeneration)
@@ -569,6 +569,15 @@ namespace Internal.JitInterface
                 // Special methods on delegate types
                 return true;
             }
+            // Async resumption stubs use faux IL with synthetic tokens. When CoreLib is in the
+            // version bubble the stubs are not wrapped with ManifestModuleWrappedMethodIL, so
+            // token resolution for InstantiatedType / ParameterizedType falls through to a path
+            // that cannot handle them. Skip compilation and let the runtime JIT these stubs.
+            // https://github.com/dotnet/runtime/issues/125337
+            if (methodNeedingCode.IsCompilerGeneratedILBodyForAsync() && compilation != null && compilation.NodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
+            {
+                return true;
+            }
             if (ShouldCodeNotBeCompiledIntoFinalImage(instructionSetSupport, methodNeedingCode))
             {
                 return true;
@@ -586,6 +595,7 @@ namespace Internal.JitInterface
             var handle = ecmaMethod.Handle;
 
             List<TypeDesc> compExactlyDependsOnList = null;
+            bool hasCompHasFallback = false;
 
             foreach (var attributeHandle in metadataReader.GetMethodDefinition(handle).GetCustomAttributes())
             {
@@ -619,35 +629,41 @@ namespace Internal.JitInterface
                             compExactlyDependsOnList.Add(typeForBypass);
                         }
                     }
+                    else if (metadataReader.StringComparer.Equals(nameHandle, "CompHasFallbackAttribute"))
+                    {
+                        hasCompHasFallback = true;
+                    }
                 }
             }
 
             if (compExactlyDependsOnList != null && compExactlyDependsOnList.Count > 0)
             {
-                // Default to true, and set to false if at least one of the types is actually supported in the current environment, and none of the
-                // intrinsic types are in an opportunistic state.
-                bool doBypass = true;
+                bool anySupported = false;
 
                 foreach (var intrinsicType in compExactlyDependsOnList)
                 {
                     InstructionSet instructionSet = InstructionSetParser.LookupPlatformIntrinsicInstructionSet(intrinsicType.Context.Target.Architecture, intrinsicType);
-                    if (instructionSet == InstructionSet.ILLEGAL)
+                    // If the instruction set is ILLEGAL, it means it is never supported by the current architecture so the behavior at runtime is known
+                    if (instructionSet != InstructionSet.ILLEGAL)
                     {
-                        // This instruction set isn't supported on the current platform at all.
-                        continue;
-                    }
-                    if (instructionSetSupport.IsInstructionSetSupported(instructionSet) || instructionSetSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
-                    {
-                        doBypass = false;
-                    }
-                    else
-                    {
-                        // If we reach here this is an instruction set generally supported on this platform, but we don't know what the behavior will be at runtime
-                        return true;
+                        if (instructionSetSupport.IsInstructionSetSupported(instructionSet))
+                        {
+                            anySupported = true;
+                        }
+                        else if (!instructionSetSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
+                        {
+                            // If we reach here this is an instruction set generally supported on this platform, but we don't know what the behavior will be at runtime
+                            return true;
+                        }
                     }
                 }
 
-                return doBypass;
+                if (!anySupported && !hasCompHasFallback)
+                {
+                    // If none of the instruction sets are supported (all are either illegal or explicitly unsupported),
+                    // skip compilation unless the method has a functional fallback path
+                    return true;
+                }
             }
 
             // No reason to bypass compilation and code generation.
@@ -770,7 +786,7 @@ namespace Internal.JitInterface
 
             try
             {
-                if (ShouldSkipCompilation(_compilation.InstructionSetSupport, MethodBeingCompiled))
+                if (ShouldSkipCompilation(_compilation.InstructionSetSupport, MethodBeingCompiled, _compilation))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it is skipped.");
@@ -861,6 +877,12 @@ namespace Internal.JitInterface
 
         private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
         {
+            if (_compilation.NodeFactory.Target.IsWasm)
+            {
+                // WebAssembly doesn't use the compact ReadyToRun helpers, so disable them here.
+                return false;
+            }
+
             switch (id)
             {
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEW:
@@ -1276,17 +1298,25 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.InitInstClass;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
+                    id = ReadyToRunHelper.ThrowArgument;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
+                    id = ReadyToRunHelper.ThrowArgumentOutOfRange;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
+                    id = ReadyToRunHelper.ThrowPlatformNotSupported;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
+                    id = ReadyToRunHelper.ThrowNotImplemented;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
                 case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_RARE:
-                // For Vector256.Create and similar cases
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
                 // For x86 tailcall where helper is required we need runtime JIT.
                 case CorInfoHelpFunc.CORINFO_HELP_TAILCALL:
                 // DirectOnThreadLocalData helper is used at runtime during R2R fixup resolution, not during R2R compilation
@@ -1755,7 +1785,7 @@ namespace Internal.JitInterface
                         fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                     }
                 }
-                else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) || _compilation.NodeFactory.Target.IsWasm)
                 {
                     // The JIT wants to know how to access a static field on a generic type. We need a runtime lookup.
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
@@ -2288,7 +2318,7 @@ namespace Internal.JitInterface
             // All virtual calls which take method instantiations must
             // currently be implemented by an indirect call via a runtime-lookup
             // function pointer
-            else if (targetMethod.HasInstantiation)
+            else if (targetMethod.HasInstantiation || _compilation.NodeFactory.Target.IsWasm) // WASM doesn't currently support the stub dispatch path
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
                 pResult->nullInstanceCheck = true;

@@ -117,7 +117,7 @@ namespace ILLink.Tasks.Tests
                 if (!(step is RootAssemblyInput))
                     continue;
 
-                var assemblyName = (string)typeof(RootAssemblyInput).GetField("fileName", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(step);
+                var assemblyName = (string)typeof(RootAssemblyInput).GetField("assemblyName", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(step);
                 if (assemblyName == null)
                     continue;
 

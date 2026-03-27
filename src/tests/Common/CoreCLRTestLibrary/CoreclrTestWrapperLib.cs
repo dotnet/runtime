@@ -294,6 +294,25 @@ namespace TestLibrary
             return collectedDump;
         }
 
+        // Kills the given process tree using 'sudo kill -9', which is required when the process runs
+        // as root (e.g. launched via 'sudo') and cannot be killed by a non-root process.
+        // sudo forks and execs the target command, so we must kill children before the sudo parent
+        // to avoid leaving root-owned child processes running as orphans.
+        static void KillWithSudo(Process process)
+        {
+            foreach (Process child in process.GetChildren())
+            {
+                if (child.TryGetProcessId(out int childPid))
+                {
+                    Process.Start("sudo", $"-n kill -9 {childPid}").WaitForExit();
+                }
+            }
+            if (process.TryGetProcessId(out int pid))
+            {
+                Process.Start("sudo", $"-n kill -9 {pid}").WaitForExit();
+            }
+        }
+
         static bool CollectCrashDumpWithCreateDump(Process process, string crashDumpPath, StreamWriter outputWriter)
         {
             string? coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
@@ -308,7 +327,6 @@ namespace TestLibrary
             createdump.StartInfo.FileName = "sudo";
             createdump.StartInfo.Arguments = $"{createdumpPath} {arguments}";
 
-            createdump.StartInfo.UseShellExecute = false;
             createdump.StartInfo.RedirectStandardOutput = true;
             createdump.StartInfo.RedirectStandardError = true;
 
@@ -335,7 +353,6 @@ namespace TestLibrary
                 chown.StartInfo.FileName = "sudo";
                 chown.StartInfo.Arguments = $"chown \"{Environment.UserName}\" \"{crashDumpPath}\"";
 
-                chown.StartInfo.UseShellExecute = false;
                 chown.StartInfo.RedirectStandardOutput = true;
                 chown.StartInfo.RedirectStandardError = true;
 
@@ -354,22 +371,10 @@ namespace TestLibrary
             }
             else
             {
-                // Workaround for https://github.com/dotnet/runtime/issues/93321
-                const int MaxRetries = 5;
-                for (int i = 0; i < MaxRetries; i++)
-                {
-                    try
-                    {
-                        createdump.Kill(entireProcessTree: true);
-                        break;
-                    }
-                    catch (Exception e) when (i < MaxRetries - 1)
-                    {
-                        Console.WriteLine($"Process.Kill(entireProcessTree: true) failed:");
-                        Console.WriteLine(e);
-                        Console.WriteLine("Retrying...");
-                    }
-                }
+                // createdump was launched via 'sudo', so the process and its children run as root.
+                // We cannot send SIGKILL to root-owned processes from a non-root process (EPERM).
+                // Use 'sudo kill' to terminate the timed-out process tree.
+                KillWithSudo(createdump);
             }
 
             return fSuccess && createdump.ExitCode == 0;
@@ -466,7 +471,6 @@ namespace TestLibrary
                     process.StartInfo.Arguments = executable;
                 }
 
-                process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
                 process.StartInfo.EnvironmentVariables.Add("__Category", category);
@@ -564,7 +568,6 @@ namespace TestLibrary
             process.StartInfo.FileName = "cmd.exe";
             process.StartInfo.Arguments = $"/c {command}";
             process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.UseShellExecute = false;
             process.StartInfo.CreateNoWindow = true;
 
             // Start the process and read the output

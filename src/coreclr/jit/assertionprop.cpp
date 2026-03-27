@@ -3159,7 +3159,7 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nAssertion prop in " FMT_BB ":\n", compCurBB->bbNum);
+        printf("\nConstant Assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
         optPrintAssertion(curAssertion, index);
         gtDispTree(newTree, nullptr, nullptr, true);
     }
@@ -3218,7 +3218,7 @@ bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertion
     }
 
     const AssertionDsc& assertion = optGetAssertion(assertionIndex);
-    JITDUMP("\nAssertion prop in " FMT_BB ":\n", compCurBB->bbNum);
+    JITDUMP("\nZEROOBJ Assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
     JITDUMPEXEC(optPrintAssertion(assertion, assertionIndex));
     DISPNODE(tree);
 
@@ -3366,6 +3366,12 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
 
     tree->SetLclNum(copyLclNum);
 
+    // The copied var also needs multi-reg, if set
+    if (lclVarDsc->lvIsMultiRegRet)
+    {
+        copyVarDsc->lvIsMultiRegRet = true;
+    }
+
     // Copy prop and last-use copy elision happens at the same time in morph.
     // This node may potentially not be a last use of the new local.
     //
@@ -3378,7 +3384,7 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nAssertion prop in " FMT_BB ":\n", compCurBB->bbNum);
+        printf("\nCopy Assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
         optPrintAssertion(curAssertion, index);
         DISPNODE(tree);
     }

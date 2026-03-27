@@ -237,7 +237,8 @@ namespace System.Text.RegularExpressions.Generator
                 RegexOptions.Multiline |
                 RegexOptions.NonBacktracking |
                 RegexOptions.RightToLeft |
-                RegexOptions.Singleline;
+                RegexOptions.Singleline |
+                RegexOptions.AnyNewLine;
             if ((regexOptions & ~SupportedOptions) != 0)
             {
                 (diagnostics ??= []).Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, memberSyntax.GetLocation(), "options"));

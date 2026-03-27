@@ -209,8 +209,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void LeadingZeroCountTest()
         {
-            Assert.Equal((BigInteger)32, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Zero));
-            Assert.Equal((BigInteger)31, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(One));
+            Assert.Equal((BigInteger)(nint.Size * 8), BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Zero));
+            Assert.Equal((BigInteger)(nint.Size * 8 - 1), BinaryIntegerHelper<BigInteger>.LeadingZeroCount(One));
             Assert.Equal((BigInteger)1, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Int64MaxValue));
 
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Int64MinValue));
@@ -228,7 +228,7 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)63, BinaryIntegerHelper<BigInteger>.PopCount(Int64MaxValue));
 
             Assert.Equal((BigInteger)1, BinaryIntegerHelper<BigInteger>.PopCount(Int64MinValue));
-            Assert.Equal((BigInteger)32, BinaryIntegerHelper<BigInteger>.PopCount(NegativeOne));
+            Assert.Equal((BigInteger)(nint.Size * 8), BinaryIntegerHelper<BigInteger>.PopCount(NegativeOne));
 
             Assert.Equal((BigInteger)1, BinaryIntegerHelper<BigInteger>.PopCount(Int64MaxValuePlusOne));
             Assert.Equal((BigInteger)64, BinaryIntegerHelper<BigInteger>.PopCount(UInt64MaxValue));
@@ -242,8 +242,8 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateLeft(Zero, 33));
 
             Assert.Equal((BigInteger)0x00000002, BinaryIntegerHelper<BigInteger>.RotateLeft(One, 1));
-            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.RotateLeft(One, 32));
-            Assert.Equal((BigInteger)0x00000002, BinaryIntegerHelper<BigInteger>.RotateLeft(One, 33));
+            Assert.Equal(BigInteger.One << (32 % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateLeft(One, 32));
+            Assert.Equal(BigInteger.One << (33 % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateLeft(One, 33));
 
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFE, BinaryIntegerHelper<BigInteger>.RotateLeft(Int64MaxValue, 1));
             Assert.Equal((BigInteger)0xFFFFFFFF7FFFFFFF, BinaryIntegerHelper<BigInteger>.RotateLeft(Int64MaxValue, 32));
@@ -269,8 +269,8 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateLeft(Zero, -32));
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateLeft(Zero, -33));
 
-            Assert.Equal((BigInteger)0x80000000, BinaryIntegerHelper<BigInteger>.RotateLeft(One, -1));
-            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.RotateLeft(One, -32));
+            Assert.Equal(BigInteger.One << (nint.Size * 8 - 1), BinaryIntegerHelper<BigInteger>.RotateLeft(One, -1));
+            Assert.Equal(BigInteger.One << ((nint.Size * 8 - 32) % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateLeft(One, -32));
             Assert.Equal((BigInteger)0x80000000, BinaryIntegerHelper<BigInteger>.RotateLeft(One, -33));
 
             Assert.Equal((BigInteger)0xBFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateLeft(Int64MaxValue, -1));
@@ -301,8 +301,8 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateRight(Zero, 32));
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateRight(Zero, 33));
 
-            Assert.Equal((BigInteger)0x80000000, BinaryIntegerHelper<BigInteger>.RotateRight(One, 1));
-            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.RotateRight(One, 32));
+            Assert.Equal(BigInteger.One << (nint.Size * 8 - 1), BinaryIntegerHelper<BigInteger>.RotateRight(One, 1));
+            Assert.Equal(BigInteger.One << ((nint.Size * 8 - 32) % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateRight(One, 32));
             Assert.Equal((BigInteger)0x80000000, BinaryIntegerHelper<BigInteger>.RotateRight(One, 33));
 
             Assert.Equal((BigInteger)0xBFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateRight(Int64MaxValue, 1));
@@ -330,8 +330,8 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateRight(Zero, -33));
 
             Assert.Equal((BigInteger)0x00000002, BinaryIntegerHelper<BigInteger>.RotateRight(One, -1));
-            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.RotateRight(One, -32));
-            Assert.Equal((BigInteger)0x00000002, BinaryIntegerHelper<BigInteger>.RotateRight(One, -33));
+            Assert.Equal(BigInteger.One << (32 % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateRight(One, -32));
+            Assert.Equal(BigInteger.One << (33 % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateRight(One, -33));
 
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFE, BinaryIntegerHelper<BigInteger>.RotateRight(Int64MaxValue, -1));
             Assert.Equal((BigInteger)0xFFFFFFFF7FFFFFFF, BinaryIntegerHelper<BigInteger>.RotateRight(Int64MaxValue, -32));
@@ -357,7 +357,7 @@ namespace System.Numerics.Tests
         [Fact]
         public static void TrailingZeroCountTest()
         {
-            Assert.Equal((BigInteger)32, BinaryIntegerHelper<BigInteger>.TrailingZeroCount(Zero));
+            Assert.Equal((BigInteger)(nint.Size * 8), BinaryIntegerHelper<BigInteger>.TrailingZeroCount(Zero));
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.TrailingZeroCount(One));
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.TrailingZeroCount(Int64MaxValue));
 
@@ -374,21 +374,21 @@ namespace System.Numerics.Tests
         [Fact]
         public static void GetByteCountTest()
         {
-            Assert.Equal(4, BinaryIntegerHelper<BigInteger>.GetByteCount(Zero));
-            Assert.Equal(4, BinaryIntegerHelper<BigInteger>.GetByteCount(One));
+            Assert.Equal(nint.Size, BinaryIntegerHelper<BigInteger>.GetByteCount(Zero));
+            Assert.Equal(nint.Size, BinaryIntegerHelper<BigInteger>.GetByteCount(One));
             Assert.Equal(8, BinaryIntegerHelper<BigInteger>.GetByteCount(Int64MaxValue));
 
             Assert.Equal(8, BinaryIntegerHelper<BigInteger>.GetByteCount(Int64MinValue));
-            Assert.Equal(4, BinaryIntegerHelper<BigInteger>.GetByteCount(NegativeOne));
+            Assert.Equal(nint.Size, BinaryIntegerHelper<BigInteger>.GetByteCount(NegativeOne));
 
             Assert.Equal(8, BinaryIntegerHelper<BigInteger>.GetByteCount(Int64MaxValuePlusOne));
             Assert.Equal(8, BinaryIntegerHelper<BigInteger>.GetByteCount(UInt64MaxValue));
 
             Assert.Equal(16, BinaryIntegerHelper<BigInteger>.GetByteCount(Int128MaxValue));
             Assert.Equal(16, BinaryIntegerHelper<BigInteger>.GetByteCount(Int128MinValue));
-            Assert.Equal(20, BinaryIntegerHelper<BigInteger>.GetByteCount(Int128MinValueMinusOne));
+            Assert.Equal(nint.Size == 8 ? 24 : 20, BinaryIntegerHelper<BigInteger>.GetByteCount(Int128MinValueMinusOne));
             Assert.Equal(16, BinaryIntegerHelper<BigInteger>.GetByteCount(Int128MinValuePlusOne));
-            Assert.Equal(20, BinaryIntegerHelper<BigInteger>.GetByteCount(Int128MinValueTimesTwo));
+            Assert.Equal(nint.Size == 8 ? 24 : 20, BinaryIntegerHelper<BigInteger>.GetByteCount(Int128MinValueTimesTwo));
             Assert.Equal(16, BinaryIntegerHelper<BigInteger>.GetByteCount(Int128MaxValuePlusOne));
             Assert.Equal(16, BinaryIntegerHelper<BigInteger>.GetByteCount(UInt128MaxValue));
         }
@@ -418,16 +418,17 @@ namespace System.Numerics.Tests
         [Fact]
         public static void TryWriteBigEndianTest()
         {
-            Span<byte> destination = stackalloc byte[20];
+            int maxBytes = nint.Size == 8 ? 24 : 20;
+            Span<byte> destination = stackalloc byte[maxBytes];
             int bytesWritten = 0;
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(Zero, destination, out bytesWritten));
-            Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00 }, destination.Slice(0, 4).ToArray());
+            Assert.Equal(nint.Size, bytesWritten);
+            Assert.Equal(new byte[nint.Size], destination.Slice(0, nint.Size).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(One, destination, out bytesWritten));
-            Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x01 }, destination.Slice(0, 4).ToArray());
+            Assert.Equal(nint.Size, bytesWritten);
+            Assert.Equal(nint.Size == 8 ? new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 } : new byte[] { 0x00, 0x00, 0x00, 0x01 }, destination.Slice(0, nint.Size).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(Int64MaxValue, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
@@ -438,8 +439,8 @@ namespace System.Numerics.Tests
             Assert.Equal(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.Slice(0, 8).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(NegativeOne, destination, out bytesWritten));
-            Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, 4).ToArray());
+            Assert.Equal(nint.Size, bytesWritten);
+            Assert.Equal(nint.Size == 8 ? new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF } : new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, nint.Size).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(Int64MaxValuePlusOne, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
@@ -458,16 +459,16 @@ namespace System.Numerics.Tests
             Assert.Equal(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.Slice(0, 16).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(Int128MinValueMinusOne, destination, out bytesWritten));
-            Assert.Equal(20, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, 20).ToArray());
+            Assert.Equal(nint.Size == 8 ? 24 : 20, bytesWritten);
+            Assert.Equal(nint.Size == 8 ? new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF } : new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, nint.Size == 8 ? 24 : 20).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(Int128MinValuePlusOne, destination, out bytesWritten));
             Assert.Equal(16, bytesWritten);
             Assert.Equal(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, destination.Slice(0, 16).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(Int128MinValueTimesTwo, destination, out bytesWritten));
-            Assert.Equal(20, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.Slice(0, 20).ToArray());
+            Assert.Equal(nint.Size == 8 ? 24 : 20, bytesWritten);
+            Assert.Equal(nint.Size == 8 ? new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } : new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.Slice(0, nint.Size == 8 ? 24 : 20).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(Int128MaxValuePlusOne, destination, out bytesWritten));
             Assert.Equal(16, bytesWritten);
@@ -479,22 +480,22 @@ namespace System.Numerics.Tests
 
             Assert.False(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
         }
 
         [Fact]
         public static void TryWriteLittleEndianTest()
         {
-            Span<byte> destination = stackalloc byte[20];
+            int maxBytes = nint.Size == 8 ? 24 : 20;
+            Span<byte> destination = stackalloc byte[maxBytes];
             int bytesWritten = 0;
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteLittleEndian(Zero, destination, out bytesWritten));
-            Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00 }, destination.Slice(0, 4).ToArray());
+            Assert.Equal(nint.Size, bytesWritten);
+            Assert.Equal(new byte[nint.Size], destination.Slice(0, nint.Size).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteLittleEndian(One, destination, out bytesWritten));
-            Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00 }, destination.Slice(0, 4).ToArray());
+            Assert.Equal(nint.Size, bytesWritten);
+            Assert.Equal(nint.Size == 8 ? new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } : new byte[] { 0x01, 0x00, 0x00, 0x00 }, destination.Slice(0, nint.Size).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteLittleEndian(Int64MaxValue, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
@@ -505,8 +506,8 @@ namespace System.Numerics.Tests
             Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, destination.Slice(0, 8).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteLittleEndian(NegativeOne, destination, out bytesWritten));
-            Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, 4).ToArray());
+            Assert.Equal(nint.Size, bytesWritten);
+            Assert.Equal(nint.Size == 8 ? new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF } : new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, nint.Size).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteLittleEndian(Int64MaxValuePlusOne, destination, out bytesWritten));
             Assert.Equal(8, bytesWritten);
@@ -525,16 +526,16 @@ namespace System.Numerics.Tests
             Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, destination.Slice(0, 16).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteLittleEndian(Int128MinValueMinusOne, destination, out bytesWritten));
-            Assert.Equal(20, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, 20).ToArray());
+            Assert.Equal(nint.Size == 8 ? 24 : 20, bytesWritten);
+            Assert.Equal(nint.Size == 8 ? new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF } : new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, nint.Size == 8 ? 24 : 20).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteLittleEndian(Int128MinValuePlusOne, destination, out bytesWritten));
             Assert.Equal(16, bytesWritten);
             Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, destination.Slice(0, 16).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteLittleEndian(Int128MinValueTimesTwo, destination, out bytesWritten));
-            Assert.Equal(20, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, 20).ToArray());
+            Assert.Equal(nint.Size == 8 ? 24 : 20, bytesWritten);
+            Assert.Equal(nint.Size == 8 ? new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF } : new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, nint.Size == 8 ? 24 : 20).ToArray());
 
             Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteLittleEndian(Int128MaxValuePlusOne, destination, out bytesWritten));
             Assert.Equal(16, bytesWritten);
@@ -546,7 +547,6 @@ namespace System.Numerics.Tests
 
             Assert.False(BinaryIntegerHelper<BigInteger>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
         }
 
         //
@@ -2650,7 +2650,7 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(Int64MaxValue, 1));
 
             Assert.Equal((BigInteger)0x4000000000000000, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(Int64MinValue, 1));
-            Assert.Equal(Int32MaxValue, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(NegativeOne, 1));
+            Assert.Equal((BigInteger)nint.MaxValue, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(NegativeOne, 1));
 
             Assert.Equal((BigInteger)0x4000000000000000, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(Int64MaxValuePlusOne, 1));
             Assert.Equal(Int64MaxValue, ShiftOperatorsHelper<BigInteger, int, BigInteger>.op_UnsignedRightShift(UInt64MaxValue, 1));
