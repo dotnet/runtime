@@ -1128,10 +1128,7 @@ void CodeGen::genIntToFloatCast(GenTree* tree)
             unreached();
     }
 
-    if (ins != INS_none)
-    {
-        GetEmitter()->emitIns(ins);
-    }
+    GetEmitter()->emitIns(ins);
     WasmProduceReg(tree);
 }
 
