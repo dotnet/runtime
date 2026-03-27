@@ -40,7 +40,7 @@ namespace System.Text.Tests
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void AsyncMethods_ReturnCanceledTaskIfCancellationTokenTripped()
         {
             // Arrange
@@ -78,7 +78,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentNullException>("outerStreamEncoding", () => Encoding.CreateTranscodingStream(Stream.Null, Encoding.UTF8, null));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [InlineData(true)]
         [InlineData(false)]
         public void CanRead_DelegatesToInnerStream(bool expectedCanRead)
@@ -101,7 +101,7 @@ namespace System.Text.Tests
             Assert.False(actualCanReadAfterDispose);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [InlineData(true)]
         [InlineData(false)]
         public void CanWrite_DelegatesToInnerStream(bool expectedCanWrite)
@@ -200,7 +200,7 @@ namespace System.Text.Tests
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void Flush_FlushesInnerStreamButNotDecodedState()
         {
             // Arrange
@@ -393,7 +393,7 @@ namespace System.Text.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public Task ReadApm()
         {
             // Tests TranscodingStream.BeginRead / EndRead
@@ -434,7 +434,7 @@ namespace System.Text.Tests
             suppressExpectedCancellationTokenAsserts: true); // APM pattern doesn't allow flowing CancellationToken
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [MemberData(nameof(ReadWriteTestBufferLengths))]
         public Task ReadAsync_ByteArray(int bufferLength)
         {
@@ -453,7 +453,7 @@ namespace System.Text.Tests
             });
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [MemberData(nameof(ReadWriteTestBufferLengths))]
         public async Task ReadAsync_Memory(int bufferLength)
         {
@@ -719,7 +719,7 @@ namespace System.Text.Tests
             Assert.Equal(0, innerStream.Position);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void Write_WithPartialData()
         {
             MemoryStream innerStream = new MemoryStream();
@@ -768,7 +768,7 @@ namespace System.Text.Tests
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public async Task WriteAsync_WithFullData()
         {
             MemoryStream sink = new MemoryStream();
@@ -828,7 +828,7 @@ namespace System.Text.Tests
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public async Task WriteAsync_WithPartialData()
         {
             MemoryStream sink = new MemoryStream();
@@ -884,7 +884,7 @@ namespace System.Text.Tests
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void WriteApm()
         {
             // Arrange

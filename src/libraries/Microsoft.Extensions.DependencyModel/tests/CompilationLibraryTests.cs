@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     public class CompilationLibraryTests
     {
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void ResolveReferencePathsAcceptsCustomResolvers()
         {
             var fail = new Mock<ICompilationAssemblyResolver>();

@@ -48,7 +48,7 @@ namespace System.Runtime.CompilerServices.Tests
             else
             {
                 Assert.True(RuntimeFeature.IsDynamicCodeSupported);
-                Assert.True(RuntimeFeature.IsDynamicCodeCompiled);
+                Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
             }
         }
 

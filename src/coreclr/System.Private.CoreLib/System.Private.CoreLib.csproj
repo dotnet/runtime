@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.iOS.xml" Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'" />
   </ItemGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
