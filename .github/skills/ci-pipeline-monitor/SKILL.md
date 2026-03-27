@@ -117,6 +117,7 @@ CREATE TABLE failures (
     failing_since_date    TEXT,
     failing_since_build   TEXT,
     console_log_url       TEXT,
+    source_test_result_id INTEGER,             -- which test_results row the error_message/stack_trace came from
     error_message         TEXT,                -- verbatim from log
     stack_trace           TEXT,                -- verbatim from log
     summary               TEXT,                -- agent-written

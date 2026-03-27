@@ -270,9 +270,19 @@ class ReportGenerator:
             )
         out.append("")
 
-        # Console Log
+        # Console Log and Source
         if fail["console_log_url"]:
             out.append(f"**Console Log:** [Console Log]({fail['console_log_url']})")
+            # Show which test result the error_message/stack_trace came from
+            if fail["source_test_result_id"]:
+                src = cur.execute(
+                    """SELECT tr.pipeline_name, tr.build_id, tr.run_name, tr.test_name
+                       FROM test_results tr WHERE tr.id = ?""",
+                    (fail["source_test_result_id"],)
+                ).fetchone()
+                if src:
+                    src_url = f"https://dev.azure.com/{ADO_ORG}/{ADO_PROJECT}/_build/results?buildId={src['build_id']}&view=ms.vss-test-web.build-test-results-tab"
+                    out.append(f"**Source:** [{src['pipeline_name']} / {src['run_name']} / {src['test_name']}]({src_url})")
             out.append("")
 
         # Failed tests — group by pipeline if 2+ pipelines

@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS failures (
     failing_since_date    TEXT,
     failing_since_build   TEXT,
     console_log_url       TEXT,
+    source_test_result_id INTEGER,
     error_message         TEXT,
     stack_trace           TEXT,
     summary               TEXT,
@@ -49,7 +50,8 @@ CREATE TABLE IF NOT EXISTS failures (
     github_issue_state    TEXT,
     github_issue_assigned TEXT,
     labels                TEXT,
-    milestone             TEXT DEFAULT '11.0.0'
+    milestone             TEXT DEFAULT '11.0.0',
+    FOREIGN KEY (source_test_result_id) REFERENCES test_results(id)
 );
 
 CREATE TABLE IF NOT EXISTS failure_pipelines (

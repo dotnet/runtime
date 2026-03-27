@@ -110,7 +110,10 @@ For each row in `test_results` (query: `SELECT * FROM test_results WHERE failure
 8.  **Write analysis** (1-3 paragraphs).
 9.  **INSERT into DB:**
     - `failures`: one row per failure group (title, test_name, error_message,
-      stack_trace verbatim, summary, analysis, github_issue_* fields)
+      stack_trace verbatim, summary, analysis, github_issue_* fields).
+      **Set `source_test_result_id`** to the `test_results.id` from which the
+      error_message and stack_trace were extracted — the report and validator
+      use this to trace back to the specific console log.
     - `failure_pipelines`: one row per (failure_id, pipeline_name, build_id,
       build_number). Populate `build_id` and `build_number` from the
       `pipelines` table — the report uses these to construct AzDO URLs.

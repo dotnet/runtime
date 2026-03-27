@@ -97,7 +97,8 @@ Body (paste as-is into GitHub issue):
 - [<pipelines.name> <pipelines.build_number>](https://dev.azure.com/dnceng-public/public/_build/results?buildId=<pipelines.build_id>)
 - [<pipelines.name> <pipelines.build_number>](https://dev.azure.com/dnceng-public/public/_build/results?buildId=<pipelines.build_id>)
 
-**Console Log:** <console log URL as a clickable link>
+**Console Log:** [Console Log](<console_log_url>)
+**Source:** [<pipeline_name> / <run_name> / <test_name>](https://dev.azure.com/dnceng-public/public/_build/results?buildId=<build_id>&view=ms.vss-test-web.build-test-results-tab)
 
 **Failed tests:**
 ```

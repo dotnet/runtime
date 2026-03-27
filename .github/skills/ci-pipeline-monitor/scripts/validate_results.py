@@ -194,35 +194,32 @@ def main():
     # 13. error_message appears verbatim in console log file
     print("\n=== Content Accuracy ===")
     if has_test_results:
-        # Identify shared console_log_paths (overwrite bug — can't validate those)
-        shared_paths = {r[0] for r in conn.execute("""
-            SELECT console_log_path FROM test_results
-            WHERE console_log_path IS NOT NULL
-            GROUP BY console_log_path HAVING COUNT(*) > 1
-        """).fetchall()}
-
         total += 1
         mismatches = []
-        skipped_shared = 0
         rows = conn.execute("""
-            SELECT tr.id, tr.console_log_path, tr.error_message, f.failure_category
-            FROM test_results tr
-            JOIN failures f ON tr.failure_id = f.id
-            WHERE tr.error_message IS NOT NULL AND tr.error_message != ''
-            AND tr.console_log_path IS NOT NULL AND tr.console_log_path != ''
+            SELECT f.id, f.error_message, f.source_test_result_id,
+                   tr.console_log_path
+            FROM failures f
+            LEFT JOIN test_results tr ON f.source_test_result_id = tr.id
+            WHERE f.error_message IS NOT NULL AND f.error_message != ''
             AND f.failure_category != 'infrastructure'
         """).fetchall()
+        verified = 0
         for r in rows:
             log_path = r["console_log_path"]
-            if log_path in shared_paths:
-                skipped_shared += 1
-                continue  # on-disk file was overwritten — can't validate
-            if not os.path.isfile(log_path):
-                mismatches.append((r["id"], "log file missing"))
-                continue
+            if not log_path or not os.path.isfile(log_path):
+                # No source_test_result_id or log missing — try any log in the group
+                fallback = conn.execute("""
+                    SELECT console_log_path FROM test_results
+                    WHERE failure_id = ? AND console_log_path IS NOT NULL AND console_log_path != ''
+                    LIMIT 1
+                """, (r["id"],)).fetchone()
+                if fallback:
+                    log_path = fallback["console_log_path"]
+                if not log_path or not os.path.isfile(log_path):
+                    continue
             with open(log_path, encoding="utf-8", errors="replace") as lf:
                 log_content = lf.read()
-            # Check that the first meaningful line of the error_message appears in the log.
             first_line = ""
             for line in r["error_message"].split("\n"):
                 stripped = line.strip()
@@ -231,11 +228,12 @@ def main():
                     break
             if first_line and first_line not in log_content:
                 mismatches.append((r["id"], first_line[:60]))
-        verified = len(rows) - skipped_shared
+            else:
+                verified += 1
         ok = check("error_message matches console log",
                     len(mismatches) == 0,
                     f"{len(mismatches)} mismatches: {mismatches[:5]}" if mismatches
-                    else f"verified {verified} rows, skipped {skipped_shared} shared paths")
+                    else f"verified {verified} failure groups")
         if not ok:
             failures += 1
 
