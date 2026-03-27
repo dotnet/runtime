@@ -329,7 +329,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         private void GetMethodRVAAndRangeStart(CodeBlockHandle cbh, out TargetPointer methodStart, out TargetPointer rangeStart)
         {
             IExecutionManager executionManager = Target.Contracts.ExecutionManager;
-            methodStart = executionManager.GetStartAddress(cbh).AsTargetPointer;
+            methodStart = CodePointerUtils.AddressFromCodePointer(executionManager.GetStartAddress(cbh), Target);
             rangeStart = executionManager.GetUnwindInfoBaseAddress(cbh);
         }
 
