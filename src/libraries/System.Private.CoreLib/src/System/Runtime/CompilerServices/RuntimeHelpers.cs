@@ -168,7 +168,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [RequiresDynamicCode("AOT must recognize usages of the method to preserve reflection info and generate stubs")]
-        public static TDelegate GetDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
+        public static TDelegate GetDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods)] TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
         {
             return storage ?? CreateSharedDelegate(method, ref storage);
         }
