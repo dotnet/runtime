@@ -44,8 +44,8 @@ internal static partial class Interop
                     stderrRawFd = stderrFd.DangerousGetHandle().ToInt32();
                 }
 
-                AllocNullTerminatedArray(argv, ref argvPtr);
-                AllocNullTerminatedEnvpArray(env, ref envpPtr);
+                AllocArgvArray(argv, ref argvPtr);
+                AllocEnvpArray(env, ref envpPtr);
                 fixed (uint* pGroups = groups)
                 {
                     result = ForkAndExecProcess(
@@ -79,7 +79,7 @@ internal static partial class Interop
         /// Allocates a single native memory block containing both a null-terminated pointer array
         /// and the UTF-8 encoded string data for the given array of strings.
         /// </summary>
-        private static unsafe void AllocNullTerminatedArray(string[] arr, ref byte** arrPtr)
+        private static unsafe void AllocArgvArray(string[] arr, ref byte** arrPtr)
         {
             int count = arr.Length;
 
@@ -87,7 +87,7 @@ internal static partial class Interop
             int totalByteLength = 0;
             foreach (string str in arr)
             {
-                totalByteLength += Encoding.UTF8.GetByteCount(str) + 1; // +1 for null terminator
+                totalByteLength = checked(totalByteLength + Encoding.UTF8.GetByteCount(str) + 1); // +1 for null terminator
             }
 
             // Allocate a single block: pointer array (count + 1 for null terminator) followed by string data.
@@ -116,7 +116,7 @@ internal static partial class Interop
         /// Allocates a single native memory block containing both a null-terminated pointer array
         /// and the UTF-8 encoded "key=value\0" data for all non-null entries in the environment dictionary.
         /// </summary>
-        private static unsafe void AllocNullTerminatedEnvpArray(IDictionary<string, string?> env, ref byte** arrPtr)
+        private static unsafe void AllocEnvpArray(IDictionary<string, string?> env, ref byte** arrPtr)
         {
             // First pass: count entries with non-null values and compute total buffer size.
             int count = 0;
@@ -126,7 +126,7 @@ internal static partial class Interop
                 if (pair.Value is not null)
                 {
                     // Each entry: UTF8(key) + '=' + UTF8(value) + '\0'
-                    totalByteLength += Encoding.UTF8.GetByteCount(pair.Key) + 1 + Encoding.UTF8.GetByteCount(pair.Value) + 1;
+                    totalByteLength = checked(totalByteLength + Encoding.UTF8.GetByteCount(pair.Key) + 1 + Encoding.UTF8.GetByteCount(pair.Value) + 1);
                     count++;
                 }
             }
