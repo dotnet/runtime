@@ -63,8 +63,6 @@ add_sanitizer_runtime_support(nativehost_static)
 
 install_with_stripped_symbols(nativehost_static TARGETS corehost_test)
 
-# NETHOST_USE_AS_STATIC prevents nethost.h from applying __declspec(dllimport) on Windows.
-# Define it on all platforms for consistency when consuming the static library.
 target_compile_definitions(nativehost_static PRIVATE NETHOST_USE_AS_STATIC)
 
 target_link_libraries(nativehost_static PRIVATE
