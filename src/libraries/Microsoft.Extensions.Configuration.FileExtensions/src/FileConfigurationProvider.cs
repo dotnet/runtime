@@ -107,9 +107,6 @@ namespace Microsoft.Extensions.Configuration
                     {
                         if (reload)
                         {
-                            // We reset Data only for exceptions from Load. For possibly transient
-                            // IOExceptions from OpenRead caught by the outer catch, we do not reset
-                            // it, preserving the original configuration.
                             Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
                             updated = true;
                         }
@@ -119,6 +116,9 @@ namespace Microsoft.Extensions.Configuration
                 }
                 catch (Exception ex)
                 {
+                    // We do not reset Data here. We reset Data only for exceptions from Load (inner try
+                    // block) such as parse errors. For (possibly transient) IO Exceptions from OpenRead
+                    // we preserve the original configuration.
                     HandleException(ExceptionDispatchInfo.Capture(ex));
                 }
             }
