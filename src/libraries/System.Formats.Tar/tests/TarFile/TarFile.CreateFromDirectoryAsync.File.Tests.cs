@@ -379,7 +379,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        public async Task CopyContents_CyclicDirectorySymlink_NoInfiniteLoopAsync()
+        public async Task CopyContents_CyclicDirectorySymlink_ThrowsAsync()
         {
             using TempDirectory root = new TempDirectory();
 
@@ -393,18 +393,8 @@ namespace System.Formats.Tar.Tests
             Directory.CreateSymbolicLink(cyclicLink, sourceDirectoryName);
 
             TarWriterOptions options = new TarWriterOptions() { SymbolicLinkMode = TarSymbolicLinkMode.CopyContents };
-            await TarFile.CreateFromDirectoryAsync(sourceDirectoryName, destinationArchive, includeBaseDirectory: false, options);
-
-            await using FileStream archiveStream = File.OpenRead(destinationArchive);
-            await using TarReader reader = new(archiveStream, leaveOpen: false);
-
-            // Only the cyclic link directory entry should appear; contents are not recursed.
-            TarEntry entry = await reader.GetNextEntryAsync();
-            Assert.NotNull(entry);
-            Assert.Equal("cyclicLink/", entry.Name);
-            Assert.Equal(TarEntryType.Directory, entry.EntryType);
-
-            Assert.Null(await reader.GetNextEntryAsync()); // No infinite recursion.
+            await Assert.ThrowsAsync<IOException>(() =>
+                TarFile.CreateFromDirectoryAsync(sourceDirectoryName, destinationArchive, includeBaseDirectory: false, options));
         }
 
         [Theory]

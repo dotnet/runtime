@@ -608,7 +608,8 @@ namespace System.Formats.Tar
         // Generates a recursive enumeration of the filesystem entries inside the specified source directory.
         // In the default PreserveLink mode, directory symlinks are not recursed.
         // In CopyContents mode, directory symlinks are followed and their contents are included, with cycle
-        // detection via visitedRealPaths to prevent infinite recursion from cyclic symlinks.
+        // detection via visitedRealPaths. If a cycle is detected, an IOException is thrown to avoid
+        // producing a non-round-trippable archive.
         private static IEnumerable<(string fullpath, string entryname)> GetFilesForCreation(
             string sourceDirectoryName, int basePathLength,
             TarSymbolicLinkMode symbolicLinkMode = TarSymbolicLinkMode.PreserveLink,
@@ -655,7 +656,12 @@ namespace System.Formats.Tar
                     {
                         shouldRecurse = true;
                     }
-                    // else: target already visited — cycle detected, skip recursion.
+                    else
+                    {
+                        // Cycle detected: the symlink points to a directory already being archived.
+                        // Throw to avoid creating a non-round-trippable archive.
+                        throw new IOException(SR.Format(SR.TarSymbolicLinkCycle, fullpath));
+                    }
                 }
 
                 // Return entries for the subdirectory.
