@@ -17,16 +17,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     /// <summary>
     /// This fixup instructs the runtime to validate that the IL found at runtime matches the hash of the IL computed at compile time.
-    /// The <c>ilMethod</c> provides the IL body from metadata for computing the standalone metadata hash.
-    /// The <c>signatureMethod</c> is the method identity encoded in the fixup signature that the runtime will decode
-    /// back to a MethodDesc. These are the same for most methods, but differ for runtime-async methods where the inlinee
-    /// is an AsyncMethodVariant: the IL comes from the target EcmaMethod, while the signature must identify the same method
-    /// so the runtime can locate the IL at the method's RVA.
     /// </summary>
+    /// <remarks>
+    /// The fixup encodes two distinct pieces of information that may come from different methods:
+    /// <list type="bullet">
+    /// <item><c>_ilMethod</c> (EcmaMethod): The source of the IL body from metadata, used to compute the standalone
+    /// metadata hash that the runtime will validate against.</item>
+    /// <item><c>_signatureMethod</c> (MethodDesc): The method identity encoded in the fixup signature. The runtime
+    /// decodes this back to a MethodDesc via <c>ZapSig::DecodeMethod</c> and then reads the IL at that method's RVA
+    /// to compare against the hash.</item>
+    /// </list>
+    /// For most methods these are the same EcmaMethod. They differ for runtime-async methods: the JIT inlines an
+    /// <c>AsyncMethodVariant</c> (which is a <c>MethodDelegator</c>, not an EcmaMethod), but the IL body lives on the
+    /// underlying EcmaMethod. Since <c>AsyncMethodVariant</c> cannot be encoded as a MethodDef token, both
+    /// <c>_ilMethod</c> and <c>_signatureMethod</c> point to the same EcmaMethod, and the runtime side
+    /// (see <c>GetILHeaderForStandaloneMetadata</c> in readytorunstandalonemethodmetadata.cpp) handles the fact that
+    /// the decoded MethodDesc is marked as an async thunk whose <c>MayHaveILHeader()</c> returns false.
+    /// </remarks>
     public class ILBodyFixupSignature : Signature, IEquatable<ILBodyFixupSignature>
     {
         private readonly ReadyToRunFixupKind _fixupKind;
+
+        /// <summary>The EcmaMethod whose IL body from metadata is hashed for the fixup validation.</summary>
         private readonly EcmaMethod _ilMethod;
+
+        /// <summary>The method identity encoded in the fixup signature that the runtime decodes to locate the IL at its RVA.</summary>
         private readonly MethodDesc _signatureMethod;
 
         public ILBodyFixupSignature(ReadyToRunFixupKind fixupKind, EcmaMethod ilMethod, MethodDesc signatureMethod)
