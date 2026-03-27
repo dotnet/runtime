@@ -1671,6 +1671,11 @@ void ILCodeStream::EmitNEWOBJ(int token, int numInArgs)
     WRAPPER_NO_CONTRACT;
     Emit(CEE_NEWOBJ, (INT16)(1 - numInArgs), token);
 }
+void ILCodeStream::EmitNEWARR(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_NEWARR, 0, token);
+}
 
 void ILCodeStream::EmitNOP(LPCSTR pszNopComment)
 {
@@ -1698,6 +1703,16 @@ void ILCodeStream::EmitSTARG(unsigned uArgIdx)
 {
     WRAPPER_NO_CONTRACT;
     Emit(CEE_STARG, -1, uArgIdx);
+}
+void ILCodeStream::EmitSTELEM_I1()
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_STELEM_I1, -3, 0);
+}
+void ILCodeStream::EmitSTELEM_I4()
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_STELEM_I4, -3, 0);
 }
 void ILCodeStream::EmitSTELEM_REF()
 {

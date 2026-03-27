@@ -1030,11 +1030,14 @@ public:
     void EmitMUL        ();
     void EmitMUL_OVF    ();
     void EmitNEWOBJ     (int token, int numInArgs);
+    void EmitNEWARR     (int token);
     void EmitNOP        (LPCSTR pszNopComment);
     void EmitPOP        ();
     void EmitRET        ();
     void EmitSHR_UN     ();
     void EmitSTARG      (unsigned uArgIdx);
+    void EmitSTELEM_I1  ();
+    void EmitSTELEM_I4  ();
     void EmitSTELEM_REF ();
     void EmitSTIND_I    ();
     void EmitSTIND_I1   ();
