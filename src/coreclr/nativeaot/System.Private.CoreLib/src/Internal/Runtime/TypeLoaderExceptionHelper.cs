@@ -24,6 +24,11 @@ namespace Internal.Runtime
             return new BadImageFormatException(GetFormatString(id));
         }
 
+        public static Exception CreateBadImageFormatException(ExceptionStringID id, string fileName)
+        {
+            return new BadImageFormatException(SR.Format(GetFormatString(id), fileName), fileName);
+        }
+
         public static Exception CreateTypeLoadException(ExceptionStringID id, string typeName, string moduleName)
         {
             return new TypeLoadException(SR.Format(GetFormatString(id), typeName, moduleName), typeName);
@@ -118,6 +123,8 @@ namespace Internal.Runtime
                     return SR.IO_FileNotFound_FileName;
                 case ExceptionStringID.BadImageFormatGeneric:
                     return SR.Arg_BadImageFormatException;
+                case ExceptionStringID.BadImageFormatFileName:
+                    return SR.BadImageFormat_FileName;
                 case ExceptionStringID.MarshalDirectiveGeneric:
                     return SR.Arg_MarshalDirectiveException;
                 case ExceptionStringID.AmbiguousMatchUnsafeAccessor:

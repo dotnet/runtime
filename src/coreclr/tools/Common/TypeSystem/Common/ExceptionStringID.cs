@@ -43,6 +43,7 @@ namespace Internal.TypeSystem
 
         // BadImageFormatException
         BadImageFormatGeneric,
+        BadImageFormatFileName,
 
         // MarshalDirectiveException
         MarshalDirectiveGeneric,
