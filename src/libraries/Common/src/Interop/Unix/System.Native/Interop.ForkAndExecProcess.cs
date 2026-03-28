@@ -163,6 +163,8 @@ internal static partial class Interop
             }
 
             pointers[entryIndex] = 0; // null terminator
+            Debug.Assert(entryIndex == count);
+            Debug.Assert(dataOffset == dataByteLength);
         }
     }
 }
