@@ -2855,115 +2855,138 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
     assert(blkOp->OperIs(GT_STORE_BLK));
 
-    bool isCopyBlk = blkOp->OperIsCopyBlkOp();
+    bool isCopyBlk  = blkOp->OperIsCopyBlkOp();
+    bool isNativeOp = blkOp->gtBlkOpKind == GenTreeBlk::BlkOpKindNativeOpcode;
+    // If the destination is on the stack we don't need a write barrier.
+    bool dstOnStack = blkOp->IsAddressNotOnHeap(m_compiler);
 
-    switch (blkOp->gtBlkOpKind)
+    if (blkOp->gtBlkOpKind == GenTreeBlk::BlkOpKindLoop)
     {
-        case GenTreeBlk::BlkOpKindCpObjUnroll:
-            genCodeForCpObj(blkOp->AsBlk());
-            break;
-
-        case GenTreeBlk::BlkOpKindLoop:
-            assert(!isCopyBlk);
-            genCodeForInitBlkLoop(blkOp);
-            break;
-
-        case GenTreeBlk::BlkOpKindNativeOpcode:
-            genConsumeOperands(blkOp);
-            // Emit the size constant expected by the memory.copy and memory.fill opcodes
-            GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
-            GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
-            break;
-
-        default:
-            unreached();
+        assert(!isCopyBlk);
+        genCodeForInitBlkLoop(blkOp);
+        genUpdateLife(blkOp);
+        return;
     }
 
-    genUpdateLife(blkOp);
-}
+    // If our destination is on the stack we should be handling it with a native memory.copy/fill,
+    // lowering should only select cpobj for cases where a write barrier is potentially necessary.
+    assert(!dstOnStack || isNativeOp);
 
-//------------------------------------------------------------------------
-// genCodeForCpObj: Produce code for a GT_STORE_BLK node that represents a cpobj operation.
-//
-// Arguments:
-//    cpObjNode - the node
-//
-void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
-{
-    GenTree*  dstAddr     = cpObjNode->Addr();
-    GenTree*  source      = cpObjNode->Data();
-    var_types srcAddrType = TYP_BYREF;
-    regNumber dstReg      = GetMultiUseOperandReg(dstAddr);
-    unsigned  dstOffset   = 0;
-    regNumber srcReg;
-    unsigned  srcOffset;
+#ifdef DEBUG
+    // If we're not using the native memory.copy/fill opcodes and are doing cpobj, we should only
+    // see types that have GC pointers in them.
+    assert(isNativeOp || blkOp->GetLayout()->HasGCPtr());
+#endif // DEBUG
 
-    // Identify the register containing our source base address, either a multi-use
-    //  reg representing the operand of a GT_IND, or the frame pointer for LCL_VAR/LCL_FLD.
-    if (source->OperIs(GT_IND))
+    bool      nullCheckDest = ((blkOp->gtFlags & GTF_IND_NONFAULTING) == 0) && !dstOnStack;
+    bool      nullCheckSrc  = false;
+    GenTree*  dest          = blkOp->Addr();
+    GenTree*  src           = blkOp->Data();
+    regNumber destReg       = REG_NA;
+    regNumber srcReg        = REG_NA;
+    unsigned  destOffset    = 0;
+    unsigned  srcOffset     = 0;
+
+    genConsumeOperands(blkOp);
+
+    // If the source is a byref or pointer it will be a GT_IND that we need to unwrap to extract the
+    //  actual address we're loading from. Note that this does not apply to the destination.
+    if (src->OperIs(GT_IND))
     {
-        bool doNullCheck = (source->gtFlags & GTF_IND_NONFAULTING) == 0;
-        source           = source->gtGetOp1();
-        assert(!source->isContained());
-        srcAddrType = source->TypeGet();
-        srcReg      = GetMultiUseOperandReg(source);
-        srcOffset   = 0;
-
-        if (doNullCheck)
+        nullCheckSrc = (src->gtFlags & GTF_IND_NONFAULTING) == 0;
+        src          = src->gtGetOp1();
+        srcReg       = GetMultiUseOperandReg(src);
+        assert(!src->isContained());
+    }
+    else if (src->OperIs(GT_CNS_INT, GT_INIT_VAL))
+    {
+        if (src->OperIs(GT_INIT_VAL))
         {
-            genEmitNullCheck(srcReg);
+            src = src->gtGetOp1();
         }
+        assert(!src->isContained());
+        assert(!isCopyBlk);
+        assert(isNativeOp);
     }
     else
     {
-        assert(source->OperIs(GT_LCL_FLD, GT_LCL_VAR));
-        GenTreeLclVarCommon* lclVar = source->AsLclVarCommon();
+        assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+        GenTreeLclVarCommon* lclVar = src->AsLclVarCommon();
         bool                 fpBased;
+        srcReg    = GetFramePointerReg();
         srcOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
         assert(fpBased);
-        srcReg = GetFramePointerReg();
     }
 
-    // If the destination is on the stack we don't need the write barrier.
-    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(m_compiler);
-    // We should have generated a memory.copy for this scenario in lowering.
-    assert(!dstOnStack);
+    if (dest->OperIs(GT_LCL_ADDR))
+    {
+        GenTreeLclVarCommon* lclVar = dest->AsLclVarCommon();
+        bool                 fpBased;
+        destReg    = GetFramePointerReg();
+        destOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
+        assert(fpBased);
+    }
+    else if (isCopyBlk || nullCheckDest)
+    {
+        destReg = GetMultiUseOperandReg(dest);
+    }
+    else
+    {
+        // This should be a native memory.fill for an initblk, where
+        // the destination is not being null checked so we didn't flag
+        // dest as multiply-used and can't allocate a reg for it.
+        assert(isNativeOp);
+    }
 
-#ifdef DEBUG
-    assert(!dstAddr->isContained());
-
-    // This GenTree node has data about GC pointers, this means we're dealing
-    // with CpObj.
-    assert(cpObjNode->GetLayout()->HasGCPtr());
-#endif // DEBUG
-
-    genConsumeOperands(cpObjNode);
+    if (nullCheckDest)
+    {
+        genEmitNullCheck(destReg);
+    }
+    if (nullCheckSrc)
+    {
+        genEmitNullCheck(srcReg);
+    }
 
     emitter* emit = GetEmitter();
 
-    if ((cpObjNode->gtFlags & GTF_IND_NONFAULTING) == 0)
+    if (isNativeOp)
     {
-        genEmitNullCheck(dstReg);
+        // The destination should already be on the stack.
+        // The src may not be on the evaluation stack if it was contained, in which case we need to manufacture it
+        if (src->isContained())
+        {
+            assert(isCopyBlk);
+            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
+            if (srcOffset != 0)
+            {
+                emit->emitIns_I(INS_I_const, EA_PTRSIZE, srcOffset);
+                emit->emitIns(INS_I_add);
+            }
+        }
+        GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
+        GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+        genUpdateLife(blkOp);
+        return;
     }
 
     // TODO-WASM: Remove the need to do this somehow
     // The dst and src may be on the evaluation stack, but we can't reliably use them, so drop them.
+    assert(!dest->isContained());
     emit->emitIns(INS_drop);
-    if (!source->isContained())
+    if (!src->isContained())
+    {
         emit->emitIns(INS_drop);
+    }
 
-    if (cpObjNode->IsVolatile())
+    if (blkOp->IsVolatile())
     {
         // TODO-WASM: Memory barrier
     }
 
-    ClassLayout* layout = cpObjNode->GetLayout();
+    ClassLayout* layout = blkOp->GetLayout();
     unsigned     slots  = layout->GetSlotCount();
 
-    emitAttr attrSrcAddr = emitActualTypeSize(srcAddrType);
-    emitAttr attrDstAddr = emitActualTypeSize(dstAddr->TypeGet());
-
-    unsigned gcPtrCount = cpObjNode->GetLayout()->GetGCPtrCount();
+    unsigned gcPtrCount = blkOp->GetLayout()->GetGCPtrCount();
 
     unsigned i = 0;
     while (i < slots)
@@ -2973,19 +2996,19 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         if (!layout->IsGCPtr(i))
         {
             // Do a pointer-sized load+store pair at the appropriate offset relative to dest and source
-            emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
-            emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
+            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(destReg));
+            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
             emit->emitIns_I(INS_I_load, EA_PTRSIZE, srcOffset);
-            emit->emitIns_I(INS_I_store, EA_PTRSIZE, dstOffset);
+            emit->emitIns_I(INS_I_store, EA_PTRSIZE, destOffset);
         }
         else
         {
             // Compute the actual dest/src of the slot being copied to pass to the helper.
-            emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
-            emit->emitIns_I(INS_I_const, attrDstAddr, dstOffset);
+            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(destReg));
+            emit->emitIns_I(INS_I_const, EA_PTRSIZE, destOffset);
             emit->emitIns(INS_I_add);
-            emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
-            emit->emitIns_I(INS_I_const, attrSrcAddr, srcOffset);
+            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(srcReg));
+            emit->emitIns_I(INS_I_const, EA_PTRSIZE, srcOffset);
             emit->emitIns(INS_I_add);
             // NOTE: This helper's signature omits SP/PEP so all we need on the stack is dst and src.
             // TODO-WASM-CQ: add a version of CORINFO_HELP_ASSIGN_BYREF that returns the updated dest/src
@@ -2994,16 +3017,18 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             gcPtrCount--;
         }
         ++i;
+        destOffset += TARGET_POINTER_SIZE;
         srcOffset += TARGET_POINTER_SIZE;
-        dstOffset += TARGET_POINTER_SIZE;
     }
 
     assert(gcPtrCount == 0);
 
-    if (cpObjNode->IsVolatile())
+    if (blkOp->IsVolatile())
     {
         // TODO-WASM: Memory barrier
     }
+
+    genUpdateLife(blkOp);
 }
 
 //------------------------------------------------------------------------
@@ -3019,6 +3044,8 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* blkOp)
     // TODO-WASM: In multi-threaded wasm we will need to generate a for loop that atomically zeroes one GC ref
     //  at a time. Right now we're single-threaded, so we can just use memory.fill.
     assert(!WASM_THREAD_SUPPORT);
+
+    // FIXME-WASM: We're missing a null check here.
 
     genConsumeOperands(blkOp);
     // Emit the value constant expected by the memory.fill opcode (zero)
