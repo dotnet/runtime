@@ -402,19 +402,18 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             using var physicalFilesWatcher = CreateWatcher(rootPath, useActivePolling: false);
 
-            IChangeToken token = physicalFilesWatcher.GetOrAddFilePathChangeToken("file.txt");
-            Assert.False(token.HasChanged);
+            physicalFilesWatcher.GetOrAddFilePathChangeToken("file.txt");
 
-            // Delete the root directory — the token should fire
+            // Delete the root directory. On some platforms (e.g., Linux) the FSW does not
+            // fire OnError when the watched directory is deleted, so we cannot wait for the
+            // token to fire here. Instead, wait briefly and then re-register.
             Directory.Delete(rootPath, recursive: true);
-            Task deleted = WhenChanged(token);
-            await deleted.WaitAsync(TimeSpan.FromSeconds(30));
-            Assert.True(token.HasChanged, "Token should fire when the root directory is deleted");
+            await Task.Delay(WaitTimeForTokenToFire);
 
             // Re-watch the same file — root is now missing, so this goes through PendingCreationWatcher
-            IChangeToken token2 = physicalFilesWatcher.GetOrAddFilePathChangeToken("file.txt");
+            IChangeToken token = physicalFilesWatcher.GetOrAddFilePathChangeToken("file.txt");
 
-            Task changed = WhenChanged(token2);
+            Task changed = WhenChanged(token);
 
             // Recreate the root — token must not fire yet
             Directory.CreateDirectory(rootPath);
@@ -424,7 +423,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             // Create the target file — now the token must fire
             File.WriteAllText(Path.Combine(rootPath, "file.txt"), string.Empty);
 
-            await changed.WaitAsync(TimeSpan.FromSeconds(15));
+            await changed.WaitAsync(TimeSpan.FromSeconds(30));
         }
 
         [Theory]

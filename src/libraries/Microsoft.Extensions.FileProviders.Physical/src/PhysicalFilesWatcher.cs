@@ -491,39 +491,50 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             lock (_fileWatcherLock)
             {
-                if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) &&
-                    !_fileWatcher.EnableRaisingEvents)
+                if (!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty)
                 {
-                    if (!Directory.Exists(_root))
+                    // On some platforms (e.g., Linux/inotify), the FileSystemWatcher does not
+                    // auto-disable when the watched directory is deleted. Detect this and
+                    // disable manually so the FSW can be re-enabled when the root reappears.
+                    if (_fileWatcher.EnableRaisingEvents && !Directory.Exists(_root))
                     {
-                        needsRootWatcher = true;
+                        _fileWatcher.EnableRaisingEvents = false;
                         _rootWasUnavailable = true;
                     }
-                    else
+
+                    if (!_fileWatcher.EnableRaisingEvents)
                     {
-                        try
+                        if (!Directory.Exists(_root))
                         {
-                            if (string.IsNullOrEmpty(_fileWatcher.Path))
-                            {
-                                _fileWatcher.Path = _root;
-                            }
-
-                            _fileWatcher.EnableRaisingEvents = true;
-
-                            // Only scan for existing entries if the FSW was enabled after _root
-                            // was initially missing (i.e. we went through the PCW path). In the
-                            // normal case where _root always existed, there is no gap to cover.
-                            justEnabledAfterRootCreated = _rootWasUnavailable;
-                            _rootWasUnavailable = false;
+                            needsRootWatcher = true;
+                            _rootWasUnavailable = true;
                         }
-                        catch (Exception ex) when (ex is ArgumentException or IOException)
+                        else
                         {
-                            // _root may have been deleted between the Directory.Exists check
-                            // and the property sets above. Fall back to watching for root creation.
-                            if (!Directory.Exists(_root))
+                            try
                             {
-                                needsRootWatcher = true;
-                                _rootWasUnavailable = true;
+                                if (string.IsNullOrEmpty(_fileWatcher.Path))
+                                {
+                                    _fileWatcher.Path = _root;
+                                }
+
+                                _fileWatcher.EnableRaisingEvents = true;
+
+                                // Only scan for existing entries if the FSW was enabled after _root
+                                // was initially missing (i.e. we went through the PCW path). In the
+                                // normal case where _root always existed, there is no gap to cover.
+                                justEnabledAfterRootCreated = _rootWasUnavailable;
+                                _rootWasUnavailable = false;
+                            }
+                            catch (Exception ex) when (ex is ArgumentException or IOException)
+                            {
+                                // _root may have been deleted between the Directory.Exists check
+                                // and the property sets above. Fall back to watching for root creation.
+                                if (!Directory.Exists(_root))
+                                {
+                                    needsRootWatcher = true;
+                                    _rootWasUnavailable = true;
+                                }
                             }
                         }
                     }
