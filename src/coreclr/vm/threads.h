@@ -1253,6 +1253,18 @@ public:
         // spinning waiting for GC
         _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
+        // Entering cooperative mode while holding the DebuggerController lock is
+        // unsafe. RareDisablePreemptiveGC may block in WaitSuspendEvents if a GC
+        // or debugger suspension is pending, while the held lock prevents other
+        // threads from reaching a safe point — classic ABBA deadlock.
+        // EnablePreemptiveGC (coop→preemptive) is a single non-blocking store,
+        // but any code path that toggles preemptive→cooperative under this lock
+        // (e.g., HashMap::LookupValue via GCCoopHackNoThread, or
+        // FindOrCreateInitAndAddJitInfo → Init → InitializeFromStartAddress)
+        // will hit this assert on the re-entry into cooperative mode.
+        _ASSERTE_MSG(!CrstBase::IsTypeHeldByCurrentThread(CrstDebuggerController),
+            "GC cooperative mode transition while holding DebuggerController lock causes deadlocks");
+
 #ifdef ENABLE_CONTRACTS_IMPL
         TriggersGC(this);
 #endif

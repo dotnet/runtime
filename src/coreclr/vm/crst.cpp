@@ -688,6 +688,21 @@ BOOL CrstBase::IsSafeToTake()
     return fSafe;
 }
 
+bool CrstBase::IsTypeHeldByCurrentThread(CrstType type)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_DEBUG_ONLY;
+
+    for (CrstBase *pCrst = t_pOwnedCrstsChain; pCrst != nullptr; pCrst = pCrst->m_next)
+    {
+        if (pCrst->m_crstType == type)
+            return true;
+    }
+
+    return false;
+}
+
 #endif // _DEBUG
 
 CrstBase::CrstAndForbidSuspendForDebuggerHolder::CrstAndForbidSuspendForDebuggerHolder(CrstBase *pCrst)
