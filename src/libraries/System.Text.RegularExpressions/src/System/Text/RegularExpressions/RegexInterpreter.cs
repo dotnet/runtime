@@ -209,27 +209,44 @@ namespace System.Text.RegularExpressions
 
         private bool MatchString(string str, ReadOnlySpan<char> inputSpan)
         {
+            int c = str.Length;
+            int pos;
+
             if (!_rightToLeft)
             {
-                if (runtextpos > inputSpan.Length ||
-                    !inputSpan.Slice(runtextpos).StartsWith(str.AsSpan()))
+                if (inputSpan.Length - runtextpos < c)
                 {
                     return false;
                 }
 
-                runtextpos += str.Length;
-                return true;
+                pos = runtextpos + c;
             }
             else
             {
-                if (!inputSpan.Slice(0, runtextpos).EndsWith(str.AsSpan()))
+                if (runtextpos < c)
                 {
                     return false;
                 }
 
-                runtextpos -= str.Length;
-                return true;
+                pos = runtextpos;
             }
+
+            while (c != 0)
+            {
+                if (str[--c] != inputSpan[--pos])
+                {
+                    return false;
+                }
+            }
+
+            if (!_rightToLeft)
+            {
+                pos += str.Length;
+            }
+
+            runtextpos = pos;
+
+            return true;
         }
 
         private bool MatchRef(int index, int length, ReadOnlySpan<char> inputSpan, bool caseInsensitive)

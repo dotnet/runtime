@@ -7,7 +7,7 @@
     The payload directory should contain:
       tests/                              — Test DLLs + xunit.console.dll
       dumps/{source_platform}/            — Extracted dumps from each source platform
-        local/{dumpType}/{name}/{name}.dmp
+        local/{dumpType}/{r2rMode}/{name}/{name}.dmp
 
     A single Helix work item runs xunit once per source platform, each time
     with CDAC_DUMP_ROOT pointing to that platform's dump subdirectory.

@@ -2727,7 +2727,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // deep nesting exhausts address space on 32-bit
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix is not available on .NET Framework")]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task CharClassSubtraction_DeepNesting_DoesNotStackOverflow(RegexEngine engine)
