@@ -10,13 +10,14 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Dump-based integration tests for the ExecutionManager code heap enumeration APIs.
-/// Uses the LocalVariables debuggee (full dump) to exercise GetCodeHeapList and
-/// GetCodeHeapInfo against a real runtime memory image.
+/// Uses the CodeHeap debuggee (heap dump) to exercise GetCodeHeapList and
+/// GetCodeHeapInfo against a real runtime memory image that contains both
+/// a LoaderCodeHeap (regular JIT-compiled methods) and a HostCodeHeap
+/// (DynamicMethod instances).
 /// </summary>
 public class CodeHeapListDumpTests : DumpTestBase
 {
-    protected override string DebuggeeName => "LocalVariables";
-    protected override string DumpType => "full";
+    protected override string DebuggeeName => "CodeHeap";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
