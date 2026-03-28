@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Returns the bundle header offset. Zero for non-bundle apphosts.
 int64_t bundle_marker_header_offset(void);
 
@@ -15,5 +19,9 @@ static inline bool bundle_marker_is_bundle(void)
 {
     return bundle_marker_header_offset() != 0;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // APPHOST_BUNDLE_MARKER_H

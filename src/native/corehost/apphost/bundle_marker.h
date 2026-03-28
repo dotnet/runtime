@@ -4,26 +4,21 @@
 #ifndef __BUNDLE_MARKER_H__
 #define __BUNDLE_MARKER_H__
 
-#include <cstdint>
+#include "apphost_bundle_marker.h"
 
-#pragma pack(push, 1)
-    union bundle_marker_t
+// C++ wrapper for backward compatibility with existing C++ code (e.g., corehost.cpp).
+// The actual implementation is in apphost_bundle_marker.c.
+struct bundle_marker_t
+{
+    static int64_t header_offset()
     {
-    public:
-        uint8_t placeholder[40];
-        struct
-        {
-            int64_t bundle_header_offset;
-            uint8_t signature[32];
-        } locator;
+        return bundle_marker_header_offset();
+    }
 
-        static int64_t header_offset();
-        static bool is_bundle()
-        {
-            return header_offset() != 0;
-        }
-    };
-#pragma pack(pop)
-
+    static bool is_bundle()
+    {
+        return bundle_marker_is_bundle();
+    }
+};
 
 #endif // __BUNDLE_MARKER_H__

@@ -4,15 +4,16 @@
 include_directories(..)
 
 if(CLR_CMAKE_TARGET_WIN32)
-    # Windows: use existing C++ sources
+    # Windows: use existing C++ sources with C bundle_marker implementation
     set(SOURCES
-        ../bundle_marker.cpp
+        ../../hostmisc/apphost_bundle_marker.c
         ./hostfxr_resolver.cpp
         ../../corehost.cpp
     )
 
     set(HEADERS
         ../bundle_marker.h
+        ../../hostmisc/apphost_bundle_marker.h
         ../../hostfxr_resolver.h
     )
 

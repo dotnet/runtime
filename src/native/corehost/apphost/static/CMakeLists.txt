@@ -30,7 +30,7 @@ if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RA
 endif()
 
 set(SOURCES
-    ../bundle_marker.cpp
+    ../../hostmisc/apphost_bundle_marker.c
     ./hostfxr_resolver.cpp
     ./hostpolicy_resolver.cpp
     ../../hostpolicy/static/coreclr_resolver.cpp
@@ -40,6 +40,7 @@ set(SOURCES
 
 set(HEADERS
     ../bundle_marker.h
+    ../../hostmisc/apphost_bundle_marker.h
     ../../hostfxr_resolver.h
     ../../fxr_resolver.h
 )
