@@ -3172,7 +3172,7 @@ namespace System.Numerics
 
             if (Environment.Is64BitProcess)
             {
-                uint high = (uint)(msLimb >> 32);
+                uint high = (uint)(msLimb >> BitsPerUInt32);
                 msWord = (high != 0) ? high : (uint)msLimb;
             }
             else
@@ -3188,7 +3188,7 @@ namespace System.Numerics
         {
             if (value._bits is null)
             {
-                return nint.PopCount(value._sign);
+                return int.PopCount(value._sign);
             }
 
             ulong result = 0;
@@ -3205,31 +3205,53 @@ namespace System.Numerics
             }
             else
             {
-                // When the value is negative, we need to popcount the two's complement representation
-                // We'll do this "inline" to avoid needing to unnecessarily allocate.
+                // When the value is negative, we compute PopCount of the two's complement
+                // representation using 32-bit word semantics.
+                //
+                // Using the identity: PopCount(2^W - m) = W - PopCount(m) - TZC(m) + 1
+                // where W is the total width in terms of 32-bit words and m is the magnitude.
+                //
+                // This avoids platform-dependent results from complementing nuint limbs,
+                // since ~(nuint) fills upper bits with 1s on 64-bit when the magnitude
+                // only uses the lower 32 bits.
 
-                int i = 0;
-                nuint part;
+                ulong magnitudePopCount = 0;
+                ulong magnitudeTZC = 0;
+                bool foundNonZero = false;
 
-                do
+                for (int i = 0; i < value._bits.Length; i++)
                 {
-                    // Simply process bits, adding the carry while the previous value is zero
+                    nuint part = value._bits[i];
+                    magnitudePopCount += (ulong)BitOperations.PopCount(part);
 
-                    part = ~value._bits[i] + 1;
-                    result += (ulong)BitOperations.PopCount(part);
-
-                    i++;
+                    if (!foundNonZero)
+                    {
+                        if (part == 0)
+                        {
+                            magnitudeTZC += (uint)BigIntegerCalculator.BitsPerLimb;
+                        }
+                        else
+                        {
+                            magnitudeTZC += (ulong)BitOperations.TrailingZeroCount(part);
+                            foundNonZero = true;
+                        }
+                    }
                 }
-                while ((part == 0) && (i < value._bits.Length));
 
-                while (i < value._bits.Length)
+                // Compute W: total width in terms of 32-bit words.
+                // On 64-bit, each nuint holds two 32-bit words, except the MSL's upper
+                // half is excluded when it's zero (matching the original uint[] layout).
+                int wordCount = value._bits.Length;
+                if (Environment.Is64BitProcess)
                 {
-                    // Then process the remaining bits only utilizing the one's complement
-
-                    part = ~value._bits[i];
-                    result += (ulong)BitOperations.PopCount(part);
-                    i++;
+                    wordCount *= 2;
+                    if ((uint)(value._bits[^1] >> BitsPerUInt32) == 0)
+                    {
+                        wordCount--;
+                    }
                 }
+
+                result = (ulong)wordCount * BitsPerUInt32 - magnitudePopCount - magnitudeTZC + 1;
             }
 
             return result;
@@ -3335,7 +3357,7 @@ namespace System.Numerics
         {
             if (value._bits is null)
             {
-                return nint.TrailingZeroCount(value._sign);
+                return int.TrailingZeroCount(value._sign);
             }
 
             ulong result = 0;
