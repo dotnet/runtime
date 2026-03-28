@@ -393,7 +393,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             CodeHeapType.HostCodeHeap => new Contracts.HostCodeHeapInfo(
                 _target.ProcessedData.GetOrAdd<Data.HostCodeHeap>(codeHeapAddress).BaseAddress,
                 _target.ProcessedData.GetOrAdd<Data.HostCodeHeap>(codeHeapAddress).CurrentAddress),
-            _ => throw new InvalidOperationException($"Unknown code heap type {codeHeap.HeapType} at address 0x{codeHeapAddress.Value:x}"),
+            _ => new Contracts.UnknownCodeHeapInfo(codeHeapAddress),
         };
     }
 
