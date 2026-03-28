@@ -218,6 +218,47 @@ namespace System.Numerics.Tests
 
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Int64MaxValuePlusOne));
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(UInt64MaxValue));
+
+            // Small values stored in _sign: LZC is based on 32-bit width.
+            Assert.Equal((BigInteger)32, BigInteger.LeadingZeroCount(new BigInteger(0)));
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(new BigInteger(1)));
+            Assert.Equal((BigInteger)30, BigInteger.LeadingZeroCount(new BigInteger(2)));
+            Assert.Equal((BigInteger)1, BigInteger.LeadingZeroCount(new BigInteger(int.MaxValue)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(new BigInteger(-1)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(new BigInteger(-2)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(new BigInteger(int.MinValue)));
+
+            // Large positive values: LZC is the leading zero count of the most significant 32-bit word.
+            // 2^31 (= int.MaxValue+1): MSW = 0x80000000, LZC = 0
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("080000000", Globalization.NumberStyles.HexNumber)));
+            // uint.MaxValue (0xFFFFFFFF): MSW = 0xFFFFFFFF, LZC = 0
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("0FFFFFFFF", Globalization.NumberStyles.HexNumber)));
+            // 2^32 (= uint.MaxValue+1): MSW = 0x00000001, LZC = 31
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Parse("0100000000", Globalization.NumberStyles.HexNumber)));
+            // long.MaxValue (0x7FFFFFFFFFFFFFFF): MSW = 0x7FFFFFFF, LZC = 1
+            Assert.Equal((BigInteger)1, BigInteger.LeadingZeroCount(BigInteger.Parse("07FFFFFFFFFFFFFFF", Globalization.NumberStyles.HexNumber)));
+            // 2^63 (= long.MaxValue+1): MSW = 0x80000000, LZC = 0
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("08000000000000000", Globalization.NumberStyles.HexNumber)));
+            // ulong.MaxValue (0xFFFFFFFFFFFFFFFF): MSW = 0xFFFFFFFF, LZC = 0
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("0FFFFFFFFFFFFFFFF", Globalization.NumberStyles.HexNumber)));
+            // 2^64 (= ulong.MaxValue+1): MSW = 0x00000001, LZC = 31
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Parse("010000000000000000", Globalization.NumberStyles.HexNumber)));
+            // 2^127: MSW = 0x80000000, LZC = 0
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("080000000000000000000000000000000", Globalization.NumberStyles.HexNumber)));
+            // 2^128: MSW = 0x00000001, LZC = 31
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Parse("0100000000000000000000000000000000", Globalization.NumberStyles.HexNumber)));
+
+            // Large negative values always return 0.
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(-BigInteger.Parse("080000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(-BigInteger.Parse("0100000000", Globalization.NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(-BigInteger.Parse("08000000000000000", Globalization.NumberStyles.HexNumber)));
+
+            // Results must be the same on 32-bit and 64-bit platforms.
+            Assert.Equal((BigInteger)32, BigInteger.LeadingZeroCount(BigInteger.Zero));
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.One));
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Pow(2, 32)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Pow(2, 63)));
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Pow(2, 64)));
         }
 
         [Fact]

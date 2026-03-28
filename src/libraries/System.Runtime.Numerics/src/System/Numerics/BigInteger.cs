@@ -3170,7 +3170,7 @@ namespace System.Numerics
             nuint msLimb = value._bits[^1];
             uint msWord;
 
-            if (nuint.Size > sizeof(uint))
+            if (Environment.Is64BitProcess)
             {
                 uint high = (uint)(msLimb >> 32);
                 msWord = (high != 0) ? high : (uint)msLimb;
