@@ -12,6 +12,12 @@ include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
+    target_include_directories(dn-containers PRIVATE ${CLR_SRC_NATIVE_DIR})
+    target_include_directories(dn-containers-no-lto PRIVATE ${CLR_SRC_NATIVE_DIR})
+endif()
+
 add_subdirectory(../../hostmisc hostmisc)
 
 configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)

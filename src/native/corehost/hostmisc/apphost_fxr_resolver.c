@@ -7,7 +7,7 @@
 #include "apphost_utils.h"
 #include "apphost_fx_ver.h"
 
-#include <containers/dn-vector.h>
+#include <dn-vector.h>
 
 #include <string.h>
 #include <assert.h>

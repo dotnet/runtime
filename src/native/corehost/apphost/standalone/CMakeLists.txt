@@ -41,28 +41,9 @@ if(CLR_CMAKE_TARGET_WIN32)
     endif()
 else()
     # Non-Windows (Linux, macOS, etc.): use C sources only - no C++ in the apphost binary
-
-    # Run the same configure checks that hostmisc uses for config.h
-    include(CheckStructHasMember)
-    include(CheckSymbolExists)
-    check_struct_has_member("struct dirent" d_type dirent.h HAVE_DIRENT_D_TYPE)
-    check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../../hostmisc/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-
-    # Configure dn-config.h for the containers library
-    configure_file(${CLR_SRC_NATIVE_DIR}/containers/dn-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/dn-config.h)
-
     set(SOURCES
         ./apphost_main.c
-        ./apphost_bundle_marker.c
         ./apphost_hostfxr_resolver.c
-        ./apphost_fxr_resolver.c
-        ./apphost_pal.c
-        ./apphost_trace.c
-        ./apphost_utils.c
-        ./apphost_fx_ver.c
-        ${CLR_SRC_NATIVE_DIR}/containers/dn-vector.c
-        ${CLR_SRC_NATIVE_DIR}/containers/dn-allocator.c
     )
 
     add_compile_definitions(FEATURE_APPHOST)
@@ -72,21 +53,9 @@ else()
     target_include_directories(apphost PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/..
-        ${CMAKE_CURRENT_SOURCE_DIR}/../..
-        ${CMAKE_CURRENT_BINARY_DIR}
-        ${CMAKE_CURRENT_BINARY_DIR}/../..
-        ${CLR_SRC_NATIVE_DIR}
-        ${CLR_SRC_NATIVE_DIR}/containers
-        ${CLR_ARTIFACTS_OBJ_DIR})
+        ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
-    target_link_libraries(apphost PRIVATE
-        ${CMAKE_DL_LIBS}
-        $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)
-
-    if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
-        target_link_libraries(apphost PRIVATE
-            $<$<BOOL:${ATOMIC_SUPPORT_LIB}>:${ATOMIC_SUPPORT_LIB}>)
-    endif()
+    target_link_libraries(apphost PRIVATE hostmisc_c dn-containers m)
 
     disable_pax_mprotect(apphost)
 endif()

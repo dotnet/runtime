@@ -62,3 +62,33 @@ target_link_libraries(hostmisc_public PUBLIC hostmisc_interface)
 set_target_properties(hostmisc_public PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 add_library(hostmisc::public ALIAS hostmisc_public)
+
+# C implementation of hostmisc functionality used by the standalone apphost and singlefilehost.
+# On non-Windows, this provides a pure C implementation that avoids C++ runtime dependencies.
+if(NOT CLR_CMAKE_TARGET_WIN32)
+    set(HOSTMISC_C_SOURCES
+        ${CMAKE_CURRENT_LIST_DIR}/apphost_trace.c
+        ${CMAKE_CURRENT_LIST_DIR}/apphost_pal.c
+        ${CMAKE_CURRENT_LIST_DIR}/apphost_utils.c
+        ${CMAKE_CURRENT_LIST_DIR}/apphost_fx_ver.c
+        ${CMAKE_CURRENT_LIST_DIR}/apphost_fxr_resolver.c
+        ${CMAKE_CURRENT_LIST_DIR}/apphost_bundle_marker.c
+    )
+
+    add_library(hostmisc_c OBJECT ${HOSTMISC_C_SOURCES})
+    target_include_directories(hostmisc_c PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/..
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}/..
+        ${CLR_SRC_NATIVE_DIR}
+        ${CLR_ARTIFACTS_OBJ_DIR})
+    target_link_libraries(hostmisc_c PUBLIC dn-containers)
+    target_link_libraries(hostmisc_c PUBLIC
+        ${CMAKE_DL_LIBS}
+        $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)
+    if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
+        target_link_libraries(hostmisc_c PUBLIC
+            $<$<BOOL:${ATOMIC_SUPPORT_LIB}>:${ATOMIC_SUPPORT_LIB}>)
+    endif()
+endif()
