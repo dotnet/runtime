@@ -286,8 +286,8 @@
     <!-- Warnings to always disable -->
     <NoWarn>$(NoWarn);CS8500;CS8969</NoWarn>
 
-    <!-- Temporarily suppress ILLink RequiresUnsafe call-site diagnostics for the entire repo. -->
-    <NoWarn>$(NoWarn);IL5000</NoWarn>
+    <!-- Temporarily suppress ILLink RequiresUnsafe call-site and annotation-mismatch diagnostics for the entire repo. -->
+    <NoWarn>$(NoWarn);IL5000;IL5001</NoWarn>
 
     <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors for private assemblies. -->
     <NoWarn Condition="'$(IsPrivateAssembly)' == 'true'">$(NoWarn);CS1591</NoWarn>

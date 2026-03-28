@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -115,6 +116,7 @@ namespace System.Runtime
 
         [Intrinsic]
         [AnalysisCharacteristic]
+        [RequiresUnsafe]
         private static extern bool DynamicInterfaceCastablePresent();
 
         private static unsafe IntPtr RhResolveDispatchWorker(object pObject, void* cell, ref DispatchCellInfo cellInfo)
