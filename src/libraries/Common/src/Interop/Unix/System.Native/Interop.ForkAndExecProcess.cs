@@ -96,15 +96,16 @@ internal static partial class Interop
             arrPtr = (byte**)block;
 
             // Create spans over both portions of the block for bounds-checked access.
+            byte* dataPtr = block + pointersByteLength;
             Span<nint> pointers = new Span<nint>(block, count + 1);
-            Span<byte> data = new Span<byte>(block + pointersByteLength, totalByteLength);
+            Span<byte> data = new Span<byte>(dataPtr, totalByteLength);
 
             pointers[count] = 0; // null terminator
 
             int dataOffset = 0;
             for (int i = 0; i < count; i++)
             {
-                pointers[i] = (nint)(block + pointersByteLength + (nuint)dataOffset);
+                pointers[i] = (nint)(dataPtr + dataOffset);
 
                 int bytesWritten = Encoding.UTF8.GetBytes(arr[i], data.Slice(dataOffset));
                 data[dataOffset + bytesWritten] = (byte)'\0';
@@ -139,8 +140,9 @@ internal static partial class Interop
             arrPtr = (byte**)block;
 
             // Create spans over both portions of the block for bounds-checked access.
+            byte* dataPtr = block + pointersByteLength;
             Span<nint> pointers = new Span<nint>(block, count + 1);
-            Span<byte> data = new Span<byte>(block + pointersByteLength, totalByteLength);
+            Span<byte> data = new Span<byte>(dataPtr, totalByteLength);
 
             pointers[count] = 0; // null terminator
 
@@ -151,7 +153,7 @@ internal static partial class Interop
             {
                 if (pair.Value is not null)
                 {
-                    pointers[entryIndex] = (nint)(block + pointersByteLength + (nuint)dataOffset);
+                    pointers[entryIndex] = (nint)(dataPtr + dataOffset);
 
                     int keyBytes = Encoding.UTF8.GetBytes(pair.Key, data.Slice(dataOffset));
                     data[dataOffset + keyBytes] = (byte)'=';
