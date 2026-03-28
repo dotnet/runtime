@@ -12015,9 +12015,9 @@ bool Lowering::TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode)
     if (!op2->IsIntegralConst(-1))
         return false;
 
-#ifndef TARGET_64BIT
+#if LOWER_DECOMPOSE_LONGS
     assert(op2->TypeIs(TYP_INT));
-#endif // !TARGET_64BIT
+#endif // LOWER_DECOMPOSE_LONGS
 
     GenTree* op1 = node->gtGetOp1();
 
