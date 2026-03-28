@@ -682,10 +682,7 @@ namespace System.Collections.Generic
                 successor.Left = match.Left;
             }
 
-            if (successor != null)
-            {
-                successor.Color = match.Color;
-            }
+            successor?.Color = match.Color;
 
             ReplaceChildOrRoot(parentOfMatch, match, successor!);
         }

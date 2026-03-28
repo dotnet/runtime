@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -105,10 +106,11 @@ namespace System
         /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public unsafe Span(void* pointer, int length)
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
@@ -436,11 +438,13 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T[] ToArray()
         {
-            if (_length == 0)
-                return Array.Empty<T>();
+            if (IsEmpty)
+            {
+                return [];
+            }
 
-            var destination = new T[_length];
-            Buffer.Memmove(ref MemoryMarshal.GetArrayDataReference(destination), ref _reference, (uint)_length);
+            var destination = new T[Length];
+            CopyTo(destination);
             return destination;
         }
     }

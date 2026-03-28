@@ -197,7 +197,7 @@ public:
 
 
     // Used by EditAndContinueModule::FixContextAndResume
-    virtual void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = nullptr) = 0;
+    virtual void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = nullptr, bool HasActivePatchSkip = false, bool fClearSetIP = false) = 0;
     virtual BOOL IsOutOfProcessSetContextEnabled() = 0;
 #endif // FEATURE_METADATA_UPDATER
 
@@ -249,16 +249,6 @@ public:
     // send a custom notification from the target to the RS. This will become an ICorDebugThread and
     // ICorDebugAppDomain on the RS.
     virtual void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomainAssembly, mdTypeDef classToken) = 0;
-
-    // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
-    virtual void SendMDANotification(
-        Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString * szName,
-        SString * szDescription,
-        SString * szXML,
-        CorDebugMDAFlags flags,
-        BOOL bAttach
-    ) = 0;
 
     virtual bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod) = 0;
 
@@ -357,6 +347,10 @@ public:
     // This allows the debugger to store the flag whereever it wants
     // and with whatever granularity (per-module, per-class, per-function, etc).
     virtual DWORD* GetJMCFlagAddr(Module * pModule) = 0;
+
+    // Returns true if any stepper/controller has enabled method-enter callbacks.
+    // Used by the interpreter to avoid calling OnMethodEnter when not stepping.
+    virtual bool IsMethodEnterEnabled() = 0;
 
     // notification for SQL fiber debugging support
     virtual void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName) = 0;

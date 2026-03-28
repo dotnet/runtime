@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.Attributes
 
     // This is a bit fragile but it's used to test that ITV attribute is marked correctly
     [SetupLinkerTrimMode("link")]
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [KeptTypeInAssembly(PlatformAssemblies.CoreLib, typeof(InternalsVisibleToAttribute))]
     class IVTUsed
     {

@@ -163,6 +163,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 Options.FeatureSwitches.Add(values[0], bool.Parse(values[1]));
             }
+            else if (flag == "--typemap-entry-assembly")
+            {
+                Options.TypeMapEntryAssembly = values[0];
+            }
             else if (flag == "--singlewarn")
             {
                 Options.SingleWarn = true;
@@ -270,6 +274,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
             // we keep the information in flag + values format for as long as we can so that this information doesn't have to be parsed out of a single string
             foreach (var additionalArgument in options.AdditionalArguments)
                 AddAdditionalArgument(additionalArgument.Key, additionalArgument.Value);
+
+            if (options.RootEntireAssemblies?.Count > 0)
+            {
+                foreach (var asm in options.RootEntireAssemblies)
+                    Options.RootEntireAssemblies.Add(asm);
+            }
 
             if (options.IlcFrameworkCompilation)
                 Options.FrameworkCompilation = true;

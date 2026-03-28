@@ -5,11 +5,13 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [Kept]
     [ExpectedNoWarnings]
+    [SetupIlcWholeProgramAnalysis]
     class AttributePropertyDataflow
     {
         public static void Main()
@@ -143,6 +145,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [Kept]
             [KeptAttributeAttribute(typeof(KeepsPublicMethodsAttribute))]
             [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethods--")]
+            [UnexpectedWarning("IL2026", "--ClassWithKeptPublicMethods--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
             [KeepsPublicMethods(Type = typeof(ClassWithKeptPublicMethods))]
             public static bool Property { [Kept] get; [Kept] set; }
 
@@ -172,6 +175,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [KeptEventRemoveMethod]
             [KeptAttributeAttribute(typeof(KeepsPublicMethodsAttribute))]
             [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethods--")]
+            [UnexpectedWarning("IL2026", "--ClassWithKeptPublicMethods--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
             [KeepsPublicMethods(Type = typeof(ClassWithKeptPublicMethods))]
             public static event EventHandler Event_FieldSyntax;
 
@@ -181,6 +185,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [KeptEventRemoveMethod]
             [KeptAttributeAttribute(typeof(KeepsPublicMethodsAttribute))]
             [ExpectedWarning("IL2026", "--ClassWithKeptPublicMethods--")]
+            [UnexpectedWarning("IL2026", "--ClassWithKeptPublicMethods--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/120004")]
             [KeepsPublicMethods(Type = typeof(ClassWithKeptPublicMethods))]
             public static event EventHandler Event_PropertySyntax
             {

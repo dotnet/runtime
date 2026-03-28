@@ -1159,10 +1159,7 @@ namespace System.Text.Json
             {
                 // Collection modified by the user: replace the main
                 // resolver with the resolver chain as our source of truth.
-                if (_options is not null)
-                {
-                    _options._typeInfoResolver = this;
-                }
+                _options?._typeInfoResolver = this;
             }
         }
 

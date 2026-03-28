@@ -363,18 +363,16 @@ namespace System
         /// </remarks>
         public void Shuffle<T>(Span<T> values)
         {
-            int n = values.Length;
-
-            for (int i = 0; i < n - 1; i++)
+            for (int i = 0; i < values.Length - 1; i++)
             {
-                int j = Next(i, n);
+                int j = Next(i, values.Length);
 
-                if (j != i)
-                {
-                    T temp = values[i];
-                    values[i] = values[j];
-                    values[j] = temp;
-                }
+                // The i != j check is excluded intentionally.
+                // Microbenchmarks show that the mispredicted branches cost more than the redundant read/write for small value types.
+                // Since large value types are uncommon in shuffle scenarios, the trade-off favors removing the branch.
+                T temp = values[i];
+                values[i] = values[j];
+                values[j] = temp;
             }
         }
 

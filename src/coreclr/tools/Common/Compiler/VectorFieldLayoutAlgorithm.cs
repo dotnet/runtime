@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -13,11 +15,9 @@ namespace ILCompiler
     public class VectorFieldLayoutAlgorithm : FieldLayoutAlgorithm
     {
         private readonly FieldLayoutAlgorithm _fallbackAlgorithm;
-        private readonly bool _vectorAbiIsStable;
 
-        public VectorFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, bool vectorAbiIsStable = true)
+        public VectorFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm)
         {
-            _vectorAbiIsStable = vectorAbiIsStable;
             _fallbackAlgorithm = fallbackAlgorithm;
         }
 
@@ -27,12 +27,11 @@ namespace ILCompiler
 
             LayoutInt alignment;
 
-            string name = defType.Name;
-            if (name == "Vector64`1")
+            if (defType.Name.SequenceEqual("Vector64`1"u8))
             {
                 alignment = new LayoutInt(8);
             }
-            else if (name == "Vector128`1")
+            else if (defType.Name.SequenceEqual("Vector128`1"u8))
             {
                 if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
                 {
@@ -44,7 +43,7 @@ namespace ILCompiler
                     alignment = new LayoutInt(16);
                 }
             }
-            else if (name == "Vector256`1")
+            else if (defType.Name.SequenceEqual("Vector256`1"u8))
             {
                 if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
                 {
@@ -77,7 +76,7 @@ namespace ILCompiler
             }
             else
             {
-                Debug.Assert(name == "Vector512`1");
+                Debug.Assert(defType.Name.SequenceEqual("Vector512`1"u8));
 
                 if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
                 {
@@ -118,7 +117,7 @@ namespace ILCompiler
                 FieldAlignment = alignment,
                 FieldSize = layoutFromMetadata.FieldSize,
                 Offsets = layoutFromMetadata.Offsets,
-                LayoutAbiStable = _vectorAbiIsStable
+                LayoutAbiStable = true
             };
         }
 
@@ -165,11 +164,11 @@ namespace ILCompiler
         public static bool IsVectorType(DefType type)
         {
             return type.IsIntrinsic &&
-                type.Namespace == "System.Runtime.Intrinsics" &&
-                ((type.Name == "Vector64`1") ||
-                 (type.Name == "Vector128`1") ||
-                 (type.Name == "Vector256`1") ||
-                 (type.Name == "Vector512`1"));
+                type.Namespace.SequenceEqual("System.Runtime.Intrinsics"u8) &&
+                (type.Name.SequenceEqual("Vector64`1"u8) ||
+                 type.Name.SequenceEqual("Vector128`1"u8) ||
+                 type.Name.SequenceEqual("Vector256`1"u8) ||
+                 type.Name.SequenceEqual("Vector512`1"u8));
         }
     }
 }

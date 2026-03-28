@@ -156,6 +156,7 @@ namespace System.DirectoryServices.Protocols
         LDAP_OPT_SECURITY_CONTEXT = 0x99,
         LDAP_OPT_ROOTDSE_CACHE = 0x9a, // Not Supported in Linux
         LDAP_OPT_DEBUG_LEVEL = 0x5001,
+        LDAP_OPT_NETWORK_TIMEOUT = 0x5005, // Not Supported in Windows
         LDAP_OPT_URI = 0x5006, // Not Supported in Windows
         LDAP_OPT_X_TLS_CACERTDIR = 0x6003, // Not Supported in Windows
         LDAP_OPT_X_TLS_NEWCTX = 0x600F, // Not Supported in Windows

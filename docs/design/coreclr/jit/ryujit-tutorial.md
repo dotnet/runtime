@@ -55,8 +55,7 @@ Finally, while the original JIT was quite x86-oriented, we now have a broader se
   - Inherits from ICorDynamicInfo (corinfo.h)
 
 #### Notes
-In this talk and elsewhere, you will see the .NET runtime often referred to as the VM, for virtual machine, the EE, for execution engine, or the CLR, for common language runtime. They are largely used interchangeably, though some might argue the terms have subtle differences.
-.NET is somewhat unique in that it currently has a single-tier JIT – no interpreter, and no re-optimizing JIT. While an interpreter exists, and experimentation has been done on re-jitting, the current model remains single-tier.
+In this document and elsewhere, you will see the .NET runtime often referred to as the VM, for virtual machine, the EE, for execution engine, or the CLR, for common language runtime. They are largely used interchangeably, though some might argue the terms have subtle differences.
 
 The JIT and the VM each implement an interface that abstracts the dependencies they share. The VM invokes methods on the ICorJitCompiler interface to compile methods, and the JIT calls back on the ICorJitInfo interface to get information about types and methods.
 
@@ -68,6 +67,10 @@ The JIT and the VM each implement an interface that abstracts the dependencies t
 This is the 10,000 foot view of RyuJIT. It takes in MSIL (aka CIL) in the form of byte codes, and the Importer phase transforms these to the intermediate representation used in the JIT. The IR operations are called "GenTrees", as in "trees for code generation". This format is preserved across the bulk of the JIT, with some changes in form and invariants along the way. Eventually, the code generator produces a low-level intermediate called InstrDescs, which simply capture the instruction encodings while the final mappings are done to produce the actual native code and associated tables.
 
 ### RyuJIT Phases
+
+Note: Various details in what follows are outdated and should be mostly taken to be of historical interest.
+For more up-to-date information about the phases and their details, please see [the overview document](ryujit-overview.md).
+
 ![RyuJIT Phases](images/ryujit-phase-diagram.png)
 
 #### Notes

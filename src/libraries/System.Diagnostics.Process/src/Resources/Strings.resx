@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -210,6 +210,12 @@
   <data name="CantRedirectStreams" xml:space="preserve">
     <value>The Process object must have the UseShellExecute property set to false in order to redirect IO streams.</value>
   </data>
+  <data name="Arg_InvalidHandle" xml:space="preserve">
+    <value>Invalid handle.</value>
+  </data>
+  <data name="CantSetHandleAndRedirect" xml:space="preserve">
+    <value>The StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties cannot be used together with the corresponding RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties.</value>
+  </data>
   <data name="DirectoryNotValidAsInput" xml:space="preserve">
     <value>The FileName property should not be a directory unless UseShellExecute is set.</value>
   </data>
@@ -331,7 +337,7 @@
     <value>Not all processes in process tree could be terminated.</value>
   </data>
   <data name="InvalidSysctl" xml:space="preserve">
-    <value>sysctl {0} failed with {1} error.</value>
+    <value>sysctl ({0}) failed with {1} error.</value>
   </data>
   <data name="InvalidPerfData" xml:space="preserve">
     <value>Invalid performance counter data with type '{0}'.</value>

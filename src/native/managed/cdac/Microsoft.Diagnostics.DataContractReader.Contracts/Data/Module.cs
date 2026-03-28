@@ -20,10 +20,13 @@ internal sealed class Module : IData<Module>
         Base = target.ReadPointer(address + (ulong)type.Fields[nameof(Base)].Offset);
         LoaderAllocator = target.ReadPointer(address + (ulong)type.Fields[nameof(LoaderAllocator)].Offset);
         DynamicMetadata = target.ReadPointer(address + (ulong)type.Fields[nameof(DynamicMetadata)].Offset);
+        SimpleName = target.ReadPointer(address + (ulong)type.Fields[nameof(SimpleName)].Offset);
         Path = target.ReadPointer(address + (ulong)type.Fields[nameof(Path)].Offset);
         FileName = target.ReadPointer(address + (ulong)type.Fields[nameof(FileName)].Offset);
         ReadyToRunInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(ReadyToRunInfo)].Offset);
         GrowableSymbolStream = target.ReadPointer(address + (ulong)type.Fields[nameof(GrowableSymbolStream)].Offset);
+        AvailableTypeParams = target.ReadPointer(address + (ulong)type.Fields[nameof(AvailableTypeParams)].Offset);
+        InstMethodHashTable = target.ReadPointer(address + (ulong)type.Fields[nameof(InstMethodHashTable)].Offset);
 
         FieldDefToDescMap = address + (ulong)type.Fields[nameof(FieldDefToDescMap)].Offset;
         ManifestModuleReferencesMap = address + (ulong)type.Fields[nameof(ManifestModuleReferencesMap)].Offset;
@@ -32,6 +35,7 @@ internal sealed class Module : IData<Module>
         TypeDefToMethodTableMap = address + (ulong)type.Fields[nameof(TypeDefToMethodTableMap)].Offset;
         TypeRefToMethodTableMap = address + (ulong)type.Fields[nameof(TypeRefToMethodTableMap)].Offset;
         MethodDefToILCodeVersioningStateMap = address + (ulong)type.Fields[nameof(MethodDefToILCodeVersioningStateMap)].Offset;
+        DynamicILBlobTable = target.ReadPointer(address + (ulong)type.Fields[nameof(DynamicILBlobTable)].Offset);
     }
 
     public TargetPointer Assembly { get; init; }
@@ -40,10 +44,13 @@ internal sealed class Module : IData<Module>
     public TargetPointer Base { get; init; }
     public TargetPointer LoaderAllocator { get; init; }
     public TargetPointer DynamicMetadata { get; init; }
+    public TargetPointer SimpleName { get; init; }
     public TargetPointer Path { get; init; }
     public TargetPointer FileName { get; init; }
     public TargetPointer ReadyToRunInfo { get; init; }
     public TargetPointer GrowableSymbolStream { get; init; }
+    public TargetPointer AvailableTypeParams { get; init; }
+    public TargetPointer InstMethodHashTable { get; init; }
 
     public TargetPointer FieldDefToDescMap { get; init; }
     public TargetPointer ManifestModuleReferencesMap { get; init; }
@@ -52,4 +59,5 @@ internal sealed class Module : IData<Module>
     public TargetPointer TypeDefToMethodTableMap { get; init; }
     public TargetPointer TypeRefToMethodTableMap { get; init; }
     public TargetPointer MethodDefToILCodeVersioningStateMap { get; init; }
+    public TargetPointer DynamicILBlobTable { get; init; }
 }

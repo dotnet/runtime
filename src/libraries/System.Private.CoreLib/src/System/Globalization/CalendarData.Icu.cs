@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -405,7 +406,7 @@ namespace System.Globalization
             // So for other calendars, only return the latest era.
             if (calendarId != CalendarId.JAPAN && calendarId != CalendarId.JAPANESELUNISOLAR && eraNames?.Length > 0)
             {
-                eraNames = [eraNames![^1]];
+                eraNames = [eraNames[^1]];
             }
 
             return result;
@@ -426,6 +427,7 @@ namespace System.Globalization
             return result;
         }
 
+        [RequiresUnsafe]
         private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, IcuEnumCalendarsData* callbackContext)
         {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
@@ -437,6 +439,7 @@ namespace System.Globalization
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void EnumCalendarInfoCallback(char* calendarStringPtr, IntPtr context)
         {
             try

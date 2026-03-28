@@ -6,6 +6,9 @@
   <ItemGroup>
     <Compile Include="Deserialize.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
   <PropertyGroup>
     <ProjectAssetsFile>$(JitPackagesConfigFileDirectory)benchmark+serialize\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>

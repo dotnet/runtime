@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "Pal.h"
@@ -80,7 +81,7 @@ EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIOPack(void * Nati
 {
 }
 
-EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogExceptionThrown(const WCHAR* exceptionTypeName, const WCHAR* exceptionMessage, void* faultingIP, HRESULT hresult)
+EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogExceptionThrown(const WCHAR* exceptionTypeName, const WCHAR* exceptionMessage, void* faultingIP, HRESULT hresult, uint16_t flags, uint16_t ClrInstanceID)
 {
 }
 

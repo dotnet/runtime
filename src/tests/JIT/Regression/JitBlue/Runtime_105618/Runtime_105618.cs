@@ -10,6 +10,9 @@
 // 
 //     File: /__w/1/s/src/coreclr/jit/promotiondecomposition.cpp Line: 1223
 // 
+
+namespace Runtime_105618;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

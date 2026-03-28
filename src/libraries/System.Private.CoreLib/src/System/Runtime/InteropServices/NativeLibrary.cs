@@ -264,5 +264,28 @@ namespace System.Runtime.InteropServices
             }
             return result;
         }
+
+#if !MONO
+        private static IntPtr LoadFromPath(string libraryName, bool throwOnError)
+        {
+            LoadLibErrorTracker errorTracker = default;
+            IntPtr ret = LoadLibraryHelper(libraryName, LoadWithAlteredSearchPathFlag, ref errorTracker);
+            if (throwOnError && ret == IntPtr.Zero)
+            {
+                errorTracker.Throw(libraryName);
+            }
+
+            return ret;
+        }
+
+        private static unsafe IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError)
+        {
+            IntPtr ret = GetSymbolOrNull(handle, symbolName);
+            if (throwOnError && ret == IntPtr.Zero)
+                throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterizedNoLibrary, symbolName));
+
+            return ret;
+        }
+#endif
     }
 }

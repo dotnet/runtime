@@ -7,6 +7,7 @@ using System.Text;
 using Xunit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using TestLibrary;
 
 unsafe class ThisCallNative
 {
@@ -16,6 +17,7 @@ unsafe class ThisCallNative
 
 public unsafe class EmptyThisCallTest
 {
+    [ActiveIssue("Tests that 'thiscall' with an empty signature results in InvalidProgramException", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static int TestEntryPoint()
     {
@@ -45,7 +47,7 @@ public unsafe class EmptyThisCallTest
         return 100;
     }
 
-    [UnmanagedCallersOnly(CallConvs = new [] {typeof(CallConvThiscall)})]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvThiscall)])]
     private static int Foo(void* a)
     {
         return 0;

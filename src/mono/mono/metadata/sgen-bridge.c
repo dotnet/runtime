@@ -713,6 +713,8 @@ sgen_bridge_handle_gc_param (const char *opt)
 
 	if (!strcmp (opt, "bridge-require-precise-merge")) {
 		bridge_processor_config.scc_precise_merge = TRUE;
+	} else if (!strcmp (opt, "disable-non-bridge-scc")) {
+		bridge_processor_config.disable_non_bridge_scc = TRUE;
 	} else {
 		return FALSE;
 	}

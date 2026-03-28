@@ -147,6 +147,7 @@
     <Compile Include="XmlConvert\SqlXmlConvertTests3.cs" />
     <Compile Include="XmlConvert\ToTypeTests.cs" />
     <Compile Include="XmlConvert\VerifyNameTests1.cs" />
+    <Compile Include="XmlConvert\XmlConvertEndOfDayTests.cs" />
     <Compile Include="XmlConvert\VerifyNameTests2.cs" />
     <Compile Include="XmlConvert\VerifyNameTests3.cs" />
     <Compile Include="XmlConvert\VerifyNameTests4.cs" />
@@ -421,6 +422,7 @@
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateAttribute_String.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateElement.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateMisc.cs" />
+    <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidationErrorMessageTests.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateText_EndElement.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateText_String.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\ValidateWhitespace_String.cs" />

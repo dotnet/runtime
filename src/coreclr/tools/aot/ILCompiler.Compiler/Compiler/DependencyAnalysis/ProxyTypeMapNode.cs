@@ -13,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ProxyTypeMapNode : DependencyNodeCore<NodeFactory>, IProxyTypeMapNode
+    internal sealed class ProxyTypeMapNode : SortableDependencyNode, IProxyTypeMapNode
     {
         private readonly IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> _mapEntries;
 
@@ -34,18 +34,29 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public int ClassCode => 779513676;
+        public override int ClassCode => 779513676;
 
-        public int CompareToImpl(ISortableNode other, CompilerComparer comparer) => comparer.Compare(TypeMapGroup, ((ProxyTypeMapNode)other).TypeMapGroup);
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer) => comparer.Compare(TypeMapGroup, ((ProxyTypeMapNode)other).TypeMapGroup);
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
         {
             foreach (var (key, value) in _mapEntries)
             {
                 yield return new CombinedDependencyListEntry(
-                    context.MaximallyConstructableType(value),
+                    context.MetadataTypeSymbol(value),
                     context.MaximallyConstructableType(key),
                     "Proxy type map entry");
+
+                // If the key type has a canonical form, it could be created at runtime by the type loader.
+                // If there is a type loader template for it, create the generic type instantiation eagerly.
+                TypeDesc canonKey = key.ConvertToCanonForm(CanonicalFormKind.Specific);
+                if (canonKey != key)
+                {
+                    yield return new CombinedDependencyListEntry(
+                        context.MaximallyConstructableType(key),
+                        context.NativeLayout.TemplateTypeLayout(canonKey),
+                        "Proxy map entry that could be loaded at runtime");
+                }
             }
         }
 
@@ -60,27 +71,27 @@ namespace ILCompiler.DependencyAnalysis
                 IEETypeNode keyNode = factory.MaximallyConstructableType(key);
                 if (keyNode.Marked)
                 {
-                    IEETypeNode valueNode = factory.MaximallyConstructableType(value);
+                    IEETypeNode valueNode = factory.MetadataTypeSymbol(value);
                     Debug.Assert(valueNode.Marked);
                     yield return (keyNode, valueNode);
                 }
             }
         }
 
-        public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, ExternalReferencesTableNode externalReferences)
+        public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
             VertexHashtable typeMapHashTable = new VertexHashtable();
 
             foreach ((IEETypeNode keyNode, IEETypeNode valueNode) in GetMarkedEntries(factory))
             {
-                Vertex keyVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(keyNode));
-                Vertex valueVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(valueNode));
+                Vertex keyVertex = externalReferences.EncodeReferenceToType(writer, keyNode.Type);
+                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, valueNode.Type);
                 Vertex entry = writer.GetTuple(keyVertex, valueVertex);
                 typeMapHashTable.Append((uint)keyNode.Type.GetHashCode(), section.Place(entry));
             }
 
             Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
-            Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(TypeMapGroup)));
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
             Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
             return section.Place(tuple);
         }

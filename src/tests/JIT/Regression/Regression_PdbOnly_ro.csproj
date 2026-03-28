@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+    <HasMergedInTests>True</HasMergedInTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="clr-x64-JIT\v4.0\DevDiv34372\overRepLocalOpt.cs" />
+    <Compile Include="CLR-x86-JIT\V1.1-M1-Beta1\b140711\b140711.cs" />
+    <Compile Include="CLR-x86-JIT\V1.2-Beta1\b102879\dblinf.cs" />
+    <Compile Include="CLR-x86-JIT\V1.2-M01\b08046cs\SyncGCHole.cs" />
+    <Compile Include="CLR-x86-JIT\V2.0-Beta2\b448208\Desktop\b448208.cs" />
+    <Compile Include="CLR-x86-JIT\V2.0-Beta2\b449827\b449827.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\b569942\b569942.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\b609280\b609280.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\DDB\b151497\NullCheckBoxedValuetypeReturn.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\DDB\b158861\b158861.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\DDB\b188478\b188478.cs" />
+    <Compile Include="Dev11\dev10_94677\loopvt.cs" />
+    <Compile Include="Dev11\dev11_4421\Dev11_4421.cs" />
+    <Compile Include="Dev11\Dev11_457559\Dev11_457559.cs" />
+    <Compile Include="Dev11\Dev11_5437\Dev11_5437.cs" />
+    <Compile Include="Dev11\Dev11_617302\Dev11_617302.cs" />
+    <Compile Include="Dev11\Dev11_646049\Dev11_646049.cs" />
+    <Compile Include="Dev11\DevDiv2_10623\DevDiv2_10623.cs" />
+    <Compile Include="JitBlue\GitHub_69659\GitHub_69659_1.cs" />
+    <Compile Include="JitBlue\GitHub_69659\GitHub_69659_2.cs" />
+    <Compile Include="JitBlue\GitHub_7907\GitHub_7907.cs" />
+    <Compile Include="JitBlue\GitHub_8231\GitHub_8231.cs" />
+    <Compile Include="VS-ia64-JIT\V1.2-Beta1\b302509\_5mvazhg.cs" />
+  </ItemGroup>
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

@@ -12,7 +12,7 @@ namespace ILCompiler
     {
         public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this PropertyPseudoDesc prop, string attributeNamespace, string attributeName)
         {
-            var ecmaType = prop.OwningType as EcmaType;
+            var ecmaType = prop.OwningType;
             var metadataReader = ecmaType.MetadataReader;
 
             var attributeHandle = metadataReader.GetCustomAttributeHandle(prop.GetCustomAttributes,
@@ -21,12 +21,12 @@ namespace ILCompiler
             if (attributeHandle.IsNil)
                 return null;
 
-            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
+            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.Module));
         }
 
         public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this PropertyPseudoDesc prop, string attributeNamespace, string attributeName)
         {
-            var ecmaType = prop.OwningType as EcmaType;
+            var ecmaType = prop.OwningType;
             var metadataReader = ecmaType.MetadataReader;
 
             var attributeHandles = prop.GetCustomAttributes;
@@ -34,14 +34,14 @@ namespace ILCompiler
             {
                 if (MetadataExtensions.IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
                 {
-                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.Module));
                 }
             }
         }
 
         public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EventPseudoDesc @event, string attributeNamespace, string attributeName)
         {
-            var ecmaType = @event.OwningType as EcmaType;
+            var ecmaType = @event.OwningType;
             var metadataReader = ecmaType.MetadataReader;
 
             var attributeHandle = metadataReader.GetCustomAttributeHandle(@event.GetCustomAttributes,
@@ -50,12 +50,12 @@ namespace ILCompiler
             if (attributeHandle.IsNil)
                 return null;
 
-            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
+            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.Module));
         }
 
         public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EventPseudoDesc @event, string attributeNamespace, string attributeName)
         {
-            var ecmaType = @event.OwningType as EcmaType;
+            var ecmaType = @event.OwningType;
             var metadataReader = ecmaType.MetadataReader;
 
             var attributeHandles = @event.GetCustomAttributes;
@@ -63,7 +63,7 @@ namespace ILCompiler
             {
                 if (MetadataExtensions.IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
                 {
-                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.Module));
                 }
             }
         }

@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
@@ -124,16 +123,28 @@ namespace System.Security.Cryptography
                 ExportKeyWithEncryptedOnlyExport(
                     static (ref readonly mldsaPrivateKeyAsn, algorithm, destination) =>
                     {
-                        ReadOnlyMemory<byte>? seed = mldsaPrivateKeyAsn.Seed ?? mldsaPrivateKeyAsn.Both?.Seed;
+                        ReadOnlySpan<byte> seedValue = default;
+                        bool hasSeed = false;
 
-                        if (seed is ReadOnlyMemory<byte> seedValue)
+                        if (mldsaPrivateKeyAsn.HasSeed)
+                        {
+                            hasSeed = true;
+                            seedValue = mldsaPrivateKeyAsn.Seed;
+                        }
+                        else if (mldsaPrivateKeyAsn.HasBoth)
+                        {
+                            hasSeed = true;
+                            seedValue = mldsaPrivateKeyAsn.Both.Seed;
+                        }
+
+                        if (hasSeed)
                         {
                             if (seedValue.Length != algorithm.PrivateSeedSizeInBytes)
                             {
                                 throw new CryptographicException(SR.Argument_PrivateSeedWrongSizeForAlgorithm);
                             }
 
-                            seedValue.Span.CopyTo(destination);
+                            seedValue.CopyTo(destination);
                             return;
                         }
 
@@ -157,30 +168,41 @@ namespace System.Security.Cryptography
             {
                 ExportKeyWithEncryptedOnlyExport(static (ref readonly mldsaPrivateKeyAsn, algorithm, destination) =>
                 {
-                    ReadOnlyMemory<byte>? expandedKey = mldsaPrivateKeyAsn.ExpandedKey ?? mldsaPrivateKeyAsn.Both?.ExpandedKey;
+                    ReadOnlySpan<byte> expandedKeyValue = default;
+                    bool hasExpandedKey = false;
 
-                    if (expandedKey is ReadOnlyMemory<byte> expandedKeyValue)
+                    if (mldsaPrivateKeyAsn.HasExpandedKey)
+                    {
+                        hasExpandedKey = true;
+                        expandedKeyValue = mldsaPrivateKeyAsn.ExpandedKey;
+                    }
+                    else if (mldsaPrivateKeyAsn.HasBoth)
+                    {
+                        hasExpandedKey = true;
+                        expandedKeyValue = mldsaPrivateKeyAsn.Both.ExpandedKey;
+                    }
+
+                    if (hasExpandedKey)
                     {
                         if (expandedKeyValue.Length != algorithm.PrivateKeySizeInBytes)
                         {
                             throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                         }
 
-                        expandedKeyValue.Span.CopyTo(destination);
+                        expandedKeyValue.CopyTo(destination);
                         return;
                     }
 
-                    // If PKCS#8 only has seed, then we can calculate the private key
-                    ReadOnlyMemory<byte>? seed = mldsaPrivateKeyAsn.Seed;
-
-                    if (seed is ReadOnlyMemory<byte> seedValue)
+                    if (mldsaPrivateKeyAsn.HasSeed)
                     {
+                        ReadOnlySpan<byte> seedValue = mldsaPrivateKeyAsn.Seed;
+
                         if (seedValue.Length != algorithm.PrivateSeedSizeInBytes)
                         {
                             throw new CryptographicException(SR.Argument_PrivateSeedWrongSizeForAlgorithm);
                         }
 
-                        using (MLDsa cloned = MLDsaImplementation.ImportSeed(algorithm, seedValue.Span))
+                        using (MLDsa cloned = MLDsaImplementation.ImportSeed(algorithm, seedValue))
                         {
                             cloned.ExportMLDsaPrivateKey(destination);
                             return;
@@ -373,16 +395,6 @@ namespace System.Security.Cryptography
                 {
                     key = CngKey.Import(pkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
                 }
-                catch (CryptographicException)
-                {
-                    // TODO: Once Windows moves to new PKCS#8 format, we can remove this conversion.
-                    byte[] newPkcs8Source = MLDsaPkcs8.ConvertToOldChoicelessFormat(pkcs8Source);
-
-                    using (PinAndClear.Track(newPkcs8Source))
-                    {
-                        key = CngKey.Import(newPkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
-                    }
-                }
                 catch (AsnContentException e)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
@@ -443,10 +455,7 @@ namespace System.Security.Cryptography
             base.Dispose(disposing);
         }
 
-        private void ExportKey(
-            CngKeyBlobFormat blobFormat,
-            int expectedKeySize,
-            Span<byte> destination)
+        private void ExportKey(CngKeyBlobFormat blobFormat, int expectedKeySize, Span<byte> destination)
         {
             byte[] blob = _key.Export(blobFormat);
 
@@ -473,7 +482,7 @@ namespace System.Security.Cryptography
         }
 
         private delegate void KeySelectorFunc(
-            ref readonly MLDsaPrivateKeyAsn mldsaPrivateKeyAsn,
+            ref readonly ValueMLDsaPrivateKeyAsn mldsaPrivateKeyAsn,
             MLDsaAlgorithm algorithm,
             Span<byte> destination);
 
@@ -484,19 +493,12 @@ namespace System.Security.Cryptography
 
             try
             {
-                ReadOnlyMemory<byte> privateKey = KeyFormatHelper.ReadPkcs8(KnownOids, pkcs8.AsMemory(), out _);
-                MLDsaPrivateKeyAsn mldsaPrivateKeyAsn;
+                ReadOnlySpan<byte> privateKey = KeyFormatHelper.ReadPkcs8(KnownOids, pkcs8.AsSpan(), out _);
+                scoped ValueMLDsaPrivateKeyAsn mldsaPrivateKeyAsn;
 
                 try
                 {
-                    mldsaPrivateKeyAsn = MLDsaPrivateKeyAsn.Decode(privateKey, AsnEncodingRules.BER);
-                }
-                catch (CryptographicException)
-                {
-                    // TODO: Once Windows moves to new PKCS#8 format, we can remove this conversion.
-                    newPkcs8 = MLDsaPkcs8.ConvertFromOldChoicelessFormat(pkcs8);
-                    ReadOnlyMemory<byte> newPrivateKey = KeyFormatHelper.ReadPkcs8(KnownOids, newPkcs8, out _);
-                    mldsaPrivateKeyAsn = MLDsaPrivateKeyAsn.Decode(newPrivateKey, AsnEncodingRules.BER);
+                    ValueMLDsaPrivateKeyAsn.Decode(privateKey, AsnEncodingRules.BER, out mldsaPrivateKeyAsn);
                 }
                 catch (AsnContentException e)
                 {

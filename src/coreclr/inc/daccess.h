@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: daccess.h
-//
-
 //
 // Support for external access of runtime data structures.  These
 // macros and templates hide the details of pointer and data handling
@@ -554,7 +553,6 @@
 //
 //*****************************************************************************
 
-
 #ifndef __daccess_h__
 #define __daccess_h__
 
@@ -822,12 +820,10 @@ interface IMDInternalImport* DacGetMDImport(const ReflectionModule* reflectionMo
 
 int DacGetIlMethodSize(TADDR methAddr);
 struct COR_ILMETHOD* DacGetIlMethod(TADDR methAddr);
-#ifdef FEATURE_EH_FUNCLETS
 struct _UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo);
 
 // virtually unwind a CONTEXT out-of-process
 BOOL DacUnwindStackFrame(T_CONTEXT * pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers);
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 class SString;
@@ -2441,7 +2437,7 @@ typedef DPTR(IMAGE_TLS_DIRECTORY)   PTR_IMAGE_TLS_DIRECTORY;
 #endif
 
 #ifndef NATIVEAOT
-#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86)
 typedef DPTR(struct _UNWIND_INFO)      PTR_UNWIND_INFO;
 #endif
 

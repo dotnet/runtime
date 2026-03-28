@@ -11,7 +11,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
     [SetupCompileArgument("/optimize+")]
     [SetupCompileArgument("/main:Mono.Linker.Tests.Cases.DataFlow.CompilerGeneratedTypesRelease")]
     [SandboxDependency("CompilerGeneratedTypes.cs")]
-    [Define("INCLUDE_UNEXPECTED_LOWERING_WARNINGS")] // https://github.com/dotnet/roslyn/issues/79333
     [SetupLinkerArgument("--disable-generated-code-heuristics")]
     class CompilerGeneratedTypesRelease
     {

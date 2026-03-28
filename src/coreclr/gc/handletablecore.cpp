@@ -685,7 +685,7 @@ void SegmentRemoveFreeBlocks(TableSegment *pSegment, uint32_t uType, BOOL *pfSca
 
 #ifdef HANDLE_OPTIMIZE_FOR_64_HANDLE_BLOCKS
         // determine whether this block is empty
-        if (((uint64_t*)pSegment->rgFreeMask)[uBlock] == UI64(0xFFFFFFFFFFFFFFFF))
+        if (((uint64_t*)pSegment->rgFreeMask)[uBlock] == 0xFFFFFFFFFFFFFFFFULL)
 #else
         // assume this block is empty until we know otherwise
         BOOL fEmpty = TRUE;
@@ -1039,7 +1039,7 @@ void SegmentResortChains(TableSegment *pSegment)
             {
 #ifdef HANDLE_OPTIMIZE_FOR_64_HANDLE_BLOCKS
                 // determine whether this block is empty
-                if (((uint64_t*)pSegment->rgFreeMask)[uBlock] == UI64(0xFFFFFFFFFFFFFFFF))
+                if (((uint64_t*)pSegment->rgFreeMask)[uBlock] == 0xFFFFFFFFFFFFFFFFULL)
 #else
                 // assume this block is empty until we know otherwise
                 BOOL fEmpty = TRUE;

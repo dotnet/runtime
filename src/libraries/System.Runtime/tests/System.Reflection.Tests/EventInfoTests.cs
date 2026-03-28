@@ -152,6 +152,27 @@ namespace System.Reflection.Tests
             }
         }
 
+        [Fact]
+        public void GetHashCode_MultipleSubClasses_ShouldBeUnique()
+        {
+            var numberOfCollisions = 0;
+            var hashset = new HashSet<int>();
+
+            foreach (var type in new Type[] { typeof(BaseClass), typeof(SubClassA), typeof(SubClassB), typeof(SubClassC) })
+            {
+                foreach (var eventInfo in type.GetEvents())
+                {
+                    if (!hashset.Add(eventInfo.GetHashCode()))
+                    {
+                        numberOfCollisions++;
+                    }
+                }
+            }
+
+            // If intermittent failures are observed, it's acceptable to relax the assertion to allow some collisions.
+            Assert.Equal(0, numberOfCollisions);
+        }
+
         [Theory]
         [MemberData(nameof(Events_TestData))]
         public void EventHandlerType(Type type, string name)
@@ -193,6 +214,9 @@ namespace System.Reflection.Tests
             public event EventHandler PublicEvent;
             public static event EventHandler PublicStaticEvent;
             public virtual event EventHandler PublicVirtualEvent;
+            public event EventHandler PublicEvent1;
+            public event EventHandler PublicEvent2;
+            public event EventHandler PublicEvent3;
         }
 
         protected class SubClass : BaseClass
@@ -200,6 +224,9 @@ namespace System.Reflection.Tests
             public new event EventHandler PublicEvent;
             public event EventHandler EventPublicNew;
         }
+        protected class SubClassA : BaseClass { }
+        protected class SubClassB : BaseClass { }
+        protected class SubClassC : BaseClass { }
 #pragma warning restore 0067
     }
 }

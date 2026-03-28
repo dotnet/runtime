@@ -511,10 +511,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(true);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, false)]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, true)]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void AddFirstSigner_DSA(SubjectIdentifierType identifierType, bool detached)
         {
 #if NET
@@ -668,7 +667,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
             select new object[] { sit, detached, data.hashAlgorithm, data.algorithm };
 
-        [ConditionalTheory(nameof(SupportsDraft10Pkcs8))]
+        [ConditionalTheory(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
         [MemberData(nameof(AddFirstSignerMLDsaTestData))]
         public static void AddFirstSigner_MLDsa(SubjectIdentifierType identifierType, bool detached, string digestOid, MLDsaAlgorithm algorithm)
         {
@@ -1126,8 +1125,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
             {
                 cms = new SignedCms();
 
-                // DSA is not supported on mobile Apple platforms, so use ECDsa signed document instead
-                if (PlatformDetection.UsesMobileAppleCrypto)
+                // DSA is not supported, so use ECDsa signed document instead
+                if (!PlatformSupport.IsDSASupported)
                 {
                     cms.Decode(SignedDocuments.SHA256ECDSAWithRsaSha256DigestIdentifier);
                 }
@@ -1802,7 +1801,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsDraft10Pkcs8))]
+        [ConditionalFact(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
         public static void ComputeSignature_MLDsa_DefaultDigest()
         {
 #if !NETFRAMEWORK

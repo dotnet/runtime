@@ -64,6 +64,12 @@ typedef struct SeqPointInfo SeqPointInfo;
 #include "mono/metadata/callspec.h"
 #include "mono/metadata/icall-signatures.h"
 
+/* we use runtime checks to fallback to scalar ops for/
+ * older z/Architectures
+ */
+#ifdef TARGET_S390X
+#include <mono/utils/mono-hwcap.h>
+#endif
 /*
  * The mini code should not have any compile time dependencies on the GC being used, so the same object file from mini/
  * can be linked into both mono and mono-sgen.
@@ -3015,6 +3021,11 @@ mini_safepoints_enabled (void)
 static inline gboolean
 mini_class_is_simd (MonoCompile *cfg, MonoClass *klass)
 {
+#ifdef TARGET_S390X
+        /* vector facility was introduced in z13 */
+	if (!mono_hwcap_s390x_has_vec)
+		return FALSE;
+#endif
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (!(((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass)))
 		return FALSE;

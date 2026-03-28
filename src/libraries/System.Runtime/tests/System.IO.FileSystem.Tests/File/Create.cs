@@ -83,7 +83,7 @@ namespace System.IO.Tests
             Assert.Empty(File.ReadAllBytes(testFile));
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix
         public void ValidCreation_ExtendedSyntax()
         {
@@ -98,7 +98,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix, long path
         public void ValidCreation_LongPathExtendedSyntax()
         {
@@ -339,6 +339,38 @@ namespace System.IO.Tests
             {
                 Assert.True(File.Exists(streamName));
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        public void CreateWithProblematicNames(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            using (Create(filePath))
+            {
+                Assert.True(File.Exists(filePath));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsCreateWithTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
+        {
+            // Windows path normalization strips trailing spaces/periods unless using \\?\ extended syntax.
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            string extendedPath = @"\\?\" + filePath;
+            
+            using (Create(extendedPath))
+            {
+                Assert.True(File.Exists(extendedPath));
+            }
+            
+            // Verify the file can be found via enumeration
+            string[] files = Directory.GetFiles(testDir.FullName);
+            Assert.Contains(files, f => Path.GetFileName(f) == fileName);
         }
 
         #endregion

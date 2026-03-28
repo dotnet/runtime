@@ -41,6 +41,7 @@ namespace System.Reflection
             // ensures the RuntimeAssembly is kept alive for as long as the stream lives
             private readonly RuntimeAssembly _manifestAssembly;
 
+            [RequiresUnsafe]
             internal unsafe ManifestResourceStream(RuntimeAssembly manifestAssembly, byte* pointer, long length, long capacity, FileAccess access) : base(pointer, length, capacity, access)
             {
                 _manifestAssembly = manifestAssembly;
@@ -252,20 +253,22 @@ namespace System.Reflection
             get => GetManifestModule().GetDefinedTypes();
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetIsCollectible")]
-        internal static partial Interop.BOOL GetIsCollectible(QCallAssembly assembly);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool GetIsCollectible(IntPtr assembly);
 
         public override bool IsCollectible
         {
             get
             {
-                RuntimeAssembly runtimeAssembly = this;
-                return GetIsCollectible(new QCallAssembly(ref runtimeAssembly)) != Interop.BOOL.FALSE;
+                bool isCollectible = GetIsCollectible(GetUnderlyingNativeHandle());
+                GC.KeepAlive(this); // We directly pass the native handle above - make sure this object stays alive for the call
+                return isCollectible;
             }
         }
 
         // GetResource will return a pointer to the resources in memory.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetResource", StringMarshalling = StringMarshalling.Utf16)]
+        [RequiresUnsafe]
         private static unsafe partial byte* GetResource(QCallAssembly assembly,
                                                        string resourceName,
                                                        out uint length);
@@ -394,6 +397,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalLoad")]
+        [RequiresUnsafe]
         private static unsafe partial void InternalLoad(NativeAssemblyNameParts* pAssemblyNameParts,
                                                 ObjectHandleOnStack requestingAssembly,
                                                 StackCrawlMarkHandle stackMark,

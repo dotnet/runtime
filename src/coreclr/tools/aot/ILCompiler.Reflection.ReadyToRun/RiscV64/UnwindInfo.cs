@@ -30,13 +30,13 @@ namespace ILCompiler.Reflection.ReadyToRun.RiscV64
             // of the current funclet, not the offset from the beginning of the main function.
             // To help find it when looking through JitDump output, also show the offset from
             // the beginning of the main function.
-            EpilogStartOffsetFromMainFunctionBegin = EpilogStartOffset * 4 + startOffset;
+            EpilogStartOffsetFromMainFunctionBegin = EpilogStartOffset * 2 + startOffset;
         }
 
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"        Epilog Start Offset: 0x{EpilogStartOffset:X5} Actual offset = 0x{EpilogStartOffset * 4:X5} Offset from main function begin = 0x{EpilogStartOffsetFromMainFunctionBegin:X6}");
+            sb.AppendLine($"        Epilog Start Offset: 0x{EpilogStartOffset:X5} Actual offset = 0x{EpilogStartOffset * 2:X5} Offset from main function begin = 0x{EpilogStartOffsetFromMainFunctionBegin:X6}");
             sb.AppendLine($"        Condition: {Condition} (0x{Condition:X})" + ((Condition == 0xE) ? " (always)" : ""));
             sb.Append($"        Epilog Start Index: {EpilogStartIndex} (0x{EpilogStartIndex:X})");
             return sb.ToString();
@@ -85,7 +85,7 @@ namespace ILCompiler.Reflection.ReadyToRun.RiscV64
             EBit = ExtractBits(dw, 21, 1);
             XBit = ExtractBits(dw, 20, 1);
             Vers = ExtractBits(dw, 18, 2);
-            FunctionLength = ExtractBits(dw, 0, 18) * 4;
+            FunctionLength = ExtractBits(dw, 0, 18) * 2;
 
             if (CodeWords == 0 && EpilogCount == 0)
             {

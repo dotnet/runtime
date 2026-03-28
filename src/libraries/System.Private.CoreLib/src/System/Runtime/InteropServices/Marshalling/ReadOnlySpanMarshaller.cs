@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -37,6 +38,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <param name="managed">The managed span.</param>
             /// <param name="numElements">The number of elements in the span.</param>
             /// <returns>A pointer to the block of memory for the unmanaged elements.</returns>
+            [RequiresUnsafe]
             public static TUnmanagedElement* AllocateContainerForUnmanagedElements(ReadOnlySpan<T> managed, out int numElements)
             {
                 // Emulate the pinning behavior:
@@ -68,6 +70,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <param name="unmanaged">The pointer to the block of memory for the unmanaged elements.</param>
             /// <param name="numElements">The number of elements that will be copied into the memory block.</param>
             /// <returns>A span over the unmanaged memory that can contain the specified number of elements.</returns>
+            [RequiresUnsafe]
             public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
             {
                 if (unmanaged == null)
@@ -148,6 +151,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Returns the unmanaged value representing the array.
             /// </summary>
+            [RequiresUnsafe]
             public TUnmanagedElement* ToUnmanaged()
             {
                 // Unsafe.AsPointer is safe since buffer must be pinned
@@ -185,6 +189,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Initializes the <see cref="ReadOnlySpanMarshaller{T, TUnmanagedElement}.ManagedToUnmanagedOut"/> marshaller.
             /// </summary>
             /// <param name="unmanaged">A pointer to the array to be unmarshalled from native to managed.</param>
+            [RequiresUnsafe]
             public void FromUnmanaged(TUnmanagedElement* unmanaged)
             {
                 _unmanagedArray = unmanaged;

@@ -1,67 +1,226 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+struct ReturnTypeInfo
+{
+    var_types    ReturnType   = TYP_UNDEF;
+    ClassLayout* ReturnLayout = nullptr;
+
+    ReturnTypeInfo(var_types returnType, ClassLayout* returnLayout)
+        : ReturnType(returnType)
+        , ReturnLayout(returnLayout)
+    {
+    }
+};
+
+struct ReturnInfo
+{
+    ReturnTypeInfo Type;
+    unsigned       Alignment;
+    unsigned       Offset;
+    unsigned       Size;
+
+    ReturnInfo(ReturnTypeInfo type)
+        : Type(type)
+    {
+    }
+
+    unsigned HeapAlignment() const
+    {
+        return std::min(Alignment, (unsigned)TARGET_POINTER_SIZE);
+    }
+};
+
 struct LiveLocalInfo
 {
     unsigned LclNum;
     unsigned Alignment;
-    unsigned DataOffset;
-    unsigned DataSize;
-    unsigned GCDataIndex;
-    unsigned GCDataCount;
+    unsigned Offset;
+    unsigned Size;
 
     explicit LiveLocalInfo(unsigned lclNum)
         : LclNum(lclNum)
     {
     }
+
+    unsigned HeapAlignment() const
+    {
+        return std::min(Alignment, (unsigned)TARGET_POINTER_SIZE);
+    }
+};
+
+struct ContinuationLayoutBuilder
+{
+private:
+    Compiler* m_compiler;
+    bool      m_needsOSRILOffset         = false;
+    bool      m_needsException           = false;
+    bool      m_needsContinuationContext = false;
+    bool      m_needsKeepAlive           = false;
+    bool      m_needsExecutionContext    = false;
+
+    jitstd::vector<ReturnTypeInfo> m_returns;
+    jitstd::vector<unsigned>       m_locals;
+
+public:
+    ContinuationLayoutBuilder(Compiler* compiler)
+        : m_compiler(compiler)
+        , m_returns(compiler->getAllocator(CMK_Async))
+        , m_locals(compiler->getAllocator(CMK_Async))
+    {
+    }
+
+    void SetNeedsOSRILOffset()
+    {
+        m_needsOSRILOffset = true;
+    }
+    bool NeedsOSRILOffset() const
+    {
+        return m_needsOSRILOffset;
+    }
+    void SetNeedsException()
+    {
+        m_needsException = true;
+    }
+    bool NeedsException() const
+    {
+        return m_needsException;
+    }
+    void SetNeedsContinuationContext()
+    {
+        m_needsContinuationContext = true;
+    }
+    bool NeedsContinuationContext() const
+    {
+        return m_needsContinuationContext;
+    }
+    void SetNeedsKeepAlive()
+    {
+        m_needsKeepAlive = true;
+    }
+    bool NeedsKeepAlive() const
+    {
+        return m_needsKeepAlive;
+    }
+    void SetNeedsExecutionContext()
+    {
+        m_needsExecutionContext = true;
+    }
+    bool NeedsExecutionContext() const
+    {
+        return m_needsExecutionContext;
+    }
+    void AddReturn(const ReturnTypeInfo& info);
+    void AddLocal(unsigned lclNum);
+    bool ContainsLocal(unsigned lclNum) const;
+
+    const jitstd::vector<unsigned>& Locals() const
+    {
+        return m_locals;
+    }
+
+    struct ContinuationLayout* Create();
+
+    static ContinuationLayoutBuilder* CreateSharedLayout(Compiler*                                comp,
+                                                         const jitstd::vector<struct AsyncState>& states);
 };
 
 struct ContinuationLayout
 {
-    unsigned                             DataSize                       = 0;
-    unsigned                             GCRefsCount                    = 0;
-    ClassLayout*                         ReturnStructLayout             = nullptr;
-    unsigned                             ReturnSize                     = 0;
-    bool                                 ReturnInGCData                 = false;
-    unsigned                             ReturnValDataOffset            = UINT_MAX;
-    unsigned                             ExceptionGCDataIndex           = UINT_MAX;
-    unsigned                             ExecContextGCDataIndex         = UINT_MAX;
-    unsigned                             ContinuationContextGCDataIndex = UINT_MAX;
-    const jitstd::vector<LiveLocalInfo>& Locals;
+    unsigned                      Size                      = 0;
+    unsigned                      OSRILOffset               = UINT_MAX;
+    unsigned                      ExceptionOffset           = UINT_MAX;
+    unsigned                      ContinuationContextOffset = UINT_MAX;
+    unsigned                      KeepAliveOffset           = UINT_MAX;
+    unsigned                      ExecutionContextOffset    = UINT_MAX;
+    jitstd::vector<LiveLocalInfo> Locals;
+    jitstd::vector<ReturnInfo>    Returns;
+    CORINFO_CLASS_HANDLE          ClassHnd = NO_CLASS_HANDLE;
 
-    explicit ContinuationLayout(const jitstd::vector<LiveLocalInfo>& locals)
-        : Locals(locals)
+    ContinuationLayout(Compiler* comp)
+        : Locals(comp->getAllocator(CMK_Async))
+        , Returns(comp->getAllocator(CMK_Async))
     {
     }
+
+    const ReturnInfo* FindReturn(Compiler* comp, GenTreeCall* call) const;
+#ifdef DEBUG
+    void Dump(int indent = 0);
+#endif
 };
 
 struct CallDefinitionInfo
 {
     GenTreeLclVarCommon* DefinitionNode = nullptr;
 
-    // Where to insert new IR for suspension checks.
+    // Where to insert new IR after the call in the original block, for
+    // suspension checks and for the async suspension for diagnostics purposes.
     GenTree* InsertAfter = nullptr;
+};
+
+struct AsyncState
+{
+    AsyncState(unsigned                   number,
+               ContinuationLayoutBuilder* layout,
+               BasicBlock*                callBlock,
+               GenTreeCall*               call,
+               CallDefinitionInfo         callDefInfo,
+               BasicBlock*                suspensionBB,
+               BasicBlock*                resumptionBB,
+               bool                       resumeReachable,
+               VARSET_TP                  mutatedSincePreviousResumption)
+        : Number(number)
+        , Layout(layout)
+        , CallBlock(callBlock)
+        , Call(call)
+        , CallDefInfo(callDefInfo)
+        , SuspensionBB(suspensionBB)
+        , ResumptionBB(resumptionBB)
+        , ResumeReachable(resumeReachable)
+        , MutatedSincePreviousResumption(mutatedSincePreviousResumption)
+    {
+    }
+
+    unsigned                   Number;
+    ContinuationLayoutBuilder* Layout;
+    BasicBlock*                CallBlock;
+    GenTreeCall*               Call;
+    CallDefinitionInfo         CallDefInfo;
+    BasicBlock*                SuspensionBB;
+    BasicBlock*                ResumptionBB;
+    // Is this suspension point reachable after a previous resumption?
+    bool ResumeReachable;
+    // Set of variables that may have been mutated since the previous resumption.
+    VARSET_TP MutatedSincePreviousResumption;
+};
+
+enum class SaveSet
+{
+    All,
+    UnmutatedLocals,
+    MutatedLocals,
 };
 
 class AsyncTransformation
 {
     friend class AsyncLiveness;
 
-    Compiler*                     m_comp;
-    jitstd::vector<LiveLocalInfo> m_liveLocalsScratch;
-    CORINFO_ASYNC_INFO*           m_asyncInfo;
-    jitstd::vector<BasicBlock*>   m_resumptionBBs;
-    CORINFO_METHOD_HANDLE         m_resumeStub = NO_METHOD_HANDLE;
-    CORINFO_CONST_LOOKUP          m_resumeStubLookup;
-    unsigned                      m_returnedContinuationVar = BAD_VAR_NUM;
-    unsigned                      m_newContinuationVar      = BAD_VAR_NUM;
-    unsigned                      m_dataArrayVar            = BAD_VAR_NUM;
-    unsigned                      m_gcDataArrayVar          = BAD_VAR_NUM;
-    unsigned                      m_resultBaseVar           = BAD_VAR_NUM;
-    unsigned                      m_exceptionVar            = BAD_VAR_NUM;
-    BasicBlock*                   m_lastSuspensionBB        = nullptr;
-    BasicBlock*                   m_lastResumptionBB        = nullptr;
-    BasicBlock*                   m_sharedReturnBB          = nullptr;
+    Compiler*                  m_compiler;
+    CORINFO_ASYNC_INFO*        m_asyncInfo;
+    jitstd::vector<AsyncState> m_states;
+    unsigned                   m_returnedContinuationVar = BAD_VAR_NUM;
+    unsigned                   m_newContinuationVar      = BAD_VAR_NUM;
+    unsigned                   m_reuseContinuationVar    = BAD_VAR_NUM;
+    unsigned                   m_dataArrayVar            = BAD_VAR_NUM;
+    unsigned                   m_gcDataArrayVar          = BAD_VAR_NUM;
+    unsigned                   m_resultBaseVar           = BAD_VAR_NUM;
+    unsigned                   m_exceptionVar            = BAD_VAR_NUM;
+    BasicBlock*                m_lastSuspensionBB        = nullptr;
+    BasicBlock*                m_lastResumptionBB        = nullptr;
+    BasicBlock*                m_sharedReturnBB          = nullptr;
+
+    void        TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** remainder);
+    BasicBlock* CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call);
 
     bool IsLive(unsigned lclNum);
     void Transform(BasicBlock*               block,
@@ -74,55 +233,64 @@ class AsyncTransformation
                                     GenTreeCall*                    call,
                                     const jitstd::vector<GenTree*>& defs,
                                     AsyncLiveness&                  life,
-                                    jitstd::vector<LiveLocalInfo>&  liveLocals);
+                                    ContinuationLayoutBuilder*      layoutBuilder);
+
+    bool HasNonContextRestoreExceptionalFlow(BasicBlock* block);
 
     void LiftLIREdges(BasicBlock*                     block,
                       const jitstd::vector<GenTree*>& defs,
-                      jitstd::vector<LiveLocalInfo>&  liveLocals);
+                      ContinuationLayoutBuilder*      layoutBuilder);
 
-    ContinuationLayout LayOutContinuation(BasicBlock*                    block,
-                                          GenTreeCall*                   call,
-                                          jitstd::vector<LiveLocalInfo>& liveLocals);
+    bool ContinuationNeedsKeepAlive(class AsyncLiveness& life);
 
-    void ClearSuspendedIndicator(BasicBlock* block, GenTreeCall* call);
+    void BuildContinuation(BasicBlock*                block,
+                           GenTreeCall*               call,
+                           bool                       needsKeepAlive,
+                           ContinuationLayoutBuilder* layoutBuilder);
 
-    CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness& life);
+    CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness* life);
 
-    BasicBlock* CreateSuspension(
-        BasicBlock* block, GenTreeCall* call, unsigned stateNum, AsyncLiveness& life, const ContinuationLayout& layout);
-    GenTreeCall* CreateAllocContinuationCall(AsyncLiveness& life,
-                                             GenTree*       prevContinuation,
-                                             unsigned       gcRefsCount,
-                                             unsigned int   dataSize);
-    void FillInGCPointersOnSuspension(GenTreeCall* call, const ContinuationLayout& layout, BasicBlock* suspendBB);
-    void FillInDataOnSuspension(const jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB);
-    void CreateCheckAndSuspendAfterCall(BasicBlock*               block,
-                                        GenTreeCall*              call,
-                                        const CallDefinitionInfo& callDefInfo,
-                                        AsyncLiveness&            life,
-                                        BasicBlock*               suspendBB,
-                                        BasicBlock**              remainder);
-    BasicBlock* CreateResumption(BasicBlock*               block,
-                                 BasicBlock*               remainder,
-                                 GenTreeCall*              call,
-                                 const CallDefinitionInfo& callDefInfo,
-                                 unsigned                  stateNum,
-                                 const ContinuationLayout& layout);
-    void        SetSuspendedIndicator(BasicBlock* block, BasicBlock* callBlock, GenTreeCall* call);
-    void        RestoreFromDataOnResumption(unsigned                             resumeByteArrLclNum,
-                                            const jitstd::vector<LiveLocalInfo>& liveLocals,
-                                            BasicBlock*                          resumeBB);
-    void        RestoreFromGCPointersOnResumption(unsigned                  resumeObjectArrLclNum,
-                                                  const ContinuationLayout& layout,
-                                                  BasicBlock*               resumeBB);
-    BasicBlock* RethrowExceptionOnResumption(BasicBlock*               block,
-                                             unsigned                  resumeObjectArrLclNum,
-                                             const ContinuationLayout& layout,
-                                             BasicBlock*               resumeBB);
+    BasicBlock* CreateSuspensionBlock(BasicBlock* block, unsigned stateNum);
+    void        CreateSuspension(BasicBlock*                      callBlock,
+                                 GenTreeCall*                     call,
+                                 BasicBlock*                      suspendBB,
+                                 unsigned                         stateNum,
+                                 const ContinuationLayout&        layout,
+                                 const ContinuationLayoutBuilder& subLayout,
+                                 bool                             resumeReachable,
+                                 VARSET_VALARG_TP                 mutatedSinceResumption);
+
+    GenTreeCall* CreateAllocContinuationCall(bool                      hasKeepAlive,
+                                             GenTree*                  prevContinuation,
+                                             const ContinuationLayout& layout);
+
+    void        FillInDataOnSuspension(GenTreeCall*                     call,
+                                       const ContinuationLayout&        layout,
+                                       const ContinuationLayoutBuilder& subLayout,
+                                       BasicBlock*                      suspendBB,
+                                       VARSET_VALARG_TP                 mutatedSinceResumption,
+                                       SaveSet                          saveSet);
+    SaveSet     GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption);
+    void        RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
+    void        CreateCheckAndSuspendAfterCall(BasicBlock*               block,
+                                               GenTreeCall*              call,
+                                               const CallDefinitionInfo& callDefInfo,
+                                               BasicBlock*               suspendBB,
+                                               BasicBlock**              remainder);
+    BasicBlock* CreateResumptionBlock(BasicBlock* remainder, unsigned stateNum);
+    void        CreateResumption(BasicBlock*                      callBlock,
+                                 GenTreeCall*                     call,
+                                 BasicBlock*                      resumeBB,
+                                 const CallDefinitionInfo&        callDefInfo,
+                                 const ContinuationLayout&        layout,
+                                 const ContinuationLayoutBuilder& subLayout);
+
+    void        RestoreFromDataOnResumption(const ContinuationLayout&        layout,
+                                            const ContinuationLayoutBuilder& subLayout,
+                                            BasicBlock*                      resumeBB);
+    BasicBlock* RethrowExceptionOnResumption(BasicBlock* block, const ContinuationLayout& layout, BasicBlock* resumeBB);
     void        CopyReturnValueOnResumption(GenTreeCall*              call,
                                             const CallDefinitionInfo& callDefInfo,
-                                            unsigned                  resumeByteArrLclNum,
-                                            unsigned                  resumeObjectArrLclNum,
                                             const ContinuationLayout& layout,
                                             BasicBlock*               storeResultBB);
 
@@ -130,23 +298,28 @@ class AsyncTransformation
                                     unsigned     offset,
                                     var_types    type,
                                     GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
-    GenTreeStoreInd* StoreAtOffset(GenTree* base, unsigned offset, GenTree* value, var_types storeType);
+    GenTreeStoreInd* StoreAtOffset(GenTree*     base,
+                                   unsigned     offset,
+                                   GenTree*     value,
+                                   var_types    storeType,
+                                   GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
-    unsigned GetDataArrayVar();
-    unsigned GetGCDataArrayVar();
-    unsigned GetResultBaseVar();
-    unsigned GetExceptionVar();
+    void        CreateDebugInfoForSuspensionPoint(const ContinuationLayout&        layout,
+                                                  const ContinuationLayoutBuilder& subLayout);
+    unsigned    GetReturnedContinuationVar();
+    unsigned    GetNewContinuationVar();
+    unsigned    GetResultBaseVar();
+    unsigned    GetExceptionVar();
+    BasicBlock* GetSharedReturnBB();
 
-    GenTree* CreateResumptionStubAddrTree();
-    GenTree* CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup);
-
+    bool ReuseContinuations();
+    void CreateResumptionsAndSuspensions();
     void CreateResumptionSwitch();
 
 public:
     AsyncTransformation(Compiler* comp)
-        : m_comp(comp)
-        , m_liveLocalsScratch(comp->getAllocator(CMK_Async))
-        , m_resumptionBBs(comp->getAllocator(CMK_Async))
+        : m_compiler(comp)
+        , m_states(comp->getAllocator(CMK_Async))
     {
     }
 

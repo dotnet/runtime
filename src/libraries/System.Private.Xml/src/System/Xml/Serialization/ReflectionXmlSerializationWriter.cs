@@ -24,7 +24,7 @@ namespace System.Xml.Serialization
 
             if (!xmlMapping.IsWriteable || !xmlMapping.GenerateSerializer)
             {
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, nameof(xmlMapping)));
+                throw new ArgumentException(SR.XmlInternalError);
             }
 
             if (xmlMapping is XmlTypeMapping || xmlMapping is XmlMembersMapping)
@@ -33,7 +33,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.XmlInternalError, nameof(xmlMapping)));
+                throw new ArgumentException(SR.XmlInternalError);
             }
         }
 
@@ -1177,6 +1177,16 @@ namespace System.Xml.Serialization
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Invalid DateTime"));
                     }
+                }
+                else if (o is DateOnly)
+                {
+                    stringValue = FromDateOnly((DateOnly)o);
+                    return true;
+                }
+                else if (o is TimeOnly)
+                {
+                    stringValue = FromTimeOnly((TimeOnly)o);
+                    return true;
                 }
                 else if (typeDesc == ReflectionXmlSerializationReader.QnameTypeDesc)
                 {

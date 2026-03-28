@@ -12,8 +12,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
     public static class DependencyResolutionCommandResultExtensions
     {
         // App asset resolution extensions
-        public const string TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
-        public const string NATIVE_DLL_SEARCH_DIRECTORIES = "NATIVE_DLL_SEARCH_DIRECTORIES";
+        private const string TRUSTED_PLATFORM_ASSEMBLIES = nameof(TRUSTED_PLATFORM_ASSEMBLIES);
+        private const string NATIVE_DLL_SEARCH_DIRECTORIES = nameof(NATIVE_DLL_SEARCH_DIRECTORIES);
+        private const string PLATFORM_RESOURCE_ROOTS = nameof(PLATFORM_RESOURCE_ROOTS);
 
         public static AndConstraint<CommandResultAssertions> HaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, params string[] values)
         {
@@ -65,6 +66,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         public static AndConstraint<CommandResultAssertions> NotHaveResolvedNativeLibraryPath(this CommandResultAssertions assertion, string path, TestApp app = null)
         {
             return assertion.NotHaveRuntimePropertyContaining(NATIVE_DLL_SEARCH_DIRECTORIES, RelativePathsToAbsoluteAppPaths(path, app));
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveResolvedResourceRootPath(this CommandResultAssertions assertion, string path, TestApp app = null)
+        {
+            return assertion.HaveRuntimePropertyContaining(PLATFORM_RESOURCE_ROOTS, RelativePathsToAbsoluteAppPaths(path, app));
+        }
+
+        public static AndConstraint<CommandResultAssertions> NotHaveResolvedResourceRootPath(this CommandResultAssertions assertion, string path, TestApp app = null)
+        {
+            return assertion.NotHaveRuntimePropertyContaining(PLATFORM_RESOURCE_ROOTS, RelativePathsToAbsoluteAppPaths(path, app));
         }
 
         // Component asset resolution extensions

@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -203,6 +204,7 @@ namespace System.Text
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe nuint ChangeCase<TFrom, TTo, TCasing>(TFrom* pSrc, TTo* pDest, nuint elementCount)
             where TFrom : unmanaged, IBinaryInteger<TFrom>
             where TTo : unmanaged, IBinaryInteger<TTo>
@@ -249,10 +251,10 @@ namespace System.Text
 
                 TFrom SourceSignedMinValue = TFrom.CreateTruncating(1 << (8 * sizeof(TFrom) - 1));
                 Vector128<TFrom> subtractionVector = Vector128.Create(conversionIsToUpper ? (SourceSignedMinValue + TFrom.CreateTruncating('a')) : (SourceSignedMinValue + TFrom.CreateTruncating('A')));
-                Vector128<TFrom> comparisionVector = Vector128.Create(SourceSignedMinValue + TFrom.CreateTruncating(26 /* A..Z or a..z */));
+                Vector128<TFrom> comparisonVector = Vector128.Create(SourceSignedMinValue + TFrom.CreateTruncating(26 /* A..Z or a..z */));
                 Vector128<TFrom> caseConversionVector = Vector128.Create(TFrom.CreateTruncating(0x20)); // works both directions
 
-                Vector128<TFrom> matches = SignedLessThan((srcVector - subtractionVector), comparisionVector);
+                Vector128<TFrom> matches = SignedLessThan((srcVector - subtractionVector), comparisonVector);
                 srcVector ^= (matches & caseConversionVector);
 
                 // Now write to the destination.
@@ -298,7 +300,7 @@ namespace System.Text
 
                     // Now find matching characters and perform case conversion.
 
-                    matches = SignedLessThan((srcVector - subtractionVector), comparisionVector);
+                    matches = SignedLessThan((srcVector - subtractionVector), comparisonVector);
                     srcVector ^= (matches & caseConversionVector);
 
                     // Now write to the destination.
@@ -464,6 +466,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe void ChangeWidthAndWriteTo<TFrom, TTo>(Vector128<TFrom> vector, TTo* pDest, nuint elementOffset)
             where TFrom : unmanaged
             where TTo : unmanaged

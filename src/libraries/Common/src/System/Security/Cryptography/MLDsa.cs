@@ -24,7 +24,6 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract partial class MLDsa : IDisposable
 #if DESIGNTIMEINTERFACES
 #pragma warning disable SA1001
@@ -299,6 +298,7 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the hash.</para>
         /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public void SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, string hashAlgorithmOid, ReadOnlySpan<byte> context = default)
         {
             ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
@@ -364,6 +364,7 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while signing the hash.</para>
         /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public byte[] SignPreHash(byte[] hash, string hashAlgorithmOid, byte[]? context = default)
         {
             ArgumentNullException.ThrowIfNull(hash);
@@ -410,6 +411,7 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while verifying the hash.</para>
         /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public bool VerifyPreHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, string hashAlgorithmOid, ReadOnlySpan<byte> context = default)
         {
             ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
@@ -481,6 +483,7 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   A <see langword="null" /> context is treated as empty.
         /// </remarks>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public bool VerifyPreHash(byte[] hash, byte[] signature, string hashAlgorithmOid, byte[]? context = null)
         {
             ArgumentNullException.ThrowIfNull(hash);
@@ -496,6 +499,7 @@ namespace System.Security.Cryptography
 
         /// <inheritdoc cref="SignMu(ReadOnlySpan{byte})"/>
         /// <exception cref="ArgumentNullException"><paramref name="externalMu"/> is <see langword="null"/>.</exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public byte[] SignMu(byte[] externalMu)
         {
             ArgumentNullException.ThrowIfNull(externalMu);
@@ -527,6 +531,7 @@ namespace System.Security.Cryptography
         ///   The current platform does not support signing with an externally computed mu value.
         /// </exception>
         /// <seealso cref="VerifyMu(byte[], byte[])"/>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public byte[] SignMu(ReadOnlySpan<byte> externalMu)
         {
             byte[] destination = new byte[Algorithm.SignatureSizeInBytes];
@@ -566,6 +571,7 @@ namespace System.Security.Cryptography
         ///   The current platform does not support signing with an externally computed mu value.
         /// </exception>
         /// <seealso cref="VerifyMu(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public void SignMu(ReadOnlySpan<byte> externalMu, Span<byte> destination)
         {
             if (externalMu.Length != Algorithm.MuSizeInBytes)
@@ -590,12 +596,14 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while computing the signature.
         /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         protected abstract void SignMuCore(ReadOnlySpan<byte> externalMu, Span<byte> destination);
 
         /// <inheritdoc cref="VerifyMu(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="externalMu"/> or <paramref name="signature"/> is <see langword="null"/>.
         /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public bool VerifyMu(byte[] externalMu, byte[] signature)
         {
             ArgumentNullException.ThrowIfNull(externalMu);
@@ -620,6 +628,7 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         ///   The current platform does not support verification with an externally computed mu value.
         /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public bool VerifyMu(ReadOnlySpan<byte> externalMu, ReadOnlySpan<byte> signature)
         {
             if (externalMu.Length != Algorithm.MuSizeInBytes || signature.Length != Algorithm.SignatureSizeInBytes)
@@ -641,6 +650,7 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   <see langword="true"/> if the mu value is valid; otherwise, <see langword="false"/>.
         /// </returns>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         protected abstract bool VerifyMuCore(ReadOnlySpan<byte> externalMu, ReadOnlySpan<byte> signature);
 
         /// <summary>
@@ -1349,26 +1359,20 @@ namespace System.Security.Cryptography
             Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
-            unsafe
+            KeyFormatHelper.ReadSubjectPublicKeyInfo(KnownOids, source, SubjectPublicKeyReader, out int read, out MLDsa mldsa);
+            Debug.Assert(read == source.Length);
+            return mldsa;
+
+            static void SubjectPublicKeyReader(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn identifier, out MLDsa mldsa)
             {
-                fixed (byte* pointer = source)
+                MLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
+
+                if (key.Length != algorithm.PublicKeySizeInBytes)
                 {
-                    using (PointerMemoryManager<byte> manager = new(pointer, source.Length))
-                    {
-                        AsnValueReader reader = new AsnValueReader(source, AsnEncodingRules.DER);
-                        SubjectPublicKeyInfoAsn.Decode(ref reader, manager.Memory, out SubjectPublicKeyInfoAsn spki);
-
-                        MLDsaAlgorithm algorithm = GetAlgorithmIdentifier(ref spki.Algorithm);
-                        ReadOnlySpan<byte> publicKey = spki.SubjectPublicKey.Span;
-
-                        if (publicKey.Length != algorithm.PublicKeySizeInBytes)
-                        {
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                        }
-
-                        return MLDsaImplementation.ImportPublicKey(algorithm, spki.SubjectPublicKey.Span);
-                    }
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
+
+                mldsa = MLDsaImplementation.ImportPublicKey(algorithm, key);
             }
         }
 
@@ -1988,6 +1992,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while signing the hash.
         /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         protected abstract void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination);
 
         /// <summary>
@@ -2011,6 +2016,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while verifying the hash.
         /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         protected abstract bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature);
 
         /// <summary>
@@ -2167,42 +2173,42 @@ namespace System.Security.Cryptography
         }
 
         private static void MLDsaKeyReader(
-            ReadOnlyMemory<byte> privateKeyContents,
-            in AlgorithmIdentifierAsn algorithmIdentifier,
+            ReadOnlySpan<byte> privateKeyContents,
+            in ValueAlgorithmIdentifierAsn algorithmIdentifier,
             out MLDsa dsa)
         {
             MLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
-            MLDsaPrivateKeyAsn dsaKey = MLDsaPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER);
+            ValueMLDsaPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER, out ValueMLDsaPrivateKeyAsn dsaKey);
 
-            if (dsaKey.Seed is ReadOnlyMemory<byte> seed)
+            if (dsaKey.HasSeed)
             {
-                if (seed.Length != algorithm.PrivateSeedSizeInBytes)
+                if (dsaKey.Seed.Length != algorithm.PrivateSeedSizeInBytes)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                dsa = MLDsaImplementation.ImportMLDsaPrivateSeed(algorithm, seed.Span);
+                dsa = MLDsaImplementation.ImportMLDsaPrivateSeed(algorithm, dsaKey.Seed);
             }
-            else if (dsaKey.ExpandedKey is ReadOnlyMemory<byte> expandedKey)
+            else if (dsaKey.HasExpandedKey)
             {
-                if (expandedKey.Length != algorithm.PrivateKeySizeInBytes)
+                if (dsaKey.ExpandedKey.Length != algorithm.PrivateKeySizeInBytes)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                dsa = MLDsaImplementation.ImportPrivateKey(algorithm, expandedKey.Span);
+                dsa = MLDsaImplementation.ImportPrivateKey(algorithm, dsaKey.ExpandedKey);
             }
-            else if (dsaKey.Both is MLDsaPrivateKeyBothAsn both)
+            else if (dsaKey.HasBoth)
             {
                 int privateKeySize = algorithm.PrivateKeySizeInBytes;
 
-                if (both.Seed.Length != algorithm.PrivateSeedSizeInBytes ||
-                    both.ExpandedKey.Length != privateKeySize)
+                if (dsaKey.Both.Seed.Length != algorithm.PrivateSeedSizeInBytes ||
+                    dsaKey.Both.ExpandedKey.Length != privateKeySize)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                MLDsa key = MLDsaImplementation.ImportMLDsaPrivateSeed(algorithm, both.Seed.Span);
+                MLDsa key = MLDsaImplementation.ImportMLDsaPrivateSeed(algorithm, dsaKey.Both.Seed);
                 byte[] rent = CryptoPool.Rent(privateKeySize);
                 Span<byte> buffer = rent.AsSpan(0, privateKeySize);
 
@@ -2210,7 +2216,7 @@ namespace System.Security.Cryptography
                 {
                     key.ExportMLDsaPrivateKey(buffer);
 
-                    if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
+                    if (CryptographicOperations.FixedTimeEquals(buffer, dsaKey.Both.ExpandedKey))
                     {
                         dsa = key;
                     }
@@ -2235,17 +2241,15 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static MLDsaAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
+        private static MLDsaAlgorithm GetAlgorithmIdentifier(ref readonly ValueAlgorithmIdentifierAsn identifier)
         {
             MLDsaAlgorithm algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(identifier.Algorithm) ??
                 throw new CryptographicException(
                     SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, identifier.Algorithm));
 
-            if (identifier.Parameters.HasValue)
+            if (identifier.HasParameters)
             {
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                identifier.Encode(writer);
-                throw Helpers.CreateAlgorithmUnknownException(writer);
+                throw Helpers.CreateAlgorithmUnknownException(in identifier);
             }
 
             return algorithm;

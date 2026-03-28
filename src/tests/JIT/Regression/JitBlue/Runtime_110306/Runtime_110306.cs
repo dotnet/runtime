@@ -7,9 +7,12 @@
 // Reduced from 115.8 KiB to 0.9 KiB in 00:02:27
 // Hits JIT assert in Release:
 // Assertion failed 'newLclValue.BothDefined()' in 'Program:Main(Fuzzlyn.ExecutionServer.IRuntime)' during 'Do value numbering' (IL size 61; hash 0xade6b36b; FullOpts)
-// 
+//
 //     File: /__w/1/s/src/coreclr/jit/valuenum.cpp Line: 6138
-// 
+//
+
+namespace Runtime_110306;
+
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -35,15 +38,10 @@ public class C3
 public class Runtime_110306
 {
     public static S0 s_3;
-    
-    [Fact]
+
+    [ConditionalFact(typeof(Avx512F.VL), nameof(Avx512F.VL.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (!Avx512F.VL.IsSupported)
-        {
-            return;
-        }
-
         try
         {
             TestMain();
@@ -52,9 +50,9 @@ public class Runtime_110306
         {
         }
     }
-    
+
     private static void TestMain()
-    {        
+    {
         var vr5 = Vector256.Create(1, 0, 0, 0);
         Vector256<long> vr15 = Vector256.Create<long>(0);
         Vector256<long> vr8 = Avx512F.VL.CompareNotEqual(vr5, vr15);

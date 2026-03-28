@@ -20,20 +20,19 @@ namespace System.Diagnostics
         private bool _haveResponding;
         private bool _responding;
 
-        private bool StartCore(ProcessStartInfo startInfo)
+        private static bool SupportsAtomicNonInheritablePipeCreation => true;
+
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             return startInfo.UseShellExecute
                 ? StartWithShellExecuteEx(startInfo)
-                : StartWithCreateProcess(startInfo);
+                : StartWithCreateProcess(startInfo, stdinHandle, stdoutHandle, stderrHandle);
         }
 
         private unsafe bool StartWithShellExecuteEx(ProcessStartInfo startInfo)
         {
             if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
                 throw new InvalidOperationException(SR.CantStartAsUser);
-
-            if (startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError)
-                throw new InvalidOperationException(SR.CantRedirectStreams);
 
             if (startInfo.StandardInputEncoding != null)
                 throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
@@ -328,13 +327,65 @@ namespace System.Diagnostics
         /// </remarks>
         private bool IsParentOf(Process possibleChild)
         {
-            try
-            {
-                return StartTime < possibleChild.StartTime && Id == possibleChild.ParentProcessId;
-            }
-            catch (Exception e) when (IsProcessInvalidException(e))
+            // Use non-throwing helpers to avoid first-chance exceptions during enumeration.
+            // This is critical for performance when a debugger is attached.
+            if (!TryGetStartTime(out DateTime myStartTime) ||
+                !possibleChild.TryGetStartTime(out DateTime childStartTime) ||
+                !possibleChild.TryGetParentProcessId(out int childParentId))
             {
                 return false;
+            }
+
+            return myStartTime < childStartTime && Id == childParentId;
+        }
+
+        /// <summary>
+        /// Try to get the process start time without throwing exceptions.
+        /// </summary>
+        private bool TryGetStartTime(out DateTime startTime)
+        {
+            startTime = default;
+            using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, false))
+            {
+                if (handle.IsInvalid)
+                {
+                    return false;
+                }
+
+                ProcessThreadTimes processTimes = new ProcessThreadTimes();
+                if (!Interop.Kernel32.GetProcessTimes(handle,
+                    out processTimes._create, out processTimes._exit,
+                    out processTimes._kernel, out processTimes._user))
+                {
+                    return false;
+                }
+
+                startTime = processTimes.StartTime;
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Try to get the parent process ID without throwing exceptions.
+        /// </summary>
+        private unsafe bool TryGetParentProcessId(out int parentProcessId)
+        {
+            parentProcessId = 0;
+            using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, false))
+            {
+                if (handle.IsInvalid)
+                {
+                    return false;
+                }
+
+                Interop.NtDll.PROCESS_BASIC_INFORMATION info;
+                if (Interop.NtDll.NtQueryInformationProcess(handle, Interop.NtDll.ProcessBasicInformation, &info, (uint)sizeof(Interop.NtDll.PROCESS_BASIC_INFORMATION), out _) != 0)
+                {
+                    return false;
+                }
+
+                parentProcessId = (int)info.InheritedFromUniqueProcessId;
+                return true;
             }
         }
 
@@ -359,14 +410,20 @@ namespace System.Diagnostics
 
         private bool Equals(Process process)
         {
-            try
-            {
-                return Id == process.Id && StartTime == process.StartTime;
-            }
-            catch (Exception e) when (IsProcessInvalidException(e))
+            // Check IDs first since they're cheap to compare and will fail most of the time.
+            if (Id != process.Id)
             {
                 return false;
             }
+
+            // Use non-throwing helper to avoid first-chance exceptions during enumeration.
+            if (!TryGetStartTime(out DateTime myStartTime) ||
+                !process.TryGetStartTime(out DateTime otherStartTime))
+            {
+                return false;
+            }
+
+            return myStartTime == otherStartTime;
         }
 
         private List<Exception>? KillTree()

@@ -19,19 +19,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "jitgcinfo.h"
 
-#ifdef TARGET_AMD64
-#include "gcinfoencoder.h" //this includes a LOT of other files too
-#endif
-
-/*****************************************************************************/
-/*****************************************************************************/
-
-/*****************************************************************************/
-
-extern int JITGcBarrierCall;
-
-/*****************************************************************************/
-
 #if MEASURE_PTRTAB_SIZE
 /* static */ size_t GCInfo::s_gcRegPtrDscSize   = 0;
 /* static */ size_t GCInfo::s_gcTotalPtrTabSize = 0;
@@ -47,7 +34,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 GCInfo::GCInfo(Compiler* theCompiler)
-    : compiler(theCompiler)
+    : m_compiler(theCompiler)
 {
     regSet         = nullptr;
     gcVarPtrList   = nullptr;
@@ -57,12 +44,15 @@ GCInfo::GCInfo(Compiler* theCompiler)
     gcPtrArgCnt    = 0;
     gcCallDescList = nullptr;
     gcCallDescLast = nullptr;
+#if EMIT_GENERATE_GCINFO
 #ifdef JIT32_GCENCODER
+    // TODO-WASM-Factoring: exclude this whole file from the wasm build by factoring out write barrier selection.
     gcEpilogTable = nullptr;
 #else  // !JIT32_GCENCODER
     m_regSlotMap   = nullptr;
     m_stackSlotMap = nullptr;
 #endif // JIT32_GCENCODER
+#endif // EMIT_GENERATE_GC_INFO
 }
 
 /*****************************************************************************/
@@ -74,7 +64,7 @@ void GCInfo::gcResetForBB()
 {
     gcRegGCrefSetCur = RBM_NONE;
     gcRegByrefSetCur = RBM_NONE;
-    VarSetOps::AssignNoCopy(compiler, gcVarPtrSetCur, VarSetOps::MakeEmpty(compiler));
+    VarSetOps::AssignNoCopy(m_compiler, gcVarPtrSetCur, VarSetOps::MakeEmpty(m_compiler));
 }
 
 #ifdef DEBUG
@@ -86,7 +76,7 @@ void GCInfo::gcResetForBB()
 
 void GCInfo::gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUGARG(bool forceOutput))
 {
-    if (compiler->verbose)
+    if (m_compiler->verbose)
     {
         if (forceOutput || (gcRegGCrefSetCur != gcRegGCrefSetNew))
         {
@@ -98,11 +88,11 @@ void GCInfo::gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUGARG(bool force
             else
             {
                 printRegMaskInt(gcRegGCrefSetCur);
-                compiler->GetEmitter()->emitDispRegSet(gcRegGCrefSetCur);
+                m_compiler->GetEmitter()->emitDispRegSet(gcRegGCrefSetCur);
                 printf(" => ");
             }
             printRegMaskInt(gcRegGCrefSetNew);
-            compiler->GetEmitter()->emitDispRegSet(gcRegGCrefSetNew);
+            m_compiler->GetEmitter()->emitDispRegSet(gcRegGCrefSetNew);
             printf("\n");
         }
     }
@@ -115,7 +105,7 @@ void GCInfo::gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUGARG(bool force
 
 void GCInfo::gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBUGARG(bool forceOutput))
 {
-    if (compiler->verbose)
+    if (m_compiler->verbose)
     {
         if (forceOutput || (gcRegByrefSetCur != gcRegByrefSetNew))
         {
@@ -127,11 +117,11 @@ void GCInfo::gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBUGARG(bool force
             else
             {
                 printRegMaskInt(gcRegByrefSetCur);
-                compiler->GetEmitter()->emitDispRegSet(gcRegByrefSetCur);
+                m_compiler->GetEmitter()->emitDispRegSet(gcRegByrefSetCur);
                 printf(" => ");
             }
             printRegMaskInt(gcRegByrefSetNew);
-            compiler->GetEmitter()->emitDispRegSet(gcRegByrefSetNew);
+            m_compiler->GetEmitter()->emitDispRegSet(gcRegByrefSetNew);
             printf("\n");
         }
     }
@@ -206,6 +196,7 @@ void GCInfo::gcMarkRegSetNpt(regMaskTP regMask DEBUGARG(bool forceOutput))
 
 void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
 {
+#if EMIT_GENERATE_GCINFO
     regMaskTP regMask = genRegMask(reg);
 
     switch (type)
@@ -220,6 +211,7 @@ void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
             gcMarkRegSetNpt(regMask);
             break;
     }
+#endif // EMIT_GENERATE_GCINFO
 }
 
 //------------------------------------------------------------------------
@@ -370,7 +362,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
 
 void GCInfo::gcVarPtrSetInit()
 {
-    VarSetOps::AssignNoCopy(compiler, gcVarPtrSetCur, VarSetOps::MakeEmpty(compiler));
+    VarSetOps::AssignNoCopy(m_compiler, gcVarPtrSetCur, VarSetOps::MakeEmpty(m_compiler));
 
     /* Initialize the list of lifetime entries */
     gcVarPtrList = gcVarPtrLast = nullptr;
@@ -386,11 +378,11 @@ GCInfo::regPtrDsc* GCInfo::gcRegPtrAllocDsc()
 {
     regPtrDsc* regPtrNext;
 
-    assert(compiler->IsFullPtrRegMapRequired());
+    assert(m_compiler->IsFullPtrRegMapRequired());
 
     /* Allocate a new entry and initialize it */
 
-    regPtrNext = new (compiler, CMK_GC) regPtrDsc;
+    regPtrNext = new (m_compiler, CMK_GC) regPtrDsc;
 
     regPtrNext->rpdIsThis = false;
 
@@ -450,14 +442,13 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
     unsigned   varNum;
     LclVarDsc* varDsc;
 
-    bool         keepThisAlive  = false; // did we track "this" in a synchronized method?
     unsigned int untrackedCount = 0;
 
     // Count the untracked locals and non-enregistered args.
 
-    for (varNum = 0, varDsc = compiler->lvaTable; varNum < compiler->lvaCount; varNum++, varDsc++)
+    for (varNum = 0, varDsc = m_compiler->lvaTable; varNum < m_compiler->lvaCount; varNum++, varDsc++)
     {
-        if (compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+        if (m_compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
         {
             // Field local of a PROMOTION_TYPE_DEPENDENT struct must have been
             // reported through its parent local
@@ -466,18 +457,18 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
 
         if (varTypeIsGC(varDsc->TypeGet()))
         {
-            if (!gcIsUntrackedLocalOrNonEnregisteredArg(varNum, &keepThisAlive))
+            if (!gcIsUntrackedLocalOrNonEnregisteredArg(varNum))
             {
                 continue;
             }
 
 #ifdef DEBUG
-            if (compiler->verbose)
+            if (m_compiler->verbose)
             {
                 int offs = varDsc->GetStackOffset();
 
                 printf("GCINFO: untrckd %s lcl at [%s", varTypeGCstring(varDsc->TypeGet()),
-                       compiler->GetEmitter()->emitGetFrameReg());
+                       m_compiler->GetEmitter()->emitGetFrameReg());
 
                 if (offs < 0)
                 {
@@ -511,12 +502,12 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
         }
 
 #ifdef DEBUG
-        if (compiler->verbose)
+        if (m_compiler->verbose)
         {
             int offs = tempThis->tdTempOffs();
 
             printf("GCINFO: untrck %s Temp at [%s", varTypeGCstring(varDsc->TypeGet()),
-                   compiler->GetEmitter()->emitGetFrameReg());
+                   m_compiler->GetEmitter()->emitGetFrameReg());
 
             if (offs < 0)
             {
@@ -535,7 +526,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
     }
 
 #ifdef DEBUG
-    if (compiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("GCINFO: untrckVars = %u\n", untrackedCount);
     }
@@ -546,11 +537,6 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
     // Count the number of entries in the table of non-register pointer variable lifetimes.
 
     unsigned int varPtrTableSize = 0;
-
-    if (keepThisAlive)
-    {
-        varPtrTableSize++;
-    }
 
     if (gcVarPtrList != nullptr)
     {
@@ -570,7 +556,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
     }
 
 #ifdef DEBUG
-    if (compiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("GCINFO: trackdLcls = %u\n", varPtrTableSize);
     }
@@ -582,10 +568,10 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
 
     unsigned int noGCRegionCount = 0;
 
-    if (compiler->codeGen->GetInterruptible())
+    if (m_compiler->codeGen->GetInterruptible())
     {
         NoGCRegionCounter counter;
-        compiler->GetEmitter()->emitGenNoGCLst(counter, /* skipMainPrologsAndEpilogs = */ true);
+        m_compiler->GetEmitter()->emitGenNoGCLst(counter, /* skipMainPrologsAndEpilogs = */ true);
         noGCRegionCount = counter.noGCRegionCount;
     }
 
@@ -599,17 +585,15 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
 //
 // Arguments:
 //   varNum - the variable number to check;
-//   pKeepThisAlive - if !UsesFunclets() and the argument != nullptr remember
-//   if `this` should be kept alive and considered tracked.
 //
 // Return value:
 //   true if it an untracked pointer value.
 //
-bool GCInfo::gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum, bool* pKeepThisAlive)
+bool GCInfo::gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum)
 {
-    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+    LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
 
-    assert(!compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc));
+    assert(!m_compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc));
     assert(varTypeIsGC(varDsc->TypeGet()));
 
     // Do we have an argument or local variable?
@@ -634,7 +618,7 @@ bool GCInfo::gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum, bool* pKeep
             // If a CEE_JMP has been used, then we need to report all the arguments even if they are enregistered, since
             // we will be using this value in JMP call.  Note that this is subtle as we require that argument offsets
             // are always fixed up properly even if lvRegister is set .
-            if (!compiler->compJmpOpUsed)
+            if (!m_compiler->compJmpOpUsed)
             {
                 return false;
             }
@@ -648,26 +632,6 @@ bool GCInfo::gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum, bool* pKeep
         }
     }
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!compiler->UsesFunclets() && compiler->lvaIsOriginalThisArg(varNum) && compiler->lvaKeepAliveAndReportThis())
-    {
-        // "this" is in the untracked variable area, but encoding of untracked variables does not support reporting
-        // "this". So report it as a tracked variable with a liveness extending over the entire method.
-        //
-        // TODO-x86-Cleanup: the semantic here is not clear, it would be useful to check different cases and
-        // add a description where "this" is saved and how it is tracked in each of them:
-        // 1) when UsesFunclets() == true (x86 Linux);
-        // 2) when UsesFunclets() == false, lvaKeepAliveAndReportThis == true, compJmpOpUsed == true;
-        // 3) when there is regPtrDsc for "this", but keepThisAlive == true;
-        // etc.
-
-        if (pKeepThisAlive != nullptr)
-        {
-            *pKeepThisAlive = true;
-        }
-        return false;
-    }
-#endif // FEATURE_EH_WINDOWS_X86
     return true;
 }
 
@@ -697,7 +661,7 @@ void GCInfo::gcRegPtrSetInit()
 {
     gcRegGCrefSetCur = gcRegByrefSetCur = 0;
 
-    if (compiler->IsFullPtrRegMapRequired())
+    if (m_compiler->IsFullPtrRegMapRequired())
     {
         gcRegPtrList = gcRegPtrLast = nullptr;
     }
@@ -733,73 +697,3 @@ void GCInfo::gcRegPtrSetInit()
 }
 
 #endif // JIT32_GCENCODER
-
-//------------------------------------------------------------------------
-// gcUpdateForRegVarMove: Update the masks when a variable is moved
-//
-// Arguments:
-//    srcMask - The register mask for the register(s) from which it is being moved
-//    dstMask - The register mask for the register(s) to which it is being moved
-//    type    - The type of the variable
-//
-// Return Value:
-//    None
-//
-// Notes:
-//    This is called during codegen when a var is moved due to an LSRA_ASG.
-//    It is also called by LinearScan::recordVarLocationAtStartOfBB() which is in turn called by
-//    CodeGen::genCodeForBBList() at the block boundary.
-
-void GCInfo::gcUpdateForRegVarMove(regMaskTP srcMask, regMaskTP dstMask, LclVarDsc* varDsc)
-{
-    var_types type    = varDsc->TypeGet();
-    bool      isGCRef = (type == TYP_REF);
-    bool      isByRef = (type == TYP_BYREF);
-
-    if (srcMask != RBM_NONE)
-    {
-        regSet->RemoveMaskVars(srcMask);
-        if (isGCRef)
-        {
-            assert((gcRegByrefSetCur & srcMask) == 0);
-            gcRegGCrefSetCur &= ~srcMask;
-            gcRegGCrefSetCur |= dstMask; // safe if no dst, i.e. RBM_NONE
-        }
-        else if (isByRef)
-        {
-            assert((gcRegGCrefSetCur & srcMask) == 0);
-            gcRegByrefSetCur &= ~srcMask;
-            gcRegByrefSetCur |= dstMask; // safe if no dst, i.e. RBM_NONE
-        }
-    }
-    else if (isGCRef || isByRef)
-    {
-        // In this case, we are moving it from the stack to a register,
-        // so remove it from the set of live stack gc refs
-        VarSetOps::RemoveElemD(compiler, gcVarPtrSetCur, varDsc->lvVarIndex);
-    }
-    if (dstMask != RBM_NONE)
-    {
-        regSet->AddMaskVars(dstMask);
-        // If the source is a reg, then the gc sets have been set appropriately
-        // Otherwise, we have to determine whether to set them
-        if (srcMask == RBM_NONE)
-        {
-            if (isGCRef)
-            {
-                gcRegGCrefSetCur |= dstMask;
-            }
-            else if (isByRef)
-            {
-                gcRegByrefSetCur |= dstMask;
-            }
-        }
-    }
-    else if (isGCRef || isByRef)
-    {
-        VarSetOps::AddElemD(compiler, gcVarPtrSetCur, varDsc->lvVarIndex);
-    }
-}
-
-/*****************************************************************************/
-/*****************************************************************************/

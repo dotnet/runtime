@@ -36,13 +36,14 @@
         - src/mono/msbuild/common/MonoAOTCompiler.props
         - src/tasks/AppleAppBuilder/Xcode.cs
         - src/tasks/MobileBuildTasks/Apple/AppleProject.cs
+        - src/tasks/Crossgen2Tasks/Microsoft.NET.CrossGen.targets
         - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
      -->
     <AndroidApiLevelMin>21</AndroidApiLevelMin>
-    <iOSVersionMin>12.2</iOSVersionMin>
-    <tvOSVersionMin>12.2</tvOSVersionMin>
-    <macOSVersionMin>12.0</macOSVersionMin>
-    <MacCatalystVersionMin>15.0</MacCatalystVersionMin>
+    <iOSVersionMin>13.0</iOSVersionMin>
+    <tvOSVersionMin>13.0</tvOSVersionMin>
+    <macOSVersionMin>14.0</macOSVersionMin>
+    <MacCatalystVersionMin>17.0</MacCatalystVersionMin>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -55,31 +56,46 @@
   <!-- Import the Arcade SDK -->
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
+  <!-- MSBuild parallelism settings for better build performance.
+       See https://devblogs.microsoft.com/cppblog/cpp-build-throughput-investigation-and-tune-up/ -->
+  <PropertyGroup>
+    <UseMultiToolTask>true</UseMultiToolTask>
+    <EnforceProcessCountAcrossBuilds>true</EnforceProcessCountAcrossBuilds>
+    <EnableClServerMode>true</EnableClServerMode>
+  </PropertyGroup>
+
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>10.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>11.0</NetCoreAppCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
     <NetCoreAppCurrentBrandName>.NET $(NetCoreAppCurrentVersion)</NetCoreAppCurrentBrandName>
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <!-- TODO: Replace NetCoreAppCurrent with NetCurrent in this repo -->
+    <NetCurrent>$(NetCoreAppCurrent)</NetCurrent>
 
     <!-- The previous supported .NET version. -->
-    <NetCoreAppPrevious>net9.0</NetCoreAppPrevious>
+    <NetCoreAppPrevious />
     <NetCoreAppPrevious Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious>
+    <!-- TODO: Replace NetCoreAppPrevious with NetPrevious in this repo -->
+    <NetPrevious>$(NetCoreAppPrevious)</NetPrevious>
 
     <!-- The minimum supported .NET version. -->
-    <NetCoreAppMinimum>net8.0</NetCoreAppMinimum>
+    <NetCoreAppMinimum>net10.0</NetCoreAppMinimum>
     <NetCoreAppMinimum Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppMinimum>
+    <!-- TODO: Replace NetCoreAppMinimum with NetMinimum in this repo -->
+    <NetMinimum>$(NetCoreAppMinimum)</NetMinimum>
 
     <!-- when this is updated, make sure to keep $(_NetCoreAppToolCurrent)
          in src/mono/wasm/build/WasmApp.LocalBuild.props
          and in src/mono/msbuild/apple/build/AppleBuild.LocalBuild.props in sync -->
-    <NetCoreAppToolCurrentVersion>10.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppToolCurrentVersion>11.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
+    <!-- TODO: Replace NetCoreAppToolCurrent with BundledNETCoreAppTargetFramework in this repo -->
 
-    <AspNetCoreAppCurrentVersion>10.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrentVersion>11.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
     <!-- Don't build for NETFramework during source-build. -->
@@ -87,8 +103,8 @@
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
     <NetFrameworkCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
 
-    <ApiCompatNetCoreAppBaselineVersion>9.0.0</ApiCompatNetCoreAppBaselineVersion>
-    <ApiCompatNetCoreAppBaselineTFM>net9.0</ApiCompatNetCoreAppBaselineTFM>
+    <ApiCompatNetCoreAppBaselineVersion>10.0.0</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineTFM>net10.0</ApiCompatNetCoreAppBaselineTFM>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
@@ -122,6 +138,7 @@
     <WasmProjectRoot>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm'))</WasmProjectRoot>
     <WasiProjectRoot>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasi'))</WasiProjectRoot>
 
+    <CoreclrRuntimeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</CoreclrRuntimeBinDir>
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)'))</AppleAppBuilderDir>
     <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)', 'publish'))</AndroidAppBuilderDir>
     <MobileBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MobileBuildTasks', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)'))</MobileBuildTasksDir>
@@ -132,10 +149,9 @@
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
     <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
     <TestExclusionListTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'TestExclusionListTasks', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)'))</TestExclusionListTasksDir>
-    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
-    <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', '$(TasksConfiguration)', '$(NetFrameworkToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
-    <Crossgen2SdkOverridePropsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.props'))</Crossgen2SdkOverridePropsPath>
-    <Crossgen2SdkOverrideTargetsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.targets'))</Crossgen2SdkOverrideTargetsPath>
+    <InstallerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', '$(TasksConfiguration)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
+    <Crossgen2SdkOverridePropsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', 'Microsoft.NET.CrossGen.props'))</Crossgen2SdkOverridePropsPath>
+    <Crossgen2SdkOverrideTargetsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', 'Microsoft.NET.CrossGen.targets'))</Crossgen2SdkOverrideTargetsPath>
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
     <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
     <MobileBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MobileBuildTasksDir)', 'MobileBuildTasks.dll'))</MobileBuildTasksAssemblyPath>
@@ -178,7 +194,7 @@
 
   <PropertyGroup>
     <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(TargetRid).$(HostConfiguration)', 'corehost'))</DotNetHostBinDir>
-    <DotNetCdacBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mscordaccore_universal', '$(Configuration)', '$(NetCoreAppCurrent)', '$(PortableTargetRid)', 'publish'))</DotNetCdacBinDir>
+    <DotNetCdacBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mscordaccore_universal', '$(Configuration)', '$(PortableTargetRid)', 'publish'))</DotNetCdacBinDir>
   </PropertyGroup>
 
   <!--Feature switches -->
@@ -319,6 +335,8 @@
     <NoWarn>$(NoWarn);CS8625</NoWarn>
     <!-- We dont need to add null annotation within the ref for explicit interface methods. -->
     <NoWarn>$(NoWarn);CS8617</NoWarn>
+    <!-- don't warn about explicit ctors in classes with [EventSource] -->
+    <NoWarn>$(NoWarn);ESGEN001;ESGEN002</NoWarn>
     <!-- No symbols are produced for ref assemblies, but some parts of the SDK still expect pdbs, so we explicitly tell it there are none. -->
     <!-- Must be set after importing Arcade to override its defaults. -->
     <DebugType>none</DebugType>
@@ -360,6 +378,8 @@
     <NoWarn>$(NoWarn);SYSLIB0011;SYSLIB0050;SYSLIB0051</NoWarn>
     <!-- don't warn about unnecessary trim warning suppressions. can be removed with preview 6. -->
     <NoWarn>$(NoWarn);IL2121</NoWarn>
+    <!-- don't warn about explicit ctors in classes with [EventSource] -->
+    <NoWarn>$(NoWarn);ESGEN001;ESGEN002</NoWarn>
     <!-- allow nullable annotated files to be incorporated into tests without warning -->
     <Nullable Condition="'$(Nullable)' == '' and '$(Language)' == 'C#'">annotations</Nullable>
   </PropertyGroup>

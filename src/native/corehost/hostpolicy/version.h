@@ -9,7 +9,6 @@
 
 struct version_t
 {
-    version_t();
     version_t(int major, int minor, int build, int revision);
 
     int get_major() const { return m_major; }
@@ -27,6 +26,8 @@ struct version_t
     bool operator >=(const version_t& b) const;
 
     static bool parse(const pal::string_t& ver, version_t* ver_out);
+
+    static const version_t& empty();
 
 private:
     int m_major;

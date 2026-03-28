@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -36,8 +37,8 @@ namespace System.Security.Cryptography
 
         private const string ECDsaIdentifier = "ECDsa";
 
-        private static volatile Dictionary<string, string>? s_defaultOidHT;
-        private static volatile Dictionary<string, object>? s_defaultNameHT;
+        private static Dictionary<string, string>? s_defaultOidHT;
+        private static Dictionary<string, object>? s_defaultNameHT;
         private static readonly ConcurrentDictionary<string, Type> appNameHT = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
         private static readonly ConcurrentDictionary<string, string> appOidHT = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -189,8 +190,7 @@ namespace System.Security.Cryptography
                 ht.Add("System.Security.Cryptography.RSA", RSACryptoServiceProviderType);
                 ht.Add("System.Security.Cryptography.AsymmetricAlgorithm", RSACryptoServiceProviderType);
 
-                if (!OperatingSystem.IsIOS() &&
-                    !OperatingSystem.IsTvOS())
+                if (Helpers.IsDSASupported)
                 {
                     ht.Add("DSA", DSACryptoServiceProviderType);
                     ht.Add("System.Security.Cryptography.DSA", DSACryptoServiceProviderType);

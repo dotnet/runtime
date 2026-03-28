@@ -117,6 +117,13 @@ namespace ILLink.Shared.TrimAnalysis
             if (!field.OriginalDefinition.Type.IsTypeInterestingForDataflow(isByRef: field.RefKind is not RefKind.None))
                 return DynamicallyAccessedMemberTypes.None;
 
+            if (field.AssociatedSymbol is IPropertySymbol property
+                && property.IsAutoProperty())
+            {
+                // If this is an auto property, we get the property annotation
+                return property.GetDynamicallyAccessedMemberTypes();
+            }
+
             return field.GetDynamicallyAccessedMemberTypes();
         }
 
@@ -165,8 +172,7 @@ namespace ILLink.Shared.TrimAnalysis
 
             var damt = parameter.GetDynamicallyAccessedMemberTypes();
 
-            var parameterMethod = (IMethodSymbol)parameter.ContainingSymbol;
-            Debug.Assert(parameterMethod != null);
+            IMethodSymbol parameterMethod = param.Method.Method;
 
             // If there are conflicts between the setter and the property annotation,
             // the setter annotation wins. (But DAMT.None is ignored)
@@ -174,7 +180,9 @@ namespace ILLink.Shared.TrimAnalysis
             // Is this a property setter `value` parameter?
             if (parameterMethod!.MethodKind == MethodKind.PropertySet
                 && damt == DynamicallyAccessedMemberTypes.None
-                && parameter.Ordinal == parameterMethod.Parameters.Length - 1)
+                && parameter.Ordinal == parameterMethod.Parameters.Length - 1
+                // Do not propagate property-level DAM for C# 14 extension properties
+                && !parameterMethod.HasExtensionParameterOnType())
             {
                 var property = (IPropertySymbol)parameterMethod.AssociatedSymbol!;
                 Debug.Assert(property != null);
@@ -194,7 +202,10 @@ namespace ILLink.Shared.TrimAnalysis
             // Is this a property getter?
             // If there are conflicts between the getter and the property annotation,
             // the getter annotation wins. (But DAMT.None is ignored)
-            if (method.MethodKind is MethodKind.PropertyGet && returnDamt == DynamicallyAccessedMemberTypes.None)
+            if (method.MethodKind is MethodKind.PropertyGet
+                && returnDamt == DynamicallyAccessedMemberTypes.None
+                // Do not propagate property-level DAM for C# 14 extension properties]
+                && !method.HasExtensionParameterOnType())
             {
                 var property = (IPropertySymbol)method.AssociatedSymbol!;
                 Debug.Assert(property != null);

@@ -236,7 +236,7 @@ namespace System.Linq.Tests
             Assert.Equal(int.MaxValue - 101, GetRange(-100, int.MaxValue).LastOrDefault());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
+        [Fact]
         public void IListImplementationIsValid()
         {
             Validate(GetRange(42, 10), [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]);

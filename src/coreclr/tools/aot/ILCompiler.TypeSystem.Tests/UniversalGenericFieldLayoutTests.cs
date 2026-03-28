@@ -246,7 +246,7 @@ namespace TypeSystemTests
             testModule = _testModuleX64;
             context = _contextX64;
 
-            tGen = testModule.GetType("GenericTypes", "GenStruct`3");
+            tGen = testModule.GetType("GenericTypes"u8, "GenStruct`3"u8);
             genOfUUU = tGen.MakeInstantiatedType(context.UniversalCanonType, context.UniversalCanonType, context.UniversalCanonType);
 
             Assert.Equal(LayoutInt.Indeterminate, genOfUUU.InstanceFieldAlignment);
@@ -261,7 +261,7 @@ namespace TypeSystemTests
             testModule = _testModuleX86;
             context = _contextX86;
 
-            tGen = testModule.GetType("GenericTypes", "GenStruct`3");
+            tGen = testModule.GetType("GenericTypes"u8, "GenStruct`3"u8);
             genOfUUU = tGen.MakeInstantiatedType(context.UniversalCanonType, context.UniversalCanonType, context.UniversalCanonType);
 
             Assert.Equal(LayoutInt.Indeterminate, genOfUUU.InstanceFieldAlignment);
@@ -276,7 +276,7 @@ namespace TypeSystemTests
             testModule = _testModuleARM;
             context = _contextARM;
 
-            tGen = testModule.GetType("GenericTypes", "GenStruct`3");
+            tGen = testModule.GetType("GenericTypes"u8, "GenStruct`3"u8);
             genOfUUU = tGen.MakeInstantiatedType(context.UniversalCanonType, context.UniversalCanonType, context.UniversalCanonType);
 
             Assert.Equal(LayoutInt.Indeterminate, genOfUUU.InstanceFieldAlignment);
@@ -292,7 +292,7 @@ namespace TypeSystemTests
         private static void TestIndeterminatedNestedStructFieldPerContext(TypeSystemContext context, ModuleDesc testModule, out InstantiatedType genOfIntNestedInt, out InstantiatedType genOfLongNestedInt)
         {
             // Given a struct with all field universal, what is the layout?
-            MetadataType tGen = testModule.GetType("GenericTypes", "GenStruct`3");
+            MetadataType tGen = testModule.GetType("GenericTypes"u8, "GenStruct`3"u8);
             InstantiatedType genOfUUU = tGen.MakeInstantiatedType(context.UniversalCanonType, context.UniversalCanonType, context.UniversalCanonType);
             genOfIntNestedInt = tGen.MakeInstantiatedType(context.GetWellKnownType(WellKnownType.Int32), genOfUUU, context.GetWellKnownType(WellKnownType.Int32));
             genOfLongNestedInt = tGen.MakeInstantiatedType(context.GetWellKnownType(WellKnownType.Int64), genOfUUU, context.GetWellKnownType(WellKnownType.Int32));
@@ -358,7 +358,7 @@ namespace TypeSystemTests
                                                out InstantiatedType genOfUI,
                                                out InstantiatedType genOfUL)
         {
-            MetadataType tDerivedGen = testModule.GetType("GenericTypes", "GenDerivedClass`2");
+            MetadataType tDerivedGen = testModule.GetType("GenericTypes"u8, "GenDerivedClass`2"u8);
             genOfIU = tDerivedGen.MakeInstantiatedType(context.GetWellKnownType(WellKnownType.Int32), context.UniversalCanonType);
             genOfLU = tDerivedGen.MakeInstantiatedType(context.GetWellKnownType(WellKnownType.Int64), context.UniversalCanonType);
             genOfUU = tDerivedGen.MakeInstantiatedType(context.UniversalCanonType, context.UniversalCanonType);

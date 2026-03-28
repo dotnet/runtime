@@ -162,6 +162,8 @@ namespace System
             return bits & TrailingSignificandMask;
         }
 
+        internal static float CreateSingle(bool sign, byte exp, uint sig) => BitConverter.UInt32BitsToSingle((sign ? SignMask : 0U) + ((uint)exp << BiasedExponentShift) + sig);
+
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
         [NonVersionable]
@@ -1469,13 +1471,8 @@ namespace System
             else if (typeof(TOther) == typeof(nuint))
             {
 #if MONO
-#if TARGET_64BIT
-                nuint actualResult = (value >= ulong.MaxValue) ? unchecked((nuint)ulong.MaxValue) :
-                                     (value <= ulong.MinValue) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
-#else
-                nuint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
-                                     (value <= uint.MinValue) ? uint.MinValue : (nuint)value;
-#endif
+                nuint actualResult = (value >= nuint.MaxValue) ? nuint.MaxValue :
+                                     (value <= nuint.MinValue) ? nuint.MinValue : (nuint)value;
 #else
                 nuint actualResult = (nuint)value;
 #endif
@@ -2183,14 +2180,14 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
         public static float Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.ParseFloat<byte, float>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out float result)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
@@ -2227,7 +2224,7 @@ namespace System
         static ushort IBinaryFloatParseAndFormatInfo<float>.NormalMantissaBits => SignificandLength;
         static ushort IBinaryFloatParseAndFormatInfo<float>.DenormalMantissaBits => TrailingSignificandLength;
 
-        static int IBinaryFloatParseAndFormatInfo<float>.MinFastFloatDecimalExponent => -65;
+        static int IBinaryFloatParseAndFormatInfo<float>.MinFastFloatDecimalExponent => -64;
         static int IBinaryFloatParseAndFormatInfo<float>.MaxFastFloatDecimalExponent => 38;
 
         static int IBinaryFloatParseAndFormatInfo<float>.MinExponentRoundToEven => -17;

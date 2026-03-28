@@ -37,7 +37,6 @@ class Object;
 #include "typestring.h"
 #include "caparser.h"
 #include "classnames.h"
-#include "objectnative.h"
 #include "finalizerthread.h"
 #include "dynamicinterfacecastable.h"
 
@@ -283,9 +282,6 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
 
     HRESULT hr = S_OK;
     NewRCWHolder pNewRCW;
-    BOOL bUseDelegate = FALSE;
-
-    MethodTable *pCallbackMT = NULL;
 
     OBJECTREF oref = NULL;
     COMOBJECTREF cref = NULL;
@@ -296,68 +292,14 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         //get wrapper for the object, this could enable GC
         CCWHolder pComWrap =  ComCallWrapper::InlineGetWrapper((OBJECTREF *)&cref);
 
-        // Make sure the ClassInitializer has run, since the user might have
-        // wanted to set up a COM object creation callback.
-        pMTClass->CheckRunClassInitThrowing();
-
-        // If the user is going to use a delegate to allocate the COM object
-        // (rather than CoCreateInstance), we need to know now, before we enable
-        // preemptive GC mode (since we touch object references in the
-        // determination).
-        // We don't just check the current class to see if it has a cllabck
-        // registered, we check up the class chain to see if any of our parents
-        // did.
-
-        pCallbackMT = pMTClass;
-        while ((pCallbackMT != NULL) &&
-               (pCallbackMT->GetObjCreateDelegate() == NULL) &&
-               !pCallbackMT->IsComImport())
-        {
-            pCallbackMT = pCallbackMT->GetParentMethodTable();
-        }
-
-        if (pCallbackMT && !pCallbackMT->IsComImport())
-            bUseDelegate = TRUE;
-
         DebuggerExitFrame __def;
 
         // get the IUnknown interface for the managed object
         pOuter = ComCallWrapper::GetComIPFromCCW(pComWrap, IID_IUnknown, NULL);
         _ASSERTE(pOuter != NULL);
 
-        // If the user has set a delegate to allocate the COM object, use it.
-        // Otherwise we just CoCreateInstance it.
-        if (bUseDelegate)
-        {
-            ARG_SLOT args[2];
-
-            OBJECTREF orDelegate = pCallbackMT->GetObjCreateDelegate();
-            MethodDesc *pMeth = COMDelegate::GetMethodDesc(orDelegate);
-
-            GCPROTECT_BEGIN(orDelegate)
-            {
-                _ASSERTE(pMeth);
-                MethodDescCallSite  delegateMethod(pMeth, &orDelegate);
-
-                // Get the OR on which we are going to invoke the method and set it
-                //  as the first parameter in arg above.
-                args[0] = (ARG_SLOT)OBJECTREFToObject(COMDelegate::GetTargetObject(orDelegate));
-
-                // Pass the IUnknown of the aggregator as the second argument.
-                args[1] = (ARG_SLOT)(IUnknown*)pOuter;
-
-                // Call the method...
-                pUnk = (IUnknown *)delegateMethod.Call_RetArgSlot(args);
-                if (!pUnk)
-                    COMPlusThrowHR(E_FAIL);
-            }
-            GCPROTECT_END();
-        }
-        else
-        {
-            _ASSERTE(m_pClassMT);
-            pUnk = CreateInstanceInternal(pOuter, &fDidContainment);
-        }
+        _ASSERTE(m_pClassMT);
+        pUnk = CreateInstanceInternal(pOuter, &fDidContainment);
 
         __def.Pop();
 
@@ -1195,7 +1137,7 @@ VOID RCWCleanupList::CleanupWrappersInCurrentCtxThread(BOOL fWait, BOOL fManualC
 
             // Do a noop wait just to make sure we are cooperating
             // with the finalizer thread
-            pThread->Join(1, TRUE);
+            pThread->DoReentrantWaitWithRetry(pThread->GetThreadHandle(), 1, WaitMode_Alertable);
         }
     }
 }
@@ -1280,14 +1222,6 @@ VOID RCWCleanupList::ReleaseRCWListRaw(RCW* pRCW)
         pRCW = pNext;
     }
 }
-
-const int RCW::s_rGCPressureTable[GCPressureSize_COUNT] =
-{
-    0,                           // GCPressureSize_None
-    GC_PRESSURE_PROCESS_LOCAL,   // GCPressureSize_ProcessLocal
-    GC_PRESSURE_MACHINE_LOCAL,   // GCPressureSize_MachineLocal
-    GC_PRESSURE_REMOTE,          // GCPressureSize_Remote
-};
 
 //--------------------------------------------------------------------------------
 // The IUnknown passed in is AddRef'ed if we succeed in creating the wrapper.
@@ -1476,42 +1410,6 @@ RCW::MarshalingType RCW::GetMarshalingType(IUnknown* pUnk, MethodTable *pClassMT
     if (IUnkEntry::IsComponentFreeThreaded(pUnk))
         return MarshalingType_FreeThreaded;
     return MarshalingType_Unknown;
-}
-
-void RCW::AddMemoryPressure(GCPressureSize pressureSize)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    int pressure = s_rGCPressureTable[pressureSize];
-    GCInterface::AddMemoryPressure(pressure);
-
-    // Remember the pressure we set.
-    m_Flags.m_GCPressure = pressureSize;
-}
-
-void RCW::RemoveMemoryPressure()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if (GCPressureSize_None == m_Flags.m_GCPressure)
-        return;
-
-    int pressure = s_rGCPressureTable[m_Flags.m_GCPressure];
-    GCInterface::RemoveMemoryPressure(pressure);
-
-    m_Flags.m_GCPressure = GCPressureSize_None;
 }
 
 
@@ -1728,9 +1626,6 @@ void RCW::Cleanup()
 
         // Release the IUnkEntry and the InterfaceEntries.
         ReleaseAllInterfacesCallBack(this);
-
-        // Remove the memory pressure caused by this RCW (if present)
-        RemoveMemoryPressure();
     }
 
 #ifdef _DEBUG
@@ -2568,14 +2463,10 @@ void ComObject::ReleaseAllData(OBJECTREF oref)
     }
     CONTRACTL_END;
 
-    GCPROTECT_BEGIN(oref)
+    GCPROTECT_BEGIN(oref);
     {
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COM_OBJECT__RELEASE_ALL_DATA);
-
-        DECLARE_ARGHOLDER_ARRAY(ReleaseAllDataArgs, 1);
-        ReleaseAllDataArgs[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(oref);
-
-        CALL_MANAGED_METHOD_NORET(ReleaseAllDataArgs);
+        UnmanagedCallersOnlyCaller releaseAllData(METHOD__COM_OBJECT__RELEASE_ALL_DATA);
+        releaseAllData.InvokeThrowing(&oref);
     }
     GCPROTECT_END();
 }

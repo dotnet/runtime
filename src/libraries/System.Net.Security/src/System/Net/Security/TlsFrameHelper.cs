@@ -576,7 +576,7 @@ namespace System.Net.Security
             ReadOnlySpan<byte> serverName = serverNameList.Slice(0, serverNameListLength);
 
             sni = GetSniFromServerName(serverName, out bool invalid);
-            return invalid == false;
+            return !invalid;
         }
 
         private static string? GetSniFromServerName(ReadOnlySpan<byte> serverName, out bool invalid)

@@ -72,10 +72,10 @@ namespace System.Security.Cryptography
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
             throw new PlatformNotSupportedException();
 
-        protected override bool TryExportCompositeMLDsaPublicKeyCore(Span<byte> destination, out int bytesWritten) =>
+        protected override int ExportCompositeMLDsaPublicKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
-        protected override bool TryExportCompositeMLDsaPrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+        protected override int ExportCompositeMLDsaPrivateKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
     }
 }

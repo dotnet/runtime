@@ -7,6 +7,7 @@
 
 #include "callcounting.h"
 #include "threadsuspend.h"
+#include <minipal/memorybarrierprocesswide.h>
 
 #ifndef DACCESS_COMPILE
 extern "C" void STDCALL OnCallCountThresholdReachedStub();
@@ -23,30 +24,6 @@ const PCODE CallCountingStub::TargetForThresholdReached = (PCODE)GetEEFuncEntryP
 // CallCountingManager::CallCountingInfo
 
 #ifndef DACCESS_COMPILE
-
-CallCountingManager::CallCountingInfo::CallCountingInfo(NativeCodeVersion codeVersion)
-    : m_codeVersion(codeVersion),
-    m_callCountingStub(nullptr),
-    m_remainingCallCount(0),
-    m_stage(Stage::Disabled)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(!codeVersion.IsNull());
-}
-
-CallCountingManager::CallCountingInfo *
-CallCountingManager::CallCountingInfo::CreateWithCallCountingDisabled(NativeCodeVersion codeVersion)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return new CallCountingInfo(codeVersion);
-}
 
 CallCountingManager::CallCountingInfo::CallCountingInfo(NativeCodeVersion codeVersion, CallCount callCountThreshold)
     : m_codeVersion(codeVersion),
@@ -87,7 +64,6 @@ NativeCodeVersion CallCountingManager::CallCountingInfo::GetCodeVersion() const
 const CallCountingStub *CallCountingManager::CallCountingInfo::GetCallCountingStub() const
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_stage != Stage::Disabled);
 
     return m_callCountingStub;
 }
@@ -117,7 +93,6 @@ void CallCountingManager::CallCountingInfo::ClearCallCountingStub()
 PTR_CallCount CallCountingManager::CallCountingInfo::GetRemainingCallCountCell()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_stage != Stage::Disabled);
     //_ASSERTE(m_callCountingStub != nullptr);
 
     return &m_remainingCallCount;
@@ -135,7 +110,6 @@ CallCountingManager::CallCountingInfo::Stage CallCountingManager::CallCountingIn
 FORCEINLINE void CallCountingManager::CallCountingInfo::SetStage(Stage stage)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_stage != Stage::Disabled);
     _ASSERTE(stage <= Stage::Complete);
 
     switch (stage)
@@ -504,58 +478,7 @@ void CallCountingManager::StaticInitialize()
 }
 #endif
 
-bool CallCountingManager::IsCallCountingEnabled(NativeCodeVersion codeVersion)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!codeVersion.IsNull());
-    _ASSERTE(codeVersion.IsDefaultVersion());
-    _ASSERTE(codeVersion.GetMethodDesc()->IsEligibleForTieredCompilation());
-
-    CodeVersionManager::LockHolder codeVersioningLockHolder;
-
-    PTR_CallCountingInfo callCountingInfo = m_callCountingInfoByCodeVersionHash.Lookup(codeVersion);
-    return callCountingInfo == NULL || callCountingInfo->GetStage() != CallCountingInfo::Stage::Disabled;
-}
-
 #ifndef DACCESS_COMPILE
-
-void CallCountingManager::DisableCallCounting(NativeCodeVersion codeVersion)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!codeVersion.IsNull());
-    _ASSERTE(codeVersion.IsDefaultVersion());
-    _ASSERTE(codeVersion.GetMethodDesc()->IsEligibleForTieredCompilation());
-
-    CodeVersionManager::LockHolder codeVersioningLockHolder;
-
-    CallCountingInfo *callCountingInfo = m_callCountingInfoByCodeVersionHash.Lookup(codeVersion);
-    if (callCountingInfo != nullptr)
-    {
-        // Call counting may already have been disabled due to the possibility of concurrent or reentering JIT of the same
-        // native code version of a method. The call counting info is created with call counting enabled or disabled and it
-        // cannot be changed thereafter for consistency in dependents of the info.
-        _ASSERTE(callCountingInfo->GetStage() == CallCountingInfo::Stage::Disabled);
-        return;
-    }
-
-    NewHolder<CallCountingInfo> callCountingInfoHolder = CallCountingInfo::CreateWithCallCountingDisabled(codeVersion);
-    m_callCountingInfoByCodeVersionHash.Add(callCountingInfoHolder);
-    callCountingInfoHolder.SuppressRelease();
-}
 
 // Returns true if the code entry point was updated to reflect the active code version, false otherwise. In normal paths, the
 // code entry point is not updated only when the use of call counting stubs is disabled, as in that case returning to the
@@ -588,12 +511,7 @@ bool CallCountingManager::SetCodeEntryPoint(
     _ASSERTE(createTieringBackgroundWorkerRef == nullptr || !*createTieringBackgroundWorkerRef);
 
     if (!methodDesc->IsEligibleForTieredCompilation() ||
-        (
-            // For a default code version that is not tier 0, call counting will have been disabled by this time (checked
-            // below). Avoid the redundant and not-insignificant expense of GetOptimizationTier() on a default code version.
-            !activeCodeVersion.IsDefaultVersion() &&
-            activeCodeVersion.IsFinalTier()
-        ) ||
+        activeCodeVersion.IsFinalTier() ||
         !g_pConfig->TieredCompilation_CallCounting())
     {
         methodDesc->SetCodeEntryPoint(codeEntryPoint);
@@ -1025,7 +943,7 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
     // will not be used after resuming the runtime. The following ensures that other threads will not use an old cached
     // entry point value that will not be valid. Do this here in case of exception later.
     MemoryBarrier(); // flush writes from this thread first to guarantee ordering
-    FlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 
     // At this point, allocated call counting stubs won't be used anymore. Call counting stubs and corresponding infos may
     // now be safely deleted. Note that call counting infos may not be deleted prior to this point because call counting
@@ -1152,11 +1070,6 @@ void CallCountingManager::DeleteAllCallCountingStubs()
         {
             CallCountingInfo *callCountingInfo = *it;
             CallCountingInfo::Stage callCountingStage = callCountingInfo->GetStage();
-            if (callCountingStage == CallCountingInfo::Stage::Disabled)
-            {
-                continue;
-            }
-
             if (callCountingInfo->GetCallCountingStub() != nullptr)
             {
                 callCountingInfo->ClearCallCountingStub();

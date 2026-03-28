@@ -33,10 +33,6 @@
 #define STATUS_LONGJUMP        ((NTSTATUS)0x80000026L)
 #endif
 
-#ifndef LOCALE_NAME_MAX_LENGTH
-#define LOCALE_NAME_MAX_LENGTH 85
-#endif // !LOCALE_NAME_MAX_LENGTH
-
 #ifndef IMAGE_FILE_MACHINE_RISCV64
 #define IMAGE_FILE_MACHINE_RISCV64        0x5064  // RISCV64
 #endif // !IMAGE_FILE_MACHINE_RISCV64
@@ -470,7 +466,7 @@ RtlpGetFunctionEndAddress (
         FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
-    return FunctionEntry->BeginAddress + 4 * FunctionLength;
+    return FunctionEntry->BeginAddress + 2 * FunctionLength;
 }
 
 #define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)

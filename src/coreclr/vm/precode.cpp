@@ -7,10 +7,13 @@
 // Stub that runs before the actual native code
 //
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 
 #include "common.h"
 #include "dllimportcallback.h"
-#include "../interpreter/interpretershared.h"
+#ifdef FEATURE_INTERPRETER
+#include <interpretershared.h>
+#endif // FEATURE_INTERPRETER
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -134,9 +137,6 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     TADDR pMD = (TADDR)NULL;
 
     PrecodeType precodeType = GetType();
-#ifdef TARGET_WASM
-    pMD = *(TADDR*)(m_data + OFFSETOF_PRECODE_MD);
-#else
     switch (precodeType)
     {
     case PRECODE_STUB:
@@ -169,7 +169,6 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     default:
         break;
     }
-#endif // TARGET_WASM
 
     if (pMD == (TADDR)NULL)
     {
@@ -191,7 +190,7 @@ TADDR InterpreterPrecode::GetMethodDesc()
     LIMITED_METHOD_DAC_CONTRACT;
 
     InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(GetData()->ByteCodeAddr);
-    return (TADDR)pInterpreterCode->Method->methodHnd;
+    return dac_cast<TADDR>(pInterpreterCode->Method->methodHnd);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -214,6 +213,12 @@ BOOL Precode::IsPointingToPrestub(PCODE target)
 #endif
 
     return FALSE;
+}
+
+BOOL Precode::IsPointingToPrestub()
+{
+    WRAPPER_NO_CONTRACT;
+    return IsPointingToPrestub(GetTarget());
 }
 
 #ifndef DACCESS_COMPILE
@@ -322,11 +327,8 @@ void Precode::Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAl
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef TARGET_WASM
-    m_data[OFFSETOF_PRECODE_TYPE] = t;
-    *(TADDR*)(m_data + OFFSETOF_PRECODE_MD) = (TADDR)pMD;
-#else
-    switch (t) {
+    switch (t)
+    {
     case PRECODE_STUB:
         ((StubPrecode*)this)->Init((StubPrecode*)pPrecodeRX, (TADDR)pMD, pLoaderAllocator);
         break;
@@ -349,7 +351,6 @@ void Precode::Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAl
         UnexpectedPrecodeType("Precode::Init", t);
         break;
     }
-#endif
 
     _ASSERTE(IsValidType(GetType()));
 }
@@ -385,12 +386,11 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!IsPointingToPrestub(target));
 
-    PCODE expected = GetTarget();
     BOOL ret = FALSE;
-
-    if (fOnlyRedirectFromPrestub && !IsPointingToPrestub(expected))
+    if (fOnlyRedirectFromPrestub && !IsPointingToPrestub())
         return FALSE;
 
+    PCODE expected = GetTarget();
     PrecodeType precodeType = GetType();
     switch (precodeType)
     {
@@ -571,8 +571,6 @@ void StubPrecode::StaticInitialize()
     }
 
     #undef ENUM_PAGE_SIZE
-#elif defined(TARGET_WASM)
-    // StubPrecode is not implemented on WASM
 #else
     _ASSERTE((SIZE_T)((BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode) <= StubPrecode::CodeSize);
 #endif
@@ -587,7 +585,6 @@ void StubPrecode::StaticInitialize()
 
 void StubPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
-#ifndef TARGET_WASM
     int totalCodeSize = (int)(pageSize / StubPrecode::CodeSize) * StubPrecode::CodeSize;
 #ifdef TARGET_X86
     for (int i = 0; i < totalCodeSize; i += StubPrecode::CodeSize)
@@ -610,7 +607,6 @@ void StubPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_
         _ASSERTE(StubPrecode::IsStubPrecodeByASM_DAC((PCODE)(pageBaseRX + i)));
     }
 #endif // _DEBUG
-#endif // TARGET_WASM
 }
 
 BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
@@ -725,8 +721,6 @@ void FixupPrecode::StaticInitialize()
         // This should fail if the template is used on a platform which doesn't support the supported page size for templates
         ThrowHR(COR_E_EXECUTIONENGINE);
     }
-#elif defined(TARGET_WASM)
-    // FixupPrecode is not implemented on WASM
 #else
     _ASSERTE((SIZE_T)((BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode) <= FixupPrecode::CodeSize);
 #endif
@@ -740,7 +734,6 @@ void FixupPrecode::StaticInitialize()
 
 void FixupPrecode::GenerateDataPage(uint8_t* pageBase, size_t pageSize)
 {
-#ifndef TARGET_WASM
     // Fill in the data page such that the target of the fixup precode starts as initialized to point
     // to the start of the precode itself, so that before the memory for the precode is initialized,
     // the precode is in a state where it will loop forever.
@@ -759,15 +752,12 @@ void FixupPrecode::GenerateDataPage(uint8_t* pageBase, size_t pageSize)
         PCODE* ppTargetSlot = (PCODE*)(pageBase + i + offsetof(FixupPrecodeData, Target));
         *ppTargetSlot = ((Precode*)(pageBase - pageSize + i))->GetEntryPoint();
     }
-#endif // !TARGET_WASM
 }
 
 void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
-#ifndef TARGET_WASM
     int totalCodeSize = (int)((pageSize / FixupPrecode::CodeSize) * FixupPrecode::CodeSize);
 #ifdef TARGET_X86
-
     for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
     {
         memcpy(pageBase + i, (const void*)FixupPrecodeCode, FixupPrecode::CodeSize);
@@ -790,7 +780,6 @@ void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size
         _ASSERTE(FixupPrecode::IsFixupPrecodeByASM_DAC((PCODE)(pageBaseRX + i)));
     }
 #endif // _DEBUG
-#endif // !TARGET_WASM
 }
 
 BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
@@ -966,4 +955,36 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
     }
 
     return TRUE;
+}
+
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+TADDR GetInterpreterCodeFromInterpreterPrecodeIfPresent(TADDR codePointerMaybeInterpreterStub)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+    
+#if defined(FEATURE_INTERPRETER) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    if (codePointerMaybeInterpreterStub == (TADDR)NULL)
+    {
+        return (TADDR)NULL;
+    }
+
+    RangeSection * pRS = ExecutionManager::FindCodeRange(codePointerMaybeInterpreterStub, ExecutionManager::GetScanFlags());
+    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            if (dac_cast<PTR_StubPrecode>(PCODEToPINSTR(codePointerMaybeInterpreterStub))->GetType() == PRECODE_INTERPRETER)
+            {
+                codePointerMaybeInterpreterStub = (dac_cast<PTR_InterpreterPrecode>(PCODEToPINSTR(codePointerMaybeInterpreterStub)))->GetData()->ByteCodeAddr;
+            }
+        }
+    }
+#endif
+
+    return codePointerMaybeInterpreterStub;
 }

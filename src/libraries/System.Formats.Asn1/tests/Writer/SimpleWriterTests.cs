@@ -49,7 +49,7 @@ namespace System.Formats.Asn1.Tests.Writer
             Assert.Equal(0, written);
             Assert.True(writer.EncodedValueEquals(ReadOnlySpan<byte>.Empty));
 
-#if NET9_0_OR_GREATER
+#if NET
             writer.Encode<object>(encoded => {
                 Assert.Equal(0, encoded.Length);
                 return null;
@@ -251,7 +251,7 @@ namespace System.Formats.Asn1.Tests.Writer
             Assert.Equal(1024, buffer?.Length);
         }
 
-#if NET9_0_OR_GREATER
+#if NET
         [Fact]
         public static void Encode_Callback_NoModifications()
         {

@@ -525,10 +525,10 @@ namespace System
         /// <summary>Returns the value of the Lazy object.</summary>
         public T? Value => _lazy.ValueForDebugDisplay;
 
-        /// <summary>Returns the execution mode of the Lazy object</summary>
+        /// <summary>Returns the execution mode of the Lazy object.</summary>
         public LazyThreadSafetyMode? Mode => _lazy.Mode;
 
-        /// <summary>Returns the execution mode of the Lazy object</summary>
+        /// <summary>Returns whether the value creation of the Lazy object is faulted or not.</summary>
         public bool IsValueFaulted => _lazy.IsValueFaulted;
     }
 }

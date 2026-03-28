@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -57,21 +58,12 @@ namespace System
 
         internal static IntPtr EdiSeparator => (IntPtr)1;  // Marks a boundary where an ExceptionDispatchInfo rethrew an exception.
 
-        private void AppendStackIP(IntPtr IP, bool isFirstRethrowFrame)
+        private void AppendStackIP(IntPtr IP)
         {
             if (_idxFirstFreeStackTraceEntry == 0)
             {
                 _corDbgStackTrace = new IntPtr[16];
             }
-            else if (isFirstRethrowFrame)
-            {
-                // For the first frame after rethrow, we replace the last entry in the stack trace with the IP
-                // of the rethrow.  This is overwriting the IP of where control left the corresponding try
-                // region for the catch that is rethrowing.
-                _corDbgStackTrace[_idxFirstFreeStackTraceEntry - 1] = IP;
-                return;
-            }
-
             if (_idxFirstFreeStackTraceEntry >= _corDbgStackTrace.Length)
                 GrowStackTrace();
 
@@ -101,7 +93,7 @@ namespace System
         internal static uint GetExceptionCount() => s_exceptionCount;
 
         [RuntimeExport("AppendExceptionStackFrame")]
-        private static void AppendExceptionStackFrame(object exceptionObj, IntPtr IP, int flags)
+        internal static void AppendExceptionStackFrame(object exceptionObj, IntPtr IP, int flags)
         {
             // This method is called by the runtime's EH dispatch code and is not allowed to leak exceptions
             // back into the dispatcher.
@@ -132,21 +124,17 @@ namespace System
                 // with another OutOfMemoryException, which may lead to infinite recursion.
                 bool fatalOutOfMemory = ex == PreallocatedOutOfMemoryException.Instance;
 
-                if (!fatalOutOfMemory)
-                    ex.AppendStackIP(IP, isFirstRethrowFrame);
+                if (!isFirstRethrowFrame && !fatalOutOfMemory)
+                    ex.AppendStackIP(IP);
 
 #if FEATURE_PERFTRACING
-                if (isFirstFrame)
+                if (isFirstFrame && NativeRuntimeEventSource.Log.IsEnabled())
                 {
                     string typeName = !fatalOutOfMemory ? ex.GetType().ToString() : "System.OutOfMemoryException";
                     string message = !fatalOutOfMemory ? ex.Message :
                         "Insufficient memory to continue the execution of the program.";
 
-                    unsafe
-                    {
-                        fixed (char* exceptionTypeName = typeName, exceptionMessage = message)
-                            RuntimeImports.NativeRuntimeEventSource_LogExceptionThrown(exceptionTypeName, exceptionMessage, IP, ex.HResult);
-                    }
+                    NativeRuntimeEventSource.Log.ExceptionThrown_V1(typeName, message, IP, (uint)ex.HResult, 0);
                 }
 #endif
             }

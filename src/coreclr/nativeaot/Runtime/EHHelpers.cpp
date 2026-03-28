@@ -232,7 +232,7 @@ EXTERN_C CODE_LOCATION RhpCheckedXchgAVLocation2;
 
 static bool InWriteBarrierHelper(uintptr_t faultingIP)
 {
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     static uintptr_t writeBarrierAVLocations[] =
     {
         (uintptr_t)&RhpAssignRefAVLocation,
@@ -271,11 +271,14 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         if (writeBarrierAVLocations[i] == faultingIP)
             return true;
     }
-#endif // USE_PORTABLE_HELPERS
+#endif // FEATURE_PORTABLE_HELPERS
 
     return false;
 }
 
+#if (defined(HOST_AMD64) || defined(HOST_ARM64)) && defined(HOST_WINDOWS)
+EXTERN_C CODE_LOCATION RhpResolveInterfaceMethodFast;
+#endif
 EXTERN_C CODE_LOCATION RhpInitialInterfaceDispatch;
 EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation1;
 EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation2;
@@ -287,9 +290,12 @@ EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation64;
 
 static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
 {
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     static uintptr_t interfaceDispatchAVLocations[] =
     {
+#if (defined(HOST_AMD64) || defined(HOST_ARM64)) && defined(HOST_WINDOWS)
+        (uintptr_t)&RhpResolveInterfaceMethodFast,
+#endif
         (uintptr_t)&RhpInitialInterfaceDispatch,
         (uintptr_t)&RhpInterfaceDispatchAVLocation1,
         (uintptr_t)&RhpInterfaceDispatchAVLocation2,
@@ -312,7 +318,7 @@ static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
         if (interfaceDispatchAVLocations[i] == faultingIP)
             return true;
     }
-#endif // USE_PORTABLE_HELPERS
+#endif // FEATURE_PORTABLE_HELPERS
 
     return false;
 }

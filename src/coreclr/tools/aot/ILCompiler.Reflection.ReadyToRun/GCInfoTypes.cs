@@ -180,10 +180,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             switch (_target)
             {
                 case Machine.ArmThumb2:
+                case Machine.RiscV64:
                     return (x << 1);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
-                case Machine.RiscV64:
                     return (x << 2);
             }
             return x;
@@ -194,10 +194,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             switch (_target)
             {
                 case Machine.ArmThumb2:
+                case Machine.RiscV64:
                     return (x >> 1);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
-                case Machine.RiscV64:
                     return (x >> 2);
             }
             return x;

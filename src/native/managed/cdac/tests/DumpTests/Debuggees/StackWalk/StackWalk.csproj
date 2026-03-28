@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DumpTypes>Full</DumpTypes>
+    <R2RModes>R2R;Jit</R2RModes>
+  </PropertyGroup>
+</Project>

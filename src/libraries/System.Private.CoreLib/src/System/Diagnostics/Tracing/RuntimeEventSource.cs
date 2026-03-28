@@ -10,13 +10,9 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// RuntimeEventSource is an EventSource that represents events emitted by the managed runtime.
     /// </summary>
-    [EventSource(Guid = "49592C0F-5A05-516D-AA4B-A64E02026C89", Name = EventSourceName)]
-    [EventSourceAutoGenerate]
+    [EventSource(Guid = "49592C0F-5A05-516D-AA4B-A64E02026C89", Name = "System.Runtime")]
     internal sealed partial class RuntimeEventSource : EventSource
     {
-        internal static readonly Guid EventSourceGuid = new Guid("49592C0F-5A05-516D-AA4B-A64E02026C89");
-        internal const string EventSourceName = "System.Runtime";
-
         public static class Keywords
         {
             public const EventKeywords AppContext = (EventKeywords)0x1;
@@ -52,10 +48,6 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _ilBytesJittedCounter;
         private PollingCounter? _methodsJittedCounter;
         private IncrementingPollingCounter? _jitTimeCounter;
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private RuntimeEventSource(int _) { }
 
         private enum EventId : int
         {

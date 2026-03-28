@@ -34,8 +34,7 @@ public class MonoRunner extends Instrumentation
 {
     static {
         // loadLibrary triggers JNI_OnLoad in these libs
-        System.loadLibrary("%JNI_LIBRARY_NAME%");
-        System.loadLibrary("monodroid");
+        %LoadLibraryStatements%
     }
 
     static String testResultsDir;

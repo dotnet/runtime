@@ -6,6 +6,7 @@ using System;
 using System.Text;
 using System.Reflection;
 using Xunit;
+using TestLibrary;
 
 public class MyObject{
   public const int MY_OBJECT_FOO = 42;
@@ -51,6 +52,7 @@ public class Test_TestObjectGetTypeVirtual{
   public const int PASS = 100;
   public const int FAIL = 42;
 
+  [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
   [Fact]
   public static int TestEntryPoint(){
 

@@ -357,9 +357,9 @@ lShortForm:
             if (FitsInI1(uConst))
             {
                 static const UINT_PTR c_uMakeShortDelta = ((UINT_PTR)CEE_LDARG - (UINT_PTR)CEE_LDARG_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDARG - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARG_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOC_S);
-                static_assert_no_msg(((UINT_PTR)CEE_STLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_STLOC_S);
+                static_assert(((UINT_PTR)CEE_LDARG - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARG_S);
+                static_assert(((UINT_PTR)CEE_LDLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOC_S);
+                static_assert(((UINT_PTR)CEE_STLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_STLOC_S);
 
                 instr = (ILInstrEnum)((UINT_PTR)instr - c_uMakeShortDelta);
             }
@@ -373,9 +373,9 @@ lShortForm:
             if (FitsInI1(uConst))
             {
                 static const UINT_PTR c_uMakeShortDelta = ((UINT_PTR)CEE_LDARGA - (UINT_PTR)CEE_LDARGA_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDARGA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARGA_S);
-                static_assert_no_msg(((UINT_PTR)CEE_STARG  - c_uMakeShortDelta) == (UINT_PTR)CEE_STARG_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDLOCA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOCA_S);
+                static_assert(((UINT_PTR)CEE_LDARGA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARGA_S);
+                static_assert(((UINT_PTR)CEE_STARG  - c_uMakeShortDelta) == (UINT_PTR)CEE_STARG_S);
+                static_assert(((UINT_PTR)CEE_LDLOCA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOCA_S);
 
                 instr = (ILInstrEnum)((UINT_PTR)instr - c_uMakeShortDelta);
             }

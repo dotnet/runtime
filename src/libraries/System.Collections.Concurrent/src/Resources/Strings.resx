@@ -1,4 +1,4 @@
-﻿<root>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -111,30 +111,6 @@
   <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
     <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
   </data>
-  <data name="ConcurrentDictionary_ArrayIncorrectType" xml:space="preserve">
-    <value>The array is multidimensional, or the type parameter for the set cannot be cast automatically to the type of the destination array.</value>
-  </data>
-  <data name="ConcurrentDictionary_SourceContainsDuplicateKeys" xml:space="preserve">
-    <value>The source argument contains duplicate keys.</value>
-  </data>
-  <data name="ConcurrentDictionary_ConcurrencyLevelMustBePositiveOrNegativeOne" xml:space="preserve">
-    <value>The concurrencyLevel argument must be positive, or -1 to indicate a default level.</value>
-  </data>
-  <data name="ConcurrentDictionary_ArrayNotLargeEnough" xml:space="preserve">
-    <value>The index is equal to or greater than the length of the array, or the number of elements in the dictionary is greater than the available space from index to the end of the destination array.</value>
-  </data>
-  <data name="ConcurrentDictionary_KeyAlreadyExisted" xml:space="preserve">
-    <value>The key already existed in the dictionary.</value>
-  </data>
-  <data name="ConcurrentDictionary_ItemKeyIsNull" xml:space="preserve">
-    <value>TKey is a reference type and item.Key is null.</value>
-  </data>
-  <data name="ConcurrentDictionary_TypeOfKeyIncorrect" xml:space="preserve">
-    <value>The key was of an incorrect type for this dictionary.</value>
-  </data>
-  <data name="ConcurrentDictionary_TypeOfValueIncorrect" xml:space="preserve">
-    <value>The value was of an incorrect type for this dictionary.</value>
-  </data>
   <data name="ConcurrentStack_PushPopRange_InvalidCount" xml:space="preserve">
     <value>The sum of the startIndex and count arguments must be less than or equal to the collection's Count.</value>
   </data>
@@ -152,8 +128,5 @@
   </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
-  </data>
-  <data name="InvalidOperation_IncompatibleComparer" xml:space="preserve">
-    <value>The collection's comparer does not support the requested operation.</value>
   </data>
 </root>

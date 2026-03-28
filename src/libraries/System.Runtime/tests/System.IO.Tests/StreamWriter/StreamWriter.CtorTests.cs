@@ -70,5 +70,33 @@ namespace System.IO.Tests
             str2 = sr2.ReadToEnd();
             Assert.Equal(testString, str2);
         }
+
+        [Fact]
+        public static void NegativeBufferSize_ThrowsArgumentOutOfRangeException()
+        {
+            var ms2 = new MemoryStream();
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamWriter(ms2, bufferSize: -2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamWriter(ms2, bufferSize: 0));
+
+            ms2.Dispose();
+        }
+
+        [Fact]
+        public static void NegativeOneBufferSize_ShouldNotThrowException()
+        {
+            var ms2 = new MemoryStream();
+            try
+            {
+                using (var sw = new StreamWriter(ms2, bufferSize: -1))
+                {
+                    Assert.NotNull(sw);
+                }
+            }
+            finally
+            {
+                ms2.Dispose();
+            }
+        }
     }
 }

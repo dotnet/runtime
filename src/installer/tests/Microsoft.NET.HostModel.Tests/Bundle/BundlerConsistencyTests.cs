@@ -99,6 +99,24 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         }
 
         [Fact]
+        public void ResolveLinkTargets()
+        {
+            string appPath = Path.Combine(
+                Path.GetDirectoryName(sharedTestState.App.AppDll),
+                Path.GetFileNameWithoutExtension(sharedTestState.App.AppDll)
+                    + ".link" + Path.GetExtension(sharedTestState.App.AppDll));
+            File.CreateSymbolicLink(appPath, sharedTestState.App.AppDll);
+            // File specification with duplicate entries with matching source paths
+            var fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(appPath, "rel/app.repeat.dll")
+            };
+            Bundler bundler = CreateBundlerInstance();
+            bundler.GenerateBundle(fileSpecs);
+        }
+
+        [Fact]
         public void DuplicateBundleRelativePath_Fails()
         {
             // File specification with duplicate entries with different source paths
@@ -227,7 +245,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             // work correctly in the presence of "."s in the hostName.
             using (var app = TestApp.CreateEmpty("App.With.Periods"))
             {
-                app.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion);
+                app.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, HostTestContext.MicrosoftNETCoreAppVersion);
 
                 string hostName = Path.GetFileName(app.AppExe);
                 string depsJsonName = Path.GetFileName(app.DepsJson);
@@ -397,7 +415,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 App = TestApp.CreateFromBuiltAssets(AppName);
                 NonAsciiApp = TestApp.CreateFromBuiltAssets("HelloWorld_中文");
 
-                SystemDll = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
+                SystemDll = Path.Combine(HostTestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
             }
 
             public void Dispose()

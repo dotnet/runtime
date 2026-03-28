@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.Text;
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.JitInterface;
@@ -63,7 +64,7 @@ namespace ILCompiler
                 {
                     // To compute dependencies of the shadow method that tracks dictionary
                     // dependencies we need to ensure there is code for the canonical method body.
-                    var dependencyMethod = (ShadowConcreteMethodNode)dependency;
+                    var dependencyMethod = (ShadowMethodNode)dependency;
                     methodCodeNodeNeedingCode = (ScannedMethodNode)dependencyMethod.CanonicalMethodNode;
                 }
 
@@ -150,7 +151,6 @@ namespace ILCompiler
             _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceInterface), "Not tracked by scanner");
             _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceClass), "Not tracked by scanner");
             _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.IsInstanceOfException), "Not tracked by scanner");
-            _dependencyGraph.AddRoot(_nodeFactory.MethodEntrypoint(_nodeFactory.TypeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowFeatureBodyRemoved")), "Substitution for methods removed based on scanning");
 
             _dependencyGraph.ComputeMarkedNodes();
 
@@ -200,7 +200,7 @@ namespace ILCompiler
 
                 ISymbolNode entryPoint;
                 if (mangledName != null)
-                    entryPoint = _compilation.NodeFactory.ExternFunctionSymbol(mangledName);
+                    entryPoint = _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String(mangledName));
                 else
                     entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
 
@@ -277,37 +277,18 @@ namespace ILCompiler
             return new ScannedReadOnlyPolicy(MarkedNodes);
         }
 
-        public BodyAndFieldSubstitutions GetBodyAndFieldSubstitutions()
-        {
-            Dictionary<MethodDesc, BodySubstitution> bodySubstitutions = [];
-
-            bool hasIDynamicInterfaceCastableType = false;
-
-            foreach (var type in ConstructedEETypes)
-            {
-                if (type.IsIDynamicInterfaceCastable)
-                {
-                    hasIDynamicInterfaceCastableType = true;
-                    break;
-                }
-            }
-
-            if (!hasIDynamicInterfaceCastableType)
-            {
-                // We can't easily trim out some of the IDynamicInterfaceCastable infrastructure because
-                // the callers do type checks based on flags on the MethodTable instead of an actual type cast.
-                // Trim out the logic that we can't do easily here.
-                TypeDesc iDynamicInterfaceCastableType = _factory.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.InteropServices", "IDynamicInterfaceCastable");
-                MethodDesc getDynamicInterfaceImplementationMethod = iDynamicInterfaceCastableType.GetKnownMethod("GetDynamicInterfaceImplementation", null);
-                bodySubstitutions.Add(getDynamicInterfaceImplementationMethod, BodySubstitution.ThrowingBody);
-            }
-
-            return new BodyAndFieldSubstitutions(bodySubstitutions, []);
-        }
-
         public TypeMapManager GetTypeMapManager()
         {
             return new ScannedTypeMapManager(_factory);
+        }
+
+        public IEnumerable<string> GetAnalysisCharacteristics()
+        {
+            foreach (DependencyNodeCore<NodeFactory> n in MarkedNodes)
+            {
+                if (n is AnalysisCharacteristicNode acn)
+                    yield return acn.Characteristic;
+            }
         }
 
         private sealed class ScannedVTableProvider : VTableSliceProvider
@@ -507,6 +488,14 @@ namespace ILCompiler
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
                 _context = factory.TypeSystemContext;
+
+                // Do not try to optimize around continuation types, we don't keep good track of them.
+                // Allow CoreLib not to have this type.
+                if (_context.SystemModule.GetType("System.Runtime.CompilerServices"u8, "Continuation"u8, throwIfNotFound: false) is MetadataType continuationType)
+                {
+                    _unsealedTypes.Add(continuationType);
+                    _disqualifiedTypes.Add(continuationType);
+                }
 
                 var vtables = new Dictionary<TypeDesc, List<MethodDesc>>();
                 var dynamicInterfaceCastableImplementationTargets = new HashSet<TypeDesc>();

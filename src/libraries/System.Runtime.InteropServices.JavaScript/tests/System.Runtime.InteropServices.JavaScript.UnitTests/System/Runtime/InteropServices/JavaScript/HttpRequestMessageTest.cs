@@ -297,8 +297,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             Assert.False(streamingEnabledValue);
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/113628", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))] // not V8 shell
         public async Task HttpStreamingDisabledBy_WasmEnableStreamingResponse_InProject()
         {
             using var client = new HttpClient();
@@ -310,7 +309,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             Assert.True(stream.CanSeek);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))] // not V8 shell
         public async Task HttpStreamingEnabledBy_WebAssemblyEnableStreamingResponse_Option()
         {
             using var client = new HttpClient();

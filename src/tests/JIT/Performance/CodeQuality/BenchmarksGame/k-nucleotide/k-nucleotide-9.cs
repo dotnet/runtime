@@ -7,6 +7,7 @@
 // Best-scoring C# .NET Core version as of 2017-09-01
 
 /* The Computer Language Benchmarks Game
+using TestLibrary;
    http://benchmarksgame.alioth.debian.org/
 
    submitted by Josh Goldfoot
@@ -253,8 +254,8 @@ namespace BenchmarksGame
             return string.Concat(n.ToString(), "\t", fragment);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/118475")]
         public static int TestEntryPoint()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);

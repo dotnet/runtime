@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -27,7 +28,7 @@ internal static partial class Interop
             AllMountPointsContext* callbackContext = (AllMountPointsContext*)context;
             try
             {
-                callbackContext->_results.Add(Marshal.PtrToStringUTF8((IntPtr)name)!);
+                callbackContext->_results.Add(Utf8StringMarshaller.ConvertToManaged(name)!);
             }
             catch (Exception e)
             {

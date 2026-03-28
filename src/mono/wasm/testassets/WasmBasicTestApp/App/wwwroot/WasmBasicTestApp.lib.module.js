@@ -12,6 +12,10 @@ export function onRuntimeConfigLoaded(config) {
 }
 
 export async function onRuntimeReady({ getAssemblyExports, getConfig }) {
+    if (params.get("throwErrorOnReady") === "true") {
+        throw new Error("Error thrown from library initializer");
+    }
+
     const testCase = params.get("test");
     if (testCase == "LibraryInitializerTest") {
         const config = getConfig();

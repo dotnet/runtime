@@ -165,7 +165,11 @@ inline BOOL PEImage::HasLoadedLayout()
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
+#ifdef PEIMAGE_FLAT_LAYOUT_ONLY
+    return m_pLayouts[IMAGE_FLAT]!=NULL;
+#else
     return m_pLayouts[IMAGE_LOADED]!=NULL;
+#endif
 }
 
 inline PTR_PEImageLayout PEImage::GetLoadedLayout()
@@ -217,6 +221,12 @@ inline BOOL PEImage::IsReferenceAssembly()
     return FALSE;
 }
 
+
+inline BOOL PEImage::HasHeaders()
+{
+    WRAPPER_NO_CONTRACT;
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->HasHeaders();
+}
 
 inline BOOL PEImage::HasNTHeaders()
 {

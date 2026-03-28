@@ -135,6 +135,10 @@ extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     BOOL fNeedFileInfo,
     QCall::ObjectHandleOnStack exception);
 
+extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
+    void* diagnosticIP,
+    QCall::ObjectHandleOnStack exception);
+
 extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip);
 
 
@@ -184,7 +188,7 @@ public:
         Sort();
         if (m_rguiNativeOffset.GetCount() > 0)
         {
-            static_assert_no_msg(sizeof(uint32_t) == sizeof(COUNT_T));
+            static_assert(sizeof(uint32_t) == sizeof(COUNT_T));
             if (m_rguiNativeOffset.GetCount() > m_cMapEntriesMax)
             {
                 // If the number of entries exceeds the maximum, we cap it to the maximum.

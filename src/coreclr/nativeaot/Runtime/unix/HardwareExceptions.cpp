@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "common.h"
 #include "CommonTypes.h"
 #include "Pal.h"
 #include "PalLimitedContext.h"
@@ -559,7 +560,7 @@ void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
         RestoreSignalHandler(code, &g_previousSIGSEGV);
     }
 
-    PalCreateCrashDumpIfEnabled(code, siginfo);
+    PalCreateCrashDumpIfEnabled(code, siginfo, context);
 }
 
 // Handler for the SIGFPE signal
@@ -581,7 +582,7 @@ void SIGFPEHandler(int code, siginfo_t *siginfo, void *context)
         RestoreSignalHandler(code, &g_previousSIGFPE);
     }
 
-    PalCreateCrashDumpIfEnabled(code, siginfo);
+    PalCreateCrashDumpIfEnabled(code, siginfo, context);
 }
 
 // Initialize hardware exception handling

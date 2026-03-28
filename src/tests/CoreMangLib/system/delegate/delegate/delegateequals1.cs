@@ -5,7 +5,7 @@ using System;
 using System.Globalization;
 using Xunit;
 //test case for delegate Equals method.
-namespace DelegateTest
+namespace DelegateEqualsTest
 {
     delegate bool booldelegate();
     public class DelegateEquals
@@ -13,6 +13,7 @@ namespace DelegateTest
 
         object starkWork;
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {
@@ -58,7 +59,7 @@ namespace DelegateTest
             try
             {
                 DelegateEquals delctor = new DelegateEquals();
-                delctor.starkWork = new booldelegate(new TestClass(1).StartWork_Bool);
+                delctor.starkWork = new booldelegate(new DelegateEqualsTestClass(1).StartWork_Bool);
                 booldelegate workDelegate = (booldelegate)delctor.starkWork;
                 if(GetCompareResult(workDelegate ,(booldelegate)delctor.starkWork))
                 {
@@ -96,7 +97,7 @@ namespace DelegateTest
             try
             {
                 DelegateEquals delctor = new DelegateEquals();
-                TestClass tcInstance = new TestClass(2);
+                DelegateEqualsTestClass tcInstance = new DelegateEqualsTestClass(2);
                 delctor.starkWork = new booldelegate(tcInstance.StartWork_Bool);
                 booldelegate workDelegate = new booldelegate(tcInstance.StartWork_Bool);
 
@@ -136,8 +137,8 @@ namespace DelegateTest
             try
             {
                 DelegateEquals delctor = new DelegateEquals();
-                delctor.starkWork = new booldelegate(TestClass.Working_Bool);
-                booldelegate workDelegate = new booldelegate(TestClass.Working_Bool);
+                delctor.starkWork = new booldelegate(DelegateEqualsTestClass.Working_Bool);
+                booldelegate workDelegate = new booldelegate(DelegateEqualsTestClass.Working_Bool);
                 if (GetCompareResult(workDelegate, (booldelegate)delctor.starkWork))
                 {
                     if (!workDelegate.Equals((booldelegate)delctor.starkWork))
@@ -174,8 +175,8 @@ namespace DelegateTest
             try
             {
                 DelegateEquals delctor = new DelegateEquals();
-                delctor.starkWork = new booldelegate(TestClass.Working_Bool);
-                booldelegate workDelegate = new booldelegate(TestClass.Completed_Bool);
+                delctor.starkWork = new booldelegate(DelegateEqualsTestClass.Working_Bool);
+                booldelegate workDelegate = new booldelegate(DelegateEqualsTestClass.Completed_Bool);
                 if (workDelegate.Equals((booldelegate)delctor.starkWork))
                 {
                     TestLibrary.TestFramework.LogError("010", "Equals method return error ");
@@ -205,8 +206,8 @@ namespace DelegateTest
             try
             {
                 DelegateEquals delctor = new DelegateEquals();
-                booldelegate workDelegate = new booldelegate(TestClass.Completed_Bool);
-                booldelegate workDelegate1 = new booldelegate(TestClass1.Completed_Bool);
+                booldelegate workDelegate = new booldelegate(DelegateEqualsTestClass.Completed_Bool);
+                booldelegate workDelegate1 = new booldelegate(DelegateEqualsTestClass1.Completed_Bool);
 
                 if (workDelegate.Equals(workDelegate1))
                 {
@@ -237,8 +238,8 @@ namespace DelegateTest
             try
             {
                 DelegateEquals delctor = new DelegateEquals();
-                booldelegate workDelegate = new booldelegate(new TestClass(1).StartWork_Bool);
-                booldelegate workDelegate1 = new booldelegate(new TestClass1(2).StartWork_Bool );
+                booldelegate workDelegate = new booldelegate(new DelegateEqualsTestClass(1).StartWork_Bool);
+                booldelegate workDelegate1 = new booldelegate(new DelegateEqualsTestClass1(2).StartWork_Bool );
 
                 if (workDelegate.Equals(workDelegate1))
                 {
@@ -279,43 +280,43 @@ namespace DelegateTest
 
     }
     //create testclass for providing test method and test target.
-    class TestClass
+    class DelegateEqualsTestClass
     {
         private int id;
-        public TestClass(int id) { this.id = id; }
+        public DelegateEqualsTestClass(int id) { this.id = id; }
         public bool StartWork_Bool()
         {
-            TestLibrary.TestFramework.LogInformation("TestClass's StartWork_Bool method  is running. id="+this.id);
+            TestLibrary.TestFramework.LogInformation("DelegateEqualsTestClass's StartWork_Bool method  is running. id="+this.id);
             return true;
         }
         public static  bool Working_Bool()
         {
-            TestLibrary.TestFramework.LogInformation("TestClass's Working_Bool method  is running .");
+            TestLibrary.TestFramework.LogInformation("DelegateEqualsTestClass's Working_Bool method  is running .");
             return true;
         }
         public static bool Completed_Bool()
         {
-            TestLibrary.TestFramework.LogInformation("TestClass's Completed_Bool method  is running .");
+            TestLibrary.TestFramework.LogInformation("DelegateEqualsTestClass's Completed_Bool method  is running .");
             return true;
         }
     }
-    class TestClass1
+    class DelegateEqualsTestClass1
     {
         private int id;
-        public TestClass1(int id) { this.id = id; }
+        public DelegateEqualsTestClass1(int id) { this.id = id; }
         public bool StartWork_Bool()
         {
-            TestLibrary.TestFramework.LogInformation("TestClass1's StartWork_Bool method  is running. id="+ this.id  );
+            TestLibrary.TestFramework.LogInformation("DelegateEqualsTestClass1's StartWork_Bool method  is running. id="+ this.id  );
             return true;
         }
         public static bool Working_Bool()
         {
-            TestLibrary.TestFramework.LogInformation("TestClass1's Working_Bool method  is running .");
+            TestLibrary.TestFramework.LogInformation("DelegateEqualsTestClass1's Working_Bool method  is running .");
             return true;
         }
         public static bool Completed_Bool()
         {
-            TestLibrary.TestFramework.LogInformation("TestClass1's Completed_Bool method  is running .");
+            TestLibrary.TestFramework.LogInformation("DelegateEqualsTestClass1's Completed_Bool method  is running .");
             return true;
         }
     }

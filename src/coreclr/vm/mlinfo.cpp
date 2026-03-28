@@ -18,6 +18,7 @@
 #include "olevariant.h"
 #include "ilmarshalers.h"
 #include "interoputil.h"
+#include "mdfileformat.h"  // For CPackedLen
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
@@ -206,7 +207,6 @@ BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pParamInfo,
 
                 pParamInfo->m_strSafeArrayUserDefTypeName = (LPUTF8)pvNativeType;
                 pParamInfo->m_cSafeArrayUserDefTypeNameBytes = strLen;
-                _ASSERTE((ULONG)(pvNativeType + strLen - pvNativeTypeStart) == cbNativeType);
             }
             break;
 
@@ -304,7 +304,6 @@ BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pParamInfo,
 
             pParamInfo->m_strCMCookie = (LPUTF8)pvNativeType;
             pParamInfo->m_cCMCookieStrBytes = strLen;
-            _ASSERTE((ULONG)(pvNativeType + strLen - pvNativeTypeStart) == cbNativeType);
             break;
 
         default:
@@ -331,7 +330,7 @@ VOID ThrowInteropParamException(UINT resID, UINT paramIdx)
         paramString.Printf("parameter #%u", paramIdx);
 
     SString errorString(W("Unknown error."));
-    errorString.LoadResource(CCompRC::Error, resID);
+    errorString.LoadResource(resID);
 
     COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_ERROR_MSG, paramString.GetUnicode(), errorString.GetUnicode());
 }
@@ -2107,7 +2106,7 @@ void MarshalInfo::ThrowTypeLoadExceptionForInvalidFieldMarshal(FieldDesc* pField
     StackSString ssFieldName(SString::Utf8, pFieldDesc->GetName());
 
     StackSString errorString(W("Unknown error."));
-    errorString.LoadResource(CCompRC::Error, resID);
+    errorString.LoadResource(resID);
 
     COMPlusThrow(kTypeLoadException, IDS_EE_BADMARSHALFIELD_ERROR_MSG,
         GetFullyQualifiedNameForClassW(pFieldDesc->GetEnclosingMethodTable()),
@@ -2541,14 +2540,9 @@ void MarshalInfo::SetupArgumentSizes()
     }
     CONTRACTL_END;
 
-    const unsigned targetPointerSize = TARGET_POINTER_SIZE;
-    const bool pointerIsValueType = false;
-    const bool pointerIsFloatHfa = false;
-    _ASSERTE(targetPointerSize == StackElemSize(TARGET_POINTER_SIZE, pointerIsValueType, pointerIsFloatHfa));
-
     if (m_byref)
     {
-        m_nativeArgSize = targetPointerSize;
+        m_nativeArgSize = TARGET_POINTER_SIZE;
     }
     else
     {
@@ -2562,7 +2556,7 @@ void MarshalInfo::SetupArgumentSizes()
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
     if (m_nativeArgSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
     {
-        m_nativeArgSize = targetPointerSize;
+        m_nativeArgSize = TARGET_POINTER_SIZE;
     }
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 }

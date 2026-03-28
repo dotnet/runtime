@@ -45,19 +45,27 @@ namespace System
 
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDIN_FILENO)), FileAccess.Read,
+            return new UnixConsoleStream(OpenStandardInputHandle(), FileAccess.Read,
                                          useReadLine: !Console.IsInputRedirected);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDOUT_FILENO)), FileAccess.Write);
+            return new UnixConsoleStream(OpenStandardOutputHandle(), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream(Interop.CheckIo(Interop.Sys.Dup(Interop.Sys.FileDescriptors.STDERR_FILENO)), FileAccess.Write);
+            return new UnixConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
         }
+
+        public static SafeFileHandle OpenStandardInputHandle() => OpenStandardHandle(0);
+
+        public static SafeFileHandle OpenStandardOutputHandle() => OpenStandardHandle(1);
+
+        public static SafeFileHandle OpenStandardErrorHandle() => OpenStandardHandle(2);
+
+        private static SafeFileHandle OpenStandardHandle(IntPtr fd) => new SafeFileHandle(fd, ownsHandle: false);
 
         public static Encoding InputEncoding
         {
@@ -660,7 +668,7 @@ namespace System
         /// Gets whether the specified file descriptor was redirected.
         /// It's considered redirected if it doesn't refer to a terminal.
         /// </summary>
-        private static bool IsHandleRedirected(SafeFileHandle fd)
+        private static bool IsHandleRedirected(IntPtr fd)
         {
             return !Interop.Sys.IsATty(fd);
         }
@@ -671,7 +679,7 @@ namespace System
         /// </summary>
         public static bool IsInputRedirectedCore()
         {
-            return IsHandleRedirected(Interop.Sys.FileDescriptors.STDIN_FILENO);
+            return IsHandleRedirected(0);
         }
 
         /// <summary>Gets whether Console.Out is redirected.
@@ -679,7 +687,7 @@ namespace System
         /// </summary>
         public static bool IsOutputRedirectedCore()
         {
-            return IsHandleRedirected(Interop.Sys.FileDescriptors.STDOUT_FILENO);
+            return IsHandleRedirected(1);
         }
 
         /// <summary>Gets whether Console.Error is redirected.
@@ -687,7 +695,7 @@ namespace System
         /// </summary>
         public static bool IsErrorRedirectedCore()
         {
-            return IsHandleRedirected(Interop.Sys.FileDescriptors.STDERR_FILENO);
+            return IsHandleRedirected(2);
         }
 
         /// <summary>Creates an encoding from the current environment.</summary>
@@ -889,8 +897,8 @@ namespace System
                     // This also resets it for termination due to an unhandled exception.
                     AppDomain.CurrentDomain.UnhandledException += (_, _) => { Interop.Sys.UninitializeTerminal(); };
 
-                    s_terminalHandle = !Console.IsOutputRedirected ? Interop.Sys.FileDescriptors.STDOUT_FILENO :
-                                       !Console.IsInputRedirected  ? Interop.Sys.FileDescriptors.STDIN_FILENO :
+                    s_terminalHandle = !Console.IsOutputRedirected ? OpenStandardOutputHandle() :
+                                       !Console.IsInputRedirected  ? OpenStandardInputHandle() :
                                        null;
 
                     // Provide the native lib with the correct code from the terminfo to transition us into
@@ -931,20 +939,6 @@ namespace System
             }
         }
 
-        /// <summary>Reads data from the file descriptor into the buffer.</summary>
-        /// <param name="fd">The file descriptor.</param>
-        /// <param name="buffer">The buffer to read into.</param>
-        /// <returns>The number of bytes read, or an exception if there's an error.</returns>
-        private static unsafe int Read(SafeFileHandle fd, Span<byte> buffer)
-        {
-            fixed (byte* bufPtr = buffer)
-            {
-                int result = Interop.CheckIo(Interop.Sys.Read(fd, bufPtr, buffer.Length));
-                Debug.Assert(result <= buffer.Length);
-                return result;
-            }
-        }
-
         internal static void WriteToTerminal(ReadOnlySpan<byte> buffer, SafeFileHandle? handle = null, bool mayChangeCursorPosition = true)
         {
             handle ??= s_terminalHandle;
@@ -970,65 +964,35 @@ namespace System
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer from which to write data.</param>
         /// <param name="mayChangeCursorPosition">Writing this buffer may change the cursor position.</param>
-        private static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
+        private static void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
         {
-            fixed (byte* p = buffer)
+            int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
+
+            try
             {
-                byte* bufPtr = p;
-                int count = buffer.Length;
-                while (count > 0)
-                {
-                    int cursorVersion = mayChangeCursorPosition ? Volatile.Read(ref s_cursorVersion) : -1;
+                RandomAccess.Write(fd, buffer, fileOffset: 0);
+            }
+            catch (IOException ex) when (Interop.Sys.ConvertErrorPlatformToPal(ex.HResult) == Interop.Error.EPIPE)
+            {
+                // Broken pipe... likely due to being redirected to a program
+                // that ended, so simply pretend we were successful.
+                return;
+            }
 
-                    int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
-                    if (bytesWritten < 0)
-                    {
-                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                        if (errorInfo.Error == Interop.Error.EPIPE)
-                        {
-                            // Broken pipe... likely due to being redirected to a program
-                            // that ended, so simply pretend we were successful.
-                            return;
-                        }
-                        else if (errorInfo.Error == Interop.Error.EAGAIN) // aka EWOULDBLOCK
-                        {
-                            // May happen if the file handle is configured as non-blocking.
-                            // In that case, we need to wait to be able to write and then
-                            // try again. We poll, but don't actually care about the result,
-                            // only the blocking behavior, and thus ignore any poll errors
-                            // and loop around to do another write (which may correctly fail
-                            // if something else has gone wrong).
-                            Interop.Sys.Poll(fd, Interop.PollEvents.POLLOUT, Timeout.Infinite, out Interop.PollEvents triggered);
-                            continue;
-                        }
-                        else
-                        {
-                            // Something else... fail.
-                            throw Interop.GetExceptionForIoErrno(errorInfo);
-                        }
-                    }
-                    else
-                    {
-                        if (mayChangeCursorPosition)
-                        {
-                            UpdatedCachedCursorPosition(bufPtr, bytesWritten, cursorVersion);
-                        }
-                    }
-
-                    count -= bytesWritten;
-                    bufPtr += bytesWritten;
-                }
+            if (mayChangeCursorPosition)
+            {
+                UpdatedCachedCursorPosition(buffer, cursorVersion);
             }
         }
 
-        private static unsafe void UpdatedCachedCursorPosition(byte* bufPtr, int count, int cursorVersion)
+        private static void UpdatedCachedCursorPosition(ReadOnlySpan<byte> buffer, int cursorVersion)
         {
             lock (Console.Out)
             {
                 int left, top;
                 if (cursorVersion != s_cursorVersion               ||  // the cursor was changed during the write by another operation
                     !TryGetCachedCursorPosition(out left, out top) ||  // we don't have a cursor position
-                    count > InteractiveBufferSize)                     // limit the amount of bytes we are willing to inspect
+                    buffer.Length > InteractiveBufferSize)              // limit the amount of bytes we are willing to inspect
                 {
                     InvalidateCachedCursorPosition();
                     return;
@@ -1036,9 +1000,8 @@ namespace System
 
                 GetWindowSize(out int width, out int height);
 
-                for (int i = 0; i < count; i++)
+                foreach (byte c in buffer)
                 {
-                    byte c = bufPtr[i];
                     if (c < 127 && c >= 32) // ASCII/UTF-8 characters that take up a single position
                     {
                         left++;
@@ -1104,11 +1067,11 @@ namespace System
             Volatile.Write(ref s_invalidateCachedSettings, 1);
         }
 
-        // Ansi colors are enabled when stdout is a terminal or when
-        // DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is set.
-        // In both cases, they are written to stdout.
+        // ANSI colors are enabled when stdout is a terminal, when
+        // FORCE_COLOR is set, or when DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is set.
+        // In all cases, they are written to stdout.
         internal static void WriteTerminalAnsiColorString(string? value)
-            => WriteTerminalAnsiString(value, Interop.Sys.FileDescriptors.STDOUT_FILENO, mayChangeCursorPosition: false);
+            => WriteTerminalAnsiString(value, OpenStandardOutputHandle(), mayChangeCursorPosition: false);
 
         /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
         /// <param name="value">The string to write.</param>

@@ -3,11 +3,5 @@
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmProfilers>aot;</WasmProfilers>
   </PropertyGroup>
-
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
-    <WasmExtraFilesToDeploy Include="main.js" />
-  </ItemGroup>
-
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
 </Project>

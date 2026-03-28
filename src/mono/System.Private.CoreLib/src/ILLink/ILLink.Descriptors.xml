@@ -278,6 +278,12 @@
 			<method name="GetHashCode" />
 		</type>
 
+		<!-- domain.c: mono_defaults.gc_class -->
+		<type fullname="System.GC">
+			<!-- gc.c: mono_gc_run_finalize -->
+			<method name="GuardedFinalize" />
+		</type>
+
 		<!-- appdomain.c (create_domain_objects) domain->out_of_memory_ex -->
 		<type fullname="System.OutOfMemoryException">
 			<!-- mono_exception_from_name_two_strings (only one string in the signature since NULL is used as the 2nd parameter) -->

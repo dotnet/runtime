@@ -5,6 +5,7 @@
 #include "gcenv.h"
 #include "env/gcenv.os.h"
 #include "softwarewritewatch.h"
+#include <minipal/memorybarrierprocesswide.h>
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 #ifndef DACCESS_COMPILE
@@ -131,7 +132,7 @@ void SoftwareWriteWatch::GetDirty(
     {
         // When a page is marked as dirty, a memory barrier is not issued after the write most of the time. Issue a memory
         // barrier on all active threads of the process now to make recent changes to dirty state visible to this thread.
-        GCToOSInterface::FlushProcessWriteBuffers();
+        minipal_memory_barrier_process_wide();
     }
 
     uint8_t *tableRegionStart;
@@ -233,7 +234,7 @@ void SoftwareWriteWatch::GetDirty(
         // that the GC will not miss marking through dirtied objects in the page. Issue a memory barrier on all active threads
         // of the process now.
         MemoryBarrier(); // flush writes from this thread first to guarantee ordering
-        GCToOSInterface::FlushProcessWriteBuffers();
+        minipal_memory_barrier_process_wide();
     }
 }
 

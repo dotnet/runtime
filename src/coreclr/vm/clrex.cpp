@@ -16,9 +16,7 @@
 #include "sigformat.h"
 #include "eeconfig.h"
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exceptionhandling.h"
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_COMINTEROP
 #include "interoputil.inl"
@@ -612,6 +610,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
     // we could store a throwable handle at the catch site, or store it
     // on the thread object.
 
+#ifdef TARGET_WINDOWS
     if (pException->IsType(SEHException::GetType()))
     {
         SEHException *pSEHException = (SEHException*)pException;
@@ -665,6 +664,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
         return throwable;
     }
     else
+#endif // TARGET_WINDOWS
     {
         // We can enter here for HRException, COMException, DelegatingException
         // just to name a few.
@@ -1050,7 +1050,7 @@ BOOL EEException::GetResourceMessage(UINT iResourceID, SString &result,
     BOOL ok;
 
     StackSString temp;
-    ok = temp.LoadResource(CCompRC::Error, iResourceID);
+    ok = temp.LoadResource(iResourceID);
 
     if (ok)
         result.FormatMessage(FORMAT_MESSAGE_FROM_STRING,
@@ -1121,7 +1121,9 @@ BOOL EEResourceException::GetThrowableMessage(SString &result)
     CONTRACTL_END;
 
     STRINGREF message = NULL;
+    GCPROTECT_BEGIN(message);
     ResMgrGetString(m_resourceName, &message);
+    GCPROTECT_END();
 
     if (message != NULL)
     {
@@ -1301,8 +1303,8 @@ OBJECTREF EEArgumentException::CreateThrowable()
     gc.pThrowable = NULL;
     gc.s1 = NULL;
     gc.pTmpThrowable = NULL;
-    ResMgrGetString(m_resourceName, &gc.s1);
     GCPROTECT_BEGIN(gc);
+    ResMgrGetString(m_resourceName, &gc.s1);
 
     MethodTable *pMT = CoreLibBinder::GetException(m_kind);
     gc.pThrowable = AllocateObject(pMT);

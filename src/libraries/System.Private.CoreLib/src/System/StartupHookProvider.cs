@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
 namespace System
@@ -70,6 +71,7 @@ namespace System
         // and call the hook.
         [UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "An ILLink warning when trimming an app with System.StartupHookProvider.IsSupported=true already exists for ProcessStartupHooks.")]
+        [RequiresUnsafe]
         private static unsafe void CallStartupHook(char* pStartupHookPart)
         {
             if (!IsSupported)
@@ -83,6 +85,22 @@ namespace System
             CallStartupHook(startupHook);
 #pragma warning restore IL2026
         }
+
+#if CORECLR
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void CallStartupHook(char* pStartupHookPart, Exception* pException)
+        {
+            try
+            {
+                CallStartupHook(pStartupHookPart);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
 
         private static void ParseStartupHook(ref StartupHookNameOrPath startupHook, string startupHookPart)
         {
@@ -161,7 +179,7 @@ namespace System
             catch (Exception assemblyLoadException)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.Argument_StartupHookAssemblyLoadFailed, startupHook.Path ?? startupHook.AssemblyName!.ToString()),
+                    SR.Format(SR.Argument_StartupHookAssemblyLoadFailed, startupHook.Path ?? startupHook.AssemblyName.ToString()),
                     assemblyLoadException);
             }
 
@@ -172,7 +190,7 @@ namespace System
             MethodInfo? initializeMethod = type.GetMethod(InitializeMethodName,
                                                          BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
                                                          null, // use default binder
-                                                         Type.EmptyTypes, // parameters
+                                                         [], // parameters
                                                          null); // no parameter modifiers
             if (initializeMethod == null)
             {

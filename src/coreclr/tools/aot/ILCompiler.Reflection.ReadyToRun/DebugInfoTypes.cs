@@ -62,7 +62,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The actual instruction of a call
         /// </summary>
-        CallInstruction = 0x10
+        CallInstruction = 0x10,
+        /// <summary>
+        /// Suspension or resumption code for a call
+        /// </summary>
+        Async = 0x20,
     }
 
     public enum DebugInfoBoundsType : uint

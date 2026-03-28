@@ -231,10 +231,11 @@ namespace ILCompiler
             out Dictionary<MethodDesc, int> methodMetadataMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
             out Dictionary<FieldDesc, int> fieldMetadataMappings,
-            out List<StackTraceMapping> stackTraceMapping)
+            out List<StackTraceMapping> stackTraceMapping,
+            out List<ReflectionStackTraceMapping> reflectionStackTraceMapping)
         {
             ComputeMetadata(new GeneratedTypesAndCodeMetadataPolicy(_blockingPolicy, factory),
-                factory, out metadataBlob, out typeMappings, out methodMappings, out methodMetadataMappings, out fieldMappings, out fieldMetadataMappings, out stackTraceMapping);
+                factory, out metadataBlob, out typeMappings, out methodMappings, out methodMetadataMappings, out fieldMappings, out fieldMetadataMappings, out stackTraceMapping, out reflectionStackTraceMapping);
         }
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
@@ -303,11 +304,27 @@ namespace ILCompiler
                 // in places where they assume IL-level trimming (where the method cannot be removed).
                 // We ask for a full reflectable method with its method body instead of just the
                 // metadata.
-                MethodDesc invokeMethod = type.GetMethod("Invoke", null);
+                MethodDesc invokeMethod = type.GetMethod("Invoke"u8, null);
                 if (!IsReflectionBlocked(invokeMethod))
                 {
                     dependencies ??= new DependencyList();
                     dependencies.Add(factory.ReflectedMethod(invokeMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Delegate invoke method is always reflectable");
+                }
+            }
+
+            if (type.IsArray)
+            {
+                // Array.Initialize needs the default constructor of the element type to be reflectable
+                // for value types with a public parameterless constructor.
+                TypeDesc elementType = ((ArrayType)type).ElementType;
+                if (elementType.IsValueType)
+                {
+                    MethodDesc defaultConstructor = elementType.GetDefaultConstructor();
+                    if (defaultConstructor is not null && !IsReflectionBlocked(defaultConstructor))
+                    {
+                        dependencies ??= new DependencyList();
+                        dependencies.Add(factory.ReflectedMethod(defaultConstructor.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Array.Initialize needs default constructor");
+                    }
                 }
             }
 
@@ -788,7 +805,7 @@ namespace ILCompiler
             var ecmaType = attributeType.GetTypeDefinition() as EcmaType;
             if (ecmaType != null)
             {
-                var moduleInfo = _linkAttributesHashTable.GetOrCreateValue(ecmaType.EcmaModule);
+                var moduleInfo = _linkAttributesHashTable.GetOrCreateValue(ecmaType.Module);
                 return !moduleInfo.RemovedAttributes.Contains(ecmaType);
             }
 

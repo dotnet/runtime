@@ -33,7 +33,6 @@
  *  Forward declarations
  */
 class   AppDomain;
-class   ArrayClass;
 class   ArrayMethodDesc;
 class   Assembly;
 class   ClassLoader;
@@ -361,7 +360,7 @@ private:
             if (pVtable[slot] != NULL && pVtableMD[slot] == NULL)
                 pVtableMD[slot] = pParentMethodTable->GetMethodDescForSlot(slot);
             _ASSERTE((pVtable[slot] == NULL) ||
-                (MethodTable::GetMethodDescForSlotAddress(pVtable[slot]) == pVtableMD[slot]));
+                (NonVirtualEntry2MethodDesc(pVtable[slot]) == pVtableMD[slot]));
             return pVtableMD[slot];
         }
 #endif // DACCESS_COMPILE

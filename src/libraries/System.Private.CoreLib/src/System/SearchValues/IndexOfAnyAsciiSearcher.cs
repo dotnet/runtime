@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -33,6 +34,7 @@ namespace System.Buffers
         internal static bool IsVectorizationSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe void SetBitmapBit(byte* bitmap, int value)
         {
             Debug.Assert((uint)value <= 127);
@@ -169,6 +171,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe bool TryComputeBitmap(ReadOnlySpan<char> values, byte* bitmap, out bool needleContainsZero)
         {
             byte* bitmapLocal = bitmap; // https://github.com/dotnet/runtime/issues/9040
@@ -1152,7 +1155,7 @@ namespace System.Buffers
                 // The shift will map values above 127 to values above 16, which the shuffle will then map to 0.
                 // On X86 and WASM, use a logical right shift instead.
                 Vector128<byte> highNibbles = AdvSimd.IsSupported
-                    ? AdvSimd.ShiftRightArithmetic(source.AsSByte(), 4).AsByte()
+                    ? (source.AsSByte() >> 4).AsByte()
                     : source >>> 4;
 
                 // The bitmapLookup represents a 8x16 table of bits, indicating whether a character is present in the needle.

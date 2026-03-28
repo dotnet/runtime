@@ -12,6 +12,7 @@
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' == 'true' and '$(HasMergedInTests)' != 'true'">true</DisableProjectBuild>
+    <SkipInferOutputType Condition="'$(TargetOS)' == 'android' and '$(TestBuildMode)' == 'nativeaot' and '$(OutputType)' != ''">true</SkipInferOutputType>
     <OutputType Condition="'$(SkipInferOutputType)' != 'true' and (('$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true') or ('$(RequiresProcessIsolation)' == 'true' and '$(CLRTestKind)' != 'SharedLibrary'))">Exe</OutputType>
 
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
@@ -309,7 +310,7 @@
     </PropertyGroup>
 
     <!-- Generate a set of stress marker files to be used in stress scenarios in CI runs -->
-    <ItemGroup Condition="'$(NumberOfStripesToUseInStress)' != '' and '$(IsMergedTestRunnerAssembly)' == 'true'">
+    <ItemGroup Condition="'$(NumberOfStripesToUseInStress)' != '' and '$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true'">
       <SequenceOfIntegers Include="0"/>
       <SequenceOfIntegers Include="1"/>
       <SequenceOfIntegers Include="2"/>
@@ -420,11 +421,21 @@
 
     <ItemGroup>
       <Content Include="$(AssemblyName).reflect.xml" Condition="Exists('$(AssemblyName).reflect.xml')" CopyToOutputDirectory="PreserveNewest" />
-      <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly" Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true'">
+      <!-- When BuildAllTestsAsStandalone is true, drop a marker file for the local test runner to discover the test entry points. -->
+      <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).StandaloneTestRunner" Condition="'$(BuildAllTestsAsStandalone)' == 'true' and '$(CLRTestKind)' != 'SharedLibrary'">
+        <Type>StandaloneTestRunner</Type>
+      </MarkerFile>
+      <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly" Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true' and '$(CLRTestKind)' != 'SharedLibrary'">
         <Type>MergedTestAssembly</Type>
+      </MarkerFile>
+      <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).XHarnessNoRunner" Condition="'$(EmitXHarnessNoRunnerMarkerFile)' == 'true'">
+        <Type>XHarnessNoRunner</Type>
       </MarkerFile>
       <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'">
         <Type>NoMonoAot</Type>
+      </MarkerFile>
+      <MarkerFile Include="$(IntermediateOutputPath)\ExpectedExitCode.txt" Condition="'$(ExpectedExitCode)' != '' and ('$(IsMergedTestRunnerAssembly)' == 'true' or '$(BuildAllTestsAsStandalone)' == 'true') and '$(CLRTestKind)' != 'SharedLibrary'">
+        <Type>$(ExpectedExitCode)</Type>
       </MarkerFile>
       <Content Include="@(MarkerFile)" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
@@ -456,7 +467,7 @@
 
 
   <PropertyGroup>
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <DisableImplicitFrameworkReferences Condition="'$(DisableImplicitFrameworkReferences)' == ''">true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -531,10 +542,6 @@
     <!-- IL projects often have mismatches assembly names vs file names and that breaks Win32 resource generation option -->
     <IlcGenerateWin32Resources Condition="'$(Language)' == 'IL'">false</IlcGenerateWin32Resources>
 
-    <!-- The default TrimMode in the SDK is full. But trimming most of the tests would just make them fail,
-         so the default for the test tree is partial. -->
-    <TrimMode Condition="'$(EnableAggressiveTrimming)' != 'true'">partial</TrimMode>
-
     <IlcTreatWarningsAsErrors>false</IlcTreatWarningsAsErrors>
 
     <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
@@ -559,16 +566,6 @@
 
     <!-- Bump the generic cycle tolerance. There's at least one test with a cycle that is reachable at runtime to depth 6 -->
     <IlcArg Include="--maxgenericcycle:7" />
-
-    <!-- We set TrimMode to partial so that we don't trim parts of the tests,
-         but don't make this apply to xunit cruft -->
-    <IlcArg Include="--trim:Microsoft.DotNet.XUnitExtensions" />
-    <IlcArg Include="--trim:xunit.abstractions" />
-    <IlcArg Include="--trim:xunit.assert" />
-    <IlcArg Include="--trim:xunit.console" />
-    <IlcArg Include="--trim:xunit.core" />
-    <IlcArg Include="--trim:xunit.execution.dotnet" />
-    <IlcArg Include="--trim:xunit.abstractions" />
 
     <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to set
          rpath so that the test can load its native library dependencies if there's any -->

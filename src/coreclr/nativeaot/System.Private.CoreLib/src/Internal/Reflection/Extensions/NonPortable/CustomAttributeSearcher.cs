@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
+using System.Reflection.Runtime.General;
 
 //==================================================================================================================
 // Dependency note:
@@ -110,13 +111,15 @@ namespace Internal.Reflection.Extensions.NonPortable
         //
         private IEnumerable<CustomAttributeData> GetMatchingCustomAttributesIterator(E element, Func<Type, bool> passesFilter, bool inherit)
         {
-            LowLevelList<CustomAttributeData> immediateResults = new LowLevelList<CustomAttributeData>();
+            ListBuilder<CustomAttributeData> immediateResults = default;
             foreach (CustomAttributeData cad in GetDeclaredCustomAttributes(element))
             {
                 if (passesFilter(cad.AttributeType))
                 {
                     yield return cad;
-                    immediateResults.Add(cad);
+
+                    if (inherit)
+                        immediateResults.Add(cad);
                 }
             }
             if (inherit)

@@ -4,6 +4,9 @@
 // There was an issue with register->stack copy for multi-reg return of a struct with small types
 // on arm/arm64.
 
+
+namespace Runtime_46240;
+
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;

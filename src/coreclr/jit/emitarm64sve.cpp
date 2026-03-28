@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 #include "instr.h"
+#include "codegen.h"
 
 /*****************************************************************************/
 
@@ -1902,6 +1903,54 @@ void emitter::emitInsSve_R_F(
     appendToCurIG(id);
 }
 
+//------------------------------------------------------------------------
+// emitInsSve_Mov: Emits a SVE move instruction
+//
+// Arguments:
+//    ins     -- The instruction being emitted
+//    attr    -- The emit attribute
+//    dstReg  -- The destination register
+//    srcReg  -- The source register
+//    canSkip -- true if the move can be elided when dstReg == srcReg, otherwise false
+//    opt     -- The instruction options
+//
+void emitter::emitInsSve_Mov(
+    instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt /* = INS_OPTS_NONE */)
+{
+    assert(IsMovInstruction(ins));
+
+    emitAttr size = EA_SIZE(attr);
+
+    switch (ins)
+    {
+        case INS_sve_mov:
+            if (isPredicateRegister(dstReg))
+            {
+                assert((opt == INS_OPTS_SCALABLE_B) || insOptsNone(opt));
+                opt  = INS_OPTS_SCALABLE_B;
+                attr = EA_SCALABLE;
+            }
+            break;
+
+        case INS_sve_movprfx:
+            opt = INS_OPTS_NONE;
+            break;
+
+        default:
+            unreached();
+            break;
+    }
+
+    // TODO-SVE: Handle predicated mov/movprfx as well.
+
+    // Unpredicated
+    if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
+    {
+        return;
+    }
+    emitInsSve_R_R(ins, attr, dstReg, srcReg, opt);
+}
+
 /*****************************************************************************
  *
  *  Add a SVE instruction referencing two registers
@@ -1967,6 +2016,13 @@ void emitter::emitInsSve_R_R(instruction     ins,
 #endif // DEBUG
                 reg2 = encodingSPtoZR(reg2);
                 fmt  = IF_SVE_CB_2A;
+            }
+            else if (isVectorRegister(reg1))
+            {
+                assert(insOptsScalable(opt));
+                assert(insScalableOptsNone(sopt));
+                assert(isVectorRegister(reg2)); // nnnnn
+                fmt = IF_SVE_AU_3A;
             }
             else
             {
@@ -2645,9 +2701,9 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             assert(isVectorRegister(reg1));                        // ddddd
             assert(isVectorRegister(reg2));                        // nnnnn
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            assert(isValidRot(emitDecodeRotationImm90_or_270(imm)));
 
             // Convert rot to bitwise representation: 0 if 90, 1 if 270
-            imm = emitEncodeRotationImm90_or_270(imm); // r
             fmt = IF_SVE_FV_2A;
             break;
 
@@ -2665,10 +2721,26 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             assert(insOptsNone(opt));
             assert(isScalableVectorSize(size));
             assert(isGeneralRegister(reg2)); // nnnnn
-            assert(isValidSimm<9>(imm));     // iii
-                                             // iiiiii
-
             assert(insScalableOptsNone(sopt));
+
+            // imm is the number of bytes to offset by. The instruction requires a multiple of the
+            // vector length ([#imm mul vl]). If it doesn't fit then stash the resulting address
+            // into a register.
+            if (emitIns_valid_imm_for_scaled_sve_ldst_offset(imm))
+            {
+                // TODO-SVE: This assumes 128bit SVE.
+                imm = imm / 16;
+            }
+            else
+            {
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
+            }
+
+            assert(isValidSimm<9>(imm));
+
             if (isVectorRegister(reg1))
             {
                 fmt = IF_SVE_IE_2A;
@@ -2684,10 +2756,26 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             assert(insOptsNone(opt));
             assert(isScalableVectorSize(size));
             assert(isGeneralRegister(reg2)); // nnnnn
-            assert(isValidSimm<9>(imm));     // iii
-                                             // iiiiii
-
             assert(insScalableOptsNone(sopt));
+
+            // imm is the number of bytes to offset by. The instruction requires a multiple of the
+            // vector length ([#imm mul vl]). If it doesn't fit then stash the resulting address
+            // into a register.
+            if (emitIns_valid_imm_for_scaled_sve_ldst_offset(imm))
+            {
+                // TODO-SVE: This assumes 128bit SVE.
+                imm = imm / 16;
+            }
+            else
+            {
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
+            }
+
+            assert(isValidSimm<9>(imm));
+
             if (isVectorRegister(reg1))
             {
                 fmt = IF_SVE_JH_2A;
@@ -2903,6 +2991,37 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_sve_pfirst:
+        case INS_sve_pnext:
+            // Explicit masked RMW predicate instructions
+            emitIns_Mov(INS_sve_mov, EA_SCALABLE, reg1, reg3, /* canSkip */ true);
+            emitInsSve_R_R(ins, attr, reg1, reg2, opt, sopt);
+            return;
+
+        case INS_sve_sqincp:
+        case INS_sve_uqincp:
+        case INS_sve_sqdecp:
+        case INS_sve_uqdecp:
+            if (isGeneralRegister(reg1))
+            {
+                // Scalar variant, with 64-bit destination register
+                assert(isGeneralRegister(reg2));
+                emitIns_Mov(INS_mov, EA_8BYTE, reg1, reg2, /* canSkip */ true);
+                emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
+                return;
+            }
+            // Vector variant
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            FALLTHROUGH;
+
+        case INS_sve_insr:
+            // RMW instructions
+            assert((reg1 == reg2) || (reg1 != reg3));
+            emitIns_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true);
+            emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
+            return;
+
         case INS_sve_and:
         case INS_sve_bic:
         case INS_sve_eor:
@@ -4434,6 +4553,36 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_sve_ext:
+        case INS_sve_rshrnt:
+        case INS_sve_shrnt:
+        case INS_sve_sli:
+        case INS_sve_sqrshrnt:
+        case INS_sve_sqrshrunt:
+        case INS_sve_sqshrnt:
+        case INS_sve_sqshrunt:
+        case INS_sve_sri:
+        case INS_sve_uqshrnt:
+        case INS_sve_uqrshrnt:
+            // RMW instructions without movprfx support, use mov instead
+            emitIns_Mov(INS_sve_mov, attr, reg1, reg2, /* canSkip */ true, opt);
+            emitInsSve_R_R_I(ins, attr, reg1, reg3, imm, opt, sopt);
+            return;
+
+        case INS_sve_cadd:
+        case INS_sve_ftmad:
+        case INS_sve_sqcadd:
+        case INS_sve_srsra:
+        case INS_sve_ssra:
+        case INS_sve_ursra:
+        case INS_sve_usra:
+        case INS_sve_xar:
+            // RMW instructions
+            assert((reg1 == reg2) || (reg1 != reg3));
+            emitIns_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true);
+            emitInsSve_R_R_I(ins, attr, reg1, reg3, imm, opt, sopt);
+            return;
+
         case INS_sve_adr:
             assert(isVectorRegister(reg1)); // ddddd
             assert(isVectorRegister(reg2)); // nnnnn
@@ -4574,14 +4723,13 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
         case INS_sve_sqrdcmlah:
             assert(insScalableOptsNone(sopt));
             assert(insOptsScalableStandard(opt));
-            assert(isVectorRegister(reg1));                        // ddddd
-            assert(isVectorRegister(reg2));                        // nnnnn
-            assert(isVectorRegister(reg3));                        // mmmmm
-            assert(isValidRot(imm));                               // rr
-            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            assert(isVectorRegister(reg1));                         // ddddd
+            assert(isVectorRegister(reg2));                         // nnnnn
+            assert(isVectorRegister(reg3));                         // mmmmm
+            assert(isValidRot(emitDecodeRotationImm0_to_270(imm))); // rr
+            assert(isValidVectorElemsize(optGetSveElemsize(opt)));  // xx
 
             // Convert rot to bitwise representation
-            imm = emitEncodeRotationImm0_to_270(imm);
             fmt = IF_SVE_EK_3A;
             break;
 
@@ -5785,12 +5933,12 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
             break;
 
         case INS_sve_cmla:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidRot(imm2));          // rr
+            assert(isVectorRegister(reg1));                          // ddddd
+            assert(isVectorRegister(reg2));                          // nnnnn
+            assert(isLowVectorRegister(reg3));                       // mmmm
+            assert(isValidRot(emitDecodeRotationImm0_to_270(imm2))); // rr
             // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            imm = (imm1 << 2) | imm2;
 
             if (opt == INS_OPTS_SCALABLE_H)
             {
@@ -5807,13 +5955,12 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
             break;
 
         case INS_sve_sqrdcmlah:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidRot(imm2));          // rr
-            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            assert(isVectorRegister(reg1));                          // ddddd
+            assert(isVectorRegister(reg2));                          // nnnnn
+            assert(isLowVectorRegister(reg3));                       // mmmm
+            assert(isValidRot(emitDecodeRotationImm0_to_270(imm2))); // rr
 
+            imm = (imm1 << 2) | imm2;
             if (opt == INS_OPTS_SCALABLE_H)
             {
                 assert(isValidUimm<2>(imm1));                 // ii
@@ -5880,6 +6027,108 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_sve_clasta:
+        case INS_sve_clastb:
+            if (isGeneralRegisterOrZR(reg1))
+            {
+                // Scalar variant
+                emitIns_Mov(INS_mov, attr, reg1, reg3, /* canSkip */ true);
+                emitInsSve_R_R_R(ins, attr, reg1, reg2, reg4, opt, sopt);
+                return;
+            }
+            else if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
+            {
+                // SIMD&FP scalar variant
+                emitIns_Mov(INS_sve_mov, EA_SCALABLE, reg1, reg3, /* canSkip */ true, opt);
+                emitInsSve_R_R_R(ins, attr, reg1, reg2, reg4, opt, sopt);
+                return;
+            }
+            // Vector variant
+            FALLTHROUGH;
+
+        case INS_sve_splice:
+            // Explicit masked RMW instructions
+            assert((reg1 == reg3) || ((reg1 != reg2) && (reg1 != reg4)));
+            emitIns_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg3, /* canSkip */ true);
+            emitInsSve_R_R_R(ins, attr, reg1, reg2, reg4, opt, sopt);
+            return;
+
+        case INS_sve_adclb:
+        case INS_sve_adclt:
+            // RMW instructions destructive on the third source register
+            assert((reg1 == reg4) || ((reg1 != reg2) && (reg1 != reg3)));
+            emitIns_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg4, /* canSkip */ true);
+            emitInsSve_R_R_R(ins, attr, reg1, reg2, reg3, opt, sopt);
+            return;
+
+        case INS_sve_addhnt:
+        case INS_sve_raddhnt:
+        case INS_sve_rsubhnt:
+        case INS_sve_subhnt:
+        case INS_sve_tbx:
+            // RMW instructions without movprfx support, use mov instead
+            emitIns_Mov(INS_sve_mov, attr, reg1, reg2, /* canSkip */ true, opt);
+            emitInsSve_R_R_R(ins, attr, reg1, reg3, reg4, opt, sopt);
+            return;
+
+        case INS_sve_and:
+        case INS_sve_bic:
+        case INS_sve_eor:
+        case INS_sve_orr:
+            if (isPredicateRegister(reg1))
+            {
+                // Predicate variants
+                assert(opt == INS_OPTS_SCALABLE_B);
+                assert(isPredicateRegister(reg1)); // dddd
+                assert(isPredicateRegister(reg2)); // gggg
+                assert(isPredicateRegister(reg3)); // nnnn
+                assert(isPredicateRegister(reg4)); // mmmm
+                fmt = IF_SVE_CZ_4A;
+                break;
+            }
+            // Otherwise (predicated) vector variants
+            FALLTHROUGH;
+
+        case INS_sve_add:
+        case INS_sve_bcax:
+        case INS_sve_bsl:
+        case INS_sve_bsl1n:
+        case INS_sve_bsl2n:
+        case INS_sve_eor3:
+        case INS_sve_eorbt:
+        case INS_sve_eortb:
+        case INS_sve_saba:
+        case INS_sve_sabalb:
+        case INS_sve_sabalt:
+        case INS_sve_sbclb:
+        case INS_sve_sbclt:
+        case INS_sve_sdot:
+        case INS_sve_smlalb:
+        case INS_sve_smlalt:
+        case INS_sve_smlslb:
+        case INS_sve_smlslt:
+        case INS_sve_sqdmlalb:
+        case INS_sve_sqdmlalbt:
+        case INS_sve_sqdmlalt:
+        case INS_sve_sqdmlslb:
+        case INS_sve_sqdmlslbt:
+        case INS_sve_sqdmlslt:
+        case INS_sve_sqrdmlah:
+        case INS_sve_sqrdmlsh:
+        case INS_sve_uaba:
+        case INS_sve_uabalb:
+        case INS_sve_uabalt:
+        case INS_sve_udot:
+        case INS_sve_umlalb:
+        case INS_sve_umlalt:
+        case INS_sve_umlslb:
+        case INS_sve_umlslt:
+            // RMW instructions
+            assert((reg1 == reg2) || ((reg1 != reg3) && (reg1 != reg4)));
+            emitIns_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true);
+            emitInsSve_R_R_R(ins, attr, reg1, reg3, reg4, opt, sopt);
+            return;
+
         case INS_sve_sel:
             assert(insScalableOptsNone(sopt));
             if (isVectorRegister(reg1))
@@ -5935,11 +6184,7 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
             }
             break;
 
-        case INS_sve_and:
-        case INS_sve_orr:
-        case INS_sve_eor:
         case INS_sve_ands:
-        case INS_sve_bic:
         case INS_sve_orn:
         case INS_sve_bics:
         case INS_sve_eors:
@@ -6986,6 +7231,35 @@ void emitter::emitInsSve_R_R_R_R_I(instruction ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_sve_cdot:
+        case INS_sve_cmla:
+        case INS_sve_fmla:
+        case INS_sve_fmls:
+        case INS_sve_mla:
+        case INS_sve_mls:
+        case INS_sve_sdot:
+        case INS_sve_smlalb:
+        case INS_sve_smlalt:
+        case INS_sve_smlslb:
+        case INS_sve_smlslt:
+        case INS_sve_sqdmlalb:
+        case INS_sve_sqdmlalt:
+        case INS_sve_sqdmlslb:
+        case INS_sve_sqdmlslt:
+        case INS_sve_sqrdcmlah:
+        case INS_sve_sqrdmlah:
+        case INS_sve_sqrdmlsh:
+        case INS_sve_udot:
+        case INS_sve_umlalb:
+        case INS_sve_umlalt:
+        case INS_sve_umlslb:
+        case INS_sve_umlslt:
+            // RMW instructions
+            assert((reg1 == reg2) || ((reg1 != reg3) && (reg1 != reg4)));
+            emitIns_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true);
+            emitInsSve_R_R_R_I(ins, attr, reg1, reg3, reg4, imm, opt);
+            return;
+
         case INS_sve_fcmla:
             assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));
@@ -7051,6 +7325,39 @@ void emitter::emitInsSve_R_R_R_R_I(instruction ins,
 
     dispIns(id);
     appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add a SVE instruction referencing four registers and two constants.
+ */
+
+void emitter::emitInsSve_R_R_R_R_I_I(instruction ins,
+                                     emitAttr    attr,
+                                     regNumber   reg1,
+                                     regNumber   reg2,
+                                     regNumber   reg3,
+                                     regNumber   reg4,
+                                     ssize_t     imm1,
+                                     ssize_t     imm2,
+                                     insOpts     opt /* = INS_OPT_NONE*/)
+{
+    switch (ins)
+    {
+        case INS_sve_cmla:
+        case INS_sve_fcmla:
+        case INS_sve_sqrdcmlah:
+        case INS_sve_cdot:
+            // RMW instructions
+            assert((reg1 == reg2) || ((reg1 != reg3) && (reg1 != reg4)));
+            emitIns_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true);
+            emitInsSve_R_R_R_I_I(ins, attr, reg1, reg3, reg4, imm1, imm2, opt);
+            return;
+
+        default:
+            unreached();
+            break;
+    }
 }
 
 /*****************************************************************************
@@ -7212,6 +7519,58 @@ void emitter::emitIns_R_PATTERN_I(instruction   ins,
 
     dispIns(id);
     appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add a SVE instruction referencing two registers, a SVE Pattern and an immediate.
+ */
+
+void emitter::emitIns_R_R_PATTERN_I(instruction   ins,
+                                    emitAttr      attr,
+                                    regNumber     reg1,
+                                    regNumber     reg2,
+                                    insSvePattern pattern,
+                                    ssize_t       imm,
+                                    insOpts       opt /* = INS_OPTS_NONE */)
+{
+    switch (ins)
+    {
+        case INS_sve_sqinch:
+        case INS_sve_uqinch:
+        case INS_sve_sqdech:
+        case INS_sve_uqdech:
+        case INS_sve_sqincw:
+        case INS_sve_uqincw:
+        case INS_sve_sqdecw:
+        case INS_sve_uqdecw:
+        case INS_sve_sqincd:
+        case INS_sve_uqincd:
+        case INS_sve_sqdecd:
+        case INS_sve_uqdecd:
+            // RMW instructions
+            if (!insOptsNone(opt))
+            {
+                // Vector variant
+                emitIns_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true);
+                emitIns_R_PATTERN_I(ins, attr, reg1, pattern, imm, opt);
+                return;
+            }
+            // Scalar variant
+            FALLTHROUGH;
+
+        case INS_sve_sqincb:
+        case INS_sve_uqincb:
+        case INS_sve_sqdecb:
+        case INS_sve_uqdecb:
+            emitIns_Mov(INS_mov, EA_8BYTE, reg1, reg2, /* canSkip */ true);
+            emitIns_R_PATTERN_I(ins, attr, reg1, pattern, imm, opt);
+            return;
+
+        default:
+            unreached();
+            break;
+    }
 }
 
 /*****************************************************************************
@@ -18581,6 +18940,7 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
         case IF_SVE_AC_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
         case IF_SVE_AO_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
         case IF_SVE_CM_3A: // <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T>
+        case IF_SVE_CV_3B: // <Zdn>.<T>, <Pv>, <Zdn>.<T>, <Zm>.<T>
         case IF_SVE_GP_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
         case IF_SVE_GR_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
         case IF_SVE_HL_3A: // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>
@@ -18691,6 +19051,701 @@ void emitter::emitInsPairSanityCheck(instrDesc* firstId, instrDesc* secondId)
 
         // "predicated using the same governing predicate register and source element size as this instruction."
         assert(firstId->idInsOpt() == secondId->idInsOpt());
+    }
+
+    // The following instructions cannot use predicated movprfx, else the behaviour will be unpredictable.
+    switch (secondId->idIns())
+    {
+        case INS_sve_sqdecd:
+        case INS_sve_sqdech:
+        case INS_sve_sqdecw:
+        case INS_sve_sqincd:
+        case INS_sve_sqinch:
+        case INS_sve_sqincw:
+        case INS_sve_uqdecd:
+        case INS_sve_uqdech:
+        case INS_sve_uqdecw:
+        case INS_sve_uqincd:
+        case INS_sve_uqinch:
+        case INS_sve_uqincw:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_BP_1A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_smlalb:
+        case INS_sve_smlalt:
+        case INS_sve_smlslb:
+        case INS_sve_smlslt:
+        case INS_sve_umlalb:
+        case INS_sve_umlalt:
+        case INS_sve_umlslb:
+        case INS_sve_umlslt:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EL_3A:
+                case IF_SVE_FG_3A:
+                case IF_SVE_FG_3B:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_add:
+        case INS_sve_sqadd:
+        case INS_sve_sqsub:
+        case INS_sve_sub:
+        case INS_sve_subr:
+        case INS_sve_uqadd:
+        case INS_sve_uqsub:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EC_1A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_and:
+        case INS_sve_bic:
+        case INS_sve_eon:
+        case INS_sve_eor:
+        case INS_sve_orn:
+        case INS_sve_orr:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_BS_1A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_bcax:
+        case INS_sve_bsl:
+        case INS_sve_bsl1n:
+        case INS_sve_bsl2n:
+        case INS_sve_eor3:
+        case INS_sve_nbsl:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_AV_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_bfmlalb:
+        case INS_sve_bfmlalt:
+        case INS_sve_bfmlslb:
+        case INS_sve_bfmlslt:
+        case INS_sve_fmlslb:
+        case INS_sve_fmlslt:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_GZ_3A:
+                case IF_SVE_HB_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_decd:
+        case INS_sve_dech:
+        case INS_sve_decw:
+        case INS_sve_incd:
+        case INS_sve_inch:
+        case INS_sve_incw:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_BN_1A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_sabalb:
+        case INS_sve_sabalt:
+        case INS_sve_sqdmlalbt:
+        case INS_sve_sqdmlslbt:
+        case INS_sve_uabalb:
+        case INS_sve_uabalt:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EL_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_addp:
+        case INS_sve_smaxp:
+        case INS_sve_sminp:
+        case INS_sve_umaxp:
+        case INS_sve_uminp:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_AA_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_eorbt:
+        case INS_sve_eortb:
+        case INS_sve_fclamp:
+        case INS_sve_sclamp:
+        case INS_sve_uclamp:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_AT_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_faddp:
+        case INS_sve_fmaxnmp:
+        case INS_sve_fmaxp:
+        case INS_sve_fminnmp:
+        case INS_sve_fminp:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_GR_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_adclb:
+        case INS_sve_adclt:
+        case INS_sve_sbclb:
+        case INS_sve_sbclt:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_FY_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_fmlallbb:
+        case INS_sve_fmlallbt:
+        case INS_sve_fmlalltb:
+        case INS_sve_fmlalltt:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_GO_3A:
+                case IF_SVE_HC_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_smax:
+        case INS_sve_smin:
+        case INS_sve_umax:
+        case INS_sve_umin:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_ED_1A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_sqdecp:
+        case INS_sve_sqincp:
+        case INS_sve_uqdecp:
+        case INS_sve_uqincp:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_DP_2A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_sqdmlalb:
+        case INS_sve_sqdmlalt:
+        case INS_sve_sqdmlslb:
+        case INS_sve_sqdmlslt:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EL_3A:
+                case IF_SVE_FJ_3A:
+                case IF_SVE_FJ_3B:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_srsra:
+        case INS_sve_ssra:
+        case INS_sve_ursra:
+        case INS_sve_usra:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_FU_2A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_smmla:
+        case INS_sve_ummla:
+        case INS_sve_usmmla:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_FO_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_bfmla:
+        case INS_sve_bfmls:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_GU_3C:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_cadd:
+        case INS_sve_sqcadd:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_FV_2A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_clasta:
+        case INS_sve_clastb:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_CM_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_decp:
+        case INS_sve_incp:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_DN_2A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_fmla:
+        case INS_sve_fmls:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_GU_3A:
+                case IF_SVE_GU_3B:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_fmlalb:
+        case INS_sve_fmlalt:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_GM_3A:
+                case IF_SVE_GN_3A:
+                case IF_SVE_GZ_3A:
+                case IF_SVE_HB_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_mla:
+        case INS_sve_mls:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_FF_3A:
+                case IF_SVE_FF_3B:
+                case IF_SVE_FF_3C:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_saba:
+        case INS_sve_uaba:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_FW_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_sdot:
+        case INS_sve_udot:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EF_3A:
+                case IF_SVE_EG_3A:
+                case IF_SVE_EH_3A:
+                case IF_SVE_EY_3A:
+                case IF_SVE_EY_3B:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_sqrdmlah:
+        case INS_sve_sqrdmlsh:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EM_3A:
+                case IF_SVE_FK_3A:
+                case IF_SVE_FK_3B:
+                case IF_SVE_FK_3C:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_bfclamp:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_GW_3B:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_bfdot:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_GY_3B:
+                case IF_SVE_HA_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_bfmmla:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_HD_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_cdot:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EJ_3A:
+                case IF_SVE_FA_3A:
+                case IF_SVE_FA_3B:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_cmla:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EK_3A:
+                case IF_SVE_FB_3A:
+                case IF_SVE_FB_3B:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_extq:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_BY_2A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_fcmla:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_GV_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_fdot:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_GY_3A:
+                case IF_SVE_GY_3B:
+                case IF_SVE_GY_3B_D:
+                case IF_SVE_HA_3A:
+                case IF_SVE_HA_3A_E:
+                case IF_SVE_HA_3A_F:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_fmmla:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_HD_3A_A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_ftmad:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_HN_2A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_insr:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_CC_2A:
+                case IF_SVE_CD_2A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_madpt:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EW_3B:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_mlapt:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EW_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_mul:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EE_1A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_revd:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_CT_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_sqrdcmlah:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EK_3A:
+                case IF_SVE_FC_3A:
+                case IF_SVE_FC_3B:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_sudot:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EZ_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_usdot:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_EI_3A:
+                case IF_SVE_EZ_3A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case INS_sve_xar:
+        {
+            switch (secondId->idInsFmt())
+            {
+                case IF_SVE_AW_2A:
+                    assert(!movprefxIsPredicated);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        default:
+            break;
     }
 }
 #endif // DEBUG

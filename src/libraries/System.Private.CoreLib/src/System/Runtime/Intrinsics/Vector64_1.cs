@@ -394,11 +394,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return vector ^ Vector64.Create(-0.0f).As<float, T>();
+                return vector ^ Vector64<float>.NegativeZero.As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return vector ^ Vector64.Create(-0.0).As<double, T>();
+                return vector ^ Vector64<double>.NegativeZero.As<double, T>();
             }
             else
             {
@@ -782,14 +782,17 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Load(T* source) => Vector64.Load(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAligned(T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static Vector64<T> ISimdVector<Vector64<T>, T>.LoadAligned(T* source) => Vector64.LoadAligned(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static Vector64<T> ISimdVector<Vector64<T>, T>.LoadAlignedNonTemporal(T* source) => Vector64.LoadAlignedNonTemporal(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
@@ -890,14 +893,17 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static void ISimdVector<Vector64<T>, T>.Store(Vector64<T> source, T* destination) => source.Store(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAligned(TSelf, T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static void ISimdVector<Vector64<T>, T>.StoreAligned(Vector64<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static void ISimdVector<Vector64<T>, T>.StoreAlignedNonTemporal(Vector64<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />

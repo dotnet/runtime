@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -22,6 +23,84 @@ namespace System.Runtime.Intrinsics
         {
             [Intrinsic]
             get => IsHardwareAccelerated;
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector64<T>)
+            where T : IFloatingPointConstants<T>
+        {
+            /// <inheritdoc cref="Vector128.get_E{T}" />
+            public static Vector64<T> E
+            {
+                [Intrinsic]
+                get => Create(T.E);
+            }
+
+            /// <inheritdoc cref="Vector128.get_Pi{T}" />
+            public static Vector64<T> Pi
+            {
+                [Intrinsic]
+                get => Create(T.Pi);
+            }
+
+            /// <inheritdoc cref="Vector128.get_Tau{T}" />
+            public static Vector64<T> Tau
+            {
+                [Intrinsic]
+                get => Create(T.Tau);
+            }
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector64<T>)
+            where T : IFloatingPointIeee754<T>
+        {
+            /// <inheritdoc cref="Vector128.get_Epsilon{T}" />
+            public static Vector64<T> Epsilon
+            {
+                [Intrinsic]
+                get => Create(T.Epsilon);
+            }
+
+            /// <inheritdoc cref="Vector128.get_NaN{T}" />
+            public static Vector64<T> NaN
+            {
+                [Intrinsic]
+                get => Create(T.NaN);
+            }
+
+            /// <inheritdoc cref="Vector128.get_NegativeInfinity{T}" />
+            public static Vector64<T> NegativeInfinity
+            {
+                [Intrinsic]
+                get => Create(T.NegativeInfinity);
+            }
+
+            /// <inheritdoc cref="Vector128.get_NegativeZero{T}" />
+            public static Vector64<T> NegativeZero
+            {
+                [Intrinsic]
+                get => Create(T.NegativeZero);
+            }
+
+            /// <inheritdoc cref="Vector128.get_PositiveInfinity{T}" />
+            public static Vector64<T> PositiveInfinity
+            {
+                [Intrinsic]
+                get => Create(T.PositiveInfinity);
+            }
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector64<T>)
+            where T : ISignedNumber<T>
+        {
+            /// <inheritdoc cref="Vector128.get_NegativeOne{T}" />
+            public static Vector64<T> NegativeOne
+            {
+                [Intrinsic]
+                get => Create(T.NegativeOne);
+            }
         }
 
         /// <summary>Computes the absolute value of each element in a vector.</summary>
@@ -699,6 +778,47 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
+        /// <summary>Computes the arc sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc sine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc sine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Asin(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinDouble<Vector64<double>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Asin<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the arc sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc sine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc sine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Asin(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.AsinSingle<Vector64<float>, Vector64<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AsinSingle<Vector64<float>, Vector64<int>, Vector64<double>, Vector64<long>>(vector);
+                }
+            }
+            else
+            {
+                return Asin<float>(vector);
+            }
+        }
+
         /// <summary>Computes the cos of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its Cos computed.</param>
         /// <returns>A vector whose elements are the cos of the elements in <paramref name="vector" />.</returns>
@@ -895,7 +1015,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{T}" /> from a given array.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="values">The array from which the vector is created.</param>
-        /// <param name="index">The index in <paramref name="values" /> at which to being reading elements.</param>
+        /// <param name="index">The index in <paramref name="values" /> at which to begin reading elements.</param>
         /// <returns>A new <see cref="Vector64{T}" /> with its elements set to the first <see cref="Vector128{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector64{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
@@ -1820,11 +1940,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return ~IsZero(AndNot(Create<uint>(float.PositiveInfinityBits), vector.AsUInt32())).As<uint, T>();
+                return ~IsZero(AndNot(Vector64<float>.PositiveInfinity.AsUInt32(), vector.AsUInt32())).As<uint, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return ~IsZero(AndNot(Create<ulong>(double.PositiveInfinityBits), vector.AsUInt64())).As<ulong, T>();
+                return ~IsZero(AndNot(Vector64<double>.PositiveInfinity.AsUInt64(), vector.AsUInt64())).As<ulong, T>();
             }
             return Vector64<T>.AllBitsSet;
         }
@@ -1899,11 +2019,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return Equals(vector, Create(float.NegativeInfinity).As<float, T>());
+                return Equals(vector, Vector64<float>.NegativeInfinity.As<float, T>());
             }
             else if (typeof(T) == typeof(double))
             {
-                return Equals(vector, Create(double.NegativeInfinity).As<double, T>());
+                return Equals(vector, Vector64<double>.NegativeInfinity.As<double, T>());
             }
             return Vector64<T>.Zero;
         }
@@ -1974,11 +2094,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return Equals(vector, Create(float.PositiveInfinity).As<float, T>());
+                return Equals(vector, Vector64<float>.PositiveInfinity.As<float, T>());
             }
             else if (typeof(T) == typeof(double))
             {
-                return Equals(vector, Create(double.PositiveInfinity).As<double, T>());
+                return Equals(vector, Vector64<double>.PositiveInfinity.As<double, T>());
             }
             return Vector64<T>.Zero;
         }
@@ -2222,6 +2342,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe Vector64<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
@@ -2232,6 +2353,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe Vector64<T> LoadAligned<T>(T* source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
@@ -2252,6 +2374,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe Vector64<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
 
         /// <summary>Loads a vector from the given source.</summary>
@@ -3576,6 +3699,20 @@ namespace System.Runtime.Intrinsics
 #endif
         }
 
+        internal static Vector64<T> Asin<T>(Vector64<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Asin(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
         internal static Vector64<T> Sin<T>(Vector64<T> vector)
             where T : ITrigonometricFunctions<T>
         {
@@ -3711,6 +3848,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe void Store<T>(this Vector64<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
@@ -3721,6 +3859,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe void StoreAligned<T>(this Vector64<T> source, T* destination)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
@@ -3741,6 +3880,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe void StoreAlignedNonTemporal<T>(this Vector64<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>

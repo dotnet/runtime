@@ -210,6 +210,7 @@ private:
         {
             remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
             remainderBlock->SetFlags(BBF_INTERNAL);
+            remainderBlock->RemoveFlags(BBF_DONT_REMOVE);
 
             // We will be adding more blocks after currBlock, so remove edge to remainderBlock.
             //
@@ -237,6 +238,7 @@ private:
             {
                 block->CopyFlags(flagsSource, BBF_SPLIT_GAINED);
             }
+            block->RemoveFlags(BBF_DONT_REMOVE);
             return block;
         }
 
@@ -415,9 +417,10 @@ private:
         {
             elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, currBlock);
 
-            GenTree* fixedFptrAddress  = GetFixedFptrAddress();
-            GenTree* actualCallAddress = compiler->gtNewIndir(pointerType, fixedFptrAddress);
-            GenTree* hiddenArgument    = GetHiddenArgument(fixedFptrAddress);
+            GenTree* fixedFptrAddress = GetFixedFptrAddress();
+            GenTree* actualCallAddress =
+                compiler->gtNewIndir(pointerType, fixedFptrAddress, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+            GenTree* hiddenArgument = GetHiddenArgument(fixedFptrAddress);
 
             Statement* fatStmt = CreateFatCallStmt(actualCallAddress, hiddenArgument);
             compiler->fgInsertStmtAtEnd(elseBlock, fatStmt);
@@ -448,7 +451,8 @@ private:
             GenTree* fixedFptrAddressCopy = compiler->gtCloneExpr(fixedFptrAddress);
             GenTree* wordSize          = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, genTypeSize(TYP_I_IMPL));
             GenTree* hiddenArgumentPtr = compiler->gtNewOperNode(GT_ADD, pointerType, fixedFptrAddressCopy, wordSize);
-            return compiler->gtNewIndir(fixedFptrAddressCopy->TypeGet(), hiddenArgumentPtr);
+            return compiler->gtNewIndir(fixedFptrAddressCopy->TypeGet(), hiddenArgumentPtr,
+                                        GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
         }
 
         //------------------------------------------------------------------------
@@ -968,10 +972,9 @@ private:
             CORINFO_CONTEXT_HANDLE context   = inlineInfo->exactContextHandle;
             if (clsHnd != NO_CLASS_HANDLE)
             {
-                // If we devirtualized an array interface call,
-                // pass the original method handle and original context handle to the devirtualizer.
+                // Pass the original method handle and original context handle to the devirtualizer if needed.
                 //
-                if (inlineInfo->arrayInterface)
+                if (inlineInfo->needsMethodContext)
                 {
                     methodHnd = inlineInfo->originalMethodHandle;
                     context   = inlineInfo->originalContextHandle;

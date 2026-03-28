@@ -20,19 +20,27 @@ namespace System
     {
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream(Interop.Sys.FileDescriptors.STDIN_FILENO, FileAccess.Read,
+            return new UnixConsoleStream(OpenStandardInputHandle(), FileAccess.Read,
                                          useReadLine: !Console.IsInputRedirected);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream(Interop.Sys.FileDescriptors.STDOUT_FILENO, FileAccess.Write);
+            return new UnixConsoleStream(OpenStandardOutputHandle(), FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream(Interop.Sys.FileDescriptors.STDERR_FILENO, FileAccess.Write);
+            return new UnixConsoleStream(OpenStandardErrorHandle(), FileAccess.Write);
         }
+
+        public static SafeFileHandle OpenStandardInputHandle() => OpenStandardHandle(0);
+
+        public static SafeFileHandle OpenStandardOutputHandle() => OpenStandardHandle(1);
+
+        public static SafeFileHandle OpenStandardErrorHandle() => OpenStandardHandle(2);
+
+        private static SafeFileHandle OpenStandardHandle(IntPtr fd) => new SafeFileHandle(fd, ownsHandle: false);
 
         public static Encoding InputEncoding
         {
@@ -236,20 +244,6 @@ namespace System
         {
         }
 
-        /// <summary>Reads data from the file descriptor into the buffer.</summary>
-        /// <param name="fd">The file descriptor.</param>
-        /// <param name="buffer">The buffer to read into.</param>
-        /// <returns>The number of bytes read, or an exception if there's an error.</returns>
-        private static unsafe int Read(SafeFileHandle fd, Span<byte> buffer)
-        {
-            fixed (byte* bufPtr = buffer)
-            {
-                int result = Interop.CheckIo(Interop.Sys.Read(fd, bufPtr, buffer.Length));
-                Debug.Assert(result <= buffer.Length);
-                return result;
-            }
-        }
-
         internal static unsafe void WriteFromConsoleStream(SafeFileHandle fd, ReadOnlySpan<byte> buffer)
         {
             EnsureConsoleInitialized();
@@ -263,45 +257,16 @@ namespace System
         /// <summary>Writes data from the buffer into the file descriptor.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="buffer">The buffer from which to write data.</param>
-        private static unsafe void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer)
+        private static void Write(SafeFileHandle fd, ReadOnlySpan<byte> buffer)
         {
-            fixed (byte* p = buffer)
+            try
             {
-                byte* bufPtr = p;
-                int count = buffer.Length;
-                while (count > 0)
-                {
-                    int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
-                    if (bytesWritten < 0)
-                    {
-                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                        if (errorInfo.Error == Interop.Error.EPIPE)
-                        {
-                            // Broken pipe... likely due to being redirected to a program
-                            // that ended, so simply pretend we were successful.
-                            return;
-                        }
-                        else if (errorInfo.Error == Interop.Error.EAGAIN) // aka EWOULDBLOCK
-                        {
-                            // May happen if the file handle is configured as non-blocking.
-                            // In that case, we need to wait to be able to write and then
-                            // try again. We poll, but don't actually care about the result,
-                            // only the blocking behavior, and thus ignore any poll errors
-                            // and loop around to do another write (which may correctly fail
-                            // if something else has gone wrong).
-                            Interop.Sys.Poll(fd, Interop.PollEvents.POLLOUT, Timeout.Infinite, out Interop.PollEvents triggered);
-                            continue;
-                        }
-                        else
-                        {
-                            // Something else... fail.
-                            throw Interop.GetExceptionForIoErrno(errorInfo);
-                        }
-                    }
-
-                    count -= bytesWritten;
-                    bufPtr += bytesWritten;
-                }
+                RandomAccess.Write(fd, buffer, fileOffset: 0);
+            }
+            catch (IOException ex) when (Interop.Sys.ConvertErrorPlatformToPal(ex.HResult) == Interop.Error.EPIPE)
+            {
+                // Broken pipe... likely due to being redirected to a program
+                // that ended, so simply pretend we were successful.
             }
         }
     }

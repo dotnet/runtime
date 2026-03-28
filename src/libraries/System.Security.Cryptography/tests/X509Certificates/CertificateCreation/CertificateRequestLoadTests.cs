@@ -427,8 +427,7 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void VerifySignature_DSA()
         {
             // macOS is limited to FIPS 186-2 DSA, so SHA-1 is the only valid algorithm.
@@ -915,11 +914,11 @@ BgkqhkiG9w0BAQsFAAMBAA==
                     //      signatureAlgorithm   AlgorithmIdentifier,
                     //      signature            BIT STRING  }
 
-                    AsnValueReader readerOne = new AsnValueReader(one.RawDataMemory.Span, AsnEncodingRules.DER);
-                    AsnValueReader readerTwo = new AsnValueReader(two.RawDataMemory.Span, AsnEncodingRules.DER);
+                    ValueAsnReader readerOne = new ValueAsnReader(one.RawDataMemory.Span, AsnEncodingRules.DER);
+                    ValueAsnReader readerTwo = new ValueAsnReader(two.RawDataMemory.Span, AsnEncodingRules.DER);
 
-                    AsnValueReader certOne = readerOne.ReadSequence();
-                    AsnValueReader certTwo = readerTwo.ReadSequence();
+                    ValueAsnReader certOne = readerOne.ReadSequence();
+                    ValueAsnReader certTwo = readerTwo.ReadSequence();
                     readerOne.ThrowIfNotEmpty();
                     readerTwo.ThrowIfNotEmpty();
 

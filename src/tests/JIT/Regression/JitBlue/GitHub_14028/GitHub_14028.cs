@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+
+namespace GitHub_14028;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
@@ -12,6 +15,7 @@ public class GitHub_10215
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool Test(Vector<int> x, Vector<int> y) => x[0] == y[0];
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

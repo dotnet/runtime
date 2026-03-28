@@ -6,6 +6,7 @@ using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
 
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -26,8 +27,16 @@ namespace ILCompiler
 
         public bool CanFold(MethodDesc method)
         {
-            return this != Null
-                && (!_genericsOnly || method.HasInstantiation || method.OwningType.HasInstantiation);
+            if (this == Null)
+                return false;
+
+            if (!_genericsOnly || method.HasInstantiation || method.OwningType.HasInstantiation)
+                return true;
+
+            if (method.GetTypicalMethodDefinition() is GetFieldHelperMethodOverride)
+                return true;
+
+            return false;
         }
 
         private void EnsureMap(NodeFactory factory)
@@ -60,7 +69,7 @@ namespace ILCompiler
 
                     // Bodies that are visible from outside should not be folded because we don't know
                     // if they're address taken.
-                    if (factory.GetSymbolAlternateName(body, out _) != null)
+                    if (!factory.GetSymbolAlternateName(body, out _).IsNull)
                         continue;
 
                     var key = new MethodInternKey(body, factory);

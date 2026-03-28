@@ -15,7 +15,7 @@ namespace ILCompiler
             if (!accessor.IsSpecialName || accessor.GetTypicalMethodDefinition() is not EcmaMethod ecmaAccessor)
                 return null;
 
-            var type = (EcmaType)ecmaAccessor.OwningType;
+            var type = ecmaAccessor.OwningType;
             var reader = type.MetadataReader;
             foreach (var propertyHandle in reader.GetTypeDefinition(type.Handle).GetProperties())
             {
@@ -35,7 +35,7 @@ namespace ILCompiler
             if (!accessor.IsSpecialName || accessor.GetTypicalMethodDefinition() is not EcmaMethod ecmaAccessor)
                 return null;
 
-            var type = (EcmaType)ecmaAccessor.OwningType;
+            var type = ecmaAccessor.OwningType;
             var reader = type.MetadataReader;
             foreach (var eventHandle in reader.GetTypeDefinition(type.Handle).GetEvents())
             {

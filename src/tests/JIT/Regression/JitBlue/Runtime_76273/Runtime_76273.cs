@@ -8,6 +8,10 @@
 //     File: D:\a\_work\1\s\src\coreclr\jit\codegenarm64.cpp Line: 4543
 //
 
+
+using TestLibrary;
+namespace Runtime_76273;
+
 using Xunit;
 public class C0
 {
@@ -20,7 +24,11 @@ public class Program
     public static IRuntime s_rt = new Runtime();
     public static ulong s_3;
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90372", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90372", TestRuntimes.Mono)]
     public static void TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();

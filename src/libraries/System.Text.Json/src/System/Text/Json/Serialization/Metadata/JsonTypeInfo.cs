@@ -1145,11 +1145,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void PopulateParameterInfoValues(JsonParameterInfoValues[] parameterInfoValues)
         {
-            if (parameterInfoValues.Length == 0)
-            {
-                return;
-            }
-
             Dictionary<ParameterLookupKey, JsonParameterInfoValues> parameterIndex = new(parameterInfoValues.Length);
             foreach (JsonParameterInfoValues parameterInfoValue in parameterInfoValues)
             {
@@ -1326,6 +1321,8 @@ namespace System.Text.Json.Serialization.Metadata
         {
             return typeof(IDictionary<string, object>).IsAssignableFrom(propertyType) ||
                 typeof(IDictionary<string, JsonElement>).IsAssignableFrom(propertyType) ||
+                propertyType == typeof(IReadOnlyDictionary<string, object>) ||
+                propertyType == typeof(IReadOnlyDictionary<string, JsonElement>) ||
                 // Avoid a reference to typeof(JsonNode) to support trimming.
                 (propertyType.FullName == JsonObjectTypeName && ReferenceEquals(propertyType.Assembly, typeof(JsonTypeInfo).Assembly));
         }

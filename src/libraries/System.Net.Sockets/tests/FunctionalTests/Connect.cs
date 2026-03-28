@@ -18,7 +18,7 @@ namespace System.Net.Sockets.Tests
         public Connect(ITestOutputHelper output) : base(output) {}
 
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // async SocketTestServer requires threads
         [MemberData(nameof(Loopbacks))]
         public async Task Connect_Success(IPAddress listenAt)
         {
@@ -46,7 +46,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(client.Connected);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // async SocketTestServer requires threads
         [MemberData(nameof(Loopbacks))]
         public async Task Connect_Dns_Success(IPAddress listenAt)
         {
@@ -69,7 +69,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // async SocketTestServer requires threads
         [MemberData(nameof(Loopbacks))]
         public async Task Connect_MultipleIPAddresses_Success(IPAddress listenAt)
         {
@@ -86,7 +86,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // async SocketTestServer requires threads
         public async Task Connect_OnConnectedSocket_Fails()
         {
             int port;
@@ -103,7 +103,7 @@ namespace System.Net.Sockets.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)] // Unix currently does not support Disconnect
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // async SocketTestServer requires threads
         public async Task Connect_AfterDisconnect_Fails()
         {
             int port;
@@ -482,19 +482,19 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ConnectSync : Connect<SocketHelperArraySync>
     {
         public ConnectSync(ITestOutputHelper output) : base(output) {}
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking>
     {
         public ConnectSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ConnectApm : Connect<SocketHelperApm>
     {
         public ConnectApm(ITestOutputHelper output) : base(output) {}
@@ -509,7 +509,7 @@ namespace System.Net.Sockets.Tests
     {
         public ConnectEap(ITestOutputHelper output) : base(output) {}
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectAsync_WithData_DataReceived(bool useArrayApi)
@@ -728,7 +728,7 @@ namespace System.Net.Sockets.Tests
         {
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // async SocketTestServer requires threads
         public async Task Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success()
         {
             if (!SupportsMultiConnect)
@@ -747,7 +747,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // async SocketTestServer requires threads
         public async Task Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
         {
             var localhostAddresses = Dns.GetHostAddresses("localhost");
@@ -783,13 +783,13 @@ namespace System.Net.Sockets.Tests
         public ConnectSync_NonParallel(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ConnectSyncForceNonBlocking_NonParallel : Connect_NonParallel<SocketHelperSyncForceNonBlocking>
     {
         public ConnectSyncForceNonBlocking_NonParallel(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ConnectApm_NonParallel : Connect_NonParallel<SocketHelperApm>
     {
         public ConnectApm_NonParallel(ITestOutputHelper output) : base(output) { }

@@ -52,6 +52,10 @@
 #include <stdio.h>
 #endif
 #include <unistd.h>
+#if defined(TARGET_SUNOS) && HAVE_GETDOMAINNAME
+// SunOS has getdomainname in libnsl but no header declaration
+extern int getdomainname(char *name, int namelen);
+#endif
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
@@ -204,6 +208,11 @@ static bool TryConvertAddressFamilyPlatformToPal(sa_family_t platformAddressFami
             *palAddressFamily = AddressFamily_AF_PACKET;
             return true;
 #endif
+#ifdef AF_LINK
+        case AF_LINK:
+            *palAddressFamily = AddressFamily_AF_LINK;
+            return true;
+#endif
 #ifdef AF_CAN
         case AF_CAN:
             *palAddressFamily = AddressFamily_AF_CAN;
@@ -239,6 +248,11 @@ static bool TryConvertAddressFamilyPalToPlatform(int32_t palAddressFamily, sa_fa
 #ifdef AF_PACKET
         case AddressFamily_AF_PACKET:
             *platformAddressFamily = AF_PACKET;
+            return true;
+#endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
+            *platformAddressFamily = AF_LINK;
             return true;
 #endif
 #ifdef AF_CAN
@@ -407,8 +421,10 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
     char name[_POSIX_HOST_NAME_MAX];
     result = gethostname((char*)name, _POSIX_HOST_NAME_MAX);
 
-    bool includeIPv4Loopback = true;
-    bool includeIPv6Loopback = true;
+    bool includeIPv4Loopback;
+    bool includeIPv6Loopback;
+    includeIPv4Loopback = true;
+    includeIPv6Loopback = true;
 
     if (result == 0 && strcasecmp((const char*)address, name) == 0)
     {
@@ -1186,6 +1202,7 @@ int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     return Error_SUCCESS;
 }
 
+
 int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option)
 {
     if (option == NULL)
@@ -1200,6 +1217,16 @@ int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     {
         return Error_EINVAL;
     }
+
+#if HAVE_IP_MULTICAST_IFINDEX
+    // Use IP_MULTICAST_IFINDEX when available for interface index specification
+    if (optionName == SocketOptionName_SO_IP_MULTICAST_IF)
+    {
+        uint32_t ifindex = (uint32_t)option->InterfaceIndex;
+        int err = setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IFINDEX, &ifindex, sizeof(ifindex));
+        return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+#endif
 
 #if HAVE_IP_MREQN
     struct ip_mreqn opt;
@@ -1515,7 +1542,7 @@ int32_t SystemNative_ReceiveSocketError(intptr_t socket, MessageHeader* messageH
 #if HAVE_LINUX_ERRQUEUE_H
     char buffer[sizeof(struct sock_extended_err) + sizeof(struct sockaddr_storage)];
     messageHeader->ControlBufferLen = sizeof(buffer);
-    messageHeader->ControlBuffer = (void*)buffer;
+    messageHeader->ControlBuffer = (uint8_t*)buffer;
 
     struct msghdr header;
     struct icmphdr icmph;
@@ -2533,6 +2560,11 @@ static bool TryConvertProtocolTypePalToPlatform(int32_t palAddressFamily, int32_
             *platformProtocolType = palProtocolType;
             return true;
 #endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
+            *platformProtocolType = palProtocolType;
+            return true;
+#endif
 #if HAVE_LINUX_CAN_H
         case AddressFamily_AF_CAN:
             switch (palProtocolType)
@@ -2669,6 +2701,11 @@ static bool TryConvertProtocolTypePlatformToPal(int32_t palAddressFamily, int pl
 #ifdef AF_PACKET
         case AddressFamily_AF_PACKET:
             // protocol is the IEEE 802.3 protocol number in network order.
+            *palProtocolType = platformProtocolType;
+            return true;
+#endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
             *palProtocolType = platformProtocolType;
             return true;
 #endif

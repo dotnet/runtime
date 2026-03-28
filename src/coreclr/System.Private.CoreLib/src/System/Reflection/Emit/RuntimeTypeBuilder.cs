@@ -126,6 +126,7 @@ namespace System.Reflection.Emit
         internal static partial void SetClassLayout(QCallModule module, int tk, PackingSize iPackingSize, int iTypeSize);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetConstantValue")]
+        [RequiresUnsafe]
         private static unsafe partial void SetConstantValue(QCallModule module, int tk, int corType, void* pValue);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetPInvokeData", StringMarshalling = StringMarshalling.Utf16)]
@@ -517,12 +518,6 @@ namespace System.Reflection.Emit
                 {
                     throw new ArgumentException(SR.Argument_BadTypeAttrNonNestedVisibilityNestedType);
                 }
-            }
-
-            // Verify that the layout mask is valid.
-            if (((attr & TypeAttributes.LayoutMask) != TypeAttributes.AutoLayout) && ((attr & TypeAttributes.LayoutMask) != TypeAttributes.SequentialLayout) && ((attr & TypeAttributes.LayoutMask) != TypeAttributes.ExplicitLayout))
-            {
-                throw new ArgumentException(SR.Argument_BadTypeAttrInvalidLayout);
             }
 
             // Check if the user attempted to set any reserved bits.
@@ -1259,13 +1254,13 @@ namespace System.Reflection.Emit
 
                 if (inst is TypeBuilderInstantiation)
                     con = GetConstructor(inst, genericTypeDefinition.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null)!);
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null)!);
                 else
                     con = inst.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null);
             }
 
-            con ??= m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
+            con ??= m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null);
 
             if (con == null)
                 throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);

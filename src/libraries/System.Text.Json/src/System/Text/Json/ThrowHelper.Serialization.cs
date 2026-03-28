@@ -230,6 +230,18 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_SerializationConverterOnAttributeOpenGenericNotCompatible(Type classType, MemberInfo? memberInfo, Type converterType)
+        {
+            string location = classType.ToString();
+            if (memberInfo != null)
+            {
+                location += $".{memberInfo.Name}";
+            }
+
+            throw new InvalidOperationException(SR.Format(SR.SerializationConverterOnAttributeOpenGenericNotCompatible, location, converterType));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializerOptionsReadOnly(JsonSerializerContext? context)
         {
             string message = context == null
@@ -290,37 +302,47 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray assignedOrNotRequiredPropertiesSet)
         {
-            StringBuilder listOfMissingPropertiesBuilder = new();
-            bool first = true;
-
-            // Soft cut-off length - once message becomes longer than that we won't be adding more elements
-            const int CutOffLength = 60;
+            StringBuilder builder = new();
 
             foreach (JsonPropertyInfo property in parent.PropertyCache)
             {
-                if (assignedOrNotRequiredPropertiesSet[property.PropertyIndex])
+                if (!assignedOrNotRequiredPropertiesSet[property.PropertyIndex])
                 {
-                    continue;
-                }
-
-                if (!first)
-                {
-                    listOfMissingPropertiesBuilder.Append(CultureInfo.CurrentUICulture.TextInfo.ListSeparator);
-                    listOfMissingPropertiesBuilder.Append(' ');
-                }
-
-                listOfMissingPropertiesBuilder.Append('\'');
-                listOfMissingPropertiesBuilder.Append(property.Name);
-                listOfMissingPropertiesBuilder.Append('\'');
-                first = false;
-
-                if (listOfMissingPropertiesBuilder.Length >= CutOffLength)
-                {
-                    break;
+                    if (!AppendMissingProperty(builder, property.Name))
+                    {
+                        break;
+                    }
                 }
             }
 
-            throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, parent.Type, listOfMissingPropertiesBuilder.ToString()));
+            throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, parent.Type, builder.ToString()));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_JsonRequiredPropertyMissing(Type type, string propertyList)
+        {
+            throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, type, propertyList));
+        }
+
+        /// <summary>
+        /// Appends a property name to a missing-properties list with culture-aware separators and a soft length cut-off.
+        /// Returns false when the cut-off is reached and no more names should be appended.
+        /// </summary>
+        internal static bool AppendMissingProperty(StringBuilder builder, string propertyName)
+        {
+            const int CutOffLength = 60;
+
+            if (builder.Length > 0)
+            {
+                builder.Append(CultureInfo.CurrentUICulture.TextInfo.ListSeparator);
+                builder.Append(' ');
+            }
+
+            builder.Append('\'');
+            builder.Append(propertyName);
+            builder.Append('\'');
+
+            return builder.Length < CutOffLength;
         }
 
         [DoesNotReturn]
@@ -332,7 +354,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_DuplicatePropertyNotAllowed()
         {
-            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed));
+            throw new JsonException(SR.DuplicatePropertiesNotAllowed);
         }
 
         [DoesNotReturn]
@@ -344,7 +366,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_DuplicatePropertyNotAllowed(ReadOnlySpan<byte> nameBytes)
         {
-            string name = JsonHelpers.Utf8GetString(nameBytes);
+            string name = Encoding.UTF8.GetString(nameBytes);
             throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_NameSpan, Truncate(name)));
         }
 
@@ -376,7 +398,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_SerializerConverterFactoryReturnsJsonConverterFactorty(Type converterType)
+        public static void ThrowInvalidOperationException_SerializerConverterFactoryReturnsJsonConverterFactory(Type converterType)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializerConverterFactoryReturnsJsonConverterFactory, converterType));
         }
@@ -549,7 +571,7 @@ namespace System.Text.Json
             if (string.IsNullOrEmpty(message))
             {
                 // Use a default message.
-                message = SR.Format(SR.SerializeUnableToSerialize);
+                message = SR.SerializeUnableToSerialize;
                 ex.AppendPathInformation = true;
             }
 
@@ -727,7 +749,7 @@ namespace System.Text.Json
         public static void ThrowJsonException_MetadataUnexpectedProperty(ReadOnlySpan<byte> propertyName, scoped ref ReadStack state)
         {
             state.Current.JsonPropertyName = propertyName.ToArray();
-            ThrowJsonException(SR.Format(SR.MetadataUnexpectedProperty));
+            ThrowJsonException(SR.MetadataUnexpectedProperty);
         }
 
         [DoesNotReturn]
@@ -781,7 +803,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_DuplicateMetadataProperty(ReadOnlySpan<byte> utf8PropertyName)
         {
-            ThrowJsonException(SR.Format(SR.DuplicateMetadataProperty, JsonHelpers.Utf8GetString(utf8PropertyName)));
+            ThrowJsonException(SR.Format(SR.DuplicateMetadataProperty, Encoding.UTF8.GetString(utf8PropertyName)));
         }
 
         [DoesNotReturn]

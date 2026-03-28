@@ -14,23 +14,27 @@ unsafe class Program
         s_success = true;
 
 #if !DEBUG
-        Console.WriteLine("****************************************************");
-        Console.WriteLine("* Size test                                        *");
-        long fileSize = new System.IO.FileInfo(Environment.ProcessPath).Length;
-        Console.WriteLine($"* Size of the executable is {fileSize / 1024,7:n0} kB             *");
-        Console.WriteLine("****************************************************");
-
-        long lowerBound, upperBound;
-        lowerBound = 1200 * 1024; // ~1.2 MB
-        upperBound = 1600 * 1024; // ~1.6 MB
-
-        if (fileSize < lowerBound || fileSize > upperBound)
+        if (!OperatingSystem.IsAndroid())
         {
-            Console.WriteLine($"BUG: File size is not in the expected range ({lowerBound} to {upperBound} bytes). Did a libraries change regress size of Hello World?");
-            return 1;
-        }
+            // Environment.ProcessPath is app_process64 on Android
+            Console.WriteLine("****************************************************");
+            Console.WriteLine("* Size test                                        *");
+            long fileSize = new System.IO.FileInfo(Environment.ProcessPath).Length;
+            Console.WriteLine($"* Size of the executable is {fileSize / 1024,7:n0} kB             *");
+            Console.WriteLine("****************************************************");
 
-        Console.WriteLine();
+            long lowerBound, upperBound;
+            lowerBound = 1090 * 1024; // ~1.09 MB
+            upperBound = 1500 * 1024; // ~1.5 MB
+
+            if (fileSize < lowerBound || fileSize > upperBound)
+            {
+                Console.WriteLine($"BUG: File size is not in the expected range ({lowerBound} to {upperBound} bytes). Did a libraries change regress size of Hello World?");
+                return 1;
+            }
+
+            Console.WriteLine();
+        }
 #endif
 
         // We expect the AOT compiler generated HW intrinsics with the following characteristics:
@@ -48,50 +52,6 @@ unsafe class Program
         bool? ExpectedSse2 = true;
 
 #if BASELINE_INTRINSICS
-        bool? ExpectedSse3 = null;
-        bool? ExpectedSsse3 = null;
-        bool? ExpectedSse41 = null;
-        bool? ExpectedSse42 = null;
-        bool? ExpectedPopcnt = null;
-        bool? ExpectedAes = null;
-        bool? ExpectedPclmulqdq = null;
-        bool? ExpectedGfni = null;
-        bool? ExpectedSha = null;
-        bool? ExpectedWaitPkg = null;
-        bool? ExpectedX86Serialize = null;
-
-        bool? ExpectedAvx = false;
-        bool? ExpectedAvx2 = false;
-        bool? ExpectedBmi1 = false;
-        bool? ExpectedBmi2 = false;
-        bool? ExpectedF16c = false;
-        bool? ExpectedFma = false;
-        bool? ExpectedLzcnt = false;
-        bool? ExpectedAvx512F = false;
-        bool? ExpectedAvx512BW = false;
-        bool? ExpectedAvx512CD = false;
-        bool? ExpectedAvx512DQ = false;
-        bool? ExpectedAvx512Vbmi = false;
-        bool? ExpectedAvx512Bitalg = false;
-        bool? ExpectedAvx512Vbmi2 = false;
-        bool? ExpectedAvx512Vpopcntdq = false;
-        bool? ExpectedAvx512Bf16 = false;
-        bool? ExpectedAvx512Fp16 = false;
-        bool? ExpectedAvx10v1 = false;
-        bool? ExpectedAvx10v1V512 = false;
-        bool? ExpectedAvx10v2 = false;
-        bool? ExpectedAvx512Vp2intersect = false;
-        bool? ExpectedAvxIfma = false;
-        bool? ExpectedAvxVnni = false;
-        bool? ExpectedAvxVnniInt = false;
-        bool? ExpectedAvxVnniIntV512 = false;
-        bool? ExpectedGfniV256 = false;
-        bool? ExpectedGfniV512 = false;
-        bool? ExpectedAesV256 = false;
-        bool? ExpectedAesV512 = false;
-        bool? ExpectedPclmulqdqV256 = false;
-        bool? ExpectedPclmulqdqV512 = false;
-#elif SSE42_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
         bool? ExpectedSse41 = true;
@@ -661,7 +621,9 @@ unsafe class Program
             // push rbp; sub rsp, 10h; lea rbp, [rsp+10h]; mov dword ptr [rbp-4], 1
             || memcmp((byte*)code, new byte[] { 0x55, 0x48, 0x83, 0xEC, 0x10, 0x48, 0x8D, 0x6C, 0x24, 0x10, 0xC7, 0x45, 0xFC, 0x01, 0x00, 0x00, 0x00 })
             // push rbp; push rdi; push rax; lea rbp, [rsp+10h]; mov dword ptr [rbp-C], 1
-            || memcmp((byte*)code, new byte[] { 0x55, 0x57, 0x50, 0x48, 0x8D, 0x6C, 0x24, 0x10, 0xC7, 0x45, 0xF4, 0x01, 0x00, 0x00, 0x00 });
+            || memcmp((byte*)code, new byte[] { 0x55, 0x57, 0x50, 0x48, 0x8D, 0x6C, 0x24, 0x10, 0xC7, 0x45, 0xF4, 0x01, 0x00, 0x00, 0x00 })
+            // push rbp; push rdi; sub rsp,28h; lea rbp, [rsp+30h]; mov dword ptr [rbp-C], 1
+            || memcmp((byte*)code, new byte[] { 0x55, 0x57, 0x48, 0x83, 0xEC, 0x28, 0x48, 0x8D, 0x6C, 0x24, 0x30, 0xC7, 0x45, 0xF4, 0x01, 0x00, 0x00, 0x00 });
     }
 
     static bool IsConstantFalse(delegate*<bool> code)
@@ -672,7 +634,9 @@ unsafe class Program
             // push rbp; sub rsp, 10h; lea rbp, [rsp+10h]; xor eax, eax
             || memcmp((byte*)code, new byte[] { 0x55, 0x48, 0x83, 0xEC, 0x10, 0x48, 0x8D, 0x6C, 0x24, 0x10, 0x33, 0xC0 })
             // push rbp; push rdi; push rax; lea rbp, [rsp+10h]; xor eax, eax
-            || memcmp((byte*)code, new byte[] { 0x55, 0x57, 0x50, 0x48, 0x8D, 0x6C, 0x24, 0x10, 0x33, 0xC0 });
+            || memcmp((byte*)code, new byte[] { 0x55, 0x57, 0x50, 0x48, 0x8D, 0x6C, 0x24, 0x10, 0x33, 0xC0 })
+            // push rbp; push rdi; sub rsp,28h; lea rbp, [rsp+30h]; xor eax, eax
+            || memcmp((byte*)code, new byte[] { 0x55, 0x57, 0x48, 0x83, 0xEC, 0x28, 0x48, 0x8D, 0x6C, 0x24, 0x30, 0x33, 0xC0 });
     }
 
     static void AssertIsConstantTrue(delegate*<bool> code)

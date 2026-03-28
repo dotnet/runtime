@@ -365,37 +365,4 @@ bool CatchHardwareExceptionHolder::IsEnabled()
     return pThread ? pThread->IsHardwareExceptionsEnabled() : false;
 }
 
-/*++
-
-  NativeExceptionHolderBase implementation
-
---*/
-
-static thread_local NativeExceptionHolderBase *t_nativeExceptionHolderHead = nullptr;
-
-extern "C"
-NativeExceptionHolderBase **
-PAL_GetNativeExceptionHolderHead()
-{
-    return &t_nativeExceptionHolderHead;
-}
-
-NativeExceptionHolderBase *
-NativeExceptionHolderBase::FindNextHolder(NativeExceptionHolderBase *currentHolder, PVOID stackLowAddress, PVOID stackHighAddress)
-{
-    NativeExceptionHolderBase *holder = (currentHolder == nullptr) ? t_nativeExceptionHolderHead : currentHolder->m_next;
-
-    while (holder != nullptr)
-    {
-        if (((void *)holder >= stackLowAddress) && ((void *)holder < stackHighAddress))
-        {
-            return holder;
-        }
-        // Get next holder
-        holder = holder->m_next;
-    }
-
-    return nullptr;
-}
-
 #include "seh-unwind.cpp"

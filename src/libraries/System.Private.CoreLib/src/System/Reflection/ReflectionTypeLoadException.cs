@@ -20,8 +20,8 @@ namespace System.Reflection
         public ReflectionTypeLoadException(Type?[]? classes, Exception?[]? exceptions, string? message)
             : base(message)
         {
-            Types = classes ?? Type.EmptyTypes;
-            LoaderExceptions = exceptions ?? Array.Empty<Exception>();
+            Types = classes ?? [];
+            LoaderExceptions = exceptions ?? [];
             HResult = HResults.COR_E_REFLECTIONTYPELOAD;
         }
 
@@ -29,8 +29,8 @@ namespace System.Reflection
         private ReflectionTypeLoadException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            Types = Type.EmptyTypes;
-            LoaderExceptions = (Exception?[]?)info.GetValue("Exceptions", typeof(Exception[])) ?? Array.Empty<Exception?>();
+            Types = [];
+            LoaderExceptions = (Exception?[]?)info.GetValue("Exceptions", typeof(Exception[])) ?? [];
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]

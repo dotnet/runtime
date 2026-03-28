@@ -136,7 +136,7 @@ namespace System.Text.Json.Serialization.Metadata
             out T? value)
             where TReadBufferState : struct, IReadBufferState<TReadBufferState, TStream>
         {
-            Utf8JsonReader reader = bufferState.GetReader(jsonReaderState);
+            bufferState.GetReader(jsonReaderState, out Utf8JsonReader reader);
 
             try
             {

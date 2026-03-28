@@ -12,13 +12,18 @@ internal sealed class RealCodeHeader : IData<RealCodeHeader>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RealCodeHeader);
         MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
+        DebugInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(DebugInfo)].Offset);
         GCInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(GCInfo)].Offset);
         NumUnwindInfos = target.Read<uint>(address + (ulong)type.Fields[nameof(NumUnwindInfos)].Offset);
         UnwindInfos = address + (ulong)type.Fields[nameof(UnwindInfos)].Offset;
+        TargetPointer jitEHInfoAddr = target.ReadPointer(address + (ulong)type.Fields[nameof(JitEHInfo)].Offset);
+        JitEHInfo = jitEHInfoAddr != TargetPointer.Null ? target.ProcessedData.GetOrAdd<EEILException>(jitEHInfoAddr) : null;
     }
 
     public TargetPointer MethodDesc { get; init; }
+    public TargetPointer DebugInfo { get; init; }
     public TargetPointer GCInfo { get; init; }
     public uint NumUnwindInfos { get; init; }
     public TargetPointer UnwindInfos { get; init; }
+    public EEILException? JitEHInfo { get; init; }
 }

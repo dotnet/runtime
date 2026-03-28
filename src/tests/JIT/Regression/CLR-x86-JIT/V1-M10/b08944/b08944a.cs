@@ -6,7 +6,7 @@ using Xunit;
 //extern("msvcrt.dll:printf") int printf(const char *fmt, ...);
 //unsigned int _exception_code();
 
-namespace X
+namespace b08944a
 {
     //@BEGINRENAME; Verify this renames
     //@ENDRENAME; Verify this renames

@@ -4,6 +4,7 @@
 // A --> B --> C --> D --> E --> A
 // We should detect the deadlock and allow one thread to proceed (and see uninitialized state).
 /*
+using TestLibrary;
 A --> B --> C --> D --> E --> A
 4 threads:
 Thread T1 starts initialization at A
@@ -26,6 +27,7 @@ using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 public struct A
 {
 	public static int i;
@@ -150,7 +152,8 @@ public class Test_CircularCctorFourThreads
 	}
 
 
-	[Fact]
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
 	public static int TestEntryPoint()
 	{
 

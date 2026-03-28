@@ -280,7 +280,7 @@ public:
 private:
     FORCEINLINE uint64_t BIT(ULONG ixBit)
     {   _ASSERTE(ixBit < (sizeof(int64_t)*CHAR_BIT));
-        return UI64(1) << ixBit; }
+        return 1ULL << ixBit; }
 
 };
 

@@ -10,6 +10,14 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/gen/">
+    <Project Path="../System.Private.CoreLib/gen/EventSourceGenerator.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
     <Project Path="../System.Private.CoreLib/gen/System.Private.CoreLib.Generators.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -444,6 +452,22 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
+    <Project Path="../System.Security.Cryptography.Pkcs/ref/System.Security.Cryptography.Pkcs.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="../System.Security.Cryptography.Xml/ref/System.Security.Cryptography.Xml.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
     <Project Path="../System.Security.Cryptography/ref/System.Security.Cryptography.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -558,6 +582,14 @@
       <Platform Solution="*|x86" Project="x86" />
     </Project>
     <Project Path="../Microsoft.Bcl.AsyncInterfaces/src/Microsoft.Bcl.AsyncInterfaces.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="../Microsoft.Bcl.Cryptography/src/Microsoft.Bcl.Cryptography.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -965,6 +997,22 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
+    <Project Path="../System.Security.Cryptography.Pkcs/src/System.Security.Cryptography.Pkcs.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="../System.Security.Cryptography.Xml/src/System.Security.Cryptography.Xml.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
     <Project Path="../System.Security.Cryptography/src/System.Security.Cryptography.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -1080,6 +1128,14 @@
       <Build Solution="Checked|x86" Project="false" />
     </Project>
     <Project Path="../Microsoft.XmlSerializer.Generator/tests/SerializableAssembly.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="tests/Canonicalization/System.Runtime.Serialization.Xml.Canonicalization.Tests.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />

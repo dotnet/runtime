@@ -145,7 +145,6 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   The value identified by this blob format is &quot;PQDSAPUBLICBLOB&quot;.
         /// </remarks>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngKeyBlobFormat PQDsaPublicBlob =>
             field ??= new CngKeyBlobFormat("PQDSAPUBLICBLOB"); // BCRYPT_PQDSA_PUBLIC_BLOB
 
@@ -160,7 +159,6 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   The value identified by this blob format is &quot;PQDSAPRIVATEBLOB&quot;.
         /// </remarks>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngKeyBlobFormat PQDsaPrivateBlob =>
             field ??= new CngKeyBlobFormat("PQDSAPRIVATEBLOB"); // BCRYPT_PQDSA_PRIVATE_BLOB
 
@@ -175,7 +173,6 @@ namespace System.Security.Cryptography
         /// <remarks>
         ///   The value identified by this blob format is &quot;PQDSAPRIVATESEEDBLOB&quot;.
         /// </remarks>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngKeyBlobFormat PQDsaPrivateSeedBlob =>
             field ??= new CngKeyBlobFormat("PQDSAPRIVATESEEDBLOB"); // BCRYPT_PQDSA_PRIVATE_SEED_BLOB
 

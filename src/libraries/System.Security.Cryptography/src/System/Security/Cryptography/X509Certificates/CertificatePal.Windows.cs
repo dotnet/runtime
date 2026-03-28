@@ -50,6 +50,8 @@ namespace System.Security.Cryptography.X509Certificates
             get { return _certContext.DangerousGetHandle(); }
         }
 
+        internal SafeCertContextHandle? SafeHandle => _certContext;
+
         public string Issuer => GetIssuerOrSubject(issuer: true, reverse: true);
 
         public string Subject => GetIssuerOrSubject(issuer: false, reverse: true);

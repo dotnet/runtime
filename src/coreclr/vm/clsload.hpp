@@ -533,6 +533,13 @@ private:
 
 
 public:
+
+    CrstBase *GetAvailableTypesLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_AvailableTypesLock;
+    }
+
     //#LoaderModule
     // LoaderModule determines in which module an item gets placed.
     // For everything except parameterized types and methods the choice is easy.
@@ -820,7 +827,6 @@ public:
         Assembly*               pTargetAssembly,
         DWORD                   dwMemberAttrs,
         MethodDesc*             pOptionalTargetMethod,
-        FieldDesc*              pOptionalTargetField,
         const AccessCheckOptions &  accessCheckOptions = *AccessCheckOptions::s_pNormalAccessChecks);
 
 private:
@@ -840,7 +846,6 @@ private:
         Assembly*               pTargetAssembly,
         DWORD                   dwMemberAttrs,
         MethodDesc*             pOptionalTargetMethod,
-        FieldDesc*              pOptionalTargetField,
         const AccessCheckOptions &  accessCheckOptions = *AccessCheckOptions::s_pNormalAccessChecks);
 
 
@@ -908,12 +913,14 @@ private:
     // Publish the type in the loader's tables
     static TypeHandle PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd);
 
+public:
     // Notify profiler and debugger that a type load has completed
     // Also update perf counters
     static void NotifyLoad(TypeHandle typeHnd);
     // Notify profiler that a MethodTable is being unloaded
     static void NotifyUnload(MethodTable* pMT, bool unloadStarted);
 
+private:
     // Phase CLASS_LOAD_EXACTPARENTS of class loading
     // Load exact parents and interfaces and dependent structures (generics dictionary, vtable fixes)
     static void LoadExactParents(MethodTable* pMT);
@@ -997,6 +1004,8 @@ private:
                                              TypeHandle typeHnd,
                                              ClassLoadLevel targetLevel);
 #endif //!DACCESS_COMPILE
+public:
+    static bool EligibleForSpecialMarkerTypeUsage(Instantiation inst, MethodTable* pOwnerMT);
 
 };  // class ClassLoader
 

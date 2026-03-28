@@ -68,6 +68,34 @@ namespace System.IO.Tests
                 => encoding.GetPreamble().Concat(data).ToArray();
         }
 
+        [Fact]
+        public static void NegativeBufferSize_ThrowsArgumentOutOfRangeException()
+        {
+            var ms2 = new MemoryStream();
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamReader(ms2, bufferSize: -2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamReader(ms2, bufferSize: 0));
+
+            ms2.Dispose();
+        }
+
+        [Fact]
+        public static void NegativeOneBufferSize_ShouldNotThrowException()
+        {
+            var ms2 = new MemoryStream();
+            try
+            {
+                using (var sr = new StreamReader(ms2,  bufferSize: -1))
+                {
+                    Assert.NotNull(sr);
+                }
+            }
+            finally
+            {
+                ms2.Dispose();
+            }
+        }
+
         [Theory]
         [MemberData(nameof(EncodingsWithEncodedDataWithPreamble))]
         public static void CreationFromMemoryStreamWithEncodingTrueDetectsCorrectEncodingWhenPreambleAvailable(Encoding expectedEncoding, byte[] encodedData, string expectedOutput)

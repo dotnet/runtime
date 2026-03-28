@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="struct02_seq.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

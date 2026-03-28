@@ -37,8 +37,8 @@ SimplerHashTable<Key,KeyFuncs,Value,Behavior>::SimplerHashTable(IAllocator* allo
     assert(m_alloc != nullptr);
 
 #ifndef __GNUC__ // these crash GCC
-    static_assert_no_msg(Behavior::s_growth_factor_numerator > Behavior::s_growth_factor_denominator);
-    static_assert_no_msg(Behavior::s_density_factor_numerator < Behavior::s_density_factor_denominator);
+    static_assert(Behavior::s_growth_factor_numerator > Behavior::s_growth_factor_denominator);
+    static_assert(Behavior::s_density_factor_numerator < Behavior::s_density_factor_denominator);
 #endif
 }
 

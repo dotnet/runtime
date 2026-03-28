@@ -1,2 +1,4 @@
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
 -tl:false
+# disable line wrapping so that C&P from the console works well
+-clp:ForceNoAlign

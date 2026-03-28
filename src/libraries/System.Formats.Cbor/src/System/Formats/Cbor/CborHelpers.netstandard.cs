@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace System.Formats.Cbor
 {
@@ -17,73 +16,6 @@ namespace System.Formats.Cbor
         private const long UnixEpochTicks = 719162L /*Number of days from 1/1/0001 to 12/31/1969*/ * 10000 * 1000 * 60 * 60 * 24; /* Ticks per day.*/
 
         public static readonly DateTimeOffset UnixEpoch = new DateTimeOffset(UnixEpochTicks, TimeSpan.Zero);
-
-        public static unsafe int GetBytes(Encoding encoding, ReadOnlySpan<char> source, Span<byte> destination)
-        {
-            if (source.IsEmpty || destination.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (char* charPtr = source)
-            fixed (byte* bytePtr = destination)
-            {
-                return encoding.GetBytes(charPtr, source.Length, bytePtr, destination.Length);
-            }
-        }
-
-        public static unsafe int GetByteCount(Encoding encoding, ReadOnlySpan<char> chars)
-        {
-            if (chars.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (char* charPtr = chars)
-            {
-                return encoding.GetByteCount(charPtr, chars.Length);
-            }
-        }
-
-        public static unsafe int GetChars(Encoding encoding, ReadOnlySpan<byte> source, Span<char> destination)
-        {
-            if (source.IsEmpty || destination.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (byte* bytePtr = source)
-            fixed (char* charPtr = destination)
-            {
-                return encoding.GetChars(bytePtr, source.Length, charPtr, destination.Length);
-            }
-        }
-
-        public static unsafe int GetCharCount(Encoding encoding, ReadOnlySpan<byte> source)
-        {
-            if (source.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (byte* bytePtr = source)
-            {
-                return encoding.GetCharCount(bytePtr, source.Length);
-            }
-        }
-
-        public static unsafe string GetString(Encoding encoding, ReadOnlySpan<byte> bytes)
-        {
-            if (bytes.IsEmpty)
-            {
-                return string.Empty;
-            }
-
-            fixed (byte* bytePtr = bytes)
-            {
-                return encoding.GetString(bytePtr, bytes.Length);
-            }
-        }
 
         public static BigInteger CreateBigIntegerFromUnsignedBigEndianBytes(byte[] bigEndianBytes)
         {

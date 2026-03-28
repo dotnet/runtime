@@ -139,7 +139,7 @@ namespace System.Xml.Serialization
         private bool _isReflectionBasedSerializer;
 
         private static readonly TempAssemblyCache s_cache = new TempAssemblyCache();
-        private static volatile XmlSerializerNamespaces? s_defaultNamespaces;
+        private static XmlSerializerNamespaces? s_defaultNamespaces;
         private static readonly XmlWriterSettings s_writerSettings = new XmlWriterSettings() { Encoding = new UTF8Encoding(false), Indent = true };
 
         private static XmlSerializerNamespaces DefaultNamespaces
@@ -926,6 +926,14 @@ namespace System.Xml.Serialization
                     {
                         writer.Write_dateTimeOffset(o);
                     }
+                    else if (_primitiveType == typeof(DateOnly))
+                    {
+                        writer.Write_dateOnly(o);
+                    }
+                    else if (_primitiveType == typeof(TimeOnly))
+                    {
+                        writer.Write_timeOnly(o);
+                    }
                     else
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlUnxpectedType, _primitiveType!.FullName));
@@ -1007,6 +1015,14 @@ namespace System.Xml.Serialization
                     else if (_primitiveType == typeof(DateTimeOffset))
                     {
                         o = reader.Read_dateTimeOffset();
+                    }
+                    else if (_primitiveType == typeof(DateOnly))
+                    {
+                        o = reader.Read_dateOnly();
+                    }
+                    else if (_primitiveType == typeof(TimeOnly))
+                    {
+                        o = reader.Read_timeOnly();
                     }
                     else
                     {

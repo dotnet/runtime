@@ -29,8 +29,6 @@
 #endif
 #endif
 
-#include "static_assert.h"
-
 #include <type_traits>
 
 #ifdef FEATURE_PAL
@@ -52,8 +50,8 @@ template <typename Dst, typename Src>
 inline bool FitsIn(Src val)
 {
 #ifdef _MSC_VER
-    static_assert_no_msg(!__is_class(Dst));
-    static_assert_no_msg(!__is_class(Src));
+    static_assert(!__is_class(Dst));
+    static_assert(!__is_class(Src));
 #endif
 
     if (std::is_signed<Src>::value == std::is_signed<Dst>::value)

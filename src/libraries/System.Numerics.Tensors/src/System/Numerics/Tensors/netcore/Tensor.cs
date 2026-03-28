@@ -199,15 +199,21 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> ConcatenateOnDimension<T>(int dimension, scoped ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination)
         {
             if (tensors.Length < 2)
+            {
                 ThrowHelper.ThrowArgument_ConcatenateTooFewTensors();
+            }
 
             if (dimension < -1 || dimension > tensors[0].Rank)
+            {
                 ThrowHelper.ThrowArgument_InvalidDimension();
+            }
 
             // Calculate total space needed.
             nint totalLength = 0;
             for (int i = 0; i < tensors.Length; i++)
+            {
                 totalLength += tensors[i].FlattenedLength;
+            }
 
             // If axis != -1, make sure all dimensions except the one to concatenate on match.
             if (dimension != -1)
@@ -217,13 +223,17 @@ namespace System.Numerics.Tensors
                 for (int i = 1; i < tensors.Length; i++)
                 {
                     if (rank != tensors[i].Rank)
+                    {
                         ThrowHelper.ThrowArgument_InvalidConcatenateShape();
+                    }
                     for (int j = 0; j < rank; j++)
                     {
                         if (j != dimension)
                         {
                             if (tensors[0].Lengths[j] != tensors[i].Lengths[j])
+                            {
                                 ThrowHelper.ThrowArgument_InvalidConcatenateShape();
+                            }
                         }
                     }
                     sumOfAxis += tensors[i].Lengths[dimension];
@@ -235,10 +245,39 @@ namespace System.Numerics.Tensors
                 lengths[dimension] = sumOfAxis;
 
                 if (!TensorShape.AreLengthsTheSame(destination.Lengths, lengths))
+                {
                     ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
+                }
             }
-            Span<T> dstSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)totalLength);
 
+            if (!destination.IsDense)
+            {
+                // For non-dense destinations, concatenate into a temporary dense buffer,
+                // then copy element-by-element to respect the destination's stride layout.
+                T[] tempBuffer = ArrayPool<T>.Shared.Rent((int)totalLength);
+                try
+                {
+                    Span<T> tempSpan = tempBuffer.AsSpan(0, (int)totalLength);
+                    ConcatenateOnDimensionToSpan(dimension, tensors, destination, tempSpan);
+                    ReadOnlyTensorSpan<T> tempTensor = new ReadOnlyTensorSpan<T>(tempBuffer, 0, destination.Lengths, []);
+                    TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(tempTensor, destination);
+                }
+                finally
+                {
+                    ArrayPool<T>.Shared.Return(tempBuffer);
+                }
+            }
+            else
+            {
+                Span<T> dstSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+                ConcatenateOnDimensionToSpan(dimension, tensors, destination, dstSpan);
+            }
+
+            return ref destination;
+        }
+
+        private static void ConcatenateOnDimensionToSpan<T>(int dimension, scoped ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination, Span<T> dstSpan)
+        {
             if (dimension is 0 or -1)
             {
                 for (int i = 0; i < tensors.Length; i++)
@@ -273,7 +312,6 @@ namespace System.Numerics.Tensors
                 }
                 rentedBuffer.Dispose();
             }
-            return ref destination;
         }
 
         private static nint CalculateCopyLength(ReadOnlySpan<nint> lengths, int startingAxis)
@@ -347,14 +385,29 @@ namespace System.Numerics.Tensors
         /// <returns></returns>
         public static ref readonly TensorSpan<T> FillGaussianNormalDistribution<T>(in TensorSpan<T> destination, Random? random = null) where T : IFloatingPoint<T>
         {
-            Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
             random ??= Random.Shared;
 
-            for (int i = 0; i < span.Length; i++)
+            if (destination.IsDense)
             {
-                double u1 = 1.0 - random.NextDouble();
-                double u2 = 1.0 - random.NextDouble();
-                span[i] = T.CreateChecked(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2));
+                Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+
+                for (int i = 0; i < span.Length; i++)
+                {
+                    double u1 = 1.0 - random.NextDouble();
+                    double u2 = 1.0 - random.NextDouble();
+                    span[i] = T.CreateChecked(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2));
+                }
+            }
+            else
+            {
+                TensorSpan<T>.Enumerator enumerator = destination.GetEnumerator();
+
+                while (enumerator.MoveNext())
+                {
+                    double u1 = 1.0 - random.NextDouble();
+                    double u2 = 1.0 - random.NextDouble();
+                    enumerator.Current = T.CreateChecked(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2));
+                }
             }
 
             return ref destination;
@@ -370,10 +423,25 @@ namespace System.Numerics.Tensors
         /// <returns></returns>
         public static ref readonly TensorSpan<T> FillUniformDistribution<T>(in TensorSpan<T> destination, Random? random = null) where T : IFloatingPoint<T>
         {
-            Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
             random ??= Random.Shared;
-            for (int i = 0; i < span.Length; i++)
-                span[i] = T.CreateChecked(random.NextDouble());
+
+            if (destination.IsDense)
+            {
+                Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+                for (int i = 0; i < span.Length; i++)
+                {
+                    span[i] = T.CreateChecked(random.NextDouble());
+                }
+            }
+            else
+            {
+                TensorSpan<T>.Enumerator enumerator = destination.GetEnumerator();
+
+                while (enumerator.MoveNext())
+                {
+                    enumerator.Current = T.CreateChecked(random.NextDouble());
+                }
+            }
 
             return ref destination;
         }
@@ -1382,7 +1450,7 @@ namespace System.Numerics.Tensors
             else
                 strides = [];
 
-            return new Tensor<T>(tensor._values, tensor._start, lengths, strides);
+            return new Tensor<T>(tensor._values, tensor._start, newLengths, strides);
         }
 
         /// <summary>
@@ -1549,12 +1617,33 @@ namespace System.Numerics.Tensors
             nint newSize = TensorPrimitives.Product(lengths);
             T[] values = tensor.IsPinned ? GC.AllocateArray<T>((int)newSize) : (new T[newSize]);
             Tensor<T> output = Create(values, lengths, []);
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref tensor.AsTensorSpan()._reference, tensor._start), tensor._values.Length - tensor._start);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
-            if (newSize >= span.Length)
-                span.CopyTo(ospan);
+
+            if (tensor.IsDense)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref tensor.AsTensorSpan()._reference, tensor._start), tensor._values.Length - tensor._start);
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
+                if (newSize >= span.Length)
+                {
+                    span.CopyTo(ospan);
+                }
+                else
+                {
+                    span.Slice(0, ospan.Length).CopyTo(ospan);
+                }
+            }
             else
-                span.Slice(0, ospan.Length).CopyTo(ospan);
+            {
+                nint copyLength = Math.Min(tensor.FlattenedLength, newSize);
+                ReadOnlyTensorSpan<T>.Enumerator enumerator = tensor.AsReadOnlyTensorSpan().GetEnumerator();
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
+
+                for (nint i = 0; i < copyLength; i++)
+                {
+                    bool moved = enumerator.MoveNext();
+                    Debug.Assert(moved);
+                    ospan[(int)i] = enumerator.Current;
+                }
+            }
 
             return output;
         }
@@ -1589,12 +1678,33 @@ namespace System.Numerics.Tensors
         /// <param name="destination">Destination <see cref="TensorSpan{T}"/> with the desired new shape.</param>
         public static void ResizeTo<T>(scoped in ReadOnlyTensorSpan<T> tensor, in TensorSpan<T> destination)
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor._shape.LinearLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-            if (ospan.Length >= span.Length)
-                span.CopyTo(ospan);
+            if (tensor.IsDense && destination.IsDense)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor.FlattenedLength);
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+                if (ospan.Length >= span.Length)
+                {
+                    span.CopyTo(ospan);
+                }
+                else
+                {
+                    span.Slice(0, ospan.Length).CopyTo(ospan);
+                }
+            }
             else
-                span.Slice(0, ospan.Length).CopyTo(ospan);
+            {
+                nint copyLength = Math.Min(tensor.FlattenedLength, destination.FlattenedLength);
+                ReadOnlyTensorSpan<T>.Enumerator srcEnumerator = tensor.GetEnumerator();
+                TensorSpan<T>.Enumerator dstEnumerator = destination.GetEnumerator();
+
+                for (nint i = 0; i < copyLength; i++)
+                {
+                    bool srcMoved = srcEnumerator.MoveNext();
+                    bool dstMoved = dstEnumerator.MoveNext();
+                    Debug.Assert(srcMoved && dstMoved);
+                    dstEnumerator.Current = srcEnumerator.Current;
+                }
+            }
         }
         #endregion
 
@@ -1684,10 +1794,7 @@ namespace System.Numerics.Tensors
         public static bool SequenceEqual<T>(this scoped in TensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<T> other)
             where T : IEquatable<T>?
         {
-            return tensor.FlattenedLength == other.FlattenedLength
-                && tensor._shape.LinearLength == other._shape.LinearLength
-                && tensor.Lengths.SequenceEqual(other.Lengths)
-                && MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor._shape.LinearLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other._shape.LinearLength));
+            return ((ReadOnlyTensorSpan<T>)tensor).SequenceEqual(other);
         }
 
         /// <summary>
@@ -1696,10 +1803,32 @@ namespace System.Numerics.Tensors
         public static bool SequenceEqual<T>(this scoped in ReadOnlyTensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<T> other)
             where T : IEquatable<T>?
         {
-            return tensor.FlattenedLength == other.FlattenedLength
-                && tensor._shape.LinearLength == other._shape.LinearLength
-                && tensor.Lengths.SequenceEqual(other.Lengths)
-                && MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor._shape.LinearLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other._shape.LinearLength));
+            if (tensor.FlattenedLength != other.FlattenedLength
+                || !tensor.Lengths.SequenceEqual(other.Lengths))
+            {
+                return false;
+            }
+
+            if (tensor.IsDense && other.IsDense)
+            {
+                return MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor.FlattenedLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other.FlattenedLength));
+            }
+
+            ReadOnlyTensorSpan<T>.Enumerator enumerator1 = tensor.GetEnumerator();
+            ReadOnlyTensorSpan<T>.Enumerator enumerator2 = other.GetEnumerator();
+
+            while (enumerator1.MoveNext())
+            {
+                bool moved = enumerator2.MoveNext();
+                Debug.Assert(moved);
+
+                if (!(enumerator1.Current?.Equals(enumerator2.Current) ?? (object?)enumerator2.Current is null))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
         #endregion
 
@@ -2064,98 +2193,147 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region ToString
-        /// <summary>
-        /// Creates a <see cref="string"/> representation of the <see cref="TensorSpan{T}"/>."/>
-        /// </summary>
-        /// <param name="tensor">The <see cref="TensorSpan{T}"/> you want to represent as a string.</param>
-        /// <param name="maximumLengths">Maximum Length of each dimension</param>
-        /// <returns>A <see cref="string"/> representation of the <paramref name="tensor"/></returns>
-        public static string ToString<T>(this in TensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths)
-            => tensor.AsReadOnlyTensorSpan().ToString(maximumLengths);
-
-        /// <summary>
-        /// Creates a <see cref="string"/> representation of the <see cref="ReadOnlyTensorSpan{T}"/>."/>
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="tensor">The <see cref="ReadOnlyTensorSpan{T}"/> you want to represent as a string.</param>
-        /// <param name="maximumLengths">Maximum Length of each dimension</param>
-        public static string ToString<T>(this in ReadOnlyTensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths)
+        internal static string ToString<T>(in ReadOnlyTensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths, string typeName)
         {
-            if (maximumLengths.Length != tensor.Rank)
+            if (!maximumLengths.IsEmpty)
             {
-                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(tensor));
+                ArgumentOutOfRangeException.ThrowIfNotEqual(maximumLengths.Length, tensor.Rank);
             }
 
-            StringBuilder sb = new();
-            ToString(in tensor, maximumLengths, sb);
-            return sb.ToString();
-        }
+            var sb = new StringBuilder(typeName);
 
-        internal static void ToString<T>(in ReadOnlyTensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths, StringBuilder sb, int indentLevel = 0)
-        {
-            Debug.Assert(maximumLengths.Length != tensor.Rank);
+            sb.Append('<');
+            sb.Append(typeof(T).Name);
+            sb.Append('>');
 
-            sb.Append(' ', indentLevel * 2);
             sb.Append('[');
+            sb.AppendJoin(", ", tensor.Lengths);
+            sb.Append(']');
 
-            if (tensor.Rank != 0)
+            if (!maximumLengths.IsEmpty)
             {
-                nint length = nint.Max(tensor.Lengths[0], maximumLengths[0]);
+                sb.AppendLine(" {");
 
-                if (tensor.Rank != 1)
+                if (tensor.Rank == 1)
                 {
-                    string separator = string.Empty;
-
-                    for (nint i = 0; i < length; i++)
-                    {
-                        sb.AppendLine(separator);
-
-                        TensorShape tmpShape = TensorShape.Create(tensor.Lengths[1..], tensor.Strides[1..], tensor.IsPinned);
-                        ReadOnlyTensorSpan<T> tmpTensor = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref tensor._reference, i * tensor.Strides[0]), tmpShape);
-                        ToString(tmpTensor, maximumLengths[1..], sb, indentLevel + 1);
-
-                        separator = ",";
-                    }
-
-                    if (length != tensor.Lengths[0])
-                    {
-                        sb.AppendLine(separator);
-                        sb.Append(' ', indentLevel * 2);
-                        sb.AppendLine("...");
-                    }
+                    nint length = nint.Min(tensor.Lengths[0], maximumLengths[0]);
+                    ToString(tensor, length, sb, indentLevel: 1);
+                    sb.AppendLine();
                 }
                 else
                 {
-                    string separator = " ";
+                    ToString(tensor, maximumLengths, sb);
+                }
 
-                    for (nint i = 0; i < length; i++)
-                    {
-                        sb.Append(separator);
-                        sb.Append(Unsafe.Add(ref tensor._reference, i));
-                        separator = ", ";
-                    }
+                sb.Append('}');
+            }
+            return sb.ToString();
+        }
 
-                    if (length != tensor.Lengths[0])
-                    {
-                        sb.Append(separator);
-                        sb.Append("...");
-                    }
+        private static void ToString<T>(in ReadOnlyTensorSpan<T> tensor, ReadOnlySpan<nint> maximumLengths, StringBuilder sb, int indentLevel = 0)
+        {
+            nint length = nint.Min(tensor.Lengths[0], maximumLengths[0]);
 
-                    sb.Append(separator);
+            if (indentLevel != 0)
+            {
+                if (tensor.Rank != 1)
+                {
+                    sb.Append(' ', indentLevel * 2);
+                    sb.AppendLine("[");
+                }
+                else
+                {
+                    ToString(tensor, length, sb, indentLevel);
+                    return;
                 }
             }
+
+            if (length != 0)
+            {
+                TensorShape tmpShape = TensorShape.Create(tensor.Lengths[1..], tensor.Strides[1..], tensor.IsPinned);
+
+                ReadOnlyTensorSpan<T> tmpTensor = new ReadOnlyTensorSpan<T>(ref tensor._reference, tmpShape);
+                ToString(tmpTensor, maximumLengths[1..], sb, indentLevel + 1);
+
+                for (nint i = 1; i < length; i++)
+                {
+                    sb.AppendLine(",");
+                    tmpTensor = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref tensor._reference, i * tensor.Strides[0]), tmpShape);
+                    ToString(tmpTensor, maximumLengths[1..], sb, indentLevel + 1);
+                }
+
+                if (length != tensor.Lengths[0])
+                {
+                    sb.AppendLine(",");
+                    sb.Append(' ', (indentLevel + 1) * 2);
+                    sb.Append("..");
+                }
+                sb.AppendLine();
+            }
+            else
+            {
+                sb.Append(' ', (indentLevel + 1) * 2);
+                sb.AppendLine("..");
+            }
+            sb.Append(' ', indentLevel * 2);
+
+            if (indentLevel != 0)
+            {
+                sb.Append(']');
+            }
+        }
+
+        private static void ToString<T>(in ReadOnlyTensorSpan<T> tensor, nint length, StringBuilder sb, int indentLevel)
+        {
+            sb.Append(' ', indentLevel * 2);
+            sb.Append('[');
+
+            if (length != 0)
+            {
+                sb.Append(tensor._reference);
+
+                for (nint i = 1; i < length; i++)
+                {
+                    sb.Append(", ");
+                    sb.Append(Unsafe.Add(ref tensor._reference, i));
+                }
+
+                if (length != tensor.Lengths[0])
+                {
+                    sb.Append(", ..");
+                }
+            }
+            else
+            {
+                sb.Append("..");
+            }
+
             sb.Append(']');
         }
 
-        /// <summary>
-        /// Creates a <see cref="string"/> representation of the <see cref="Tensor{T}"/>."/>
-        /// </summary>
-        /// <param name="tensor">The <see cref="Span{T}"/> you want to represent as a string.</param>
-        /// <param name="maximumLengths">Maximum Length of each dimension</param>
-        /// <returns>A <see cref="string"/> representation of the <paramref name="tensor"/></returns>
-        public static string ToString<T>(this Tensor<T> tensor, ReadOnlySpan<nint> maximumLengths)
-            => tensor.AsReadOnlyTensorSpan().ToString(maximumLengths);
+        private static StringBuilder AppendJoin<T>(this StringBuilder sb, string separator, ReadOnlySpan<T> values)
+        {
+            if (values.IsEmpty)
+            {
+                return sb;
+            }
 
+            if (values[0] is not null)
+            {
+                sb.Append(values[0]);
+            }
+
+            for (int i = 1; i < values.Length; i++)
+            {
+                sb.Append(separator);
+
+                if (values[i] is not null)
+                {
+                    sb.Append(values[i]);
+                }
+            }
+            return sb;
+        }
         #endregion
 
         #region Transpose
@@ -2449,62 +2627,6 @@ namespace System.Numerics.Tensors
         {
             TensorOperation.ValidateCompatibility(x, destination);
             TensorOperation.Invoke<TensorOperation.AcosPi<T>, T, T>(x, destination);
-            return ref destination;
-        }
-        #endregion
-
-        #region Add
-        /// <summary>
-        /// Adds each element of <paramref name="x"/> to each element of <paramref name="y"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        /// <param name="y">The second <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        public static Tensor<T> Add<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
-            TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Adds <paramref name="y"/> to each element of <paramref name="x"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        /// <param name="y">The <typeparamref name="T"/> to add to each element of <paramref name="x"/>.</param>
-        public static Tensor<T> Add<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Adds each element of <paramref name="x"/> to each element of <paramref name="y"/> and returns a new <see cref="ReadOnlyTensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        /// <param name="y">The second <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Add<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, destination);
-            TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-
-        /// <summary>
-        /// Adds <paramref name="y"/> to each element of <paramref name="x"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        /// <param name="y">The <typeparamref name="T"/> to add to each element of <paramref name="x"/>.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Add<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.Add<T>, T, T>(x, y, destination);
             return ref destination;
         }
         #endregion
@@ -2851,118 +2973,6 @@ namespace System.Numerics.Tensors
             T flattenedLength = T.CreateChecked(x.FlattenedLength);
             T sum = Sum(x);
             return sum / flattenedLength;
-        }
-        #endregion
-
-        #region BitwiseAnd
-        /// <summary>
-        /// Computes the element-wise bitwise and of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static Tensor<T> BitwiseAnd<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Computes the element-wise bitwise and of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> BitwiseAnd<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, destination);
-            TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-
-        /// <summary>
-        /// Computes the element-wise bitwise and of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The second value.</param>
-        public static Tensor<T> BitwiseAnd<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Computes the element-wise bitwise and of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The second value.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> BitwiseAnd<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.BitwiseAnd<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-        #endregion
-
-        #region BitwiseOr
-        /// <summary>
-        /// Computes the element-wise bitwise of of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static Tensor<T> BitwiseOr<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.BitwiseOr<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Computes the element-wise bitwise of of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> BitwiseOr<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.BitwiseOr<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-
-        /// <summary>
-        /// Computes the element-wise bitwise or of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The second value.</param>
-        public static Tensor<T> BitwiseOr<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.BitwiseOr<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Computes the element-wise bitwise or of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The second value.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> BitwiseOr<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.BitwiseOr<T>, T, T>(x, y, destination);
-            return ref destination;
         }
         #endregion
 
@@ -3329,91 +3339,6 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
-        #region Divide
-        /// <summary>
-        /// Divides each element of <paramref name="x"/> by <paramref name="y"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">Input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The divisor</param>
-        public static Tensor<T> Divide<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IDivisionOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Divides <paramref name="x"/> by each element of <paramref name="y"/> and returns a new <see cref="Tensor{T}"/> with the result."/>
-        /// </summary>
-        /// <param name="x">The value to be divided.</param>
-        /// <param name="y">The <see cref="ReadOnlyTensorSpan{T}"/> divisor.</param>
-        public static Tensor<T> Divide<T>(T x, in ReadOnlyTensorSpan<T> y)
-            where T : IDivisionOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(y.Lengths);
-            TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Divides each element of <paramref name="x"/> by its corresponding element in <paramref name="y"/> and returns
-        /// a new <see cref="ReadOnlyTensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> to be divided.</param>
-        /// <param name="y">The <see cref="ReadOnlyTensorSpan{T}"/> divisor.</param>
-        public static Tensor<T> Divide<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IDivisionOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
-            TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Divides each element of <paramref name="x"/> by <paramref name="y"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">Input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The divisor</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Divide<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
-            where T : IDivisionOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-
-        /// <summary>
-        /// Divides <paramref name="x"/> by each element of <paramref name="y"/> and returns a new <see cref="TensorSpan{T}"/> with the result."/>
-        /// </summary>
-        /// <param name="x">The value to be divided.</param>
-        /// <param name="y">The <see cref="ReadOnlyTensorSpan{T}"/> divisor.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Divide<T>(T x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IDivisionOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(y, destination);
-            TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-
-        /// <summary>
-        /// Divides each element of <paramref name="x"/> by its corresponding element in <paramref name="y"/> and returns
-        /// a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> to be divided.</param>
-        /// <param name="y">The <see cref="ReadOnlyTensorSpan{T}"/> divisor.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Divide<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IDivisionOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, destination);
-            TensorOperation.Invoke<TensorOperation.Divide<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-        #endregion
-
         #region Dot
         /// <summary>
         /// Computes the dot product of two tensors containing numbers.
@@ -3732,8 +3657,28 @@ namespace System.Numerics.Tensors
         public static nint IndexOfMax<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            return TensorPrimitives.IndexOfMax(span);
+            if (x.IsDense)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x.FlattenedLength);
+                return TensorPrimitives.IndexOfMax(span);
+            }
+
+            return IndexOfMaxFallback(x);
+        }
+
+        private static nint IndexOfMaxFallback<T>(scoped in ReadOnlyTensorSpan<T> x)
+            where T : INumber<T>
+        {
+            T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
+            try
+            {
+                x.FlattenTo(flat);
+                return TensorPrimitives.IndexOfMax<T>(flat.AsSpan(0, (int)x.FlattenedLength));
+            }
+            finally
+            {
+                ArrayPool<T>.Shared.Return(flat);
+            }
         }
 
         #endregion
@@ -3744,8 +3689,28 @@ namespace System.Numerics.Tensors
         public static nint IndexOfMaxMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            return TensorPrimitives.IndexOfMaxMagnitude(span);
+            if (x.IsDense)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x.FlattenedLength);
+                return TensorPrimitives.IndexOfMaxMagnitude(span);
+            }
+
+            return IndexOfMaxMagnitudeFallback(x);
+        }
+
+        private static nint IndexOfMaxMagnitudeFallback<T>(scoped in ReadOnlyTensorSpan<T> x)
+            where T : INumber<T>
+        {
+            T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
+            try
+            {
+                x.FlattenTo(flat);
+                return TensorPrimitives.IndexOfMaxMagnitude<T>(flat.AsSpan(0, (int)x.FlattenedLength));
+            }
+            finally
+            {
+                ArrayPool<T>.Shared.Return(flat);
+            }
         }
         #endregion
 
@@ -3755,8 +3720,28 @@ namespace System.Numerics.Tensors
         public static nint IndexOfMin<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            return TensorPrimitives.IndexOfMin(span);
+            if (x.IsDense)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x.FlattenedLength);
+                return TensorPrimitives.IndexOfMin(span);
+            }
+
+            return IndexOfMinFallback(x);
+        }
+
+        private static nint IndexOfMinFallback<T>(scoped in ReadOnlyTensorSpan<T> x)
+            where T : INumber<T>
+        {
+            T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
+            try
+            {
+                x.FlattenTo(flat);
+                return TensorPrimitives.IndexOfMin<T>(flat.AsSpan(0, (int)x.FlattenedLength));
+            }
+            finally
+            {
+                ArrayPool<T>.Shared.Return(flat);
+            }
         }
         #endregion
 
@@ -3768,8 +3753,28 @@ namespace System.Numerics.Tensors
         public static nint IndexOfMinMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            return TensorPrimitives.IndexOfMinMagnitude(span);
+            if (x.IsDense)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x.FlattenedLength);
+                return TensorPrimitives.IndexOfMinMagnitude(span);
+            }
+
+            return IndexOfMinMagnitudeFallback(x);
+        }
+
+        private static nint IndexOfMinMagnitudeFallback<T>(scoped in ReadOnlyTensorSpan<T> x)
+            where T : INumber<T>
+        {
+            T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
+            try
+            {
+                x.FlattenTo(flat);
+                return TensorPrimitives.IndexOfMinMagnitude<T>(flat.AsSpan(0, (int)x.FlattenedLength));
+            }
+            finally
+            {
+                ArrayPool<T>.Shared.Return(flat);
+            }
         }
         #endregion
 
@@ -4512,87 +4517,6 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
-        #region Multiply
-        /// <summary>
-        /// Multiplies each element of <paramref name="x"/> with <paramref name="y"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">Input <see cref="ReadOnlyTensorSpan{T}"/></param>
-        /// <param name="y"><typeparamref name="T"/> value to multiply by.</param>
-        public static Tensor<T> Multiply<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
-        {
-            Tensor<T> destination = CreateFromShape<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Multiplies each element of <paramref name="x"/> with <paramref name="y"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
-        /// </summary>
-        /// <param name="x">Left <see cref="ReadOnlyTensorSpan{T}"/> for multiplication.</param>
-        /// <param name="y">Right <see cref="ReadOnlyTensorSpan{T}"/> for multiplication.</param>
-        public static Tensor<T> Multiply<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
-            TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Multiplies each element of <paramref name="x"/> with <paramref name="y"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">Input <see cref="ReadOnlyTensorSpan{T}"/></param>
-        /// <param name="y"><typeparamref name="T"/> value to multiply by.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Multiply<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
-            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-
-        /// <summary>
-        /// Multiplies each element of <paramref name="x"/> with <paramref name="y"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
-        /// </summary>
-        /// <param name="x">Left <see cref="ReadOnlyTensorSpan{T}"/> for multiplication.</param>
-        /// <param name="y">Right <see cref="ReadOnlyTensorSpan{T}"/> for multiplication.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Multiply<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, destination);
-            TensorOperation.Invoke<TensorOperation.Multiply<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-        #endregion
-
-        #region Negate
-        /// <summary>Computes the element-wise negation of each number in the specified tensor.</summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/></param>
-        public static Tensor<T> Negate<T>(in ReadOnlyTensorSpan<T> x)
-            where T : IUnaryNegationOperators<T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.Negate<T>, T, T>(x, destination);
-            return destination;
-        }
-
-        /// <summary>Computes the element-wise negation of each number in the specified tensor.</summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/></param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Negate<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<T> destination)
-            where T : IUnaryNegationOperators<T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.Negate<T>, T, T>(x, destination);
-            return ref destination;
-        }
-        #endregion
-
         #region Norm
         /// <summary>
         ///  Takes the norm of the <see cref="ReadOnlyTensorSpan{T}"/> and returns the result.
@@ -4604,29 +4528,6 @@ namespace System.Numerics.Tensors
             T result = T.AdditiveIdentity;
             TensorOperation.Invoke<TensorOperation.SumOfSquares<T>, T, T>(x, ref result);
             return T.Sqrt(result);
-        }
-        #endregion
-
-        #region OnesComplement
-        /// <summary>Computes the element-wise one's complement of numbers in the specified tensor.</summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/></param>
-        public static Tensor<T> OnesComplement<T>(in ReadOnlyTensorSpan<T> x)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.OnesComplement<T>, T, T>(x, destination);
-            return destination;
-        }
-
-        /// <summary>Computes the element-wise one's complement of numbers in the specified tensor.</summary>
-        /// <param name="y">The <see cref="ReadOnlyTensorSpan{T}"/></param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> OnesComplement<T>(scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(y, destination);
-            TensorOperation.Invoke<TensorOperation.OnesComplement<T>, T, T>(y, destination);
-            return ref destination;
         }
         #endregion
 
@@ -5118,93 +5019,9 @@ namespace System.Numerics.Tensors
         {
             T mean = Average(x);
             T result = T.AdditiveIdentity;
-            TensorOperation.Invoke<TensorOperation.SumOfSquaredDifferences<T>, T, T>(x, mean, ref result);
+            TensorOperation.Invoke<TensorOperation.SumOfSquaredAbsoluteDifferences<T>, T, T>(x, mean, ref result);
             T variance = result / T.CreateChecked(x.FlattenedLength);
             return T.Sqrt(variance);
-
-        }
-        #endregion
-
-        #region Subtract
-        /// <summary>
-        /// Subtracts <paramref name="y"/> from each element of <paramref name="x"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The <typeparamref name="T"/> to subtract.</param>
-        public static Tensor<T> Subtract<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : ISubtractionOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.Subtract<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Subtracts each element of <paramref name="y"/> from <paramref name="x"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <typeparamref name="T"/> to be subtracted from.</param>
-        /// <param name="y">The <see cref="ReadOnlyTensorSpan{T}"/> of values to subtract.</param>
-        public static Tensor<T> Subtract<T>(T x, in ReadOnlyTensorSpan<T> y)
-            where T : ISubtractionOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(y.Lengths);
-            TensorOperation.Invoke<TensorOperation.Subtract<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Subtracts each element of <paramref name="x"/> from <paramref name="y"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> with values to be subtracted from.</param>
-        /// <param name="y">The <see cref="ReadOnlyTensorSpan{T}"/> with values to subtract.</param>
-        public static Tensor<T> Subtract<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : ISubtractionOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
-            TensorOperation.Invoke<TensorOperation.Subtract<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Subtracts <paramref name="y"/> from each element of <paramref name="x"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> with values to be subtracted from.</param>
-        /// <param name="y">The <typeparamref name="T"/> value to subtract.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Subtract<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
-            where T : ISubtractionOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.Subtract<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-
-        /// <summary>
-        /// Subtracts each element of <paramref name="y"/> from <paramref name="x"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <typeparamref name="T"/> value to be subtracted from.</param>
-        /// <param name="y">The <see cref="ReadOnlyTensorSpan{T}"/> values to subtract.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Subtract<T>(T x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : ISubtractionOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(y, destination);
-            TensorOperation.Invoke<TensorOperation.Subtract<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-
-        /// <summary>
-        /// Subtracts each element of <paramref name="x"/> from <paramref name="y"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The <see cref="ReadOnlyTensorSpan{T}"/> of values to be subtracted from.</param>
-        /// <param name="y">The <see cref="ReadOnlyTensorSpan{T}"/>of values to subtract.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Subtract<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : ISubtractionOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, destination);
-            TensorOperation.Invoke<TensorOperation.Subtract<T>, T, T>(x, y, destination);
-            return ref destination;
         }
         #endregion
 
@@ -5349,58 +5166,6 @@ namespace System.Numerics.Tensors
         {
             TensorOperation.ValidateCompatibility(x, destination);
             TensorOperation.Invoke<TensorOperation.Truncate<T>, T, T>(x, destination);
-            return ref destination;
-        }
-        #endregion
-
-        #region Xor
-        /// <summary>Computes the element-wise XOR of numbers in the specified tensors.</summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static Tensor<T> Xor<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, out Tensor<T> destination);
-            TensorOperation.Invoke<TensorOperation.Xor<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>Computes the element-wise XOR of numbers in the specified tensors.</summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Xor<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, y, destination);
-            TensorOperation.Invoke<TensorOperation.Xor<T>, T, T>(x, y, destination);
-            return ref destination;
-        }
-
-        /// <summary>
-        /// Computes the element-wise Xor of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The second value.</param>
-        public static Tensor<T> Xor<T>(in ReadOnlyTensorSpan<T> x, T y)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            Tensor<T> destination = CreateFromShapeUninitialized<T>(x.Lengths);
-            TensorOperation.Invoke<TensorOperation.Xor<T>, T, T>(x, y, destination);
-            return destination;
-        }
-
-        /// <summary>
-        /// Computes the element-wise Xor of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        /// <param name="y">The second value.</param>
-        /// <param name="destination"></param>
-        public static ref readonly TensorSpan<T> Xor<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            TensorOperation.ValidateCompatibility(x, destination);
-            TensorOperation.Invoke<TensorOperation.Xor<T>, T, T>(x, y, destination);
             return ref destination;
         }
         #endregion

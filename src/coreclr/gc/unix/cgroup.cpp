@@ -68,7 +68,10 @@ public:
     static void Initialize()
     {
         s_cgroup_version = FindCGroupVersion();
-        FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr, &s_memory_cgroup_path, &s_memory_cgroup_hierarchy_mount);
+        if (s_cgroup_version != 0)
+        {
+            FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr, &s_memory_cgroup_path, &s_memory_cgroup_hierarchy_mount);
+        }
     }
 
     static void Cleanup()
@@ -119,7 +122,7 @@ private:
         // modes because both of those involve cgroup v1 controllers managing
         // resources.
 
-#if !HAVE_NON_LEGACY_STATFS
+#if !HAVE_NON_LEGACY_STATFS || TARGET_WASM
         return 0;
 #else
 

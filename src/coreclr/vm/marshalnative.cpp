@@ -59,7 +59,7 @@ extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
 
     // If the code is already ready, we are done. Else, we need to execute the prestub
     // This is a perf thing since it's always safe to execute the prestub twice.
-    if (!pMD->IsPointingToPrestub())
+    if (!pMD->ShouldCallPrestub())
         return;
 
     // Silently ignore if not PInvoke and not runtime generated.

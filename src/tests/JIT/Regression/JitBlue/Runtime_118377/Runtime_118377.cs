@@ -23,29 +23,26 @@ public class Runtime_118377
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Vector<ulong> M4()
     {
-        var vr3 = Sve.CreateWhileLessThanMask64Bit(0, 0);
+        var vr3 = Sve.CreateWhileLessThanMaskUInt64(0, 0);
         var vr5 = Vector.Create<ulong>(s_4);
         var vr1 = Sve.CreateBreakPropagateMask(vr3, vr5);
         var vr7 = Vector.Create<ulong>(0);
         return Sve.Add(vr1, vr7);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Sve.IsSupported)
-        {
-            var vr4 = F0;
-            var vr0 = Vector.Create<ulong>(vr4);
-            var vr8 = Vector128.CreateScalar(14533768479604701152UL).AsVector();
-            var vr10 = F0;
-            var vr9 = Vector.Create<ulong>(vr10);
-            var vr6 = Sve.AbsoluteDifference(vr8, vr9);
-            var vr11 = M4();
-            Vector<ulong> var2 = Sve.ConditionalSelect(vr0, vr6, vr11);
-            Console.WriteLine(var2);
-            Assert.Equal(14533768479604701151UL, var2[0]);
-            Assert.Equal(1UL, var2[1]);
-        }
+        var vr4 = F0;
+        var vr0 = Vector.Create<ulong>(vr4);
+        var vr8 = Vector128.CreateScalar(14533768479604701152UL).AsVector();
+        var vr10 = F0;
+        var vr9 = Vector.Create<ulong>(vr10);
+        var vr6 = Sve.AbsoluteDifference(vr8, vr9);
+        var vr11 = M4();
+        Vector<ulong> var2 = Sve.ConditionalSelect(vr0, vr6, vr11);
+        Console.WriteLine(var2);
+        Assert.Equal(14533768479604701151UL, var2[0]);
+        Assert.Equal(1UL, var2[1]);
     }
 }
