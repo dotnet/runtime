@@ -197,7 +197,7 @@ if defined RunWithNodeJS (
 )
 
 if defined __TreeSubtree (
-    set __RuntestPyArgs=%__RuntestPyArgs% --tree %__TreeSubtree%
+    set __RuntestPyArgs=%__RuntestPyArgs% --tree "%__TreeSubtree%"
 )
 
 REM Find python and set it to the variable PYTHON
