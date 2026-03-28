@@ -14,7 +14,6 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    [TestCategory("native")]
     public class PInvokeTableGeneratorTests : PInvokeTableGeneratorTestsBase
     {
         public PInvokeTableGeneratorTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -24,6 +23,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        [TestCategory("native")]
         public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_NotConsideredBlittable
                         (Configuration config, bool aot)
         {
@@ -35,6 +35,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        [TestCategory("coreclr-native")]
         public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_WithStructLayout_ConsideredBlittable
                         (Configuration config, bool aot)
         {
@@ -46,6 +47,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        [TestCategory("coreclr-native")]
         public async Task UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittable
                         (Configuration config, bool aot)
         {
@@ -94,6 +96,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Debug)]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Release)]
+        [TestCategory("coreclr-native")]
         public async Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
                         (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
         {
@@ -133,6 +136,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        [TestCategory("native")]
         public async Task UnmanagedCallback_InFileType(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_filetype");
@@ -152,6 +156,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        [TestCategory("native")]
         public async Task UnmanagedCallersOnly_Namespaced(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_namespace");
@@ -180,6 +185,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        [TestCategory("native")]
         public void IcallWithOverloadedParametersAndEnum(Configuration config, bool aot)
         {
             string appendToTheEnd =
@@ -276,6 +282,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(parameters: new object[] { "tr_TR.UTF-8" })]
+        [TestCategory("native")]
         public async Task BuildNativeInNonEnglishCulture(Configuration config, bool aot, string culture)
         {
             // Check that we can generate interp tables in non-english cultures
@@ -351,16 +358,19 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native")]
         public async Task EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("native")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native")]
         public void EnsureComInteropCompilesInAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "com");
@@ -373,6 +383,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("native")]
         public async Task UCOWithSpecialCharacters(Configuration config, bool aot)
         {
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";

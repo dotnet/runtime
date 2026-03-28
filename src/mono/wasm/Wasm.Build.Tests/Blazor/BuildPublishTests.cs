@@ -50,7 +50,7 @@ public class BuildPublishTests : BlazorWasmTestBase
 
     [Theory]
     [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { true })]
-    [TestCategory("native")]
+    [TestCategory("coreclr-native")]
     public void DefaultTemplate_AOT_WithWorkload(Configuration config, bool testUnicode)
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_aot", appendUnicodeToPath: testUnicode);

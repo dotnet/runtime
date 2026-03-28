@@ -14,7 +14,6 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    [TestCategory("native")]
     public class DllImportTests : PInvokeTableGeneratorTestsBase
     {
         public DllImportTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -24,6 +23,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("native")]
         public async Task NativeLibraryWithVariadicFunctions(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "variadic");
@@ -44,6 +44,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        [TestCategory("native")]
         public async Task DllImportWithFunctionPointersCompilesWithoutWarning(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "fnptr");
@@ -63,6 +64,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        [TestCategory("native")]
         public async Task DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "fnptr_variadic");
@@ -82,6 +84,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        [TestCategory("native")]
         public async Task DllImportWithFunctionPointers_WarningsAsMessages(Configuration config, bool aot)
         {
             string extraProperties = "<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessage);WASM0001</MSBuildWarningsAsMessages>";
@@ -101,6 +104,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        [TestCategory("coreclr-native")]
         public void UnmanagedCallback_WithFunctionPointers_CompilesWithWarnings(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_fnptr");
@@ -118,6 +122,7 @@ namespace Wasm.Build.Tests
                 "with.per.iod",
                 "with🚀unicode#"
             } })]
+        [TestCategory("native")]
         public async Task CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(Configuration config, bool aot, string[] libraryNames)
         {
             var extraItems = @"<NativeFileReference Include=""*.c"" />";

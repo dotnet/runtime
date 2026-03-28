@@ -79,7 +79,7 @@ public class MiscTests : BlazorWasmTestBase
     }
 
     [Fact]
-    [TestCategory("native")]
+    [TestCategory("coreclr-native")]
     public void BugRegression_60479_WithRazorClassLib()
     {
         Configuration config = Configuration.Release;
