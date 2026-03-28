@@ -289,8 +289,9 @@ namespace System.Runtime.Loader.Tests
 
             Assert.NotNull(ex.FileName);
             Assert.Contains("MissingDependency.Leaf", ex.FileName);
-            Assert.Contains("MissingDependency.Mid", ex.Message);
-            Assert.Contains("MissingDependency.Root", ex.Message);
+            string exString = ex.ToString();
+            Assert.Contains("Requested by: MissingDependency.Mid", exString);
+            Assert.Contains("MissingDependency.Root", exString);
         }
     }
 }

@@ -46,6 +46,7 @@ namespace System.IO
 
         public string? FileName { get; }
         public string? FusionLog { get; }
+        private readonly string? _requestingAssemblyChain;
 
         public override string ToString()
         {
@@ -53,6 +54,9 @@ namespace System.IO
 
             if (!string.IsNullOrEmpty(FileName))
                 s += Environment.NewLineConst + SR.Format(SR.IO_FileName_Name, FileName);
+
+            if (_requestingAssemblyChain is not null)
+                s += Environment.NewLineConst + SR.Format(SR.IO_FileLoad_RequestedBy, _requestingAssemblyChain.ReplaceLineEndings());
 
             if (InnerException != null)
                 s += Environment.NewLineConst + InnerExceptionPrefix + InnerException.ToString();

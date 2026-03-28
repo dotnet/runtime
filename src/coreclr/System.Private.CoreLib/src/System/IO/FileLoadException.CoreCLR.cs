@@ -9,29 +9,13 @@ namespace System.IO
     public partial class FileLoadException
     {
         // Do not delete: this is invoked from native code.
-        private FileLoadException(string? fileName, int hResult)
-            : base(null)
-        {
-            HResult = hResult;
-            FileName = fileName;
-            _message = FormatFileLoadExceptionMessage(FileName, HResult);
-        }
-
-        // Do not delete: this is invoked from native code.
-        // Used when the requesting assembly chain is known, to provide assembly load dependency context.
         private FileLoadException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
             HResult = hResult;
             FileName = fileName;
+            _requestingAssemblyChain = requestingAssemblyChain;
             _message = FormatFileLoadExceptionMessage(FileName, HResult);
-            if (requestingAssemblyChain is not null)
-                _message += Environment.NewLine + FormatRequestingAssemblyChain(requestingAssemblyChain);
-        }
-
-        internal static string FormatRequestingAssemblyChain(string requestingAssemblyChain)
-        {
-            return SR.Format(SR.IO_FileLoad_RequestedBy, requestingAssemblyChain);
         }
 
         internal static string FormatFileLoadExceptionMessage(string? fileName, int hResult)

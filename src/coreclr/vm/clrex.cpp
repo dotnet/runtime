@@ -1616,52 +1616,30 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     gc.pNewFileString = StringObject::NewString(m_name);
     gc.pNewException = AllocateObject(CoreLibBinder::GetException(m_kind));
 
-    bool usedThreeArgCtor = false;
-
     if (!m_requestingAssemblyName.IsEmpty())
     {
         gc.pNewRequestingChain = StringObject::NewString(m_requestingAssemblyName);
-
-        MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
-                                COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_Int_RetVoid);
-
-        if (pMD)
-        {
-            MethodDescCallSite exceptionCtor(pMD);
-
-            ARG_SLOT args[] = {
-                ObjToArgSlot(gc.pNewException),
-                ObjToArgSlot(gc.pNewFileString),
-                ObjToArgSlot(gc.pNewRequestingChain),
-                (ARG_SLOT) m_hr
-            };
-
-            exceptionCtor.Call(args);
-            usedThreeArgCtor = true;
-        }
     }
 
-    if (!usedThreeArgCtor)
+    MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
+                            COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_Int_RetVoid);
+
+    if (!pMD)
     {
-        MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
-                                COR_CTOR_METHOD_NAME, &gsig_IM_Str_Int_RetVoid);
-
-        if (!pMD)
-        {
-            MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
-            COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
-        }
-
-        MethodDescCallSite exceptionCtor(pMD);
-
-        ARG_SLOT args[] = {
-            ObjToArgSlot(gc.pNewException),
-            ObjToArgSlot(gc.pNewFileString),
-            (ARG_SLOT) m_hr
-        };
-
-        exceptionCtor.Call(args);
+        MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
+        COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
     }
+
+    MethodDescCallSite exceptionCtor(pMD);
+
+    ARG_SLOT args[] = {
+        ObjToArgSlot(gc.pNewException),
+        ObjToArgSlot(gc.pNewFileString),
+        ObjToArgSlot(gc.pNewRequestingChain),
+        (ARG_SLOT) m_hr
+    };
+
+    exceptionCtor.Call(args);
 
     GCPROTECT_END();
 
