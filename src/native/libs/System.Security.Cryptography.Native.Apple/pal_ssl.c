@@ -230,12 +230,12 @@ int32_t AppleCryptoNative_SSLSetALPNProtocols(SSLContextRef sslContext,
     return *pOSStatus == noErr;
 }
 
-int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, void* protocol, int length, int32_t* pOSStatus)
+int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, const void* protocol, int length, int32_t* pOSStatus)
 {
     if (sslContext == NULL || protocol == NULL || length <= 0 || pOSStatus == NULL)
         return -1;
 
-    CFStringRef value = CFStringCreateWithBytes(NULL, (UInt8*)protocol, length, kCFStringEncodingASCII, 0);
+    CFStringRef value = CFStringCreateWithBytes(NULL, (const UInt8*)protocol, length, kCFStringEncodingASCII, 0);
     if (!value)
     {
         *pOSStatus = errSecMemoryError;
