@@ -26,19 +26,14 @@ namespace Microsoft.Win32.SafeHandles
         // Process.{Safe}Handle to initialize and use a WaitHandle to successfully use it on
         // Unix as well to wait for the process to complete.
 
-        /// <summary>Finalizable holder for the underlying shared wait state object.</summary>
-        internal ProcessWaitState.Holder? _waitStateHolder;
-
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
 
-        private SafeProcessHandle(int processId, bool usesTerminal) : base(ownsHandle: true)
+        private SafeProcessHandle(int processId, ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
             ProcessId = processId;
 
-            // Ensure we'll reap this process.
-            _waitStateHolder = new ProcessWaitState.Holder(processId, isNewChild: true, usesTerminal);
-            _handle = _waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
+            _handle = waitStateHolder._state.EnsureExitedEvent().GetSafeWaitHandle();
             _handle.DangerousAddRef(ref _releaseRef);
             SetHandle(_handle.DangerousGetHandle());
         }
@@ -57,8 +52,6 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Debug.Assert(_handle != null);
                 _handle.DangerousRelease();
-
-                _waitStateHolder?.Dispose();
             }
             return true;
         }
@@ -66,8 +59,21 @@ namespace Microsoft.Win32.SafeHandles
         // On Unix, we don't use process descriptors yet, so we can't get PID.
         private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
 
-        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
+            SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
+
+            // For standalone SafeProcessHandle.Start, we dispose the wait state holder immediately.
+            // The DangerousAddRef on the SafeWaitHandle (Unix) keeps the OS handle alive.
+            waitStateHolder?.Dispose();
+
+            return startedProcess;
+        }
+
+        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
+        {
+            waitStateHolder = null;
+
             if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
@@ -122,6 +128,7 @@ namespace Microsoft.Win32.SafeHandles
                         startInfo, filename, argv, envp, cwd,
                         setCredentials, userId, groupId, groups,
                         stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
+                        out waitStateHolder,
                         throwOnNoExec: false); // return invalid handle instead of throwing on ENOEXEC
 
                     if (!processHandle.IsInvalid)
@@ -137,7 +144,8 @@ namespace Microsoft.Win32.SafeHandles
                 return ForkAndExecProcess(
                     startInfo, filename, argv, envp, cwd,
                     setCredentials, userId, groupId, groups,
-                    stdinHandle, stdoutHandle, stderrHandle, usesTerminal);
+                    stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
+                    out waitStateHolder);
             }
             else
             {
@@ -151,7 +159,8 @@ namespace Microsoft.Win32.SafeHandles
                 return ForkAndExecProcess(
                     startInfo, filename, argv, envp, cwd,
                     setCredentials, userId, groupId, groups,
-                    stdinHandle, stdoutHandle, stderrHandle, usesTerminal);
+                    stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
+                    out waitStateHolder);
             }
         }
 
@@ -160,8 +169,10 @@ namespace Microsoft.Win32.SafeHandles
             string[] envp, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
             SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
-            bool usesTerminal, bool throwOnNoExec = true)
+            bool usesTerminal, out ProcessWaitState.Holder? waitStateHolder, bool throwOnNoExec = true)
         {
+            waitStateHolder = null;
+
             if (string.IsNullOrEmpty(resolvedFilename))
             {
                 Interop.ErrorInfo error = Interop.Error.ENOENT.Info();
@@ -214,7 +225,11 @@ namespace Microsoft.Win32.SafeHandles
                 throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
             }
 
-            return new SafeProcessHandle(childPid, usesTerminal);
+            // Create the wait state holder for this child process. The caller is responsible
+            // for either handing it to Process (for Process.Start) or disposing it
+            // (for SafeProcessHandle.StartCore, where DangerousAddRef keeps the OS handle alive).
+            waitStateHolder = new ProcessWaitState.Holder(childPid, isNewChild: true, usesTerminal);
+            return new SafeProcessHandle(childPid, waitStateHolder);
         }
     }
 }

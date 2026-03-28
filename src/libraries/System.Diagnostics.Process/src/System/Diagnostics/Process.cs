@@ -1327,21 +1327,9 @@ namespace System.Diagnostics
                     }
                 }
 
-                SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle);
-                if (startedProcess.IsInvalid)
+                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle))
                 {
-                    Debug.Assert(startInfo.UseShellExecute && OperatingSystem.IsWindows());
                     return false;
-                }
-
-                // We must configure the _waitStateHolder on Unix before SetProcessId is called,
-                // as it may create a new instance of the holder.
-                ConfigureAfterProcessStart(startedProcess);
-
-                SetProcessHandle(startedProcess);
-                if (!startInfo.UseShellExecute || !OperatingSystem.IsWindows())
-                {
-                    SetProcessId(startedProcess.ProcessId);
                 }
             }
             catch
@@ -1395,8 +1383,6 @@ namespace System.Diagnostics
 
             return true;
         }
-
-        partial void ConfigureAfterProcessStart(SafeProcessHandle safeProcessHandle);
 
         /// <devdoc>
         ///    <para>
