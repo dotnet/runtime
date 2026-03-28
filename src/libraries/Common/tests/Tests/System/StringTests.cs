@@ -2151,7 +2151,7 @@ namespace System.Tests
                         bool actual = s1.EndsWith(s2, comp);
                         Assert.True(expected == actual,
                             $"String.EndsWith: length={length}, mismatchIndex={mismatchIndex}, comp={comp}, " +
-                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]})");
+                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]}), expected={expected}, actual={actual}");
                     }
 
                     var firstSpan = new ReadOnlySpan<char>(first);
@@ -2167,7 +2167,7 @@ namespace System.Tests
                         bool actual = firstSpan.EndsWith(secondSpan, comp);
                         Assert.True(expected == actual,
                             $"Span.EndsWith: length={length}, mismatchIndex={mismatchIndex}, comp={comp}, " +
-                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]})");
+                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]}), expected={expected}, actual={actual}");
                     }
                 }
             }
@@ -7332,7 +7332,7 @@ namespace System.Tests
                         bool actual = s1.StartsWith(s2, comp);
                         Assert.True(expected == actual,
                             $"String.StartsWith: length={length}, mismatchIndex={mismatchIndex}, comp={comp}, " +
-                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]})");
+                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]}), expected={expected}, actual={actual}");
                     }
 
                     ReadOnlySpan<char> firstSpan = s1.AsSpan();
@@ -7348,7 +7348,7 @@ namespace System.Tests
                         bool actual = firstSpan.StartsWith(secondSpan, comp);
                         Assert.True(expected == actual,
                             $"Span.StartsWith: length={length}, mismatchIndex={mismatchIndex}, comp={comp}, " +
-                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]})");
+                            $"chars=({(int)first[mismatchIndex]},{(int)second[mismatchIndex]}), expected={expected}, actual={actual}");
                     }
                 }
             }
