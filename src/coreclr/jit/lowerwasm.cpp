@@ -362,8 +362,8 @@ void Lowering::LowerIndexAddr(GenTreeIndexAddr* indexAddr)
 {
     if (indexAddr->IsBoundsChecked())
     {
-        SetMultiplyUsed(indexAddr->Arr());
-        SetMultiplyUsed(indexAddr->Index());
+        SetMultiplyUsed(indexAddr->Arr() DEBUGARG("LowerIndexAddr Arr"));
+        SetMultiplyUsed(indexAddr->Index() DEBUGARG("LowerIndexAddr Index"));
     }
 }
 
