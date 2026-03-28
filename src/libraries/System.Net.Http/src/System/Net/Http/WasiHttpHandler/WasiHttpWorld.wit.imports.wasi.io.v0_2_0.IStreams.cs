@@ -75,6 +75,7 @@ internal interface IStreams {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[resource-drop]input-stream"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -87,6 +88,7 @@ internal interface IStreams {
 
         internal static class ReadWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]input-stream.read"), WasmImportLinkage]
             internal static extern void wasmImportRead(int p0, long p1, nint p2);
 
@@ -152,6 +154,7 @@ internal interface IStreams {
 
         internal static class BlockingReadWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]input-stream.blocking-read"), WasmImportLinkage]
             internal static extern void wasmImportBlockingRead(int p0, long p1, nint p2);
 
@@ -217,6 +220,7 @@ internal interface IStreams {
 
         internal static class SkipWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]input-stream.skip"), WasmImportLinkage]
             internal static extern void wasmImportSkip(int p0, long p1, nint p2);
 
@@ -279,6 +283,7 @@ internal interface IStreams {
 
         internal static class BlockingSkipWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]input-stream.blocking-skip"), WasmImportLinkage]
             internal static extern void wasmImportBlockingSkip(int p0, long p1, nint p2);
 
@@ -341,6 +346,7 @@ internal interface IStreams {
 
         internal static class SubscribeWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]input-stream.subscribe"), WasmImportLinkage]
             internal static extern int wasmImportSubscribe(int p0);
 
@@ -382,6 +388,7 @@ internal interface IStreams {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[resource-drop]output-stream"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -394,6 +401,7 @@ internal interface IStreams {
 
         internal static class CheckWriteWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]output-stream.check-write"), WasmImportLinkage]
             internal static extern void wasmImportCheckWrite(int p0, nint p1);
 
@@ -456,6 +464,7 @@ internal interface IStreams {
 
         internal static class WriteWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]output-stream.write"), WasmImportLinkage]
             internal static extern void wasmImportWrite(int p0, nint p1, int p2, nint p3);
 
@@ -521,6 +530,7 @@ internal interface IStreams {
 
         internal static class BlockingWriteAndFlushWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]output-stream.blocking-write-and-flush"), WasmImportLinkage]
             internal static extern void wasmImportBlockingWriteAndFlush(int p0, nint p1, int p2, nint p3);
 
@@ -586,6 +596,7 @@ internal interface IStreams {
 
         internal static class FlushWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]output-stream.flush"), WasmImportLinkage]
             internal static extern void wasmImportFlush(int p0, nint p1);
 
@@ -648,6 +659,7 @@ internal interface IStreams {
 
         internal static class BlockingFlushWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]output-stream.blocking-flush"), WasmImportLinkage]
             internal static extern void wasmImportBlockingFlush(int p0, nint p1);
 
@@ -710,6 +722,7 @@ internal interface IStreams {
 
         internal static class SubscribeWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]output-stream.subscribe"), WasmImportLinkage]
             internal static extern int wasmImportSubscribe(int p0);
 
@@ -727,6 +740,7 @@ internal interface IStreams {
 
         internal static class WriteZeroesWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]output-stream.write-zeroes"), WasmImportLinkage]
             internal static extern void wasmImportWriteZeroes(int p0, long p1, nint p2);
 
@@ -789,6 +803,7 @@ internal interface IStreams {
 
         internal static class BlockingWriteZeroesAndFlushWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]output-stream.blocking-write-zeroes-and-flush"), WasmImportLinkage]
             internal static extern void wasmImportBlockingWriteZeroesAndFlush(int p0, long p1, nint p2);
 
@@ -851,6 +866,7 @@ internal interface IStreams {
 
         internal static class SpliceWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]output-stream.splice"), WasmImportLinkage]
             internal static extern void wasmImportSplice(int p0, int p1, long p2, nint p3);
 
@@ -914,6 +930,7 @@ internal interface IStreams {
 
         internal static class BlockingSpliceWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/streams@0.2.0", EntryPoint = "[method]output-stream.blocking-splice"), WasmImportLinkage]
             internal static extern void wasmImportBlockingSplice(int p0, int p1, long p2, nint p3);
 

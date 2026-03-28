@@ -21,6 +21,7 @@ internal static partial class Interop
             MLDsa87 = 3,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaGetPalId(
             SafeEvpPKeyHandle mldsa,
@@ -56,6 +57,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_MLDsaGenerateKey(string keyType, ReadOnlySpan<byte> seed, int seedLength);
 
@@ -74,6 +76,7 @@ internal static partial class Interop
             return handle;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaSignPure(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
@@ -99,6 +102,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaVerifyPure(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
@@ -132,6 +136,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaSignPreEncoded(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
@@ -154,6 +159,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaVerifyPreEncoded(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
@@ -184,6 +190,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaSignExternalMu(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
@@ -210,6 +217,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaVerifyExternalMu(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
@@ -243,12 +251,15 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaExportSecretKey(SafeEvpPKeyHandle pkey, Span<byte> destination, int destinationLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaExportSeed(SafeEvpPKeyHandle pkey, Span<byte> destination, int destinationLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaExportPublicKey(SafeEvpPKeyHandle pkey, Span<byte> destination, int destinationLength);
 

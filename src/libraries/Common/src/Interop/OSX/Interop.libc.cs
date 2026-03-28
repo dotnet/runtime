@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -23,10 +24,12 @@ internal static partial class Interop
             public const uint ATTR_CMN_CRTIME = 0x00000200;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.libc, EntryPoint = "setattrlist", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static unsafe partial int setattrlist(string path, AttrList* attrList, void* attrBuf, nint attrBufSize, CULong options);
 
         internal const uint FSOPT_NOFOLLOW = 0x00000001;
+        [RequiresUnsafe]
         [LibraryImport(Libraries.libc, EntryPoint = "fsetattrlist", SetLastError = true)]
         private static unsafe partial int fsetattrlist(int fd, AttrList* attrList, void* attrBuf, nint attrBufSize, CULong options);
 
@@ -45,6 +48,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.libc, EntryPoint = "clonefile", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static unsafe partial int clonefile(string src, string dst, int flags);
 

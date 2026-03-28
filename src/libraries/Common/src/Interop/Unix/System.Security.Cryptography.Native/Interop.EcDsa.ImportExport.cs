@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -11,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters", StringMarshalling = StringMarshalling.Utf8)]
         private static partial int EcKeyCreateByKeyParameters(
             out SafeEcKeyHandle key,
@@ -37,6 +39,7 @@ internal static partial class Interop
             return key;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByExplicitParameters")]
         internal static partial SafeEcKeyHandle EcKeyCreateByExplicitParameters(
             ECCurve.ECCurveType curveType,
@@ -96,6 +99,7 @@ internal static partial class Interop
             return key;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_EvpPKeyGetEcGroupNid(SafeEvpPKeyHandle pkey, out int nid);
 
@@ -125,6 +129,7 @@ internal static partial class Interop
             throw Interop.Crypto.CreateOpenSslCryptographicException();
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_GetECKeyParameters(
             SafeEcKeyHandle key,
@@ -133,6 +138,7 @@ internal static partial class Interop
             out SafeBignumHandle qy_bn, out int y_cb,
             out IntPtr d_bn_not_owned, out int d_cb);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_EvpPKeyGetEcKeyParameters(
             SafeEvpPKeyHandle key,
@@ -257,6 +263,7 @@ internal static partial class Interop
             return parameters;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_GetECCurveParameters(
             SafeEcKeyHandle key,
@@ -274,6 +281,7 @@ internal static partial class Interop
             out SafeBignumHandle cofactor, out int cofactor_cb,
             out SafeBignumHandle seed, out int seed_cb);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial int CryptoNative_EvpPKeyGetEcCurveParameters(
             SafeEvpPKeyHandle key,

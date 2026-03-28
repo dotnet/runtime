@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -13,14 +14,17 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CFNetworkLibrary)]
         internal static partial SafeCFDictionaryHandle CFNetworkCopySystemProxySettings();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CFNetworkLibrary)]
         internal static partial SafeCFArrayHandle CFNetworkCopyProxiesForURL(SafeCreateHandle url, SafeCFDictionaryHandle proxySettings);
 
         internal delegate void CFProxyAutoConfigurationResultCallback(IntPtr client, IntPtr proxyList, IntPtr error);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CFNetworkLibrary)]
         internal static partial CFRunLoopSourceRef CFNetworkExecuteProxyAutoConfigurationURL(
             IntPtr proxyAutoConfigURL,
@@ -28,6 +32,7 @@ internal static partial class Interop
             CFProxyAutoConfigurationResultCallback cb,
             ref CFStreamClientContext clientContext);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CFNetworkLibrary)]
         internal static partial CFRunLoopSourceRef CFNetworkExecuteProxyAutoConfigurationScript(
             IntPtr proxyAutoConfigurationScript,

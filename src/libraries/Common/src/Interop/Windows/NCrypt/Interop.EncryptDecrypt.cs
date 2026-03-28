@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -9,9 +10,11 @@ internal static partial class Interop
 {
     internal static partial class NCrypt
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NCrypt)]
         internal static unsafe partial ErrorCode NCryptEncrypt(SafeNCryptKeyHandle hKey, ReadOnlySpan<byte> pbInput, int cbInput, void* pPaddingInfo, Span<byte> pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NCrypt)]
         internal static unsafe partial ErrorCode NCryptDecrypt(SafeNCryptKeyHandle hKey, ReadOnlySpan<byte> pbInput, int cbInput, void* pPaddingInfo, Span<byte> pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags);
     }

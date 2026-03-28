@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -16,6 +17,7 @@ internal static partial class Interop
             public byte Reserved;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         [SuppressGCTransition]
         internal static partial uint GetCurrentProcessorNumberEx(out PROCESSOR_NUMBER ProcNumber);

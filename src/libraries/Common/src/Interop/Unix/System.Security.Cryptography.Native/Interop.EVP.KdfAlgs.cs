@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -29,6 +30,7 @@ internal static partial class Interop
                 Hkdf = EvpKdfFetch(HkdfAlgorithmName);
             }
 
+            [RequiresUnsafe]
             [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKdfFetch", StringMarshalling = StringMarshalling.Utf8)]
             private static partial SafeEvpKdfHandle CryptoNative_EvpKdfFetch(string algorithm, out int haveFeature);
 

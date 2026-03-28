@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -10,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class NCrypt
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial ErrorCode NCryptSignHash(SafeNCryptKeyHandle hKey, void* pPaddingInfo, byte* pbHashValue, int cbHashValue, byte* pbSignature, int cbSignature, out int pcbResult, AsymmetricPaddingMode dwFlags);
 
@@ -22,6 +24,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial ErrorCode NCryptVerifySignature(SafeNCryptKeyHandle hKey, void* pPaddingInfo, byte* pbHashValue, int cbHashValue, byte* pbSignature, int cbSignature, AsymmetricPaddingMode dwFlags);
 

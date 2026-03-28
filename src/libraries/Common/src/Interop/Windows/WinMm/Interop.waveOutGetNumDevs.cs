@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -14,6 +15,7 @@ internal static partial class Interop
         /// </summary>
         /// <returns>The number of devices indicates success. Zero indicates that
         /// no devices are present or that an error occurred.</returns>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.WinMM)]
         internal static partial int waveOutGetNumDevs();
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NET
@@ -95,6 +96,7 @@ internal static partial class Interop
         /// information about the capabilities of the device.</param>
         /// <param name="cbwoc">Size, in bytes, of the WAVEOUTCAPS structure.</param>
         /// <returns>MMSYSERR</returns>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.WinMM, EntryPoint = "waveOutGetDevCapsW")]
         internal static partial MMSYSERR waveOutGetDevCaps(IntPtr uDeviceID, ref WAVEOUTCAPS caps, int cbwoc);
     }

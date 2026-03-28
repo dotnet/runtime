@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Globalization
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICUData", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int LoadICUData(string? path);
     }

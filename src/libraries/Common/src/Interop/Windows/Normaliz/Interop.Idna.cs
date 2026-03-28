@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -12,6 +13,7 @@ internal static partial class Interop
         //  Idn APIs
         //
 
+        [RequiresUnsafe]
         [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int IdnToAscii(
                                         uint dwFlags,
@@ -20,6 +22,7 @@ internal static partial class Interop
                                         Span<char> lpASCIICharStr,
                                         int cchASCIIChar);
 
+        [RequiresUnsafe]
         [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int IdnToUnicode(
                                         uint dwFlags,

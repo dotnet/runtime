@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -27,6 +28,7 @@ internal static partial class Interop
                 out ppKeyOut,
                 out pOSStatus);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SecKeyImportEphemeral(
             ref byte pbKeyBlob,
@@ -65,6 +67,7 @@ internal static partial class Interop
             throw new CryptographicException();
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SecKeyExport(
             SafeSecKeyRefHandle? key,

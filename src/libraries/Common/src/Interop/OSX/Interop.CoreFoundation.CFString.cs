@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
@@ -16,11 +17,13 @@ internal static partial class Interop
         /// Returns the interior pointer of the cfString if it has the specified encoding.
         /// If it has the wrong encoding, or if the interior pointer isn't being shared for some reason, returns NULL
         /// </summary>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary)]
         private static unsafe partial byte* CFStringGetCStringPtr(
             SafeCFStringHandle cfString,
             CFStringBuiltInEncodings encoding);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary)]
         private static partial SafeCFDataHandle CFStringCreateExternalRepresentation(
             IntPtr alloc,

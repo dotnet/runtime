@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -10,9 +11,11 @@ internal static partial class Interop
     // TODO: [AndroidCrypto] Rename class to AndroidCrypto once all consumers are split in Android vs. Unix
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_BigNumToBinary")]
         private static unsafe partial int BigNumToBinary(SafeBignumHandle a, byte* to);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_GetBigNumBytes")]
         private static partial int GetBigNumBytes(SafeBignumHandle a);
 

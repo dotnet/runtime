@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -17,6 +18,7 @@ internal static partial class Interop
         /// <returns>
         /// Returns the number of bytes written on success; otherwise, returns -1 and sets errno
         /// </returns>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Write", SetLastError = true)]
         internal static unsafe partial int Write(SafePipeHandle fd, byte* buffer, int bufferSize);
     }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -13,6 +14,7 @@ internal static partial class Interop
         internal static bool EcdhDeriveKey(SafeEcKeyHandle ourKey, SafeEcKeyHandle peerKey, Span<byte> buffer, out int usedBuffer) =>
             EcdhDeriveKey(ourKey, peerKey, ref MemoryMarshal.GetReference(buffer), buffer.Length, out usedBuffer);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcdhDeriveKey")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EcdhDeriveKey(SafeEcKeyHandle ourKey, SafeEcKeyHandle peerKey, ref byte buffer, int bufferLength, out int usedBuffer);

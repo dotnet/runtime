@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -23,6 +24,7 @@ internal static partial class Interop
             public UIntPtr PeakPagefileUsage;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "K32GetProcessMemoryInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetProcessMemoryInfo(IntPtr Process, ref PROCESS_MEMORY_COUNTERS ppsmemCounters, uint cb);

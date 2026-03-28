@@ -54,6 +54,7 @@ namespace System.Runtime
         //
 
         // Force a garbage collection.
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static partial void RhCollect(int generation, InternalGCCollectionMode mode, Interop.BOOL lowMemoryP = Interop.BOOL.FALSE);
 
@@ -73,6 +74,7 @@ namespace System.Runtime
         private static extern bool _RhReRegisterForFinalize(object obj);
 
         // Wait for all pending finalizers. This must be a p/invoke to avoid starving the GC.
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static partial void RhWaitForPendingFinalizers([MarshalAs(UnmanagedType.Bool)] bool allowReentrantWait);
 
@@ -114,6 +116,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhIsServerGc")]
         internal static extern bool RhIsServerGc();
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static partial long RhGetGcTotalMemory();
 
@@ -141,12 +144,15 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetLastGCDuration")]
         internal static extern long RhGetLastGCDuration(int generation);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial IntPtr RhRegisterFrozenSegment(void* pSegmentStart, nuint allocSize, nuint commitSize, nuint reservedSize);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhUpdateFrozenSegment(IntPtr seg, void* allocated, void* committed);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static partial void RhUnregisterFrozenSegment(IntPtr pSegmentHandle);
 
@@ -168,10 +174,12 @@ namespace System.Runtime
 
         // Enters a no GC region, possibly doing a blocking GC if there
         // is not enough memory available to satisfy the caller's request.
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static partial int RhStartNoGCRegion(long totalSize, Interop.BOOL hasLohSize, long lohSize, Interop.BOOL disallowFullBlockingGC);
 
         // Exits a no GC region, possibly doing a GC to clean up the garbage that the caller allocated.
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static partial int RhEndNoGCRegion();
 
@@ -194,6 +202,7 @@ namespace System.Runtime
             Boolean
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhEnumerateConfigurationValues(void* configurationContext, delegate* unmanaged<void*, byte*, byte*, GCConfigurationType, long, void> callback);
 
@@ -209,15 +218,19 @@ namespace System.Runtime
             internal ulong HeapHardLimitPOHPercent;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static partial int RhRefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial int RhEnableNoGCRegionCallback(void* callback, long totalSize);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static partial long RhGetGenerationBudget(int generation);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static partial long RhGetTotalAllocatedBytesPrecise();
 
@@ -225,9 +238,11 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetMemoryInfo")]
         internal static extern void RhGetMemoryInfo(ref byte info, GCKind kind);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhAllocateNewArray(MethodTable* pArrayEEType, uint numElements, uint flags, void* pResult);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
 
@@ -363,6 +378,7 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int RhpGetThunkBlockSize();
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhAllocateThunksMapping")]
         internal static unsafe partial int RhAllocateThunksMapping(IntPtr* ppMapping);
 
@@ -413,21 +429,25 @@ namespace System.Runtime
         internal static extern unsafe void RhUnbox(object? obj, ref byte data, MethodTable* pUnboxToEEType);
 
         // Busy spin for the given number of iterations.
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
         [SuppressGCTransition]
         internal static partial void RhSpinWait(int iterations);
 
         // Call RhSpinWait with a GC transition
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
         internal static partial void RhLongSpinWait(int iterations);
 
         // Yield the cpu to another thread ready to process, if one is available.
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhYield")]
         private static partial int _RhYield();
         internal static bool RhYield() => _RhYield() != 0;
 
 #if !TARGET_UNIX
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial int RhCompatibleReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
 #endif
@@ -877,9 +897,11 @@ namespace System.Runtime
         internal static extern unsafe float modff(float x, float* intptr);
 
 #if TARGET_UNIX
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf8)]
         internal static partial void RhSetCurrentThreadName(string name);
 #else
+        [RequiresUnsafe]
         [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void RhSetCurrentThreadName(string name);
 #endif

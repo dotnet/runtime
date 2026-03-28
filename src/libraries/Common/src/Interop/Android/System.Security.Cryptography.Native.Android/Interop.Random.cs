@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -15,6 +16,7 @@ internal static partial class Interop
             return CryptoNative_GetRandomBytes(pbBuffer, count);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool CryptoNative_GetRandomBytes(byte* buf, int num);

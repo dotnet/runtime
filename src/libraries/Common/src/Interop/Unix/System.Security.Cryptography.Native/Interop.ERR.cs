@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography;
@@ -12,21 +13,27 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
         internal static partial ulong ErrClearError();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetExceptionError")]
         private static partial ulong ErrGetExceptionError([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekError")]
         internal static partial ulong ErrPeekError();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekLastError")]
         internal static partial ulong ErrPeekLastError();
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrReasonErrorString")]
         internal static unsafe partial byte* ErrReasonErrorString(ulong error);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrErrorStringN")]
         private static unsafe partial void ErrErrorStringN(ulong e, byte* buf, int len);
 

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
@@ -14,9 +15,11 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary)]
         private static partial CFIndex CFErrorGetCode(SafeCFErrorHandle cfError);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary)]
         private static partial SafeCFStringHandle CFErrorCopyDescription(SafeCFErrorHandle cfError);
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -9,6 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "ReplaceFileW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool ReplaceFilePrivate(

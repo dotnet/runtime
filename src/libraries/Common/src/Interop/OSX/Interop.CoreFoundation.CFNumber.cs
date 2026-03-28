@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -16,6 +17,7 @@ internal static partial class Interop
             kCFNumberIntType = 9,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary)]
         private static unsafe partial int CFNumberGetValue(IntPtr handle, CFNumberType type, int* value);
     }

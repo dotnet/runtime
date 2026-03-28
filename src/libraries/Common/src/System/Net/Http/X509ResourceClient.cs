@@ -90,61 +90,79 @@ namespace System.Net.Http
         private const string HttpContentTypeName = "System.Net.Http.HttpContent, System.Net.Http";
         private const string TaskOfHttpResponseMessageTypeName = "System.Threading.Tasks.Task`1[[System.Net.Http.HttpResponseMessage, System.Net.Http]], System.Runtime";
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType(SocketsHttpHandlerTypeName)]
         private static extern object CreateHttpHandler();
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_PooledConnectionIdleTimeout")]
         private static extern TimeSpan GetPooledConnectionIdleTimeout([UnsafeAccessorType(SocketsHttpHandlerTypeName)] object handler);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_AllowAutoRedirect")]
         private static extern bool GetAllowAutoRedirect([UnsafeAccessorType(SocketsHttpHandlerTypeName)] object handler);
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_AllowAutoRedirect")]
         private static extern void SetAllowAutoRedirect([UnsafeAccessorType(SocketsHttpHandlerTypeName)] object handler, bool value);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_PooledConnectionIdleTimeout")]
         private static extern void SetPooledConnectionIdleTimeout([UnsafeAccessorType(SocketsHttpHandlerTypeName)] object handler, TimeSpan value);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType(HttpClientTypeName)]
         private static extern object CreateHttpClient([UnsafeAccessorType(HttpMessageHandlerTypeName)] object handler);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_MaxResponseContentBufferSize")]
         private static extern long GetMaxResponseContentBufferSize([UnsafeAccessorType(HttpClientTypeName)] object client);
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_MaxResponseContentBufferSize")]
         private static extern void SetMaxResponseContentBufferSize([UnsafeAccessorType(HttpClientTypeName)] object client, long value);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_RequestUri")]
         private static extern Uri? GetRequestUri([UnsafeAccessorType(HttpRequestMessageTypeName)] object requestMessage);
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_RequestUri")]
         private static extern void SetRequestUri([UnsafeAccessorType(HttpRequestMessageTypeName)] object requestMessage, Uri? value);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType(HttpRequestMessageTypeName)]
         private static extern object CreateRequestMessage();
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Send")]
         [return: UnsafeAccessorType(HttpResponseMessageTypeName)]
         private static extern object Send([UnsafeAccessorType(HttpClientTypeName)] object client, [UnsafeAccessorType(HttpRequestMessageTypeName)] object requestMessage, CancellationToken cancellationToken);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SendAsync")]
         [return: UnsafeAccessorType(TaskOfHttpResponseMessageTypeName)]
         private static extern object SendAsync([UnsafeAccessorType(HttpClientTypeName)] object client, [UnsafeAccessorType(HttpRequestMessageTypeName)] object requestMessage, CancellationToken cancellationToken);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Content")]
         [return: UnsafeAccessorType(HttpContentTypeName)]
         private static extern object GetContent([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_StatusCode")]
         private static extern HttpStatusCode GetStatusCode([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Headers")]
         [return: UnsafeAccessorType(HttpResponseHeadersTypeName)]
         private static extern object GetHeaders([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Location")]
         private static extern Uri? GetLocation([UnsafeAccessorType(HttpResponseHeadersTypeName)] object headers);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ReadAsStream")]
         private static extern Stream ReadAsStream([UnsafeAccessorType(HttpContentTypeName)] object content);
 

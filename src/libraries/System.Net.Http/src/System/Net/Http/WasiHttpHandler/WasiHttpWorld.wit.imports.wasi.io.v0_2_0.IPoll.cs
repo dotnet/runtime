@@ -32,6 +32,7 @@ internal interface IPoll {
             Dispose(true);
         }
 
+        [RequiresUnsafe]
         [DllImport("wasi:io/poll@0.2.0", EntryPoint = "[resource-drop]pollable"), WasmImportLinkage]
         private static extern void wasmImportResourceDrop(int p0);
 
@@ -44,6 +45,7 @@ internal interface IPoll {
 
         internal static class ReadyWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/poll@0.2.0", EntryPoint = "[method]pollable.ready"), WasmImportLinkage]
             internal static extern int wasmImportReady(int p0);
 
@@ -60,6 +62,7 @@ internal interface IPoll {
 
         internal static class BlockWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:io/poll@0.2.0", EntryPoint = "[method]pollable.block"), WasmImportLinkage]
             internal static extern void wasmImportBlock(int p0);
 

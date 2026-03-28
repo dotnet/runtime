@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static unsafe partial int ReadFile(
             SafeHandle handle,

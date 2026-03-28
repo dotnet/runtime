@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -11,21 +12,25 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_StoreEnumerateUserRoot(
             out SafeCFArrayHandle pCertsOut,
             out int pOSStatusOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_StoreEnumerateMachineRoot(
             out SafeCFArrayHandle pCertsOut,
             out int pOSStatusOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_StoreEnumerateUserDisallowed(
             out SafeCFArrayHandle pCertsOut,
             out int pOSStatusOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_StoreEnumerateMachineDisallowed(
             out SafeCFArrayHandle pCertsOut,

@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -15,6 +16,7 @@ internal static partial class Interop
         internal const int REG_NOTIFY_CHANGE_SECURITY = 0x8;
         internal const int REG_NOTIFY_THREAD_AGNOSTIC = 0x10000000;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegNotifyChangeKeyValue", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegNotifyChangeKeyValue(
             SafeHandle hKey,

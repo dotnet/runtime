@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -13,6 +14,7 @@ internal static partial class Interop
         internal const int CTRL_LOGOFF_EVENT = 5;
         internal const int CTRL_SHUTDOWN_EVENT = 6;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool SetConsoleCtrlHandler(delegate* unmanaged<int, BOOL> handler, [MarshalAs(UnmanagedType.Bool)] bool Add);

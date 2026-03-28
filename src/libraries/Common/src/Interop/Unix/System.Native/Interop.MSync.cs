@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -16,6 +17,7 @@ internal static partial class Interop
             MS_INVALIDATE = 0x10,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MSync", SetLastError = true)]
         internal static partial int MSync(IntPtr addr, ulong len, MemoryMappedSyncFlags flags);
     }

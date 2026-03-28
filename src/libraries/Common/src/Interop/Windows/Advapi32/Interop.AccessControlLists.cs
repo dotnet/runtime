@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -8,10 +9,12 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool InitializeAcl(nint pAcl, int nAclLength, int dwAclRevision);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "SetEntriesInAclW", SetLastError = true)]
         internal static unsafe partial int SetEntriesInAcl(
             int cCountOfExplicitEntries,
@@ -19,10 +22,12 @@ internal static partial class Interop
             nint OldAcl,
             out SafeLocalAllocHandle NewAcl);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetAce(ACL* pAcl, int dwAceIndex, out ACE* pAce);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool AddMandatoryAce(

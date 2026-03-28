@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -10,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Socket")]
         internal static unsafe partial Error Socket(int addressFamily, int socketType, int protocolType, IntPtr* socket);
     }

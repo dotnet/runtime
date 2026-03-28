@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -9,6 +10,7 @@ namespace Microsoft.Win32.RegistryTests
 {
     internal static partial class Helpers
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Advapi32,  EntryPoint = "RegSetValueW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         private static partial int RegSetValue(SafeRegistryHandle handle, string value, int regType, string sb, int sizeIgnored);
 
@@ -18,6 +20,7 @@ namespace Microsoft.Win32.RegistryTests
             return RegSetValue(key.Handle, null, REG_SZ, value, 0) == 0;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Advapi32,  EntryPoint = "RegQueryValueExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         private static partial int RegQueryValueEx(SafeRegistryHandle handle, string valueName, int[] reserved, IntPtr regType, byte[] value, ref int size);
 
@@ -39,6 +42,7 @@ namespace Microsoft.Win32.RegistryTests
             return RegQueryValueEx(handle, null, null, IntPtr.Zero, b, ref size) != ERROR_FILE_NOT_FOUND;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Kernel32, EntryPoint = "SetEnvironmentVariableW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetEnvironmentVariable(string lpName, string lpValue);

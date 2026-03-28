@@ -4,6 +4,7 @@
 // The Debugger class is a part of the System.Diagnostics package
 // and is used for communicating with a debugger.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -11,6 +12,7 @@ namespace System.Diagnostics
 {
     public static partial class Debugger
     {
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Break")]
         private static partial void BreakInternal();
 
@@ -54,6 +56,7 @@ namespace System.Diagnostics
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Launch")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool LaunchInternal();
@@ -61,6 +64,7 @@ namespace System.Diagnostics
         // Returns whether or not a managed debugger is attached to the process.
         public static bool IsAttached => IsManagedDebuggerAttached() != 0;
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsManagedDebuggerAttached")]
         [SuppressGCTransition]
         private static partial int IsManagedDebuggerAttached();
@@ -70,12 +74,14 @@ namespace System.Diagnostics
         // report the message depending on its settings.
         public static void Log(int level, string? category, string? message) => LogInternal(level, category, message);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Log", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void LogInternal(int level, string? category, string? message);
 
         // Checks to see if an attached debugger has logging enabled
         public static bool IsLogging() => IsLoggingInternal() != 0;
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsLoggingHelper")]
         [SuppressGCTransition]
         private static partial int IsLoggingInternal();
@@ -83,6 +89,7 @@ namespace System.Diagnostics
         // Posts a custom notification for the attached debugger.  If there is no
         // debugger attached, has no effect.  The debugger may or may not
         // report the notification depending on its settings.
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_CustomNotification")]
         private static partial void CustomNotification(ObjectHandleOnStack data);
 

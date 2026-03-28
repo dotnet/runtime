@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security;
 using static System.Net.WebSockets.WebSocketProtocolComponent;
@@ -10,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class WebSocket
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.WebSocket, EntryPoint = "WebSocketSend")]
         internal static partial int WebSocketSend_Raw(
             SafeHandle webSocketHandle,
@@ -17,6 +19,7 @@ internal static partial class Interop
             ref Buffer buffer,
             IntPtr applicationContext);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.WebSocket, EntryPoint = "WebSocketSend")]
         internal static partial int WebSocketSendWithoutBody_Raw(
             SafeHandle webSocketHandle,

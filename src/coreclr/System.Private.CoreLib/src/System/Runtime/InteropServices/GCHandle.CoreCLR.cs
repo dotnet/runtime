@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
@@ -22,6 +23,7 @@ namespace System.Runtime.InteropServices
         private static IntPtr InternalAllocWithGCTransition(object? value, GCHandleType type)
             => _InternalAllocWithGCTransition(ObjectHandleOnStack.Create(ref value), type);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalAllocWithGCTransition")]
         private static partial IntPtr _InternalAllocWithGCTransition(ObjectHandleOnStack value, GCHandleType type);
 
@@ -38,6 +40,7 @@ namespace System.Runtime.InteropServices
         private static void InternalFreeWithGCTransition(IntPtr dependentHandle)
             => _InternalFreeWithGCTransition(dependentHandle);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalFreeWithGCTransition")]
         private static partial void _InternalFreeWithGCTransition(IntPtr dependentHandle);
 
@@ -57,6 +60,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool InternalTryGetBridgeWait(IntPtr handle, ref object? result);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalGetBridgeWait")]
         private static partial void InternalGetBridgeWait(IntPtr handle, ObjectHandleOnStack result);
 

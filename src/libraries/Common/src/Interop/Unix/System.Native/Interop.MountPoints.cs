@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -13,6 +14,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAllMountPoints")]
         private static unsafe partial int GetAllMountPoints(delegate* unmanaged<void*, byte*, void> onFound, void* context);
 

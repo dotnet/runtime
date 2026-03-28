@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
@@ -64,9 +65,11 @@ namespace System.Runtime.CompilerServices
             SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void SystemJS_MarkAsyncMain();
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall)]
         private static unsafe partial void SystemJS_RejectMainPromise(
             [MarshalAs(UnmanagedType.LPWStr)] string pMessage, int messageLength,

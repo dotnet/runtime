@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -12,6 +13,7 @@ internal static partial class Interop
         private const uint SYNCHRONIZE = 0x00100000;
         internal const uint THREAD_ALL_ACCESS = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3FF;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static partial IntPtr OpenThread(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inherited, int threadID);
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -10,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Mswsock
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Mswsock, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool TransmitFile(

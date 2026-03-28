@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
@@ -12,6 +13,7 @@ internal static partial class Interop
 {
     internal static partial class NCrypt
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial ErrorCode NCryptGetProperty(
             SafeNCryptHandle hObject,
@@ -21,6 +23,7 @@ internal static partial class Interop
             out int pcbResult,
             CngPropertyOptions dwFlags);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial ErrorCode NCryptSetProperty(
             SafeNCryptHandle hObject,

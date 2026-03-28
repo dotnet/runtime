@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -12,6 +13,7 @@ internal static partial class Interop
         /// <summary>
         /// Version used for a buffer containing a scalar integer (not an IntPtr)
         /// </summary>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32)]
         private static unsafe partial CRYPT_OID_INFO* CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, void* pvKey, OidGroup group);
 

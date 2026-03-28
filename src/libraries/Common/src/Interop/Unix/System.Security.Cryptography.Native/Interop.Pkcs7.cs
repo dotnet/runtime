@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -9,30 +10,38 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemReadBioPkcs7")]
         internal static partial SafePkcs7Handle PemReadBioPkcs7(SafeBioHandle bp);
 
         internal static SafePkcs7Handle DecodePkcs7(ReadOnlySpan<byte> buf) =>
             DecodePkcs7(ref MemoryMarshal.GetReference(buf), buf.Length);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodePkcs7")]
         private static partial SafePkcs7Handle DecodePkcs7(ref byte buf, int len);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_D2IPkcs7Bio")]
         internal static partial SafePkcs7Handle D2IPkcs7Bio(SafeBioHandle bp);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pkcs7CreateCertificateCollection")]
         internal static partial SafePkcs7Handle Pkcs7CreateCertificateCollection(SafeX509StackHandle certs);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pkcs7Destroy")]
         internal static partial void Pkcs7Destroy(IntPtr p7);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetPkcs7Certificates")]
         private static partial int GetPkcs7Certificates(SafePkcs7Handle p7, out SafeSharedX509StackHandle certs);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetPkcs7DerSize")]
         internal static partial int GetPkcs7DerSize(SafePkcs7Handle p7);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodePkcs7")]
         internal static partial int EncodePkcs7(SafePkcs7Handle p7, byte[] buf);
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -12,6 +13,7 @@ internal static partial class Interop
         internal const int SECURITY_MAX_SID_SIZE =
             12 /* sizeof(SID) */ - 4 /* sizeof(DWORD) */ + SID_MAX_SUB_AUTHORITIES * 4 /* sizeof(DWORD) */;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         internal static partial int CreateWellKnownSid(
             int sidType,
@@ -19,6 +21,7 @@ internal static partial class Interop
             byte[] resultSid,
             ref uint resultSidLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CreateWellKnownSid(

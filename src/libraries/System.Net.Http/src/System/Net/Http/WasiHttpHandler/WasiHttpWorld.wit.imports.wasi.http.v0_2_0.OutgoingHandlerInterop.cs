@@ -17,6 +17,7 @@ namespace WasiHttpWorld.wit.imports.wasi.http.v0_2_0
 
         internal static class HandleWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/outgoing-handler@0.2.0", EntryPoint = "handle"), WasmImportLinkage]
             internal static extern void wasmImportHandle(int p0, int p1, int p2, nint p3);
 

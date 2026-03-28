@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -10,9 +11,11 @@ internal static partial class Interop
 {
     internal static partial class JObjectLifetime
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_NewGlobalReference")]
         internal static partial IntPtr NewGlobalReference(IntPtr obj);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DeleteGlobalReference")]
         internal static partial void DeleteGlobalReference(IntPtr obj);
 

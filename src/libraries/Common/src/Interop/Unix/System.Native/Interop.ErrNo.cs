@@ -2,16 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal unsafe partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetErrNo")]
         [SuppressGCTransition]
         internal static partial int GetErrNo();
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_SetErrNo")]
         [SuppressGCTransition]
         internal static partial void SetErrNo(int errorCode);

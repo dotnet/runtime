@@ -224,6 +224,9 @@
     <Compile Include="System\Diagnostics\DebuggerStepThroughAttribute.cs" />
     <Compile Include="System\Diagnostics\StackTraceHiddenAttribute.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DoesNotReturnIfAttribute.cs" />
+    <Compile Include="$(CommonPath)System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs">
+      <Link>System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs</Link>
+    </Compile>
     <Compile Include="System\Diagnostics\Debug.cs" />
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\IDynamicInterfaceCastable.cs" />

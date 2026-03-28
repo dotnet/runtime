@@ -1707,10 +1707,12 @@ namespace System.Net
 
                     const string HttpConnectionSettingsTypeName = "System.Net.Http.HttpConnectionSettings, System.Net.Http";
 
+                    [RequiresUnsafe]
                     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Settings")]
                     [return: UnsafeAccessorType(HttpConnectionSettingsTypeName)]
                     static extern object GetSettings(SocketsHttpHandler handler);
 
+                    [RequiresUnsafe]
                     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_impersonationLevel")]
                     static extern ref TokenImpersonationLevel GetImpersonationLevel([UnsafeAccessorType(HttpConnectionSettingsTypeName)] object settings);
                 }

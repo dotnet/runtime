@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -159,6 +160,7 @@ namespace Internal.Runtime
         }
 
         [Intrinsic]
+        [RequiresUnsafe]
         internal static extern MethodTable* Of<T>();
 
         // upper ushort is used for Flags

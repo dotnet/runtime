@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -28,6 +29,7 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void CFRunLoopRun();
 #else
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
         internal static partial void CFRunLoopRun();
 #endif
@@ -35,6 +37,7 @@ internal static partial class Interop
         /// <summary>
         /// Runs the current thread's CFRunLoop object in a particular mode.
         /// </summary>
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
         internal static partial int CFRunLoopRunInMode(CFStringRef mode, double seconds, int returnAfterSourceHandled);
 
@@ -42,6 +45,7 @@ internal static partial class Interop
         /// Notifies a RunLoop to stop and return control to the execution context that called CFRunLoopRun
         /// </summary>
         /// <param name="rl">The RunLoop to notify to stop</param>
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
         internal static partial void CFRunLoopStop(CFRunLoopRef rl);
 
@@ -50,6 +54,7 @@ internal static partial class Interop
         /// Follows the "Get Rule" where you do not own the object unless you CFRetain it; in which case, you must also CFRelease it as well.
         /// </summary>
         /// <returns>Returns a pointer to a CFRunLoop on success; otherwise, returns IntPtr.Zero</returns>
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
         internal static partial CFRunLoopRef CFRunLoopGetCurrent();
 
@@ -59,6 +64,7 @@ internal static partial class Interop
         /// <param name="rl">The run loop to modify.</param>
         /// <param name="source">The run loop source to add. The source is retained by the run loop.</param>
         /// <param name="mode">The run loop mode to which to add source.</param>
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
         internal static partial void CFRunLoopAddSource(CFRunLoopRef rl, CFRunLoopSourceRef source, CFStringRef mode);
 
@@ -68,6 +74,7 @@ internal static partial class Interop
         /// <param name="rl">The run loop to modify.</param>
         /// <param name="source">The run loop source to remove.</param>
         /// <param name="mode">The run loop mode of rl from which to remove source.</param>
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
         internal static partial void CFRunLoopRemoveSource(CFRunLoopRef rl, CFRunLoopSourceRef source, CFStringRef mode);
 
@@ -75,6 +82,7 @@ internal static partial class Interop
         /// Invalidates a CFRunLoopSource object, stopping it from ever firing again.
         /// </summary>
         /// <param name="source">The run loop source to invalidate.</param>
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
         internal static partial void CFRunLoopSourceInvalidate(CFRunLoopSourceRef source);
 
@@ -86,6 +94,7 @@ internal static partial class Interop
         /// waiting for a source or timer to become ready to fire;
         /// false if rl either is not running or is currently processing
         /// a source, timer, or observer.</returns>
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CFRunLoopIsWaiting(CFRunLoopRef rl);

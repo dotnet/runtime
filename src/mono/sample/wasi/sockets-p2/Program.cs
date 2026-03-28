@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -52,6 +53,7 @@ Accept: */*
     {
         return PollWasiEventLoopUntilResolved((Thread)null!, MainAsync(args));
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "PollWasiEventLoopUntilResolved")]
         static extern T PollWasiEventLoopUntilResolved<T>(Thread t, Task<T> mainTask);
     }

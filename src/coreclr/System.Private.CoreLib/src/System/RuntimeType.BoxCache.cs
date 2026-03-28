@@ -131,8 +131,8 @@ namespace System
                 valueTypeSize = valueTypeSizeTemp;
             }
 
-            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetBoxInfo")]
             [RequiresUnsafe]
+            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetBoxInfo")]
             private static partial void GetBoxInfo(
                 QCallTypeHandle type,
                 delegate*<void*, object>* ppfnAllocator,

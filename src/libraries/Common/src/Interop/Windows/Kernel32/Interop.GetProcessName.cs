@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -10,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "QueryFullProcessImageNameW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool QueryFullProcessImageName(

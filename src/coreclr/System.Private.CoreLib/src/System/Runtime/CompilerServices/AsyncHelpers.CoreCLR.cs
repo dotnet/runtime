@@ -238,8 +238,8 @@ namespace System.Runtime.CompilerServices
         private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
 
 #if !NATIVEAOT
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_AddContinuationToExInternal")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_AddContinuationToExInternal")]
         private static unsafe partial void AddContinuationToExInternal(void* diagnosticIP, ObjectHandleOnStack ex);
 
         [RequiresUnsafe]

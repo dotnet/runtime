@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -9,9 +10,11 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         internal static partial NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, Span<byte> pbOutput, int cbOutput, int dwFlags);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         internal static unsafe partial NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, byte* pbOutput, int cbOutput, int dwFlags);
     }

@@ -117,10 +117,12 @@ namespace System.Runtime.InteropServices.Java
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_Initialize")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool InitializeInternal(IntPtr markCrossReferences);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_FinishCrossReferenceProcessing")]
         internal static unsafe partial void FinishCrossReferenceProcessingBridge(
             MarkCrossReferencesArgs* crossReferences,

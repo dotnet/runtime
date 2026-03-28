@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 
@@ -32,6 +33,7 @@ internal static partial class Interop
             return HResult;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "EventWriteTransfer")]
         private static unsafe partial int EventWriteTransfer_PInvoke(
             long registrationHandle,

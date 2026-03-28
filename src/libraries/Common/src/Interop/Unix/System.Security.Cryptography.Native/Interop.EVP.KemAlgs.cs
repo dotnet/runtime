@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -28,6 +29,7 @@ internal static partial class Interop
                 MlKem1024 = EvpKemAvailable(MLKemAlgorithm.MLKem1024.Name);
             }
 
+            [RequiresUnsafe]
             [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKemAvailable", StringMarshalling = StringMarshalling.Utf8)]
             private static partial int CryptoNative_EvpKemAvailable(string algorithm);
 

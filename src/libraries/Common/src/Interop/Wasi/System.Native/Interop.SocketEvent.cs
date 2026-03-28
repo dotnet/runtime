@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -19,6 +20,7 @@ internal static partial class Interop
             Error = 0x10
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetWasiSocketDescriptor")]
         internal static unsafe partial Error GetWasiSocketDescriptor(IntPtr socket, IntPtr* entry);
     }

@@ -6,12 +6,14 @@ using Microsoft.Win32.SafeHandles;
 #else
 using Internal.Win32.SafeHandles;
 #endif
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
@@ -21,6 +23,7 @@ internal static partial class Interop
             byte[]? lpData,
             ref int lpcbData);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int RegQueryValueEx(
             SafeRegistryHandle hKey,

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -50,6 +51,7 @@ internal static partial class Interop
         internal const uint SEE_MASK_NOCLOSEPROCESS = 0x00000040;
         internal const uint SEE_MASK_FLAG_NO_UI = 0x00000400;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Shell32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool ShellExecuteExW(

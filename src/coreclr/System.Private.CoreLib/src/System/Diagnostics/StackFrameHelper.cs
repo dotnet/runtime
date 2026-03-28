@@ -39,10 +39,12 @@ namespace System.Diagnostics
         private int iFrameCount;
 #pragma warning restore 414
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType("System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         private static extern object CreateStackTraceSymbols();
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method)]
         private static extern void GetSourceLineInfo(
             [UnsafeAccessorType("System.Diagnostics.StackTraceSymbols, System.Diagnostics.StackTrace, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")] object target,

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.DirectoryServices.Protocols;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -100,42 +101,55 @@ internal static partial class Interop
             ldap_get_option_int(IntPtr.Zero, LdapOption.LDAP_OPT_DEBUG_LEVEL, ref unused);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_initialize", SetLastError = true)]
         public static partial int ldap_initialize(out IntPtr ld, [MarshalAs(UnmanagedType.LPUTF8Str)] string uri);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_unbind_ext_s")]
         public static partial int ldap_unbind_ext_s(IntPtr ld, ref IntPtr serverctrls, ref IntPtr clientctrls);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_dn")]
         public static partial IntPtr ldap_get_dn(ConnectionHandle ldapHandle, IntPtr result);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
         public static partial int ldap_get_option_bool(ConnectionHandle ldapHandle, LdapOption option, [MarshalAs(UnmanagedType.Bool)] ref bool outValue);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
         public static unsafe partial int ldap_get_option_secInfo(ConnectionHandle ldapHandle, LdapOption option, void* outValue);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
         public static partial int ldap_get_option_sechandle(ConnectionHandle ldapHandle, LdapOption option, ref SecurityHandle outValue);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
         private static partial int ldap_get_option_int(IntPtr ldapHandle, LdapOption option, ref int outValue);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
         public static partial int ldap_get_option_int(ConnectionHandle ldapHandle, LdapOption option, ref int outValue);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
         public static partial int ldap_get_option_ptr(ConnectionHandle ldapHandle, LdapOption option, ref IntPtr outValue);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_values_len")]
         public static partial IntPtr ldap_get_values_len(ConnectionHandle ldapHandle, IntPtr result, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_result", SetLastError = true)]
         public static partial int ldap_result(ConnectionHandle ldapHandle, int messageId, int all, in LDAP_TIMEVAL timeout, ref IntPtr Mesage);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_result2error")]
         public static partial int ldap_result2error(ConnectionHandle ldapHandle, IntPtr result, int freeIt);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_search_ext")]
         public static partial int ldap_search(
             ConnectionHandle ldapHandle,
@@ -150,46 +164,60 @@ internal static partial class Interop
             int sizelimit,
             ref int messageNumber);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", SetLastError = true)]
         public static partial int ldap_set_option_bool(ConnectionHandle ld, LdapOption option, [MarshalAs(UnmanagedType.Bool)] bool value);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_clientcert(ConnectionHandle ldapHandle, LdapOption option, QUERYCLIENTCERT outValue);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_servercert(ConnectionHandle ldapHandle, LdapOption option, VERIFYSERVERCERT outValue);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", SetLastError = true)]
         public static partial int ldap_set_option_int(ConnectionHandle ld, LdapOption option, ref int inValue);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_ptr(ConnectionHandle ldapHandle, LdapOption option, ref IntPtr inValue);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_string(ConnectionHandle ldapHandle, LdapOption option, [MarshalAs(UnmanagedType.LPUTF8Str)] string inValue);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_referral(ConnectionHandle ldapHandle, LdapOption option, ref LdapReferralCallback outValue);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_timeval(ConnectionHandle ldapHandle, LdapOption option, ref LDAP_TIMEVAL inValue);
 
         // Note that ldap_start_tls_s has a different signature across Windows LDAP and OpenLDAP
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_start_tls_s")]
         public static partial int ldap_start_tls(ConnectionHandle ldapHandle, IntPtr serverControls, IntPtr clientControls);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_result")]
         public static partial int ldap_parse_result(ConnectionHandle ldapHandle, IntPtr result, ref int serverError, ref IntPtr dn, ref IntPtr message, ref IntPtr referral, ref IntPtr control, byte freeIt);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_result")]
         public static partial int ldap_parse_result_referral(ConnectionHandle ldapHandle, IntPtr result, IntPtr serverError, IntPtr dn, IntPtr message, ref IntPtr referral, IntPtr control, byte freeIt);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_extended_result")]
         public static partial int ldap_parse_extended_result(ConnectionHandle ldapHandle, IntPtr result, ref IntPtr oid, ref IntPtr data, byte freeIt);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_reference")]
         public static partial int ldap_parse_reference(ConnectionHandle ldapHandle, IntPtr result, ref IntPtr referrals, IntPtr ServerControls, byte freeIt);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_bind_s")]
         internal static partial int ldap_sasl_bind(
             ConnectionHandle ld,
@@ -200,6 +228,7 @@ internal static partial class Interop
             IntPtr clientctrls,
             IntPtr servercredp);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_interactive_bind_s")]
         internal static partial int ldap_sasl_interactive_bind(
             ConnectionHandle ld,
@@ -211,60 +240,79 @@ internal static partial class Interop
             LDAP_SASL_INTERACT_PROC proc,
             IntPtr defaults);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_err2string")]
         public static partial IntPtr ldap_err2string(int err);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_extended_operation")]
         public static partial int ldap_extended_operation(ConnectionHandle ldapHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string oid, BerVal data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_first_attribute")]
         public static partial IntPtr ldap_first_attribute(ConnectionHandle ldapHandle, IntPtr result, ref IntPtr address);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_first_entry")]
         public static partial IntPtr ldap_first_entry(ConnectionHandle ldapHandle, IntPtr result);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_first_reference")]
         public static partial IntPtr ldap_first_reference(ConnectionHandle ldapHandle, IntPtr result);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_control_free")]
         public static partial int ldap_control_free(IntPtr control);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_controls_free")]
         public static partial int ldap_controls_free(IntPtr value);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_value_free")]
         public static partial int ldap_value_free(IntPtr value);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_value_free_len")]
         public static partial IntPtr ldap_value_free_len(IntPtr berelement);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_memfree")]
         public static partial void ldap_memfree(IntPtr value);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_msgfree")]
         public static partial void ldap_msgfree(IntPtr value);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_modify_ext")]
         public static partial int ldap_modify(ConnectionHandle ldapHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_next_attribute")]
         public static partial IntPtr ldap_next_attribute(ConnectionHandle ldapHandle, IntPtr result, IntPtr address);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_next_entry")]
         public static partial IntPtr ldap_next_entry(ConnectionHandle ldapHandle, IntPtr result);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_next_reference")]
         public static partial IntPtr ldap_next_reference(ConnectionHandle ldapHandle, IntPtr result);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_abandon")]
         public static partial int ldap_abandon(ConnectionHandle ldapHandle, int messagId);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_add_ext")]
         public static partial int ldap_add(ConnectionHandle ldapHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_delete_ext")]
         public static partial int ldap_delete_ext(ConnectionHandle ldapHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string dn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_rename")]
         public static partial int ldap_rename(
             ConnectionHandle ldapHandle,
@@ -276,6 +324,7 @@ internal static partial class Interop
             IntPtr clientcontrol,
             ref int messageNumber);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_compare_ext")]
         public static partial int ldap_compare(
             ConnectionHandle ldapHandle,

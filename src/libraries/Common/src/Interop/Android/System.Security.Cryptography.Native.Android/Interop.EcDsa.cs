@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -12,6 +13,7 @@ internal static partial class Interop
         internal static bool EcDsaSign(ReadOnlySpan<byte> dgst, Span<byte> sig, out int siglen, SafeEcKeyHandle ecKey) =>
             EcDsaSign(ref MemoryMarshal.GetReference(dgst), dgst.Length, ref MemoryMarshal.GetReference(sig), out siglen, ecKey);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcDsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EcDsaSign(ref byte dgst, int dlen, ref byte sig, out int siglen, SafeEcKeyHandle ecKey);
@@ -34,10 +36,12 @@ internal static partial class Interop
          *      0: incorrect signature
          *     -1: error
          */
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcDsaVerify")]
         private static partial int EcDsaVerify(ref byte dgst, int dgst_len, ref byte sigbuf, int sig_len, SafeEcKeyHandle ecKey);
 
         // returns the maximum length of a DER encoded ECDSA signature created with this key.
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcDsaSize")]
         private static partial int AndroidCryptoNative_EcDsaSize(SafeEcKeyHandle ecKey);
 

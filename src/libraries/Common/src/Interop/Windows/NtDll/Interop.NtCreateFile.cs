@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -12,6 +13,7 @@ internal static partial class Interop
     {
         // https://msdn.microsoft.com/en-us/library/bb432380.aspx
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff566424.aspx
+        [RequiresUnsafe]
         [LibraryImport(Libraries.NtDll)]
         private static unsafe partial uint NtCreateFile(
             IntPtr* FileHandle,

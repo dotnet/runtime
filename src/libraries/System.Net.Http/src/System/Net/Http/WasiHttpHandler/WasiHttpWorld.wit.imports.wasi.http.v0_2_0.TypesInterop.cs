@@ -17,6 +17,7 @@ namespace WasiHttpWorld.wit.imports.wasi.http.v0_2_0
 
         internal static class HttpErrorCodeWasmInterop
         {
+            [RequiresUnsafe]
             [DllImport("wasi:http/types@0.2.0", EntryPoint = "http-error-code"), WasmImportLinkage]
             internal static extern void wasmImportHttpErrorCode(int p0, nint p1);
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
@@ -13,11 +14,13 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary, EntryPoint = "CFArrayGetCount")]
         private static partial CFIndex _CFArrayGetCount(SafeCFArrayHandle cfArray);
 
         // Follows the "Get" version of the "Create" rule, so needs to return an IntPtr to
         // prevent CFRelease from being called on the SafeHandle close.
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary, EntryPoint = "CFArrayGetValueAtIndex")]
         private static partial IntPtr CFArrayGetValueAtIndex(SafeCFArrayHandle cfArray, CFIndex index);
 

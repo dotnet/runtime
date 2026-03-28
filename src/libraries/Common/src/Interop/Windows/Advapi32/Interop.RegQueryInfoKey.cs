@@ -7,6 +7,7 @@ using Microsoft.Win32.SafeHandles;
 using Internal.Win32.SafeHandles;
 #endif
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -14,6 +15,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryInfoKeyW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegQueryInfoKey(
             SafeRegistryHandle hKey,

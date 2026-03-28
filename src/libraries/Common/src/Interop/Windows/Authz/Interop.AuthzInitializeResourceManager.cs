@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Authz
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Authz, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool AuthzInitializeResourceManager(
@@ -18,6 +20,7 @@ internal static partial class Interop
             string name,
             out IntPtr rm);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Authz)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool AuthzFreeResourceManager(IntPtr rm);

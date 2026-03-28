@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -11,23 +12,27 @@ internal static partial class Interop
 {
     internal static partial class NetSecurityNative
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_ReleaseGssBuffer")]
         internal static unsafe partial void ReleaseGssBuffer(
             byte* bufferPtr,
             ulong length);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_DisplayMinorStatus")]
         internal static partial Status DisplayMinorStatus(
             out Status minorStatus,
             Status statusValue,
             ref GssBuffer buffer);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_DisplayMajorStatus")]
         internal static partial Status DisplayMajorStatus(
             out Status minorStatus,
             Status statusValue,
             ref GssBuffer buffer);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_ImportUserName")]
         internal static partial Status ImportUserName(
             out Status minorStatus,
@@ -35,6 +40,7 @@ internal static partial class Interop
             int inputNameByteCount,
             out SafeGssNameHandle outputName);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_ImportPrincipalName")]
         internal static partial Status ImportPrincipalName(
             out Status minorStatus,
@@ -42,22 +48,26 @@ internal static partial class Interop
             int inputNameByteCount,
             out SafeGssNameHandle outputName);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_ReleaseName")]
         internal static partial Status ReleaseName(
             out Status minorStatus,
             ref IntPtr inputName);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_AcquireAcceptorCred")]
         internal static partial Status AcquireAcceptorCred(
             out Status minorStatus,
             out SafeGssCredHandle outputCredHandle);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_InitiateCredSpNego")]
         internal static partial Status InitiateCredSpNego(
             out Status minorStatus,
             SafeGssNameHandle desiredName,
             out SafeGssCredHandle outputCredHandle);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_InitiateCredWithPassword", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial Status InitiateCredWithPassword(
             out Status minorStatus,
@@ -67,11 +77,13 @@ internal static partial class Interop
             int passwordLen,
             out SafeGssCredHandle outputCredHandle);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_ReleaseCred")]
         internal static partial Status ReleaseCred(
             out Status minorStatus,
             ref IntPtr credHandle);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_InitSecContext")]
         private static partial Status InitSecContext(
             out Status minorStatus,
@@ -158,6 +170,7 @@ internal static partial class Interop
                 out isNtlmUsed);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_AcceptSecContext")]
         private static partial Status AcceptSecContext(
             out Status minorStatus,
@@ -189,17 +202,20 @@ internal static partial class Interop
                 out isNtlmUsed);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_DeleteSecContext")]
         internal static partial Status DeleteSecContext(
             out Status minorStatus,
             ref IntPtr contextHandle);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_GetUser")]
         internal static partial Status GetUser(
             out Status minorStatus,
             SafeGssContextHandle? acceptContextHandle,
             ref GssBuffer token);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_Wrap")]
         private static unsafe partial Status Wrap(
             out Status minorStatus,
@@ -209,6 +225,7 @@ internal static partial class Interop
             int count,
             ref GssBuffer outBuffer);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_Unwrap")]
         private static unsafe partial Status Unwrap(
             out Status minorStatus,
@@ -218,6 +235,7 @@ internal static partial class Interop
             int count,
             ref GssBuffer outBuffer);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_GetMic")]
         private static unsafe partial Status GetMic(
             out Status minorStatus,
@@ -226,6 +244,7 @@ internal static partial class Interop
             int inputLength,
             ref GssBuffer outBuffer);
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.NetSecurityNative, EntryPoint = "NetSecurityNative_VerifyMic")]
         private static unsafe partial Status VerifyMic(
             out Status minorStatus,

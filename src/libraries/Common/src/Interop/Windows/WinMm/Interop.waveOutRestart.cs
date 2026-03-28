@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -13,6 +14,7 @@ internal static partial class Interop
         /// </summary>
         /// <param name="hwo">Handle to the waveform-audio output device.</param>
         /// <returns>MMSYSERR</returns>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.WinMM)]
         internal static partial MMSYSERR waveOutRestart(IntPtr hwo);
     }

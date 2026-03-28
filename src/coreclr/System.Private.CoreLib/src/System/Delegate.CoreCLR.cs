@@ -415,6 +415,7 @@ namespace System
                 new QCallTypeHandle(ref methodType), method, flags);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodName", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool BindToMethodName(ObjectHandleOnStack d, ObjectHandleOnStack target, QCallTypeHandle methodType, string method, DelegateBindingFlags flags);
@@ -428,6 +429,7 @@ namespace System
             return ret;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool BindToMethodInfo(ObjectHandleOnStack d, ObjectHandleOnStack target, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags);
@@ -479,6 +481,7 @@ namespace System
             Construct(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref target), method);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_Construct")]
         private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
 
@@ -486,8 +489,8 @@ namespace System
         [RequiresUnsafe]
         private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
         [RequiresUnsafe]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
         private static unsafe partial void* GetMulticastInvokeSlow(MethodTable* pMT);
 
         internal unsafe IntPtr GetMulticastInvoke()
@@ -524,6 +527,7 @@ namespace System
             return methodInfo!;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_FindMethodHandle")]
         private static partial void FindMethodHandle(ObjectHandleOnStack d, ObjectHandleOnStack retMethodInfo);
 
@@ -532,6 +536,7 @@ namespace System
             return InternalEqualMethodHandles(ObjectHandleOnStack.Create(ref left), ObjectHandleOnStack.Create(ref right));
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InternalEqualMethodHandles")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool InternalEqualMethodHandles(ObjectHandleOnStack left, ObjectHandleOnStack right);
@@ -541,6 +546,7 @@ namespace System
             return AdjustTarget(ObjectHandleOnStack.Create(ref target), methodPtr);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_AdjustTarget")]
         private static partial IntPtr AdjustTarget(ObjectHandleOnStack target, IntPtr methodPtr);
 
@@ -550,6 +556,7 @@ namespace System
             InitializeVirtualCallStub(ObjectHandleOnStack.Create(ref d), methodPtr);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
         private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
 

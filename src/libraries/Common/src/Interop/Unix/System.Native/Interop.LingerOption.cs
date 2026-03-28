@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -15,12 +16,15 @@ internal static partial class Interop
             public int Seconds; // Number of seconds to linger for
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetLingerOption")]
         internal static unsafe partial Error GetLingerOption(SafeHandle socket, LingerOption* option);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetLingerOption")]
         internal static unsafe partial Error SetLingerOption(SafeHandle socket, LingerOption* option);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetLingerOption")]
         internal static unsafe partial Error SetLingerOption(IntPtr socket, LingerOption* option);
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
@@ -10,6 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "ReadDirectoryChangesW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool ReadDirectoryChangesW(

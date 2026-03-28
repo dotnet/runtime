@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 
@@ -12,6 +13,7 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptSignHash(
             SafeBCryptKeyHandle hKey,

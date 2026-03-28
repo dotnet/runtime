@@ -273,6 +273,153 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
             await VerifyNoDiagnostic(source);
         }
+
+        [Fact]
+        public async Task LibraryImportMethod_WithoutRequiresUnsafe_Diagnostic()
+        {
+            var source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Runtime.InteropServices;
+
+                public partial class C
+                {
+                    [LibraryImport("lib")]
+                    static partial void NativeMethod();
+                }
+                """ + RequiresUnsafeAttributeDefinition;
+
+            var fixedSource = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Runtime.InteropServices;
+
+                public partial class C
+                {
+                    [LibraryImport("lib")]
+                    [RequiresUnsafe]
+                    static partial void NativeMethod();
+                }
+                """ + RequiresUnsafeAttributeDefinition;
+
+            await VerifyCodeFix(
+                source,
+                fixedSource,
+                baselineExpected: new[] {
+                    VerifyCS.Diagnostic(DiagnosticId.LibraryImportMethodMissingRequiresUnsafe)
+                        .WithSpan(7, 25, 7, 37)
+                        .WithArguments("C.NativeMethod()")
+                        .WithSeverity(DiagnosticSeverity.Warning)
+                },
+                fixedExpected: Array.Empty<DiagnosticResult>());
+        }
+
+        [Fact]
+        public async Task LibraryImportMethod_AlreadyAnnotated_NoDiagnostic()
+        {
+            var source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Runtime.InteropServices;
+
+                public partial class C
+                {
+                    [LibraryImport("lib")]
+                    [RequiresUnsafe]
+                    static partial void NativeMethod();
+                }
+                """ + RequiresUnsafeAttributeDefinition;
+
+            await VerifyNoDiagnostic(source);
+        }
+
+        [Fact]
+        public async Task ExternMethod_WithoutRequiresUnsafe_Diagnostic()
+        {
+            var source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Runtime.InteropServices;
+
+                public class C
+                {
+                    [DllImport("lib")]
+                    private static extern void NativeMethod();
+                }
+                """ + RequiresUnsafeAttributeDefinition;
+
+            var fixedSource = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Runtime.InteropServices;
+
+                public class C
+                {
+                    [DllImport("lib")]
+                    [RequiresUnsafe]
+                    private static extern void NativeMethod();
+                }
+                """ + RequiresUnsafeAttributeDefinition;
+
+            await VerifyCodeFix(
+                source,
+                fixedSource,
+                baselineExpected: new[] {
+                    VerifyCS.Diagnostic(DiagnosticId.ExternMethodMissingRequiresUnsafe)
+                        .WithSpan(7, 32, 7, 44)
+                        .WithArguments("C.NativeMethod()")
+                        .WithSeverity(DiagnosticSeverity.Warning)
+                },
+                fixedExpected: Array.Empty<DiagnosticResult>());
+        }
+
+        [Fact]
+        public async Task ExternMethod_AlreadyAnnotated_NoDiagnostic()
+        {
+            var source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Runtime.InteropServices;
+
+                public class C
+                {
+                    [DllImport("lib")]
+                    [RequiresUnsafe]
+                    private static extern void NativeMethod();
+                }
+                """ + RequiresUnsafeAttributeDefinition;
+
+            await VerifyNoDiagnostic(source);
+        }
+
+        [Fact]
+        public async Task InternalCallExtern_WithoutRequiresUnsafe_NoDiagnostic()
+        {
+            var source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Runtime.CompilerServices;
+
+                public class C
+                {
+                    [MethodImpl(MethodImplOptions.InternalCall)]
+                    private static extern void InternalMethod();
+                }
+                """ + RequiresUnsafeAttributeDefinition;
+
+            await VerifyNoDiagnostic(source);
+        }
+
+        [Fact]
+        public async Task InternalCallExtern_LegacyShortCtor_NoDiagnostic()
+        {
+            // MethodImplAttribute(short) legacy constructor - value 0x1000 = InternalCall
+            var source = """
+                using System.Diagnostics.CodeAnalysis;
+                using System.Runtime.CompilerServices;
+
+                public class C
+                {
+                    [MethodImpl(0x1000)]
+                    private static extern void InternalMethod();
+                }
+                """ + RequiresUnsafeAttributeDefinition;
+
+            await VerifyNoDiagnostic(source);
+        }
     }
 }
 #endif

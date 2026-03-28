@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_LookupFriendlyNameByOid", StringMarshalling = StringMarshalling.Utf8)]
         internal static unsafe partial int LookupFriendlyNameByOid(string oidValue, ref byte* friendlyNamePtr);
     }

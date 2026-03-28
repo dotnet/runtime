@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
@@ -102,6 +103,7 @@ internal static partial class Interop
             Debug.Assert(ret == destination.Length);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static partial int AppleCryptoNative_HKDFExpand(
@@ -113,6 +115,7 @@ internal static partial class Interop
             Span<byte> destinationPtr,
             int destinationLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static partial int AppleCryptoNative_HKDFExtract(
@@ -124,6 +127,7 @@ internal static partial class Interop
             Span<byte> destinationPtr,
             int destinationLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static partial int AppleCryptoNative_HKDFDeriveKey(

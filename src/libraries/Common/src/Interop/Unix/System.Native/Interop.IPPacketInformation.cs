@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 #pragma warning disable CA1823 // unused private padding fields in MulticastOption structs
@@ -16,10 +17,12 @@ internal static partial class Interop
             private int _padding;       // Pad out to 8-byte alignment
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetControlMessageBufferSize")]
         [SuppressGCTransition]
         internal static partial int GetControlMessageBufferSize(int isIPv4, int isIPv6);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryGetIPPacketInformation")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool TryGetIPPacketInformation(MessageHeader* messageHeader, [MarshalAs(UnmanagedType.Bool)] bool isIPv4, IPPacketInformation* packetInfo);

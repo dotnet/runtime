@@ -2,15 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial IntPtr CreateThreadpoolTimer(delegate* unmanaged<void*, void*, void*, void> pfnti, IntPtr pv, IntPtr pcbe);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial IntPtr SetThreadpoolTimer(IntPtr pti, long* pftDueTime, uint msPeriod, uint msWindowLength);
     }

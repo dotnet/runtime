@@ -10,6 +10,7 @@ internal static partial class Interop
 {
     internal static unsafe partial class Kernel32
     {
+        [RequiresUnsafe]
         [DoesNotReturn]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "ExitProcess")]
         internal static partial void ExitProcess(int exitCode);

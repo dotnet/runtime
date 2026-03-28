@@ -3,12 +3,14 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class BCrypt
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         internal static partial NTSTATUS BCryptDestroyKey(IntPtr hKey);
     }

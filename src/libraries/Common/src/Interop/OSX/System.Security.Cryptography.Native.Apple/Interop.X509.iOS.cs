@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
@@ -33,6 +34,7 @@ internal static partial class Interop
                 out pPrivateKeyOut);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509ImportCertificate(
             ref byte pbKeyBlob,
@@ -42,6 +44,7 @@ internal static partial class Interop
             out SafeSecCertificateHandle pCertOut,
             out SafeSecIdentityHandle pPrivateKeyOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509ImportCollection(
             ref byte pbKeyBlob,

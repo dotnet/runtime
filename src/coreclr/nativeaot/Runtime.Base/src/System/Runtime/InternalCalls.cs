@@ -5,6 +5,7 @@
 // This is where we group together all the internal calls.
 //
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -59,6 +60,7 @@ namespace System.Runtime
         //
 
         // Force a garbage collection.
+        [RequiresUnsafe]
         [DllImport(RuntimeLibrary)]
         internal static extern void RhCollect(int generation, InternalGCCollectionMode mode, Interop.BOOL lowMemoryP = Interop.BOOL.FALSE);
 
@@ -247,10 +249,12 @@ namespace System.Runtime
 
         // Block the current thread until at least one object needs to be finalized (returns true) or
         // memory is low (returns false and the finalizer thread should initiate a garbage collection).
+        [RequiresUnsafe]
         [DllImport(RuntimeLibrary)]
         internal static extern uint RhpWaitForFinalizerRequest();
 
         // Indicate that the current round of finalizations is complete.
+        [RequiresUnsafe]
         [DllImport(RuntimeLibrary)]
         internal static extern void RhpSignalFinalizationComplete(uint fCount, int observedFullGcCount);
     }

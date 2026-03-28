@@ -3053,6 +3053,7 @@ namespace System.ComponentModel
 
                 _comNativeDescriptor = (TypeDescriptionProvider)CreateComNativeDescriptor();
 
+                [RequiresUnsafe]
                 [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
                 [return: UnsafeAccessorType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms")]
                 [MethodImpl(MethodImplOptions.NoInlining)]

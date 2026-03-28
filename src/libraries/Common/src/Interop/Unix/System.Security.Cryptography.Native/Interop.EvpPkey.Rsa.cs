@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -11,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial SafeEvpPKeyHandle CryptoNative_EvpPKeyCreateRsa(IntPtr rsa);
 
@@ -29,6 +31,7 @@ internal static partial class Interop
             return pkey;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial SafeEvpPKeyHandle CryptoNative_RsaGenerateKey(int keySize);
 
@@ -45,6 +48,7 @@ internal static partial class Interop
             return pkey;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaDecrypt(
             SafeEvpPKeyHandle pkey,
@@ -82,6 +86,7 @@ internal static partial class Interop
             return written;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaEncrypt(
             SafeEvpPKeyHandle pkey,
@@ -119,6 +124,7 @@ internal static partial class Interop
             return written;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaSignHash(
             SafeEvpPKeyHandle pkey,
@@ -160,6 +166,7 @@ internal static partial class Interop
             return written;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaVerifyHash(
             SafeEvpPKeyHandle pkey,

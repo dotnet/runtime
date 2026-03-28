@@ -1833,9 +1833,9 @@ namespace System.Reflection
         }
         #endregion
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_ParseAttributeUsageAttribute")]
         [SuppressGCTransition]
-        [RequiresUnsafe]
         private static partial int ParseAttributeUsageAttribute(
             IntPtr pData,
             int cData,
@@ -1859,6 +1859,7 @@ namespace System.Reflection
             return result != 0;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreateCustomAttributeInstance")]
         private static partial void CreateCustomAttributeInstance(
             QCallModule pModule,
@@ -1888,6 +1889,7 @@ namespace System.Reflection
             return result!;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomAttribute_CreatePropertyOrFieldData", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void CreatePropertyOrFieldData(
             QCallModule pModule,

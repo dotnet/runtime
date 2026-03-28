@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.DirectoryServices.Protocols;
 using System.Runtime.InteropServices;
 
@@ -12,12 +13,15 @@ internal static partial class Interop
     {
         public const int ber_default_successful_return_code = 0;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_alloc_t")]
         public static partial IntPtr ber_alloc(int option);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_init")]
         public static partial IntPtr ber_init(BerVal value);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_free")]
         public static partial IntPtr ber_free(IntPtr berelement, int option);
 
@@ -46,18 +50,23 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_start_seq")]
         public static partial int ber_start_seq(SafeBerHandle berElement, nuint tag);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_start_set")]
         public static partial int ber_start_set(SafeBerHandle berElement, nuint tag);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_put_seq")]
         public static partial int ber_put_seq(SafeBerHandle berElement, nuint tag);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_put_set")]
         public static partial int ber_put_set(SafeBerHandle berElement, nuint tag);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_put_null")]
         public static partial int ber_put_null(SafeBerHandle berElement, nuint tag);
 
@@ -78,12 +87,15 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_put_int")]
         public static partial int ber_put_int(SafeBerHandle berElement, int value, nuint tag);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_put_enum")]
         public static partial int ber_put_enum(SafeBerHandle berElement, int value, nuint tag);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_put_boolean")]
         public static partial int ber_put_boolean(SafeBerHandle berElement, int value, nuint tag);
 
@@ -104,21 +116,27 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_put_ostring")]
         private static partial int ber_put_ostring(SafeBerHandle berElement, HGlobalMemHandle value, nuint length, nuint tag);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_put_string")]
         private static partial int ber_put_string(SafeBerHandle berElement, HGlobalMemHandle value, nuint tag);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_put_bitstring")]
         private static partial int ber_put_bitstring(SafeBerHandle berElement, HGlobalMemHandle value, nuint length, nuint tag);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_flatten")]
         public static partial int ber_flatten(SafeBerHandle berElement, ref IntPtr value);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_bvfree")]
         public static partial int ber_bvfree(IntPtr value);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_bvecfree")]
         public static partial int ber_bvecfree(IntPtr value);
 
@@ -141,9 +159,11 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_skip_tag")]
         private static partial int ber_skip_tag(SafeBerHandle berElement, ref nuint len);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_get_null")]
         private static partial int ber_get_null(SafeBerHandle berElement);
 
@@ -164,12 +184,15 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_get_int")]
         private static partial int ber_get_int(SafeBerHandle berElement, ref int value);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_get_enum")]
         private static partial int ber_get_enum(SafeBerHandle berElement, ref int value);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_get_boolean")]
         private static partial int ber_get_boolean(SafeBerHandle berElement, ref int value);
 
@@ -182,6 +205,7 @@ internal static partial class Interop
             return res;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_get_stringb")]
         private static partial int ber_get_stringb(SafeBerHandle berElement, ref IntPtr value, ref nuint bitLength);
 
@@ -191,6 +215,7 @@ internal static partial class Interop
             return ber_get_stringal(berElement, ref value);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ber_get_stringal")]
         private static partial int ber_get_stringal(SafeBerHandle berElement, ref IntPtr value);
 

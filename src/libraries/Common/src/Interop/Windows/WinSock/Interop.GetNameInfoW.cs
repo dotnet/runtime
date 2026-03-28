@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
@@ -19,6 +20,7 @@ internal static partial class Interop
             NI_DGRAM = 0x10, /* Service is a datagram service */
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial SocketError GetNameInfoW(
             byte* pSockaddr,

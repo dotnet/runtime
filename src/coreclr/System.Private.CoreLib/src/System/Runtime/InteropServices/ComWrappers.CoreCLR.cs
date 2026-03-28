@@ -23,6 +23,7 @@ namespace System.Runtime.InteropServices
         public static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
             => GetIUnknownImplInternal(out fpQueryInterface, out fpAddRef, out fpRelease);
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIUnknownImpl")]
         [SuppressGCTransition]
         private static partial void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
@@ -33,9 +34,9 @@ namespace System.Runtime.InteropServices
             fpAddRef = fpRelease = GetUntrackedAddRefRelease();
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetUntrackedAddRefRelease")]
         [SuppressGCTransition]
-        [RequiresUnsafe]
         private static unsafe partial delegate* unmanaged[MemberFunction]<IntPtr, uint> GetUntrackedAddRefRelease();
 
         internal static IntPtr DefaultIUnknownVftblPtr { get; } = CreateDefaultIUnknownVftbl();
@@ -149,6 +150,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIReferenceTrackerTargetVftbl")]
         [SuppressGCTransition]
         private static partial IntPtr GetDefaultIReferenceTrackerTargetVftbl();
@@ -161,12 +163,14 @@ namespace System.Runtime.InteropServices
             return GetTaggedImpl();
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetTaggedImpl")]
         [SuppressGCTransition]
         private static partial IntPtr GetTaggedImpl();
 
         internal sealed partial class ManagedObjectWrapperHolder
         {
+            [RequiresUnsafe]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_RegisterIsRootedCallback")]
             private static partial void RegisterIsRootedCallback();
 
@@ -175,6 +179,7 @@ namespace System.Runtime.InteropServices
                 return AllocateRefCountedHandle(ObjectHandleOnStack.Create(ref holder));
             }
 
+            [RequiresUnsafe]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_AllocateRefCountedHandle")]
             private static partial IntPtr AllocateRefCountedHandle(ObjectHandleOnStack obj);
         }

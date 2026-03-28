@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -18,6 +19,7 @@ internal static partial class Interop
             BCRYPT_PAD_OAEP = 4,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptEncrypt(
             SafeBCryptKeyHandle hKey,
@@ -31,6 +33,7 @@ internal static partial class Interop
             out int cbResult,
             BCryptEncryptFlags dwFlags);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptDecrypt(
             SafeBCryptKeyHandle hKey,

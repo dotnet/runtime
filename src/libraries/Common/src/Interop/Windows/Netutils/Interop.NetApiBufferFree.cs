@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Netutils
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Netutils)]
         internal static partial int NetApiBufferFree(IntPtr buffer);
     }

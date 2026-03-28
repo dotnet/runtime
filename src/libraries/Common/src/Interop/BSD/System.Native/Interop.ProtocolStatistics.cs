@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -33,6 +34,7 @@ internal static partial class Interop
             private readonly int __padding;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetTcpGlobalStatistics")]
         public static unsafe partial int GetTcpGlobalStatistics(TcpGlobalStatistics* statistics);
 
@@ -55,6 +57,7 @@ internal static partial class Interop
             public readonly int Forwarding;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv4GlobalStatistics")]
         public static unsafe partial int GetIPv4GlobalStatistics(IPv4GlobalStatistics* statistics);
 
@@ -68,6 +71,7 @@ internal static partial class Interop
             public readonly ulong UdpListeners;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUdpGlobalStatistics")]
         public static unsafe partial int GetUdpGlobalStatistics(UdpGlobalStatistics* statistics);
 
@@ -98,6 +102,7 @@ internal static partial class Interop
             public readonly ulong TimestampRequestsSent;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIcmpv4GlobalStatistics")]
         public static unsafe partial int GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* statistics);
 
@@ -134,6 +139,7 @@ internal static partial class Interop
             public readonly ulong TimeExceededMessagesSent;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIcmpv6GlobalStatistics")]
         public static unsafe partial int GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* statistics);
 
@@ -155,9 +161,11 @@ internal static partial class Interop
             public readonly ulong Flags;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNativeIPInterfaceStatistics", StringMarshalling = StringMarshalling.Utf8)]
         public static partial int GetNativeIPInterfaceStatistics(string name, out NativeIPInterfaceStatistics stats);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNumRoutes")]
         public static partial int GetNumRoutes();
     }

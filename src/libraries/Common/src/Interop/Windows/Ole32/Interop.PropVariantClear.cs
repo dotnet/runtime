@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Ole32
     {
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Ole32)]
         internal static partial void PropVariantClear(IntPtr pObject);
     }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -11,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_EcDsaSignHash(
             SafeEvpPKeyHandle pkey,
@@ -42,6 +44,7 @@ internal static partial class Interop
             return written;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_EcDsaVerifyHash(
             SafeEvpPKeyHandle pkey,

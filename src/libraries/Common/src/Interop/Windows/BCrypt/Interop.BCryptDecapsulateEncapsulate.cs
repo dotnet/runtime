@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -9,6 +10,7 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptDecapsulate(
             SafeBCryptKeyHandle hKey,
@@ -19,6 +21,7 @@ internal static partial class Interop
             out uint pcbSecretKey,
             uint dwFlags);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptEncapsulate(
             SafeBCryptKeyHandle hKey,

@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -207,6 +208,7 @@ internal static class BinaryReaderExtensions
         }
 
 #if NET
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         extern static DateTime CallPrivateSerializationConstructor(SerializationInfo si, StreamingContext ct);
 #endif

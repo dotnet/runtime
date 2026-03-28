@@ -40,6 +40,7 @@ namespace System
             Init(ThisPtr, cookie);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_Init")]
         private static partial void Init(ArgIterator* thisPtr, IntPtr cookie);
 
@@ -57,6 +58,7 @@ namespace System
             Init(ThisPtr, cookie, ptr);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_Init2")]
         private static partial void Init(ArgIterator* thisPtr, IntPtr cookie, void* ptr);
 
@@ -83,6 +85,7 @@ namespace System
             return result;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_GetNextArg")]
         private static partial void GetNextArg(ArgIterator* thisPtr, TypedReference* pResult);
 
@@ -118,6 +121,7 @@ namespace System
             return result;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_GetNextArg2")]
         private static partial void GetNextArg(ArgIterator* thisPtr, QCallTypeHandle rth, TypedReference* pResult);
 
@@ -143,6 +147,7 @@ namespace System
             return RuntimeTypeHandle.FromIntPtr(GetNextArgType(ThisPtr));
         }
 
+        [RequiresUnsafe]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_GetNextArgType")]
         private static partial IntPtr GetNextArgType(ArgIterator* thisPtr);
 

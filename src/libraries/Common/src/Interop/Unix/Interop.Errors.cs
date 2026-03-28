@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -184,23 +185,29 @@ internal static partial class Interop
         }
 
 #if SERIAL_PORTS
+        [RequiresUnsafe]
         [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPlatformToPal")]
         internal static partial Error ConvertErrorPlatformToPal(int platformErrno);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_ConvertErrorPalToPlatform")]
         internal static partial int ConvertErrorPalToPlatform(Error error);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_StrErrorR")]
         private static unsafe partial byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
 #else
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConvertErrorPlatformToPal")]
         [SuppressGCTransition]
         internal static partial Error ConvertErrorPlatformToPal(int platformErrno);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConvertErrorPalToPlatform")]
         [SuppressGCTransition]
         internal static partial int ConvertErrorPalToPlatform(Error error);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_StrErrorR")]
         private static unsafe partial byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
 #endif

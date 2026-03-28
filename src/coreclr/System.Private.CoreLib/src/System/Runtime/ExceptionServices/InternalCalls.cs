@@ -14,40 +14,40 @@ namespace System.Runtime.ExceptionServices
 {
     internal static partial class InternalCalls
     {
+        [RequiresUnsafe]
         [StackTraceHidden]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SfiInit")]
-        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, [MarshalAs(UnmanagedType.U1)] bool instructionFault, bool* fIsExceptionIntercepted);
 
+        [RequiresUnsafe]
         [StackTraceHidden]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SfiNext")]
-        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted);
 
+        [RequiresUnsafe]
         [StackTraceHidden]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CallFilterFunclet")]
-        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpCallFilterFunclet(
             ObjectHandleOnStack exceptionObj, byte* pFilterIP, void* pvRegDisplay);
 
+        [RequiresUnsafe]
         [StackTraceHidden]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppendExceptionStackFrame")]
-        [RequiresUnsafe]
         internal static unsafe partial void RhpAppendExceptionStackFrame(ObjectHandleOnStack exceptionObj, IntPtr ip, UIntPtr sp, int flags, EH.ExInfo* exInfo);
 
+        [RequiresUnsafe]
         [StackTraceHidden]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EHEnumInitFromStackFrameIterator")]
         [SuppressGCTransition]
-        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpEHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, out EH.MethodRegionInfo pMethodRegionInfo, void* pEHEnum);
 
+        [RequiresUnsafe]
         [StackTraceHidden]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EHEnumNext")]
-        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
     }

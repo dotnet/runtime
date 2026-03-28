@@ -104,11 +104,13 @@ namespace System.Resources
             : false;
 
         [RequiresUnreferencedCode("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Deserialize")]
         private static extern object Deserialize(
             [UnsafeAccessorType(BinaryFormatterTypeName)] object formatter,
             Stream serializationStream);
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType(BinaryFormatterTypeName)]
         private static extern object CreateBinaryFormatter();

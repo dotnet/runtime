@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -43,6 +44,7 @@ internal static partial class Interop
             public IntPtr OutgoingPreviousAuthenticationInformation;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32)]
         internal static partial uint LsaCreateTrustedDomainEx(SafeLsaPolicyHandle handle, in TRUSTED_DOMAIN_INFORMATION_EX domainEx, in TRUSTED_DOMAIN_AUTH_INFORMATION authInfo, int desiredAccess, out IntPtr domainHandle);
     }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
@@ -25,6 +26,7 @@ internal static partial class Interop
             RSA = 2,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial ulong AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SafeSecKeyRefHandle publicKey);
 
@@ -154,6 +156,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static unsafe partial int AppleCryptoNative_SecKeyCreateWithData(
             byte* pKey,
@@ -163,12 +166,14 @@ internal static partial class Interop
             out SafeSecKeyRefHandle pDataKey,
             out SafeCFErrorHandle pErrorOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static unsafe partial int AppleCryptoNative_SecKeyCopyExternalRepresentation(
             SafeSecKeyRefHandle key,
             out SafeCFDataHandle pDataOut,
             out SafeCFErrorHandle pErrorOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SecKeyCopyPublicKey")]
         internal static unsafe partial SafeSecKeyRefHandle CopyPublicKey(SafeSecKeyRefHandle privateKey);
     }

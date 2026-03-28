@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -14,12 +15,15 @@ internal static partial class Interop
             private IntPtr Ptr;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial void InitializeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial void WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool SleepConditionVariableCS(CONDITION_VARIABLE* ConditionVariable, CRITICAL_SECTION* CriticalSection, int dwMilliseconds);

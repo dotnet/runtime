@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -11,18 +12,23 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspRequestDestroy")]
         internal static partial void OcspRequestDestroy(IntPtr ocspReq);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOcspRequestDerSize")]
         internal static partial int GetOcspRequestDerSize(SafeOcspRequestHandle req);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeOcspRequest")]
         internal static partial int EncodeOcspRequest(SafeOcspRequestHandle req, byte[] buf);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509BuildOcspRequest")]
         internal static partial SafeOcspRequestHandle X509BuildOcspRequest(IntPtr subject, IntPtr issuer);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial int CryptoNative_X509DecodeOcspToExpiration(
             byte* buf,
@@ -78,6 +84,7 @@ internal static partial class Interop
             return false;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial SafeOcspResponseHandle CryptoNative_DecodeOcspResponse(ref byte buf, int len);
 
@@ -88,6 +95,7 @@ internal static partial class Interop
                 buf.Length);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OcspResponseDestroy")]
         internal static partial void OcspResponseDestroy(IntPtr ocspReq);
     }

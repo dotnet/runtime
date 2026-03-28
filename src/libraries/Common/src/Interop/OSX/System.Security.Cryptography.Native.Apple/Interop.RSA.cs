@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
@@ -13,6 +14,7 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_RsaGenerateKey(
             int keySizeInBits,
@@ -20,6 +22,7 @@ internal static partial class Interop
             out SafeSecKeyRefHandle pPrivateKey,
             out SafeCFErrorHandle pErrorOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_RsaSignaturePrimitive(
             SafeSecKeyRefHandle privateKey,
@@ -28,6 +31,7 @@ internal static partial class Interop
             out SafeCFDataHandle pDataOut,
             out SafeCFErrorHandle pErrorOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_RsaVerificationPrimitive(
             SafeSecKeyRefHandle publicKey,
@@ -36,6 +40,7 @@ internal static partial class Interop
             out SafeCFDataHandle pDataOut,
             out SafeCFErrorHandle pErrorOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_RsaEncryptionPrimitive(
             SafeSecKeyRefHandle publicKey,
@@ -44,6 +49,7 @@ internal static partial class Interop
             out SafeCFDataHandle pDataOut,
             out SafeCFErrorHandle pErrorOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaEncryptOaep")]
         private static partial int RsaEncryptOaep(
             SafeSecKeyRefHandle publicKey,
@@ -53,6 +59,7 @@ internal static partial class Interop
             out SafeCFDataHandle pEncryptedOut,
             out SafeCFErrorHandle pErrorOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaEncryptPkcs")]
         private static partial int RsaEncryptPkcs(
             SafeSecKeyRefHandle publicKey,
@@ -61,6 +68,7 @@ internal static partial class Interop
             out SafeCFDataHandle pEncryptedOut,
             out SafeCFErrorHandle pErrorOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptOaep")]
         private static partial int RsaDecryptOaep(
             SafeSecKeyRefHandle publicKey,
@@ -70,6 +78,7 @@ internal static partial class Interop
             out SafeCFDataHandle pEncryptedOut,
             out SafeCFErrorHandle pErrorOut);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptRaw")]
         private static partial int RsaDecryptRaw(
             SafeSecKeyRefHandle publicKey,

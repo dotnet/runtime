@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -13,6 +14,7 @@ internal static partial class Interop
         public const int FORMAT_MESSAGE_FROM_HMODULE = 0x00000800;
         public const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "FormatMessageW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         public static partial int FormatMessage(
             int dwFlags,

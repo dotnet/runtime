@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -29,6 +30,7 @@ internal static partial class Interop
         /// </param>
         /// <param name="message">The message to put in the log entry</param>
         /// <param name="arg1">Like printf, the argument is passed to the variadic part of the C++ function to wildcards in the message</param>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SysLog", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial void SysLog(SysLogPriority priority, string message, string arg1);
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -13,6 +14,7 @@ internal static partial class Interop
             return CryptEncodeObject(dwCertEncodingType, (nint)lpszStructType, pvStructInfo, pbEncoded, ref pcbEncoded);
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool CryptEncodeObject(

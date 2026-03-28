@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -12,6 +13,7 @@ internal static partial class Interop
         internal const int CRYPT_FORMAT_STR_MULTI_LINE = 0x00000001;
         internal const int CRYPT_FORMAT_STR_NO_HEX     = 0x00000010;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptFormatObject(

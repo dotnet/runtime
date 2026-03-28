@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 #pragma warning disable CA1823 // analyzer incorrectly flags fixed buffer length const (https://github.com/dotnet/roslyn/issues/37593)
@@ -89,6 +90,7 @@ internal static partial class Interop
         /// the data is valid. If the sizes do not match then the data is invalid, most likely due
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.libproc, SetLastError = true)]
         private static unsafe partial int proc_pidinfo(
             int pid,

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -14,6 +15,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Sysctl", SetLastError = true)]
         private static unsafe partial int Sysctl(int* name, uint namelen, void* value, nuint* len);
 

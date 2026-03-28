@@ -268,6 +268,16 @@ namespace Microsoft.Interop
             var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers, SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
 
             List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute, wasmImportLinkageAttribute, stackTraceHiddenAttribute);
+
+            // If RequiresUnsafeAttribute is defined in the current compilation (not just referenced), add it
+            // to the generated __PInvoke extern method. The attribute is internal, so it's only accessible when
+            // defined in the same assembly being compiled.
+            if (environment.Compilation.GetTypeByMetadataName(TypeNames.System_Diagnostics_CodeAnalysis_RequiresUnsafeAttribute) is { } requiresUnsafeType
+                && SymbolEqualityComparer.Default.Equals(requiresUnsafeType.ContainingAssembly, environment.Compilation.Assembly))
+            {
+                additionalAttributes.Add(Attribute(NameSyntaxes.System_Diagnostics_CodeAnalysis_RequiresUnsafeAttribute));
+            }
+
             return new IncrementalStubGenerationContext(
                 signatureContext,
                 containingTypeContext,

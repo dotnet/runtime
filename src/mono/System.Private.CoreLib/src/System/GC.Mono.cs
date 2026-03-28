@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -150,6 +151,7 @@ namespace System
             _ReRegisterForFinalize(obj);
         }
 
+        [RequiresUnsafe]
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Finalize))]
         private static extern void CallFinalize(object o);
         private static void GuardedFinalize(object o)

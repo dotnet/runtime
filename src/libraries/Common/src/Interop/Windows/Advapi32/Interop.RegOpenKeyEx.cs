@@ -7,12 +7,14 @@ using Microsoft.Win32.SafeHandles;
 using Internal.Win32.SafeHandles;
 #endif
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegOpenKeyExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegOpenKeyEx(
             SafeRegistryHandle hKey,
@@ -21,6 +23,7 @@ internal static partial class Interop
             int samDesired,
             out SafeRegistryHandle hkResult);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegOpenKeyExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegOpenKeyEx(
             IntPtr hKey,

@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Logcat
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Liblog, StringMarshalling = StringMarshalling.Utf8)]
         private static partial void __android_log_print(LogLevel level, string? tag, string format, string args, IntPtr ptr);
 

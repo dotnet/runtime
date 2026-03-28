@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -22,6 +23,7 @@ internal static partial class Interop
             PP_UNIQUE_CONTAINER = 36
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptSetProvParam(
@@ -30,6 +32,7 @@ internal static partial class Interop
             IntPtr pbData,
             int dwFlags);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptSetProvParam(
@@ -38,6 +41,7 @@ internal static partial class Interop
             ref IntPtr pbData,
             int dwFlags);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptGetProvParam(

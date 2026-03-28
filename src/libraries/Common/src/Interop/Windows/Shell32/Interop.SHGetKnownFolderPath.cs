@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -11,6 +12,7 @@ internal static partial class Interop
         internal const int COR_E_PLATFORMNOTSUPPORTED = unchecked((int)0x80131539);
 
         // https://msdn.microsoft.com/en-us/library/windows/desktop/bb762188.aspx
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Shell32, SetLastError = false, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int SHGetKnownFolderPath(
             in Guid rfid,

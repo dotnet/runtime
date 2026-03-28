@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -11,9 +12,11 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetAsn1IntegerDerSize")]
         private static partial int GetAsn1IntegerDerSize(SafeSharedAsn1IntegerHandle i);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeAsn1Integer")]
         private static partial int EncodeAsn1Integer(SafeSharedAsn1IntegerHandle i, byte[] buf);
 

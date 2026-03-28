@@ -12,6 +12,7 @@ namespace System.Runtime.CompilerServices;
 [DebuggerStepThrough]
 internal static unsafe partial class GenericsHelpers
 {
+    [RequiresUnsafe]
     [LibraryImport(RuntimeHelpers.QCall)]
     private static partial IntPtr GenericHandleWorker(IntPtr pMD, IntPtr pMT, IntPtr signature, uint dictionaryIndexAndSlot, IntPtr pModule);
 

@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -15,6 +16,7 @@ internal static partial class Interop
 
         internal const int NID_undef = 0;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ObjTxt2Nid", StringMarshalling = StringMarshalling.Utf8)]
         private static partial int ObjTxt2Nid(string oid);
 

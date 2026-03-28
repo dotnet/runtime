@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
@@ -190,6 +191,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_ChaCha20Poly1305Encrypt(
@@ -201,6 +203,7 @@ internal static partial class Interop
             UnsafeBufferPointer<byte> aad,
             out SwiftError error);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_ChaCha20Poly1305Decrypt(
@@ -212,6 +215,7 @@ internal static partial class Interop
             UnsafeBufferPointer<byte> aad,
             out SwiftError error);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_AesGcmEncrypt(
@@ -223,6 +227,7 @@ internal static partial class Interop
             UnsafeBufferPointer<byte> aad,
             out SwiftError error);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_AesGcmDecrypt(
@@ -234,6 +239,7 @@ internal static partial class Interop
             UnsafeBufferPointer<byte> aad,
             out SwiftError error);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvSwift) })]
         [return: MarshalAs(UnmanagedType.U1)]

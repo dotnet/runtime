@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -27,6 +28,7 @@ internal static partial class Interop
             POLICY_NOTIFICATION = 0x00001000,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "LsaOpenPolicy", SetLastError = true)]
         private static partial uint LsaOpenPolicy(
             ref UNICODE_STRING SystemName,

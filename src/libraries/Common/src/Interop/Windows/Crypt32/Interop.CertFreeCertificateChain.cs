@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Crypt32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         internal static partial void CertFreeCertificateChain(IntPtr pChainContext);
     }

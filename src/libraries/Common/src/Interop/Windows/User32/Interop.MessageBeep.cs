@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -13,6 +14,7 @@ internal static partial class Interop
         internal const int MB_ICONEXCLAMATION = 0x30;
         internal const int MB_ICONASTERISK = 0x40;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.User32)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool MessageBeep(int type);

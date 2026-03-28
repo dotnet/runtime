@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -16,6 +17,7 @@ internal static partial class Interop
         /// 2) if no children are terminated, 0 is returned
         /// 3) on error, -1 is returned
         /// </returns>
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitIdAnyExitedNoHangNoWait", SetLastError = true)]
         internal static partial int WaitIdAnyExitedNoHangNoWait();
     }

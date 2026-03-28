@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -10,9 +11,11 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpKdfFree")]
         internal static partial void EvpKdfFree(IntPtr kdf);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HkdfDeriveKey", StringMarshalling = StringMarshalling.Utf8)]
         private static partial int CryptoNative_HkdfDeriveKey(
             SafeEvpKdfHandle kdf,
@@ -26,6 +29,7 @@ internal static partial class Interop
             Span<byte> destination,
             int destinationLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HkdfExpand", StringMarshalling = StringMarshalling.Utf8)]
         private static partial int CryptoNative_HkdfExpand(
             SafeEvpKdfHandle kdf,
@@ -37,6 +41,7 @@ internal static partial class Interop
             Span<byte> destination,
             int destinationLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HkdfExtract", StringMarshalling = StringMarshalling.Utf8)]
         private static partial int CryptoNative_HkdfExtract(
             SafeEvpKdfHandle kdf,
@@ -48,6 +53,7 @@ internal static partial class Interop
             Span<byte> destination,
             int destinationLength);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_KbkdfHmacOneShot", StringMarshalling = StringMarshalling.Utf8)]
         private static unsafe partial int CryptoNative_KbkdfHmacOneShot(
             SafeEvpKdfHandle kdf,

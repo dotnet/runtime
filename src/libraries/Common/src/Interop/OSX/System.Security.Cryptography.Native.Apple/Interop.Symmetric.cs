@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -42,9 +43,11 @@ internal static partial class Interop
             None = 0,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorFree")]
         internal static partial void CryptorFree(IntPtr handle);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorCreate")]
         internal static unsafe partial int CryptorCreate(
             PAL_SymmetricOperation operation,
@@ -58,6 +61,7 @@ internal static partial class Interop
             out SafeAppleCryptorHandle cryptor,
             out int ccStatus);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorUpdate")]
         internal static unsafe partial int CryptorUpdate(
             SafeAppleCryptorHandle cryptor,
@@ -68,6 +72,7 @@ internal static partial class Interop
             out int cbWritten,
             out int ccStatus);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorReset")]
         internal static unsafe partial int CryptorReset(SafeAppleCryptorHandle cryptor, byte* pbIv, out int ccStatus);
     }

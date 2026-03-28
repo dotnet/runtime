@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
@@ -61,6 +62,7 @@ internal static partial class Interop
             public const uint BCRYPT_KEY_DATA_BLOB_VERSION1 = 0x1;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial NTSTATUS BCryptImportKey(SafeAlgorithmHandle hAlgorithm, IntPtr hImportKey, string pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte* pbInput, int cbInput, int dwFlags);
     }

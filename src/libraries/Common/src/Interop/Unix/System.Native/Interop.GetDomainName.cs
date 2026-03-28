@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
@@ -11,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetDomainName")]
         private static unsafe partial int GetDomainName(byte* name, int len);
 

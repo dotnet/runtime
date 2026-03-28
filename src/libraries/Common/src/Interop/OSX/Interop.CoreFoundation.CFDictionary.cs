@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -11,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary)]
         internal static partial IntPtr CFDictionaryGetValue(SafeCFDictionaryHandle handle, IntPtr key);
     }

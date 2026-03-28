@@ -89,6 +89,7 @@ namespace System.ComponentModel
 
                     return true;
 
+                    [RequiresUnsafe]
                     [RequiresUnreferencedCode("DefaultValueAttribute usage of TypeConverter is not compatible with trimming.")]
                     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ConvertFromInvariantString")]
                     static extern object ConvertFromInvariantString(

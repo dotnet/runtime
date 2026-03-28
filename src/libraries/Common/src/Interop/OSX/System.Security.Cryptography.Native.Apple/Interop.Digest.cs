@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
@@ -13,10 +14,12 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestFree")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static partial void DigestFree(IntPtr handle);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestCreate")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static partial SafeDigestCtxHandle DigestCreate(PAL_HashAlgorithm algorithm, out int cbDigest);
@@ -24,6 +27,7 @@ internal static partial class Interop
         internal static int DigestUpdate(SafeDigestCtxHandle ctx, ReadOnlySpan<byte> data) =>
             DigestUpdate(ctx, ref MemoryMarshal.GetReference(data), data.Length);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestUpdate")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static partial int DigestUpdate(SafeDigestCtxHandle ctx, ref byte pbData, int cbData);
@@ -31,6 +35,7 @@ internal static partial class Interop
         internal static int DigestFinal(SafeDigestCtxHandle ctx, Span<byte> output) =>
             DigestFinal(ctx, ref MemoryMarshal.GetReference(output), output.Length);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestFinal")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static partial int DigestFinal(SafeDigestCtxHandle ctx, ref byte pbOutput, int cbOutput);
@@ -38,18 +43,22 @@ internal static partial class Interop
         internal static int DigestCurrent(SafeDigestCtxHandle ctx, Span<byte> output) =>
             DigestCurrent(ctx, ref MemoryMarshal.GetReference(output), output.Length);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestCurrent")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static partial int DigestCurrent(SafeDigestCtxHandle ctx, ref byte pbOutput, int cbOutput);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestOneShot")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static unsafe partial int DigestOneShot(PAL_HashAlgorithm algorithm, byte* pbData, int cbData, byte* pbOutput, int cbOutput, int* cbDigest);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestReset")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static partial int DigestReset(SafeDigestCtxHandle ctx);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestClone")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         internal static partial SafeDigestCtxHandle DigestClone(SafeDigestCtxHandle ctx);

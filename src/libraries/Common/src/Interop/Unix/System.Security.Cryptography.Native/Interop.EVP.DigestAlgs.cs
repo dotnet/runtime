@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -20,60 +21,70 @@ internal static partial class Interop
         private static volatile IntPtr s_evpSha3_Shake128;
         private static volatile IntPtr s_evpSha3_Shake256;
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpMd5();
 
         private static IntPtr EvpMd5() =>
             s_evpMd5 != IntPtr.Zero ? s_evpMd5 : (s_evpMd5 = CryptoNative_EvpMd5());
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpSha1();
 
         private static IntPtr EvpSha1() =>
             s_evpSha1 != IntPtr.Zero ? s_evpSha1 : (s_evpSha1 = CryptoNative_EvpSha1());
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpSha256();
 
         private static IntPtr EvpSha256() =>
             s_evpSha256 != IntPtr.Zero ? s_evpSha256 : (s_evpSha256 = CryptoNative_EvpSha256());
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpSha384();
 
         private static IntPtr EvpSha384() =>
             s_evpSha384 != IntPtr.Zero ? s_evpSha384 : (s_evpSha384 = CryptoNative_EvpSha384());
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpSha512();
 
         private static IntPtr EvpSha512() =>
             s_evpSha512 != IntPtr.Zero ? s_evpSha512 : (s_evpSha512 = CryptoNative_EvpSha512());
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpSha3_256();
 
         private static IntPtr EvpSha3_256() =>
             s_evpSha3_256 != IntPtr.Zero ? s_evpSha3_256 : (s_evpSha3_256 = CryptoNative_EvpSha3_256());
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpSha3_384();
 
         private static IntPtr EvpSha3_384() =>
             s_evpSha3_384 != IntPtr.Zero ? s_evpSha3_384 : (s_evpSha3_384 = CryptoNative_EvpSha3_384());
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpSha3_512();
 
         private static IntPtr EvpSha3_512() =>
             s_evpSha3_512 != IntPtr.Zero ? s_evpSha3_512 : (s_evpSha3_512 = CryptoNative_EvpSha3_512());
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpShake128();
 
         private static IntPtr EvpShake128() =>
             s_evpSha3_Shake128 != IntPtr.Zero ? s_evpSha3_Shake128 : (s_evpSha3_Shake128 = CryptoNative_EvpShake128());
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpShake256();
 

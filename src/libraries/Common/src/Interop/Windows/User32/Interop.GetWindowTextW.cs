@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -9,6 +10,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.User32, SetLastError = true)]
         public static unsafe partial int GetWindowTextW(IntPtr hWnd, char* lpString, int nMaxCount);
     }

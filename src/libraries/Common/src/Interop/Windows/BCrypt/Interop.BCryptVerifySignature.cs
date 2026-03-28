@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using Internal.Cryptography;
@@ -19,6 +20,7 @@ internal static partial class Interop
             BCRYPT_PAD_PQDSA = 32,
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptVerifySignature(
             SafeBCryptKeyHandle hKey,

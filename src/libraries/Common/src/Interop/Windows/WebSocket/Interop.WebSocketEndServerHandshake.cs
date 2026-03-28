@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -11,6 +12,7 @@ internal static partial class Interop
 {
     internal static partial class WebSocket
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.WebSocket)]
         internal static partial int WebSocketEndServerHandshake(SafeHandle webSocketHandle);
     }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
@@ -17,6 +18,7 @@ internal static partial class Interop
         // https://developer.apple.com/reference/corefoundation/cfabsolutetime
         private static readonly DateTime s_cfDateEpoch = new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.CoreFoundationLibrary)]
         private static partial SafeCFDateHandle CFDateCreate(IntPtr zero, CFAbsoluteTime at);
 

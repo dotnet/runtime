@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -9,6 +10,7 @@ internal static partial class Interop
 {
     internal static partial class PerfCounter
     {
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32)]
         internal static partial uint PerfStopProvider(
             IntPtr hProvider
@@ -53,6 +55,7 @@ internal static partial class Interop
             internal uint InstanceNameSize;
         }
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32)]
         internal static partial uint PerfStartProvider(
             ref Guid ProviderGuid,
@@ -60,6 +63,7 @@ internal static partial class Interop
             out SafePerfProviderHandle phProvider
         );
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial PerfCounterSetInstanceStruct* PerfCreateInstance(
             SafePerfProviderHandle hProvider,
@@ -68,6 +72,7 @@ internal static partial class Interop
             uint dwInstance
         );
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32)]
         internal static unsafe partial uint PerfSetCounterSetInfo(
             SafePerfProviderHandle hProvider,
@@ -75,12 +80,14 @@ internal static partial class Interop
             uint dwTemplateSize
         );
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32)]
         internal static unsafe partial uint PerfDeleteInstance(
             SafePerfProviderHandle hProvider,
             PerfCounterSetInstanceStruct* InstanceBlock
         );
 
+        [RequiresUnsafe]
         [LibraryImport(Libraries.Advapi32)]
         internal static unsafe partial uint PerfSetCounterRefValue(
             SafePerfProviderHandle hProvider,

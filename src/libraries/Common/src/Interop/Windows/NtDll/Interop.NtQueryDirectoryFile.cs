@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -10,6 +11,7 @@ internal static partial class Interop
     {
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff556633.aspx
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff567047.aspx
+        [RequiresUnsafe]
         [LibraryImport(Libraries.NtDll)]
         public static unsafe partial int NtQueryDirectoryFile(
             IntPtr FileHandle,
