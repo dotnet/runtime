@@ -3347,29 +3347,28 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (((simdSize == 16) || (simdSize == 32)) && ((narrowType == TYP_BYTE) || (narrowType == TYP_SHORT)))
                 {
+                    intrinsic = (simdSize == 32) ? NI_AVX2_PackSignedSaturate : NI_X86Base_PackSignedSaturate;
+
+                    // Pack instructions use the base type of the return for the simdBaseType
+                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, narrowType, simdSize);
+
                     if (simdSize == 32)
                     {
-                        // Pack instructions use the base type of the return for the simdBaseType
-                        op1     = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_AVX2_PackSignedSaturate, narrowType,
-                                                           simdSize);
-                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, gtNewIconNode(SHUFFLE_WYZX),
+                        retNode = gtNewSimdHWIntrinsicNode(retType, retNode, gtNewIconNode(SHUFFLE_WYZX),
                                                            NI_AVX2_Permute4x64, TYP_LONG, simdSize);
-                    }
-                    else
-                    {
-                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_X86Base_PackSignedSaturate, narrowType,
-                                                           simdSize);
                     }
                     break;
                 }
 
-                bool     isSaturating = false;
-                unsigned cvtSimdSize  = (simdSize == 64) ? simdSize : (simdSize * 2);
-                intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdBaseType, narrowType, cvtSimdSize,
-                                                                          /* preferSaturating */ true, &isSaturating);
-
-                if ((intrinsic != NI_Illegal) && isSaturating)
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
+                    bool     isSaturating = false;
+                    unsigned cvtSimdSize  = (simdSize == 64) ? simdSize : (simdSize * 2);
+                    intrinsic =
+                        GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdBaseType, narrowType, cvtSimdSize,
+                                                                      /* preferSaturating */ true, &isSaturating);
+
+                    assert((intrinsic != NI_Illegal) && isSaturating);
 
                     if (simdSize == 64)
                     {
@@ -3447,18 +3446,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     if (varTypeIsSmall(narrowType))
                     {
+                        intrinsic = (simdSize == 32) ? NI_AVX2_PackUnsignedSaturate : NI_X86Base_PackUnsignedSaturate;
+
+                        // Pack instructions use the base type of the return for the simdBaseType
+                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, narrowType, simdSize);
+
                         if (simdSize == 32)
                         {
-                            // Pack instructions use the base type of the return for the simdBaseType
-                            op1 = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_AVX2_PackUnsignedSaturate, narrowType,
-                                                           simdSize);
-                            retNode = gtNewSimdHWIntrinsicNode(retType, op1, gtNewIconNode(SHUFFLE_WYZX),
+                            retNode = gtNewSimdHWIntrinsicNode(retType, retNode, gtNewIconNode(SHUFFLE_WYZX),
                                                                NI_AVX2_Permute4x64, TYP_ULONG, simdSize);
-                        }
-                        else
-                        {
-                            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_X86Base_PackUnsignedSaturate,
-                                                               narrowType, simdSize);
                         }
                     }
                     else
