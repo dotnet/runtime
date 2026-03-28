@@ -100,8 +100,6 @@ internal static partial class Interop
             Span<nint> pointers = new Span<nint>(block, count + 1);
             Span<byte> data = new Span<byte>(dataPtr, dataByteLength);
 
-            pointers[count] = 0; // null terminator
-
             int dataOffset = 0;
             for (int i = 0; i < count; i++)
             {
@@ -112,6 +110,7 @@ internal static partial class Interop
                 dataOffset += bytesWritten + 1;
             }
 
+            pointers[count] = 0; // null terminator
             Debug.Assert(dataOffset == dataByteLength);
         }
 
