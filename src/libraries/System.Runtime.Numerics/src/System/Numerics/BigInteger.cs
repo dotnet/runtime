@@ -3164,23 +3164,10 @@ namespace System.Numerics
                 return 0;
             }
 
-            // When positive, count leading zeros in the most significant 32-bit word of the value.
-            // On 64-bit systems, each nuint limb holds 64 bits, so we extract the most significant
-            // 32-bit half. This preserves the behavior from when _bits was uint[] (32-bit limbs).
-            nuint msLimb = value._bits[^1];
-            uint msWord;
-
-            if (Environment.Is64BitProcess)
-            {
-                uint high = (uint)(msLimb >> BitsPerUInt32);
-                msWord = (high != 0) ? high : (uint)msLimb;
-            }
-            else
-            {
-                msWord = (uint)msLimb;
-            }
-
-            return uint.LeadingZeroCount(msWord);
+            // When positive, count leading zeros in the most significant 32-bit word.
+            // The & 31 maps the result to 32-bit word semantics: on 64-bit, when the
+            // upper half is zero, LZC is 32 + uint_lzc, and (32 + x) & 31 == x.
+            return BitOperations.LeadingZeroCount(value._bits[^1]) & 31;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
