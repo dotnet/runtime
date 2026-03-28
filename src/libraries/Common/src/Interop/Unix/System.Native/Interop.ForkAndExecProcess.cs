@@ -165,8 +165,13 @@ internal static partial class Interop
                 }
             }
 
-            Debug.Assert(entryIndex == count);
-            Debug.Assert(dataOffset == dataByteLength);
+            // If the dictionary was concurrently modified to be smaller between passes,
+            // GetBytes won't throw (it has plenty of room), but the uninitialized tail of
+            // the block would contain garbage data. Throw to prevent that.
+            if (entryIndex != count || dataOffset != dataByteLength)
+            {
+                throw new InvalidOperationException();
+            }
         }
     }
 }
