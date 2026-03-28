@@ -617,75 +617,31 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
     return spmiArgs;
 }
 
-//-------------------------------------------------------------
-// RegisterCtrlHandler: Installs the Ctrl-C / SIGINT handler.
-//
+#ifdef TARGET_UNIX
+
 static bool RegisterCtrlHandler()
 {
-#ifdef TARGET_UNIX
     signal(SIGINT, PosixCtrlHandler);
     return true;
-#else
-    if (!SetConsoleCtrlHandler(CtrlHandler, TRUE))
-    {
-        LogError("Failed to set control handler.");
-        return false;
-    }
-    return true;
-#endif // TARGET_UNIX
 }
 
-//-------------------------------------------------------------
-// GetTempFolderPath: Gets the path to the temporary folder.
-//
 static bool GetTempFolderPath(char* tempPath)
 {
-#ifdef TARGET_UNIX
     const char* tmpDir = getenv("TMPDIR");
     if (tmpDir == nullptr)
         tmpDir = "/tmp";
     snprintf(tempPath, MAX_PATH, "%s/", tmpDir);
     return true;
-#else
-    if (!GetTempPath(MAX_PATH, tempPath))
-    {
-        LogError("Failed to get path to temp folder.");
-        return false;
-    }
-    return true;
-#endif // TARGET_UNIX
 }
 
-//-------------------------------------------------------------
-// GetDefaultWorkerCount: Returns the default number of worker processes
-// (the number of online processors, capped at MAXIMUM_WAIT_OBJECTS on Windows).
-//
 static int GetDefaultWorkerCount()
 {
-#ifdef TARGET_UNIX
     long nprocs = sysconf(_SC_NPROCESSORS_ONLN);
     return (nprocs > 0) ? (int)nprocs : 1;
-#else
-    SYSTEM_INFO sysinfo;
-    GetSystemInfo(&sysinfo);
-
-    int count = (int)sysinfo.dwNumberOfProcessors;
-
-    // If we ever execute on a machine which has more than MAXIMUM_WAIT_OBJECTS(64) CPU cores
-    // we still can't spawn more than the max supported by WaitForMultipleObjects()
-    if (count > MAXIMUM_WAIT_OBJECTS)
-        count = MAXIMUM_WAIT_OBJECTS;
-
-    return count;
-#endif // TARGET_UNIX
 }
 
-//-------------------------------------------------------------
-// GetCurrentExePath: Fills `path` with the full path of the running executable.
-//
 static bool GetCurrentExePath(char* path)
 {
-#ifdef TARGET_UNIX
     char* exePath = minipal_getexepath();
     if (exePath == nullptr)
     {
@@ -696,22 +652,10 @@ static bool GetCurrentExePath(char* path)
     path[MAX_PATH - 1] = '\0';
     free(exePath);
     return true;
-#else
-    if (!GetModuleFileName(NULL, path, MAX_PATH))
-    {
-        LogError("Failed to get current exe path.");
-        return false;
-    }
-    return true;
-#endif // TARGET_UNIX
 }
 
-//-------------------------------------------------------------
-// OpenWorkerOutputFiles: Opens the stdout and stderr redirect files for one worker.
-//
 static bool OpenWorkerOutputFiles(PerWorkerData& wd, int workerIndex)
 {
-#ifdef TARGET_UNIX
     LogDebug("stdout %i=%s", workerIndex, wd.stdOutputPath);
     wd.hStdOutput = open(wd.stdOutputPath, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
     if (wd.hStdOutput == -1)
@@ -727,7 +671,102 @@ static bool OpenWorkerOutputFiles(PerWorkerData& wd, int workerIndex)
         LogError("Unable to open '%s'. errno=%d", wd.stdErrorPath, errno);
         return false;
     }
-#else
+    return true;
+}
+
+static void CloseWorkerOutputFiles(PerWorkerData& wd)
+{
+    close(wd.hStdOutput);
+    close(wd.hStdError);
+}
+
+// Returns a heap-allocated array of per-worker exit codes; caller must free with FreeWorkerExitCodes.
+static int* WaitForWorkerProcesses(SpmiProcessHandle* handles, int count)
+{
+    int* exitCodes = new int[count];
+    for (int i = 0; i < count; i++)
+    {
+        int status;
+        if (waitpid(handles[i], &status, 0) == -1)
+        {
+            LogError("waitpid failed for child %d: %s", i, strerror(errno));
+            exitCodes[i] = -1;
+        }
+        else if (WIFEXITED(status))
+        {
+            exitCodes[i] = WEXITSTATUS(status);
+        }
+        else
+        {
+            // Terminated by a signal (e.g., OOM killer).
+            exitCodes[i] = -1;
+        }
+    }
+    return exitCodes;
+}
+
+static bool GetWorkerExitCode(SpmiProcessHandle* handles, int* exitCodes, int workerIndex, unsigned& exitCode)
+{
+    if (exitCodes[workerIndex] == -1)
+        return false;
+    exitCode = (unsigned)exitCodes[workerIndex];
+    return true;
+}
+
+static void FreeWorkerExitCodes(int* exitCodes)
+{
+    delete[] exitCodes;
+}
+
+#else // !TARGET_UNIX
+
+static bool RegisterCtrlHandler()
+{
+    if (!SetConsoleCtrlHandler(CtrlHandler, TRUE))
+    {
+        LogError("Failed to set control handler.");
+        return false;
+    }
+    return true;
+}
+
+static bool GetTempFolderPath(char* tempPath)
+{
+    if (!GetTempPath(MAX_PATH, tempPath))
+    {
+        LogError("Failed to get path to temp folder.");
+        return false;
+    }
+    return true;
+}
+
+static int GetDefaultWorkerCount()
+{
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+
+    int count = (int)sysinfo.dwNumberOfProcessors;
+
+    // If we ever execute on a machine which has more than MAXIMUM_WAIT_OBJECTS(64) CPU cores
+    // we still can't spawn more than the max supported by WaitForMultipleObjects()
+    if (count > MAXIMUM_WAIT_OBJECTS)
+        count = MAXIMUM_WAIT_OBJECTS;
+
+    return count;
+}
+
+static bool GetCurrentExePath(char* path)
+{
+    if (!GetModuleFileName(NULL, path, MAX_PATH))
+    {
+        LogError("Failed to get current exe path.");
+        return false;
+    }
+    return true;
+}
+
+static bool OpenWorkerOutputFiles(PerWorkerData& wd, int workerIndex)
+{
     SECURITY_ATTRIBUTES sa;
     sa.nLength              = sizeof(sa);
     sa.lpSecurityDescriptor = NULL;
@@ -750,89 +789,37 @@ static bool OpenWorkerOutputFiles(PerWorkerData& wd, int workerIndex)
         LogError("Unable to open '%s'. GetLastError()=%u", wd.stdErrorPath, GetLastError());
         return false;
     }
-#endif // TARGET_UNIX
     return true;
 }
 
-//-------------------------------------------------------------
-// CloseWorkerOutputFiles: Closes the stdout and stderr redirect files for one worker.
-//
 static void CloseWorkerOutputFiles(PerWorkerData& wd)
 {
-#ifdef TARGET_UNIX
-    close(wd.hStdOutput);
-    close(wd.hStdError);
-#else
     CloseHandle(wd.hStdOutput);
     CloseHandle(wd.hStdError);
-#endif // TARGET_UNIX
 }
 
-//-------------------------------------------------------------
-// WaitForWorkerProcesses: Waits for all worker processes to finish.
-//
-// Returns an int array of per-worker exit codes (caller must free with FreeWorkerExitCodes),
-// or nullptr on Windows (exit codes are retrieved lazily via GetWorkerExitCode).
-//
+// Returns nullptr; exit codes are retrieved lazily via GetWorkerExitCode / GetExitCodeProcess.
 static int* WaitForWorkerProcesses(SpmiProcessHandle* handles, int count)
 {
-#ifdef TARGET_UNIX
-    int* exitCodes = new int[count];
-    for (int i = 0; i < count; i++)
-    {
-        int status;
-        if (waitpid(handles[i], &status, 0) == -1)
-        {
-            LogError("waitpid failed for child %d: %s", i, strerror(errno));
-            exitCodes[i] = -1;
-        }
-        else if (WIFEXITED(status))
-        {
-            exitCodes[i] = WEXITSTATUS(status);
-        }
-        else
-        {
-            // Terminated by a signal (e.g., OOM killer).
-            exitCodes[i] = -1;
-        }
-    }
-    return exitCodes;
-#else
     WaitForMultipleObjects(count, handles, true, INFINITE);
     return nullptr;
-#endif // TARGET_UNIX
 }
 
-//-------------------------------------------------------------
-// GetWorkerExitCode: Retrieves the exit code for one worker.
-//
-// Returns true and sets exitCode on success; returns false if the exit code is unavailable.
-//
 static bool GetWorkerExitCode(SpmiProcessHandle* handles, int* exitCodes, int workerIndex, unsigned& exitCode)
 {
-#ifdef TARGET_UNIX
-    if (exitCodes[workerIndex] == -1)
-        return false;
-    exitCode = (unsigned)exitCodes[workerIndex];
-    return true;
-#else
     DWORD code;
     if (!GetExitCodeProcess(handles[workerIndex], &code))
         return false;
     exitCode = (unsigned)code;
     return true;
-#endif // TARGET_UNIX
 }
 
-//-------------------------------------------------------------
-// FreeWorkerExitCodes: Frees the array returned by WaitForWorkerProcesses.
-//
 static void FreeWorkerExitCodes(int* exitCodes)
 {
-#ifdef TARGET_UNIX
-    delete[] exitCodes;
-#endif // TARGET_UNIX
+    // No-op on Windows; exit codes are retrieved via GetExitCodeProcess.
 }
+
+#endif // TARGET_UNIX
 
 int doParallelSuperPMI(CommandLine::Options& o)
 {
