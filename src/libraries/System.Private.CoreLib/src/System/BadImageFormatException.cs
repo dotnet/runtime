@@ -17,6 +17,7 @@ namespace System
     {
         private readonly string? _fileName;  // The name of the corrupt PE file.
         private readonly string? _fusionLog;  // fusion log (when applicable)
+        private readonly string? _requestingAssemblyChain;
 
         public BadImageFormatException()
             : base(SR.Arg_BadImageFormatException)
@@ -96,6 +97,9 @@ namespace System
 
             if (!string.IsNullOrEmpty(_fileName))
                 s += Environment.NewLineConst + SR.Format(SR.IO_FileName_Name, _fileName);
+
+            if (_requestingAssemblyChain is not null)
+                s += Environment.NewLineConst + SR.Format(SR.IO_FileLoad_RequestedBy, _requestingAssemblyChain.ReplaceLineEndings());
 
             if (InnerException != null)
                 s += InnerExceptionPrefix + InnerException.ToString();

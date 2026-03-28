@@ -665,11 +665,18 @@ class EEFileLoadException : public EEException
   private:
     SString m_name;
     HRESULT m_hr;
+    SString m_requestingAssemblyChain;
 
   public:
 
     EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException = NULL);
     ~EEFileLoadException();
+
+    void SetRequestingAssemblyChain(const SString &name)
+    {
+        WRAPPER_NO_CONTRACT;
+        m_requestingAssemblyChain = name;
+    }
 
     // virtual overrides
     HRESULT GetHR()
@@ -692,7 +699,9 @@ class EEFileLoadException : public EEException
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
-        return new EEFileLoadException(m_name, m_hr);
+        EEFileLoadException *pClone = new EEFileLoadException(m_name, m_hr);
+        pClone->SetRequestingAssemblyChain(m_requestingAssemblyChain);
+        return pClone;
     }
 
  private:

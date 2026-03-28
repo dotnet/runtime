@@ -9,11 +9,12 @@ namespace System.IO
     public partial class FileLoadException
     {
         // Do not delete: this is invoked from native code.
-        private FileLoadException(string? fileName, int hResult)
+        private FileLoadException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
             HResult = hResult;
             FileName = fileName;
+            _requestingAssemblyChain = requestingAssemblyChain;
             _message = FormatFileLoadExceptionMessage(FileName, HResult);
         }
 

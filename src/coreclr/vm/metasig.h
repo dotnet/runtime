@@ -365,6 +365,7 @@ DEFINE_METASIG(SM(PtrChar_Int_PtrPtrChar_RetArrStr, P(u) i P(P(u)), a(s)))
 DEFINE_METASIG_T(IM(Str_Exception_RetVoid, s C(EXCEPTION), v))
 DEFINE_METASIG(IM(Str_Str_RetVoid, s s, v))
 DEFINE_METASIG(IM(Str_Int_RetVoid, s i, v))
+DEFINE_METASIG(IM(Str_Str_Int_RetVoid, s s i, v))
 DEFINE_METASIG(IM(Str_Str_Str_Int_RetVoid, s s s i, v))
 DEFINE_METASIG_T(IM(Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj, \
                  s g(BINDING_FLAGS) C(BINDER) j a(j) a(g(PARAMETER_MODIFIER)) C(CULTURE_INFO) a(s), j))

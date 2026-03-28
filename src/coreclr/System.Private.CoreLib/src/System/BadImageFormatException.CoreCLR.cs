@@ -6,11 +6,12 @@ namespace System
     public partial class BadImageFormatException
     {
         // Do not delete: this is invoked from native code.
-        private BadImageFormatException(string? fileName, int hResult)
+        private BadImageFormatException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
             HResult = hResult;
             _fileName = fileName;
+            _requestingAssemblyChain = requestingAssemblyChain;
             SetMessageField();
         }
     }

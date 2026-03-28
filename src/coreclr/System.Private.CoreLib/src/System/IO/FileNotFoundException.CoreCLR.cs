@@ -6,11 +6,12 @@ namespace System.IO
     public partial class FileNotFoundException
     {
         // Do not delete: this is invoked from native code.
-        private FileNotFoundException(string? fileName, int hResult)
+        private FileNotFoundException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
             HResult = hResult;
             FileName = fileName;
+            _requestingAssemblyChain = requestingAssemblyChain;
             SetMessageField();
         }
     }

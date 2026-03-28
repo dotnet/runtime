@@ -1608,16 +1608,23 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     struct {
         OBJECTREF pNewException;
         STRINGREF pNewFileString;
+        STRINGREF pNewRequestingChain;
     } gc;
     gc.pNewException = NULL;
     gc.pNewFileString = NULL;
+    gc.pNewRequestingChain = NULL;
     GCPROTECT_BEGIN(gc);
 
     gc.pNewFileString = StringObject::NewString(m_name);
     gc.pNewException = AllocateObject(CoreLibBinder::GetException(m_kind));
 
+    if (!m_requestingAssemblyChain.IsEmpty())
+    {
+        gc.pNewRequestingChain = StringObject::NewString(m_requestingAssemblyChain);
+    }
+
     MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
-                            COR_CTOR_METHOD_NAME, &gsig_IM_Str_Int_RetVoid);
+                            COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_Int_RetVoid);
 
     if (!pMD)
     {
@@ -1625,11 +1632,12 @@ OBJECTREF EEFileLoadException::CreateThrowable()
         COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
     }
 
-    MethodDescCallSite  exceptionCtor(pMD);
+    MethodDescCallSite exceptionCtor(pMD);
 
     ARG_SLOT args[] = {
         ObjToArgSlot(gc.pNewException),
         ObjToArgSlot(gc.pNewFileString),
+        ObjToArgSlot(gc.pNewRequestingChain),
         (ARG_SLOT) m_hr
     };
 
@@ -1667,8 +1675,6 @@ BOOL EEFileLoadException::CheckType(Exception* ex)
 // <TODO>@todo: ideally we would use inner exceptions with these routines</TODO>
 
 /* static */
-
-/* static */
 void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT hr, Exception *pInnerException/* = NULL*/)
 {
     CONTRACTL
@@ -1686,7 +1692,66 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
 
     StackSString name;
     pSpec->GetDisplayName(0, name);
-    EX_THROW_WITH_INNER(EEFileLoadException, (name, hr), pInnerException);
+
+    // Extract the requesting assembly chain for diagnostic purposes
+    {
+        FAULT_NOT_FATAL();
+
+        Exception *inner2 = ExThrowWithInnerHelper(pInnerException);
+        EEFileLoadException *pException = new EEFileLoadException(name, hr);
+        pException->SetInnerException(inner2);
+
+        Assembly *pParentAssembly = pSpec->GetParentAssembly();
+        if (pParentAssembly != NULL)
+        {
+            // Build the requesting assembly chain: start with the immediate parent,
+            // then walk up the binding cache to find transitive requesting assemblies.
+            StackSString requestingChain;
+            pParentAssembly->GetDisplayName(requestingChain);
+
+            EX_TRY
+            {
+                Assembly *pWalkAssembly = pParentAssembly;
+                int depth = 0;
+                const int MaxChainDepth = 10;
+
+                // The binding cache may contain multiple entries for the same assembly
+                // (bound under different AssemblySpecs), possibly with a different parent.
+                // LookupParentAssemblyForAssembly returns the first match found during
+                // iteration, so the chain is best-effort to provide what info we can
+                while (pWalkAssembly != NULL && depth < MaxChainDepth)
+                {
+                    pParentAssembly = AppDomain::GetCurrentDomain()->FindCachedParentAssembly(pWalkAssembly);
+                    if (pParentAssembly == NULL || pParentAssembly == pWalkAssembly)
+                        break;
+
+                    StackSString parentName;
+                    pParentAssembly->GetDisplayName(parentName);
+                    requestingChain.Append(W("\n --> "));
+                    requestingChain.Append(parentName);
+
+                    if (pParentAssembly->IsSystem())
+                        break;
+
+                    pWalkAssembly = pParentAssembly;
+                    depth++;
+                }
+            }
+            EX_CATCH
+            {
+                // If the chain walk fails for any reason, just use what we have so far
+            }
+            EX_END_CATCH
+
+            pException->SetRequestingAssemblyChain(requestingChain);
+        }
+
+        STRESS_LOG3(LF_EH, LL_INFO100, "EX_THROW_WITH_INNER Type = 0x%x HR = 0x%x, "
+                    INDEBUG(__FILE__) " line %d\n", EEFileLoadException::GetType(),
+                    pException->GetHR(), __LINE__);
+        EX_THROW_DEBUG_TRAP(__FUNCTION__, __FILE__, __LINE__, "EEFileLoadException", pException->GetHR(), "(name, hr)");
+        PAL_CPP_THROW(EEFileLoadException *, pException);
+    }
 }
 
 /* static */
