@@ -3033,9 +3033,15 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
     }
     else
     {
-       readSetPtr = readFdsCount == 0 ? NULL : (fd_set*)calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       writeSetPtr = writeFdsCount == 0 ? NULL : (fd_set*)calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       errorSetPtr = errorFdsCount == 0 ? NULL : (fd_set*)calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
+        // Since this code later calls select(maxFd + 1, ...) and sets bits for file descriptor values up to maxFd,
+        // the allocation needs to cover maxFd + 1 bits. If maxFd is an exact multiple of __DARWIN_NFDBITS,
+        // __DARWIN_FD_SET(maxFd, ...) can index past the end of the allocated buffer (potential memory corruption).
+        assert(maxFd < INT_MAX - 1);
+        size_t fdSetCount = __DARWIN_howmany(maxFd + 1, __DARWIN_NFDBITS);
+        size_t fdSetSize = sizeof(((fd_set*)0)->fds_bits[0]);
+        readSetPtr = readFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+        writeSetPtr = writeFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+        errorSetPtr = errorFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
     }
 
 
