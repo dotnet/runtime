@@ -144,8 +144,6 @@ internal static partial class Interop
             Span<nint> pointers = new Span<nint>(block, count + 1);
             Span<byte> data = new Span<byte>(dataPtr, dataByteLength);
 
-            pointers[count] = 0; // null terminator
-
             // Second pass: encode each key=value pair directly into the buffer.
             int entryIndex = 0;
             int dataOffset = 0;
@@ -165,13 +163,7 @@ internal static partial class Interop
                 }
             }
 
-            // If the dictionary was concurrently modified to be smaller between passes,
-            // GetBytes won't throw (it has plenty of room), but the uninitialized tail of
-            // the block would contain garbage data. Throw to prevent that.
-            if (entryIndex != count || dataOffset != dataByteLength)
-            {
-                throw new InvalidOperationException();
-            }
+            pointers[entryIndex] = 0; // null terminator
         }
     }
 }
