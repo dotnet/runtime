@@ -869,6 +869,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetCodeHeapList(ClrDataAddress jitManager, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpJitCodeHeapInfo[]? codeHeaps, uint* pNeeded)
     {
+        // returns the code heap list from the single global EEJitManager.
         int hr = HResults.S_OK;
         try
         {

@@ -62,14 +62,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         RangeList = 0x04,
     }
 
-    private enum JitTypes
-    {
-        TYPE_UNKNOWN = 0,
-        TYPE_JIT = 1,
-        TYPE_R2R = 2,
-        TYPE_INTERPRETER = 3
-    };
-
     // Mirrors the native CodeHeap::CodeHeapType enum in codeman.h.
     // Used to interpret the raw byte stored in the target process.
     private enum CodeHeapType : byte
@@ -393,7 +385,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             CodeHeapType.HostCodeHeap => new Contracts.HostCodeHeapInfo(
                 _target.ProcessedData.GetOrAdd<Data.HostCodeHeap>(codeHeapAddress).BaseAddress,
                 _target.ProcessedData.GetOrAdd<Data.HostCodeHeap>(codeHeapAddress).CurrentAddress),
-            _ => new Contracts.UnknownCodeHeapInfo(codeHeapAddress),
+            _ => new Contracts.UnknownCodeHeapInfo(),
         };
     }
 

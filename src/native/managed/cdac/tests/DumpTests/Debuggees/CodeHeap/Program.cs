@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 
@@ -30,7 +29,7 @@ internal static class Program
     }
 
     /// <summary>
-    /// Builds and invokes a trivial DynamicMethod (returns the argument unchanged).
+    /// Builds and invokes a trivial DynamicMethod (returns its argument plus 1).
     /// Creating and JIT-compiling the DynamicMethod causes the runtime to allocate
     /// a HostCodeHeap for the resulting native code.
     /// </summary>
