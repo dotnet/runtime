@@ -22005,8 +22005,8 @@ GenTree* Compiler::gtNewSimdCvtNode(
 
     bool           isSaturating = false;
     NamedIntrinsic cvtIntrinsic =
-        GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(this, simdSourceBaseType, simdTargetBaseType, simdSize,
-                                                             /* preferSaturating */ true, &isSaturating);
+        GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdSourceBaseType, simdTargetBaseType, simdSize,
+                                                      /* preferSaturating */ true, &isSaturating);
 
     if (isSaturating)
     {
@@ -22108,9 +22108,8 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(
     assert(varTypeIsFloating(simdSourceBaseType));
     assert(varTypeIsIntegral(simdTargetBaseType));
 
-    // Generate intrinsic needed for conversion
     NamedIntrinsic hwIntrinsicID =
-        GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(this, simdSourceBaseType, simdTargetBaseType, simdSize);
+        GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdSourceBaseType, simdTargetBaseType, simdSize);
 
     assert(hwIntrinsicID != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdSourceBaseType, simdSize);
@@ -25128,7 +25127,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
         }
 
         NamedIntrinsic intrinsicId =
-            GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(this, opBaseType, simdBaseType, simdSize);
+            GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, opBaseType, simdBaseType, simdSize);
         assert(intrinsicId != NI_Illegal);
 
         tmp1 = gtNewSimdHWIntrinsicNode(tmpSimdType, op1, intrinsicId, opBaseType, simdSize);
@@ -25156,11 +25155,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 // This is the same in principle to the other comments below, however due to
                 // code formatting, its too long to reasonably display here.
                 GenTreeVecCon* vecCon1 = gtNewVconNode(type);
-
-                for (unsigned i = 0; i < (simdSize / 8); i++)
-                {
-                    vecCon1->gtSimdVal.u64[i] = 0x00FF00FF00FF00FF;
-                }
+                vecCon1->EvaluateBroadcastInPlace<uint16_t>(UINT8_MAX);
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
@@ -25193,11 +25188,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 // return Avx2.Permute4x64(tmp3.AsUInt64(), SHUFFLE_WYZX).As<T>();
 
                 GenTreeVecCon* vecCon1 = gtNewVconNode(type);
-
-                for (unsigned i = 0; i < (simdSize / 8); i++)
-                {
-                    vecCon1->gtSimdVal.u64[i] = 0x0000FFFF0000FFFF;
-                }
+                vecCon1->EvaluateBroadcastInPlace<uint32_t>(UINT16_MAX);
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
@@ -25291,11 +25282,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 // return Sse2.PackUnsignedSaturate(tmp1, tmp2).As<T>();
 
                 GenTreeVecCon* vecCon1 = gtNewVconNode(type);
-
-                for (unsigned i = 0; i < (simdSize / 8); i++)
-                {
-                    vecCon1->gtSimdVal.u64[i] = 0x00FF00FF00FF00FF;
-                }
+                vecCon1->EvaluateBroadcastInPlace<uint16_t>(UINT8_MAX);
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
@@ -25321,11 +25308,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 // return Sse2.PackUnsignedSaturate(tmp1, tmp2).As<T>();
 
                 GenTreeVecCon* vecCon1 = gtNewVconNode(type);
-
-                for (unsigned i = 0; i < (simdSize / 8); i++)
-                {
-                    vecCon1->gtSimdVal.u64[i] = 0x0000FFFF0000FFFF;
-                }
+                vecCon1->EvaluateBroadcastInPlace<uint32_t>(UINT16_MAX);
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
@@ -27364,7 +27347,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, var_typ
             unreached();
     }
 
-    intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(this, simdBaseType, targetType, simdSize);
+    intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdBaseType, targetType, simdSize);
     assert(intrinsic != NI_Illegal);
 
     if (simdSize == 64)
@@ -27474,7 +27457,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, var_typ
             unreached();
     }
 
-    intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(this, simdBaseType, targetType, simdSize);
+    intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdBaseType, targetType, simdSize);
     assert(intrinsic != NI_Illegal);
 
     if (simdSize == 64)
@@ -30264,8 +30247,8 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 }
 
 //------------------------------------------------------------------------------
-// GetHWIntrinsicIdForVectorConvert: Returns intrinsic ID for vector conversion
-//     based on the source and target types, plus SIMD size.
+// GetHWIntrinsicIdForVecCvt: Returns intrinsic ID for vector conversion based
+//    on the source and target types, plus SIMD size.
 //
 // Arguments:
 //    comp             - The compiler instance
@@ -30280,12 +30263,12 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 // Returns:
 //    The matching intrinsic ID, or NI_Illegal if a matching intrinsic was not found.
 //
-NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(Compiler* comp,
-                                                                    var_types sourceType,
-                                                                    var_types targetType,
-                                                                    unsigned  simdSize,
-                                                                    bool      preferSaturating /* = false */,
-                                                                    bool*     isSaturating /* = nullptr */)
+NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(Compiler* comp,
+                                                             var_types sourceType,
+                                                             var_types targetType,
+                                                             unsigned  simdSize,
+                                                             bool      preferSaturating /* = false */,
+                                                             bool*     isSaturating /* = nullptr */)
 {
     assert(varTypeIsArithmetic(sourceType));
     assert(varTypeIsArithmetic(targetType));

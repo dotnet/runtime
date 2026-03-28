@@ -1825,7 +1825,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(varTypeIsLong(simdBaseType));
 
-            intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(this, simdBaseType, TYP_DOUBLE, simdSize);
+            intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdBaseType, TYP_DOUBLE, simdSize);
 
             if (intrinsic != NI_Illegal)
             {
@@ -1906,7 +1906,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(varTypeIsInt(simdBaseType));
 
-            intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(this, simdBaseType, TYP_FLOAT, simdSize);
+            intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdBaseType, TYP_FLOAT, simdSize);
 
             if (intrinsic != NI_Illegal)
             {
@@ -3363,10 +3363,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     break;
                 }
 
-                bool isSaturating = false;
-                intrinsic =
-                    GenTreeHWIntrinsic::GetHWIntrinsicIdForVectorConvert(this, simdBaseType, narrowType, simdSize,
-                                                                         /* preferSaturating */ true, &isSaturating);
+                bool     isSaturating = false;
+                unsigned cvtSimdSize  = (simdSize == 64) ? simdSize : (simdSize * 2);
+                intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdBaseType, narrowType, cvtSimdSize,
+                                                                          /* preferSaturating */ true, &isSaturating);
 
                 if ((intrinsic != NI_Illegal) && isSaturating)
                 {
@@ -3382,14 +3382,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         assert((simdSize == 16) || (simdSize == 32));
 
-                        var_types      widenType = (simdSize == 32) ? TYP_SIMD64 : TYP_SIMD32;
+                        var_types      widenType = getSIMDTypeForSize(cvtSimdSize);
                         NamedIntrinsic widenIntrinsic =
                             (simdSize == 32) ? NI_Vector256_ToVector512Unsafe : NI_Vector128_ToVector256Unsafe;
 
                         op1 = gtNewSimdHWIntrinsicNode(widenType, op1, widenIntrinsic, simdBaseType, simdSize);
-                        op1 = gtNewSimdWithUpperNode(widenType, op1, op2, simdBaseType, simdSize * 2);
+                        op1 = gtNewSimdWithUpperNode(widenType, op1, op2, simdBaseType, cvtSimdSize);
 
-                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseType, simdSize * 2);
+                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseType, cvtSimdSize);
                     }
                 }
                 else
