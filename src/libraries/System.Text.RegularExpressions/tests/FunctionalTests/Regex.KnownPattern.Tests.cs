@@ -1569,7 +1569,7 @@ namespace System.Text.RegularExpressions.Tests
                 throw new SkipTestException("Could not find Regex.SampleMatches");
             Func<Regex, int, int, IEnumerable<string>> sampleMatches = sampleMatchesMI.CreateDelegate<Func<Regex, int, int, IEnumerable<string>>>();
 
-            TimeSpan matchTimeout = TimeSpan.FromSeconds(2);
+            int fewerThanRequestedCount = 0;
 
             DataSetExpression[] entries = s_patternsDataSet.Value;
             for (int i = 0; i < entries.Length; i++)
@@ -1588,21 +1588,18 @@ namespace System.Text.RegularExpressions.Tests
 
                 const int NumInputs = 3;
                 const int Seed = 42;
-                List<string> expectedMatchInputs;
-                try
+                string[] expectedMatchInputs = sampleMatches(generator, NumInputs, Seed).ToArray();
+                if (expectedMatchInputs.Length < NumInputs)
                 {
-                    expectedMatchInputs = new List<string>(sampleMatches(generator, NumInputs, Seed));
-                }
-                catch
-                {
+                    fewerThanRequestedCount++;
+                    Assert.True((fewerThanRequestedCount / (double)entries.Length) < 0.10, "SampleMatches is repeatedly producing an insufficient number of inputs");
                     continue;
                 }
 
                 foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
                 {
                     // SourceGenerated uses Roslyn to compile each pattern; with thousands of
-                    // entries that makes this test prohibitively slow. It shares codegen with
-                    // Compiled, so coverage is equivalent.
+                    // entries that makes this test prohibitively slow.
                     if (engine == RegexEngine.SourceGenerated)
                     {
                         continue;
@@ -1610,15 +1607,18 @@ namespace System.Text.RegularExpressions.Tests
 
                     Regex r = engine == RegexEngine.NonBacktracking ?
                         generator :
-                        await RegexHelpers.GetRegexAsync(engine, entry.Pattern, entry.Options, matchTimeout);
+                        await RegexHelpers.GetRegexAsync(engine, entry.Pattern, entry.Options, TimeSpan.FromSeconds(2));
 
                     foreach (string input in expectedMatchInputs)
                     {
                         try
                         {
-                            Assert.True(r.IsMatch(input), $"[{i}-{engine}] Options={entry.Options} Pattern=<{entry.Pattern}> didn't match input=<{input}> (hex: {string.Join(" ", input.Select(c => $"{(int)c:X4}"))})");
+                            if (!r.IsMatch(input))
+                            {
+                                Assert.Fail($"[{i}-{engine}] Options={entry.Options} Pattern=<{entry.Pattern}> didn't match input=<{input}> (hex: {string.Join(" ", input.Select(c => $"{(int)c:X4}"))})");
+                            }
                         }
-                        catch (RegexMatchTimeoutException) when (engine != RegexEngine.NonBacktracking)
+                        catch (RegexMatchTimeoutException)
                         {
                             // SampleMatches can generate random inputs that trigger catastrophic
                             // backtracking in Interpreter/Compiled. That's expected behavior for

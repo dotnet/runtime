@@ -78,7 +78,17 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     while (true)
                     {
-                        Debug.Assert(states.NfaStateSet.Count > 0);
+                        // The state set can be empty when the initial DFA state has no
+                        // NFA expansion (e.g. for certain anchor combinations).
+                        if (states.NfaStateSet.Count == 0)
+                        {
+                            if (latestCandidate is not null)
+                            {
+                                results.Add(latestCandidate.ToString());
+                            }
+
+                            break;
+                        }
 
                         // Gather the possible endings for satisfying nullability
                         possibleEndings.Clear();
