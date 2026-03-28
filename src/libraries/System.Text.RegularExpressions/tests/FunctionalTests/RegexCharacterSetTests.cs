@@ -364,7 +364,6 @@ namespace System.Text.RegularExpressions.Tests
                     yield return new object[] { engine, @"\p{IsVedicExtensions}", new[] { 0x1CD0, 0x1CFF } };
                     yield return new object[] { engine, @"\p{IsPhoneticExtensionsSupplement}", new[] { 0x1D80, 0x1DBF } };
                     yield return new object[] { engine, @"\p{IsCombiningDiacriticalMarksSupplement}", new[] { 0x1DC0, 0x1DFF } };
-                    yield return new object[] { engine, @"\p{IsSupplementalPunctuation}", new[] { 0x2E00, 0x2E7F } };
                     yield return new object[] { engine, @"\p{IsGlagolitic}", new[] { 0x2C00, 0x2C5F } };
                     yield return new object[] { engine, @"\p{IsLatinExtended-C}", new[] { 0x2C60, 0x2C7F } };
                     yield return new object[] { engine, @"\p{IsCoptic}", new[] { 0x2C80, 0x2CFF } };
@@ -372,6 +371,7 @@ namespace System.Text.RegularExpressions.Tests
                     yield return new object[] { engine, @"\p{IsTifinagh}", new[] { 0x2D30, 0x2D7F } };
                     yield return new object[] { engine, @"\p{IsEthiopicExtended}", new[] { 0x2D80, 0x2DDF } };
                     yield return new object[] { engine, @"\p{IsCyrillicExtended-A}", new[] { 0x2DE0, 0x2DFF } };
+                    yield return new object[] { engine, @"\p{IsSupplementalPunctuation}", new[] { 0x2E00, 0x2E7F } };
                     yield return new object[] { engine, @"\p{IsCJKStrokes}", new[] { 0x31C0, 0x31EF } };
                     yield return new object[] { engine, @"\p{IsLisu}", new[] { 0xA4D0, 0xA4FF } };
                     yield return new object[] { engine, @"\p{IsVai}", new[] { 0xA500, 0xA63F } };
