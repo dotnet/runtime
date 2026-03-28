@@ -92,25 +92,13 @@ namespace System.Formats.Cbor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ushort ReadHalfBigEndian(ReadOnlySpan<byte> source)
         {
-            ushort value = BitConverter.IsLittleEndian ?
-                BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<ushort>(source)) :
-                MemoryMarshal.Read<ushort>(source);
-
-            return value;
+            return BinaryPrimitives.ReadUInt16BigEndian(source);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteHalfBigEndian(Span<byte> destination, ushort value)
         {
-            if (BitConverter.IsLittleEndian)
-            {
-                ushort tmp = BinaryPrimitives.ReverseEndianness(value);
-                MemoryMarshal.Write(destination, ref tmp);
-            }
-            else
-            {
-                MemoryMarshal.Write(destination, ref value);
-            }
+            BinaryPrimitives.WriteUInt16BigEndian(destination, value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -138,23 +126,13 @@ namespace System.Formats.Cbor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReadDoubleBigEndian(ReadOnlySpan<byte> source)
         {
-            return BitConverter.IsLittleEndian ?
-                BitConverter.Int64BitsToDouble(BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<long>(source))) :
-                MemoryMarshal.Read<double>(source);
+            return BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64BigEndian(source));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteDoubleBigEndian(Span<byte> destination, double value)
         {
-            if (BitConverter.IsLittleEndian)
-            {
-                long tmp = BinaryPrimitives.ReverseEndianness(BitConverter.DoubleToInt64Bits(value));
-                MemoryMarshal.Write(destination, ref tmp);
-            }
-            else
-            {
-                MemoryMarshal.Write(destination, ref value);
-            }
+            BinaryPrimitives.WriteInt64BigEndian(destination, BitConverter.DoubleToInt64Bits(value));
         }
 
         internal static uint SingleToUInt32Bits(float value)

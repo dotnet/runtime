@@ -23,10 +23,7 @@ namespace System.Reflection
 #if NET
             WriteUInt64(buffer, start, BitConverter.DoubleToUInt64Bits(value));
 #else
-            unsafe
-            {
-                WriteUInt64(buffer, start, *(ulong*)&value);
-            }
+            WriteUInt64(buffer, start, unchecked((ulong)BitConverter.DoubleToInt64Bits(value)));
 #endif
         }
 
@@ -49,19 +46,19 @@ namespace System.Reflection
         }
 
         public static void WriteUInt16(this byte[] buffer, int start, ushort value) =>
-            Unsafe.WriteUnaligned(ref buffer[start], !BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(start), value);
 
         public static void WriteUInt16BE(this byte[] buffer, int start, ushort value) =>
-            Unsafe.WriteUnaligned(ref buffer[start], BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
+            BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(start), value);
 
         public static void WriteUInt32BE(this byte[] buffer, int start, uint value) =>
-            Unsafe.WriteUnaligned(ref buffer[start], BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
+            BinaryPrimitives.WriteUInt32BigEndian(buffer.AsSpan(start), value);
 
         public static void WriteUInt32(this byte[] buffer, int start, uint value) =>
-            Unsafe.WriteUnaligned(ref buffer[start], !BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(start), value);
 
         public static void WriteUInt64(this byte[] buffer, int start, ulong value) =>
-            Unsafe.WriteUnaligned(ref buffer[start], !BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
+            BinaryPrimitives.WriteUInt64LittleEndian(buffer.AsSpan(start), value);
 
         public const int SizeOfSerializedDecimal = sizeof(byte) + 3 * sizeof(uint);
 
