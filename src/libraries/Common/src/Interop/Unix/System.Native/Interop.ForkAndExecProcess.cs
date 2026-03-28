@@ -84,21 +84,21 @@ internal static partial class Interop
             int count = arr.Length;
 
             // First pass: compute total byte length of all strings.
-            int totalByteLength = 0;
+            int dataByteLength = 0;
             foreach (string str in arr)
             {
-                totalByteLength = checked(totalByteLength + Encoding.UTF8.GetByteCount(str) + 1); // +1 for null terminator
+                dataByteLength = checked(dataByteLength + Encoding.UTF8.GetByteCount(str) + 1); // +1 for null terminator
             }
 
             // Allocate a single block: pointer array (count + 1 for null terminator) followed by string data.
             nuint pointersByteLength = checked((nuint)(count + 1) * (nuint)sizeof(byte*));
-            byte* block = (byte*)NativeMemory.Alloc(checked(pointersByteLength + (nuint)totalByteLength));
+            byte* block = (byte*)NativeMemory.Alloc(checked(pointersByteLength + (nuint)dataByteLength));
             arrPtr = (byte**)block;
 
             // Create spans over both portions of the block for bounds-checked access.
             byte* dataPtr = block + pointersByteLength;
             Span<nint> pointers = new Span<nint>(block, count + 1);
-            Span<byte> data = new Span<byte>(dataPtr, totalByteLength);
+            Span<byte> data = new Span<byte>(dataPtr, dataByteLength);
 
             pointers[count] = 0; // null terminator
 
@@ -112,7 +112,7 @@ internal static partial class Interop
                 dataOffset += bytesWritten + 1;
             }
 
-            Debug.Assert(dataOffset == totalByteLength);
+            Debug.Assert(dataOffset == dataByteLength);
         }
 
         /// <summary>
@@ -123,26 +123,26 @@ internal static partial class Interop
         {
             // First pass: count entries with non-null values and compute total buffer size.
             int count = 0;
-            int totalByteLength = 0;
+            int dataByteLength = 0;
             foreach (KeyValuePair<string, string?> pair in env)
             {
                 if (pair.Value is not null)
                 {
                     // Each entry: UTF8(key) + '=' + UTF8(value) + '\0'
-                    totalByteLength = checked(totalByteLength + Encoding.UTF8.GetByteCount(pair.Key) + 1 + Encoding.UTF8.GetByteCount(pair.Value) + 1);
+                    dataByteLength = checked(dataByteLength + Encoding.UTF8.GetByteCount(pair.Key) + 1 + Encoding.UTF8.GetByteCount(pair.Value) + 1);
                     count++;
                 }
             }
 
             // Allocate a single block: pointer array (count + 1 for null terminator) followed by string data.
             nuint pointersByteLength = checked((nuint)(count + 1) * (nuint)sizeof(byte*));
-            byte* block = (byte*)NativeMemory.Alloc(checked(pointersByteLength + (nuint)totalByteLength));
+            byte* block = (byte*)NativeMemory.Alloc(checked(pointersByteLength + (nuint)dataByteLength));
             arrPtr = (byte**)block;
 
             // Create spans over both portions of the block for bounds-checked access.
             byte* dataPtr = block + pointersByteLength;
             Span<nint> pointers = new Span<nint>(block, count + 1);
-            Span<byte> data = new Span<byte>(dataPtr, totalByteLength);
+            Span<byte> data = new Span<byte>(dataPtr, dataByteLength);
 
             pointers[count] = 0; // null terminator
 
@@ -166,7 +166,7 @@ internal static partial class Interop
             }
 
             Debug.Assert(entryIndex == count);
-            Debug.Assert(dataOffset == totalByteLength);
+            Debug.Assert(dataOffset == dataByteLength);
         }
     }
 }
