@@ -515,12 +515,12 @@ namespace System.Threading.Channels.Tests
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(10000)]
-        public void SingleProducerConsumer_ConcurrentReadWrite_WithBufferedCapacity_Success(int bufferedCapacity)
+        public async Task SingleProducerConsumer_ConcurrentReadWrite_WithBufferedCapacity_Success(int bufferedCapacity)
         {
             var c = Channel.CreateBounded<int>(bufferedCapacity);
 
             const int NumItems = 10000;
-            Task.WaitAll(
+            await Task.WhenAll(
                 Task.Run(async () =>
                 {
                     for (int i = 0; i < NumItems; i++)
@@ -541,7 +541,7 @@ namespace System.Threading.Channels.Tests
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(10000)]
-        public void ManyProducerConsumer_ConcurrentReadWrite_WithBufferedCapacity_Success(int bufferedCapacity)
+        public async Task ManyProducerConsumer_ConcurrentReadWrite_WithBufferedCapacity_Success(int bufferedCapacity)
         {
             var c = Channel.CreateBounded<int>(bufferedCapacity);
 
@@ -590,7 +590,7 @@ namespace System.Threading.Channels.Tests
                 });
             }
 
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
             Assert.Equal((NumItems * (NumItems + 1L)) / 2, readTotal);
         }
 

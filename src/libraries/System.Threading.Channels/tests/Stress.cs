@@ -174,7 +174,7 @@ namespace System.Threading.Channels.Tests
 
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         [MemberData(nameof(ReadWriteVariations_TestData))]
-        public void ReadWriteVariations(
+        public async Task ReadWriteVariations(
             Func<ChannelOptions, Channel<int>> channelCreator,
             ChannelOptions options,
             Func<ChannelReader<int>, Task<bool>> readDelegate,
@@ -247,7 +247,7 @@ namespace System.Threading.Channels.Tests
                 }));
             }
 
-            Task.WaitAll(taskList.ToArray());
+            await Task.WhenAll(taskList.ToArray());
 
             if (shouldReadAllWrittenValues)
             {

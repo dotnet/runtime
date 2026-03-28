@@ -260,12 +260,12 @@ namespace System.Threading.Channels.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public void Stress_TryWrite_TryRead()
+        public async Task Stress_TryWrite_TryRead()
         {
             const int NumItems = 3000000;
             Channel<int> c = CreateChannel();
 
-            Task.WaitAll(
+            await Task.WhenAll(
                 Task.Run(async () =>
                 {
                     int received = 0;

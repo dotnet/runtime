@@ -144,12 +144,12 @@ namespace System.Threading.Channels.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60472", TestPlatforms.iOS | TestPlatforms.tvOS)]
-        public void SingleProducerConsumer_ConcurrentReadWrite_Success()
+        public async Task SingleProducerConsumer_ConcurrentReadWrite_Success()
         {
             Channel<int> c = CreateChannel();
 
             const int NumItems = 100000;
-            Task.WaitAll(
+            await Task.WhenAll(
                 Task.Run(async () =>
                 {
                     for (int i = 0; i < NumItems; i++)
@@ -168,13 +168,13 @@ namespace System.Threading.Channels.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60472", TestPlatforms.iOS | TestPlatforms.tvOS)]
-        public void SingleProducerConsumer_PingPong_Success()
+        public async Task SingleProducerConsumer_PingPong_Success()
         {
             Channel<int> c1 = CreateChannel();
             Channel<int> c2 = CreateChannel();
 
             const int NumItems = 100000;
-            Task.WaitAll(
+            await Task.WhenAll(
                 Task.Run(async () =>
                 {
                     for (int i = 0; i < NumItems; i++)
@@ -198,7 +198,7 @@ namespace System.Threading.Channels.Tests
         [InlineData(1, 10)]
         [InlineData(10, 1)]
         [InlineData(10, 10)]
-        public void ManyProducerConsumer_ConcurrentReadWrite_Success(int numReaders, int numWriters)
+        public async Task ManyProducerConsumer_ConcurrentReadWrite_Success(int numReaders, int numWriters)
         {
             if (RequiresSingleReader && numReaders > 1)
             {
@@ -254,7 +254,7 @@ namespace System.Threading.Channels.Tests
                 });
             }
 
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
             Assert.Equal((NumItems * (NumItems + 1L)) / 2, readTotal);
         }
 
