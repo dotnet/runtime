@@ -10196,9 +10196,13 @@ VOID GetGenericArgAssemblyDetailInfo(SString    &sType,
 }
 
 static BOOL FindFirstDifferingGenericArgument(TypeHandle thFrom, TypeHandle thTo,
-                                              TypeHandle *pthArgFrom, TypeHandle *pthArgTo)
+                                              TypeHandle *pthArgFrom, TypeHandle *pthArgTo,
+                                              DWORD depth = 0)
 {
     WRAPPER_NO_CONTRACT;
+
+    if (depth > 8)
+        return FALSE;
 
     Instantiation instFrom = thFrom.GetInstantiation();
     Instantiation instTo = thTo.GetInstantiation();
@@ -10215,7 +10219,7 @@ static BOOL FindFirstDifferingGenericArgument(TypeHandle thFrom, TypeHandle thTo
         Module *pModTo = instTo[i].GetModule();
         if (pModFrom != NULL && pModTo != NULL && pModFrom == pModTo)
         {
-            if (FindFirstDifferingGenericArgument(instFrom[i], instTo[i], pthArgFrom, pthArgTo))
+            if (FindFirstDifferingGenericArgument(instFrom[i], instTo[i], pthArgFrom, pthArgTo, depth + 1))
                 return TRUE;
         }
 
@@ -10279,8 +10283,17 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
                  StackSString sGenericArgName;
                  thDifferingArgFrom.GetName(sGenericArgName);
 
-                 PEAssembly *pPEAssemblyArgFrom = pModuleArgFrom->GetAssembly()->GetPEAssembly();
-                 PEAssembly *pPEAssemblyArgTo = pModuleArgTo->GetAssembly()->GetPEAssembly();
+                 Assembly *pAssemblyArgFrom = pModuleArgFrom->GetAssembly();
+                 Assembly *pAssemblyArgTo = pModuleArgTo->GetAssembly();
+
+                 _ASSERTE(pAssemblyArgFrom != NULL);
+                 _ASSERTE(pAssemblyArgTo != NULL);
+
+                 PEAssembly *pPEAssemblyArgFrom = pAssemblyArgFrom->GetPEAssembly();
+                 PEAssembly *pPEAssemblyArgTo = pAssemblyArgTo->GetPEAssembly();
+
+                 _ASSERTE(pPEAssemblyArgFrom != NULL);
+                 _ASSERTE(pPEAssemblyArgTo != NULL);
 
                  StackSString sArgAssemblyFromDisplayName;
                  StackSString sArgAssemblyToDisplayName;
