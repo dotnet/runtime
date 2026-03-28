@@ -248,6 +248,8 @@ public:
         return m_holderthreadid;
     }
 
+    static bool IsTypeHeldByCurrentThread(CrstType type);
+
 #endif //_DEBUG
 
     //-----------------------------------------------------------------
