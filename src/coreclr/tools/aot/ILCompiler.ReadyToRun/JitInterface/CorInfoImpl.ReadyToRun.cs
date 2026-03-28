@@ -579,10 +579,11 @@ namespace Internal.JitInterface
                 return true;
             }
             // Runtime-async methods produce relocations with non-zero addends that the RISC-V
-            // PEObjectWriter cannot resolve (PutRiscV64AuipcCombo requires zero-initialized
-            // offset fields). Skip compilation and let the runtime JIT these methods.
+            // and LoongArch64 PEObjectWriter cannot resolve (their Put* helpers require
+            // zero-initialized offset fields). Skip compilation and let the runtime JIT
+            // these methods.
             if ((methodNeedingCode.IsAsync || methodNeedingCode.IsAsyncVariant() || methodNeedingCode.IsCompilerGeneratedILBodyForAsync())
-                && methodNeedingCode.Context.Target.Architecture == TargetArchitecture.RiscV64)
+                && methodNeedingCode.Context.Target.Architecture is TargetArchitecture.RiscV64 or TargetArchitecture.LoongArch64)
             {
                 return true;
             }
