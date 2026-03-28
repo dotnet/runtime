@@ -115,7 +115,10 @@ ILStubResolver::GetLocalSig()
 STRINGREF* ILStubResolver::ConstructStringLiteral(mdToken token)
 {
     STANDARD_VM_CONTRACT;
-
+#ifdef DACCESS_COMPILE
+    DacNotImpl();
+    return NULL;
+#else // DACCESS_COMPILE
     GCX_COOP();
 
     STRINGREF* string = NULL;
@@ -131,6 +134,7 @@ STRINGREF* ILStubResolver::ConstructStringLiteral(mdToken token)
     GCPROTECT_END();
 
     return string;
+#endif // DACCESS_COMPILE
 }
 
 BOOL ILStubResolver::IsValidStringRef(mdToken metaTok)

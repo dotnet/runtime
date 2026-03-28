@@ -224,9 +224,6 @@ MethodDesc* CLRToCOMCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags
         return CreateEventCallStub(pMD);
     }
 
-    if (SF_IsCOMLateBoundStub(dwStubFlags))
-        return NULL;
-
     // Get the call signature information
     StubSigDesc sigDesc(pMD);
 

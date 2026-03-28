@@ -45,6 +45,7 @@
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
 #include "clrtocomcall.h"
+#include "reflectioninvocation.h"
 #endif // FEATURE_COMINTEROP
 
 #include "eventtrace.h"
@@ -782,7 +783,7 @@ public:
 
         if (SF_IsHRESULTSwapping(m_dwStubFlags))
         {
-            if (SF_IsForwardStub(m_dwStubFlags))
+            if (SF_IsForwardStub(m_dwStubFlags) && !SF_IsCOMLateBoundStub(m_dwStubFlags))
             {
                 ILCodeLabel* pSkipThrowLabel = pcsDispatch->NewCodeLabel();
 
@@ -1621,6 +1622,369 @@ public:
 protected:
     FieldDesc *m_pFD;
 };
+
+class LateBoundCLRToCOM_ILStubState : public ILStubState
+{
+public:
+
+    LateBoundCLRToCOM_ILStubState(Module* pStubModule, const Signature &signature, SigTypeContext *pTypeContext, DWORD dwStubFlags, MethodDesc* pTargetMD)
+        : ILStubState(
+                pStubModule,
+                signature,
+                pTypeContext,
+                dwStubFlags | PINVOKESTUB_FL_STUB_HAS_THIS | PINVOKESTUB_FL_TARGET_HAS_THIS,
+                -1 /* no explicit LCID argument support for late binding */,
+                CoreLibBinder::GetMethod(METHOD__CLASS__FORWARD_CALL_TO_INVOKE)), /* Late binding stubs will always eventually invoke this method. Pass it as the target for easier diagnostic support. */
+        m_signature(pTargetMD)
+    {
+        STANDARD_VM_CONTRACT;
+        m_wrapperTypes.ReSizeThrows(m_signature.NumFixedArgs());
+
+        MethodDesc* pInterfaceMD = pTargetMD;
+        if (!pInterfaceMD->IsInterface())
+        {
+            pInterfaceMD = pTargetMD->GetInterfaceMD();
+        }
+
+        m_pManagedMD = pInterfaceMD;
+    }
+
+    void BeginEmit(DWORD dwStubFlags)  // CLR to COM IL
+    {
+        STANDARD_VM_CONTRACT;
+
+        ILStubState::BeginEmit(dwStubFlags);
+
+
+        ILCodeStream *pcsSetup = m_slIL.GetSetupCodeStream();
+
+        LocalDesc argumentArray(ELEMENT_TYPE_OBJECT);
+        argumentArray.MakeArray();
+        m_argumentArrayLocalNum = MakeArrayLocalOfElementType(pcsSetup, CLASS__OBJECT);
+        m_argumentTypeLocalNum = MakeArrayLocalOfElementType(pcsSetup, CLASS__TYPE);
+        m_argumentIsByRefArrayLocalNum = MakeArrayLocalOfElementType(pcsSetup, CLASS__BOOLEAN);
+    }
+    void MarshalLCID(int argIdx)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    void MarshalArgument(MarshalInfo* pInfo, int argOffset)
+    {
+        STANDARD_VM_CONTRACT;
+
+        UINT paramIndex = pInfo->GetParamIndex();
+
+        CorElementType elementType = m_signature.NextArg();
+
+        _ASSERTE(pInfo->IsByRef() == (elementType == ELEMENT_TYPE_BYREF));
+
+        TypeHandle argType;
+
+        if (elementType == ELEMENT_TYPE_BYREF)
+        {
+            elementType = m_signature.GetByRefType(&argType);
+            if (CorIsPrimitiveType(elementType))
+            {
+                argType = TypeHandle(CoreLibBinder::GetElementType(elementType));
+            }
+        }
+        else
+        {
+            argType = m_signature.GetLastTypeHandleThrowing();
+        }
+
+        ILCodeStream *pcsMarshal = m_slIL.GetMarshalCodeStream();
+
+        pcsMarshal->EmitLDLOC(m_argumentArrayLocalNum);
+        pcsMarshal->EmitLDC(paramIndex);
+        LocalDesc argTypeDesc(argType);
+        pcsMarshal->EmitLDARG(paramIndex);
+        if (pInfo->IsByRef())
+        {
+            pcsMarshal->EmitLDIND_T(&argTypeDesc);
+        }
+
+        if (argType.IsValueType())
+        {
+            pcsMarshal->EmitBOX(pcsMarshal->GetToken(argType));
+        }
+
+        pcsMarshal->EmitSTELEM_REF();
+
+        pcsMarshal->EmitLDLOC(m_argumentTypeLocalNum);
+        pcsMarshal->EmitLDC(paramIndex);
+
+        pcsMarshal->EmitLDTOKEN(pcsMarshal->GetToken(argType));
+        pcsMarshal->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
+        pcsMarshal->EmitSTELEM_REF();
+
+        if (pInfo->IsByRef())
+        {
+            // Mark this argument as by-ref in the argumentIsByRef array so the callee knows to copy back the value after the call.
+            pcsMarshal->EmitLDLOC(m_argumentIsByRefArrayLocalNum);
+            pcsMarshal->EmitLDC(paramIndex);
+            pcsMarshal->EmitLDC(1);
+            pcsMarshal->EmitSTELEM_I1();
+
+            // We need to emit the code to copy back the results after the call.
+            ILCodeStream* pcsUnmarshal = m_slIL.GetUnmarshalCodeStream();
+
+            pcsUnmarshal->EmitLDARG(paramIndex);
+            pcsUnmarshal->EmitLDLOC(m_argumentArrayLocalNum);
+            pcsUnmarshal->EmitLDC(paramIndex);
+            pcsUnmarshal->EmitLDELEM_REF();
+            pcsUnmarshal->EmitUNBOX_ANY(pcsUnmarshal->GetToken(argType));
+            pcsUnmarshal->EmitSTIND_T(&argTypeDesc);
+        }
+
+        m_wrapperTypes[paramIndex] = pInfo->GetDispWrapperType();
+        if (m_wrapperTypes[paramIndex] != 0)
+        {
+            m_wrapperTypesNeeded = TRUE;
+        }
+    }
+
+    void FinishEmit(MethodDesc* pStubMD)
+    {
+        if (m_wrapperTypesNeeded)
+        {
+            ILCodeStream* pcsMarshal = m_slIL.GetMarshalCodeStream();
+
+            LocalDesc wrapperArrayType(ELEMENT_TYPE_I4);
+            wrapperArrayType.MakeArray();
+            m_wrapperArrayLocalNum = pcsMarshal->NewLocal(wrapperArrayType);
+            pcsMarshal->EmitLDC((DWORD)m_signature.NumFixedArgs());
+            pcsMarshal->EmitNEWARR(pcsMarshal->GetToken(CoreLibBinder::GetClass(CLASS__INT32)));
+            pcsMarshal->EmitSTLOC(m_wrapperArrayLocalNum);
+
+            for (UINT i = 0; i < m_signature.NumFixedArgs(); i++)
+            {
+                if (m_wrapperTypes[i] != 0)
+                {
+                    pcsMarshal->EmitLDLOC(m_wrapperArrayLocalNum);
+                    pcsMarshal->EmitLDC(i);
+                    pcsMarshal->EmitLDC(m_wrapperTypes[i]);
+                    pcsMarshal->EmitSTELEM_I4();
+                }
+            }
+        }
+
+        ILStubState::FinishEmit(pStubMD);
+    }
+
+    void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD)
+    {
+        STANDARD_VM_CONTRACT;
+
+        // We don't invoke a target method here directly.
+        // We invoke a helper that will go through late binding to invoke the target.
+        ILCodeStream* pcsDispatch = m_slIL.GetDispatchCodeStream();
+
+        pcsDispatch->EmitLDTOKEN(pcsDispatch->GetToken(m_pManagedMD->GetMethodTable()));
+        pcsDispatch->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
+
+        mdToken token;
+        LPCUTF8 memberName;
+        DWORD binderFlags = GetInfoFromMetadata(&token, &memberName);
+
+        // Retrieve the name of the target member. If the member
+        // has a DISPID then use that to optimize the invoke.
+        DISPID dispId = DISPID_UNKNOWN;
+        HRESULT hr = m_pManagedMD->GetMDImport()->GetDispIdOfMemberDef(token, (ULONG*)&dispId);
+        if (hr == S_OK)
+        {
+            WCHAR strTmp[ARRAY_SIZE(DISPID_NAME_FORMAT_STRING) + MaxUnsigned32BitDecString];
+            _snwprintf_s(strTmp, ARRAY_SIZE(strTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, dispId);
+            pcsDispatch->EmitLDSTR(SString(strTmp));
+        }
+        else
+        {
+            pcsDispatch->EmitLDSTR(SString(SString::Utf8, memberName));
+        }
+
+        pcsDispatch->EmitLDC(binderFlags);
+        pcsDispatch->EmitLoadThis();
+        pcsDispatch->EmitLDLOC(m_argumentArrayLocalNum);
+        pcsDispatch->EmitLDLOC(m_argumentIsByRefArrayLocalNum);
+        if (m_wrapperTypesNeeded)
+        {
+            pcsDispatch->EmitLDLOC(m_wrapperArrayLocalNum);
+        }
+        else
+        {
+            pcsDispatch->EmitLDNULL();
+        }
+        pcsDispatch->EmitLDLOC(m_argumentTypeLocalNum);
+
+        pcsDispatch->EmitLDTOKEN(pcsDispatch->GetToken(m_signature.GetRetTypeHandleThrowing()));
+        pcsDispatch->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
+        pcsDispatch->EmitCALL(METHOD__CLASS__FORWARD_CALL_TO_INVOKE, 9, 1);
+    }
+
+    void MarshalReturn(MarshalInfo* pInfo, int argOffset)
+    {
+        STANDARD_VM_CONTRACT;
+
+        ILCodeStream* pcs = m_slIL.GetReturnUnmarshalCodeStream();
+
+        if (m_pManagedMD->IsVoid())
+        {
+            pcs->EmitPOP();
+        }
+        else
+        {
+            LocalDesc rawRet(ELEMENT_TYPE_OBJECT);
+            DWORD rawRetLocal = pcs->NewLocal(rawRet);
+            pcs->EmitSTLOC(rawRetLocal);
+            pcs->EmitLDLOC(rawRetLocal);
+
+            ILCodeLabel* nullRetLabel = pcs->NewCodeLabel();
+            ILCodeLabel* afterRetLabel = pcs->NewCodeLabel();
+            pcs->EmitBRFALSE(nullRetLabel);
+
+            // If the return value is non-null, then we can just unbox it.
+            pcs->EmitLDLOC(rawRetLocal);
+            pcs->EmitUNBOX_ANY(pcs->GetToken(m_signature.GetRetTypeHandleThrowing()));
+            pcs->EmitBR(afterRetLabel);
+
+            // If the return value is null, we need to return the default value for the return type.
+            pcs->EmitLabel(nullRetLabel);
+            LocalDesc retTypeDesc(m_signature.GetRetTypeHandleThrowing());
+            DWORD defaultValueLocal = pcs->NewLocal(retTypeDesc);
+            pcs->EmitLDLOCA(defaultValueLocal);
+            pcs->EmitINITOBJ(pcs->GetToken(m_signature.GetRetTypeHandleThrowing()));
+            pcs->EmitLDLOC(defaultValueLocal);
+
+            pcs->EmitLabel(afterRetLabel);
+        }
+    }
+
+private:
+    DWORD MakeArrayLocalOfElementType(ILCodeStream* pcs, BinderClassID elementType)
+    {
+        MethodTable* pMT = CoreLibBinder::GetClass(elementType);
+        LocalDesc arrayDesc(pMT);
+        arrayDesc.MakeArray();
+        DWORD localNum = pcs->NewLocal(arrayDesc);
+        pcs->EmitLDC(m_signature.NumFixedArgs());
+        pcs->EmitNEWARR(pcs->GetToken(pMT));
+        pcs->EmitSTLOC(localNum);
+        return localNum;
+    }
+
+    DWORD GetInfoFromMetadata(mdToken* pToken, LPCUTF8* pstrMemberName)
+    {
+        DWORD binderFlags = BINDER_AllLookup;
+        mdProperty propToken;
+        LPCUTF8 strMemberName;
+        ULONG uSemantic;
+
+        // If the method has a void return type, then set the IgnoreReturn binding flag.
+        if (m_pManagedMD->IsVoid())
+            binderFlags |= BINDER_IgnoreReturn;
+
+        // See if there is property information for this member.
+        HRESULT hr = m_pManagedMD->GetMDImport()->GetPropertyInfoForMethodDef(m_pManagedMD->GetMemberDef(), &propToken, &strMemberName, &uSemantic);
+        if (hr != S_OK)
+        {
+            // Non-property method
+            *pstrMemberName = m_pManagedMD->GetName();
+            *pToken = m_pManagedMD->GetMemberDef();
+            return binderFlags | BINDER_InvokeMethod;
+        }
+
+        // Property accessor
+        *pstrMemberName = strMemberName;
+        *pToken = propToken;
+
+        // Determine which type of accessor we are dealing with.
+        switch (uSemantic)
+        {
+        case msGetter:
+        {
+            // INVOKE_PROPERTYGET
+            binderFlags |= BINDER_GetProperty;
+            break;
+        }
+
+        case msSetter:
+        {
+            // INVOKE_PROPERTYPUT or INVOKE_PROPERTYPUTREF
+            ULONG cAssoc;
+            ASSOCIATE_RECORD* pAssoc;
+
+            IMDInternalImport *pMDImport = m_pManagedMD->GetMDImport();
+
+            // Retrieve all the associates.
+            HENUMInternalHolder henum{ pMDImport };
+            henum.EnumAssociateInit(propToken);
+
+            cAssoc = henum.EnumGetCount();
+            _ASSERTE(cAssoc > 0);
+
+            ULONG allocSize = cAssoc * sizeof(*pAssoc);
+            if (allocSize < cAssoc)
+                COMPlusThrowHR(COR_E_OVERFLOW);
+
+            pAssoc = (ASSOCIATE_RECORD*)_alloca((size_t)allocSize);
+            IfFailThrow(pMDImport->GetAllAssociates(&henum, pAssoc, cAssoc));
+
+            // Check to see if there is both a set and an other. If this is the case
+            // then the setter is a INVOKE_PROPERTYPUTREF otherwise we will make it a
+            // INVOKE_PROPERTYPUT | INVOKE_PROPERTYPUTREF.
+            bool propHasOther = false;
+            for (ULONG i = 0; i < cAssoc; i++)
+            {
+                if (pAssoc[i].m_dwSemantics == msOther)
+                {
+                    propHasOther = true;
+                    break;
+                }
+            }
+
+            if (propHasOther)
+            {
+                // There is both a INVOKE_PROPERTYPUT and a INVOKE_PROPERTYPUTREF for this
+                // property. Therefore be specific and make this invoke a INVOKE_PROPERTYPUTREF.
+                binderFlags |= BINDER_PutRefDispProperty;
+            }
+            else
+            {
+                // Only a setter so make the invoke a set which maps to
+                // INVOKE_PROPERTYPUT | INVOKE_PROPERTYPUTREF.
+                binderFlags = BINDER_SetProperty;
+            }
+            break;
+        }
+
+        case msOther:
+        {
+            // INVOKE_PROPERTYPUT
+            binderFlags |= BINDER_PutDispProperty;
+            break;
+        }
+
+        default:
+        {
+            _ASSERTE(!"Invalid method semantic!");
+        }
+        }
+
+        return binderFlags;
+    }
+
+    MethodDesc* m_pManagedMD;
+    MetaSig m_signature;
+
+    DWORD m_argumentArrayLocalNum;
+    DWORD m_argumentIsByRefArrayLocalNum;
+    DWORD m_argumentTypeLocalNum;
+    DWORD m_wrapperArrayLocalNum;
+    CQuickArray<DWORD> m_wrapperTypes;
+    BOOL m_wrapperTypesNeeded;
+};
+
 #endif // FEATURE_COMINTEROP
 
 ILStubLinkerFlags GetILStubLinkerFlagsForPInvokeStubFlags(PInvokeStubFlags flags)
@@ -3625,6 +3989,12 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
             pss->MarshalReturn(&returnInfo, argOffset);
         }
     }
+    else if (SF_IsCOMLateBoundStub(dwStubFlags))
+    {
+        // Late-bound COM always targets a method that returns an object.
+        // Call MarshalReturn with a "NULL" marshal info to enable it to handle this appropriately.
+        pss->MarshalReturn(NULL, argOffset);
+    }
 
     return marshalType;
 }
@@ -5283,6 +5653,10 @@ MethodDesc* PInvoke::CreateCLRToNativeILStub(
         if (SF_IsReverseStub(dwStubFlags))
         {
             pStubState = new COMToCLR_ILStubState(pModule, pSigDesc->m_sig, &pSigDesc->m_typeContext, dwStubFlags, iLCIDArg, pMD);
+        }
+        else if (SF_IsCOMLateBoundStub(dwStubFlags))
+        {
+            pStubState = new LateBoundCLRToCOM_ILStubState(pModule, pSigDesc->m_sig, &pSigDesc->m_typeContext, dwStubFlags, pMD);
         }
         else
         {
