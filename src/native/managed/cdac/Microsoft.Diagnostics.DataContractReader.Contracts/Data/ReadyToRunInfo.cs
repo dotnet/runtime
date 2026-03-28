@@ -34,6 +34,8 @@ internal sealed class ReadyToRunInfo : IData<ReadyToRunInfo>
 
         // Map is from the composite info pointer (set to itself for non-multi-assembly composite images)
         EntryPointToMethodDescMap = CompositeInfo + (ulong)type.Fields[nameof(EntryPointToMethodDescMap)].Offset;
+        LoadedImageBase = target.ReadPointer(address + (ulong)type.Fields[nameof(LoadedImageBase)].Offset);
+        Composite = target.ReadPointer(address + (ulong)type.Fields[nameof(Composite)].Offset);
     }
 
     internal TargetPointer CompositeInfo { get; }
@@ -49,4 +51,6 @@ internal sealed class ReadyToRunInfo : IData<ReadyToRunInfo>
     public TargetPointer DelayLoadMethodCallThunks { get; }
     public TargetPointer DebugInfoSection { get; }
     public TargetPointer EntryPointToMethodDescMap { get; }
+    public TargetPointer LoadedImageBase { get; }
+    public TargetPointer Composite { get; }
 }

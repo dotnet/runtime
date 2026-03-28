@@ -58,13 +58,18 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
 
             const orig_funcs_on_exit = _ems_.___funcs_on_exit;
             // it would be better to use addOnExit(), but it's called too late.
+            // this can't be async
             _ems_.___funcs_on_exit = () => {
-                // this will prevent more timers (like finalizer) to get scheduled during thread destructor
-                if (_ems_.dotnetBrowserUtilsExports.abortBackgroundTimers) {
-                    _ems_.dotnetBrowserUtilsExports.abortBackgroundTimers();
+                try {
+                    // this will prevent more timers (like finalizer) to get scheduled during thread destructor
+                    if (_ems_.dotnetBrowserUtilsExports.abortBackgroundTimers) {
+                        _ems_.dotnetBrowserUtilsExports.abortBackgroundTimers();
+                    }
+                    _ems_.EXITSTATUS = _ems_._BrowserHost_ShutdownDotnet(_ems_.EXITSTATUS || 0);
+                    orig_funcs_on_exit();
+                } catch (err) {
+                    // silently ignore any error during shutdown
                 }
-                _ems_.EXITSTATUS = _ems_._BrowserHost_ShutdownDotnet(_ems_.EXITSTATUS || 0);
-                orig_funcs_on_exit();
             };
 
         }, ...(_ems_.Module.preInit || [])];

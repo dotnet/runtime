@@ -1014,7 +1014,7 @@ namespace System.Numerics.Tests
                 return;
             }
 
-            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.Value, actual.Value);
+            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.Value.ToString(), actual.Value.ToString());
         }
     }
 }

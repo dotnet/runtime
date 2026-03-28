@@ -294,7 +294,7 @@ void CodeGen::genCodeForBBlist()
            (thanks to GTF_ORDER_SIDEEFF).
          */
 
-        if (handlerGetsXcptnObj(block->bbCatchTyp))
+        if (handlerGetsXcptnObj(block->GetCatchType()))
         {
             for (GenTree* node : LIR::AsRange(block))
             {
@@ -407,6 +407,16 @@ void CodeGen::genCodeForBBlist()
         if (block->IsFirst() && m_compiler->lvaHasAnySwiftStackParamToReassemble())
         {
             genHomeSwiftStructStackParameters();
+        }
+#endif
+
+#ifdef TARGET_WASM
+        // genHomeRegisterParams can generate arbitrary amounts of code on Wasm, so
+        // we have moved it out of the prolog to the first basic block in order to
+        // work around the restriction that the prolog can only be one insGroup.
+        if (block->IsFirst())
+        {
+            genHomeRegisterParamsOutsideProlog();
         }
 #endif
 

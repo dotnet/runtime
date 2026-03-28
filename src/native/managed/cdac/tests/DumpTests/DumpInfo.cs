@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -21,6 +22,36 @@ public sealed class DumpInfo
 
     [JsonPropertyName("arch")]
     public string Arch { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The expected (debuggee, dumpDir, r2rDir) combinations for this dump set.
+    /// Written during dump generation from each debuggee's csproj metadata.
+    /// </summary>
+    [JsonPropertyName("debuggees")]
+    public DebuggeeEntry[] Debuggees { get; set; } = [];
+
+    private HashSet<(string Name, string DumpDir, string R2RDir)>? _debuggeeLookup;
+
+    /// <summary>
+    /// Returns <see langword="true"/> if a dump is expected for the given combination.
+    /// The debuggee list in <c>dump-info.json</c> is already filtered to only include
+    /// debuggees that should have been generated on the platform where dumps were created.
+    /// </summary>
+    public bool IsDumpExpected(string debuggeeName, string dumpDir, string r2rDir)
+    {
+        _debuggeeLookup ??= BuildDebuggeeLookup();
+
+        return _debuggeeLookup.Contains((debuggeeName.ToLowerInvariant(), dumpDir.ToLowerInvariant(), r2rDir.ToLowerInvariant()));
+    }
+
+    private HashSet<(string, string, string)> BuildDebuggeeLookup()
+    {
+        HashSet<(string, string, string)> lookup = new(Debuggees.Length);
+        foreach (DebuggeeEntry entry in Debuggees)
+            lookup.Add((entry.Name.ToLowerInvariant(), entry.DumpDir.ToLowerInvariant(), entry.R2RDir.ToLowerInvariant()));
+
+        return lookup;
+    }
 
     /// <summary>
     /// Attempts to load <c>dump-info.json</c> from the given version directory.
@@ -64,11 +95,28 @@ public sealed class DumpInfo
             System.Runtime.InteropServices.Architecture.X86 => "x86",
             System.Runtime.InteropServices.Architecture.Arm64 => "arm64",
             System.Runtime.InteropServices.Architecture.Arm => "arm",
+            System.Runtime.InteropServices.Architecture.RiscV64 => "riscv64",
+            System.Runtime.InteropServices.Architecture.LoongArch64 => "loongarch64",
             _ => "unknown",
         };
 
         return new DumpInfo { Os = os, Arch = arch };
     }
+}
+
+/// <summary>
+/// Describes a single expected dump combination in <c>dump-info.json</c>.
+/// </summary>
+public sealed class DebuggeeEntry
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("dumpDir")]
+    public string DumpDir { get; set; } = string.Empty;
+
+    [JsonPropertyName("r2rDir")]
+    public string R2RDir { get; set; } = string.Empty;
 }
 
 [JsonSerializable(typeof(DumpInfo))]

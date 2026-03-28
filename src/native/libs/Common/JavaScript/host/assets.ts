@@ -27,7 +27,7 @@ export function registerPdbBytes(bytes: Uint8Array, virtualPath: string) {
     _ems_.FS.createDataFile(parentDirectory, fileName, bytes, true /* canRead */, true /* canWrite */, true /* canOwn */);
 }
 
-export function registerDllBytes(bytes: Uint8Array, virtualPath: string) {
+export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortName: string) {
     const sp = _ems_.stackSave();
     try {
         const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
@@ -38,13 +38,9 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string) {
         const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
         _ems_.HEAPU8.set(bytes, ptr >>> 0);
 
-        const name = virtualPath.startsWith(browserVirtualAppBase)
-            ? virtualPath.substring(browserVirtualAppBase.length)
-            : virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
-
-        _ems_.dotnetLogger.debug(`Registered assembly '${virtualPath}' (name: '${name}') at ${ptr.toString(16)} length ${bytes.length}`);
+        _ems_.dotnetLogger.debug(`Registered assembly '${virtualPath}' (shortName: '${shortName}') at ${ptr.toString(16)} length ${bytes.length}`);
         loadedAssemblies.set(virtualPath, { ptr, length: bytes.length });
-        loadedAssemblies.set(name, { ptr, length: bytes.length });
+        loadedAssemblies.set(shortName, { ptr, length: bytes.length });
     } finally {
         _ems_.stackRestore(sp);
     }
@@ -96,8 +92,8 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
     }
 }
 
-export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr) {
-    const path = _ems_.UTF8ToString(pathPtr);
+export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr): boolean {
+    const path = _ems_.UTF8ArrayToString(_ems_.dotnetApi.localHeapViewU8(), pathPtr as any);
     const assembly = loadedAssemblies.get(path);
     if (assembly) {
         _ems_.HEAPU32[outDataStartPtr as any >>> 2] = assembly.ptr;
@@ -159,17 +155,22 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
 export async function instantiateWasm(wasmPromise: Promise<Response>, imports: WebAssembly.Imports): Promise<{ instance: WebAssembly.Instance; module: WebAssembly.Module; }> {
     let instance: WebAssembly.Instance;
     let module: WebAssembly.Module;
-    const res = await checkResponseOk(wasmPromise);
-    if (!hasInstantiateStreaming || !res.isStreamingOk) {
-        const data = await res.arrayBuffer();
-        module = await WebAssembly.compile(data);
-        instance = await WebAssembly.instantiate(module, imports);
-    } else {
-        const instantiated = await WebAssembly.instantiateStreaming(wasmPromise, imports);
-        instance = instantiated.instance;
-        module = instantiated.module;
+    try {
+        const res = await checkResponseOk(wasmPromise);
+        if (!hasInstantiateStreaming || !res.isStreamingOk) {
+            const data = await res.arrayBuffer();
+            module = await WebAssembly.compile(data);
+            instance = await WebAssembly.instantiate(module, imports);
+        } else {
+            const instantiated = await WebAssembly.instantiateStreaming(wasmPromise, imports);
+            instance = instantiated.instance;
+            module = instantiated.module;
+        }
+        return { instance, module };
+    } catch (err) {
+        _ems_.dotnetApi.exit(1, err);
+        throw err;
     }
-    return { instance, module };
 
     async function checkResponseOk(wasmPromise: Promise<Response> | undefined): Promise<Response & { isStreamingOk?: boolean }> {
         _ems_.dotnetAssert.check(wasmPromise, "WASM binary promise was not initialized");

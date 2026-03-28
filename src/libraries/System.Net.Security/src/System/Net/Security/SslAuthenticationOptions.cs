@@ -11,7 +11,6 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions : IDisposable
     {
-        private const string EnableOcspStaplingContextSwitchName = "System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux";
 
         internal const X509RevocationMode DefaultRevocationMode = X509RevocationMode.NoCheck;
 
@@ -146,8 +145,7 @@ namespace System.Net.Security
 
                 if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
                 {
-                    bool ocspFetch = false;
-                    _ = AppContext.TryGetSwitch(EnableOcspStaplingContextSwitchName, out ocspFetch);
+                    bool ocspFetch = LocalAppContextSwitches.EnableOcspStapling;
                     // given cert is X509Certificate2 with key. We can use it directly.
                     SetCertificateContextFromCert(certificateWithKey, !ocspFetch);
                 }
@@ -182,8 +180,6 @@ namespace System.Net.Security
             {
 #pragma warning disable 0618
                 // SSL2 is mutually exclusive with >= TLS1.2
-                // On Windows10 SSL2 flag has no effect but on earlier versions of the OS
-                // opting into both SSL2 and >= TLS1.2 causes negotiation to always fail.
                 protocols &= ~SslProtocols.Ssl2;
 #pragma warning restore 0618
             }

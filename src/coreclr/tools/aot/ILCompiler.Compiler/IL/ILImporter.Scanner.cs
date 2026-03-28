@@ -460,7 +460,7 @@ namespace Internal.IL
 
                     const string asyncReason = "Async state machine";
 
-                    var resumptionStub = new AsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+                    AsyncResumptionStub resumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
                     _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
 
                     _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
@@ -725,8 +725,7 @@ namespace Internal.IL
                 else
                 {
                     // We have the canonical version of the method - find the runtime determined version.
-                    // This is simplified because we know the method is on a valuetype.
-                    Debug.Assert(targetMethod.OwningType.IsValueType);
+                    Debug.Assert(targetMethod.OwningType.IsValueType || targetMethod.Signature.IsStatic);
 
                     MethodDesc targetOfLookup;
                     if (_constrained.IsRuntimeDeterminedType)

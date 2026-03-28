@@ -460,7 +460,7 @@ namespace System.Diagnostics
                     // The reason: each log registry key must always contain subkey (i.e. source) with the same name.
                     string keyname = key.Name;
                     int index = keyname.LastIndexOf('\\');
-                    if (string.Compare(keyname, index + 1, source, 0, keyname.Length - index, StringComparison.Ordinal) == 0)
+                    if (keyname.AsSpan(index + 1).Equals(source, StringComparison.Ordinal))
                         throw new InvalidOperationException(SR.Format(SR.CannotDeleteEqualSource, source));
                 }
 

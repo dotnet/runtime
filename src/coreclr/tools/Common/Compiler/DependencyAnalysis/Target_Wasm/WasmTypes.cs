@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+
 using ILCompiler.ObjectWriter;
 using Internal.JitInterface;
 
@@ -150,6 +151,9 @@ namespace ILCompiler.DependencyAnalysis.Wasm
         private readonly WasmResultType _returns;
 
         public int SignatureLength => _params.Types.Length + _returns.Types.Length;
+
+        public WasmResultType Params => _params;
+        public WasmResultType Returns => _returns;
 
         public WasmFuncType(WasmResultType paramTypes, WasmResultType returnTypes)
         {

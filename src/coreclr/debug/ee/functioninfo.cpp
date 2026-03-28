@@ -2060,7 +2060,7 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
         {
             // Some versions may not be compiled yet - skip those for now
             // if they compile later the JitCompiled callback will add a DJI to our cache at that time
-            PCODE codeAddr = itr->GetNativeCode();
+            PCODE codeAddr = GetInterpreterCodeFromInterpreterPrecodeIfPresent(itr->GetNativeCode());
             LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD (%d) Native code for DJI - %p\n", ++count, codeAddr));
             if (codeAddr)
             {
