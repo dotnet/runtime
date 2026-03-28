@@ -10930,14 +10930,6 @@ void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
             return;
         }
 
-        // For address-exposed locals, the wider merged store may not be as atomic
-        // as the individual narrower stores. Skip coalescing to match the
-        // atomicity guarantees of LowerStoreIndirCoalescing.
-        if (m_compiler->lvaVarAddrExposed(currLclNum))
-        {
-            break;
-        }
-
         // Make sure the current node's tree range is closed (no unexpected interleaved nodes).
         bool               isClosedRange = false;
         LIR::ReadOnlyRange currRange     = BlockRange().GetTreeRange(store, &isClosedRange);
