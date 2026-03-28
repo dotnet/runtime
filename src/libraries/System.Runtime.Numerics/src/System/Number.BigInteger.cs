@@ -1136,20 +1136,18 @@ namespace System
                 nuint[] buffer = new nuint[bufferLength];
                 Build(buffer, cached ?? LeadingPowers1E9);
 
-                // The write is safe without explicit memory barriers because:
-                // 1. The array is fully initialized before being stored.
-                // 2. On ARM64, the .NET GC write barrier uses stlr (store-release),
-                //    providing release semantics for reference-type stores.
-                // 3. Readers have a data dependency (load reference -> access elements),
-                //    providing natural acquire ordering on all architectures.
+                // reftype field assignments have Store-Release semantics in .NET, so no volatile is needed.
                 s_cachedPowersOf1e9 = buffer;
                 return new(buffer);
             }
 
             /// <summary>
             /// Pre-calculated cumulative lengths into <see cref="pow1E9"/>.
-            /// <c>pow1E9[Indexes[i-1]..Indexes[i]]</c> equals <c>1000000000^(1&lt;&lt;i)</c>.
+            /// <c>pow1E9[Indexes[i]..Indexes[i+1]]&lt;&lt;(32*OmittedLength(i))</c> equals <c>1000000000^(1&lt;&lt;i)</c>.
             /// </summary>
+            /// <remarks>
+            /// Satisfies the following relationship <c>Indexes[i+1] - Indexes[i] == Math.Ceiling(Math.Log2(1000000000) * (1u&lt;&lt;i) / 32 - OmittedLength(i))</c>.
+            /// </remarks>
             private static ReadOnlySpan<int> Indexes => nint.Size == 8 ? Indexes64 : Indexes32;
 
             private static ReadOnlySpan<int> Indexes32 =>
@@ -1225,8 +1223,7 @@ namespace System
             ];
 
             /// <summary>
-            /// Pre-computed leading powers of 10^9 for small exponents. Entries up to
-            /// <c>1000000000^(1&lt;&lt;5)</c> are stored directly because their low limb is never zero.
+            /// Pre-computed leading powers of 10^9 for small exponents.
             /// </summary>
             private static ReadOnlySpan<nuint> LeadingPowers1E9 => nint.Size == 8
                 ? MemoryMarshal.Cast<ulong, nuint>(LeadingPowers1E9_64)
