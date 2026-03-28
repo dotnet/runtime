@@ -209,8 +209,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void LeadingZeroCountTest()
         {
-            Assert.Equal((BigInteger)(nint.Size * 8), BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Zero));
-            Assert.Equal((BigInteger)(nint.Size * 8 - 1), BinaryIntegerHelper<BigInteger>.LeadingZeroCount(One));
+            Assert.Equal((BigInteger)32, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Zero));
+            Assert.Equal((BigInteger)31, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(One));
             Assert.Equal((BigInteger)1, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Int64MaxValue));
 
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Int64MinValue));

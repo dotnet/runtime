@@ -3153,15 +3153,34 @@ namespace System.Numerics
         {
             if (value._bits is null)
             {
-                return nint.LeadingZeroCount(value._sign);
+                // For small values stored in _sign, use 32-bit counting to match the
+                // behavior when _bits was uint[] (where each limb was always 32-bit).
+                return uint.LeadingZeroCount((uint)value._sign);
             }
 
-            // When the value is positive, we just need to get the lzcnt of the most significant bits.
             // When negative, two's complement has infinite sign-extension of 1-bits, so LZC is always 0.
+            if (value._sign < 0)
+            {
+                return 0;
+            }
 
-            return (value._sign >= 0)
-                ? BitOperations.LeadingZeroCount(value._bits[^1])
-                : 0;
+            // When positive, count leading zeros in the most significant 32-bit word of the value.
+            // On 64-bit systems, each nuint limb holds 64 bits, so we extract the most significant
+            // 32-bit half. This preserves the behavior from when _bits was uint[] (32-bit limbs).
+            nuint msLimb = value._bits[^1];
+            uint msWord;
+
+            if (nuint.Size > sizeof(uint))
+            {
+                uint high = (uint)(msLimb >> 32);
+                msWord = (high != 0) ? high : (uint)msLimb;
+            }
+            else
+            {
+                msWord = (uint)msLimb;
+            }
+
+            return uint.LeadingZeroCount(msWord);
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
