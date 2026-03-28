@@ -233,8 +233,6 @@ HRESULT EEConfig::Init()
     fGDBJitEmitDebugFrame = false;
 #endif
 
-    runtimeAsync = false;
-
     return S_OK;
 }
 
@@ -847,8 +845,6 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
     fUseCachedInterfaceDispatch = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseCachedInterfaceDispatch) != 0;
 #endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
-
-    runtimeAsync = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RuntimeAsync) != 0;
 
     return hr;
 }
