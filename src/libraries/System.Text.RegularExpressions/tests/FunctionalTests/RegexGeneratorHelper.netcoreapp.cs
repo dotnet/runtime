@@ -166,10 +166,9 @@ namespace System.Text.RegularExpressions.Tests
             if (!Environment.Is64BitProcess && regexes.Length > MaxBatchSize)
             {
                 var batchResults = new List<Regex>(regexes.Length);
-                for (int i = 0; i < regexes.Length; i += MaxBatchSize)
+                foreach (var chunk in regexes.Chunk(MaxBatchSize))
                 {
-                    int end = Math.Min(i + MaxBatchSize, regexes.Length);
-                    batchResults.AddRange(await SourceGenRegexAsync(regexes[i..end], cancellationToken));
+                    batchResults.AddRange(await SourceGenRegexAsync(chunk, cancellationToken));
                 }
                 return batchResults.ToArray();
             }
