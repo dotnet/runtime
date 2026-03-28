@@ -176,6 +176,16 @@ class CallStackLogger
             }
         }
 
+        MethodDesc* pMD = pCF->GetFunction();
+
+        // Skip CoreLib-internal bridge methods marked with [StackTraceHidden]
+        // (e.g. Environment.CallEntryPoint) so they don't appear in fatal
+        // stack overflow traces.
+        if (pMD != nullptr && pMD->GetModule()->IsSystem() && pMD->HasUnmanagedCallersOnlyAttribute())
+        {
+            return SWA_CONTINUE;
+        }
+
         MethodDesc** itemPtr = m_frames.Append();
         if (itemPtr == nullptr)
         {
@@ -183,7 +193,7 @@ class CallStackLogger
             return SWA_ABORT;
         }
 
-        *itemPtr = pCF->GetFunction();
+        *itemPtr = pMD;
 
         return SWA_CONTINUE;
     }

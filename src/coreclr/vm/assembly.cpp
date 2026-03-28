@@ -1171,8 +1171,6 @@ extern "C" void SystemJS_ResolveMainPromise(int exitCode);
 
 static void RunMainInternal(Param* pParam)
 {
-    MethodDescCallSite  threadStart(pParam->pFD);
-
     PTRARRAYREF StrArgArray = NULL;
     GCPROTECT_BEGIN(StrArgArray);
 
@@ -1193,18 +1191,27 @@ static void RunMainInternal(Param* pParam)
             StrArgArray = *pParam->stringArgs;
     }
 
+    pParam->pFD->EnsureActive();
+    PCODE entryPoint = pParam->pFD->GetSingleCallableAddrOfCode();
+
     ARG_SLOT stackVar = ObjToArgSlot(StrArgArray);
+
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(stackVar);
+
+    PRECALL_PREP(args);
+    PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(entryPoint);
 
     if (pParam->pFD->IsVoid())
     {
         // Set the return value to 0 instead of returning random junk
         *pParam->piRetVal = 0;
-        threadStart.Call(&stackVar);
+        PERFORM_CALL;
     }
     else
     {
-        // Call the main method
-        *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
+        PERFORM_CALL;
+        *pParam->piRetVal = static_cast<INT32>(reinterpret_cast<INT_PTR>(__retval));
         SetLatchedExitCode(*pParam->piRetVal);
     }
 

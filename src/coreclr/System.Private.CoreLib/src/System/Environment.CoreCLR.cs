@@ -134,5 +134,57 @@ namespace System
                 *pException = ex;
             }
         }
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        [RequiresUnsafe]
+        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue, Exception* pException)
+        {
+            try
+            {
+                if (hasArgument)
+                {
+                    if (hasReturnValue)
+                    {
+                        *pReturnValue = ((delegate* managed<string[]?, int>)entryPoint)(pArgument is not null ? *pArgument : null);
+                    }
+                    else
+                    {
+                        ((delegate* managed<string[]?, void>)entryPoint)(pArgument is not null ? *pArgument : null);
+                    }
+                }
+                else
+                {
+                    if (hasReturnValue)
+                    {
+                        *pReturnValue = ((delegate* managed<int>)entryPoint)();
+                    }
+                    else
+                    {
+                        ((delegate* managed<void>)entryPoint)();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        [RequiresUnsafe]
+        internal static unsafe int CallEntryPointUtf16StringRetInt(IntPtr entryPoint, char* pArgument, Exception* pException)
+        {
+            try
+            {
+                return ((delegate* managed<string?, int>)entryPoint)(pArgument is not null ? new string(pArgument) : null);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return 1; // EXIT_FAILURE
+            }
+        }
     }
 }

@@ -227,7 +227,7 @@ namespace System.Diagnostics
                 StackFrame? sf = GetFrame(iFrameIndex);
                 MethodBase? mb = sf?.GetMethod();
                 if (mb != null && (ShowInStackTrace(mb) ||
-                                   (iFrameIndex == _numOfFrames - 1))) // Don't filter last frame
+                                   (iFrameIndex == _numOfFrames - 1 && fFirstFrame))) // Don't filter last frame only if everything else was filtered
                 {
                     // We want a newline at the end of every line except for the last
                     if (fFirstFrame)

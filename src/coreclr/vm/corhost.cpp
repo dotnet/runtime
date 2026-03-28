@@ -428,25 +428,18 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
         {
             GCX_COOP();
 
-            MethodDescCallSite method(pMethodMD);
+            UnmanagedCallersOnlyCaller callEntryPoint(METHOD__ENVIRONMENT__CALL_ENTRY_POINT_UTF16_STRING_RET_INT);
+            pMethodMD->EnsureActive();
+            PCODE entryPoint = pMethodMD->GetSingleCallableAddrOfCode();
 
-            STRINGREF sref = NULL;
-            GCPROTECT_BEGIN(sref);
+            INT32 retval = callEntryPoint.InvokeThrowing_Ret<INT32>(
+                static_cast<INT_PTR>(entryPoint),
+                pwzArgument);
 
-            if (pwzArgument)
-                sref = StringObject::NewString(pwzArgument);
-
-            ARG_SLOT MethodArgs[] =
-            {
-                ObjToArgSlot(sref)
-            };
-            DWORD retval = method.Call_RetI4(MethodArgs);
             if (pReturnValue)
             {
                 *pReturnValue = retval;
             }
-
-            GCPROTECT_END();
         }
     }
     EX_CATCH_HRESULT(hr);
