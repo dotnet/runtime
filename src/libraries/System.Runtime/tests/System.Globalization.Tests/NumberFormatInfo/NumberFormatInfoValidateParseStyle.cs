@@ -28,16 +28,21 @@ namespace System.Globalization.Tests
         [InlineData(unchecked((NumberStyles)0xFFFFFC00), false)]
         [InlineData(NumberStyles.HexNumber | NumberStyles.Integer, false)]
         [InlineData(NumberStyles.AllowHexSpecifier, false)]
+        [InlineData(NumberStyles.HexFloat, true)]
+        [InlineData(NumberStyles.AllowBinarySpecifier, false)]
+        [InlineData(NumberStyles.AllowHexSpecifier | NumberStyles.AllowExponent, true)]
         [InlineData(NumberStyles.None, true)]
         public void ValidateParseStyle_Float(NumberStyles style, bool valid)
         {
+            // Use a value that's valid for hex float styles (which require "0x" prefix and "p" exponent).
+            string value = (style & NumberStyles.AllowHexSpecifier) != 0 ? "0x0p0" : "0";
             if (!valid)
             {
-                AssertExtensions.Throws<ArgumentException>("style", () => float.Parse("0", style));
+                AssertExtensions.Throws<ArgumentException>("style", () => float.Parse(value, style));
             }
             else
             {
-                float.Parse("0", style); // Should not throw
+                float.Parse(value, style); // Should not throw
             }
         }
     }
