@@ -159,11 +159,10 @@ namespace System.Diagnostics
             GetWaitState();
         }
 
-        partial void ConfigureAfterProcessStart(SafeProcessHandle safeProcessHandle)
+        partial void ConfigureAfterProcessStart(IDisposable? waitStateHolder)
         {
-            // Transfer the ownership of the wait state holder from the SafeProcessHandle to the Process,
-            // so that the Process can track it and ensure it gets cleaned up when the Process is disposed.
-            _waitStateHolder = Interlocked.Exchange(ref safeProcessHandle._waitStateHolder, null);
+            // Take ownership of the wait state holder that was created during process start.
+            _waitStateHolder = (ProcessWaitState.Holder?)waitStateHolder;
         }
 
         /// <devdoc>

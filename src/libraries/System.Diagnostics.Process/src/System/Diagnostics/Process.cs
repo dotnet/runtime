@@ -1327,16 +1327,17 @@ namespace System.Diagnostics
                     }
                 }
 
-                SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle);
+                SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, out IDisposable? waitStateHolder);
                 if (startedProcess.IsInvalid)
                 {
                     Debug.Assert(startInfo.UseShellExecute && OperatingSystem.IsWindows());
+                    waitStateHolder?.Dispose();
                     return false;
                 }
 
-                // We must configure the _waitStateHolder on Unix before SetProcessId is called,
-                // as it may create a new instance of the holder.
-                ConfigureAfterProcessStart(startedProcess);
+                // On Unix, hand the wait state holder to this Process instance
+                // so it can track process exit. On Windows, waitStateHolder is always null.
+                ConfigureAfterProcessStart(waitStateHolder);
 
                 SetProcessHandle(startedProcess);
                 if (!startInfo.UseShellExecute || !OperatingSystem.IsWindows())
@@ -1396,7 +1397,7 @@ namespace System.Diagnostics
             return true;
         }
 
-        partial void ConfigureAfterProcessStart(SafeProcessHandle safeProcessHandle);
+        partial void ConfigureAfterProcessStart(IDisposable? waitStateHolder);
 
         /// <devdoc>
         ///    <para>

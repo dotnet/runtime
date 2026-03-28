@@ -16,8 +16,9 @@ namespace Microsoft.Win32.SafeHandles
             return Interop.Kernel32.CloseHandle(handle);
         }
 
-        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out IDisposable? waitStateHolder)
         {
+            waitStateHolder = null;
             return startInfo.UseShellExecute
                 ? StartWithShellExecuteEx(startInfo)
                 : StartWithCreateProcess(startInfo, stdinHandle, stdoutHandle, stderrHandle);

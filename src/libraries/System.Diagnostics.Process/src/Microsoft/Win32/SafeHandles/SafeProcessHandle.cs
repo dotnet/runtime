@@ -117,7 +117,11 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle);
+            SafeProcessHandle result = StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, out IDisposable? waitStateHolder);
+            // For standalone SafeProcessHandle.Start, we dispose the wait state holder immediately.
+            // The DangerousAddRef on the SafeWaitHandle (Unix) keeps the OS handle alive.
+            waitStateHolder?.Dispose();
+            return result;
         }
 
         private void Validate()
