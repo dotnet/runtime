@@ -287,15 +287,6 @@ DEFINE_METASIG(SM(Obj_RetVoid, j, v))
 DEFINE_METASIG(SM(Obj_RetInt, j, i))
 DEFINE_METASIG(SM(Obj_RetIntPtr, j, I))
 
-#ifdef FEATURE_COMINTEROP
-DEFINE_METASIG_T(SM(Obj_Int_RefComVariant_RetVoid, j i r(g(COMVARIANT)), v))
-DEFINE_METASIG_T(SM(Obj_RefComVariant_RetVoid, j r(g(COMVARIANT)), v))
-DEFINE_METASIG_T(SM(RefComVariant_RetObject, r(g(COMVARIANT)), j))
-DEFINE_METASIG_T(IM(RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid, g(RT_TYPE_HANDLE) r(F) r(I), v))
-
-#endif
-
-
 DEFINE_METASIG(SM(Str_RetInt, s, i))
 DEFINE_METASIG(SM(Int_Str_RetIntPtr, i s, I))
 DEFINE_METASIG(SM(Int_Str_IntPtr_RetIntPtr, i s I, I))
@@ -313,7 +304,6 @@ DEFINE_METASIG_T(IM(RetModule, _, C(MODULE)))
 DEFINE_METASIG_T(IM(PtrNativeAssemblyNameParts, P(g(NATIVE_ASSEMBLY_NAME_PARTS)), v))
 DEFINE_METASIG(SM(PtrCharPtrVoid, P(u) P(v), v))
 DEFINE_METASIG(IM(RetObj, _, j))
-DEFINE_METASIG(SM(RetObj, _, j))
 DEFINE_METASIG(IM(RetStr, _, s))
 
 DEFINE_METASIG_T(IM(RetType, _, C(TYPE)))
