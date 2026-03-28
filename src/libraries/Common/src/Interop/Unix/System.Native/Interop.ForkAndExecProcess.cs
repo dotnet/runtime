@@ -95,14 +95,16 @@ internal static partial class Interop
             byte* block = (byte*)NativeMemory.Alloc(checked(pointersByteLength + (nuint)totalByteLength));
             arrPtr = (byte**)block;
 
-            // Set the null terminator for the pointer array.
-            arrPtr[count] = null;
-
+            // Create spans over both portions of the block for bounds-checked access.
+            Span<nint> pointers = new Span<nint>(block, count + 1);
             Span<byte> data = new Span<byte>(block + pointersByteLength, totalByteLength);
+
+            pointers[count] = 0; // null terminator
+
             int dataOffset = 0;
             for (int i = 0; i < count; i++)
             {
-                arrPtr[i] = block + pointersByteLength + (nuint)dataOffset;
+                pointers[i] = (nint)(block + pointersByteLength + (nuint)dataOffset);
 
                 int bytesWritten = Encoding.UTF8.GetBytes(arr[i], data.Slice(dataOffset));
                 data[dataOffset + bytesWritten] = (byte)'\0';
@@ -136,19 +138,20 @@ internal static partial class Interop
             byte* block = (byte*)NativeMemory.Alloc(checked(pointersByteLength + (nuint)totalByteLength));
             arrPtr = (byte**)block;
 
-            // Set the null terminator for the pointer array.
-            arrPtr[count] = null;
+            // Create spans over both portions of the block for bounds-checked access.
+            Span<nint> pointers = new Span<nint>(block, count + 1);
+            Span<byte> data = new Span<byte>(block + pointersByteLength, totalByteLength);
+
+            pointers[count] = 0; // null terminator
 
             // Second pass: encode each key=value pair directly into the buffer.
-            // Span bounds checking on the data portion will throw if the collection was concurrently modified.
-            Span<byte> data = new Span<byte>(block + pointersByteLength, totalByteLength);
             int entryIndex = 0;
             int dataOffset = 0;
             foreach (KeyValuePair<string, string?> pair in env)
             {
                 if (pair.Value is not null)
                 {
-                    arrPtr[entryIndex] = block + pointersByteLength + (nuint)dataOffset;
+                    pointers[entryIndex] = (nint)(block + pointersByteLength + (nuint)dataOffset);
 
                     int keyBytes = Encoding.UTF8.GetBytes(pair.Key, data.Slice(dataOffset));
                     data[dataOffset + keyBytes] = (byte)'=';
