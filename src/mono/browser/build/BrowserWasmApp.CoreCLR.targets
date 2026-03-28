@@ -20,13 +20,12 @@
     <!-- Ensure TargetsBrowser is set so native.wasm.targets populates exported functions/methods -->
     <TargetsBrowser Condition="'$(TargetsBrowser)' == '' and '$(IsBrowserWasmProject)' == 'true'">true</TargetsBrowser>
 
-    <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
-    <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
+    <!-- EH and SIMD are always enabled for CoreCLR -->
+    <WasmEnableExceptionHandling>true</WasmEnableExceptionHandling>
+    <WasmEnableSIMD>true</WasmEnableSIMD>
     <WasmClang>emcc</WasmClang>
 
-    <_WasmDefaultFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">-fwasm-exceptions</_WasmDefaultFlags>
-    <_WasmDefaultFlags Condition="'$(WasmEnableExceptionHandling)' == 'false'">-fexceptions</_WasmDefaultFlags>
-    <_WasmDefaultFlags Condition="'$(WasmEnableSIMD)' == 'true'">$(_WasmDefaultFlags) -msimd128</_WasmDefaultFlags>
+    <_WasmDefaultFlags>-fwasm-exceptions -msimd128</_WasmDefaultFlags>
 
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Build</WasmBuildAppAfterThisTarget>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
@@ -256,9 +255,8 @@
       <_EmccCommonFlags Include="$(EmccFlags)" />
       <_EmccCommonFlags Include="-v"  Condition="'$(EmccVerbose)' == 'true'" />
       <_EmccCommonFlags Include="-g"  Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
-      <_EmccCommonFlags Include="-fwasm-exceptions"                        Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
-      <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"          Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
-      <_EmccCommonFlags Include="-msimd128"                                Condition="'$(WasmEnableSIMD)' == 'true'" />
+      <_EmccCommonFlags Include="-fwasm-exceptions" />
+      <_EmccCommonFlags Include="-msimd128" />
     </ItemGroup>
 
     <ItemGroup>
