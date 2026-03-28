@@ -2470,9 +2470,8 @@ public:
 
     // MapBreakpoints will map any and all breakpoints (except EnC
     //      patches) from previous versions of the method into the current version.
-    HRESULT MapAndBindFunctionPatches( DebuggerJitInfo *pJiNew,
-        MethodDesc * fd,
-        CORDB_ADDRESS_TYPE * addrOfCode);
+    HRESULT MapAndBindFunctionPatches(DebuggerJitInfo *pJiNew,
+        MethodDesc * fd);
 
     // MPTDJI takes the given patch (and djiFrom, if you've got it), and
     // does the IL mapping forwards to djiTo.  Returns

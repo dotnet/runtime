@@ -1403,8 +1403,7 @@ void DebuggerController::Dequeue()
 // mapping with. Future calls will fail too.
 // returns false, *pFail = true
 bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
-                                   MethodDesc *pMD,
-                                   CORDB_ADDRESS_TYPE *startAddr)
+                                   MethodDesc *pMD)
 {
     CONTRACTL
     {
@@ -1417,31 +1416,36 @@ bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
     CONTRACTL_END;
 
     _ASSERTE(patch != NULL);
+    _ASSERTE(patch->HasDJI() && patch->GetDJI()->m_jitComplete);
     _ASSERTE(!patch->IsILPrimaryPatch());
     _ASSERTE(pMD != NULL);
 
-    LOG((LF_CORDB,LL_INFO10000, "DC::BP: Patch %p (patchId:0x%zx) to %s::%s (pMD: %p) at %p\n",
-        patch, patch->patchId, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, pMD, startAddr));
-
-    //
-    // Translate patch to address, if it hasn't been already.
-    //
+    LOG((LF_CORDB,LL_INFO10000, "DC::BP: Patch %p (patchId:0x%zx) to %s::%s (pMD: %p)\n",
+        patch, patch->patchId, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, pMD) );
 
     if (patch->address != NULL)
     {
         return true;
     }
 
-    if (startAddr == NULL)
+    CORDB_ADDRESS_TYPE* startAddr = NULL;
+    if (patch->HasDJI() && patch->GetDJI()->m_jitComplete)
     {
-        if (patch->HasDJI() && patch->GetDJI()->m_jitComplete)
-        {
-            startAddr = (CORDB_ADDRESS_TYPE *) CORDB_ADDRESS_TO_PTR(patch->GetDJI()->m_addrOfCode);
-            _ASSERTE(startAddr != NULL);
-        }
-        //We should never be calling this function with both a NULL startAddr and a DJI that doesn't have code.
-        _ASSERTE(startAddr != NULL);
+        LOG((LF_CORDB,LL_INFO10000, "DC::BP: Patch %p (patchId:0x%zx) has DJI %p\n",
+            patch, patch->patchId, patch->GetDJI()));
+        startAddr = (CORDB_ADDRESS_TYPE *) CORDB_ADDRESS_TO_PTR(patch->GetDJI()->m_addrOfCode);
     }
+    else
+    {
+        // We shouldn't enter here, but conservatively preserve the path for now, since GetJitInfo below can return the latest
+        // DJI or create one in the NULL case and we haven't run with asserts on this code path in a while. If we do enter here,
+        // we'll at least have a stack to know where we end up getting bind requests for patches with no DJI or unjitted DJI.
+        LOG((LF_CORDB,LL_INFO10000, "DC::BP: Patch %p (patchId:0x%zx) has no DJI or incomplete DJI. Unexpected state\n",
+            patch, patch->patchId));
+        _ASSERTE(!"DC::BP: We shouldn't be getting bind requests for patches with no DJI or unjitted DJI.");
+    }
+
+    _ASSERTE(startAddr != NULL);
 
     // The PrecodeStubManager redirects calls to the JITed Async Thunk which will be redirected by the AsyncThunkStubManager
     // We need to bind a patch inside the async thunk which is a 'stub'.
@@ -2321,7 +2325,7 @@ BOOL DebuggerController::AddBindAndActivatePatchForMethodDesc(MethodDesc *fd,
                             0,
                             dji);
 
-    if (DebuggerController::BindPatch(patch, fd, NULL))
+    if (DebuggerController::BindPatch(patch, fd))
     {
         DebuggerController::ActivatePatch(patch);
         ok = TRUE;

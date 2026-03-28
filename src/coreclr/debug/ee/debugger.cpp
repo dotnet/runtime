@@ -2507,7 +2507,7 @@ void Debugger::JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress
 
         // Bind any IL patches to the newly jitted native code.
         HRESULT hr;
-        hr = MapAndBindFunctionPatches(dji, fd, (CORDB_ADDRESS_TYPE *)newAddress);
+        hr = MapAndBindFunctionPatches(dji, fd);
         _ASSERTE(SUCCEEDED(hr));
     }
 
@@ -4730,8 +4730,7 @@ static BOOL IsDuplicatePatch(SIZE_T_UNORDERED_ARRAY* unorderedArray, SIZE_T Entr
 //  <TODO>@todo Need to factor code,so that we can selectively map forward DFK(ilOFfset) BPs</TODO>
  ******************************************************************************/
 HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
-                                            MethodDesc * fd,
-                                            CORDB_ADDRESS_TYPE *addrOfCode)
+                                            MethodDesc * fd)
 {
     // @@@
     // Internal helper API. Can be called from Debugger or Controller.
@@ -4851,8 +4850,8 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
             // we don't care if it turns out that there isn't a mapping.
             // <TODO>@todo-postponed: EnC: Make sure that this doesn't cause
             // the patch-table to shift.</TODO>
-            hr = MapPatchToDJI( dcp, djiNew );
-            if (CORDBG_E_CODE_NOT_AVAILABLE == hr )
+            hr = MapPatchToDJI(dcp, djiNew);
+            if (CORDBG_E_CODE_NOT_AVAILABLE == hr)
             {
                 *(listUnbindablePatches.AppendThrowing()) = dcp;
                 hr = S_OK;
@@ -4959,7 +4958,7 @@ HRESULT Debugger::MapPatchToDJI(DebuggerControllerPatch *dcp, DebuggerJitInfo *d
             // We have an unbound native patch (eg. for PatchTrace), lets try to bind and activate it
             dcp->SetDJI(djiTo);
             LOG((LF_CORDB, LL_EVERYTHING, "D::MPTDJI trying to bind patch... could be problem\n"));
-            if (DebuggerController::BindPatch(dcp, djiTo->m_nativeCodeVersion.GetMethodDesc(), NULL))
+            if (DebuggerController::BindPatch(dcp, djiTo->m_nativeCodeVersion.GetMethodDesc()))
             {
                 DebuggerController::ActivatePatch(dcp);
                 LOG((LF_CORDB, LL_INFO1000, "D::MPTDJI Binding went fine!\n" ));
