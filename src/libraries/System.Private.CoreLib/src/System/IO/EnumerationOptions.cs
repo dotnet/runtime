@@ -74,11 +74,11 @@ namespace System.IO
         public MatchType MatchType { get; set; }
 
         /// <summary>
-        /// Gets or sets the case matching behavior for file name pattern matching.
+        /// Gets or sets the case matching behavior for entry (file and directory) name matching against the search pattern.
         /// </summary>
         /// <remarks>
-        /// This property affects only how file names are matched against the search pattern.
-        /// It does not affect directory path resolution. On case-sensitive file systems
+        /// This property affects only how entry names (file and directory names) are matched against the search pattern during enumeration.
+        /// It does not affect directory path resolution or traversal. On case-sensitive file systems
         /// (common on Linux or when using a case-sensitive volume), directory paths must match the exact casing
         /// regardless of this setting; on case-insensitive file systems, path resolution follows the behavior
         /// of the underlying file system. The default is to match the platform defaults.
