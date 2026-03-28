@@ -229,7 +229,10 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
                     CFDataRef dnData = CFDataCreate(NULL, (const UInt8*)dnBytes, (CFIndex)dnLength);
                     if (dnData != NULL)
                     {
-                        CFArrayAppendValue(acceptableIssuers, dnData);
+                        if (acceptableIssuers != NULL)
+                        {
+                            CFArrayAppendValue(acceptableIssuers, dnData);
+                        }
                         CFRelease(dnData);
                     }
                 }

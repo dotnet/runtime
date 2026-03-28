@@ -3041,8 +3041,17 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
         readSetPtr = readFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
         writeSetPtr = writeFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
         errorSetPtr = errorFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
-    }
 
+        if ((readFdsCount > 0 && readSetPtr == NULL)
+            || (writeFdsCount > 0 && writeSetPtr == NULL)
+            || (errorFdsCount > 0 && errorSetPtr == NULL))
+        {
+            free(readSetPtr);
+            free(writeSetPtr);
+            free(errorSetPtr);
+            return Error_ENOMEM;
+        }
+    }
 
     struct timeval timeout;
     timeout.tv_sec = microseconds / 1000000;
