@@ -245,7 +245,10 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
         void* identity = _challengeFunc(context, acceptableIssuers);
 
         // Clean up
-        CFRelease(acceptableIssuers);
+        if (acceptableIssuers != NULL)
+        {
+            CFRelease(acceptableIssuers);
+        }
 
         if (identity != NULL)
         {
