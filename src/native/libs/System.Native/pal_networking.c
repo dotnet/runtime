@@ -3033,9 +3033,9 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
     }
     else
     {
-       readSetPtr = readFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       writeSetPtr = writeFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       errorSetPtr = errorFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
+       readSetPtr = readFdsCount == 0 ? NULL : (fd_set*)calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
+       writeSetPtr = writeFdsCount == 0 ? NULL : (fd_set*)calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
+       errorSetPtr = errorFdsCount == 0 ? NULL : (fd_set*)calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
     }
 
 
