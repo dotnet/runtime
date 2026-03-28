@@ -1115,11 +1115,7 @@ public:
         return m_AssemblyCache.LookupAssembly(pSpec, fThrow);
     }
 
-    Assembly* FindCachedParentAssembly(Assembly* pAssembly)
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_AssemblyCache.LookupParentAssemblyForAssembly(pAssembly);
-    }
+    Assembly* FindCachedParentAssembly(Assembly* pAssembly);
 
 private:
     PEAssembly* FindCachedFile(AssemblySpec* pSpec, BOOL fThrow = TRUE);

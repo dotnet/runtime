@@ -1616,9 +1616,9 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     gc.pNewFileString = StringObject::NewString(m_name);
     gc.pNewException = AllocateObject(CoreLibBinder::GetException(m_kind));
 
-    if (!m_requestingAssemblyName.IsEmpty())
+    if (!m_requestingAssemblyChain.IsEmpty())
     {
-        gc.pNewRequestingChain = StringObject::NewString(m_requestingAssemblyName);
+        gc.pNewRequestingChain = StringObject::NewString(m_requestingAssemblyChain);
     }
 
     MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
@@ -1702,42 +1702,37 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
         Assembly *pParentAssembly = pSpec->GetParentAssembly();
         if (pParentAssembly != NULL)
         {
-            StackSString parentName;
-            pParentAssembly->GetDisplayName(parentName);
-
             // Build the requesting assembly chain: start with the immediate parent,
             // then walk up the binding cache to find transitive requesting assemblies.
             StackSString requestingChain;
-            requestingChain.Set(parentName);
+            pParentAssembly->GetDisplayName(requestingChain);
 
             EX_TRY
             {
-                AppDomain *pDomain = pSpec->GetAppDomain();
-                if (pDomain != NULL)
+                Assembly *pWalkAssembly = pParentAssembly;
+                int depth = 0;
+                const int MaxChainDepth = 10;
+
+                // The binding cache may contain multiple entries for the same assembly
+                // (bound under different AssemblySpecs), possibly with a different parent.
+                // LookupParentAssemblyForAssembly returns the first match found during
+                // iteration, so the chain is best-effort to provide what info we can
+                while (pWalkAssembly != NULL && depth < MaxChainDepth)
                 {
-                    Assembly *pWalkAssembly = pParentAssembly;
-                    int depth = 0;
-                    const int MaxChainDepth = 10;
+                    pParentAssembly = AppDomain::GetCurrentDomain()->FindCachedParentAssembly(pWalkAssembly);
+                    if (pParentAssembly == NULL || pParentAssembly == pWalkAssembly)
+                        break;
 
-                    while (pWalkAssembly != NULL && depth < MaxChainDepth)
-                    {
-                        // Look up the current assembly in the binding cache to find
-                        // which assembly requested its load (its parent).
-                        Assembly *pGrandParent = pDomain->FindCachedParentAssembly(pWalkAssembly);
-                        if (pGrandParent == NULL || pGrandParent == pWalkAssembly)
-                            break;
+                    StackSString parentName;
+                    pParentAssembly->GetDisplayName(parentName);
+                    requestingChain.Append(W("\n --> "));
+                    requestingChain.Append(parentName);
 
-                        StackSString grandParentName;
-                        pGrandParent->GetDisplayName(grandParentName);
-                        requestingChain.Append(W("\n ---> "));
-                        requestingChain.Append(grandParentName);
+                    if (pParentAssembly->IsSystem())
+                        break;
 
-                        if (pGrandParent->IsSystem())
-                            break;
-
-                        pWalkAssembly = pGrandParent;
-                        depth++;
-                    }
+                    pWalkAssembly = pParentAssembly;
+                    depth++;
                 }
             }
             EX_CATCH
@@ -1746,7 +1741,7 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
             }
             EX_END_CATCH
 
-            pException->SetRequestingAssembly(requestingChain);
+            pException->SetRequestingAssemblyChain(requestingChain);
         }
 
         STRESS_LOG3(LF_EH, LL_INFO100, "EX_THROW_WITH_INNER Type = 0x%x HR = 0x%x, "

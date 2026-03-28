@@ -3043,6 +3043,22 @@ BOOL AppDomain::IsCached(AssemblySpec *pSpec)
     return m_AssemblyCache.Contains(pSpec);
 }
 
+Assembly* AppDomain::FindCachedParentAssembly(Assembly* pAssembly)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // LookupParentAssemblyForAssembly iterates over the values in cache.
+    // Take the lock to protect against concurrent modifications.
+    DomainCacheCrstHolderForGCPreemp lock(this);
+    return m_AssemblyCache.LookupParentAssemblyForAssembly(pAssembly);
+}
+
 PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec, BOOL fThrow /*=TRUE*/)
 {
     CONTRACTL
