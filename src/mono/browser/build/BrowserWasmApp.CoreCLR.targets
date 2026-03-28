@@ -20,7 +20,9 @@
     <!-- Ensure TargetsBrowser is set so native.wasm.targets populates exported functions/methods -->
     <TargetsBrowser Condition="'$(TargetsBrowser)' == '' and '$(IsBrowserWasmProject)' == 'true'">true</TargetsBrowser>
 
-    <!-- EH and SIMD are always enabled for CoreCLR -->
+    <!-- EH and SIMD are always enabled for CoreCLR — detect user overrides before forcing true -->
+    <_CoreCLRInvalidEH Condition="'$(WasmEnableExceptionHandling)' != '' and '$(WasmEnableExceptionHandling)' != 'true'">true</_CoreCLRInvalidEH>
+    <_CoreCLRInvalidSIMD Condition="'$(WasmEnableSIMD)' != '' and '$(WasmEnableSIMD)' != 'true'">true</_CoreCLRInvalidSIMD>
     <WasmEnableExceptionHandling>true</WasmEnableExceptionHandling>
     <WasmEnableSIMD>true</WasmEnableSIMD>
     <WasmClang>emcc</WasmClang>
@@ -133,6 +135,10 @@
   <!-- ======================== Initialize ======================== -->
 
   <Target Name="_CoreCLRWasmInitialize">
+    <Error Condition="'$(_CoreCLRInvalidEH)' == 'true'"
+           Text="WasmEnableExceptionHandling cannot be disabled for CoreCLR browser-wasm. The CoreCLR runtime requires wasm exception handling." />
+    <Error Condition="'$(_CoreCLRInvalidSIMD)' == 'true'"
+           Text="WasmEnableSIMD cannot be disabled for CoreCLR browser-wasm. The CoreCLR runtime requires SIMD." />
     <Error Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == '' and ('%(ResolvedRuntimePack.PackageDirectory)' == '' or !Exists(%(ResolvedRuntimePack.PackageDirectory)))"
            Text="%24(MicrosoftNetCoreAppRuntimePackDir) is not set and cannot find %25(ResolvedRuntimePack.PackageDirectory). One of these must be a valid path." />
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
