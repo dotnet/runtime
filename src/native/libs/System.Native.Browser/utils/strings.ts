@@ -3,11 +3,12 @@
 
 import type { CharPtr, VoidPtr } from "../types";
 import { dotnetApi } from "../utils/cross-module";
-import { getU16Local, setU16Local, viewOrCopy, zeroRegion } from "./memory";
+import { getU16Local, isSharedArrayBuffer, setU16Local, viewOrCopy, zeroRegion } from "./memory";
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
 let textDecoderUtf16: TextDecoder | undefined = undefined;
 let textEncoderUtf8: TextEncoder | undefined = undefined;
+let textDecoderUtf8Relaxed: TextDecoder | undefined = undefined;
 let stringsInitialized = false;
 
 export function stringsInit(): void {
@@ -15,6 +16,15 @@ export function stringsInit(): void {
         // V8 does not provide TextDecoder
         if (typeof globalThis.TextDecoder !== "undefined") {
             textDecoderUtf16 = new globalThis.TextDecoder("utf-16le");
+            textDecoderUtf8Relaxed = new globalThis.TextDecoder("utf-8", { fatal: false });
+            if (!_ems_.UTF8Decoder) {
+                _ems_.UTF8Decoder = new globalThis.TextDecoder("utf-8", { fatal: false });
+            }
+            const originalUTF8DecoderDecode = _ems_.UTF8Decoder.decode;
+            _ems_.UTF8Decoder.decode = function (input: Uint8Array): string {
+                const view = isSharedArrayBuffer(input.buffer) ? input.slice() : input;
+                return originalUTF8DecoderDecode.call(this, view);
+            };
         }
         if (typeof globalThis.TextEncoder !== "undefined") {
             textEncoderUtf8 = new globalThis.TextEncoder();
@@ -63,10 +73,8 @@ export function stringToUTF8(str: string): Uint8Array {
 export function utf16ToString(startPtr: number, endPtr: number): string {
     startPtr = startPtr >>> 0;
     endPtr = endPtr >>> 0;
-    stringsInit();
     if (textDecoderUtf16) {
         const subArray = viewOrCopy(dotnetApi.localHeapViewU8(), startPtr as any, endPtr as any);
-        // TODO-WASM: When threading is enabled, TextDecoder does not accept a view of a
         // SharedArrayBuffer, we must make a copy of the array first.
         // See https://github.com/whatwg/encoding/issues/172
         return textDecoderUtf16.decode(subArray);
@@ -86,4 +94,16 @@ export function utf16ToStringLoop(startPtr: number, endPtr: number): string {
         str += String.fromCharCode(char);
     }
     return str;
+}
+
+export function utf8ToStringRelaxed(buffer: Uint8Array): string {
+    // SharedArrayBuffer, we must make a copy of the array first.
+    // See https://github.com/whatwg/encoding/issues/172
+    const subArray = viewOrCopy(buffer, 0 as any, buffer.byteLength as any);
+
+    if (!textDecoderUtf8Relaxed) {
+        return _ems_.UTF8ArrayToString(subArray, 0, subArray.byteLength);
+    }
+
+    return textDecoderUtf8Relaxed.decode(subArray);
 }

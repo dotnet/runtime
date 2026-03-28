@@ -70,6 +70,13 @@ public sealed class HostCodeHeapInfo : ICodeHeapInfo
 
 public sealed class UnknownCodeHeapInfo : ICodeHeapInfo {}
 
+public enum JitType : uint
+{
+    Unknown = 0,
+    Jit = 1,
+    R2R = 2
+}
+
 public interface IExecutionManager : IContract
 {
     static string IContract.Name { get; } = nameof(ExecutionManager);
@@ -78,7 +85,7 @@ public interface IExecutionManager : IContract
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize) => throw new NotImplementedException();
-    uint GetJITType(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    JitType GetJITType(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint) => throw new NotImplementedException();
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
