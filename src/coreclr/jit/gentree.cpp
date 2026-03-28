@@ -27199,6 +27199,30 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
 
     if (simdSize == 32)
     {
+        if (varTypeIsFloating(simdBaseType) && compOpportunisticallyDependsOn(InstructionSet_AVX))
+        {
+            // Use AVX HorizontalAdd for floating-point Sum. vhaddps/vhaddpd naturally
+            // operate within 128-bit lanes, preserving the deterministic lane-by-lane
+            // addition order while producing much more compact code than the
+            // permute+add approach (4 instructions for float, 3 for double, vs 11/5).
+
+            unsigned vectorLength = getSIMDVectorLength(16, simdBaseType);
+            int      haddCount    = genLog2(vectorLength);
+
+            for (int i = 0; i < haddCount; i++)
+            {
+                tmp = fgMakeMultiUse(&op1);
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, tmp, NI_AVX_HorizontalAdd, simdBaseType, 32);
+            }
+
+            GenTree* op1Dup = fgMakeMultiUse(&op1);
+            op1             = gtNewSimdGetUpperNode(TYP_SIMD16, op1, simdBaseType, 32);
+            op1Dup          = gtNewSimdGetLowerNode(TYP_SIMD16, op1Dup, simdBaseType, 32);
+            op1             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseType, 16);
+
+            return gtNewSimdToScalarNode(type, op1, simdBaseType, 16);
+        }
+
         GenTree* op1Dup = fgMakeMultiUse(&op1);
 
         op1    = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, simdSize);
@@ -27206,9 +27230,8 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
 
         if (varTypeIsFloating(simdBaseType))
         {
-            // We need to ensure deterministic results which requires
-            // consistently adding values together. Since many operations
-            // end up operating on 128-bit lanes, we break sum the same way.
+            // Fallback for non-AVX: process lanes independently to ensure
+            // deterministic results matching the software fallback.
 
             op1    = gtNewSimdSumNode(type, op1, simdBaseType, 16);
             op1Dup = gtNewSimdSumNode(type, op1Dup, simdBaseType, 16);
