@@ -617,7 +617,7 @@ namespace Microsoft.Interop
                 (ContainingSyntax syntax, IEnumerable<ComMethodContext>? shadowingMethods) = data;
 
                 writer.WriteLine("[global::System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute<InterfaceInformation, InterfaceImplementation>]");
-                writer.WriteLine($"{string.Join(" ", syntax.Modifiers)} {syntax.TypeKind.GetDeclarationKeyword()} {syntax.Identifier}{syntax.TypeParameters}");
+                writer.WriteLine($"{string.Join(" ", syntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword))} {syntax.TypeKind.GetDeclarationKeyword()} {syntax.Identifier}{syntax.TypeParameters}");
                 writer.WriteLine('{');
                 writer.Indent++;
 
