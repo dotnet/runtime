@@ -3034,8 +3034,7 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
     else
     {
         // Since this code later calls select(maxFd + 1, ...) and sets bits for file descriptor values up to maxFd,
-        // the allocation needs to cover maxFd + 1 bits. If maxFd is an exact multiple of __DARWIN_NFDBITS,
-        // __DARWIN_FD_SET(maxFd, ...) can index past the end of the allocated buffer (potential memory corruption).
+        // the allocation needs to cover maxFd + 1 bits.
         assert(maxFd < INT_MAX - 1);
         size_t fdSetCount = __DARWIN_howmany(maxFd + 1, __DARWIN_NFDBITS);
         size_t fdSetSize = sizeof(((fd_set*)0)->fds_bits[0]);
