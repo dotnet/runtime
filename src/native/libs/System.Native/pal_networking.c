@@ -3042,9 +3042,9 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
         writeSetPtr = writeFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
         errorSetPtr = errorFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
 
-        if ((readFdsCount > 0 && readSetPtr == NULL)
-            || (writeFdsCount > 0 && writeSetPtr == NULL)
-            || (errorFdsCount > 0 && errorSetPtr == NULL))
+        if ((readFdsCount != 0 && readSetPtr == NULL)
+            || (writeFdsCount != 0 && writeSetPtr == NULL)
+            || (errorFdsCount != 0 && errorSetPtr == NULL))
         {
             free(readSetPtr);
             free(writeSetPtr);
