@@ -79,8 +79,9 @@ namespace System.IO
         /// <remarks>
         /// This property affects only how file names are matched against the search pattern.
         /// It does not affect directory path resolution. On case-sensitive file systems
-        /// (such as Linux and macOS), directory paths must match the exact casing regardless of this setting.
-        /// The default is to match the platform defaults.
+        /// (common on Linux or when using a case-sensitive volume), directory paths must match the exact casing
+        /// regardless of this setting; on case-insensitive file systems, path resolution follows the behavior
+        /// of the underlying file system. The default is to match the platform defaults.
         /// </remarks>
         public MatchCasing MatchCasing { get; set; }
 
