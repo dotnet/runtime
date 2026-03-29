@@ -64,7 +64,7 @@ namespace System.Formats.Cbor
         {
             EnsureWriteCapacity(1 + sizeof(float));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional32BitData));
-            CborHelpers.WriteSingleBigEndian(_buffer.AsSpan(_offset), value);
+            BinaryPrimitives.WriteSingleBigEndian(_buffer.AsSpan(_offset), value);
             _offset += sizeof(float);
             AdvanceDataItemCounters();
         }
@@ -73,7 +73,7 @@ namespace System.Formats.Cbor
         {
             EnsureWriteCapacity(1 + sizeof(double));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional64BitData));
-            BinaryPrimitives.WriteInt64BigEndian(_buffer.AsSpan(_offset), BitConverter.DoubleToInt64Bits(value));
+            BinaryPrimitives.WriteDoubleBigEndian(_buffer.AsSpan(_offset), value);
             _offset += sizeof(double);
             AdvanceDataItemCounters();
         }

@@ -27,14 +27,5 @@ namespace System.Formats.Cbor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Half ReadHalfBigEndian(ReadOnlySpan<byte> source)
             => BinaryPrimitives.ReadHalfBigEndian(source);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe float ReadSingleBigEndian(ReadOnlySpan<byte> source)
-            => BinaryPrimitives.ReadSingleBigEndian(source);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void WriteSingleBigEndian(Span<byte> destination, float value)
-            => BinaryPrimitives.WriteSingleBigEndian(destination, value);
-
     }
 }

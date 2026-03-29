@@ -36,7 +36,7 @@ namespace System.Formats.Cbor
 
                 case CborAdditionalInfo.Additional32BitData:
                     EnsureReadCapacity(buffer, 1 + sizeof(float));
-                    result = CborHelpers.ReadSingleBigEndian(buffer.Slice(1));
+                    result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(1 + sizeof(float));
                     AdvanceDataItemCounters();
                     return result;
@@ -77,14 +77,14 @@ namespace System.Formats.Cbor
 
                 case CborAdditionalInfo.Additional32BitData:
                     EnsureReadCapacity(buffer, 1 + sizeof(float));
-                    result = CborHelpers.ReadSingleBigEndian(buffer.Slice(1));
+                    result = BinaryPrimitives.ReadSingleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(1 + sizeof(float));
                     AdvanceDataItemCounters();
                     return result;
 
                 case CborAdditionalInfo.Additional64BitData:
                     EnsureReadCapacity(buffer, 1 + sizeof(double));
-                    result = BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64BigEndian(buffer.Slice(1)));
+                    result = BinaryPrimitives.ReadDoubleBigEndian(buffer.Slice(1));
                     AdvanceBuffer(1 + sizeof(double));
                     AdvanceDataItemCounters();
                     return result;
