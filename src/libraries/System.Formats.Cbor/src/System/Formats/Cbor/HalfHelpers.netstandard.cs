@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
@@ -53,7 +53,7 @@ namespace System.Formats.Cbor
             {
                 if (sig == 0)
                 {
-                    return CborHelpers.UInt32BitsToSingle(sign ? FloatSignMask : 0); // Positive / Negative zero
+                    return BitConverter.UInt32BitsToSingle(sign ? FloatSignMask : 0); // Positive / Negative zero
                 }
                 (exp, sig) = NormSubnormalF16Sig(sig);
                 exp -= 1;
@@ -62,7 +62,7 @@ namespace System.Formats.Cbor
             return CreateSingle(sign, (byte)(exp + 0x70), sig << 13);
 
             static float CreateSingle(bool sign, byte exp, uint sig)
-                => CborHelpers.Int32BitsToSingle((int)(((sign ? 1U : 0U) << FloatSignShift) + ((uint)exp << FloatExponentShift) + sig));
+                => BitConverter.Int32BitsToSingle((int)(((sign ? 1U : 0U) << FloatSignShift) + ((uint)exp << FloatExponentShift) + sig));
         }
 
         public static bool HalfIsNaN(ushort value)
@@ -119,7 +119,7 @@ namespace System.Formats.Cbor
             uint signInt = (sign ? 1U : 0U) << FloatSignShift;
             uint sigInt = (uint)(significand >> 41);
 
-            return CborHelpers.UInt32BitsToSingle(signInt | NaNBits | sigInt);
+            return BitConverter.UInt32BitsToSingle(signInt | NaNBits | sigInt);
         }
         #endregion
 
@@ -128,7 +128,7 @@ namespace System.Formats.Cbor
         {
             const int SingleMaxExponent = 0xFF;
 
-            uint floatInt = CborHelpers.SingleToUInt32Bits(value);
+            uint floatInt = BitConverter.SingleToUInt32Bits(value);
             bool sign = (floatInt & FloatSignMask) >> FloatSignShift != 0;
             int exp = (int)(floatInt & FloatExponentMask) >> FloatExponentShift;
             uint sig = floatInt & FloatSignificandMask;

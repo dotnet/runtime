@@ -125,20 +125,9 @@ namespace System.Formats.Cbor
             return BinaryPrimitives.ReadUInt16BigEndian(source);
         }
 #endif
-
-        internal static uint SingleToUInt32Bits(float value)
-            => unchecked((uint)SingleToInt32Bits(value));
-
-        internal static unsafe int SingleToInt32Bits(float value)
-            => *((int*)&value);
-
-        internal static float UInt32BitsToSingle(uint value)
-            => Int32BitsToSingle((int)value);
-
-        internal static unsafe float Int32BitsToSingle(int value)
-            => *((float*)&value);
     }
 
+#if !NET
     internal static class BinaryPrimitivesPolyfills
     {
         extension(BinaryPrimitives)
@@ -169,6 +158,25 @@ namespace System.Formats.Cbor
             }
         }
     }
+
+    internal static class BitConverterPolyfills
+    {
+        extension(BitConverter)
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static unsafe int SingleToInt32Bits(float value) => *((int*)&value);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static unsafe float Int32BitsToSingle(int value) => *((float*)&value);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static uint SingleToUInt32Bits(float value) => unchecked((uint)BitConverter.SingleToInt32Bits(value));
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static float UInt32BitsToSingle(uint value) => BitConverter.Int32BitsToSingle((int)value);
+        }
+    }
+#endif
 
     internal static class StackExtensions
     {
