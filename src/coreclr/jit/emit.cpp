@@ -71,26 +71,6 @@ int emitLocation::GetInsOffset() const
     return emitGetInsOfsFromCodePos(codePos);
 }
 
-// Get the instruction offset in the current instruction region, which must be a funclet prolog.
-// This is used to find an instruction offset used in unwind data.
-UNATIVE_OFFSET emitLocation::GetFuncletPrologOffset(emitter* emit) const
-{
-    assert(ig->igFuncIdx != 0);
-    assert((ig->igFlags & IGF_FUNCLET_PROLOG) != 0);
-    assert((ig->igFlags & IGF_OUT_OF_ORDER_HEAD) != 0);
-    assert(GetInsOffset() == 0);
-
-    unsigned  offset = 0;
-    insGroup* lastIG = ig;
-    while (lastIG != emit->emitCurIG)
-    {
-        offset += lastIG->igSize;
-        lastIG = lastIG->igNext;
-    }
-    assert((lastIG->igFlags & IGF_FUNCLET_PROLOG) != 0);
-
-    return offset + emit->emitCurIGsize;
-}
 //------------------------------------------------------------------------
 // IsPreviousInsNum: Returns true if the emitter is on the next instruction
 //  of the same group as this emitLocation.
@@ -1284,7 +1264,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         if (last != nullptr)
         {
             // Append the jump(s) from this IG to the global list
-            bool prologJump = (ig == emitPrologIG);
+            bool prologJump = emitIGisInProlog(ig);
             if ((emitJumpList == nullptr) || prologJump)
             {
                 last->idjNext = emitJumpList;
@@ -1370,6 +1350,8 @@ void emitter::emitBegFN(bool hasFramePtr
 #ifdef DEBUG
     emitChkAlign = chkAlign;
 #endif
+
+    emitPrologEndPos.Init();
 
     /* We have no epilogs yet */
 
@@ -1467,7 +1449,8 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitNxtIGnum = 1;
 
-    emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
+    emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
+    emitCurIG->igFlags |= (IGF_PROLOG | IGF_OUT_OF_ORDER_HEAD);
 
     emitLastIns   = nullptr;
     emitLastInsIG = nullptr;
@@ -1484,8 +1467,10 @@ void emitter::emitBegFN(bool hasFramePtr
 #endif
 
     /* Append another group, to start generating the method body */
-
     emitNewIG();
+
+    /* The group after the placeholder prolog group doesn't get the "propagate" flags */
+    emitCurIG->igFlags &= ~IGF_PROPAGATE_MASK;
 }
 
 /*****************************************************************************
@@ -1725,8 +1710,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 {
 #ifdef DEBUG
     // Under STRESS_EMITTER, put every instruction in its own instruction group.
-    if (m_compiler->compStressCompile(Compiler::STRESS_EMITTER, 1) && emitCurIGinsCnt && !emitIGisInProlog(emitCurIG) &&
-        !emitIGisInFuncletProlog(emitCurIG) && !emitCurIG->endsWithAlignInstr())
+    if (m_compiler->compStressCompile(Compiler::STRESS_EMITTER, 1) && (emitCurIGinsCnt != 0) &&
+        !emitCurIG->endsWithAlignInstr())
     {
         emitNxtIG(true);
     }
@@ -1886,8 +1871,6 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 //
 void emitter::emitCheckIGList()
 {
-    assert(emitPrologIG != nullptr);
-
 #if EMIT_BACKWARDS_NAVIGATION
     struct IGIDPair
     {
@@ -1919,17 +1902,18 @@ void emitter::emitCheckIGList()
             assert((currIG->igFlags & IGF_EXTEND) == 0);
 
             // First IG must be the function prolog.
-            assert(currIG == emitPrologIG);
+            assert((currIG->igFlags & IGF_PROLOG) != 0);
         }
 
-        if (currIG == emitPrologIG)
+        if ((currIG->igFlags & IGF_PROLOG) != 0)
         {
             // If we're in the function prolog, we can't be in any other prolog or epilog.
             assert((currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) == 0);
         }
 
         // An IG can have at most one of the prolog and epilog flags set.
-        assert(genCountBits((unsigned)currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
+        assert(genCountBits((unsigned)currIG->igFlags &
+                            (IGF_PROLOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
 
         // An IG can't have both IGF_HAS_ALIGN and IGF_REMOVED_ALIGN.
         assert(genCountBits((unsigned)currIG->igFlags & (IGF_HAS_ALIGN | IGF_REMOVED_ALIGN)) <= 1);
@@ -1945,16 +1929,13 @@ void emitter::emitCheckIGList()
             // not be EXTEND groups, and would there be a benefit to that? Since epilogs are NOGC
             // it would help eliminate NOGC EXTEND groups.
             //
-            // Note that function prologs must currently exist entirely within one IG and there is
-            // no flag to indicate a function prolog (the `emitPrologIG` variable points to the single
-            // unique prolog IG).
-            //
             // Thus, we can't have this assert:
             // assert((currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) ==
             //        (prevIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)));
 
-            // If this is a funclet prolog IG, then it can only extend another funclet prolog IG.
-            assert((currIG->igFlags & IGF_FUNCLET_PROLOG) == (prevIG->igFlags & IGF_FUNCLET_PROLOG));
+            // If this is a prolog IG, then it can only extend another prolog IG.
+            assert((currIG->igFlags & (IGF_PROLOG | IGF_FUNCLET_PROLOG)) ==
+                   (prevIG->igFlags & (IGF_PROLOG | IGF_FUNCLET_PROLOG)));
 
             // If this is a function epilog IG, it can't extend a funclet prolog or funclet epilog IG.
             if (currIG->igFlags & IGF_EPILOG)
@@ -2053,8 +2034,7 @@ void emitter::emitBegProlog()
     emitForceNewIG       = false;
 
     /* Switch to the pre-allocated prolog IG */
-
-    emitGenIG(emitPrologIG);
+    emitGenIG(emitGetFirstPrologIG());
 
     /* Nothing is live on entry to the prolog */
 
@@ -2069,21 +2049,6 @@ void emitter::emitBegProlog()
 
 /*****************************************************************************
  *
- *  Return the code offset of the current location in the prolog.
- */
-
-unsigned emitter::emitGetPrologOffsetEstimate()
-{
-    /* For now only allow a single prolog ins group */
-
-    assert(emitPrologIG);
-    assert(emitPrologIG == emitCurIG);
-
-    return emitCurIGsize;
-}
-
-/*****************************************************************************
- *
  *  Mark the code offset of the current location as the end of the prolog,
  *  so it can be used later to compute the actual size of the prolog.
  */
@@ -2091,13 +2056,7 @@ unsigned emitter::emitGetPrologOffsetEstimate()
 void emitter::emitMarkPrologEnd()
 {
     assert(m_compiler->compGeneratingProlog);
-
-    /* For now only allow a single prolog ins group */
-
-    assert(emitPrologIG);
-    assert(emitPrologIG == emitCurIG);
-
-    emitPrologEndPos = emitCurOffset();
+    emitPrologEndPos.CaptureLocation(this);
 }
 
 /*****************************************************************************
@@ -2114,7 +2073,7 @@ void emitter::emitEndProlog()
 
     /* Save the prolog IG if non-empty or if only one block */
 
-    if (emitCurIGnonEmpty() || emitCurIG == emitPrologIG)
+    if (emitCurIGnonEmpty() || (emitCurIG == emitGetFirstPrologIG()))
     {
         emitSavIG();
     }
@@ -2291,7 +2250,6 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
         emitForceStoreGCState = true;
 
         /* The group after the placeholder group doesn't get the "propagate" flags */
-
         emitCurIG->igFlags &= ~IGF_PROPAGATE_MASK;
     }
 
@@ -2418,6 +2376,11 @@ void emitter::emitFinishPrologEpilogGeneration()
  *  Common code for prolog / epilog beginning. Convert the placeholder group to actual code IG,
  *  and set it as the current group.
  */
+insGroup* emitter::emitGetFirstPrologIG() const
+{
+    assert(emitIGisInProlog(emitIGlist));
+    return emitIGlist;
+}
 
 void emitter::emitBegPrologEpilog(insGroup* igPh)
 {
@@ -4070,6 +4033,14 @@ void emitter::emitDispIGflags(unsigned flags)
     {
         printf(", byref");
     }
+    if (flags & IGF_PROLOG)
+    {
+        printf(", prolog");
+    }
+    if (flags & IGF_EPILOG)
+    {
+        printf(", epilog");
+    }
     if (flags & IGF_FUNCLET_PROLOG)
     {
         printf(", funclet prolog");
@@ -4077,10 +4048,6 @@ void emitter::emitDispIGflags(unsigned flags)
     if (flags & IGF_FUNCLET_EPILOG)
     {
         printf(", funclet epilog");
-    }
-    if (flags & IGF_EPILOG)
-    {
-        printf(", epilog");
     }
     if (flags & IGF_NOGCINTERRUPT)
     {
@@ -4267,10 +4234,6 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
             if (ig == emitCurIG)
             {
                 printf(" <-- Current IG");
-            }
-            if (ig == emitPrologIG)
-            {
-                printf(" <-- Prolog IG");
             }
         }
 
@@ -4953,9 +4916,6 @@ void emitter::emitJumpDistBind()
     UNATIVE_OFFSET adjIG;
     UNATIVE_OFFSET adjLJ;
     insGroup*      lstIG;
-#ifdef DEBUG
-    insGroup* prologIG = emitPrologIG;
-#endif // DEBUG
 
     int jmp_iteration = 1;
 
@@ -5146,7 +5106,7 @@ AGAIN:
         assert(lastLJ == nullptr || lastIG != jmp->idjIG || lastLJ->idjOffs < jmp->idjOffs);
         lastLJ = (lastIG == jmp->idjIG) ? jmp : nullptr;
 
-        assert(lastIG == nullptr || lastIG->IsBeforeOrEqual(jmp->idjIG) || jmp->idjIG == prologIG);
+        assert(lastIG == nullptr || lastIG->IsBeforeOrEqual(jmp->idjIG) || emitIGisInProlog(jmp->idjIG));
         lastIG = jmp->idjIG;
 #endif // DEBUG
 
@@ -7768,7 +7728,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
 #endif // DEBUG
 
     // Assign the real prolog size
-    *prologSize = emitCodeOffset(emitPrologIG, emitPrologEndPos);
+    *prologSize = emitPrologEndPos.CodeOffset(this);
 
     /* Return the amount of code we've generated */
 
@@ -9549,6 +9509,39 @@ UNATIVE_OFFSET emitter::emitCodeOffset(void* blockPtr, unsigned codePos)
     return ig->igOffs + of;
 }
 
+//------------------------------------------------------------------------
+// emitGetCurrentCodeOffsetFrom: Get current code offset relative to "ig".
+//
+// This is used to retrieve the current offset within a prolog being generated
+// for unwind info. Thus, the offset we return from here can't later shrink,
+// and overestimating the code size of prolog instructions is fatal.
+//
+// Arguments:
+//    ig - IG denoting the start of code, "nullptr" for main function prolog
+//
+// Return Value:
+//    Effectively "<current code offset> - ig->igOffs".
+//
+UNATIVE_OFFSET emitter::emitGetCurrentCodeOffsetFrom(insGroup* ig)
+{
+    if (ig == nullptr)
+    {
+        ig = emitGetFirstPrologIG();
+    }
+    assert((ig->igFlags & IGF_OUT_OF_ORDER_HEAD) != 0);
+
+    unsigned igKind = ig->igFlags & (IGF_PROLOG | IGF_FUNCLET_PROLOG);
+    unsigned offset = 0;
+    while (ig != emitCurIG)
+    {
+        offset += ig->igSize;
+        ig = ig->igNext;
+    }
+    assert((ig->igFlags & igKind) == igKind);
+
+    return offset + emitCurIGsize;
+}
+
 /*****************************************************************************
  *
  *  Record the fact that the given register now contains a live GC ref.
@@ -9979,12 +9972,7 @@ void emitter::emitInsertIGAfter(insGroup* insertAfterIG, insGroup* ig)
 
 void emitter::emitNxtIG(bool extend)
 {
-    /* Right now we don't allow multi-IG prologs */
-
-    assert(emitCurIG != emitPrologIG);
-
     /* First save the current group */
-
     emitSavIG(extend);
 
     /* Update the GC live sets for the group's start

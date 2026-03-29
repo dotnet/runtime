@@ -213,8 +213,6 @@ public:
         return true;
     }
 
-    UNATIVE_OFFSET GetFuncletPrologOffset(emitter* emit) const;
-
     bool IsPreviousInsNum(emitter* emit) const;
 
 #ifdef DEBUG
@@ -293,38 +291,35 @@ public:
     insGroup* igLoopBackEdge; // "last" back-edge that branches back to an aligned loop head.
 #endif
 
-#define IGF_GC_VARS        0x0001 // new set of live GC ref variables
-#define IGF_BYREF_REGS     0x0002 // new set of live by-ref registers
-#define IGF_FUNCLET_PROLOG 0x0004 // this group belongs to a funclet prolog
-#define IGF_FUNCLET_EPILOG 0x0008 // this group belongs to a funclet epilog.
-#define IGF_EPILOG         0x0010 // this group belongs to a main function epilog
-#define IGF_NOGCINTERRUPT  0x0020 // this IG is in a no-interrupt region (prolog, epilog, etc.)
-#define IGF_UPD_ISZ        0x0040 // some instruction sizes updated
-#define IGF_PLACEHOLDER    0x0080 // this is a placeholder group, to be filled in later
-#define IGF_EXTEND                                                                                                     \
-    0x0100 // this block is conceptually an extension of the previous block
-           // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_HAS_ALIGN                                                                                                  \
-    0x0200 // this group contains an alignment instruction(s) at the end to align either the next
-           // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
-#define IGF_REMOVED_ALIGN                                                                                              \
-    0x0400                           // IG was marked as having an alignment instruction(s), but was later unmarked
-                                     // without updating the IG's size/offsets.
-#define IGF_HAS_REMOVABLE_JMP 0x0800 // this group ends with an unconditional jump which is a candidate for removal
+#define IGF_GC_VARS        (1 << 0) // new set of live GC ref variables
+#define IGF_BYREF_REGS     (1 << 1) // new set of live by-ref registers
+#define IGF_PROLOG         (1 << 2) // this group belongs to a main function prolog
+#define IGF_EPILOG         (1 << 3) // this group belongs to a main function epilog
+#define IGF_FUNCLET_PROLOG (1 << 4) // this group belongs to a funclet prolog
+#define IGF_FUNCLET_EPILOG (1 << 5) // this group belongs to a funclet epilog.
+#define IGF_NOGCINTERRUPT  (1 << 6) // this IG is in a no-interrupt region (prolog, epilog, etc.)
+#define IGF_UPD_ISZ        (1 << 7) // some instruction sizes updated
+#define IGF_PLACEHOLDER    (1 << 8) // this is a placeholder group, to be filled in later
+// This block is conceptually an extension of the previous block
+// and the emitter should continue to track GC info as if there was no new block.
+#define IGF_EXTEND (1 << 9)
+// This group contains an alignment instruction(s) at the end to align either the next
+// IG, or, if this IG contains with an unconditional branch, some subsequent IG.
+#define IGF_HAS_ALIGN (1 << 10)
+// IG was marked as having an alignment instruction(s), but was later unmarked
+// without updating the IG's size/offsets.
+#define IGF_REMOVED_ALIGN     (1 << 11)
+#define IGF_HAS_REMOVABLE_JMP (1 << 12) // this group ends with an unconditional jump which is a candidate for removal
 #ifdef TARGET_ARM64
-#define IGF_HAS_REMOVED_INSTR 0x1000 // this group has an instruction that was removed.
+#define IGF_HAS_REMOVED_INSTR (1 << 13) // this group has an instruction that was removed.
 #endif
-#define IGF_OUT_OF_ORDER_HEAD 0x2000 // first group (generated in-order) of a region generated out-of-order
+#define IGF_OUT_OF_ORDER_HEAD (1 << 14) // first group (generated in-order) of a region generated out-of-order
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
 // automatically marked properly.
-#ifdef DEBUG
-#define IGF_PROPAGATE_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)
-#else // DEBUG
-#define IGF_PROPAGATE_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG)
-#endif // DEBUG
-#define IGF_OUT_OF_ORDER_MASK (IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)
+#define IGF_PROPAGATE_MASK    (IGF_PROLOG | IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)
+#define IGF_OUT_OF_ORDER_MASK (IGF_PROLOG | IGF_EPILOG | IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)
 
     // Try to do better packing based on how large regMaskSmall is (8, 16, or 64 bits).
 
@@ -583,22 +578,22 @@ protected:
     static emitAttr        emitDecodeSize(emitter::opSize ensz);
 
     // Currently, we only allow one IG for the prolog
-    bool emitIGisInProlog(const insGroup* ig)
+    bool emitIGisInProlog(const insGroup* ig) const
     {
-        return ig == emitPrologIG;
+        return (ig != nullptr) && ((ig->igFlags & IGF_PROLOG) != 0);
     }
 
-    bool emitIGisInEpilog(const insGroup* ig)
+    bool emitIGisInEpilog(const insGroup* ig) const
     {
         return (ig != nullptr) && ((ig->igFlags & IGF_EPILOG) != 0);
     }
 
-    bool emitIGisInFuncletProlog(const insGroup* ig)
+    bool emitIGisInFuncletProlog(const insGroup* ig) const
     {
         return (ig != nullptr) && ((ig->igFlags & IGF_FUNCLET_PROLOG) != 0);
     }
 
-    bool emitIGisInFuncletEpilog(const insGroup* ig)
+    bool emitIGisInFuncletEpilog(const insGroup* ig) const
     {
         return (ig != nullptr) && ((ig->igFlags & IGF_FUNCLET_EPILOG) != 0);
     }
@@ -2604,7 +2599,7 @@ protected:
     /*                      Method prolog and epilog                        */
     /************************************************************************/
 
-    unsigned emitPrologEndPos;
+    emitLocation emitPrologEndPos;
 
     unsigned       emitEpilogCnt;
     UNATIVE_OFFSET emitEpilogSize;
@@ -2648,6 +2643,8 @@ public:
     size_t emitGenEpilogLst(size_t (*fp)(void*, unsigned), void* cp);
 
 #endif // JIT32_GCENCODER
+
+    insGroup* emitGetFirstPrologIG() const;
 
     void emitBegPrologEpilog(insGroup* igPh);
     void emitEndPrologEpilog();
@@ -2901,9 +2898,6 @@ private:
 
     insGroup* emitIGlist; // first  instruction group
     insGroup* emitIGlast; // last   instruction group
-    insGroup* emitIGthis; // issued instruction group
-
-    insGroup* emitPrologIG; // prolog instruction group
 
     instrDescJmp* emitJumpList;       // list of local jumps in method
     instrDescJmp* emitJumpLast;       // last of local jumps in method

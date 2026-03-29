@@ -24,7 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // locations must remain correct after the prolog and epilogs are generated.
 //
 // For the prolog, instructions are put in the special, preallocated, prolog instruction group.
-// We don't want to expose the emitPrologIG unnecessarily (locations are actually pointers to
+// We don't want to expose the prolog IG unnecessarily (locations are actually pointers to
 // emitter instruction groups). Since we know the offset of the start of the function/funclet,
 // where the prolog is, will be zero, we use a nullptr start location to indicate that.
 //
@@ -421,26 +421,11 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
 UNATIVE_OFFSET Compiler::unwindGetCurrentOffset(FuncInfoDsc* func)
 {
     assert(compGeneratingProlog);
-    UNATIVE_OFFSET offset;
-    if (func->funKind == FUNC_ROOT)
-    {
-        offset = GetEmitter()->emitGetPrologOffsetEstimate();
-    }
-    else
-    {
-        if (TargetArchitecture::IsX64 ||
-            (TargetOS::IsUnix &&
-             (TargetArchitecture::IsArmArch || TargetArchitecture::IsX86 || TargetArchitecture::IsLoongArch64)))
-        {
-            assert(func->startLoc != nullptr);
-            offset = func->startLoc->GetFuncletPrologOffset(GetEmitter());
-        }
-        else
-        {
-            offset = 0; // TODO ???
-        }
-    }
+    emitLocation* loc = func->startLoc;
+    insGroup*     ig  = (loc != nullptr) ? loc->GetIG() : nullptr;
+    assert((ig == nullptr) || (loc->GetInsOffset() == 0));
 
+    UNATIVE_OFFSET offset = GetEmitter()->emitGetCurrentCodeOffsetFrom(ig);
     return offset;
 }
 
