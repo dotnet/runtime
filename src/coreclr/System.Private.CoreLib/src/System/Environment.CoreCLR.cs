@@ -138,36 +138,29 @@ namespace System
         [UnmanagedCallersOnly]
         [StackTraceHidden]
         [RequiresUnsafe]
-        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue, Exception* pException)
+        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue)
         {
-            try
+            if (hasArgument)
             {
-                if (hasArgument)
+                if (hasReturnValue)
                 {
-                    if (hasReturnValue)
-                    {
-                        *pReturnValue = ((delegate* managed<string[]?, int>)entryPoint)(pArgument is not null ? *pArgument : null);
-                    }
-                    else
-                    {
-                        ((delegate* managed<string[]?, void>)entryPoint)(pArgument is not null ? *pArgument : null);
-                    }
+                    *pReturnValue = ((delegate* managed<string[]?, int>)entryPoint)(pArgument is not null ? *pArgument : null);
                 }
                 else
                 {
-                    if (hasReturnValue)
-                    {
-                        *pReturnValue = ((delegate* managed<int>)entryPoint)();
-                    }
-                    else
-                    {
-                        ((delegate* managed<void>)entryPoint)();
-                    }
+                    ((delegate* managed<string[]?, void>)entryPoint)(pArgument is not null ? *pArgument : null);
                 }
             }
-            catch (Exception ex)
+            else
             {
-                *pException = ex;
+                if (hasReturnValue)
+                {
+                    *pReturnValue = ((delegate* managed<int>)entryPoint)();
+                }
+                else
+                {
+                    ((delegate* managed<void>)entryPoint)();
+                }
             }
         }
 

@@ -692,6 +692,35 @@ public:
         GCPROTECT_END();
     }
 
+    // Invoke a managed [UnmanagedCallersOnly] method that has no trailing
+    // Exception* argument. Exceptions are allowed to propagate naturally
+    // through the reverse P/Invoke boundary.
+    template<typename... Args>
+    void InvokeUnhandled(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        {
+            GCX_PREEMP();
+
+            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+            _ASSERTE(methodEntry != (PCODE)NULL);
+
+            auto fptr = reinterpret_cast<void(*)(Args...)>(methodEntry);
+            fptr(args...);
+        }
+    }
+
     template<typename Ret, typename... Args>
     Ret InvokeThrowing_Ret(Args... args)
     {

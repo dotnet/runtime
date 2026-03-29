@@ -1204,7 +1204,7 @@ static void RunMainInternal(Param* pParam)
     }
 
     UnmanagedCallersOnlyCaller callEntryPoint(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
-    callEntryPoint.InvokeThrowing(
+    callEntryPoint.InvokeUnhandled(
         static_cast<INT_PTR>(entryPoint),
         &StrArgArray,
         CLR_BOOL_ARG(hasArgument),
