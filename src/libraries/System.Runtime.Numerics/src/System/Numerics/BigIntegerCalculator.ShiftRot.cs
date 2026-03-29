@@ -9,6 +9,140 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
+        /// <summary>
+        /// Rotates a span of 32-bit words left by the specified amount.
+        /// This provides platform-independent 32-bit word rotation semantics.
+        /// </summary>
+        public static void RotateLeft32(Span<uint> bits, long rotateLeftAmount)
+        {
+            Debug.Assert(Math.Abs(rotateLeftAmount) <= 0x80000000);
+
+            const int BitsPerWord = 32;
+            int digitShiftMax = (int)(0x80000000 / BitsPerWord);
+
+            int digitShift = digitShiftMax;
+            int smallShift = 0;
+
+            if (rotateLeftAmount < 0)
+            {
+                if (rotateLeftAmount != -0x80000000)
+                {
+                    (digitShift, smallShift) = Math.DivRem(-(int)rotateLeftAmount, BitsPerWord);
+                }
+
+                RotateRight32(bits, digitShift % bits.Length, smallShift);
+            }
+            else
+            {
+                if (rotateLeftAmount != 0x80000000)
+                {
+                    (digitShift, smallShift) = Math.DivRem((int)rotateLeftAmount, BitsPerWord);
+                }
+
+                RotateLeft32(bits, digitShift % bits.Length, smallShift);
+            }
+        }
+
+        private static void RotateLeft32(Span<uint> bits, int digitShift, int smallShift)
+        {
+            Debug.Assert(bits.Length > 0);
+
+            LeftShiftSelf32(bits, smallShift, out uint carry);
+            bits[0] |= carry;
+
+            if (digitShift == 0)
+            {
+                return;
+            }
+
+            SwapUpperAndLower32(bits, bits.Length - digitShift);
+        }
+
+        private static void RotateRight32(Span<uint> bits, int digitShift, int smallShift)
+        {
+            Debug.Assert(bits.Length > 0);
+
+            RightShiftSelf32(bits, smallShift, out uint carry);
+            bits[^1] |= carry;
+
+            if (digitShift == 0)
+            {
+                return;
+            }
+
+            SwapUpperAndLower32(bits, digitShift);
+        }
+
+        private static void SwapUpperAndLower32(Span<uint> bits, int lowerLength)
+        {
+            Debug.Assert(lowerLength > 0);
+            Debug.Assert(lowerLength < bits.Length);
+
+            int upperLength = bits.Length - lowerLength;
+
+            Span<uint> lower = bits.Slice(0, lowerLength);
+            Span<uint> upper = bits.Slice(lowerLength);
+
+            Span<uint> lowerDst = bits.Slice(upperLength);
+
+            int tmpLength = Math.Min(lowerLength, upperLength);
+            uint[] tmpArray = new uint[tmpLength];
+            Span<uint> tmp = tmpArray;
+
+            if (upperLength < lowerLength)
+            {
+                upper.CopyTo(tmp);
+                lower.CopyTo(lowerDst);
+                tmp.CopyTo(bits);
+            }
+            else
+            {
+                lower.CopyTo(tmp);
+                upper.CopyTo(bits);
+                tmp.CopyTo(lowerDst);
+            }
+        }
+
+        private static void LeftShiftSelf32(Span<uint> bits, int shift, out uint carry)
+        {
+            Debug.Assert((uint)shift < 32);
+
+            carry = 0;
+            if (shift == 0 || bits.IsEmpty)
+            {
+                return;
+            }
+
+            int back = 32 - shift;
+            carry = bits[^1] >> back;
+
+            for (int i = bits.Length - 1; i > 0; i--)
+            {
+                bits[i] = (bits[i] << shift) | (bits[i - 1] >> back);
+            }
+            bits[0] <<= shift;
+        }
+
+        private static void RightShiftSelf32(Span<uint> bits, int shift, out uint carry)
+        {
+            Debug.Assert((uint)shift < 32);
+
+            carry = 0;
+            if (shift == 0 || bits.IsEmpty)
+            {
+                return;
+            }
+
+            int back = 32 - shift;
+            carry = bits[0] << back;
+
+            for (int i = 0; i < bits.Length - 1; i++)
+            {
+                bits[i] = (bits[i] >> shift) | (bits[i + 1] << back);
+            }
+            bits[^1] >>= shift;
+        }
+
         public static void RotateLeft(Span<nuint> bits, long rotateLeftAmount)
         {
             Debug.Assert(Math.Abs(rotateLeftAmount) <= 0x80000000);

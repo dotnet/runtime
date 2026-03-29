@@ -3291,41 +3291,83 @@ namespace System.Numerics
             Debug.Assert(bits.Length > 0);
             Debug.Assert(Math.Abs(rotateLeftAmount) <= 0x80000000);
 
-            int zLength = bits.Length;
-            int leadingZeroCount = negative ? bits.IndexOfAnyExcept(0u) : 0;
-
-            if (negative && (nint)bits[^1] < 0
-                && (leadingZeroCount != bits.Length - 1 || bits[^1] != ((nuint)1 << (BigIntegerCalculator.BitsPerLimb - 1))))
+            // Determine the number of 32-bit words in the magnitude.
+            // On 64-bit, each nuint limb holds two 32-bit words; the MSL's upper
+            // half may be zero (matching the original uint[] layout).
+            int wordCount;
+            if (Environment.Is64BitProcess)
             {
-                // For a shift of N x BitsPerLimb bit,
-                // We check for a special case where its sign bit could be outside the nuint array after 2's complement conversion.
-                // For example given [nuint.MaxValue, nuint.MaxValue, nuint.MaxValue], its 2's complement is [0x01, 0x00, 0x00]
-                // After a BitsPerLimb bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
-                // The expected result is [0x00, 0x00, nuint.MaxValue] (2's complement) or [0x00, 0x00, 0x01] when converted back
-                // If the 2's component's last element is a 0, we will track the sign externally
-                ++zLength;
+                wordCount = bits.Length * 2;
+                if ((uint)(bits[^1] >> BitsPerUInt32) == 0)
+                {
+                    wordCount--;
+                }
+            }
+            else
+            {
+                wordCount = bits.Length;
             }
 
-            Span<nuint> zd = RentedBuffer.Create(zLength, out RentedBuffer zdBuffer);
+            int zWordCount = wordCount;
 
-            zd[^1] = 0;
-            bits.CopyTo(zd);
+            // Reinterpret magnitude as a span of 32-bit words.
+            ReadOnlySpan<uint> words = MemoryMarshal.Cast<nuint, uint>(bits).Slice(0, wordCount);
+
+            int leadingZeroCount = negative ? words.IndexOfAnyExcept(0u) : 0;
+
+            if (negative && (int)words[^1] < 0
+                && (leadingZeroCount != words.Length - 1 || words[^1] != UInt32HighBit))
+            {
+                // For a shift of N x 32 bit,
+                // We check for a special case where its sign bit could be outside the uint array after 2's complement conversion.
+                // For example given [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF], its 2's complement is [0x01, 0x00, 0x00]
+                // After a 32 bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
+                // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
+                // If the 2's complement's last element is a 0, we will track the sign externally
+                ++zWordCount;
+            }
+
+            // Allocate a buffer of nuint limbs large enough to hold zWordCount 32-bit words.
+            int zLimbCount = (zWordCount + (Environment.Is64BitProcess ? 1 : 0)) / (Environment.Is64BitProcess ? 2 : 1);
+            Span<nuint> zd = RentedBuffer.Create(zLimbCount, out RentedBuffer zdBuffer);
+            zd[^1] = 0; // Clear the last nuint limb (which may be partially used)
+
+            // Work on the 32-bit word view of the buffer.
+            Span<uint> zw = MemoryMarshal.Cast<nuint, uint>(zd).Slice(0, zWordCount);
+
+            // Copy magnitude words into the working buffer.
+            words.CopyTo(zw);
+            if (zWordCount > wordCount)
+            {
+                zw[^1] = 0; // Extra word for sign tracking
+            }
 
             if (negative)
             {
-                Debug.Assert((uint)leadingZeroCount < (uint)zd.Length);
+                Debug.Assert((uint)leadingZeroCount < (uint)zw.Length);
 
-                // Same as NumericsHelpers.DangerousMakeTwosComplement(zd);
-                // Leading zero count is already calculated.
-                zd[leadingZeroCount] = (nuint)(-(nint)zd[leadingZeroCount]);
-                NumericsHelpers.DangerousMakeOnesComplement(zd.Slice(leadingZeroCount + 1));
+                // Two's complement conversion on the 32-bit word view.
+                zw[leadingZeroCount] = (uint)(-(int)zw[leadingZeroCount]);
+                for (int i = leadingZeroCount + 1; i < zw.Length; i++)
+                {
+                    zw[i] = ~zw[i];
+                }
             }
 
-            BigIntegerCalculator.RotateLeft(zd, rotateLeftAmount);
+            BigIntegerCalculator.RotateLeft32(zw, rotateLeftAmount);
 
-            if (negative && (nint)zd[^1] < 0)
+            if (negative && (int)zw[^1] < 0)
             {
-                NumericsHelpers.DangerousMakeTwosComplement(zd);
+                // Convert back from two's complement on the 32-bit word view.
+                int i = zw.IndexOfAnyExcept(0u);
+                if ((uint)i < (uint)zw.Length)
+                {
+                    zw[i] = (uint)(-(int)zw[i]);
+                    for (int j = i + 1; j < zw.Length; j++)
+                    {
+                        zw[j] = ~zw[j];
+                    }
+                }
             }
             else
             {

@@ -456,7 +456,7 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000002, BigInteger.RotateRight(new BigInteger(2), 32));
             Assert.Equal((BigInteger)0x00000004, BigInteger.RotateRight(new BigInteger(2), 31));
             Assert.Equal((BigInteger)0x00000002, BigInteger.RotateRight(new BigInteger(1), 31));
-            Assert.Equal(unchecked((BigInteger)(int)0xBFFFFFFF), BigInteger.RotateRight(new BigInteger(-2), 1));
+            Assert.Equal(new BigInteger(int.MaxValue), BigInteger.RotateRight(new BigInteger(-2), 1));
             Assert.Equal(unchecked((BigInteger)(int)0xFFFFFFFE), BigInteger.RotateRight(new BigInteger(-2), 32));
 
             // Platform-independence: results must be the same on 32-bit and 64-bit.
