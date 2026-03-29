@@ -135,7 +135,7 @@ namespace AsyncMicro
     public class Program
     {
         [Fact]
-        static void TestPrRepro()
+        public static void TestPrRepro()
         {
             Derived2 test = new();
             Test(test).GetAwaiter().GetResult();
@@ -150,7 +150,7 @@ namespace AsyncMicro
         {
             public virtual async Task Foo()
             {
-                Console.WriteLine("Task< Base.Foo");
+                Console.WriteLine("Task Base.Foo");
             }
         }
 
