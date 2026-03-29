@@ -710,6 +710,9 @@
              Link="Common\Interop\Android\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Initialization.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Initialization.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.GarbageCollection.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.GarbageCollection.cs" />
+    <Compile Include="AndroidGarbageCollectAttribute.cs" />
     <Compile Include="DefaultECDsaProvider.Android.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Android.cs" />
     <Compile Include="X509Certificates\X509StoreMutableTests.Android.cs" />

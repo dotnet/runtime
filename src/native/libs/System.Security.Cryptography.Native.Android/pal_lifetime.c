@@ -10,5 +10,7 @@ jobject AndroidCryptoNative_NewGlobalReference(jobject obj)
 
 void AndroidCryptoNative_DeleteGlobalReference(jobject obj)
 {
-    ReleaseGRef(GetJNIEnv(), obj);
+    JNIEnv* env = GetJNIEnv();
+    ReleaseGRef(env, obj);
+    AndroidCryptoNative_MaybeTriggerJavaGC(env);
 }

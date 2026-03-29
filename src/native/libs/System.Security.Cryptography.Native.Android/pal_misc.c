@@ -34,3 +34,10 @@ jobject AndroidCryptoNative_CreateKeyPair(JNIEnv* env, jobject publicKey, jobjec
     jobject keyPair = (*env)->NewObject(env, g_keyPairClass, g_keyPairCtor, publicKey, privateKey);
     return CheckJNIExceptions(env) ? FAIL : ToGRef(env, keyPair);
 }
+
+void AndroidCryptoNative_TriggerJavaGarbageCollection(void)
+{
+    JNIEnv* env = GetJNIEnv();
+    (*env)->CallStaticVoidMethod(env, g_SystemClass, g_SystemGc);
+    (void)TryClearJNIExceptions(env);
+}

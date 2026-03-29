@@ -24,6 +24,10 @@ extern jmethodID g_ByteArrayInputStreamReset;
 extern jclass    g_Enum;
 extern jmethodID g_EnumOrdinal;
 
+// java/lang/System
+extern jclass    g_SystemClass;
+extern jmethodID g_SystemGc;
+
 // java/lang/String
 extern jclass    g_String;
 extern jmethodID g_StringGetBytes;
@@ -587,6 +591,7 @@ jobject ToGRef(JNIEnv *env, jobject lref) ARGS_NON_NULL(1);
 jobject AddGRef(JNIEnv *env, jobject gref) ARGS_NON_NULL(1);
 void ReleaseGRef(JNIEnv *env, jobject gref) ARGS_NON_NULL(1);
 void ReleaseLRef(JNIEnv *env, jobject lref) ARGS_NON_NULL(1);
+void AndroidCryptoNative_MaybeTriggerJavaGC(JNIEnv *env) ARGS_NON_NULL(1);
 jclass GetClassGRef(JNIEnv *env, const char* name) ARGS_NON_NULL(1);
 
 // Print and clear any JNI exceptions. Returns true if there was an exception, false otherwise.

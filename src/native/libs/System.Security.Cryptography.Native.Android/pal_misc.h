@@ -7,5 +7,6 @@
 
 PALEXPORT int32_t CryptoNative_EnsureOpenSslInitialized(void);
 PALEXPORT int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num);
+PALEXPORT void AndroidCryptoNative_TriggerJavaGarbageCollection(void);
 
 jobject AndroidCryptoNative_CreateKeyPair(JNIEnv* env, jobject publicKey, jobject privateKey) ARGS_NON_NULL(1,2);

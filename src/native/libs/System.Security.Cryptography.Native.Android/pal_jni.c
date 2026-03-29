@@ -3,6 +3,7 @@
 
 #include "pal_jni.h"
 #include <pthread.h>
+#include <stdatomic.h>
 
 JavaVM* gJvm;
 
@@ -14,6 +15,10 @@ jmethodID g_ByteArrayInputStreamReset;
 // java/lang/Enum
 jclass    g_Enum;
 jmethodID g_EnumOrdinal;
+
+// java/lang/System
+jclass    g_SystemClass;
+jmethodID g_SystemGc;
 
 // java/lang/String
 jclass    g_String;
@@ -529,6 +534,24 @@ void ReleaseLRef(JNIEnv *env, jobject lref)
         (*env)->DeleteLocalRef(env, lref);
 }
 
+// Trigger interval for Java GC nudges.  After this many crypto object
+// destructions, call System.gc() to give ART a chance to reclaim native
+// memory (BoringSSL buffers) backing Java key/certificate objects whose
+// JNI global refs have already been deleted.
+#define JAVA_GC_TRIGGER_INTERVAL 5
+static _Atomic(int32_t) g_CryptoDestroyCounter;
+
+void AndroidCryptoNative_MaybeTriggerJavaGC(JNIEnv *env)
+{
+    int32_t count = atomic_fetch_add_explicit(&g_CryptoDestroyCounter, 1, memory_order_relaxed) + 1;
+    if (count >= JAVA_GC_TRIGGER_INTERVAL)
+    {
+        atomic_store_explicit(&g_CryptoDestroyCounter, 0, memory_order_relaxed);
+        (*env)->CallStaticVoidMethod(env, g_SystemClass, g_SystemGc);
+        (void)TryClearJNIExceptions(env);
+    }
+}
+
 ARGS_NON_NULL_ALL static bool TryGetClassGRef(JNIEnv *env, const char* name, jclass* out)
 {
     *out = NULL;
@@ -703,6 +726,9 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 
     g_Enum =                    GetClassGRef(env, "java/lang/Enum");
     g_EnumOrdinal =             GetMethod(env, false, g_Enum, "ordinal", "()I");
+
+    g_SystemClass =             GetClassGRef(env, "java/lang/System");
+    g_SystemGc =                GetMethod(env, true, g_SystemClass, "gc", "()V");
 
     g_String =          GetClassGRef(env, "java/lang/String");
     g_StringGetBytes =  GetMethod(env, false, g_String, "getBytes", "()[B");
