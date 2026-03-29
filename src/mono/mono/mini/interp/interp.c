@@ -4355,6 +4355,9 @@ main_loop:
 					} else {
 						LOCAL_VAR (call_args_offset, MonoObject*) = this_arg;
 					}
+				} else if (!m_method_is_static (cmethod->method) && cmethod->param_count == param_count) {
+					// Closed over null: instance method bound with null this
+					LOCAL_VAR (call_args_offset, MonoObject*) = NULL;
 				} else {
 					// skip the delegate pointer for static calls
 					// FIXME we could avoid memmove

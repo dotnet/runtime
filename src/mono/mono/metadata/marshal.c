@@ -2223,11 +2223,23 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 
 	if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL) {
 		/*
-		 * We don't want to use target_method's signature because it can be freed early
+		 * Determine closed_over_null by comparing the invoke sig's param count
+		 * with the actual target method's param count directly, rather than via
+		 * the stripped signature. When closed over null, both have the same count.
+		 * When not closed over null, the invoke sig has one extra param that
+		 * becomes 'this' for the virtual call.
 		 */
-		target_method_sig = mono_metadata_signature_dup_delegate_invoke_to_target (invoke_sig);
+		if (target_method) {
+			MonoMethodSignature *actual_target_sig = mono_method_signature_internal (target_method);
+			closed_over_null = sig->param_count == actual_target_sig->param_count;
+		}
 
-		closed_over_null = sig->param_count == target_method_sig->param_count;
+		if (!closed_over_null) {
+			/*
+			 * We don't want to use target_method's signature because it can be freed early
+			 */
+			target_method_sig = mono_metadata_signature_dup_delegate_invoke_to_target (invoke_sig);
+		}
 	}
 
 	/*
