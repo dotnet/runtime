@@ -1352,6 +1352,17 @@ namespace System.Text.RegularExpressions.Tests
             // Test with something after the \z trailing anchor
             yield return (@"^1234\zx", "1234", RegexOptions.None, 0, 4, false, "");
             yield return (@"^1234\zx", "1234x", RegexOptions.None, 0, 5, false, "");
+
+            // Greedy loop with a subsumed literal followed by a nullable subsequent.
+            // The loop's character class includes the literal that follows it, and the
+            // subsequent element is nullable (min=0) and disjoint from the loop. The
+            // backtracking optimization must not reduce to a single position check because
+            // multiple backtrack positions can succeed when the post-literal part is nullable.
+            yield return (@"([0-9\w\+]+\.)|([0-9\w\+]+\+)([\(\)]*)", "2+_", RegexOptions.None, 0, 3, true, "2+");
+            yield return (@"([0-9\w\+]+\.)|([0-9\w\+]+\+)([\(\)]*)", "2+", RegexOptions.None, 0, 2, true, "2+");
+            yield return (@"([0-9\w\+]+\.)|([0-9\w\+]+\+)([\(\)]*)", "abc+xyz+()", RegexOptions.None, 0, 10, true, "abc+xyz+()");
+            yield return (@"[\w+]+\+\s*", "a+b+ ", RegexOptions.None, 0, 5, true, "a+b+ ");
+            yield return (@"\w+a\s*", "ba", RegexOptions.None, 0, 2, true, "ba");
         }
 
         [OuterLoop("Takes several seconds to run")]
