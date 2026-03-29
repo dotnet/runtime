@@ -62,7 +62,7 @@ public class EdgeCaseTests : ReadTests
         }
     }
 
-    [ConditionalTheory]
+    [Theory]
     [InlineData(100)]
     [InlineData(64_001)]
     [InlineData(127_000)]
@@ -73,7 +73,7 @@ public class EdgeCaseTests : ReadTests
     {
         if (length == 2147483591 && (!PlatformDetection.Is64BitProcess || !PlatformDetection.IsReleaseRuntime || !PlatformDetection.IsNetCore))
         {
-            throw new SkipTestException("It would take too much time to execute.");
+            throw SkipException.ForSkip("It would take too much time to execute.");
         }
 
         try

@@ -11,6 +11,7 @@ using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -2731,7 +2732,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             if (RegexHelpers.IsNonBacktracking(engine) && !PlatformDetection.IsMultithreadingSupported)
             {
-                throw new SkipTestException("Deep nesting with NonBacktracking hits threading APIs not supported on single-threaded WASM.");
+                throw SkipException.ForSkip("Deep nesting with NonBacktracking hits threading APIs not supported on single-threaded WASM.");
             }
 
             // Build a pattern with deeply nested character class subtractions: [a-[a-[a-[...[a]...]]]]

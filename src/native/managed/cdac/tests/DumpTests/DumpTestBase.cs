@@ -96,7 +96,7 @@ public abstract class DumpTestBase : IDisposable
             if (_dumpInfo is not null && _dumpInfo.IsDumpExpected(debuggeeName, dumpType, config.R2RMode))
                 Assert.Fail($"Expected {config.R2RMode}/{dumpType} dump for {debuggeeName} but not found: {dumpPath}");
 
-            throw new SkipTestException($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
+            throw SkipException.ForSkip($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
         }
 
         _host = ClrMdDumpHost.Open(dumpPath);
@@ -167,7 +167,7 @@ public abstract class DumpTestBase : IDisposable
 
     /// <summary>
     /// Returns the R2R modes to test against. Both modes are always tested;
-    /// dumps that don't exist for a given mode are skipped via <see cref="SkipTestException"/>.
+    /// dumps that don't exist for a given mode are skipped via <see cref="SkipException"/>.
     /// </summary>
     private static IEnumerable<string> GetR2RModes()
     {
