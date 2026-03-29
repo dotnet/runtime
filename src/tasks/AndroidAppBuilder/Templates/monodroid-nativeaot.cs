@@ -72,7 +72,7 @@ internal static unsafe partial class MonoDroidExports
             string excludesFile = Path.Combine(homeDir, "xunit-excludes.txt");
             if (File.Exists(excludesFile))
             {
-                args = args.Concat(File.ReadAllLines(excludesFile).SelectMany(trait => new string[]{"-trait-", trait})).ToArray();
+                args = args.Concat(File.ReadAllLines(excludesFile).SelectMany(trait => new string[]{"-notrait", trait})).ToArray();
             }
         }
         // SingleFile unit tests
