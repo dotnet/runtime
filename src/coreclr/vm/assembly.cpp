@@ -1194,24 +1194,25 @@ static void RunMainInternal(Param* pParam)
     pParam->pFD->EnsureActive();
     PCODE entryPoint = pParam->pFD->GetSingleCallableAddrOfCode();
 
-    ARG_SLOT stackVar = ObjToArgSlot(StrArgArray);
+    BOOL hasArgument = (pParam->EntryType == EntryManagedMain);
+    BOOL hasReturnValue = !pParam->pFD->IsVoid();
 
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(stackVar);
-
-    PRECALL_PREP(args);
-    PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(entryPoint);
-
-    if (pParam->pFD->IsVoid())
+    if (!hasReturnValue)
     {
         // Set the return value to 0 instead of returning random junk
         *pParam->piRetVal = 0;
-        PERFORM_CALL;
     }
-    else
+
+    UnmanagedCallersOnlyCaller callEntryPoint(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
+    callEntryPoint.InvokeThrowing(
+        static_cast<INT_PTR>(entryPoint),
+        &StrArgArray,
+        CLR_BOOL_ARG(hasArgument),
+        CLR_BOOL_ARG(hasReturnValue),
+        pParam->piRetVal);
+
+    if (hasReturnValue)
     {
-        PERFORM_CALL;
-        *pParam->piRetVal = static_cast<INT32>(reinterpret_cast<INT_PTR>(__retval));
         SetLatchedExitCode(*pParam->piRetVal);
     }
 
