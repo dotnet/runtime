@@ -7268,9 +7268,6 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
 
     GenTree* result = nullptr;
 
-    GenTree* prolog = new (m_compiler, GT_NOP) GenTree(GT_PINVOKE_PROLOG, TYP_VOID);
-    BlockRange().InsertBefore(call, prolog);
-
     bool addPInvokePrologEpilog = !call->IsSuppressGCTransition();
     if (addPInvokePrologEpilog)
     {

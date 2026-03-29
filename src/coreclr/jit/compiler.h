@@ -12295,9 +12295,6 @@ public:
             case GT_PHI_ARG:
             case GT_JMPTABLE:
             case GT_PHYSREG:
-            case GT_EMITNOP:
-            case GT_PINVOKE_PROLOG:
-            case GT_PINVOKE_EPILOG:
             case GT_IL_OFFSET:
             case GT_RECORD_ASYNC_RESUME:
             case GT_NOP:
