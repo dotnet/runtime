@@ -1143,10 +1143,10 @@ namespace System
 
             /// <summary>
             /// Pre-calculated cumulative lengths into <see cref="pow1E9"/>.
-            /// <c>pow1E9[Indexes[i]..Indexes[i+1]]&lt;&lt;(32*OmittedLength(i))</c> equals <c>1000000000^(1&lt;&lt;i)</c>.
+            /// <c>pow1E9[Indexes[i]..Indexes[i+1]]&lt;&lt;(BitsPerLimb*OmittedLength(i))</c> equals <c>1000000000^(1&lt;&lt;i)</c>.
             /// </summary>
             /// <remarks>
-            /// Satisfies the following relationship <c>Indexes[i+1] - Indexes[i] == Math.Ceiling(Math.Log2(1000000000) * (1u&lt;&lt;i) / 32 - OmittedLength(i))</c>.
+            /// Satisfies the following relationship <c>Indexes[i+1] - Indexes[i] == Math.Ceiling(Math.Log2(1000000000) * (1u&lt;&lt;i) / BitsPerLimb - OmittedLength(i))</c>.
             /// </remarks>
             private static ReadOnlySpan<int> Indexes => nint.Size == 8 ? Indexes64 : Indexes32;
 
