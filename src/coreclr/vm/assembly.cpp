@@ -1174,21 +1174,11 @@ static void RunMainInternal(Param* pParam)
     PTRARRAYREF StrArgArray = NULL;
     GCPROTECT_BEGIN(StrArgArray);
 
-    // Build the parameter array and invoke the method.
-    if (pParam->EntryType == EntryManagedMain)
+    // If managed args were supplied by host, pass them through directly.
+    // Otherwise, managed side will materialize string[] from raw argv.
+    if (pParam->EntryType == EntryManagedMain && pParam->stringArgs != NULL)
     {
-        if (pParam->stringArgs == NULL) {
-            // Allocate a COM Array object with enough slots for cCommandArgs - 1
-            StrArgArray = (PTRARRAYREF) AllocateObjectArray((pParam->cCommandArgs - pParam->numSkipArgs), g_pStringClass);
-
-            // Create Stringrefs for each of the args
-            for (DWORD arg = pParam->numSkipArgs; arg < pParam->cCommandArgs; arg++) {
-                STRINGREF sref = StringObject::NewString(pParam->wzArgs[arg]);
-                StrArgArray->SetAt(arg - pParam->numSkipArgs, (OBJECTREF) sref);
-            }
-        }
-        else
-            StrArgArray = *pParam->stringArgs;
+        StrArgArray = *pParam->stringArgs;
     }
 
     pParam->pFD->EnsureActive();
@@ -1209,7 +1199,10 @@ static void RunMainInternal(Param* pParam)
         &StrArgArray,
         CLR_BOOL_ARG(hasArgument),
         CLR_BOOL_ARG(hasReturnValue),
-        pParam->piRetVal);
+        pParam->piRetVal,
+        pParam->wzArgs,
+        static_cast<INT32>(pParam->cCommandArgs),
+        static_cast<INT32>(pParam->numSkipArgs));
 
     if (hasReturnValue)
     {

@@ -138,17 +138,35 @@ namespace System
         [UnmanagedCallersOnly]
         [StackTraceHidden]
         [RequiresUnsafe]
-        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue)
+        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue, char** pRawArguments, int commandArgCount, int skipArgs)
         {
+            string[]? argument = null;
+            if (hasArgument)
+            {
+                if (pArgument is not null)
+                {
+                    argument = *pArgument;
+                }
+                else
+                {
+                    int argCount = commandArgCount - skipArgs;
+                    argument = argCount <= 0 ? [] : new string[argCount];
+                    for (int i = 0; i < argCount; i++)
+                    {
+                        argument[i] = new string(pRawArguments[i + skipArgs]);
+                    }
+                }
+            }
+
             if (hasArgument)
             {
                 if (hasReturnValue)
                 {
-                    *pReturnValue = ((delegate* managed<string[]?, int>)entryPoint)(pArgument is not null ? *pArgument : null);
+                    *pReturnValue = ((delegate* managed<string[]?, int>)entryPoint)(argument);
                 }
                 else
                 {
-                    ((delegate* managed<string[]?, void>)entryPoint)(pArgument is not null ? *pArgument : null);
+                    ((delegate* managed<string[]?, void>)entryPoint)(argument);
                 }
             }
             else
