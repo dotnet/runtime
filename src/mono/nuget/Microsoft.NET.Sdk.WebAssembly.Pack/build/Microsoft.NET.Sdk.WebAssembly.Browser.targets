@@ -754,6 +754,23 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
   
+  <!-- Redefine assetplaceholder behavior to get IncludeOnlyHardFingerprintedModules=true at build time -->
+  <!-- TODO: Should we make this configurable via a property? -->
+  <Target Name="GenerateHtmlAssetPlaceholdersBuildStaticWebAssets"
+          DependsOnTargets="$(GenerateHtmlAssetPlaceholdersBuildStaticWebAssetsDependsOn)"
+          Condition="'$(_WasmFingerprintAssets)' == 'true'">
+    <OverrideHtmlAssetPlaceholders
+      Assets="@(_EsModuleCandidate)"
+      Endpoints="@(_EsModuleCandidateEndpoints)"
+      IncludeOnlyHardFingerprintedModules="true"
+      HtmlFiles="@(_HtmlStaticWebAssets)"
+      OutputPath="$(_BuildHtmlAssetPlaceholdersPath)">
+      <Output TaskParameter="HtmlCandidates" ItemName="_HtmlCandidates" />
+      <Output TaskParameter="HtmlFilesToRemove" ItemName="_HtmlFilesToRemove" />
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </OverrideHtmlAssetPlaceholders>
+  </Target>
+
   <!-- Publish starts here -->
 
   <!-- Make sure that ResolveAssemblyReferences runs early enough to ensure satellite assemblies are populated in the ResolvedFilesToPublish -->
