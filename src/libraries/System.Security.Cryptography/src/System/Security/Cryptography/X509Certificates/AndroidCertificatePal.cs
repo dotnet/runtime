@@ -25,7 +25,6 @@ namespace System.Security.Cryptography.X509Certificates
         private SafeJObjectHandle? _keyStorePrivateKeyEntry;
 
         private CertificateData _certData;
-        private AndroidCryptoMemoryPressure _nativeMemoryPressure;
 
         public static ICertificatePal FromHandle(IntPtr handle)
         {
@@ -174,20 +173,17 @@ namespace System.Security.Cryptography.X509Certificates
         {
             _cert = Interop.AndroidCrypto.GetPrivateKeyEntryCertificate(handle);
             _keyStorePrivateKeyEntry = handle;
-            _nativeMemoryPressure.Add();
         }
 
         internal AndroidCertificatePal(SafeX509Handle handle)
         {
             _cert = handle;
-            _nativeMemoryPressure.Add();
         }
 
         internal AndroidCertificatePal(SafeX509Handle handle, SafeKeyHandle privateKey)
         {
             _cert = handle;
             _privateKey = privateKey;
-            _nativeMemoryPressure.Add();
         }
 
         public bool HasPrivateKey => _privateKey is not null || _keyStorePrivateKeyEntry is not null;
@@ -590,8 +586,6 @@ namespace System.Security.Cryptography.X509Certificates
                 _cert.Dispose();
                 _cert = null!;
             }
-
-            _nativeMemoryPressure.Remove();
         }
 
         public byte[] Export(X509ContentType contentType, SafePasswordHandle password)

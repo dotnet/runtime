@@ -19,7 +19,6 @@ namespace System.Security.Cryptography
             private const int BitsPerByte = 8;
 
             private Lazy<SafeRsaHandle>? _key;
-            private AndroidCryptoMemoryPressure _nativeKeyMemoryPressure;
 
             public RSAAndroid()
                 : this(2048)
@@ -29,18 +28,12 @@ namespace System.Security.Cryptography
             public RSAAndroid(int keySize)
             {
                 base.KeySize = keySize;
-                _key = new Lazy<SafeRsaHandle>(() =>
-                {
-                    SafeRsaHandle key = GenerateKey();
-                    _nativeKeyMemoryPressure.Add();
-                    return key;
-                });
+                _key = new Lazy<SafeRsaHandle>(GenerateKey);
             }
 
             internal RSAAndroid(SafeRsaHandle key)
             {
                 _key = new Lazy<SafeRsaHandle>(key.DuplicateHandle());
-                _nativeKeyMemoryPressure.Add();
                 SetKeySizeFromHandle(key);
             }
 
@@ -58,12 +51,7 @@ namespace System.Security.Cryptography
 
                     ThrowIfDisposed();
                     FreeKey();
-                    _key = new Lazy<SafeRsaHandle>(() =>
-                    {
-                        SafeRsaHandle key = GenerateKey();
-                        _nativeKeyMemoryPressure.Add();
-                        return key;
-                    });
+                    _key = new Lazy<SafeRsaHandle>(GenerateKey);
                 }
             }
 
@@ -409,7 +397,6 @@ namespace System.Security.Cryptography
 
                 FreeKey();
                 _key = new Lazy<SafeRsaHandle>(key);
-                _nativeKeyMemoryPressure.Add();
                 SetKeySizeFromHandle(key);
             }
 
@@ -457,7 +444,6 @@ namespace System.Security.Cryptography
 
                 FreeKey();
                 _key = new Lazy<SafeRsaHandle>(key);
-                _nativeKeyMemoryPressure.Add();
                 SetKeySizeFromHandle(key);
 
                 bytesRead = subjectPublicKey.Length;
@@ -499,8 +485,6 @@ namespace System.Security.Cryptography
                     SafeRsaHandle handle = _key.Value;
                     handle?.Dispose();
                 }
-
-                _nativeKeyMemoryPressure.Remove();
             }
 
             private static void ValidateParameters(ref RSAParameters parameters)

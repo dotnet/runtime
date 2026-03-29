@@ -1215,8 +1215,6 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaImplementation.NotSupported.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\AndroidCryptoMemoryPressure.cs"
-             Link="Common\System\Security\Cryptography\AndroidCryptoMemoryPressure.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAAndroid.cs"
              Link="Common\System\Security\Cryptography\DSAAndroid.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECAndroid.cs"

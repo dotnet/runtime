@@ -9,7 +9,6 @@ namespace System.Security.Cryptography
     internal sealed partial class ECAndroid : IDisposable
     {
         private Lazy<SafeEcKeyHandle> _key = null!; // Always initialized
-        private AndroidCryptoMemoryPressure _nativeKeyMemoryPressure;
 
         public ECAndroid(ECCurve curve)
         {
@@ -18,12 +17,7 @@ namespace System.Security.Cryptography
 
         public ECAndroid(AsymmetricAlgorithm owner)
         {
-            _key = new Lazy<SafeEcKeyHandle>(() =>
-            {
-                SafeEcKeyHandle key = GenerateKeyLazy(owner);
-                _nativeKeyMemoryPressure.Add();
-                return key;
-            });
+            _key = new Lazy<SafeEcKeyHandle>(() => GenerateKeyLazy(owner));
         }
 
         public ECAndroid(ECParameters ecParameters)
@@ -34,7 +28,6 @@ namespace System.Security.Cryptography
         public ECAndroid(SafeEcKeyHandle key)
         {
             _key = new Lazy<SafeEcKeyHandle>(key);
-            _nativeKeyMemoryPressure.Add();
         }
 
         internal SafeEcKeyHandle Value => _key.Value;
@@ -59,7 +52,6 @@ namespace System.Security.Cryptography
 
             FreeKey();
             _key = new Lazy<SafeEcKeyHandle>(key);
-            _nativeKeyMemoryPressure.Add();
         }
 
         internal int GenerateKey(ECCurve curve)
@@ -115,8 +107,6 @@ namespace System.Security.Cryptography
 
                 _key = null!;
             }
-
-            _nativeKeyMemoryPressure.Remove();
         }
     }
 }

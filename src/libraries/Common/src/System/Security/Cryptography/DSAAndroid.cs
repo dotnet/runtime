@@ -24,7 +24,6 @@ namespace System.Security.Cryptography
             private const int BitsPerByte = 8;
 
             private Lazy<SafeDsaHandle>? _key;
-            private AndroidCryptoMemoryPressure _nativeKeyMemoryPressure;
 
             public DSAAndroid()
                 : this(2048)
@@ -35,12 +34,7 @@ namespace System.Security.Cryptography
             {
                 LegalKeySizesValue = s_legalKeySizes;
                 base.KeySize = keySize;
-                _key = new Lazy<SafeDsaHandle>(() =>
-                {
-                    SafeDsaHandle key = GenerateKey();
-                    _nativeKeyMemoryPressure.Add();
-                    return key;
-                });
+                _key = new Lazy<SafeDsaHandle>(GenerateKey);
             }
 
             internal DSAAndroid(SafeDsaHandle key)
@@ -63,12 +57,7 @@ namespace System.Security.Cryptography
                     base.KeySize = value;
 
                     FreeKey();
-                    _key = new Lazy<SafeDsaHandle>(() =>
-                    {
-                        SafeDsaHandle key = GenerateKey();
-                        _nativeKeyMemoryPressure.Add();
-                        return key;
-                    });
+                    _key = new Lazy<SafeDsaHandle>(GenerateKey);
                 }
             }
 
@@ -174,8 +163,6 @@ namespace System.Security.Cryptography
                 {
                     _key.Value?.Dispose();
                 }
-
-                _nativeKeyMemoryPressure.Remove();
             }
 
             private static void CheckInvalidKey([NotNull] SafeDsaHandle key)
@@ -393,7 +380,6 @@ namespace System.Security.Cryptography
 
                 FreeKey();
                 _key = new Lazy<SafeDsaHandle>(newKey);
-                _nativeKeyMemoryPressure.Add();
             }
 
             internal SafeDsaHandle DuplicateKeyHandle() => GetKey().DuplicateHandle();
