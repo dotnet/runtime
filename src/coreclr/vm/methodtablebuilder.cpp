@@ -2697,7 +2697,7 @@ MethodTableBuilder::EnumerateClassMethods()
     // In a worst case the number of declared methods can double
     // as each async method may have two variants.
     // The method count is typically a modest number though.
-    // If we have covariant overrides, then overrides from Task<T> -> Task we will need 3 method descs.
+    // If we have covariant overrides, such as a base Task method overridden by Task<T>, we will need 3 method descs.
     // Reserve the space conservatively, up to the max, for the worst case scenario.
     DWORD cMethUpperBound = cMethAndGaps * (bmtMetaData->fHasCovariantOverride ? 3 : 2);
     if ((DWORD)MAX_SLOT_INDEX <= cMethUpperBound)
@@ -3542,8 +3542,8 @@ MethodTableBuilder::EnumerateClassMethods()
             }
 
             // In rare cases we need a void-returning async variant in addition to the T-returning one.
-            // It is ok to add a void-returning thunk and end up not using it, but we do not want waste.
-            // Thus we try to filter closer to the cases when the thunk is most certainly will be used.
+            // It is ok to add a void-returning thunk and end up not using it, but we want to avoid waste.
+            // Thus we try to filter closer to the cases when the thunk most certainly will be used.
             if (insertCount == 1)
             {
                 if (implType != METHOD_IMPL ||
