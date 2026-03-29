@@ -3317,14 +3317,8 @@ namespace System.Numerics
             int zWordCount = wordCount;
 
             // For negative values, find the index of the first non-zero word.
-            int leadingZeroCount = 0;
-            if (negative)
-            {
-                while (leadingZeroCount < wordCount && zw[leadingZeroCount] == 0)
-                {
-                    leadingZeroCount++;
-                }
-            }
+            Span<uint> wordsSpan = zw.AsSpan(0, wordCount);
+            int leadingZeroCount = negative ? wordsSpan.IndexOfAnyExcept(0u) : 0;
 
             if (negative && (int)zw[zWordCount - 1] < 0
                 && (leadingZeroCount != zWordCount - 1 || zw[zWordCount - 1] != UInt32HighBit))
@@ -3357,11 +3351,7 @@ namespace System.Numerics
             if (negative && (int)zwSpan[^1] < 0)
             {
                 // Convert back from two's complement on the 32-bit word view.
-                int firstNonZero = 0;
-                while (firstNonZero < zWordCount && zw[firstNonZero] == 0)
-                {
-                    firstNonZero++;
-                }
+                int firstNonZero = zwSpan.IndexOfAnyExcept(0u);
 
                 if ((uint)firstNonZero < (uint)zWordCount)
                 {
