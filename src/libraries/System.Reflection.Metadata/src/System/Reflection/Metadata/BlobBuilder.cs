@@ -821,8 +821,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteByte(byte value)
         {
-            int start = ReserveBytesPrimitive(sizeof(byte));
-            _buffer.WriteByte(start, value);
+            _buffer[ReserveBytesPrimitive(sizeof(byte))] = value;
         }
 
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
