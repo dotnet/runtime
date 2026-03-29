@@ -73,11 +73,7 @@ namespace System.Formats.Cbor
         {
             EnsureWriteCapacity(1 + sizeof(double));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional64BitData));
-#if NET
-            BinaryPrimitives.WriteDoubleBigEndian(_buffer.AsSpan(_offset), value);
-#else
             BinaryPrimitives.WriteInt64BigEndian(_buffer.AsSpan(_offset), BitConverter.DoubleToInt64Bits(value));
-#endif
             _offset += sizeof(double);
             AdvanceDataItemCounters();
         }

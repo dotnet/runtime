@@ -84,11 +84,7 @@ namespace System.Formats.Cbor
 
                 case CborAdditionalInfo.Additional64BitData:
                     EnsureReadCapacity(buffer, 1 + sizeof(double));
-#if NET
-                    result = BinaryPrimitives.ReadDoubleBigEndian(buffer.Slice(1));
-#else
                     result = BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64BigEndian(buffer.Slice(1)));
-#endif
                     AdvanceBuffer(1 + sizeof(double));
                     AdvanceDataItemCounters();
                     return result;
