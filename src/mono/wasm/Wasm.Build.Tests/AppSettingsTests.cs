@@ -60,7 +60,9 @@ public class AppSettingsTests : WasmTemplateTestsBase
         );
         RunResult result = publish
             ? await RunForPublishWithWebServer(runOptions)
-            : await RunForBuildWithDotnetRun(runOptions);
+            : UseJavascriptBundler
+                ? await RunForBuildWithWebServer(runOptions)
+                : await RunForBuildWithDotnetRun(runOptions);
 
         const string browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
         Assert.Contains(result.TestOutput, m => m.Contains($"'{browserVirtualAppBase}appsettings.json' exists 'True'"));

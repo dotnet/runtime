@@ -47,7 +47,9 @@ public class FilesToIncludeInFileSystemTests : WasmTemplateTestsBase
         );
         RunResult result = publish
             ? await RunForPublishWithWebServer(runOptions)
-            : await RunForBuildWithDotnetRun(runOptions);
+            : UseJavascriptBundler
+                ? await RunForBuildWithWebServer(runOptions)
+                : await RunForBuildWithDotnetRun(runOptions);
 
         Assert.Contains(result.TestOutput, m => m.Contains("'/myfiles/Vfs1.txt' exists 'True' with content 'Vfs1.txt'"));
         Assert.Contains(result.TestOutput, m => m.Contains("'/myfiles/Vfs2.txt' exists 'True' with content 'Vfs2.txt'"));

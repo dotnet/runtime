@@ -338,29 +338,35 @@ public class WasmTemplateTestsBase : BuildTestBase
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
     public virtual async Task<RunResult> RunForBuildWithDotnetRun(RunOptions runOptions)
-        => await BrowserRun(runOptions with { Host = RunHost.DotnetRun });
+        => await BrowserRun(runOptions with { Host = RunHost.DotnetRun }, forPublish: false);
 
     public virtual async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
-        => await BrowserRun(runOptions with { Host = RunHost.WebServer });
+        => await BrowserRun(runOptions with { Host = RunHost.WebServer }, forPublish: true);
 
-    private async Task<RunResult> BrowserRun(RunOptions runOptions)
+    public virtual async Task<RunResult> RunForBuildWithWebServer(RunOptions runOptions)
+        => await BrowserRun(runOptions with { Host = RunHost.WebServer }, forPublish: false);
+
+    private async Task<RunResult> BrowserRun(RunOptions runOptions, bool forPublish)
     {
+        string wwwrootDir = Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish), "..");
         if (EnvironmentVariables.UseJavascriptBundler)
         {
-            runOptions = runOptions with { CustomBundleDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..", "public")) };
+            runOptions = runOptions with { CustomBundleDir = Path.GetFullPath(Path.Combine(wwwrootDir, "public")) };
         }
+
+        string workingDirectory = !string.IsNullOrEmpty(runOptions.CustomBundleDir)
+            ? runOptions.CustomBundleDir
+            : forPublish
+                ? Path.GetFullPath(wwwrootDir)
+                : _projectDir;
 
         return runOptions.Host switch
         {
             RunHost.DotnetRun =>
-                    await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir, runOptions),
+                await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", workingDirectory, runOptions),
 
             RunHost.WebServer =>
-                    await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
-                        string.IsNullOrEmpty(runOptions.CustomBundleDir) ?
-                            Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
-                            runOptions.CustomBundleDir,
-                         runOptions),
+                await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files", workingDirectory, runOptions),
 
             _ => throw new NotImplementedException(runOptions.Host.ToString())
         };
