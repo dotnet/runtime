@@ -32,7 +32,6 @@
     <Compile Include="$(CoreClrProjectRoot)tools/aot/ILCompiler.Trimming.Tests/Extensions/NiceIO.cs" />
     <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCases/TestCase.cs" />
     <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCases/TestDatabase.cs" />
-    <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCases/TestSuites.cs" />
     <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/TestCaseCollector.cs" />
     <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/TestCaseCompilationMetadataProvider.cs" />
     <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/TestCaseLinkerOptions.cs" />
@@ -43,6 +42,7 @@
     <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/AssemblyChecker.cs" />
     <Compile Include="$(ToolsProjectRoot)illink/test/Mono.Linker.Tests/TestCasesRunner/ILVerification/*.cs" />
     <Compile Include="$(LibrariesProjectRoot)/Common/src/System/Text/ValueStringBuilder.cs" />
+    <Content Include="ILTrimExpectedFailures.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
