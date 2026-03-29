@@ -200,6 +200,17 @@ namespace Microsoft.Win32.SafeHandles
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle);
+
+                if (errno == 0)
+                {
+                    // Create the wait state holder while still holding the read lock.
+                    // This ensures the child process is registered in s_childProcessWaitStates
+                    // before the lock is released. If SIGCHLD fires after the lock is released,
+                    // CheckChildren will find the child in the table and reap it properly.
+                    // Without this, there is a race: SIGCHLD could fire after the lock is released
+                    // but before the child is registered, causing WaitForExit to hang indefinitely.
+                    waitStateHolder = new ProcessWaitState.Holder(childPid, isNewChild: true, usesTerminal);
+                }
             }
             finally
             {
@@ -225,11 +236,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
             }
 
-            // Create the wait state holder for this child process. The caller is responsible
-            // for either handing it to Process (for Process.Start) or disposing it
-            // (for SafeProcessHandle.StartCore, where DangerousAddRef keeps the OS handle alive).
-            waitStateHolder = new ProcessWaitState.Holder(childPid, isNewChild: true, usesTerminal);
-            return new SafeProcessHandle(childPid, waitStateHolder);
+            return new SafeProcessHandle(childPid, waitStateHolder!);
         }
     }
 }
