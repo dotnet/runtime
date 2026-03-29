@@ -326,8 +326,8 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateLeft(Zero, 33));
 
             Assert.Equal((BigInteger)0x00000002, BinaryIntegerHelper<BigInteger>.RotateLeft(One, 1));
-            Assert.Equal(BigInteger.One << (32 % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateLeft(One, 32));
-            Assert.Equal(BigInteger.One << (33 % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateLeft(One, 33));
+            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.RotateLeft(One, 32));
+            Assert.Equal((BigInteger)0x00000002, BinaryIntegerHelper<BigInteger>.RotateLeft(One, 33));
 
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFE, BinaryIntegerHelper<BigInteger>.RotateLeft(Int64MaxValue, 1));
             Assert.Equal((BigInteger)0xFFFFFFFF7FFFFFFF, BinaryIntegerHelper<BigInteger>.RotateLeft(Int64MaxValue, 32));
@@ -353,8 +353,8 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateLeft(Zero, -32));
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateLeft(Zero, -33));
 
-            Assert.Equal(BigInteger.One << (nint.Size * 8 - 1), BinaryIntegerHelper<BigInteger>.RotateLeft(One, -1));
-            Assert.Equal(BigInteger.One << ((nint.Size * 8 - 32) % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateLeft(One, -32));
+            Assert.Equal((BigInteger)0x80000000, BinaryIntegerHelper<BigInteger>.RotateLeft(One, -1));
+            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.RotateLeft(One, -32));
             Assert.Equal((BigInteger)0x80000000, BinaryIntegerHelper<BigInteger>.RotateLeft(One, -33));
 
             Assert.Equal((BigInteger)0xBFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateLeft(Int64MaxValue, -1));
@@ -376,6 +376,20 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateLeft(UInt64MaxValue, -1));
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateLeft(UInt64MaxValue, -32));
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateLeft(UInt64MaxValue, -33));
+
+            // Small values in _sign path: 32-bit rotation semantics.
+            Assert.Equal((BigInteger)0x00000004, BigInteger.RotateLeft(new BigInteger(2), 1));
+            Assert.Equal((BigInteger)0x00000002, BigInteger.RotateLeft(new BigInteger(2), 32));
+            Assert.Equal((BigInteger)0x00000001, BigInteger.RotateLeft(new BigInteger(2), 31));
+            Assert.Equal((BigInteger)0x80000000, BigInteger.RotateLeft(new BigInteger(1), 31));
+            Assert.Equal(unchecked((BigInteger)(int)0xFFFFFFFD), BigInteger.RotateLeft(new BigInteger(-2), 1));
+            Assert.Equal(unchecked((BigInteger)(int)0xFFFFFFFE), BigInteger.RotateLeft(new BigInteger(-2), 32));
+
+            // Platform-independence: results must be the same on 32-bit and 64-bit.
+            Assert.Equal((BigInteger)0x00000001, BigInteger.RotateLeft(BigInteger.One, 32));
+            Assert.Equal((BigInteger)0x80000000, BigInteger.RotateLeft(BigInteger.One, -1));
+            Assert.Equal(BigInteger.MinusOne, BigInteger.RotateLeft(BigInteger.MinusOne, 1));
+            Assert.Equal(BigInteger.MinusOne, BigInteger.RotateLeft(BigInteger.MinusOne, 32));
         }
 
         [Fact]
@@ -385,8 +399,8 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateRight(Zero, 32));
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateRight(Zero, 33));
 
-            Assert.Equal(BigInteger.One << (nint.Size * 8 - 1), BinaryIntegerHelper<BigInteger>.RotateRight(One, 1));
-            Assert.Equal(BigInteger.One << ((nint.Size * 8 - 32) % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateRight(One, 32));
+            Assert.Equal((BigInteger)0x80000000, BinaryIntegerHelper<BigInteger>.RotateRight(One, 1));
+            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.RotateRight(One, 32));
             Assert.Equal((BigInteger)0x80000000, BinaryIntegerHelper<BigInteger>.RotateRight(One, 33));
 
             Assert.Equal((BigInteger)0xBFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateRight(Int64MaxValue, 1));
@@ -414,8 +428,8 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateRight(Zero, -33));
 
             Assert.Equal((BigInteger)0x00000002, BinaryIntegerHelper<BigInteger>.RotateRight(One, -1));
-            Assert.Equal(BigInteger.One << (32 % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateRight(One, -32));
-            Assert.Equal(BigInteger.One << (33 % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateRight(One, -33));
+            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.RotateRight(One, -32));
+            Assert.Equal((BigInteger)0x00000002, BinaryIntegerHelper<BigInteger>.RotateRight(One, -33));
 
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFE, BinaryIntegerHelper<BigInteger>.RotateRight(Int64MaxValue, -1));
             Assert.Equal((BigInteger)0xFFFFFFFF7FFFFFFF, BinaryIntegerHelper<BigInteger>.RotateRight(Int64MaxValue, -32));
@@ -436,6 +450,20 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateRight(UInt64MaxValue, -1));
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateRight(UInt64MaxValue, -32));
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateRight(UInt64MaxValue, -33));
+
+            // Small values in _sign path: 32-bit rotation semantics.
+            Assert.Equal((BigInteger)0x00000001, BigInteger.RotateRight(new BigInteger(2), 1));
+            Assert.Equal((BigInteger)0x00000002, BigInteger.RotateRight(new BigInteger(2), 32));
+            Assert.Equal((BigInteger)0x00000004, BigInteger.RotateRight(new BigInteger(2), 31));
+            Assert.Equal((BigInteger)0x00000002, BigInteger.RotateRight(new BigInteger(1), 31));
+            Assert.Equal(unchecked((BigInteger)(int)0xBFFFFFFF), BigInteger.RotateRight(new BigInteger(-2), 1));
+            Assert.Equal(unchecked((BigInteger)(int)0xFFFFFFFE), BigInteger.RotateRight(new BigInteger(-2), 32));
+
+            // Platform-independence: results must be the same on 32-bit and 64-bit.
+            Assert.Equal((BigInteger)0x00000001, BigInteger.RotateRight(BigInteger.One, 32));
+            Assert.Equal((BigInteger)0x80000000, BigInteger.RotateRight(BigInteger.One, 1));
+            Assert.Equal(BigInteger.MinusOne, BigInteger.RotateRight(BigInteger.MinusOne, 1));
+            Assert.Equal(BigInteger.MinusOne, BigInteger.RotateRight(BigInteger.MinusOne, 32));
         }
 
         [Fact]

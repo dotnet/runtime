@@ -3256,9 +3256,9 @@ namespace System.Numerics
 
             if (value._bits is null)
             {
-                nuint rs = BitOperations.RotateLeft((nuint)value._sign, rotateAmount);
+                uint rs = uint.RotateLeft((uint)value._sign, rotateAmount);
                 return neg
-                    ? new BigInteger((nint)rs)
+                    ? new BigInteger((int)rs)
                     : new BigInteger(rs);
             }
 
@@ -3277,9 +3277,9 @@ namespace System.Numerics
 
             if (value._bits is null)
             {
-                nuint rs = BitOperations.RotateRight((nuint)value._sign, rotateAmount);
+                uint rs = uint.RotateRight((uint)value._sign, rotateAmount);
                 return neg
-                    ? new BigInteger((nint)rs)
+                    ? new BigInteger((int)rs)
                     : new BigInteger(rs);
             }
 
