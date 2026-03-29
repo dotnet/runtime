@@ -294,9 +294,6 @@ namespace System.Formats.Cbor
 
         private static BigInteger CreateBigIntegerFromUnsignedBigEndianBytes(byte[] bigEndianBytes)
         {
-#if NET
-            return new BigInteger(bigEndianBytes, isUnsigned: true, isBigEndian: true);
-#else
             if (bigEndianBytes.Length == 0)
                 return new BigInteger(bigEndianBytes);
 
@@ -314,7 +311,6 @@ namespace System.Formats.Cbor
 
             temp.AsSpan().Reverse();
             return new BigInteger(temp);
-#endif
         }
     }
 }
