@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,12 +12,20 @@ using System.Runtime.InteropServices;
 
 namespace System.Formats.Cbor
 {
-    internal static partial class CborHelpers
+    internal static class CborHelpers
     {
+#if NET
+        public static readonly DateTimeOffset UnixEpoch = DateTimeOffset.UnixEpoch;
+#else
         private const long UnixEpochTicks = 719162L /*Number of days from 1/1/0001 to 12/31/1969*/ * 10000 * 1000 * 60 * 60 * 24; /* Ticks per day.*/
 
         public static readonly DateTimeOffset UnixEpoch = new DateTimeOffset(UnixEpochTicks, TimeSpan.Zero);
+#endif
 
+#if NET
+        public static BigInteger CreateBigIntegerFromUnsignedBigEndianBytes(byte[] bytes)
+            => new BigInteger(bytes, isUnsigned: true, isBigEndian: true);
+#else
         public static BigInteger CreateBigIntegerFromUnsignedBigEndianBytes(byte[] bigEndianBytes)
         {
             if (bigEndianBytes.Length == 0)
@@ -44,7 +53,12 @@ namespace System.Formats.Cbor
 
             return new BigInteger(temp);
         }
+#endif
 
+#if NET
+        public static byte[] CreateUnsignedBigEndianBytesFromBigInteger(BigInteger value)
+            => value.ToByteArray(isUnsigned: true, isBigEndian: true);
+#else
         public static byte[] CreateUnsignedBigEndianBytesFromBigInteger(BigInteger value)
         {
             byte[] littleEndianBytes = value.ToByteArray();
@@ -74,12 +88,22 @@ namespace System.Formats.Cbor
 
             return start == 0 ? littleEndianBytes : bytesAsSpan.Slice(start).ToArray();
         }
+#endif
 
+#if NET
+        public static void GetBitsFromDecimal(decimal d, Span<int> destination)
+            => decimal.GetBits(d, destination);
+#else
         public static void GetBitsFromDecimal(decimal d, Span<int> destination)
         {
             decimal.GetBits(d).CopyTo(destination);
         }
+#endif
 
+#if NET
+        public static string BuildStringFromIndefiniteLengthTextString<TState>(int length, TState state, SpanAction<char, TState> action)
+            => string.Create(length, state, action);
+#else
         public delegate void SpanAction<T, in TArg>(Span<T> span, TArg arg);
 
         public static string BuildStringFromIndefiniteLengthTextString<TState>(int length, TState state, SpanAction<char, TState> action)
@@ -88,12 +112,19 @@ namespace System.Formats.Cbor
             action(arr, state);
             return new string(arr);
         }
+#endif
 
+#if NET
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half ReadHalfBigEndian(ReadOnlySpan<byte> source)
+            => BinaryPrimitives.ReadHalfBigEndian(source);
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ushort ReadHalfBigEndian(ReadOnlySpan<byte> source)
         {
             return BinaryPrimitives.ReadUInt16BigEndian(source);
         }
+#endif
 
         internal static uint SingleToUInt32Bits(float value)
             => unchecked((uint)SingleToInt32Bits(value));
