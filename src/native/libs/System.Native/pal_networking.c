@@ -3080,6 +3080,12 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
 
     if (*triggered < 0)
     {
+        if (maxFd >= FD_SETSIZE)
+        {
+            free(readSetPtr);
+            free(writeSetPtr);
+            free(errorSetPtr);
+        }
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 

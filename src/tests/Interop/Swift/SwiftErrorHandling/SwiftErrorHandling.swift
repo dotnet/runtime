@@ -32,6 +32,7 @@ public func getMyErrorMessage(from error: Error, messageLength: inout Int32) -> 
             return UnsafePointer(buffer.baseAddress!)
         }
     }
+    messageLength = 0
     return nil
 }
 
