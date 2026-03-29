@@ -5,7 +5,6 @@ using System;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

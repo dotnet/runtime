@@ -338,6 +338,12 @@ A common usage in the libraries tests is the following:
 
 This is put on test classes to indicate that none of the tests in that class (which as usual run serially with respect to each other) may run concurrently with tests in another class. This is used for tests that use a lot of disk space or memory, or dominate all the cores, such that they are likely to disrupt any tests that run concurrently.
 
+## xunit v3 Migration
+
+For xunit v3–specific patterns (empty `[MemberData]`, `ConditionalTheory`
+migration, non-serializable test data), see the
+[xunit v3 Migration Notes](xunit3-migration.md).
+
 ## FactAttribute and `Skip`
 
 Another way to disable the test entirely is to use the `Skip` named argument that is used on the `FactAttribute`.

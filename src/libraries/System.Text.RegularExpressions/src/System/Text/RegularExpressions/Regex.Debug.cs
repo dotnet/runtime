@@ -40,6 +40,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="k">upper bound on the number of generated strings</param>
         /// <param name="randomseed">random seed for the generator, 0 means no random seed</param>
+        /// <returns></returns>
         [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal IEnumerable<string> SampleMatches(int k, int randomseed)
         {
@@ -48,23 +49,7 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException();
             }
 
-            // The NFA-based sampler may occasionally produce inputs that don't actually
-            // match (e.g. when anchors like $ appear inside alternations). Validate each
-            // candidate with IsMatch and retry with a different seed if needed.
-            const int MaxAttempts = 5;
-            List<string> results = new(k);
-            for (int attempt = 0; attempt < MaxAttempts && results.Count < k; attempt++)
-            {
-                foreach (string input in srmFactory._matcher.SampleMatches(k - results.Count, randomseed + attempt))
-                {
-                    if (IsMatch(input))
-                    {
-                        results.Add(input);
-                    }
-                }
-            }
-
-            return results;
+            return srmFactory._matcher.SampleMatches(k, randomseed);
         }
 
         /// <summary>

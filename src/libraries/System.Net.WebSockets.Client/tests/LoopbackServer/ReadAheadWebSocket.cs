@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 using System.Threading.Channels;
 
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.WebSockets.Client.Tests;
 
 internal class ReadAheadWebSocket : WebSocket

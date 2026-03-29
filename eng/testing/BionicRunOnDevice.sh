@@ -66,4 +66,4 @@ cd "$currentDirectory" || exit 1
 if [ -e "${currentTest}.deps.json" ]; then
 	depsFileArg="--depsfile ${currentTest}.deps.json"
 fi
-$runtimeExe exec --runtimeconfig "${currentTest}".runtimeconfig.json ${depsFileArg} xunit.console.dll "${currentTest}".dll -xml testResults.xml -nologo -nocolor -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing
+$runtimeExe exec --runtimeconfig "${currentTest}".runtimeconfig.json ${depsFileArg} "${currentTest}".dll -xml testResults.xml -nologo -nocolor -trait- category=IgnoreForCI -trait- category=OuterLoop -trait- category=failing

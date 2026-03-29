@@ -387,34 +387,20 @@ namespace System.Reflection.Tests
             Assert.Equal(expected.GetFunctionPointerCallingConventions(), actual.GetFunctionPointerCallingConventions());
         }
 
-        public static IEnumerable<object[]> MakeFunctionPointerSignatureTypeTestData
-        {
-            get
-            {
-                yield return
-                [
-                    Type.MakeFunctionPointerSignatureType(typeof(int), [typeof(int), typeof(int)]),
-                    typeof(ClassWithFunctionPointers).GetField("Func1").GetModifiedFieldType()
-                ];
-
-                yield return
-                [
-                    Type.MakeFunctionPointerSignatureType(typeof(bool), [typeof(string)], true, [typeof(CallConvCdecl)]),
-                    typeof(ClassWithFunctionPointers).GetField("Func2").GetModifiedFieldType()
-                ];
-
-                yield return
-                [
-                    Type.MakeFunctionPointerSignatureType(typeof(void), [typeof(int)], true, [typeof(CallConvSuppressGCTransition), typeof(CallConvFastcall)]),
-                    typeof(ClassWithFunctionPointers).GetField("Func3").GetModifiedFieldType()
-                ];
-            }
-        }
-
         [Theory]
-        [MemberData(nameof(MakeFunctionPointerSignatureTypeTestData))]
-        public static void MakeFunctionPointerSignatureType_MatchesGetModifiedFieldType(Type signatureType, Type reflectedType)
+        [InlineData(nameof(ClassWithFunctionPointers.Func1))]
+        [InlineData(nameof(ClassWithFunctionPointers.Func2))]
+        [InlineData(nameof(ClassWithFunctionPointers.Func3))]
+        public static void MakeFunctionPointerSignatureType_MatchesGetModifiedFieldType(string fieldName)
         {
+            Type reflectedType = typeof(ClassWithFunctionPointers).GetField(fieldName).GetModifiedFieldType();
+            Type signatureType = fieldName switch
+            {
+                nameof(ClassWithFunctionPointers.Func1) => Type.MakeFunctionPointerSignatureType(typeof(int), [typeof(int), typeof(int)]),
+                nameof(ClassWithFunctionPointers.Func2) => Type.MakeFunctionPointerSignatureType(typeof(bool), [typeof(string)], true, [typeof(CallConvCdecl)]),
+                nameof(ClassWithFunctionPointers.Func3) => Type.MakeFunctionPointerSignatureType(typeof(void), [typeof(int)], true, [typeof(CallConvSuppressGCTransition), typeof(CallConvFastcall)]),
+                _ => throw new ArgumentException($"Unknown field: {fieldName}", nameof(fieldName)),
+            };
             AssertFunctionPointerTypesEqual(reflectedType, signatureType);
         }
 

@@ -291,6 +291,7 @@ namespace System.DirectoryServices.Protocols.Tests
             => VerifyResponseControl(value, expectedResultCode, expectedAttribute);
 
         [Theory]
+        [SkipOnCoreClr("netfx-only test")]
         [MemberData(nameof(NonconformantControlValues))]
         public void NonconformantResponseControlParsedSuccessfully(byte[] value, ResultCode expectedResultCode, string expectedAttribute)
             => VerifyResponseControl(value, expectedResultCode, expectedAttribute);

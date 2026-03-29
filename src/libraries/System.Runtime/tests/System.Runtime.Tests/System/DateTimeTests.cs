@@ -1277,7 +1277,7 @@ namespace System.Tests
 
         private static bool IsNotOSXOrBrowser => !PlatformDetection.IsApplePlatform && !PlatformDetection.IsBrowser;
 
-        [ConditionalTheory(typeof(DateTimeTests), nameof(IsNotOSXOrBrowser))]
+        [Theory]
         [InlineData("ar")]
         [InlineData("ar-EG")]
         [InlineData("ar-IQ")]
@@ -1285,6 +1285,7 @@ namespace System.Tests
         [InlineData("ar-YE")]
         public static void DateTimeParsingWithBiDiCultureTest(string cultureName)
         {
+            Assert.SkipUnless(IsNotOSXOrBrowser, "Requires IsNotOSXOrBrowser");
             DateTime dt = new DateTime(2021, 11, 30, 14, 30, 40);
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
             string formatted = dt.ToString("d", ci);
@@ -2908,11 +2909,12 @@ namespace System.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [Theory]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60562", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void TryFormat_MatchesExpected(DateTime dateTime, string format, IFormatProvider provider, string expected)
         {
+            Assert.SkipUnless(PlatformDetection.IsNotInvariantGlobalization, "Requires IsNotInvariantGlobalization");
             // UTF16
             {
                 var destination = new char[expected.Length];

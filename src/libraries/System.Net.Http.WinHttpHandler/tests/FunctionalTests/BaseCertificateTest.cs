@@ -4,8 +4,6 @@
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 {
     public abstract class BaseCertificateTest

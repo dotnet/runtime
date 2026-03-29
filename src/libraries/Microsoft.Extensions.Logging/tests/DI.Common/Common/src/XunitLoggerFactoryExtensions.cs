@@ -4,7 +4,7 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Testing;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace Microsoft.Extensions.Logging
 {

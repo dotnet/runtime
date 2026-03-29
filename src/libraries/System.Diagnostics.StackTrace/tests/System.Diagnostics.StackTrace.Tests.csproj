@@ -8,6 +8,7 @@
 
     <!-- these tests depend on the pdb files -->
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
+    <RootNamespace>System.Diagnostics.SymbolStore.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DiagnosticMethodInfoTests.cs" />

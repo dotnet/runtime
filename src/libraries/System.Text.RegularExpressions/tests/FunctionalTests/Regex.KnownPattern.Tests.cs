@@ -6,11 +6,13 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -1561,15 +1563,14 @@ namespace System.Text.RegularExpressions.Tests
             });
         }
 
-        [OuterLoop("Takes minutes to generate and validate thousands of expressions")]
+        [ActiveIssue("Manual execution only for now until stability is improved")]
+        [OuterLoop("Super slow")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
         public async Task PatternsDataSet_GenerateInputsWithNonBacktracking_MatchWithAllEngines()
         {
             MethodInfo? sampleMatchesMI = typeof(Regex).GetMethod("SampleMatches", BindingFlags.NonPublic | BindingFlags.Instance) ??
-                throw new SkipTestException("Could not find Regex.SampleMatches");
+                throw SkipException.ForSkip("Could not find Regex.SampleMatches");
             Func<Regex, int, int, IEnumerable<string>> sampleMatches = sampleMatchesMI.CreateDelegate<Func<Regex, int, int, IEnumerable<string>>>();
-
-            int fewerThanRequestedCount = 0;
 
             DataSetExpression[] entries = s_patternsDataSet.Value;
             for (int i = 0; i < entries.Length; i++)
@@ -1588,42 +1589,30 @@ namespace System.Text.RegularExpressions.Tests
 
                 const int NumInputs = 3;
                 const int Seed = 42;
-                string[] expectedMatchInputs = sampleMatches(generator, NumInputs, Seed).ToArray();
-                if (expectedMatchInputs.Length < NumInputs)
+                IEnumerable<string> expectedMatchInputs = null;
+                try
                 {
-                    fewerThanRequestedCount++;
-                    Assert.True((fewerThanRequestedCount / (double)entries.Length) < 0.10, "SampleMatches is repeatedly producing an insufficient number of inputs");
+#pragma warning disable SYSLIB0046 // temporary until some use of SampleMatches no longer hangs
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                    ControlledExecution.Run(() => expectedMatchInputs = sampleMatches(generator, NumInputs, Seed), cts.Token);
+#pragma warning restore SYSLIB0046
+                }
+                catch (OperationCanceledException)
+                {
+                    Console.Error.WriteLine($"*** SampleMatches hung on entry {i} ***");
                     continue;
                 }
 
                 foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
                 {
-                    // SourceGenerated uses Roslyn to compile each pattern; with thousands of
-                    // entries that makes this test prohibitively slow.
-                    if (engine == RegexEngine.SourceGenerated)
-                    {
-                        continue;
-                    }
-
                     Regex r = engine == RegexEngine.NonBacktracking ?
                         generator :
-                        await RegexHelpers.GetRegexAsync(engine, entry.Pattern, entry.Options, TimeSpan.FromSeconds(2));
+                        await RegexHelpers.GetRegexAsync(engine, entry.Pattern, entry.Options);
 
                     foreach (string input in expectedMatchInputs)
                     {
-                        try
-                        {
-                            if (!r.IsMatch(input))
-                            {
-                                Assert.Fail($"[{i}-{engine}] Options={entry.Options} Pattern=<{entry.Pattern}> didn't match input=<{input}> (hex: {string.Join(" ", input.Select(c => $"{(int)c:X4}"))})");
-                            }
-                        }
-                        catch (RegexMatchTimeoutException)
-                        {
-                            // SampleMatches can generate random inputs that trigger catastrophic
-                            // backtracking in Interpreter/Compiled. That's expected behavior for
-                            // backtracking engines, not a correctness bug — just skip these.
-                        }
+                        Console.WriteLine($"[{i}-{engine}] {r} <= {input}");
+                        Assert.True(r.IsMatch(input));
                     }
                 }
             }

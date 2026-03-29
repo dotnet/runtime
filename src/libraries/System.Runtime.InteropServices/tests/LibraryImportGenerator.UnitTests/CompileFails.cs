@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;

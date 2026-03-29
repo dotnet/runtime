@@ -405,8 +405,11 @@ void WasmRegAlloc::CollectReferencesForIndexAddr(GenTreeIndexAddr* indexAddrNode
 {
     // Bounds checking requires both operands be used multiple times.
     //
-    ConsumeTemporaryRegForOperand(indexAddrNode->Index() DEBUGARG("bounds check"));
-    ConsumeTemporaryRegForOperand(indexAddrNode->Arr() DEBUGARG("bounds check"));
+    if (indexAddrNode->IsBoundsChecked())
+    {
+        ConsumeTemporaryRegForOperand(indexAddrNode->Index() DEBUGARG("bounds check"));
+        ConsumeTemporaryRegForOperand(indexAddrNode->Arr() DEBUGARG("bounds check"));
+    }
 }
 
 //------------------------------------------------------------------------

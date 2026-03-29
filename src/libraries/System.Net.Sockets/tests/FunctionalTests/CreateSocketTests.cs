@@ -10,8 +10,6 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Sockets.Tests
 {
     public class CreateSocket

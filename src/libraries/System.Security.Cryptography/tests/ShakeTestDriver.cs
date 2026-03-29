@@ -58,23 +58,20 @@ namespace System.Security.Cryptography.Tests
 
         private static void CheckIsSupported()
         {
-            if (!IsSupported)
-                throw new SkipTestException(nameof(IsSupported));
+            Assert.SkipUnless(IsSupported, nameof(IsSupported));
         }
 
         private static void CheckIsNotSupported()
         {
-            if (!IsNotSupported)
-                throw new SkipTestException(nameof(IsNotSupported));
+            Assert.SkipUnless(IsNotSupported, nameof(IsNotSupported));
         }
 
         private static void CheckIsReadSupported()
         {
-            if (!IsReadSupported)
-                throw new SkipTestException(nameof(IsReadSupported));
+            Assert.SkipUnless(IsReadSupported, nameof(IsReadSupported));
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_Allocated_AllAtOnce()
         {
             CheckIsSupported();
@@ -98,7 +95,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_Allocated_Chunks()
         {
             CheckIsSupported();
@@ -119,7 +116,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_Allocated_Reused()
         {
             CheckIsSupported();
@@ -140,7 +137,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_Allocated_GetCurrentHash_ByteArray()
         {
             CheckIsSupported();
@@ -163,7 +160,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_Allocated_Hash_Destination()
         {
             CheckIsSupported();
@@ -187,7 +184,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_Allocated_Read_Twice()
         {
             CheckIsReadSupported();
@@ -212,7 +209,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_Allocated_Read_GetHashAndReset()
         {
             CheckIsReadSupported();
@@ -237,7 +234,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_Clone_Independent_Unobserved()
         {
             CheckIsSupported();
@@ -258,7 +255,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_Clone_Independent_Disposed()
         {
             CheckIsSupported();
@@ -279,7 +276,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_Reset()
         {
             CheckIsSupported();
@@ -299,7 +296,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_OneShot_HashData_ByteArray()
         {
             CheckIsSupported();
@@ -311,7 +308,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_OneShot_HashData_ByteArray_SpanInput()
         {
             CheckIsSupported();
@@ -323,7 +320,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_OneShot_HashData_SpanBuffer_JustRight()
         {
             CheckIsSupported();
@@ -336,7 +333,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_OneShot_HashData_SpanBuffer_LargerWithOffset()
         {
             CheckIsSupported();
@@ -354,7 +351,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_OneShot_HashData_SpanBuffer_OverlapExact()
         {
             CheckIsSupported();
@@ -371,7 +368,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_OneShot_HashData_SpanBuffer_OverlapPartial_MessageBefore()
         {
             CheckIsSupported();
@@ -388,7 +385,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_OneShot_HashData_SpanBuffer_OverlapPartial_MessageAfter()
         {
             CheckIsSupported();
@@ -405,7 +402,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_OneShot_HashData_Stream_ByteArray()
         {
             CheckIsSupported();
@@ -419,7 +416,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void KnownAnswerTests_OneShot_HashData_Stream_Destination()
         {
             CheckIsSupported();
@@ -435,7 +432,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task KnownAnswerTests_OneShot_HashDataAsync_Stream_ByteArray()
         {
             CheckIsSupported();
@@ -449,7 +446,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task KnownAnswerTests_OneShot_HashDataAsync_Stream_Destination()
         {
             CheckIsSupported();
@@ -465,7 +462,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void HashData_Minimal()
         {
             CheckIsSupported();
@@ -484,7 +481,7 @@ namespace System.Security.Cryptography.Tests
             TShakeTrait.HashData(source, Span<byte>.Empty); // Assert.NoThrow
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task HashDataAsync_Minimal()
         {
             CheckIsSupported();
@@ -494,7 +491,7 @@ namespace System.Security.Cryptography.Tests
             await TShakeTrait.HashDataAsync(Stream.Null, Memory<byte>.Empty); // Assert.NoThrow
         }
 
-        [ConditionalFact]
+        [Fact]
         public void GetCurrentHash_Minimal()
         {
             CheckIsSupported();
@@ -509,7 +506,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void GetHashAndReset_Minimal()
         {
             CheckIsSupported();
@@ -524,7 +521,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void GetHashAndReset_ResetWithEmpty()
         {
             CheckIsSupported();
@@ -562,7 +559,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ArgValidation_OneShot_HashData_OutputLengthNegative()
         {
             CheckIsSupported();
@@ -586,7 +583,7 @@ namespace System.Security.Cryptography.Tests
                 () => TShakeTrait.HashDataAsync(Stream.Null, outputLength: -1));
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ArgValidation_OneShot_HashData_StreamNotReadable()
         {
             CheckIsSupported();
@@ -609,7 +606,7 @@ namespace System.Security.Cryptography.Tests
                 () => TShakeTrait.HashDataAsync(UntouchableStream.Instance, outputLength: 1));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ArgValidation_OneShot_HashDataAsync_Cancelled()
         {
             CheckIsSupported();
@@ -623,7 +620,7 @@ namespace System.Security.Cryptography.Tests
                 async () => await TShakeTrait.HashDataAsync(Stream.Null, buffer, cancelledToken));
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ArgValidation_OneShot_HashData_SourceNull()
         {
             CheckIsSupported();
@@ -636,7 +633,7 @@ namespace System.Security.Cryptography.Tests
                 () => TShakeTrait.HashData((Stream)null, outputLength: 1));
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ArgValidation_Allocated_GetCurrentHash_OutputLengthNegative()
         {
             CheckIsSupported();
@@ -648,7 +645,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ArgValidation_Allocated_GetHashAndReset_OutputLengthNegative()
         {
             CheckIsSupported();
@@ -660,7 +657,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ArgValidation_Allocated_AppendData_DataNull()
         {
             CheckIsSupported();
@@ -672,7 +669,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ArgValidation_Allocated_UseAfterDispose()
         {
             CheckIsSupported();
@@ -693,7 +690,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => TShakeTrait.Read(shake, outputLength: 1));
         }
 
-        [ConditionalFact]
+        [Fact]
         public void NotSupported_ThrowsPlatformNotSupportedException()
         {
             CheckIsNotSupported();
@@ -716,7 +713,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(TShakeTrait.IsSupported, PlatformDetection.SupportsSha3);
         }
 
-        [ConditionalFact]
+        [Fact]
         public void Clone_DifferentInstance()
         {
             CheckIsSupported();
@@ -727,7 +724,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void Read_MixedAppendAfterRead()
         {
             CheckIsReadSupported();
@@ -746,7 +743,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void Read_MixedCloneAfterRead()
         {
             CheckIsReadSupported();
@@ -764,7 +761,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void Read_MixedGetHashAndReset()
         {
             CheckIsReadSupported();
@@ -782,7 +779,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void Read_MixedGetCurrentHash()
         {
             CheckIsReadSupported();
@@ -802,7 +799,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void Read_NotSupported()
         {
             CheckIsSupported();
@@ -822,10 +819,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetHashAndReset_ConcurrentUseDoesNotCrashProcess()
         {
-            if (!IsSupported)
-            {
-                throw new SkipTestException("Algorithm is not supported on this platform.");
-            }
+            Assert.SkipUnless(IsSupported, "Algorithm is not supported on this platform.");
 
             RemoteExecutor.Invoke(static () =>
             {

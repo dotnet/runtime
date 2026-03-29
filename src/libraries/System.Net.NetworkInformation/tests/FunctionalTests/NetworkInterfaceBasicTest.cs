@@ -6,8 +6,6 @@ using System.Net.Test.Common;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.NetworkInformation.Tests
 {
     public class NetworkInterfaceBasicTest
@@ -275,17 +273,14 @@ namespace System.Net.NetworkInformation.Tests
             Assert.True(NetworkInterface.GetIsNetworkAvailable());
         }
 
-        [ConditionalTheory]
+        [Theory]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task NetworkInterface_LoopbackInterfaceIndex_MatchesReceivedPackets(bool ipv6)
         {
-            if (ipv6 && !Socket.OSSupportsIPv6)
-            {
-                throw new SkipTestException("IPv6 is not supported");
-            }
+            Assert.SkipWhen(ipv6 && !Socket.OSSupportsIPv6, "IPv6 is not supported");
 
             using (var client = new Socket(SocketType.Dgram, ProtocolType.Udp))
             using (var server = new Socket(SocketType.Dgram, ProtocolType.Udp))
@@ -307,7 +302,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void NetworkInterface_UnicastLLA_ScopeIdSet()
         {
             bool foundLla = false;
@@ -324,10 +319,7 @@ namespace System.Net.NetworkInformation.Tests
                 }
             }
 
-            if (!foundLla)
-            {
-                throw new SkipTestException("Did not find any LLA");
-            }
+            Assert.SkipUnless(foundLla, "Did not find any LLA");
         }
     }
 }

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-using Xunit.Abstractions;
 using System.Threading;
 
 namespace System.Net.Sockets.Tests
