@@ -27226,20 +27226,8 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
 
         GenTree* op1Dup = fgMakeMultiUse(&op1);
 
-        op1    = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, simdSize);
-        op1Dup = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseType, simdSize);
-
-        if (varTypeIsFloating(simdBaseType))
-        {
-            // Fallback for non-AVX: process lanes independently to ensure
-            // deterministic results matching the software fallback.
-
-            op1    = gtNewSimdSumNode(type, op1, simdBaseType, 16);
-            op1Dup = gtNewSimdSumNode(type, op1Dup, simdBaseType, 16);
-
-            return gtNewOperNode(GT_ADD, type, op1, op1Dup);
-        }
-
+        op1      = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, simdSize);
+        op1Dup   = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseType, simdSize);
         simdSize = 16;
         op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseType, 16);
     }
