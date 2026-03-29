@@ -2672,55 +2672,28 @@ namespace System.Runtime.Intrinsics.Arm
         // While incrementing scalar is less than
 
         /// <summary>
-        ///   <para>svbool_t svwhilelt_b16[_s32](int32_t op1, int32_t op2)</para>
-        ///   <para>  WHILELT Presult.H, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b8[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.B, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanMask16Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateWhileLessThanMaskByte(int left, int right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svbool_t svwhilelt_b16[_s64](int64_t op1, int64_t op2)</para>
-        ///   <para>  WHILELT Presult.H, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b8[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.B, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanMask16Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateWhileLessThanMaskByte(long left, long right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svbool_t svwhilelt_b16[_u32](uint32_t op1, uint32_t op2)</para>
-        ///   <para>  WHILELO Presult.H, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b8[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.B, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanMask16Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateWhileLessThanMaskByte(uint left, uint right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svbool_t svwhilelt_b16[_u64](uint64_t op1, uint64_t op2)</para>
-        ///   <para>  WHILELO Presult.H, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b8[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.B, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanMask16Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
-
-
-        // While incrementing scalar is less than
-
-        /// <summary>
-        ///   <para>svbool_t svwhilelt_b32[_s32](int32_t op1, int32_t op2)</para>
-        ///   <para>  WHILELT Presult.S, Wop1, Wop2</para>
-        /// </summary>
-        public static Vector<uint> CreateWhileLessThanMask32Bit(int left, int right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svbool_t svwhilelt_b32[_s64](int64_t op1, int64_t op2)</para>
-        ///   <para>  WHILELT Presult.S, Xop1, Xop2</para>
-        /// </summary>
-        public static Vector<uint> CreateWhileLessThanMask32Bit(long left, long right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svbool_t svwhilelt_b32[_u32](uint32_t op1, uint32_t op2)</para>
-        ///   <para>  WHILELO Presult.S, Wop1, Wop2</para>
-        /// </summary>
-        public static Vector<uint> CreateWhileLessThanMask32Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   <para>svbool_t svwhilelt_b32[_u64](uint64_t op1, uint64_t op2)</para>
-        ///   <para>  WHILELO Presult.S, Xop1, Xop2</para>
-        /// </summary>
-        public static Vector<uint> CreateWhileLessThanMask32Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateWhileLessThanMaskByte(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
 
 
         // While incrementing scalar is less than
@@ -2729,25 +2702,106 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svwhilelt_b64[_s32](int32_t op1, int32_t op2)</para>
         ///   <para>  WHILELT Presult.D, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanMask64Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+        public static Vector<double> CreateWhileLessThanMaskDouble(int left, int right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svwhilelt_b64[_s64](int64_t op1, int64_t op2)</para>
         ///   <para>  WHILELT Presult.D, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanMask64Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+        public static Vector<double> CreateWhileLessThanMaskDouble(long left, long right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svwhilelt_b64[_u32](uint32_t op1, uint32_t op2)</para>
         ///   <para>  WHILELO Presult.D, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanMask64Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+        public static Vector<double> CreateWhileLessThanMaskDouble(uint left, uint right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svwhilelt_b64[_u64](uint64_t op1, uint64_t op2)</para>
         ///   <para>  WHILELO Presult.D, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanMask64Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+        public static Vector<double> CreateWhileLessThanMaskDouble(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b16[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.H, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanMaskInt16(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b16[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanMaskInt16(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b16[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.H, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanMaskInt16(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b16[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanMaskInt16(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b32[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanMaskInt32(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b32[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanMaskInt32(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b32[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanMaskInt32(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b32[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanMaskInt32(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanMaskInt64(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanMaskInt64(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanMaskInt64(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanMaskInt64(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
 
 
         // While incrementing scalar is less than
@@ -2756,106 +2810,133 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svwhilelt_b8[_s32](int32_t op1, int32_t op2)</para>
         ///   <para>  WHILELT Presult.B, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanMask8Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> CreateWhileLessThanMaskSByte(int left, int right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svwhilelt_b8[_s64](int64_t op1, int64_t op2)</para>
         ///   <para>  WHILELT Presult.B, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanMask8Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> CreateWhileLessThanMaskSByte(long left, long right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svwhilelt_b8[_u32](uint32_t op1, uint32_t op2)</para>
         ///   <para>  WHILELO Presult.B, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanMask8Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> CreateWhileLessThanMaskSByte(uint left, uint right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svwhilelt_b8[_u64](uint64_t op1, uint64_t op2)</para>
         ///   <para>  WHILELO Presult.B, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanMask8Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> CreateWhileLessThanMaskSByte(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
 
 
-        // While incrementing scalar is less than or equal to
-
-        /// <summary>
-        ///   <para>svbool_t svwhilele_b16[_s32](int32_t op1, int32_t op2)</para>
-        ///   <para>  WHILELE Presult.H, Wop1, Wop2</para>
-        /// </summary>
-        public static Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+        // While incrementing scalar is less than
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b16[_s64](int64_t op1, int64_t op2)</para>
-        ///   <para>  WHILELE Presult.H, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.S, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+        public static Vector<float> CreateWhileLessThanMaskSingle(int left, int right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b16[_u32](uint32_t op1, uint32_t op2)</para>
-        ///   <para>  WHILELS Presult.H, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.S, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+        public static Vector<float> CreateWhileLessThanMaskSingle(long left, long right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b16[_u64](uint64_t op1, uint64_t op2)</para>
-        ///   <para>  WHILELS Presult.H, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.S, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
-
-
-        // While incrementing scalar is less than or equal to
+        public static Vector<float> CreateWhileLessThanMaskSingle(uint left, uint right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b32[_s32](int32_t op1, int32_t op2)</para>
-        ///   <para>  WHILELE Presult.S, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.S, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<uint> CreateWhileLessThanOrEqualMask32Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+        public static Vector<float> CreateWhileLessThanMaskSingle(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b32[_s64](int64_t op1, int64_t op2)</para>
-        ///   <para>  WHILELE Presult.S, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b16[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.H, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<uint> CreateWhileLessThanOrEqualMask32Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> CreateWhileLessThanMaskUInt16(int left, int right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b32[_u32](uint32_t op1, uint32_t op2)</para>
-        ///   <para>  WHILELS Presult.S, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b16[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.H, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<uint> CreateWhileLessThanOrEqualMask32Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> CreateWhileLessThanMaskUInt16(long left, long right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b32[_u64](uint64_t op1, uint64_t op2)</para>
-        ///   <para>  WHILELS Presult.S, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b16[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.H, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<uint> CreateWhileLessThanOrEqualMask32Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
-
-
-        // While incrementing scalar is less than or equal to
+        public static Vector<ushort> CreateWhileLessThanMaskUInt16(uint left, uint right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b64[_s32](int32_t op1, int32_t op2)</para>
-        ///   <para>  WHILELE Presult.D, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b16[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.H, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> CreateWhileLessThanMaskUInt16(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b64[_s64](int64_t op1, int64_t op2)</para>
-        ///   <para>  WHILELE Presult.D, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.S, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> CreateWhileLessThanMaskUInt32(int left, int right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b64[_u32](uint32_t op1, uint32_t op2)</para>
-        ///   <para>  WHILELS Presult.D, Wop1, Wop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.S, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> CreateWhileLessThanMaskUInt32(long left, long right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>svbool_t svwhilele_b64[_u64](uint64_t op1, uint64_t op2)</para>
-        ///   <para>  WHILELS Presult.D, Xop1, Xop2</para>
+        ///   <para>svbool_t svwhilelt_b32[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.S, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> CreateWhileLessThanMaskUInt32(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b32[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<uint> CreateWhileLessThanMaskUInt32(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELT Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanMaskUInt64(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELT Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanMaskUInt64(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELO Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanMaskUInt64(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilelt_b64[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELO Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanMaskUInt64(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
 
 
         // While incrementing scalar is less than or equal to
@@ -2864,25 +2945,268 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svwhilele_b8[_s32](int32_t op1, int32_t op2)</para>
         ///   <para>  WHILELE Presult.B, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanOrEqualMask8Bit(int left, int right) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateWhileLessThanOrEqualMaskByte(int left, int right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svwhilele_b8[_s64](int64_t op1, int64_t op2)</para>
         ///   <para>  WHILELE Presult.B, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanOrEqualMask8Bit(long left, long right) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateWhileLessThanOrEqualMaskByte(long left, long right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svwhilele_b8[_u32](uint32_t op1, uint32_t op2)</para>
         ///   <para>  WHILELS Presult.B, Wop1, Wop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanOrEqualMask8Bit(uint left, uint right) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateWhileLessThanOrEqualMaskByte(uint left, uint right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svwhilele_b8[_u64](uint64_t op1, uint64_t op2)</para>
         ///   <para>  WHILELS Presult.B, Xop1, Xop2</para>
         /// </summary>
-        public static Vector<byte> CreateWhileLessThanOrEqualMask8Bit(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateWhileLessThanOrEqualMaskByte(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<double> CreateWhileLessThanOrEqualMaskDouble(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<double> CreateWhileLessThanOrEqualMaskDouble(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<double> CreateWhileLessThanOrEqualMaskDouble(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<double> CreateWhileLessThanOrEqualMaskDouble(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.H, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanOrEqualMaskInt16(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanOrEqualMaskInt16(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.H, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanOrEqualMaskInt16(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<short> CreateWhileLessThanOrEqualMaskInt16(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanOrEqualMaskInt32(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanOrEqualMaskInt32(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanOrEqualMaskInt32(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<int> CreateWhileLessThanOrEqualMaskInt32(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanOrEqualMaskInt64(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanOrEqualMaskInt64(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanOrEqualMaskInt64(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<long> CreateWhileLessThanOrEqualMaskInt64(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b8[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.B, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<sbyte> CreateWhileLessThanOrEqualMaskSByte(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b8[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.B, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<sbyte> CreateWhileLessThanOrEqualMaskSByte(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b8[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.B, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<sbyte> CreateWhileLessThanOrEqualMaskSByte(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b8[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.B, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<sbyte> CreateWhileLessThanOrEqualMaskSByte(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<float> CreateWhileLessThanOrEqualMaskSingle(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<float> CreateWhileLessThanOrEqualMaskSingle(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<float> CreateWhileLessThanOrEqualMaskSingle(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<float> CreateWhileLessThanOrEqualMaskSingle(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.H, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<ushort> CreateWhileLessThanOrEqualMaskUInt16(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<ushort> CreateWhileLessThanOrEqualMaskUInt16(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.H, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<ushort> CreateWhileLessThanOrEqualMaskUInt16(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b16[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.H, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<ushort> CreateWhileLessThanOrEqualMaskUInt16(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<uint> CreateWhileLessThanOrEqualMaskUInt32(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<uint> CreateWhileLessThanOrEqualMaskUInt32(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.S, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<uint> CreateWhileLessThanOrEqualMaskUInt32(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b32[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.S, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<uint> CreateWhileLessThanOrEqualMaskUInt32(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+
+        // While incrementing scalar is less than or equal to
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_s32](int32_t op1, int32_t op2)</para>
+        ///   <para>  WHILELE Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanOrEqualMaskUInt64(int left, int right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_s64](int64_t op1, int64_t op2)</para>
+        ///   <para>  WHILELE Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanOrEqualMaskUInt64(long left, long right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_u32](uint32_t op1, uint32_t op2)</para>
+        ///   <para>  WHILELS Presult.D, Wop1, Wop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanOrEqualMaskUInt64(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svwhilele_b64[_u64](uint64_t op1, uint64_t op2)</para>
+        ///   <para>  WHILELS Presult.D, Xop1, Xop2</para>
+        /// </summary>
+        public static Vector<ulong> CreateWhileLessThanOrEqualMaskUInt64(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
 
 
         // Divide
