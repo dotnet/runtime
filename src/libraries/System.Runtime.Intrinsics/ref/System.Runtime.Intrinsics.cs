@@ -19,6 +19,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<T> AndNot<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static bool Any<T>(System.Runtime.Intrinsics.Vector128<T> vector, T value) { throw null; }
         public static bool AnyWhereAllBitsSet<T>(System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> Asin(System.Runtime.Intrinsics.Vector128<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> Asin(System.Runtime.Intrinsics.Vector128<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Byte> AsByte<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Double> AsDouble<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int16> AsInt16<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
@@ -480,6 +482,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<T> AndNot<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static bool Any<T>(System.Runtime.Intrinsics.Vector256<T> vector, T value) { throw null; }
         public static bool AnyWhereAllBitsSet<T>(System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<double> Asin(System.Runtime.Intrinsics.Vector256<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<float> Asin(System.Runtime.Intrinsics.Vector256<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Byte> AsByte<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Double> AsDouble<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int16> AsInt16<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
@@ -930,6 +934,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<T> AndNot<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
         public static bool Any<T>(System.Runtime.Intrinsics.Vector512<T> vector, T value) { throw null; }
         public static bool AnyWhereAllBitsSet<T>(System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Asin(System.Runtime.Intrinsics.Vector512<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Asin(System.Runtime.Intrinsics.Vector512<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<System.Byte> AsByte<T>(this System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<System.Double> AsDouble<T>(this System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<System.Int16> AsInt16<T>(this System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
@@ -1379,6 +1385,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<T> AndNot<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static bool Any<T>(System.Runtime.Intrinsics.Vector64<T> vector, T value) { throw null; }
         public static bool AnyWhereAllBitsSet<T>(System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<double> Asin(System.Runtime.Intrinsics.Vector64<double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> Asin(System.Runtime.Intrinsics.Vector64<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Byte> AsByte<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Double> AsDouble<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int16> AsInt16<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
@@ -5524,38 +5532,86 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> CreateTrueMaskUInt16([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<uint> CreateTrueMaskUInt32([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static System.Numerics.Vector<ulong> CreateTrueMaskUInt64([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateWhileLessThanMask16Bit(int left, int right) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateWhileLessThanMask16Bit(long left, long right) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateWhileLessThanMask16Bit(uint left, uint right) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateWhileLessThanMask16Bit(ulong left, ulong right) { throw null; }
-        public static System.Numerics.Vector<uint> CreateWhileLessThanMask32Bit(int left, int right) { throw null; }
-        public static System.Numerics.Vector<uint> CreateWhileLessThanMask32Bit(long left, long right) { throw null; }
-        public static System.Numerics.Vector<uint> CreateWhileLessThanMask32Bit(uint left, uint right) { throw null; }
-        public static System.Numerics.Vector<uint> CreateWhileLessThanMask32Bit(ulong left, ulong right) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateWhileLessThanMask64Bit(int left, int right) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateWhileLessThanMask64Bit(long left, long right) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateWhileLessThanMask64Bit(uint left, uint right) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateWhileLessThanMask64Bit(ulong left, ulong right) { throw null; }
-        public static System.Numerics.Vector<byte> CreateWhileLessThanMask8Bit(int left, int right) { throw null; }
-        public static System.Numerics.Vector<byte> CreateWhileLessThanMask8Bit(long left, long right) { throw null; }
-        public static System.Numerics.Vector<byte> CreateWhileLessThanMask8Bit(uint left, uint right) { throw null; }
-        public static System.Numerics.Vector<byte> CreateWhileLessThanMask8Bit(ulong left, ulong right) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(int left, int right) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(long left, long right) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(uint left, uint right) { throw null; }
-        public static System.Numerics.Vector<ushort> CreateWhileLessThanOrEqualMask16Bit(ulong left, ulong right) { throw null; }
-        public static System.Numerics.Vector<uint> CreateWhileLessThanOrEqualMask32Bit(int left, int right) { throw null; }
-        public static System.Numerics.Vector<uint> CreateWhileLessThanOrEqualMask32Bit(long left, long right) { throw null; }
-        public static System.Numerics.Vector<uint> CreateWhileLessThanOrEqualMask32Bit(uint left, uint right) { throw null; }
-        public static System.Numerics.Vector<uint> CreateWhileLessThanOrEqualMask32Bit(ulong left, ulong right) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(int left, int right) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(long left, long right) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(uint left, uint right) { throw null; }
-        public static System.Numerics.Vector<ulong> CreateWhileLessThanOrEqualMask64Bit(ulong left, ulong right) { throw null; }
-        public static System.Numerics.Vector<byte> CreateWhileLessThanOrEqualMask8Bit(int left, int right) { throw null; }
-        public static System.Numerics.Vector<byte> CreateWhileLessThanOrEqualMask8Bit(long left, long right) { throw null; }
-        public static System.Numerics.Vector<byte> CreateWhileLessThanOrEqualMask8Bit(uint left, uint right) { throw null; }
-        public static System.Numerics.Vector<byte> CreateWhileLessThanOrEqualMask8Bit(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanMaskByte(int left, int right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanMaskByte(long left, long right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanMaskByte(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanMaskByte(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileLessThanMaskDouble(int left, int right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileLessThanMaskDouble(long left, long right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileLessThanMaskDouble(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileLessThanMaskDouble(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileLessThanMaskInt16(int left, int right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileLessThanMaskInt16(long left, long right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileLessThanMaskInt16(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileLessThanMaskInt16(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileLessThanMaskInt32(int left, int right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileLessThanMaskInt32(long left, long right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileLessThanMaskInt32(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileLessThanMaskInt32(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileLessThanMaskInt64(int left, int right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileLessThanMaskInt64(long left, long right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileLessThanMaskInt64(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileLessThanMaskInt64(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileLessThanMaskSByte(int left, int right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileLessThanMaskSByte(long left, long right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileLessThanMaskSByte(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileLessThanMaskSByte(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileLessThanMaskSingle(int left, int right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileLessThanMaskSingle(long left, long right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileLessThanMaskSingle(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileLessThanMaskSingle(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanMaskUInt16(int left, int right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanMaskUInt16(long left, long right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanMaskUInt16(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanMaskUInt16(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanMaskUInt32(int left, int right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanMaskUInt32(long left, long right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanMaskUInt32(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanMaskUInt32(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanMaskUInt64(int left, int right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanMaskUInt64(long left, long right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanMaskUInt64(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanMaskUInt64(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanOrEqualMaskByte(int left, int right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanOrEqualMaskByte(long left, long right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanOrEqualMaskByte(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<byte> CreateWhileLessThanOrEqualMaskByte(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileLessThanOrEqualMaskDouble(int left, int right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileLessThanOrEqualMaskDouble(long left, long right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileLessThanOrEqualMaskDouble(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<double> CreateWhileLessThanOrEqualMaskDouble(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileLessThanOrEqualMaskInt16(int left, int right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileLessThanOrEqualMaskInt16(long left, long right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileLessThanOrEqualMaskInt16(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<short> CreateWhileLessThanOrEqualMaskInt16(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileLessThanOrEqualMaskInt32(int left, int right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileLessThanOrEqualMaskInt32(long left, long right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileLessThanOrEqualMaskInt32(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<int> CreateWhileLessThanOrEqualMaskInt32(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileLessThanOrEqualMaskInt64(int left, int right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileLessThanOrEqualMaskInt64(long left, long right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileLessThanOrEqualMaskInt64(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<long> CreateWhileLessThanOrEqualMaskInt64(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileLessThanOrEqualMaskSByte(int left, int right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileLessThanOrEqualMaskSByte(long left, long right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileLessThanOrEqualMaskSByte(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<sbyte> CreateWhileLessThanOrEqualMaskSByte(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileLessThanOrEqualMaskSingle(int left, int right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileLessThanOrEqualMaskSingle(long left, long right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileLessThanOrEqualMaskSingle(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<float> CreateWhileLessThanOrEqualMaskSingle(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanOrEqualMaskUInt16(int left, int right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanOrEqualMaskUInt16(long left, long right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanOrEqualMaskUInt16(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<ushort> CreateWhileLessThanOrEqualMaskUInt16(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanOrEqualMaskUInt32(int left, int right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanOrEqualMaskUInt32(long left, long right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanOrEqualMaskUInt32(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<uint> CreateWhileLessThanOrEqualMaskUInt32(ulong left, ulong right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanOrEqualMaskUInt64(int left, int right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanOrEqualMaskUInt64(long left, long right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanOrEqualMaskUInt64(uint left, uint right) { throw null; }
+        public static System.Numerics.Vector<ulong> CreateWhileLessThanOrEqualMaskUInt64(ulong left, ulong right) { throw null; }
         public static System.Numerics.Vector<double> Divide(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> Divide(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<int> DotProduct(System.Numerics.Vector<int> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }

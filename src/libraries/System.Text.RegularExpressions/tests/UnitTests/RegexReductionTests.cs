@@ -275,6 +275,11 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?>(?>(?>(?>))))", "")]
         [InlineData("(?>(?>(?>(?>(?!)))))", "(?!)")]
         [InlineData("(?=(?>))", "")]
+        // Atomic wrapping non-backtrackable nodes (One, Notone, Set, Multi) is redundant
+        [InlineData("(?>a)", "a")]
+        [InlineData("(?>[^a])", "[^a]")]
+        [InlineData("(?>[abc])", "[abc]")]
+        [InlineData("(?>abc)", "abc")]
         // Lookaround reduction
         [InlineData("(?!(abc))", "(?!abc)")]
         [InlineData("(?!a(b*)c)", "(?!ab*c)")]
@@ -473,6 +478,9 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:http|https)://foo", "http(?>s?)://foo")]
         [InlineData("(?:ab|abc)d", "ab(?>c?)d")]
         [InlineData("(?:abc|abcd|abce|abcfg)h", "abc(?:|[de]|fg)h")]
+        // Shared-prefix extraction skips non-text branches and factors later text branches
+        [InlineData("[^x]|ab|ac", "[^x]|a[bc]")]
+        [InlineData("[^x]|\\ab|\\ac", "[^x]|\\a[bc]")]
         public void PatternsReduceIdentically(string actual, string expected)
         {
             // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.

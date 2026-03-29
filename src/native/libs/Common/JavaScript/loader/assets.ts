@@ -108,6 +108,9 @@ export async function instantiateMainWasm(imports: WebAssembly.Imports, successC
         const result = await dotnetBrowserHostExports.instantiateWasm(wasmBinaryPromise!, imports);
         instance = result.instance;
         module = result.module;
+    } catch (err) {
+        dotnetApi.exit(1, err);
+        throw err;
     } finally {
         onDownloadedAsset(assetInternal);
     }
