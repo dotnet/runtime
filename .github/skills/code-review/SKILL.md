@@ -126,6 +126,9 @@ When presenting the final review (whether as a PR comment or as output to the us
 (Repeat for each finding category. Group related findings under a single heading.)
 
 </details>
+
+<!-- AI disclosure note: place any AI-generated content disclosure below this line. -->
+<!-- Example: > [!NOTE] This review was created by GitHub Copilot. -->
 ```
 
 ### Guidelines
