@@ -21778,42 +21778,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 // Narrow and merge halves using helper method
                 return gtNewSimdNarrowNode(type, lowerProduct, upperProduct, simdBaseType, simdSize);
             }
-            else if (varTypeIsInt(simdBaseType))
-            {
-                // op1Dup = op1
-                GenTree* op1Dup = fgMakeMultiUse(&op1);
-
-                // op2Dup = op2
-                GenTree* op2Dup = fgMakeMultiUse(&op2);
-
-                // op1Dup = Sse2.ShiftRightLogical128BitLane(op1Dup, 4)
-                op1Dup = gtNewSimdHWIntrinsicNode(type, op1Dup, gtNewIconNode(4, TYP_INT),
-                                                  NI_X86Base_ShiftRightLogical128BitLane, simdBaseType, simdSize);
-
-                // op2Dup = Sse2.ShiftRightLogical128BitLane(op2Dup, 4)
-                op2Dup = gtNewSimdHWIntrinsicNode(type, op2Dup, gtNewIconNode(4, TYP_INT),
-                                                  NI_X86Base_ShiftRightLogical128BitLane, simdBaseType, simdSize);
-
-                // op2Dup = Sse2.Multiply(op1Dup.AsUInt32(), op2Dup.AsUInt32()).AsInt32()
-                op2Dup = gtNewSimdHWIntrinsicNode(type, op1Dup, op2Dup, NI_X86Base_Multiply, TYP_ULONG, simdSize);
-
-                // op2Dup = Sse2.Shuffle(op2Dup, (0, 0, 2, 0))
-                op2Dup = gtNewSimdHWIntrinsicNode(type, op2Dup, gtNewIconNode(SHUFFLE_XXZX, TYP_INT),
-                                                  NI_X86Base_Shuffle, simdBaseType, simdSize);
-
-                // op1 = Sse2.Multiply(op1.AsUInt32(), op2.AsUInt32()).AsInt32()
-                op1 = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_X86Base_Multiply, TYP_ULONG, simdSize);
-
-                // op1 = Sse2.Shuffle(op1, (0, 0, 2, 0))
-                op1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode(SHUFFLE_XXZX, TYP_INT), NI_X86Base_Shuffle,
-                                               simdBaseType, simdSize);
-
-                // op2 = op2Dup;
-                op2 = op2Dup;
-
-                // result = Sse2.UnpackLow(op1, op2)
-                return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_X86Base_UnpackLow, simdBaseType, simdSize);
-            }
             else if (varTypeIsLong(simdBaseType))
             {
                 // This fallback path will be used only if the vpmullq instruction is not available.
