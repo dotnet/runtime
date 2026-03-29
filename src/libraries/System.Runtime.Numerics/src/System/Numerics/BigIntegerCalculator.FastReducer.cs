@@ -120,6 +120,11 @@ namespace System.Numerics
                     int i = 0;
                     nuint borrow = 0;
 
+                    if (right.Length != 0)
+                    {
+                        _ = left[right.Length - 1];
+                    }
+
                     for (; i < right.Length; i++)
                     {
                         left[i] = SubWithBorrow(left[i], right[i], borrow, out borrow);
