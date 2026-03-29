@@ -114,6 +114,8 @@ When presenting the final review (whether as a PR comment or as output to the us
 **Summary**: <✅ LGTM / ⚠️ Needs Human Review / ⚠️ Needs Changes / ❌ Reject>. <2-3 sentence summary of the overall verdict and key points. If "Needs Human Review," explicitly state which findings you are uncertain about and what a human reviewer should focus on.>
 
 ---
+<details>
+  <summary>Detailed Findings</summary>
 
 ### Detailed Findings
 
@@ -122,6 +124,8 @@ When presenting the final review (whether as a PR comment or as output to the us
 <Explanation with specifics. Reference code, line numbers, interleavings, etc.>
 
 (Repeat for each finding category. Group related findings under a single heading.)
+
+</details>
 ```
 
 ### Guidelines
