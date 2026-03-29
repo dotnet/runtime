@@ -84,7 +84,7 @@ namespace Microsoft.Win32.SafeHandles
             string? filename;
             string[] argv;
 
-            string[] envp = ProcessUtils.CreateEnvp(startInfo);
+            IDictionary<string, string?> env = startInfo.Environment;
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
@@ -125,7 +125,7 @@ namespace Microsoft.Win32.SafeHandles
                     argv = ProcessUtils.ParseArgv(startInfo);
 
                     SafeProcessHandle processHandle = ForkAndExecProcess(
-                        startInfo, filename, argv, envp, cwd,
+                        startInfo, filename, argv, env, cwd,
                         setCredentials, userId, groupId, groups,
                         stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
                         out waitStateHolder,
@@ -142,7 +142,7 @@ namespace Microsoft.Win32.SafeHandles
                 argv = ProcessUtils.ParseArgv(startInfo, filename, ignoreArguments: true);
 
                 return ForkAndExecProcess(
-                    startInfo, filename, argv, envp, cwd,
+                    startInfo, filename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
                     out waitStateHolder);
@@ -157,7 +157,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
 
                 return ForkAndExecProcess(
-                    startInfo, filename, argv, envp, cwd,
+                    startInfo, filename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
                     out waitStateHolder);
@@ -166,7 +166,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private static SafeProcessHandle ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
-            string[] envp, string? cwd, bool setCredentials, uint userId,
+            IDictionary<string, string?> env, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
             SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
             bool usesTerminal, out ProcessWaitState.Holder? waitStateHolder, bool throwOnNoExec = true)
@@ -197,7 +197,7 @@ namespace Microsoft.Win32.SafeHandles
                 // is used to fork/execve as executing managed code in a forked process is not safe (only
                 // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
                 errno = Interop.Sys.ForkAndExecProcess(
-                    resolvedFilename, argv, envp, cwd,
+                    resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle);
             }

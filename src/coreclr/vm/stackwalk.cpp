@@ -664,7 +664,7 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
             break;
         }
 
-        BOOL success = PAL_VirtualUnwind(pContext, NULL);
+        BOOL success = PAL_VirtualUnwind(pContext);
         if (!success)
         {
             _ASSERTE(!"Thread::VirtualUnwindToFirstManagedCallFrame: PAL_VirtualUnwind failed");

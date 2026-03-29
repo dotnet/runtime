@@ -645,7 +645,7 @@ void Frame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targe
     do
     {
 #ifdef TARGET_UNIX
-        PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+        PAL_VirtualUnwind(pRD->pCurrentContext);
 #else
         Thread::VirtualUnwindCallFrame(pRD);
 #endif
@@ -683,7 +683,7 @@ void InlinedCallFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, 
         while (!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)))
         {
     #ifdef TARGET_UNIX
-            PAL_VirtualUnwind(pRD->pCurrentContext, NULL);
+            PAL_VirtualUnwind(pRD->pCurrentContext);
     #else
             Thread::VirtualUnwindCallFrame(pRD);
     #endif
