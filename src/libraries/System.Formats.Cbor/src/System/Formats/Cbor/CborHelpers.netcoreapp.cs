@@ -33,15 +33,8 @@ namespace System.Formats.Cbor
             => BinaryPrimitives.ReadSingleBigEndian(source);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double ReadDoubleBigEndian(ReadOnlySpan<byte> source)
-            => BinaryPrimitives.ReadDoubleBigEndian(source);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void WriteSingleBigEndian(Span<byte> destination, float value)
             => BinaryPrimitives.WriteSingleBigEndian(destination, value);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void WriteDoubleBigEndian(Span<byte> destination, double value)
-            => BinaryPrimitives.WriteDoubleBigEndian(destination, value);
     }
 }

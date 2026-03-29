@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
 namespace System.Formats.Cbor
@@ -72,7 +73,11 @@ namespace System.Formats.Cbor
         {
             EnsureWriteCapacity(1 + sizeof(double));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional64BitData));
-            CborHelpers.WriteDoubleBigEndian(_buffer.AsSpan(_offset), value);
+#if NET
+            BinaryPrimitives.WriteDoubleBigEndian(_buffer.AsSpan(_offset), value);
+#else
+            BinaryPrimitives.WriteInt64BigEndian(_buffer.AsSpan(_offset), BitConverter.DoubleToInt64Bits(value));
+#endif
             _offset += sizeof(double);
             AdvanceDataItemCounters();
         }

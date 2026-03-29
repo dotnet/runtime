@@ -27,7 +27,7 @@ namespace System.Formats.Cbor
             }
             else
             {
-                CborHelpers.WriteHalfBigEndian(_buffer.AsSpan(_offset), value);
+                BinaryPrimitives.WriteUInt16BigEndian(_buffer.AsSpan(_offset), value);
             }
             _offset += sizeof(ushort);
             AdvanceDataItemCounters();

@@ -96,12 +96,6 @@ namespace System.Formats.Cbor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteHalfBigEndian(Span<byte> destination, ushort value)
-        {
-            BinaryPrimitives.WriteUInt16BigEndian(destination, value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ReadSingleBigEndian(ReadOnlySpan<byte> source)
         {
             return BitConverter.IsLittleEndian ?
@@ -121,18 +115,6 @@ namespace System.Formats.Cbor
             {
                 MemoryMarshal.Write(destination, ref value);
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double ReadDoubleBigEndian(ReadOnlySpan<byte> source)
-        {
-            return BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64BigEndian(source));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteDoubleBigEndian(Span<byte> destination, double value)
-        {
-            BinaryPrimitives.WriteInt64BigEndian(destination, BitConverter.DoubleToInt64Bits(value));
         }
 
         internal static uint SingleToUInt32Bits(float value)

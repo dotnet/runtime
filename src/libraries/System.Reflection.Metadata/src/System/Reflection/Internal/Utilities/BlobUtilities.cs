@@ -20,11 +20,7 @@ namespace System.Reflection
 
         public static void WriteDouble(this byte[] buffer, int start, double value)
         {
-#if NET
-            WriteUInt64(buffer, start, BitConverter.DoubleToUInt64Bits(value));
-#else
             WriteUInt64(buffer, start, unchecked((ulong)BitConverter.DoubleToInt64Bits(value)));
-#endif
         }
 
         public static void WriteSingle(this byte[] buffer, int start, float value)
