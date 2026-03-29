@@ -11124,12 +11124,6 @@ public:
         unsigned         compMethodHash() const;
 #endif // defined(DEBUG)
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-        // things for pseudorandom nop insertion
-        unsigned  compChecksum;
-        CLRRandom compRNG;
-#endif
-
         // The following holds the FLG_xxxx flags for the method we're compiling.
         unsigned compFlags;
 
