@@ -27199,7 +27199,8 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
 
     if (simdSize == 32)
     {
-        if (varTypeIsFloating(simdBaseType) && compOpportunisticallyDependsOn(InstructionSet_AVX))
+        assert(compOpportunisticallyDependsOn(InstructionSet_AVX)); // simdSize = 32 implies this.
+        if (varTypeIsFloating(simdBaseType))
         {
             // Use AVX HorizontalAdd for floating-point Sum. vhaddps/vhaddpd naturally
             // operate within 128-bit lanes, preserving the deterministic lane-by-lane
