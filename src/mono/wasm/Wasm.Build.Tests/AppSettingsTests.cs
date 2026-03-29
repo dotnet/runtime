@@ -24,27 +24,19 @@ public class AppSettingsTests : WasmTemplateTestsBase
     public static IEnumerable<object?[]> LoadAppSettingsBasedOnApplicationEnvironmentData()
     {
         // Defaults
-        if (!EnvironmentVariables.UseJavascriptBundler)
-            yield return new object?[] { false, null, null, "Development" };
-
+        yield return new object?[] { false, null, null, "Development" };
         yield return new object?[] { true, null, null, "Production" };
 
         // Override defaults from MSBuild
-        if (!EnvironmentVariables.UseJavascriptBundler)
-            yield return new object?[] { false, "Production", null, "Production" };
-
+        yield return new object?[] { false, "Production", null, "Production" };
         yield return new object?[] { true, "Development", null, "Development" };
 
         // Override defaults from JavaScript
-        if (!EnvironmentVariables.UseJavascriptBundler)
-            yield return new object?[] { false, null, "Production", "Production" };
-
+        yield return new object?[] { false, null, "Production", "Production" };
         yield return new object?[] { true, null, "Development", "Development" };
 
         // Override MSBuild from JavaScript
-        if (!EnvironmentVariables.UseJavascriptBundler)
-            yield return new object?[] { false, "FromMSBuild", "Production", "Production" };
-
+        yield return new object?[] { false, "FromMSBuild", "Production", "Production" };
         yield return new object?[] { true, "FromMSBuild", "Development", "Development" };
     }
 

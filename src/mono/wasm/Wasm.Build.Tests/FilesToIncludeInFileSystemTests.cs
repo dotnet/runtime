@@ -23,10 +23,10 @@ public class FilesToIncludeInFileSystemTests : WasmTemplateTestsBase
 
     public static IEnumerable<object?[]> LoadFilesToVfsData()
     {
-        if (!EnvironmentVariables.UseJavascriptBundler)
-            yield return new object?[] { false };
-        
-        yield return new object?[] { true };
+        return new object[][] {
+            [false],
+            [true]
+        };
     }
 
     [Theory, TestCategory("bundler-friendly")]
