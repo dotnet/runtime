@@ -3310,8 +3310,9 @@ namespace System.Numerics
 
             // Extract 32-bit words from nuint limbs using arithmetic (endianness-safe).
             // Word 0 = low 32 bits of limb 0, word 1 = high 32 bits of limb 0 (on 64-bit), etc.
-            uint[] zw = new uint[wordCount];
-            ExtractWords(bits, zw);
+            // Allocate one extra word up front for the possible sign-extension word (avoids Array.Resize).
+            uint[] zw = new uint[wordCount + 1];
+            ExtractWords(bits, zw.AsSpan(0, wordCount));
 
             int zWordCount = wordCount;
 
@@ -3319,7 +3320,7 @@ namespace System.Numerics
             int leadingZeroCount = 0;
             if (negative)
             {
-                while (leadingZeroCount < zw.Length && zw[leadingZeroCount] == 0)
+                while (leadingZeroCount < wordCount && zw[leadingZeroCount] == 0)
                 {
                     leadingZeroCount++;
                 }
@@ -3335,36 +3336,37 @@ namespace System.Numerics
                 // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
                 // If the 2's complement's last element is a 0, we will track the sign externally
                 ++zWordCount;
-                Array.Resize(ref zw, zWordCount);
             }
 
             if (negative)
             {
-                Debug.Assert((uint)leadingZeroCount < (uint)zw.Length);
+                Debug.Assert((uint)leadingZeroCount < (uint)zWordCount);
 
                 // Two's complement conversion on the 32-bit word view.
                 zw[leadingZeroCount] = (uint)(-(int)zw[leadingZeroCount]);
-                for (int i = leadingZeroCount + 1; i < zw.Length; i++)
+                for (int i = leadingZeroCount + 1; i < zWordCount; i++)
                 {
                     zw[i] = ~zw[i];
                 }
             }
 
-            BigIntegerCalculator.RotateLeft32(zw, rotateLeftAmount);
+            Span<uint> zwSpan = zw.AsSpan(0, zWordCount);
 
-            if (negative && (int)zw[^1] < 0)
+            BigIntegerCalculator.RotateLeft32(zwSpan, rotateLeftAmount);
+
+            if (negative && (int)zwSpan[^1] < 0)
             {
                 // Convert back from two's complement on the 32-bit word view.
                 int firstNonZero = 0;
-                while (firstNonZero < zw.Length && zw[firstNonZero] == 0)
+                while (firstNonZero < zWordCount && zw[firstNonZero] == 0)
                 {
                     firstNonZero++;
                 }
 
-                if ((uint)firstNonZero < (uint)zw.Length)
+                if ((uint)firstNonZero < (uint)zWordCount)
                 {
                     zw[firstNonZero] = (uint)(-(int)zw[firstNonZero]);
-                    for (int j = firstNonZero + 1; j < zw.Length; j++)
+                    for (int j = firstNonZero + 1; j < zWordCount; j++)
                     {
                         zw[j] = ~zw[j];
                     }
@@ -3379,7 +3381,7 @@ namespace System.Numerics
             int zLimbCount = Environment.Is64BitProcess ? (zWordCount + 1) / 2 : zWordCount;
             Span<nuint> zd = RentedBuffer.Create(zLimbCount, out RentedBuffer zdBuffer);
             zd[^1] = 0;
-            PackWords(zw, zd);
+            PackWords(zwSpan, zd);
 
             BigInteger result = new(zd, negative);
 
