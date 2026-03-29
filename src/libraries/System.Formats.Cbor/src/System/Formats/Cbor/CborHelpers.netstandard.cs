@@ -96,7 +96,7 @@ namespace System.Formats.Cbor
         }
 
         internal static uint SingleToUInt32Bits(float value)
-            => (uint)SingleToInt32Bits(value);
+            => unchecked((uint)SingleToInt32Bits(value));
 
         internal static unsafe int SingleToInt32Bits(float value)
             => *((int*)&value);
@@ -125,25 +125,16 @@ namespace System.Formats.Cbor
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static float ReadSingleBigEndian(ReadOnlySpan<byte> source)
+            public static unsafe float ReadSingleBigEndian(ReadOnlySpan<byte> source)
             {
-                return BitConverter.IsLittleEndian ?
-                    CborHelpers.Int32BitsToSingle(BinaryPrimitives.ReverseEndianness(MemoryMarshal.Read<int>(source))) :
-                    MemoryMarshal.Read<float>(source);
+                int intValue = BinaryPrimitives.ReadInt32BigEndian(source);
+                return *((float*)&intValue);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void WriteSingleBigEndian(Span<byte> destination, float value)
+            public static unsafe void WriteSingleBigEndian(Span<byte> destination, float value)
             {
-                if (BitConverter.IsLittleEndian)
-                {
-                    int tmp = BinaryPrimitives.ReverseEndianness(CborHelpers.SingleToInt32Bits(value));
-                    MemoryMarshal.Write(destination, ref tmp);
-                }
-                else
-                {
-                    MemoryMarshal.Write(destination, ref value);
-                }
+                BinaryPrimitives.WriteInt32BigEndian(destination, *((int*)&value));
             }
         }
     }

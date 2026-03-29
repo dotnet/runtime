@@ -20,13 +20,17 @@ namespace System.Reflection
 
         public static void WriteDouble(this byte[] buffer, int start, double value)
         {
+#if NET
+            BinaryPrimitives.WriteDoubleLittleEndian(buffer.AsSpan(start), value);
+#else
             WriteUInt64(buffer, start, unchecked((ulong)BitConverter.DoubleToInt64Bits(value)));
+#endif
         }
 
         public static void WriteSingle(this byte[] buffer, int start, float value)
         {
 #if NET
-            WriteUInt32(buffer, start, BitConverter.SingleToUInt32Bits(value));
+            BinaryPrimitives.WriteSingleLittleEndian(buffer.AsSpan(start), value);
 #else
             unsafe
             {
