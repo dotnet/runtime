@@ -3310,7 +3310,7 @@ namespace System.Numerics
 
             // Extract 32-bit words from nuint limbs using arithmetic (endianness-safe).
             // Word 0 = low 32 bits of limb 0, word 1 = high 32 bits of limb 0 (on 64-bit), etc.
-            // Allocate one extra word up front for the possible sign-extension word (avoids Array.Resize).
+            // Allocate one extra word up front for the possible sign-extension word.
             uint[] zw = new uint[wordCount + 1];
             ExtractWords(bits, zw.AsSpan(0, wordCount));
 
