@@ -44,7 +44,7 @@ namespace System
                 }
                 else
                 {
-                    // slower path for BigEndian: ToByteArray always returns LE layout
+                    // slower path for BigEndian
                     self.ToByteArray().AsSpan().CopyTo(destination);
                 }
 
