@@ -52,6 +52,10 @@
 #include <stdio.h>
 #endif
 #include <unistd.h>
+#if defined(TARGET_SUNOS) && HAVE_GETDOMAINNAME
+// SunOS has getdomainname in libnsl but no header declaration
+extern int getdomainname(char *name, int namelen);
+#endif
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
@@ -204,6 +208,11 @@ static bool TryConvertAddressFamilyPlatformToPal(sa_family_t platformAddressFami
             *palAddressFamily = AddressFamily_AF_PACKET;
             return true;
 #endif
+#ifdef AF_LINK
+        case AF_LINK:
+            *palAddressFamily = AddressFamily_AF_LINK;
+            return true;
+#endif
 #ifdef AF_CAN
         case AF_CAN:
             *palAddressFamily = AddressFamily_AF_CAN;
@@ -239,6 +248,11 @@ static bool TryConvertAddressFamilyPalToPlatform(int32_t palAddressFamily, sa_fa
 #ifdef AF_PACKET
         case AddressFamily_AF_PACKET:
             *platformAddressFamily = AF_PACKET;
+            return true;
+#endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
+            *platformAddressFamily = AF_LINK;
             return true;
 #endif
 #ifdef AF_CAN
@@ -2546,6 +2560,11 @@ static bool TryConvertProtocolTypePalToPlatform(int32_t palAddressFamily, int32_
             *platformProtocolType = palProtocolType;
             return true;
 #endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
+            *platformProtocolType = palProtocolType;
+            return true;
+#endif
 #if HAVE_LINUX_CAN_H
         case AddressFamily_AF_CAN:
             switch (palProtocolType)
@@ -2682,6 +2701,11 @@ static bool TryConvertProtocolTypePlatformToPal(int32_t palAddressFamily, int pl
 #ifdef AF_PACKET
         case AddressFamily_AF_PACKET:
             // protocol is the IEEE 802.3 protocol number in network order.
+            *palProtocolType = platformProtocolType;
+            return true;
+#endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
             *palProtocolType = platformProtocolType;
             return true;
 #endif
@@ -3009,11 +3033,27 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
     }
     else
     {
-       readSetPtr = readFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       writeSetPtr = writeFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       errorSetPtr = errorFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-    }
+        // Since this code later calls select(maxFd + 1, ...) and sets bits for file descriptor values up to maxFd,
+        // the allocation needs to cover maxFd + 1 bits.
+        if (maxFd > INT_MAX - 1)
+            return Error_EINVAL;
 
+        size_t fdSetCount = __DARWIN_howmany(maxFd + 1, __DARWIN_NFDBITS);
+        size_t fdSetSize = sizeof(((fd_set*)0)->fds_bits[0]);
+        readSetPtr = readFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+        writeSetPtr = writeFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+        errorSetPtr = errorFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+
+        if ((readFdsCount != 0 && readSetPtr == NULL)
+            || (writeFdsCount != 0 && writeSetPtr == NULL)
+            || (errorFdsCount != 0 && errorSetPtr == NULL))
+        {
+            free(readSetPtr);
+            free(writeSetPtr);
+            free(errorSetPtr);
+            return Error_ENOMEM;
+        }
+    }
 
     struct timeval timeout;
     timeout.tv_sec = microseconds / 1000000;
@@ -3040,6 +3080,12 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
 
     if (*triggered < 0)
     {
+        if (maxFd >= FD_SETSIZE)
+        {
+            free(readSetPtr);
+            free(writeSetPtr);
+            free(errorSetPtr);
+        }
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 

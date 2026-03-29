@@ -1190,6 +1190,48 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<float> ConvertToSingleOddRoundToOdd(Vector<float> even, Vector<double> value) { throw new PlatformNotSupportedException(); }
 
+
+        // Count matching elements in vector
+
+        /// <summary>
+        /// svuint32_t svhistcnt[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   HISTCNT Zresult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> CountMatchingElements(Vector<int> mask, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svhistcnt[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   HISTCNT Zresult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> CountMatchingElements(Vector<long> mask, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svhistcnt[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   HISTCNT Zresult.S, Pg/Z, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> CountMatchingElements(Vector<uint> mask, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svhistcnt[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   HISTCNT Zresult.D, Pg/Z, Zop1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> CountMatchingElements(Vector<ulong> mask, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        // Count matching elements in vector segments
+
+        /// <summary>
+        /// svuint8_t svhistseg[_s8](svint8_t op1, svint8_t op2)
+        ///   HISTSEG Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> CountMatchingElementsIn128BitSegments(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint8_t svhistseg[_u8](svuint8_t op1, svuint8_t op2)
+        ///   HISTSEG Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> CountMatchingElementsIn128BitSegments(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+
         // Complex dot product
 
         /// <summary>
@@ -1437,6 +1479,584 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> FusedAddRoundedHalving(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
 
+        // Load 8-bit data and zero-extend, non-temporal
+
+        // <summary>
+        // svint32_t svldnt1ub_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LDNT1B Zresult.S, Pg/Z, [Zbases.S, XZR]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorByteZeroExtendNonTemporal(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svldnt1ub_gather_[u32]offset_s32(svbool_t pg, const uint8_t *base, svuint32_t offsets)
+        ///   LDNT1B Zresult.S, Pg/Z, [Zoffsets.S, Xbase]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorByteZeroExtendNonTemporal(Vector<int> mask, byte* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1ub_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1B Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorByteZeroExtendNonTemporal(Vector<long> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1ub_gather_[s64]offset_s64(svbool_t pg, const uint8_t *base, svint64_t offsets)
+        ///   LDNT1B Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorByteZeroExtendNonTemporal(Vector<long> mask, byte* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1ub_gather_[u64]offset_s64(svbool_t pg, const uint8_t *base, svuint64_t offsets)
+        ///   LDNT1B Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorByteZeroExtendNonTemporal(Vector<long> mask, byte* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+        // <summary>
+        // svuint32_t svldnt1ub_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LDNT1B Zresult.S, Pg/Z, [Zbases.S, XZR]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorByteZeroExtendNonTemporal(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldnt1ub_gather_[u32]offset_u32(svbool_t pg, const uint8_t *base, svuint32_t offsets)
+        ///   LDNT1B Zresult.S, Pg/Z, [Zoffsets.S, Xbase]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorByteZeroExtendNonTemporal(Vector<uint> mask, byte* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1ub_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1B Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorByteZeroExtendNonTemporal(Vector<ulong> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1ub_gather_[s64]offset_u64(svbool_t pg, const uint8_t *base, svint64_t offsets)
+        ///   LDNT1B Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorByteZeroExtendNonTemporal(Vector<ulong> mask, byte* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1ub_gather_[u64]offset_u64(svbool_t pg, const uint8_t *base, svuint64_t offsets)
+        ///   LDNT1B Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorByteZeroExtendNonTemporal(Vector<ulong> mask, byte* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+
+        // Load 16-bit data and sign-extend, non-temporal
+
+        // <summary>
+        // svint32_t svldnt1sh_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LDNT1SH Zresult.S, Pg/Z, [Zbases.S, XZR]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorInt16SignExtendNonTemporal(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1sh_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1SH Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt16SignExtendNonTemporal(Vector<long> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1sh_gather_[s64]index_s64(svbool_t pg, const int16_t *base, svint64_t indices)
+        ///   LDNT1SH Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt16SignExtendNonTemporal(Vector<long> mask, short* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1sh_gather_[u64]index_s64(svbool_t pg, const int16_t *base, svuint64_t indices)
+        ///   LDNT1SH Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt16SignExtendNonTemporal(Vector<long> mask, short* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        // <summary>
+        // svuint32_t svldnt1sh_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LDNT1SH Zresult.S, Pg/Z, [Zbases.S, XZR]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorInt16SignExtendNonTemporal(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sh_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1SH Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt16SignExtendNonTemporal(Vector<ulong> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sh_gather_[s64]index_u64(svbool_t pg, const int16_t *base, svint64_t indices)
+        ///   LDNT1SH Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt16SignExtendNonTemporal(Vector<ulong> mask, short* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sh_gather_[u64]index_u64(svbool_t pg, const int16_t *base, svuint64_t indices)
+        ///   LDNT1SH Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt16SignExtendNonTemporal(Vector<ulong> mask, short* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+
+        // Load 16-bit data and sign-extend, non-temporal
+
+        /// <summary>
+        /// svint32_t svldnt1sh_gather_[u32]offset_s32(svbool_t pg, const int16_t *base, svuint32_t offsets)
+        ///   LDNT1SH Zresult.S, Pg/Z, [Zoffsets.S, Xbase]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorInt16WithByteOffsetsSignExtendNonTemporal(Vector<int> mask, short* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1sh_gather_[s64]offset_s64(svbool_t pg, const int16_t *base, svint64_t offsets)
+        ///   LDNT1SH Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt16WithByteOffsetsSignExtendNonTemporal(Vector<long> mask, short* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1sh_gather_[u64]offset_s64(svbool_t pg, const int16_t *base, svuint64_t offsets)
+        ///   LDNT1SH Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt16WithByteOffsetsSignExtendNonTemporal(Vector<long> mask, short* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldnt1sh_gather_[u32]offset_u32(svbool_t pg, const int16_t *base, svuint32_t offsets)
+        ///   LDNT1SH Zresult.S, Pg/Z, [Zoffsets.S, Xbase]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorInt16WithByteOffsetsSignExtendNonTemporal(Vector<uint> mask, short* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sh_gather_[s64]offset_u64(svbool_t pg, const int16_t *base, svint64_t offsets)
+        ///   LDNT1SH Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt16WithByteOffsetsSignExtendNonTemporal(Vector<ulong> mask, short* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sh_gather_[u64]offset_u64(svbool_t pg, const int16_t *base, svuint64_t offsets)
+        ///   LDNT1SH Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt16WithByteOffsetsSignExtendNonTemporal(Vector<ulong> mask, short* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+
+        // Load 32-bit data and sign-extend, non-temporal
+
+        /// <summary>
+        /// svint64_t svldnt1sw_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1SW Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt32SignExtendNonTemporal(Vector<long> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1sw_gather_[s64]index_s64(svbool_t pg, const int32_t *base, svint64_t indices)
+        ///   LDNT1SW Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt32SignExtendNonTemporal(Vector<long> mask, int* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1sw_gather_[u64]index_s64(svbool_t pg, const int32_t *base, svuint64_t indices)
+        ///   LDNT1SW Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt32SignExtendNonTemporal(Vector<long> mask, int* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sw_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1SW Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt32SignExtendNonTemporal(Vector<ulong> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sw_gather_[s64]index_u64(svbool_t pg, const int32_t *base, svint64_t indices)
+        ///   LDNT1SW Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt32SignExtendNonTemporal(Vector<ulong> mask, int* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sw_gather_[u64]index_u64(svbool_t pg, const int32_t *base, svuint64_t indices)
+        ///   LDNT1SW Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt32SignExtendNonTemporal(Vector<ulong> mask, int* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+
+        // Load 32-bit data and sign-extend, non-temporal
+
+        /// <summary>
+        /// svint64_t svldnt1sw_gather_[s64]offset_s64(svbool_t pg, const int32_t *base, svint64_t offsets)
+        ///   LDNT1SW Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt32WithByteOffsetsSignExtendNonTemporal(Vector<long> mask, int* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1sw_gather_[u64]offset_s64(svbool_t pg, const int32_t *base, svuint64_t offsets)
+        ///   LDNT1SW Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt32WithByteOffsetsSignExtendNonTemporal(Vector<long> mask, int* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sw_gather_[s64]offset_u64(svbool_t pg, const int32_t *base, svint64_t offsets)
+        ///   LDNT1SW Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt32WithByteOffsetsSignExtendNonTemporal(Vector<ulong> mask, int* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sw_gather_[u64]offset_u64(svbool_t pg, const int32_t *base, svuint64_t offsets)
+        ///   LDNT1SW Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt32WithByteOffsetsSignExtendNonTemporal(Vector<ulong> mask, int* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+
+        // Unextended load, non-temporal
+
+        /// <summary>
+        /// svfloat64_t svldnt1_gather[_u64base]_f64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<double> GatherVectorNonTemporal(Vector<double> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svldnt1_gather_[s64]index[_f64](svbool_t pg, const float64_t *base, svint64_t indices)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<double> GatherVectorNonTemporal(Vector<double> mask, double* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svldnt1_gather_[u64]index[_f64](svbool_t pg, const float64_t *base, svuint64_t indices)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<double> GatherVectorNonTemporal(Vector<double> mask, double* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        // <summary>
+        // svint32_t svldnt1_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LDNT1W Zresult.S, Pg/Z, [Zbases.S, XZR]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorNonTemporal(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorNonTemporal(Vector<long> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1_gather_[s64]index[_s64](svbool_t pg, const int64_t *base, svint64_t indices)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorNonTemporal(Vector<long> mask, long* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1_gather_[u64]index[_s64](svbool_t pg, const int64_t *base, svuint64_t indices)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorNonTemporal(Vector<long> mask, long* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        // <summary>
+        // svfloat32_t svldnt1_gather[_u32base]_f32(svbool_t pg, svuint32_t bases)
+        //   LDNT1W Zresult.S, Pg/Z, [Zbases.S, XZR]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<float> GatherVectorNonTemporal(Vector<float> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        // <summary>
+        // svuint32_t svldnt1_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LDNT1W Zresult.S, Pg/Z, [Zbases.S, XZR]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorNonTemporal(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorNonTemporal(Vector<ulong> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1_gather_[s64]index[_u64](svbool_t pg, const uint64_t *base, svint64_t indices)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorNonTemporal(Vector<ulong> mask, ulong* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1_gather_[u64]index[_u64](svbool_t pg, const uint64_t *base, svuint64_t indices)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorNonTemporal(Vector<ulong> mask, ulong* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svldnt1_gather_[s64]offset[_f64](svbool_t pg, const float64_t *base, svint64_t offsets)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<double> GatherVectorWithByteOffsetsNonTemporal(Vector<double> mask, double* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svldnt1_gather_[u64]offset[_f64](svbool_t pg, const float64_t *base, svuint64_t offsets)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<double> GatherVectorWithByteOffsetsNonTemporal(Vector<double> mask, double* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svldnt1_gather_[u32]offset[_s32](svbool_t pg, const int32_t *base, svuint32_t offsets)
+        ///   LDNT1W Zresult.S, Pg/Z, [Zoffsets.S, Xbase]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorWithByteOffsetsNonTemporal(Vector<int> mask, int* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1_gather_[s64]offset[_s64](svbool_t pg, const int64_t *base, svint64_t offsets)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorWithByteOffsetsNonTemporal(Vector<long> mask, long* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1_gather_[u64]offset[_s64](svbool_t pg, const int64_t *base, svuint64_t offsets)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorWithByteOffsetsNonTemporal(Vector<long> mask, long* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svldnt1_gather_[u32]offset[_f32](svbool_t pg, const float32_t *base, svuint32_t offsets)
+        ///   LDNT1W Zresult.S, Pg/Z, [Zoffsets.S, Xbase]
+        /// </summary>
+        public static unsafe Vector<float> GatherVectorWithByteOffsetsNonTemporal(Vector<float> mask, float* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldnt1_gather_[u32]offset[_u32](svbool_t pg, const uint32_t *base, svuint32_t offsets)
+        ///   LDNT1W Zresult.S, Pg/Z, [Zoffsets.S, Xbase]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorWithByteOffsetsNonTemporal(Vector<uint> mask, uint* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1_gather_[s64]offset[_u64](svbool_t pg, const uint64_t *base, svint64_t offsets)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorWithByteOffsetsNonTemporal(Vector<ulong> mask, ulong* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1_gather_[u64]offset[_u64](svbool_t pg, const uint64_t *base, svuint64_t offsets)
+        ///   LDNT1D Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorWithByteOffsetsNonTemporal(Vector<ulong> mask, ulong* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+
+        // Load 8-bit data and sign-extend, non-temporal
+
+        // <summary>
+        // svint32_t svldnt1sb_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LDNT1SB Zresult.S, Pg/Z, [Zbases.S, XZR]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorSByteSignExtendNonTemporal(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svldnt1sb_gather_[u32]offset_s32(svbool_t pg, const int8_t *base, svuint32_t offsets)
+        ///   LDNT1SB Zresult.S, Pg/Z, [Zoffsets.S, Xbase]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorSByteSignExtendNonTemporal(Vector<int> mask, sbyte* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1sb_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1SB Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorSByteSignExtendNonTemporal(Vector<long> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1sb_gather_[s64]offset_s64(svbool_t pg, const int8_t *base, svint64_t offsets)
+        ///   LDNT1SB Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorSByteSignExtendNonTemporal(Vector<long> mask, sbyte* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1sb_gather_[u64]offset_s64(svbool_t pg, const int8_t *base, svuint64_t offsets)
+        ///   LDNT1SB Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorSByteSignExtendNonTemporal(Vector<long> mask, sbyte* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+        // <summary>
+        // svuint32_t svldnt1sb_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LDNT1SB Zresult.S, Pg/Z, [Zbases.S, XZR]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorSByteSignExtendNonTemporal(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldnt1sb_gather_[u32]offset_u32(svbool_t pg, const int8_t *base, svuint32_t offsets)
+        ///   LDNT1SB Zresult.S, Pg/Z, [Zoffsets.S, Xbase]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorSByteSignExtendNonTemporal(Vector<uint> mask, sbyte* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sb_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1SB Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorSByteSignExtendNonTemporal(Vector<ulong> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sb_gather_[s64]offset_u64(svbool_t pg, const int8_t *base, svint64_t offsets)
+        ///   LDNT1SB Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorSByteSignExtendNonTemporal(Vector<ulong> mask, sbyte* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1sb_gather_[u64]offset_u64(svbool_t pg, const int8_t *base, svuint64_t offsets)
+        ///   LDNT1SB Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorSByteSignExtendNonTemporal(Vector<ulong> mask, sbyte* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+
+        // Load 16-bit data and zero-extend, non-temporal
+
+        /// <summary>
+        /// svint32_t svldnt1uh_gather_[u32]offset_s32(svbool_t pg, const uint16_t *base, svuint32_t offsets)
+        ///   LDNT1H Zresult.S, Pg/Z, [Zoffsets.S, Xbase]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal(Vector<int> mask, ushort* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1uh_gather_[s64]offset_s64(svbool_t pg, const uint16_t *base, svint64_t offsets)
+        ///   LDNT1H Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal(Vector<long> mask, ushort* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1uh_gather_[u64]offset_s64(svbool_t pg, const uint16_t *base, svuint64_t offsets)
+        ///   LDNT1H Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal(Vector<long> mask, ushort* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldnt1uh_gather_[u32]offset_u32(svbool_t pg, const uint16_t *base, svuint32_t offsets)
+        ///   LDNT1H Zresult.S, Pg/Z, [Zoffsets.S, Xbase]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal(Vector<uint> mask, ushort* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1uh_gather_[s64]offset_u64(svbool_t pg, const uint16_t *base, svint64_t offsets)
+        ///   LDNT1H Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal(Vector<ulong> mask, ushort* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1uh_gather_[u64]offset_u64(svbool_t pg, const uint16_t *base, svuint64_t offsets)
+        ///   LDNT1H Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal(Vector<ulong> mask, ushort* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+
+        // Load 16-bit data and zero-extend, non-temporal
+
+        // <summary>
+        // svint32_t svldnt1uh_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LDNT1H Zresult.S, Pg/Z, [Zbases.S, XZR]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorUInt16ZeroExtendNonTemporal(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1uh_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1H Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt16ZeroExtendNonTemporal(Vector<long> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1uh_gather_[s64]index_s64(svbool_t pg, const uint16_t *base, svint64_t indices)
+        ///   LDNT1H Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt16ZeroExtendNonTemporal(Vector<long> mask, ushort* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1uh_gather_[u64]index_s64(svbool_t pg, const uint16_t *base, svuint64_t indices)
+        ///   LDNT1H Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt16ZeroExtendNonTemporal(Vector<long> mask, ushort* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        // <summary>
+        // svuint32_t svldnt1uh_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LDNT1H Zresult.S, Pg/Z, [Zbases.S, XZR]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorUInt16ZeroExtendNonTemporal(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1uh_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1H Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt16ZeroExtendNonTemporal(Vector<ulong> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1uh_gather_[s64]index_u64(svbool_t pg, const uint16_t *base, svint64_t indices)
+        ///   LDNT1H Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt16ZeroExtendNonTemporal(Vector<ulong> mask, ushort* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1uh_gather_[u64]index_u64(svbool_t pg, const uint16_t *base, svuint64_t indices)
+        ///   LDNT1H Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt16ZeroExtendNonTemporal(Vector<ulong> mask, ushort* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+
+        // Load 32-bit data and zero-extend, non-temporal
+
+        /// <summary>
+        /// svint64_t svldnt1uw_gather_[s64]offset_s64(svbool_t pg, const uint32_t *base, svint64_t offsets)
+        ///   LDNT1W Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal(Vector<long> mask, uint* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1uw_gather_[u64]offset_s64(svbool_t pg, const uint32_t *base, svuint64_t offsets)
+        ///   LDNT1W Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal(Vector<long> mask, uint* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1uw_gather_[s64]offset_u64(svbool_t pg, const uint32_t *base, svint64_t offsets)
+        ///   LDNT1W Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal(Vector<ulong> mask, uint* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1uw_gather_[u64]offset_u64(svbool_t pg, const uint32_t *base, svuint64_t offsets)
+        ///   LDNT1W Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal(Vector<ulong> mask, uint* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+
+        // Load 32-bit data and zero-extend, non-temporal
+
+        /// <summary>
+        /// svint64_t svldnt1uw_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1W Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt32ZeroExtendNonTemporal(Vector<long> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1uw_gather_[s64]index_s64(svbool_t pg, const uint32_t *base, svint64_t indices)
+        ///   LDNT1W Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt32ZeroExtendNonTemporal(Vector<long> mask, uint* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldnt1uw_gather_[u64]index_s64(svbool_t pg, const uint32_t *base, svuint64_t indices)
+        ///   LDNT1W Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt32ZeroExtendNonTemporal(Vector<long> mask, uint* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1uw_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LDNT1W Zresult.D, Pg/Z, [Zbases.D, XZR]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt32ZeroExtendNonTemporal(Vector<ulong> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1uw_gather_[s64]index_u64(svbool_t pg, const uint32_t *base, svint64_t indices)
+        ///   LDNT1W Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt32ZeroExtendNonTemporal(Vector<ulong> mask, uint* address, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldnt1uw_gather_[u64]index_u64(svbool_t pg, const uint32_t *base, svuint64_t indices)
+        ///   LDNT1W Zresult.D, Pg/Z, [Zoffsets.D, Xbase]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt32ZeroExtendNonTemporal(Vector<ulong> mask, uint* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+
         /// Interleaving Xor
 
         /// <summary>
@@ -1554,6 +2174,32 @@ namespace System.Runtime.Intrinsics.Arm
         ///   FLOGB Ztied.D, Pg/M, Ztied.D
         /// </summary>
         public static Vector<long> Log2(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        // Detect any matching elements
+
+        /// <summary>
+        /// svbool_t svmatch[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   MATCH Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> Match(Vector<byte> mask, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svmatch[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   MATCH Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> Match(Vector<short> mask, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svmatch[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   MATCH Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> Match(Vector<sbyte> mask, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svmatch[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   MATCH Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> Match(Vector<ushort> mask, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
 
         // Maximum number pairwise
 
@@ -2388,6 +3034,33 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> MultiplyBySelectedScalarWideningOdd(Vector<uint> left, Vector<uint> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
 
 
+        // Detect no matching elements
+
+        /// <summary>
+        /// svbool_t svnmatch[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   NMATCH Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> NoMatch(Vector<byte> mask, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svnmatch[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   NMATCH Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> NoMatch(Vector<short> mask, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svnmatch[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   NMATCH Presult.B, Pg/Z, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> NoMatch(Vector<sbyte> mask, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svnmatch[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   NMATCH Presult.H, Pg/Z, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> NoMatch(Vector<ushort> mask, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+
         // Polynomial multiply
 
         /// <summary>
@@ -2928,24 +3601,28 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1h_scatter_[s64]index[_s64](svbool_t pg, int16_t *base, svint64_t indices, svint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitNarrowingNonTemporal(Vector<long> mask, short* address, Vector<long> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[u64]index[_s64](svbool_t pg, int16_t *base, svuint64_t indices, svint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitNarrowingNonTemporal(Vector<long> mask, short* address, Vector<ulong> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[s64]index[_u64](svbool_t pg, uint16_t *base, svint64_t indices, svuint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitNarrowingNonTemporal(Vector<ulong> mask, ushort* address, Vector<long> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[u64]index[_u64](svbool_t pg, uint16_t *base, svuint64_t indices, svuint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitNarrowingNonTemporal(Vector<ulong> mask, ushort* address, Vector<ulong> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
@@ -2955,36 +3632,42 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1h_scatter_[u32]offset[_s32](svbool_t pg, int16_t *base, svuint32_t offsets, svint32_t data)
         ///   STNT1H Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<int> mask, short* address, Vector<uint> offsets, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[s64]offset[_s64](svbool_t pg, int16_t *base, svint64_t offsets, svint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, short* address, Vector<long> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[u64]offset[_s64](svbool_t pg, int16_t *base, svuint64_t offsets, svint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, short* address, Vector<ulong> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[u32]offset[_u32](svbool_t pg, uint16_t *base, svuint32_t offsets, svuint32_t data)
         ///   STNT1H Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<uint> mask, ushort* address, Vector<uint> offsets, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[s64]offset[_u64](svbool_t pg, uint16_t *base, svint64_t offsets, svuint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, ushort* address, Vector<long> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1h_scatter_[u64]offset[_u64](svbool_t pg, uint16_t *base, svuint64_t offsets, svuint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, ushort* address, Vector<ulong> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
@@ -3006,24 +3689,28 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1w_scatter_[s64]index[_s64](svbool_t pg, int32_t *base, svint64_t indices, svint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitNarrowingNonTemporal(Vector<long> mask, int* address, Vector<long> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1w_scatter_[u64]index[_s64](svbool_t pg, int32_t *base, svuint64_t indices, svint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitNarrowingNonTemporal(Vector<long> mask, int* address, Vector<ulong> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1w_scatter_[s64]index[_u64](svbool_t pg, uint32_t *base, svint64_t indices, svuint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitNarrowingNonTemporal(Vector<ulong> mask, uint* address, Vector<long> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1w_scatter_[u64]index[_u64](svbool_t pg, uint32_t *base, svuint64_t indices, svuint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitNarrowingNonTemporal(Vector<ulong> mask, uint* address, Vector<ulong> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
@@ -3033,24 +3720,28 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1w_scatter_[s64]offset[_s64](svbool_t pg, int32_t *base, svint64_t offsets, svint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, int* address, Vector<long> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1w_scatter_[u64]offset[_s64](svbool_t pg, int32_t *base, svuint64_t offsets, svint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, int* address, Vector<ulong> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1w_scatter_[s64]offset[_u64](svbool_t pg, uint32_t *base, svint64_t offsets, svuint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, uint* address, Vector<long> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1w_scatter_[u64]offset[_u64](svbool_t pg, uint32_t *base, svuint64_t offsets, svuint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, uint* address, Vector<ulong> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
@@ -3089,36 +3780,42 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1b_scatter_[u32]offset[_s32](svbool_t pg, int8_t *base, svuint32_t offsets, svint32_t data)
         ///   STNT1B Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<int> mask, sbyte* address, Vector<uint> offsets, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1b_scatter_[s64]offset[_s64](svbool_t pg, int8_t *base, svint64_t offsets, svint64_t data)
         ///   STNT1B Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, sbyte* address, Vector<long> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1b_scatter_[u64]offset[_s64](svbool_t pg, int8_t *base, svuint64_t offsets, svint64_t data)
         ///   STNT1B Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, sbyte* address, Vector<ulong> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1b_scatter_[u32]offset[_u32](svbool_t pg, uint8_t *base, svuint32_t offsets, svuint32_t data)
         ///   STNT1B Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<uint> mask, byte* address, Vector<uint> offsets, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1b_scatter_[s64]offset[_u64](svbool_t pg, uint8_t *base, svint64_t offsets, svuint64_t data)
         ///   STNT1B Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, byte* address, Vector<long> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1b_scatter_[u64]offset[_u64](svbool_t pg, uint8_t *base, svuint64_t offsets, svuint64_t data)
         ///   STNT1B Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, byte* address, Vector<ulong> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
@@ -3167,36 +3864,42 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1_scatter_[s64]index[_f64](svbool_t pg, float64_t *base, svint64_t indices, svfloat64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<double> mask, double* address, Vector<long> indices, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u64]index[_f64](svbool_t pg, float64_t *base, svuint64_t indices, svfloat64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<double> mask, double* address, Vector<ulong> indices, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[s64]index[_s64](svbool_t pg, int64_t *base, svint64_t indices, svint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<long> mask, long* address, Vector<long> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u64]index[_s64](svbool_t pg, int64_t *base, svuint64_t indices, svint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<long> mask, long* address, Vector<ulong> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[s64]index[_u64](svbool_t pg, uint64_t *base, svint64_t indices, svuint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<ulong> mask, ulong* address, Vector<long> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u64]index[_u64](svbool_t pg, uint64_t *base, svuint64_t indices, svuint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<ulong> mask, ulong* address, Vector<ulong> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
@@ -3206,54 +3909,63 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1_scatter_[s64]offset[_f64](svbool_t pg, float64_t *base, svint64_t offsets, svfloat64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<double> mask, double* address, Vector<long> offsets, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u64]offset[_f64](svbool_t pg, float64_t *base, svuint64_t offsets, svfloat64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<double> mask, double* address, Vector<ulong> offsets, Vector<double> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u32]offset[_s32](svbool_t pg, int32_t *base, svuint32_t offsets, svint32_t data)
         ///   STNT1W Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<int> mask, int* address, Vector<uint> offsets, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[s64]offset[_s64](svbool_t pg, int64_t *base, svint64_t offsets, svint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<long> mask, long* address, Vector<long> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u64]offset[_s64](svbool_t pg, int64_t *base, svuint64_t offsets, svint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<long> mask, long* address, Vector<ulong> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u32]offset[_f32](svbool_t pg, float32_t *base, svuint32_t offsets, svfloat32_t data)
         ///   STNT1W Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<float> mask, float* address, Vector<uint> offsets, Vector<float> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u32]offset[_u32](svbool_t pg, uint32_t *base, svuint32_t offsets, svuint32_t data)
         ///   STNT1W Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<uint> mask, uint* address, Vector<uint> offsets, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[s64]offset[_u64](svbool_t pg, uint64_t *base, svint64_t offsets, svuint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<ulong> mask, ulong* address, Vector<long> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void svstnt1_scatter_[u64]offset[_u64](svbool_t pg, uint64_t *base, svuint64_t offsets, svuint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<ulong> mask, ulong* address, Vector<ulong> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 

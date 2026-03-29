@@ -72,14 +72,15 @@ internal static class UnwindDataSize
                 uint unwindWords;
                 uint epilogScopes;
 
-                // If both Epilog Count and Code Word is not zero
-                // Info of Epilog and Unwind scopes are given by 1 word header
-                // Otherwise this info is given by a 2 word header
-                if ((xdata0 >> 27) != 0)
+                unwindWords = (xdata0 >> 27) & 0x1f;
+                epilogScopes = (xdata0 >> 22) & 0x1f;
+
+                // If either Epilog Count or Code Word is non-zero,
+                // epilog/unwind scope info is in the 1-word header.
+                // Otherwise this info is given by a 2-word header.
+                if (unwindWords != 0 || epilogScopes != 0)
                 {
                     size = 4;
-                    epilogScopes = (xdata0 >> 22) & 0x1f;
-                    unwindWords = (xdata0 >> 27) & 0x1f;
                 }
                 else
                 {

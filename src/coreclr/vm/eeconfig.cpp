@@ -233,8 +233,6 @@ HRESULT EEConfig::Init()
     fGDBJitEmitDebugFrame = false;
 #endif
 
-    runtimeAsync = false;
-
     return S_OK;
 }
 
@@ -789,11 +787,35 @@ HRESULT EEConfig::sync()
         }
     #endif
 
+#ifdef FEATURE_PGO
+        if (fTieredPGO)
+        {
+            // Initial tier for R2R is always just OptimizationTier0
+            // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
+            // OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
+            // OptimizationTier0Instrumented - instrument all ILOnly code
+            if (g_pConfig->TieredPGO_InstrumentOnlyHotCode())
+            {
+                tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0;
+            }
+            else
+            {
+                tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0Instrumented;
+            }
+        }
+        else
+#endif
+        {
+            tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0;
+        }
+
         if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
         {
             ETW::CompilationLog::TieredCompilation::Runtime::SendSettings();
         }
     }
+#else // !FEATURE_TIERED_COMPILATION
+    tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTierOptimized;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -823,8 +845,6 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
     fUseCachedInterfaceDispatch = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseCachedInterfaceDispatch) != 0;
 #endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
-
-    runtimeAsync = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RuntimeAsync) != 0;
 
     return hr;
 }

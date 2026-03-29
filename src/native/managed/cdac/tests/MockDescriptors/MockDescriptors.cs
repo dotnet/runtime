@@ -61,16 +61,6 @@ internal partial class MockDescriptors
         ]
     };
 
-    private static readonly TypeFields ArrayClassFields = new TypeFields()
-    {
-        DataType = DataType.ArrayClass,
-        Fields =
-        [
-            new(nameof(Data.ArrayClass.Rank), DataType.uint8),
-        ],
-        BaseTypeFields = EEClassFields
-    };
-
     private static readonly TypeFields ObjectFields = new TypeFields()
     {
         DataType = DataType.Object,
@@ -78,6 +68,11 @@ internal partial class MockDescriptors
         [
             new("m_pMethTab", DataType.pointer),
         ]
+    };
+
+    private static readonly TypeFields ObjectHeaderFields = new TypeFields()
+    {
+        DataType = DataType.ObjectHeader,
     };
 
     private static readonly TypeFields StringFields = new TypeFields()
@@ -101,12 +96,23 @@ internal partial class MockDescriptors
         BaseTypeFields = ObjectFields
     };
 
+    private static readonly TypeFields SyncBlockCacheFields = new TypeFields()
+    {
+        DataType = DataType.SyncBlockCache,
+        Fields =
+        [
+            new(nameof(Data.SyncBlockCache.FreeSyncTableIndex), DataType.uint32),
+            new(nameof(Data.SyncBlockCache.CleanupBlockList), DataType.pointer),
+        ]
+    };
+
     private static readonly TypeFields SyncTableEntryFields = new TypeFields()
     {
         DataType = DataType.SyncTableEntry,
         Fields =
         [
             new(nameof(Data.SyncTableEntry.SyncBlock), DataType.pointer),
+            new(nameof(Data.SyncTableEntry.Object), DataType.pointer),
         ]
     };
 
@@ -116,6 +122,10 @@ internal partial class MockDescriptors
         Fields =
         [
             new(nameof(Data.SyncBlock.InteropInfo), DataType.pointer),
+            new(nameof(Data.SyncBlock.Lock), DataType.pointer),
+            new(nameof(Data.SyncBlock.ThinLock), DataType.uint32),
+            new(nameof(Data.SyncBlock.LinkNext), DataType.pointer),
+            new(nameof(Data.SyncBlock.HashCode), DataType.uint32),
         ]
     };
 
@@ -126,6 +136,7 @@ internal partial class MockDescriptors
         [
             new(nameof(Data.InteropSyncBlockInfo.RCW), DataType.pointer),
             new(nameof(Data.InteropSyncBlockInfo.CCW), DataType.pointer),
+            new(nameof(Data.InteropSyncBlockInfo.CCF), DataType.pointer),
         ]
     };
 
@@ -140,6 +151,7 @@ internal partial class MockDescriptors
             new(nameof(Data.Module.Flags), DataType.uint32),
             new(nameof(Data.Module.LoaderAllocator), DataType.pointer),
             new(nameof(Data.Module.DynamicMetadata), DataType.pointer),
+            new(nameof(Data.Module.SimpleName), DataType.pointer),
             new(nameof(Data.Module.Path), DataType.pointer),
             new(nameof(Data.Module.FileName), DataType.pointer),
             new(nameof(Data.Module.ReadyToRunInfo), DataType.pointer),
@@ -234,12 +246,37 @@ internal partial class MockDescriptors
         Dictionary<DataType, Target.TypeInfo> types = new();
         foreach (var toAdd in typeFields)
         {
-            TargetTestHelpers.LayoutResult layout = GetLayout(helpers, toAdd);
-            types[toAdd.DataType] = new Target.TypeInfo()
+            if (toAdd.DataType == DataType.ObjectHeader)
             {
-                Fields = layout.Fields,
-                Size = layout.Stride,
-            };
+                List<TargetTestHelpers.Field> objectHeaderFields = new();
+                if (helpers.Arch.Is64Bit)
+                    objectHeaderFields.Add(new("Padding", DataType.uint32));
+                objectHeaderFields.Add(new(nameof(Data.ObjectHeader.SyncBlockValue), DataType.uint32));
+                TargetTestHelpers.Field[] fields = objectHeaderFields.ToArray();
+                TypeFields objectHeaderTypeFields = new TypeFields()
+                {
+                    DataType = DataType.ObjectHeader,
+                    Fields = fields,
+                };
+
+                TargetTestHelpers.LayoutResult layout = GetLayout(helpers, objectHeaderTypeFields);
+
+                types[toAdd.DataType] = new Target.TypeInfo()
+                {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+                };
+            }
+            else
+            {
+                TargetTestHelpers.LayoutResult layout = GetLayout(helpers, toAdd);
+                types[toAdd.DataType] = new Target.TypeInfo()
+                {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+                };
+            }
+
         }
         return types;
 

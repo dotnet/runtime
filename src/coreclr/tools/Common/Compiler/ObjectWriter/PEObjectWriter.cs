@@ -846,9 +846,10 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            // Align the output file size with the image (including trailing padding for section and file alignment).
-            Debug.Assert(outputFileStream.Position <= sizeOfImage);
-            outputFileStream.SetLength(sizeOfImage);
+            // Ensure that the final file size is aligned to file alignment.
+            long paddedSize = AlignmentHelper.AlignUp((int)outputFileStream.Position, (int)_peFileAlignment);
+
+            outputFileStream.SetLength(paddedSize);
         }
 
         private void PopulateDataDirectoryForWellKnownSymbolIfPresent(OptionalHeaderDataDirectories dataDirs, ImageDirectoryEntry directory, SortableDependencyNode.ObjectNodeOrder wellKnownSymbol)
@@ -921,30 +922,20 @@ namespace ILCompiler.ObjectWriter
                             break;
                         case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                         {
-                            if (addend != 0)
-                            {
-                                throw new NotSupportedException();
-                            }
+                            long targetAddress = symbolImageOffset + addend;
                             int sourcePageRVA = (int)(relocOffset & ~0xFFF);
-                            long delta = ((long)symbolImageOffset - sourcePageRVA >> 12) & 0x1f_ffff;
+                            long delta = ((targetAddress - sourcePageRVA) >> 12) & 0x1f_ffff;
                             Relocation.WriteValue(reloc.Type, pData, delta);
                             break;
                         }
                         case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                         case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
-                            if (addend != 0)
-                            {
-                                throw new NotSupportedException();
-                            }
-                            Relocation.WriteValue(reloc.Type, pData, symbolImageOffset & 0xfff);
+                            Relocation.WriteValue(reloc.Type, pData, (symbolImageOffset + addend) & 0xfff);
                             break;
                         case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                         {
-                            if (addend != 0)
-                            {
-                                throw new NotSupportedException();
-                            }
-                            long delta = ((long)symbolImageOffset - (long)(relocOffset & ~0xfff) + ((long)(symbolImageOffset & 0x800) << 1));
+                            long targetAddress = symbolImageOffset + addend;
+                            long delta = (targetAddress - (long)(relocOffset & ~0xfff) + ((targetAddress & 0x800) << 1));
                             Relocation.WriteValue(reloc.Type, pData, delta);
                             break;
                         }
@@ -953,11 +944,8 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I:
                         case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S:
                         {
-                            if (addend != 0)
-                            {
-                                throw new NotSupportedException();
-                            }
-                            long delta = (long)symbolImageOffset - (long)relocOffset;
+                            long targetAddress = symbolImageOffset + addend;
+                            long delta = targetAddress - (long)relocOffset;
                             Relocation.WriteValue(reloc.Type, pData, delta);
                             break;
                         }

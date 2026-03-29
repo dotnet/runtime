@@ -3,6 +3,7 @@
 using System;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 interface IGen
 {
@@ -61,7 +62,7 @@ public class Test_thread18
 	
 	}
 	
-	[Fact]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
 	public static int TestEntryPoint()
 	{
 		Gen.ThreadPoolTest<object>();

@@ -15,7 +15,7 @@ using Microsoft.CodeAnalysis.Text;
 using Microsoft.Interop;
 using Xunit;
 
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.CodeAnalysis.Testing.EmptySourceGeneratorProvider, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.CodeAnalysis.Testing.EmptySourceGeneratorProvider, Microsoft.Interop.Analyzers.ComInterfaceGeneratorDiagnosticsAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {

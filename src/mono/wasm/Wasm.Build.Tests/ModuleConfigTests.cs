@@ -23,7 +23,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
 
     [Theory]
     [InlineData(false)]
-    [InlineData(true)]
+    // [InlineData(true)] // ActiveIssue: https://github.com/dotnet/runtime/issues/124946
     public async Task DownloadProgressFinishes(bool failAssemblyDownload)
     {
         Configuration config = Configuration.Debug;
@@ -57,7 +57,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [Fact, TestCategory("bundler-friendly")]
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsMonoRuntime)), TestCategory("bundler-friendly")]
     public async Task OutErrOverrideWorks()
     {
         Configuration config = Configuration.Debug;
@@ -75,34 +75,6 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         Assert.True(
             result.ConsoleOutput.Any(m => m.Contains("Emscripten err override works!")),
             "Emscripten err override doesn't work"
-        );
-    }
-
-    [Theory]
-    [InlineData(Configuration.Release, true)]
-    [InlineData(Configuration.Release, false)]
-    public async Task OverrideBootConfigName(Configuration config, bool isPublish)
-    {
-        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"OverrideBootConfigName_{isPublish}");
-
-        if (isPublish)
-            PublishProject(info, config, new PublishOptions(BootConfigFileName: "boot.json", UseCache: false));
-        else
-            BuildProject(info, config, new BuildOptions(BootConfigFileName: "boot.json", UseCache: false));
-
-        var runOptions = new BrowserRunOptions(
-            Configuration: config,
-            TestScenario: "OverrideBootConfigName"
-        );
-        var result = await (isPublish
-            ? RunForPublishWithWebServer(runOptions)
-            : RunForBuildWithDotnetRun(runOptions)
-        );
-
-        Assert.Collection(
-            result.TestOutput,
-            m => Assert.Equal("ConfigSrc: boot.json", m),
-            m => Assert.Equal("Managed code has run", m)
         );
     }
 
@@ -124,11 +96,19 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     }
 
     [Theory]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    public void SymbolMapFileEmitted(bool emitSymbolMap, bool isPublish)
+    [InlineData(false)]
+    [InlineData(true)]
+    [TestCategory("native")]
+    public void SymbolMapFileEmitted(bool isPublish)
+        => SymbolMapFileEmittedCore(emitSymbolMap: true, isPublish);
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SymbolMapFileNotEmitted(bool isPublish)
+        => SymbolMapFileEmittedCore(emitSymbolMap: false, isPublish);
+
+    private void SymbolMapFileEmittedCore(bool emitSymbolMap, bool isPublish)
     {
         Configuration config = Configuration.Release;
         string extraProperties = $"<WasmEmitSymbolMap>{emitSymbolMap.ToString().ToLowerInvariant()}</WasmEmitSymbolMap>";

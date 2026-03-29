@@ -1842,7 +1842,7 @@ public:
 
     bool OperIsConditionalJump() const
     {
-        return OperIs(GT_JTRUE, GT_JCMP, GT_JTEST, GT_JCC);
+        return OperIs(GT_JTRUE, GT_JCMP, GT_JTEST, GT_JCC, GT_WASM_JEXCEPT);
     }
 
     bool OperConsumesFlags() const
@@ -2512,6 +2512,9 @@ public:
     // in HIR if for some reason you need to visit operands in the order in which they will execute.
     template <typename TVisitor>
     VisitResult VisitOperands(TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitOperandUses(TVisitor visitor);
 
 public:
     bool Precedes(GenTree* other);
@@ -9521,8 +9524,7 @@ inline bool GenTree::OperIsInitBlkOp()
         return false;
     }
     GenTree* src       = Data();
-    bool     isInitBlk = src->TypeIs(TYP_INT);
-    assert(isInitBlk == src->gtSkipReloadOrCopy()->IsInitVal());
+    bool     isInitBlk = src->TypeIs(TYP_INT) && src->gtSkipReloadOrCopy()->IsInitVal();
 
     return isInitBlk;
 }

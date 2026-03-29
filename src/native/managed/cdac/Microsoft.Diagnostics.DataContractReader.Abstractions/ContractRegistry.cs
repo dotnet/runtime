@@ -95,9 +95,23 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
     /// <summary>
+    /// Gets an instance of the SyncBlock contract for the target.
+    /// </summary>
+    public virtual ISyncBlock SyncBlock => GetContract<ISyncBlock>();
+    /// <summary>
     /// Gets an instance of the BuiltInCOM contract for the target.
     /// </summary>
     public virtual IBuiltInCOM BuiltInCOM => GetContract<IBuiltInCOM>();
+    /// <summary>
+    /// Gets an instance of the ConditionalWeakTable contract for the target.
+    /// </summary>
+    public virtual IConditionalWeakTable ConditionalWeakTable => GetContract<IConditionalWeakTable>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
+
+    /// <summary>
+    /// Flush all cached data held by contracts in this registry.
+    /// Called when the target process state may have changed (e.g. on resume).
+    /// </summary>
+    public abstract void Flush();
 }

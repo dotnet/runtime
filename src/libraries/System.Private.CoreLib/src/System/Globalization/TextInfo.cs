@@ -19,13 +19,6 @@ namespace System.Globalization
     /// </summary>
     public sealed partial class TextInfo : ICloneable, IDeserializationCallback
     {
-        private enum Tristate : byte
-        {
-            NotInitialized = 0,
-            False = 1,
-            True = 2
-        }
-
         private bool _isReadOnly;
 
         private readonly string _cultureName;
@@ -36,10 +29,10 @@ namespace System.Globalization
         // // Name of the text info we're using (ie: _cultureData.TextInfoName)
         private readonly string _textInfoName;
 
-        private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
+        private NullableBool _isAsciiCasingSameAsInvariant;
 
         // Invariant text info
-        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true) { _isAsciiCasingSameAsInvariant = Tristate.True };
+        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true) { _isAsciiCasingSameAsInvariant = NullableBool.True };
 
         internal TextInfo(CultureData cultureData)
         {
@@ -546,13 +539,13 @@ namespace System.Globalization
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (_isAsciiCasingSameAsInvariant == Tristate.NotInitialized)
+                if (_isAsciiCasingSameAsInvariant == NullableBool.Undefined)
                 {
                     PopulateIsAsciiCasingSameAsInvariant();
                 }
 
-                Debug.Assert(_isAsciiCasingSameAsInvariant == Tristate.True || _isAsciiCasingSameAsInvariant == Tristate.False);
-                return _isAsciiCasingSameAsInvariant == Tristate.True;
+                Debug.Assert(_isAsciiCasingSameAsInvariant == NullableBool.True || _isAsciiCasingSameAsInvariant == NullableBool.False);
+                return _isAsciiCasingSameAsInvariant == NullableBool.True;
             }
         }
 
@@ -560,7 +553,7 @@ namespace System.Globalization
         private void PopulateIsAsciiCasingSameAsInvariant()
         {
             bool compareResult = CultureInfo.GetCultureInfo(_textInfoName).CompareInfo.Compare("abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", CompareOptions.IgnoreCase) == 0;
-            _isAsciiCasingSameAsInvariant = (compareResult) ? Tristate.True : Tristate.False;
+            _isAsciiCasingSameAsInvariant = compareResult ? NullableBool.True : NullableBool.False;
         }
 
         /// <summary>
@@ -775,6 +768,7 @@ namespace System.Globalization
             return inputIndex;
         }
 
+        [RequiresUnsafe]
         private unsafe void ChangeCaseCore(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
             if (GlobalizationMode.UseNls)

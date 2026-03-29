@@ -122,7 +122,7 @@ namespace System.Reflection.Context.Tests
         }
 #pragma warning restore SYSLIB0050
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void MetadataToken_ReturnsValue()
         {
             Assert.True(_customTypeInfo.MetadataToken > 0);
