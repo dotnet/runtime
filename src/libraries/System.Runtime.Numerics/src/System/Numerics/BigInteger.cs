@@ -3308,15 +3308,25 @@ namespace System.Numerics
                 wordCount = bits.Length;
             }
 
+            // Extract 32-bit words from nuint limbs using arithmetic (endianness-safe).
+            // Word 0 = low 32 bits of limb 0, word 1 = high 32 bits of limb 0 (on 64-bit), etc.
+            uint[] zw = new uint[wordCount];
+            ExtractWords(bits, zw);
+
             int zWordCount = wordCount;
 
-            // Reinterpret magnitude as a span of 32-bit words.
-            ReadOnlySpan<uint> words = MemoryMarshal.Cast<nuint, uint>(bits).Slice(0, wordCount);
+            // For negative values, find the index of the first non-zero word.
+            int leadingZeroCount = 0;
+            if (negative)
+            {
+                while (leadingZeroCount < zw.Length && zw[leadingZeroCount] == 0)
+                {
+                    leadingZeroCount++;
+                }
+            }
 
-            int leadingZeroCount = negative ? words.IndexOfAnyExcept(0u) : 0;
-
-            if (negative && (int)words[^1] < 0
-                && (leadingZeroCount != words.Length - 1 || words[^1] != UInt32HighBit))
+            if (negative && (int)zw[zWordCount - 1] < 0
+                && (leadingZeroCount != zWordCount - 1 || zw[zWordCount - 1] != UInt32HighBit))
             {
                 // For a shift of N x 32 bit,
                 // We check for a special case where its sign bit could be outside the uint array after 2's complement conversion.
@@ -3325,22 +3335,7 @@ namespace System.Numerics
                 // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
                 // If the 2's complement's last element is a 0, we will track the sign externally
                 ++zWordCount;
-            }
-
-            // Allocate a buffer of nuint limbs large enough to hold zWordCount 32-bit words.
-            // On 64-bit, each nuint limb holds 2 words, so we need ceil(zWordCount / 2) limbs.
-            int zLimbCount = Environment.Is64BitProcess ? (zWordCount + 1) / 2 : zWordCount;
-            Span<nuint> zd = RentedBuffer.Create(zLimbCount, out RentedBuffer zdBuffer);
-            zd[^1] = 0; // Clear the last nuint limb (which may be partially used)
-
-            // Work on the 32-bit word view of the buffer.
-            Span<uint> zw = MemoryMarshal.Cast<nuint, uint>(zd).Slice(0, zWordCount);
-
-            // Copy magnitude words into the working buffer.
-            words.CopyTo(zw);
-            if (zWordCount > wordCount)
-            {
-                zw[^1] = 0; // Extra word for sign tracking
+                Array.Resize(ref zw, zWordCount);
             }
 
             if (negative)
@@ -3360,11 +3355,16 @@ namespace System.Numerics
             if (negative && (int)zw[^1] < 0)
             {
                 // Convert back from two's complement on the 32-bit word view.
-                int i = zw.IndexOfAnyExcept(0u);
-                if ((uint)i < (uint)zw.Length)
+                int firstNonZero = 0;
+                while (firstNonZero < zw.Length && zw[firstNonZero] == 0)
                 {
-                    zw[i] = (uint)(-(int)zw[i]);
-                    for (int j = i + 1; j < zw.Length; j++)
+                    firstNonZero++;
+                }
+
+                if ((uint)firstNonZero < (uint)zw.Length)
+                {
+                    zw[firstNonZero] = (uint)(-(int)zw[firstNonZero]);
+                    for (int j = firstNonZero + 1; j < zw.Length; j++)
                     {
                         zw[j] = ~zw[j];
                     }
@@ -3375,11 +3375,71 @@ namespace System.Numerics
                 negative = false;
             }
 
+            // Pack 32-bit words back into nuint limbs (endianness-safe).
+            int zLimbCount = Environment.Is64BitProcess ? (zWordCount + 1) / 2 : zWordCount;
+            Span<nuint> zd = RentedBuffer.Create(zLimbCount, out RentedBuffer zdBuffer);
+            zd[^1] = 0;
+            PackWords(zw, zd);
+
             BigInteger result = new(zd, negative);
 
             zdBuffer.Dispose();
 
             return result;
+        }
+
+        /// <summary>
+        /// Extracts 32-bit words from nuint limbs using arithmetic operations (endianness-safe).
+        /// Word 0 is the least significant 32 bits of limb 0.
+        /// </summary>
+        private static void ExtractWords(ReadOnlySpan<nuint> limbs, Span<uint> words)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                int w = 0;
+                for (int i = 0; i < limbs.Length; i++)
+                {
+                    words[w++] = (uint)limbs[i];
+                    if (w < words.Length)
+                    {
+                        words[w++] = (uint)(limbs[i] >> BitsPerUInt32);
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < words.Length; i++)
+                {
+                    words[i] = (uint)limbs[i];
+                }
+            }
+        }
+
+        /// <summary>
+        /// Packs 32-bit words back into nuint limbs using arithmetic operations (endianness-safe).
+        /// </summary>
+        private static void PackWords(ReadOnlySpan<uint> words, Span<nuint> limbs)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                int w = 0;
+                for (int i = 0; i < limbs.Length; i++)
+                {
+                    nuint limb = words[w++];
+                    if (w < words.Length)
+                    {
+                        limb |= (nuint)words[w++] << BitsPerUInt32;
+                    }
+                    limbs[i] = limb;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < words.Length; i++)
+                {
+                    limbs[i] = words[i];
+                }
+            }
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
