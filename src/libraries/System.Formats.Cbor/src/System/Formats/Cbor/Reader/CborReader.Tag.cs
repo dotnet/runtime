@@ -125,7 +125,7 @@ namespace System.Formats.Cbor
                         }
 
                         TimeSpan timespan = TimeSpan.FromSeconds(seconds);
-                        return CborHelpers.UnixEpoch + timespan;
+                        return DateTimeOffset.UnixEpoch + timespan;
 
                     default:
                         throw new CborContentException(SR.Cbor_Reader_InvalidUnixTimeEncoding);
@@ -175,7 +175,7 @@ namespace System.Formats.Cbor
                 }
 
                 byte[] unsignedBigEndianEncoding = ReadByteString();
-                BigInteger unsignedValue = CborHelpers.CreateBigIntegerFromUnsignedBigEndianBytes(unsignedBigEndianEncoding);
+                BigInteger unsignedValue = CreateBigIntegerFromUnsignedBigEndianBytes(unsignedBigEndianEncoding);
                 return isNegative ? -1 - unsignedValue : unsignedValue;
             }
             catch
@@ -290,6 +290,31 @@ namespace System.Formats.Cbor
             }
 
             return result;
+        }
+
+        private static BigInteger CreateBigIntegerFromUnsignedBigEndianBytes(byte[] bigEndianBytes)
+        {
+#if NET
+            return new BigInteger(bigEndianBytes, isUnsigned: true, isBigEndian: true);
+#else
+            if (bigEndianBytes.Length == 0)
+                return new BigInteger(bigEndianBytes);
+
+            byte[] temp;
+            if ((bigEndianBytes[0] & 0x80) != 0)
+            {
+                var bytesPlusOne = new byte[bigEndianBytes.Length + 1];
+                bigEndianBytes.CopyTo(bytesPlusOne.AsSpan(1));
+                temp = bytesPlusOne;
+            }
+            else
+            {
+                temp = bigEndianBytes;
+            }
+
+            temp.AsSpan().Reverse();
+            return new BigInteger(temp);
+#endif
         }
     }
 }
