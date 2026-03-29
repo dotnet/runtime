@@ -885,7 +885,7 @@ namespace System.Collections.Generic
                     Entry[]? entries = dictionary._entries;
                     int last = -1;
                     int i = bucket - 1; // Value in buckets is 1-based
-                    while (i >= 0)
+                    while ((uint)i < (uint)entries.Length)
                     {
                         ref Entry entry = ref entries[i];
 
@@ -1318,7 +1318,7 @@ namespace System.Collections.Generic
                 if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
                     comparer == null)
                 {
-                    while (i >= 0)
+                    while ((uint)i < (uint)entries.Length)
                     {
                         ref Entry entry = ref entries[i];
 
@@ -1366,7 +1366,7 @@ namespace System.Collections.Generic
                 else
                 {
                     Debug.Assert(comparer is not null);
-                    while (i >= 0)
+                    while ((uint)i < (uint)entries.Length)
                     {
                         ref Entry entry = ref entries[i];
 
@@ -1444,7 +1444,7 @@ namespace System.Collections.Generic
                 if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
                     comparer == null)
                 {
-                    while (i >= 0)
+                    while ((uint)i < (uint)entries.Length)
                     {
                         ref Entry entry = ref entries[i];
 
@@ -1494,7 +1494,7 @@ namespace System.Collections.Generic
                 else
                 {
                     Debug.Assert(comparer is not null);
-                    while (i >= 0)
+                    while ((uint)i < (uint)entries.Length)
                     {
                         ref Entry entry = ref entries[i];
 
