@@ -3328,7 +3328,8 @@ namespace System.Numerics
             }
 
             // Allocate a buffer of nuint limbs large enough to hold zWordCount 32-bit words.
-            int zLimbCount = (zWordCount + (Environment.Is64BitProcess ? 1 : 0)) / (Environment.Is64BitProcess ? 2 : 1);
+            // On 64-bit, each nuint limb holds 2 words, so we need ceil(zWordCount / 2) limbs.
+            int zLimbCount = Environment.Is64BitProcess ? (zWordCount + 1) / 2 : zWordCount;
             Span<nuint> zd = RentedBuffer.Create(zLimbCount, out RentedBuffer zdBuffer);
             zd[^1] = 0; // Clear the last nuint limb (which may be partially used)
 

@@ -86,8 +86,8 @@ namespace System.Numerics
             Span<uint> lowerDst = bits.Slice(upperLength);
 
             int tmpLength = Math.Min(lowerLength, upperLength);
-            uint[] tmpArray = new uint[tmpLength];
-            Span<uint> tmp = tmpArray;
+            uint[] tmpArray = System.Buffers.ArrayPool<uint>.Shared.Rent(tmpLength);
+            Span<uint> tmp = tmpArray.AsSpan(0, tmpLength);
 
             if (upperLength < lowerLength)
             {
@@ -101,6 +101,8 @@ namespace System.Numerics
                 upper.CopyTo(bits);
                 tmp.CopyTo(lowerDst);
             }
+
+            System.Buffers.ArrayPool<uint>.Shared.Return(tmpArray);
         }
 
         private static void LeftShiftSelf32(Span<uint> bits, int shift, out uint carry)
