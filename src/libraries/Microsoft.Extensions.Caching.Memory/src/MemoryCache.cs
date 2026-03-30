@@ -33,7 +33,6 @@ namespace Microsoft.Extensions.Caching.Memory
         private long _accumulatedMisses;
         private long _accumulatedEvictions;
         private readonly ThreadLocal<StatsHandler>? _stats;
-        private readonly Meter? _meter;
         private CoherentState _coherentState;
         private bool _disposed;
         private DateTime _lastExpirationScan;
@@ -73,11 +72,11 @@ namespace Microsoft.Extensions.Caching.Memory
                 _allStats = new List<Stats>();
                 _stats = new ThreadLocal<StatsHandler>(() => new StatsHandler(this));
 
-                _meter = meterFactory?.Create(new MeterOptions("Microsoft.Extensions.Caching.Memory.MemoryCache")
+                Meter meter = meterFactory?.Create(new MeterOptions("Microsoft.Extensions.Caching.Memory.MemoryCache")
                 {
                     Tags = [new("cache.name", _options.Name)]
                 }) ?? SharedMeter.Instance;
-                InitializeMetrics(_meter);
+                InitializeMetrics(meter);
             }
 
             _lastExpirationScan = UtcNow;
@@ -674,7 +673,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            if (_allStats is not null && actuallyRemoved > 0)
+            if (actuallyRemoved > 0 && _allStats is not null)
             {
                 Interlocked.Add(ref _accumulatedEvictions, actuallyRemoved);
             }
@@ -728,7 +727,6 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (disposing)
                 {
-                    _meter?.Dispose();
                     _stats?.Dispose();
                     GC.SuppressFinalize(this);
                 }
@@ -882,7 +880,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void InitializeMetrics(Meter meter)
         {
-            var weakThis = new WeakReference<MemoryCache>(this);
+            // Use a weak reference for `this` to avoid keeping it alive indefinitely
+            // due to it being captured in the instrument's lambda and hence kept alive by the Meter.
+            WeakReference<MemoryCache> weakThis = new(this);
             KeyValuePair<string, object?> cacheNameTag = new("cache.name", _options.Name);
 
             meter.CreateObservableCounter("cache.requests",
@@ -957,6 +957,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private sealed class SharedMeter : Meter
         {
             public static Meter Instance { get; } = new SharedMeter();
+
             private SharedMeter()
                 : base("Microsoft.Extensions.Caching.Memory.MemoryCache")
             {
