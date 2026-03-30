@@ -2322,6 +2322,8 @@ public:
         return m_ehDsc->ebdTryBeg;
     }
 
+    bool CanEnumerateInReversePostOrder() const;
+
 #ifdef DEBUG
     static void Dump(FlowGraphTryRegion* region);
 #endif
@@ -2331,16 +2333,18 @@ public:
 class FlowGraphTryRegions
 {
 private:
+    Compiler* m_compiler;
     FlowGraphDfsTree* m_dfsTree;
     // Collection of try regions that were found, indexed by EhID
     jitstd::vector<FlowGraphTryRegion*> m_tryRegions;
 
-    FlowGraphTryRegions(FlowGraphDfsTree* dfs, unsigned numRegions);
+    FlowGraphTryRegions(Compiler* comp, FlowGraphDfsTree* dfs, unsigned numRegions);
 
     unsigned m_numRegions;
     unsigned m_numTryCatchRegions;
     bool m_tryRegionsIncludeHandlerBlocks;
     bool m_hasMultipleEntryTryRegions;
+    BitVecTraits m_traits;
 
     void SetHasMultipleEntryTryRegions()
     {
@@ -2351,14 +2355,26 @@ public:
 
     static FlowGraphTryRegions* Build(Compiler* comp, FlowGraphDfsTree* dfs, bool includeHandlerBlocks = false);
 
-    BitVecTraits GetBlockBitVecTraits()
+    BitVecTraits* GetBlockBitVecTraits()
     {
-        return m_dfsTree->PostOrderTraits();
+        return &m_traits;
+    }
+
+    unsigned GetBlockIndex(BasicBlock* block) const
+    {
+        if (m_dfsTree != nullptr)
+        {
+            return block->bbPostorderNum;
+        }
+        else
+        {
+            return block->bbNum;
+        }
     }
 
     Compiler* GetCompiler() const
     {
-        return m_dfsTree->GetCompiler();
+        return m_compiler;
     }
 
     FlowGraphTryRegion* GetTryRegionByHeader(BasicBlock* block);

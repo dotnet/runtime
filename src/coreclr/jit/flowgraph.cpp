@@ -7548,15 +7548,19 @@ void BlockReachabilitySets::Dump()
 // FlowGraphTryRegions::FlowGraphTryRegions: Constructor for FlowGraphTryRegions.
 //
 // Arguments:
+//
 //    dfsTree    -- DFS tree for the flow graph
 //    numRegions -- Number of try regions in the method
 //
-FlowGraphTryRegions::FlowGraphTryRegions(FlowGraphDfsTree* dfsTree, unsigned numRegions)
-    : m_dfsTree(dfsTree)
-    , m_tryRegions(numRegions, nullptr, dfsTree->GetCompiler()->getAllocator(CMK_BasicBlock))
+FlowGraphTryRegions::FlowGraphTryRegions(Compiler* comp, FlowGraphDfsTree* dfsTree, unsigned numRegions)
+    : m_compiler(comp)
+    , m_dfsTree(dfsTree)
+    , m_tryRegions(numRegions, nullptr, comp->getAllocator(CMK_BasicBlock))
     , m_numRegions(0)
     , m_numTryCatchRegions(0)
     , m_tryRegionsIncludeHandlerBlocks(false)
+    , m_hasMultipleEntryTryRegions(false)
+    , m_traits((dfsTree == nullptr) ? comp->fgBBNumMax + 1 : dfsTree->GetPostOrderCount(), comp)
 {
 }
 
@@ -7603,8 +7607,8 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
     , m_requiresRuntimeResumption(false)
     , m_hasSideEntry(false)
 {
-    BitVecTraits traits = regions->GetBlockBitVecTraits();
-    m_blocks            = BitVecOps::MakeEmpty(&traits);
+    BitVecTraits* const traits = regions->GetBlockBitVecTraits();
+    m_blocks                   = BitVecOps::MakeEmpty(traits);
 }
 
 //------------------------------------------------------------------------
@@ -7612,7 +7616,7 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
 //
 // Arguments:
 //    comp                 -- Compiler instance
-//    dfsTree              -- DFS tree for the flow graph
+//    dfsTree              -- DFS tree for the flow graph (optional, can be nullptr)
 //    includeHandlerBlocks -- include blocks in handlers inside the try
 //
 // Returns:
@@ -7624,7 +7628,7 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
     // collection if we've deleted some EH regions.
     //
     unsigned const       numTryRegions = comp->compEHID;
-    FlowGraphTryRegions* regions       = new (comp, CMK_BasicBlock) FlowGraphTryRegions(dfsTree, numTryRegions);
+    FlowGraphTryRegions* regions       = new (comp, CMK_BasicBlock) FlowGraphTryRegions(comp, dfsTree, numTryRegions);
     assert(numTryRegions >= comp->compHndBBtabCount);
 
     regions->m_tryRegionsIncludeHandlerBlocks = includeHandlerBlocks;
@@ -7659,9 +7663,7 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
         }
     }
 
-    // Collect the postorder numbers of each block in each region
-    //
-    BitVecTraits traits = regions->m_dfsTree->PostOrderTraits();
+    BitVecTraits* const traits = regions->GetBlockBitVecTraits();
 
     for (BasicBlock* block : comp->Blocks())
     {
@@ -7683,7 +7685,7 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
             //
             while (region != nullptr)
             {
-                BitVecOps::AddElemD(&traits, region->m_blocks, block->bbPostorderNum);
+                BitVecOps::AddElemD(traits, region->m_blocks, regions->GetBlockIndex(block));
 
                 // Enumerate block's pred edges to find the try entry edges.
                 //
@@ -7774,8 +7776,8 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 //
 unsigned FlowGraphTryRegion::NumBlocks() const
 {
-    BitVecTraits traits = m_regions->GetBlockBitVecTraits();
-    return BitVecOps::Count(&traits, m_blocks);
+    BitVecTraits* const traits = m_regions->GetBlockBitVecTraits();
+    return BitVecOps::Count(traits, m_blocks);
 }
 
 //------------------------------------------------------------------------
@@ -7794,6 +7796,18 @@ FlowGraphTryRegion* FlowGraphTryRegion::EnclosingRegion() const
         ancestor = ancestor->m_parent;
     }
     return ancestor;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphTryRegion::CanEnumerateInReversePostOrder: check if the
+//   try region can be enumerated in reverse post order
+//
+// Returns:
+//    True if so.
+//
+bool FlowGraphTryRegion::CanEnumerateInReversePostOrder() const
+{
+    return m_regions->GetDfsTree() != nullptr;
 }
 
 #ifdef DEBUG
@@ -7826,10 +7840,26 @@ void FlowGraphTryRegion::Dump(FlowGraphTryRegion* region)
         printf(" [outermost]:");
     }
 
-    region->VisitTryRegionBlocksReversePostOrder([](BasicBlock* block) {
-        printf(" " FMT_BB, block->bbNum);
-        return BasicBlockVisit::Continue;
-    });
+    if (region->CanEnumerateInReversePostOrder())
+    {
+        printf(" [rpo]:");
+
+        region->VisitTryRegionBlocksReversePostOrder([](BasicBlock* block) {
+            printf(" " FMT_BB, block->bbNum);
+            return BasicBlockVisit::Continue;
+        });
+    }
+    else
+    {
+        printf(" [bbNum]:");
+
+        BitVecOps::Iter iterator(regions->GetBlockBitVecTraits(), region->m_blocks);
+        unsigned int    index;
+        while (iterator.NextElem(&index))
+        {
+            printf(" " FMT_BB, index);
+        }
+    }
 
     printf(" [entries]: ");
     for (FlowEdge* const edge : region->EntryEdges())
