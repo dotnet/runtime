@@ -4,5 +4,7 @@
     <StrongNameKeyId>ECMA</StrongNameKeyId>
     <IsTrimmable>false</IsTrimmable>
     <IsAotCompatible>false</IsAotCompatible>
+    <!-- Need ILLink task to generate resource substitutions -->
+    <UseLiveILLink>true</UseLiveILLink>
   </PropertyGroup>
 </Project>
