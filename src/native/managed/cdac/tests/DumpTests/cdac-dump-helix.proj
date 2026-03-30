@@ -83,6 +83,8 @@
   <PropertyGroup>
     <_DumpInfoJson>{"os":"$(TargetOS)","arch":"$(TargetArchitecture)","debuggees":[$(_DebuggeeJsonArray)]}</_DumpInfoJson>
     <_HelixCommandFile>$(DumpTestsPayload)/HelixCommand.txt</_HelixCommandFile>
+    <_DumpInfoCommandWindows>echo $(_DumpInfoJson)&gt; %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\dump-info.json</_DumpInfoCommandWindows>
+    <_DumpInfoCommandUnix>echo '$(_DumpInfoJson)' &gt; $HELIX_WORKITEM_PAYLOAD/dumps/local/dump-info.json</_DumpInfoCommandUnix>
   </PropertyGroup>
 
   <!--
@@ -157,9 +159,9 @@
     <ItemGroup>
       <!-- Write dump metadata file for the test harness. -->
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="echo $(_DumpInfoJson)&gt; %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\dump-info.json" />
+          Include="$(_DumpInfoCommandWindows)" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="echo '$(_DumpInfoJson)' &gt; $HELIX_WORKITEM_PAYLOAD/dumps/local/dump-info.json" />
+          Include="$(_DumpInfoCommandUnix)" />
     </ItemGroup>
 
     <!-- Test mode only: run xunit, capture exit code, propagate after archive. -->
@@ -184,7 +186,7 @@
           Include="tar -czf $HELIX_WORKITEM_UPLOAD_ROOT/dumps.tar.gz -C $HELIX_WORKITEM_PAYLOAD/dumps ." />
     </ItemGroup>
 
-    <!-- Propagate test exit code without using "exit" (see GH issue #126196). -->
+    <!-- Propagate test exit code without directly exiting the parent Helix work item shell (see GH issue #126196). -->
     <ItemGroup Condition="'$(DumpOnly)' != 'true'">
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="%25ComSpec%25 /C exit %25test_exit_code%25" />
