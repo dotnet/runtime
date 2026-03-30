@@ -106,6 +106,7 @@ namespace System.Runtime.Intrinsics.X86
         private static extern unsafe void CpuId(int* cpuInfo, int functionId, int subFunctionId);
 #else
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "X86Base_CpuId")]
+        [RequiresUnsafe]
         private static unsafe partial void CpuId(int* cpuInfo, int functionId, int subFunctionId);
 #endif
 

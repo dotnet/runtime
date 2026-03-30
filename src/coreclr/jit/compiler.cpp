@@ -4988,9 +4988,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
 #ifdef TARGET_WASM
-    // Transform any strongly connected components into reducible flow.
+    // Make EH continuation flow explicit
+    //
+    DoPhase(this, PHASE_WASM_EH_FLOW, &Compiler::fgWasmEhFlow);
+
+    // Clean up unreachable blocks.
     //
     DoPhase(this, PHASE_DFS_BLOCKS_WASM, &Compiler::fgDfsBlocksAndRemove);
+
+    // Transform any strongly connected components into reducible flow.
+    //
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
 #endif
 
@@ -6596,72 +6603,6 @@ void Compiler::compCompileFinish()
 #endif // !DEBUG
 }
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-// this is zlib adler32 checksum.  source came from windows base
-
-#define BASE 65521L // largest prime smaller than 65536
-#define NMAX 5552
-// NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1
-
-#define DO1(buf, i)                                                                                                    \
-    {                                                                                                                  \
-        s1 += buf[i];                                                                                                  \
-        s2 += s1;                                                                                                      \
-    }
-#define DO2(buf, i)                                                                                                    \
-    DO1(buf, i);                                                                                                       \
-    DO1(buf, i + 1);
-#define DO4(buf, i)                                                                                                    \
-    DO2(buf, i);                                                                                                       \
-    DO2(buf, i + 2);
-#define DO8(buf, i)                                                                                                    \
-    DO4(buf, i);                                                                                                       \
-    DO4(buf, i + 4);
-#define DO16(buf)                                                                                                      \
-    DO8(buf, 0);                                                                                                       \
-    DO8(buf, 8);
-
-unsigned adler32(unsigned adler, char* buf, unsigned int len)
-{
-    unsigned int s1 = adler & 0xffff;
-    unsigned int s2 = (adler >> 16) & 0xffff;
-    int          k;
-
-    if (buf == NULL)
-        return 1L;
-
-    while (len > 0)
-    {
-        k = len < NMAX ? len : NMAX;
-        len -= k;
-        while (k >= 16)
-        {
-            DO16(buf);
-            buf += 16;
-            k -= 16;
-        }
-        if (k != 0)
-            do
-            {
-                s1 += *buf++;
-                s2 += s1;
-            } while (--k);
-        s1 %= BASE;
-        s2 %= BASE;
-    }
-    return (s2 << 16) | s1;
-}
-#endif
-
-unsigned getMethodBodyChecksum(_In_z_ char* code, int size)
-{
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    return adler32(0, code, size);
-#else
-    return 0;
-#endif
-}
-
 int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
                                 COMP_HANDLE           compHnd,
                                 CORINFO_METHOD_INFO*  methodInfo,
@@ -6689,9 +6630,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     else
     {
         info.compFlags = info.compCompHnd->getMethodAttribs(info.compMethodHnd);
-#ifdef PSEUDORANDOM_NOP_INSERTION
-        info.compChecksum = getMethodBodyChecksum((char*)methodInfo->ILCode, methodInfo->ILCodeSize);
-#endif
         compInlineContext = m_inlineStrategy->GetRootContext();
     }
 

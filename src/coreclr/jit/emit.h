@@ -1310,6 +1310,11 @@ protected:
         {
             return _idInsFmt == IF_LOCAL_DECL;
         }
+
+        bool idIsValTypeImm() const
+        {
+            return _idInsFmt == IF_TRY_TABLE;
+        }
 #endif
 
 #ifdef TARGET_ARM64
@@ -2368,6 +2373,24 @@ protected:
             lclCnt = cnt;
         }
     };
+
+    struct instrDescValTypeImm : instrDesc
+    {
+        instrDescValTypeImm() = delete;
+
+        unsigned int  imm;
+        WasmValueType valType;
+
+        void idValType(WasmValueType type)
+        {
+            valType = type;
+        }
+
+        void idImm(unsigned int i)
+        {
+            imm = i;
+        }
+    };
 #endif // TARGET_WASM
 
 #ifdef TARGET_RISCV64
@@ -2715,10 +2738,6 @@ public:
 
     bool emitHasFramePtr;
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    bool emitInInstrumentation;
-#endif // PSEUDORANDOM_NOP_INSERTION
-
 #ifdef DEBUG
     bool emitChkAlign; // perform some alignment checks
 #endif
@@ -2978,23 +2997,6 @@ private:
 
     unsigned emitNxtIGnum;
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-
-    // random nop insertion to break up nop sleds
-    unsigned emitNextNop;
-    bool     emitRandomNops;
-
-    void emitEnableRandomNops()
-    {
-        emitRandomNops = true;
-    }
-    void emitDisableRandomNops()
-    {
-        emitRandomNops = false;
-    }
-
-#endif // PSEUDORANDOM_NOP_INSERTION
-
     insGroup* emitAllocAndLinkIG();
     insGroup* emitAllocIG();
     void      emitInitIG(insGroup* ig);
@@ -3186,8 +3188,6 @@ private:
 #if defined(FEATURE_SIMD)
     void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider);
 #endif // FEATURE_SIMD
-
-    int emitNextRandomNop();
 
     //
     // Functions for allocating instrDescs.

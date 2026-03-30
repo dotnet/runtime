@@ -69,7 +69,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <see cref="MLKem.ExportSubjectPublicKeyInfo" /> must return a
         /// valid ASN.1-DER encoded X.509 SubjectPublicKeyInfo.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public PublicKey(MLKem key) : this(key.ExportSubjectPublicKeyInfo())
         {
         }
@@ -86,7 +85,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <see cref="MLDsa.ExportSubjectPublicKeyInfo" /> must return a
         /// valid ASN.1-DER encoded X.509 SubjectPublicKeyInfo.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public PublicKey(MLDsa key) : this(key.ExportSubjectPublicKeyInfo())
         {
         }
@@ -358,7 +356,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The key contents are corrupt or could not be read successfully.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         [UnsupportedOSPlatform("browser")]
         public MLKem? GetMLKemPublicKey()
         {
@@ -381,7 +378,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The key contents are corrupt or could not be read successfully.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         [UnsupportedOSPlatform("browser")]
         public MLDsa? GetMLDsaPublicKey()
         {

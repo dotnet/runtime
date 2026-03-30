@@ -34,8 +34,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             lock (this)
             {
-                // Zero is treated as no seed, instead using a system provided one
-                Random random = randomseed != 0 ? new Random(randomseed) : new Random();
+                Random random = new Random(randomseed);
                 CharSetSolver charSetSolver = _builder._charSetSolver;
 
                 // Create helper BDDs for handling anchors and preferentially generating ASCII inputs
@@ -79,7 +78,17 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     while (true)
                     {
-                        Debug.Assert(states.NfaStateSet.Count > 0);
+                        // The state set can be empty when the initial DFA state has no
+                        // NFA expansion (e.g. for certain anchor combinations).
+                        if (states.NfaStateSet.Count == 0)
+                        {
+                            if (latestCandidate is not null)
+                            {
+                                results.Add(latestCandidate.ToString());
+                            }
+
+                            break;
+                        }
 
                         // Gather the possible endings for satisfying nullability
                         possibleEndings.Clear();
@@ -132,6 +141,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         int[] mintermIds = SymbolicRegexMatcher<TSet>.NfaStateHandler.StartsWithLineAnchor(this, in statesWrapper) ?
                             Shuffle(random, mintermIdsWithZ) :
                             Shuffle(random, mintermIdsWithoutZ);
+                        bool transitionSucceeded = false;
                         foreach (int mintermId in mintermIds)
                         {
                             bool success = SymbolicRegexMatcher<TSet>.NfaStateHandler.TryTakeTransition(this, ref statesWrapper, mintermId);
@@ -141,6 +151,7 @@ namespace System.Text.RegularExpressions.Symbolic
                                 TSet minterm = GetMintermFromId(mintermId);
                                 // Append a random member of the minterm
                                 inputSoFar.Append(ChooseChar(random, ToBDD(minterm, Solver, charSetSolver), ascii, charSetSolver));
+                                transitionSucceeded = true;
                                 break;
                             }
                             else
@@ -150,8 +161,8 @@ namespace System.Text.RegularExpressions.Symbolic
                             }
                         }
 
-                        // In the case that there are no next states or input has become too large: stop here
-                        if (states.NfaStateSet.Count == 0 || inputSoFar.Length > SampleMatchesMaxInputLength)
+                        // In the case that there are no next states, no viable transition was found, or input has become too large: stop here
+                        if (!transitionSucceeded || states.NfaStateSet.Count == 0 || inputSoFar.Length > SampleMatchesMaxInputLength)
                         {
                             // Ending up here without an ending is unlikely but possible for example for infeasible patterns
                             // such as @"no\bway" or due to poor choice of c -- no anchor is enabled -- so this is a deadend.
