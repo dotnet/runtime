@@ -1,11 +1,16 @@
 <Project>
   <!-- Settings for tools that publish as AOT -->
 
-  <PropertyGroup Condition="'$(AotOrSingleFile)' == 'true' and '$(UseNativeAotForComponents)' == 'true'">
-    <PublishAot>true</PublishAot>
+  <PropertyGroup Condition="'$(UseNativeAotForComponents)' == 'true'">
+    <PublishAot Condition="'$(AotOrSingleFile)' == 'true'" >true</PublishAot>
+    <!--
+      _IsApplePlatform is defined in the NativeAOT NuGet package targets which are imported after
+      Directory.Build.targets, so it is not available here. Use PortableOS to detect Apple platforms.
+    -->
+    <_IsApplePlatformToolAot Condition="'$(PortableOS)' == 'osx' or '$(PortableOS)' == 'ios' or '$(PortableOS)' == 'iossimulator' or '$(PortableOS)' == 'tvos' or '$(PortableOS)' == 'tvossimulator' or '$(PortableOS)' == 'maccatalyst'">true</_IsApplePlatformToolAot>
     <!-- Use .dwarf files instead of .dsym files since our symbol exporting may not safely handle folders. -->
-    <NativeSymbolExt Condition="'$(_IsApplePlatform)' == 'true'">.dwarf</NativeSymbolExt>
-    <DsymUtilOptions Condition="'$(_IsApplePlatform)' == 'true'">--flat</DsymUtilOptions>
+    <NativeSymbolExt Condition="'$(_IsApplePlatformToolAot)' == 'true'">.dwarf</NativeSymbolExt>
+    <DsymUtilOptions Condition="'$(_IsApplePlatformToolAot)' == 'true'">--flat >/dev/null 2>&amp;1</DsymUtilOptions>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AotOrSingleFile)' == 'true' and '$(UseNativeAotForComponents)' != 'true'">
