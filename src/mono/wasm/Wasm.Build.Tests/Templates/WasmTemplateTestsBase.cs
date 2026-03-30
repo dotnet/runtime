@@ -359,6 +359,8 @@ public class WasmTemplateTestsBase : BuildTestBase
             runOptions = runOptions with { CustomBundleDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..", "public")) };
         }
 
+        EnsureXHarnessAvailable();
+
         return runOptions.Host switch
         {
             RunHost.DotnetRun =>
