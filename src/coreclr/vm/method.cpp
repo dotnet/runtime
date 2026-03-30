@@ -3711,7 +3711,9 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
     {
         // Stubs generated for being called from native code are equivalent to
         // managed methods marked with UnmanagedCallersOnly.
-        return AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubReversePInvoke;
+        DynamicMethodDesc::ILStubType stubType = AsDynamicMethodDesc()->GetILStubType();
+        return stubType == DynamicMethodDesc::StubReversePInvoke
+            || stubType == DynamicMethodDesc::StubCOMToCLRInterop;
     }
 
     HRESULT hr = GetCustomAttribute(

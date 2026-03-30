@@ -463,7 +463,7 @@ Crst UnresolvedClassLock
 End
 
 Crst WrapperTemplate
-    AcquiredBefore ExecutableAllocatorLock
+    AcquiredBefore LoaderHeap
 End
 
 Crst UMEntryThunkCache

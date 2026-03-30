@@ -92,17 +92,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Frame__m_Next
 
 #define               SIZEOF__Frame                 0x10
 
-#ifdef FEATURE_COMINTEROP
-#define               SIZEOF__ComPrestubMethodFrame                 0x20
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComPrestubMethodFrame
-                    == sizeof(ComPrestubMethodFrame));
-
-#define               SIZEOF__ComMethodFrame                        0x20
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame
-                    == sizeof(ComMethodFrame));
-
-#endif // FEATURE_COMINTEROP
-
 #define               OFFSETOF__Thread__m_fPreemptiveGCDisabled     0x04
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_fPreemptiveGCDisabled
                     == offsetof(Thread, m_fPreemptiveGCDisabled));

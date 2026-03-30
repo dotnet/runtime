@@ -3414,9 +3414,10 @@ void Module::FixupVTables()
 
                     UMEntryThunkData *pUMEntryThunkData = UMEntryThunkData::CreateUMEntryThunk();
 
-                    UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
+                    DelegateUMThunkMarshInfo *pUMThunkMarshInfo = (DelegateUMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(DelegateUMThunkMarshInfo), CODE_SIZE_ALIGN));
 
-                    pUMThunkMarshInfo->LoadTimeInit(pMD);
+                    new (pUMThunkMarshInfo) DelegateUMThunkMarshInfo(pMD);
+
                     pUMEntryThunkData->LoadTimeInit((PCODE)0, NULL, pUMThunkMarshInfo, pMD);
 
                     SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunkData->GetCode());

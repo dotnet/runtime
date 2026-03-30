@@ -511,14 +511,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 }
 #endif // FEATURE_HIJACK
 
-#ifdef FEATURE_COMINTEROP
-
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-}
-#endif // FEATURE_COMINTEROP
-
 #if !defined(DACCESS_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
 

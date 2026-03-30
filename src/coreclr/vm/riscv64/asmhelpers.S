@@ -645,31 +645,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END CallEHFilterFunclet, _TEXT
 
-#ifdef FEATURE_COMINTEROP
-// Function used by COM interop to get floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-// On entry//
-//   a0          : size of the FP result (4 or 8 bytes)
-//   a1          : pointer to 64-bit buffer to receive result
-//
-// On exit:
-//   buffer pointed to by a1 on entry contains the float or double argument as appropriate
-//
-LEAF_ENTRY getFPReturn, _TEXT
-    fsd  f0, 0(a1)
-LEAF_END getFPReturn, _TEXT
-
-// ------------------------------------------------------------------
-// Function used by COM interop to set floating point return value (since it's not in the same
-// register(s) as non-floating point values).
-//
-LEAF_ENTRY setFPReturn, _TEXT
-    fmv.d.x f0, a1
-LEAF_END setFPReturn, _TEXT
-
-#endif // FEATURE_COMINTEROP
-
 // ------------------------------------------------------------------
 // void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
 

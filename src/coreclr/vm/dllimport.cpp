@@ -1564,11 +1564,13 @@ public:
                 pStubModule,
                 signature,
                 pTypeContext,
-                dwStubFlags | PINVOKESTUB_FL_STUB_HAS_THIS | PINVOKESTUB_FL_TARGET_HAS_THIS,
+                dwStubFlags | PINVOKESTUB_FL_STUB_HAS_THIS,
                 iLCIDParamIdx,
                 pTargetMD)
     {
         STANDARD_VM_CONTRACT;
+        m_slIL.SetHasThis(false);
+        m_slIL.SetCallingConvention(CorInfoCallConvExtension::Stdcall, SF_IsVarArgStub(dwStubFlags));
     }
 
     void BeginEmit(DWORD dwStubFlags)  // COM to CLR IL
@@ -1577,7 +1579,25 @@ public:
 
         ILStubState::BeginEmit(dwStubFlags);
 
-        m_slIL.GetDispatchCodeStream()->EmitLoadThis();
+        ILCodeStream* pDispatch = m_slIL.GetDispatchCodeStream();
+
+        // Add argument for the native 'this' pointer (the COM IP)
+        DWORD dwNativeThisArg = pDispatch->SetStubTargetArgType(ELEMENT_TYPE_I, false);
+        _ASSERTE(dwNativeThisArg == 0);
+        pDispatch->EmitLDARG(dwNativeThisArg);
+        pDispatch->EmitCALL(METHOD__INTERFACEMARSHALER__GET_OBJECT_FOR_COM_CALLABLE_WRAPPER_IUNKNOWN, 1, 1);
+
+        if (SF_IsFieldGetterStub(dwStubFlags)
+            || SF_IsFieldSetterStub(dwStubFlags)
+            || m_slIL.GetTargetMD()->IsInterface())
+        {
+            // Make sure we're not trying to call on the class interface of a class with ComVisible(false) members
+            //  in its hierarchy.
+            // If we have a fieldcall or a null interface MD, we could be dealing with the IClassX interface.
+            ILCodeStream* pSetup = m_slIL.GetSetupCodeStream();
+            pSetup->EmitLDARG(0);
+            pSetup->EmitCALL(METHOD__INTERFACEMARSHALER__VALIDATE_COM_VISIBILITY_FOR_IUNKNOWN, 1, 0);
+        }
     }
 };
 
@@ -2202,15 +2222,11 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             pcsEmit->EmitLDIND_REF();                  // Get Delegate object
             pcsEmit->EmitLDFLD(tokDelegate_methodPtr); // get _methodPtr
         }
-#ifdef FEATURE_COMINTEROP
-        else if (SF_IsCOMStub(dwStubFlags)) // COM -> CLR call
+        else
         {
-            // managed target is passed directly in the secret argument
-            EmitLoadStubContext(pcsEmit, dwStubFlags);
-        }
-#endif // FEATURE_COMINTEROP
-        else // direct reverse P/Invoke (CoreCLR hosting)
-        {
+            // One of the following:
+            // - COM -> CLR call
+            // - direct reverse P/Invoke (CoreCLR hosting)
             EmitLoadStubContext(pcsEmit, dwStubFlags);
             CONSISTENCY_CHECK(0 == offsetof(UMEntryThunkData, m_pManagedTarget)); // if this changes, just add back the EmitLDC/EmitADD below
             // pcsEmit->EmitLDC(offsetof(UMEntryThunkData, m_pManagedTarget));
@@ -3755,6 +3771,13 @@ static void CreatePInvokeStubWorker(StubState*               pss,
     if (SF_IsCOMStub(dwStubFlags))
     {
         ms = MarshalInfo::MARSHAL_SCENARIO_COMINTEROP;
+
+        if (SF_IsReverseStub(dwStubFlags))
+        {
+            // Reverse COM interop stubs have an implicit "this" parameter that is the first parameter on the native side,
+            // but doesn't exist on the managed side. Account for this in the argument offset.
+            argOffset++;
+        }
     }
     else
 #endif // FEATURE_COMINTEROP
