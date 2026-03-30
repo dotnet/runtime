@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
   <PropertyGroup>
+    <HelixBaseUri>https://helix.int-dot.net/</HelixBaseUri>
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
