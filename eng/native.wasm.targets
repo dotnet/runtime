@@ -1,7 +1,12 @@
 <Project>
   <Import Project="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
 
-  <ItemGroup>
+  <!-- These packages provide ICU and timezone data paths for the native build (CMake).
+       Skip them during app-level relink (IsBrowserWasmProject) since the runtime pack
+       already includes the pre-built native files, and the NuGet contentFiles (timezone
+       data, READMEs) would pollute the app's Content items causing VFS/StaticWebAssets
+       validation failures. -->
+  <ItemGroup Condition="'$(IsBrowserWasmProject)' != 'true'">
     <PackageReference Condition="'$(TargetsWasm)' == 'true'" Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
     <PackageReference Condition="'$(TargetsWasm)' == 'true'" Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>

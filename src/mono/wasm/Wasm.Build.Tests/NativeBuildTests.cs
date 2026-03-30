@@ -13,7 +13,6 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    [TestCategory("native")]
     public class NativeBuildTests : WasmTemplateTestsBase
     {
         public NativeBuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -23,6 +22,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("native")]
         public async Task SimpleNativeBuild(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -41,6 +41,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true)]
+        [TestCategory("native")]
         public void AOTNotSupportedWithNoTrimming(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -59,6 +60,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("native")]
         public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(Configuration config, bool aot)
         {
             string printFileTypeTarget = @"
@@ -91,6 +93,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("native")]
         public void NativeBuildIsRequired(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -105,6 +108,7 @@ namespace Wasm.Build.Tests
         }
 
         [Fact]
+        [TestCategory("coreclr-native")]
         public async Task ZipArchiveInteropTest()
         {
             Configuration config = Configuration.Debug;
