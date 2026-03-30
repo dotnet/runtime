@@ -525,6 +525,14 @@ HARDWARE_INTRINSIC(Sve,           TransposeEven_Predicates,                     
 HARDWARE_INTRINSIC(Sve,           TransposeOdd_Predicates,                                          -1,      2,     {INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2},    HW_Category_SIMD,                  HW_Flag_Scalable|HW_Flag_ReturnsPerElementMask)
 HARDWARE_INTRINSIC(Sve,           ReverseElement_Predicates,                                        -1,      1,     {INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev},     HW_Category_SIMD,                  HW_Flag_Scalable|HW_Flag_ReturnsPerElementMask)
 
+// ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+//                 ISA            Function name                                              SIMD size  NumArg                                                                                                                 Instructions                                                                                        Category                           Flags
+//                                                                                                                  {TYP_BYTE,           TYP_UBYTE,          TYP_SHORT,          TYP_USHORT,         TYP_INT,            TYP_UINT,           TYP_LONG,           TYP_ULONG,          TYP_FLOAT,          TYP_DOUBLE}
+// ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+// SVE Implementation of VectorT Intrinsics
+#define FIRST_NI_VectorT          NI_Illegal
+#define LAST_NI_VectorT           NI_Illegal
+
 #endif // FEATURE_HW_INTRINSIC
 
 #undef HARDWARE_INTRINSIC
