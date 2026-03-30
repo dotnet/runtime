@@ -549,9 +549,14 @@ namespace System
                 {
                     for (int i = 0; i < bits.Length; i++)
                     {
-                        UInt128 p = (UInt128)bits[i] * multiplier + carry;
-                        bits[i] = (nuint)(ulong)p;
-                        carry = (nuint)(ulong)(p >> 64);
+                        ulong high = Math.BigMul(bits[i], multiplier, out ulong low);
+                        ulong lowWithAdd = low + carry;
+                        bits[i] = (nuint)lowWithAdd;
+                        if (lowWithAdd < low)
+                        {
+                            high++;
+                        }
+                        carry = (nuint)high;
                     }
                 }
                 else
