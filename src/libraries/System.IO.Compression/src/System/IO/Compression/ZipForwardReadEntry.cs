@@ -135,7 +135,7 @@ public sealed class ZipForwardReadEntry
     /// the data has been copied into a <see cref="MemoryStream"/> that remains valid
     /// independently.
     /// </remarks>
-    public Stream? DataStream { get; internal set; }
+    public Stream? DataStream { get; }
 
     /// <summary>
     /// Extracts the entry to a file on disk.
@@ -145,13 +145,31 @@ public sealed class ZipForwardReadEntry
     /// <see langword="true"/> to overwrite an existing file; otherwise <see langword="false"/>.
     /// </param>
     /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is null or empty.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The entry is a directory or has no data (<see cref="DataStream"/> is <see langword="null"/>).
+    /// </exception>
     public void ExtractToFile(string destinationFileName, bool overwrite)
     {
         ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
 
+        if (DataStream is null)
+        {
+            throw new InvalidOperationException(SR.ZipStreamEntryNoDataToExtract);
+        }
+
         FileMode mode = overwrite ? FileMode.Create : FileMode.CreateNew;
         using FileStream fs = new(destinationFileName, mode, FileAccess.Write, FileShare.None);
-        DataStream?.CopyTo(fs);
+        DataStream.CopyTo(fs);
+
+        try
+        {
+            File.SetLastWriteTime(destinationFileName, LastModified.DateTime);
+        }
+        catch
+        {
+            // Some platforms (e.g. Android) may not support setting the last write time.
+            // Extraction should not fail because of that.
+        }
     }
 
     /// <summary>
@@ -163,20 +181,35 @@ public sealed class ZipForwardReadEntry
     /// </param>
     /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentException"><paramref name="destinationFileName"/> is null or empty.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The entry is a directory or has no data (<see cref="DataStream"/> is <see langword="null"/>).
+    /// </exception>
     public async Task ExtractToFileAsync(string destinationFileName, bool overwrite,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
+
+        if (DataStream is null)
+        {
+            throw new InvalidOperationException(SR.ZipStreamEntryNoDataToExtract);
+        }
 
         FileMode mode = overwrite ? FileMode.Create : FileMode.CreateNew;
         FileStream fs = new(destinationFileName, mode, FileAccess.Write, FileShare.None,
             bufferSize: 0x1000, useAsync: true);
         await using (fs.ConfigureAwait(false))
         {
-            if (DataStream is not null)
-            {
-                await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
-            }
+            await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
+        }
+
+        try
+        {
+            File.SetLastWriteTime(destinationFileName, LastModified.DateTime);
+        }
+        catch
+        {
+            // Some platforms (e.g. Android) may not support setting the last write time.
+            // Extraction should not fail because of that.
         }
     }
 

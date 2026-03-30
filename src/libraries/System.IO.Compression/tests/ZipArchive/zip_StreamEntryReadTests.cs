@@ -33,9 +33,7 @@ namespace System.IO.Compression.Tests
 
             for (int i = 0; i < expectedContents.Length; i++)
             {
-                ZipForwardReadEntry? entry = async
-                    ? await reader.GetNextEntryAsync()
-                    : reader.GetNextEntry();
+                ZipForwardReadEntry? entry = await GetNextEntry(reader, async);
 
                 Assert.NotNull(entry);
                 Assert.NotNull(entry.DataStream);
@@ -46,9 +44,7 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(expectedContents[i], decompressed);
             }
 
-            ZipForwardReadEntry? end = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? end = await GetNextEntry(reader, async);
             Assert.Null(end);
         }
 
@@ -64,9 +60,7 @@ namespace System.IO.Compression.Tests
 
             for (int i = 0; i < expectedContents.Length; i++)
             {
-                ZipForwardReadEntry? entry = async
-                    ? await reader.GetNextEntryAsync()
-                    : reader.GetNextEntry();
+                ZipForwardReadEntry? entry = await GetNextEntry(reader, async);
 
                 Assert.NotNull(entry);
                 Assert.NotNull(entry.DataStream);
@@ -85,13 +79,12 @@ namespace System.IO.Compression.Tests
             byte[][] expectedContents = [s_smallContent, s_mediumContent, s_largeContent];
 
             using MemoryStream archiveStream = new(zipBytes);
-            using ZipStreamReader reader = new(archiveStream);
+            using WrappedStream nonSeekableStream = new(archiveStream, canRead: true, canWrite: false, canSeek: false);
+            using ZipStreamReader reader = new(nonSeekableStream);
 
             for (int i = 0; i < expectedContents.Length; i++)
             {
-                ZipForwardReadEntry? entry = async
-                    ? await reader.GetNextEntryAsync()
-                    : reader.GetNextEntry();
+                ZipForwardReadEntry? entry = await GetNextEntry(reader, async);
 
                 Assert.NotNull(entry);
                 Assert.NotNull(entry.DataStream);
@@ -109,7 +102,8 @@ namespace System.IO.Compression.Tests
             byte[] zipBytes = CreateZipWithEntries(CompressionLevel.NoCompression, seekable: false);
 
             using MemoryStream archiveStream = new(zipBytes);
-            using ZipStreamReader reader = new(archiveStream);
+            using WrappedStream nonSeekableStream = new(archiveStream, canRead: true, canWrite: false, canSeek: false);
+            using ZipStreamReader reader = new(nonSeekableStream);
 
             if (async)
             {
@@ -128,18 +122,15 @@ namespace System.IO.Compression.Tests
             byte[] zipBytes = CreateZipWithEntries(CompressionLevel.Optimal, seekable: true);
 
             using MemoryStream archiveStream = new(zipBytes);
-            using ZipStreamReader reader = new(archiveStream);
+            using WrappedStream nonSeekableStream = new(archiveStream, canRead: true, canWrite: false, canSeek: false);
+            using ZipStreamReader reader = new(nonSeekableStream);  
 
-            ZipForwardReadEntry? entry = async
-                ? await reader.GetNextEntryAsync(copyData: true)
-                : reader.GetNextEntry(copyData: true);
+            ZipForwardReadEntry? entry = await GetNextEntry(reader, async, copyData: true);
 
             Assert.NotNull(entry);
             Assert.NotNull(entry.DataStream);
 
-            ZipForwardReadEntry? next = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? next = await GetNextEntry(reader, async);
             Assert.NotNull(next);
 
             entry.DataStream.Position = 0;
@@ -156,20 +147,13 @@ namespace System.IO.Compression.Tests
             using MemoryStream archiveStream = new(zipBytes);
             using ZipStreamReader reader = new(archiveStream);
 
-            ZipForwardReadEntry? first = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? first = await GetNextEntry(reader, async);
             Assert.NotNull(first);
 
             byte[] partial = new byte[5];
-            if (async)
-                await first.DataStream!.ReadAsync(partial);
-            else
-                first.DataStream!.Read(partial);
+            await ReadStream(first.DataStream!, partial, async);
 
-            ZipForwardReadEntry? second = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? second = await GetNextEntry(reader, async);
 
             Assert.NotNull(second);
             Assert.Equal("medium.bin", second.FullName);
@@ -187,20 +171,13 @@ namespace System.IO.Compression.Tests
             using MemoryStream archiveStream = new(zipBytes);
             using ZipStreamReader reader = new(archiveStream);
 
-            ZipForwardReadEntry? first = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? first = await GetNextEntry(reader, async);
             Assert.NotNull(first);
 
             byte[] partial = new byte[3];
-            if (async)
-                await first.DataStream!.ReadAsync(partial);
-            else
-                first.DataStream!.Read(partial);
+            await ReadStream(first.DataStream!, partial, async);
 
-            ZipForwardReadEntry? second = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? second = await GetNextEntry(reader, async);
 
             Assert.NotNull(second);
             Assert.Equal("medium.bin", second.FullName);
@@ -217,9 +194,7 @@ namespace System.IO.Compression.Tests
 
             using ZipStreamReader reader = new(ms);
 
-            ZipForwardReadEntry? entry = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? entry = await GetNextEntry(reader, async);
 
             Assert.NotNull(entry);
             Assert.Equal(ZipCompressionMethod.Deflate64, entry.CompressionMethod);
@@ -245,9 +220,7 @@ namespace System.IO.Compression.Tests
             ms.Position = 0;
             using ZipStreamReader reader = new(ms);
 
-            ZipForwardReadEntry? entry = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? entry = await GetNextEntry(reader, async);
 
             Assert.NotNull(entry);
             Assert.Equal(entryName, entry.FullName);
@@ -268,7 +241,7 @@ namespace System.IO.Compression.Tests
             bool foundUnencrypted = false;
 
             ZipForwardReadEntry? entry;
-            while ((entry = async ? await reader.GetNextEntryAsync() : reader.GetNextEntry()) is not null)
+            while ((entry = await GetNextEntry(reader, async)) is not null)
             {
                 if (entry.IsEncrypted)
                     foundEncrypted = true;
@@ -304,22 +277,14 @@ namespace System.IO.Compression.Tests
             using MemoryStream archiveStream = new(zipBytes);
             ZipStreamReader reader = new(archiveStream);
 
-            ZipForwardReadEntry? entry = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? entry = await GetNextEntry(reader, async);
 
             Assert.NotNull(entry);
 
             byte[] partial = new byte[5];
-            if (async)
-                await entry.DataStream!.ReadAsync(partial);
-            else
-                entry.DataStream!.Read(partial);
+            await ReadStream(entry.DataStream!, partial, async);
 
-            if (async)
-                await reader.DisposeAsync();
-            else
-                reader.Dispose();
+            await DisposeReader(reader, async);
         }
 
         [Theory]
@@ -332,9 +297,7 @@ namespace System.IO.Compression.Tests
             ms.Position = 0;
             using ZipStreamReader reader = new(ms);
 
-            ZipForwardReadEntry? entry = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? entry = await GetNextEntry(reader, async);
 
             Assert.Null(entry);
         }
@@ -348,10 +311,7 @@ namespace System.IO.Compression.Tests
             using MemoryStream archiveStream = new(zipBytes);
 
             ZipStreamReader reader = new(archiveStream, leaveOpen: true);
-            if (async)
-                await reader.DisposeAsync();
-            else
-                reader.Dispose();
+            await DisposeReader(reader, async);
 
             Assert.True(archiveStream.CanRead);
         }
@@ -369,9 +329,7 @@ namespace System.IO.Compression.Tests
             ms.Position = 0;
             using ZipStreamReader reader = new(ms, entryNameEncoding: Encoding.UTF8, leaveOpen: true);
 
-            ZipForwardReadEntry? entry = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? entry = await GetNextEntry(reader, async);
 
             Assert.NotNull(entry);
             Assert.Equal("hello.txt", entry.FullName);
@@ -387,29 +345,21 @@ namespace System.IO.Compression.Tests
             using ZipStreamReader reader = new(archiveStream);
 
             // Skip first entry
-            ZipForwardReadEntry? first = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? first = await GetNextEntry(reader, async);
             Assert.NotNull(first);
 
             // Read second entry fully
-            ZipForwardReadEntry? second = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? second = await GetNextEntry(reader, async);
             Assert.NotNull(second);
             byte[] data = await ReadStreamFully(second.DataStream!, async);
             Assert.Equal(s_mediumContent, data);
 
             // Skip third entry
-            ZipForwardReadEntry? third = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? third = await GetNextEntry(reader, async);
             Assert.NotNull(third);
 
             // Confirm end
-            ZipForwardReadEntry? end = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? end = await GetNextEntry(reader, async);
             Assert.Null(end);
         }
 
@@ -423,15 +373,10 @@ namespace System.IO.Compression.Tests
             ZipStreamReader reader = new(archiveStream);
 
             // Read one entry to ensure the reader was functional.
-            ZipForwardReadEntry? entry = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? entry = await GetNextEntry(reader, async);
             Assert.NotNull(entry);
 
-            if (async)
-                await reader.DisposeAsync();
-            else
-                reader.Dispose();
+            await DisposeReader(reader, async);
 
             if (async)
             {
@@ -456,18 +401,14 @@ namespace System.IO.Compression.Tests
             // Read first entry with copyData: true — exercises the path that
             // eagerly decompresses, copies into a MemoryStream, then reads the
             // data descriptor to validate CRC.
-            ZipForwardReadEntry? first = async
-                ? await reader.GetNextEntryAsync(copyData: true)
-                : reader.GetNextEntry(copyData: true);
+            ZipForwardReadEntry? first = await GetNextEntry(reader, async, copyData: true);
 
             Assert.NotNull(first);
             Assert.NotNull(first.DataStream);
 
             // Advance to the next entry to confirm the stream position is correct
             // after consuming the data descriptor.
-            ZipForwardReadEntry? second = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
+            ZipForwardReadEntry? second = await GetNextEntry(reader, async);
             Assert.NotNull(second);
             Assert.Equal("medium.bin", second.FullName);
 
@@ -480,6 +421,144 @@ namespace System.IO.Compression.Tests
             byte[] secondData = await ReadStreamFully(second.DataStream!, async);
             Assert.Equal(s_mediumContent, secondData);
         }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToFile_CreatesFileWithExpectedContent(bool async)
+        {
+            byte[] zipBytes = CreateZipWithEntries(CompressionLevel.Optimal, seekable: true);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            ZipForwardReadEntry? entry = await GetNextEntry(reader, async);
+
+            Assert.NotNull(entry);
+            Assert.Equal("small.txt", entry.FullName);
+
+            string tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            try
+            {
+                await ExtractEntryToFile(entry, tempPath, overwrite: true, async);
+
+                byte[] written = File.ReadAllBytes(tempPath);
+                Assert.Equal(s_smallContent, written);
+            }
+            finally
+            {
+                File.Delete(tempPath);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToFile_OverwriteTrue_ReplacesExistingFile(bool async)
+        {
+            byte[] zipBytes = CreateZipWithEntries(CompressionLevel.Optimal, seekable: true);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            ZipForwardReadEntry? entry = await GetNextEntry(reader, async);
+
+            Assert.NotNull(entry);
+
+            string tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            try
+            {
+                // Create a pre-existing file with different content.
+                File.WriteAllText(tempPath, "old content");
+
+                await ExtractEntryToFile(entry, tempPath, overwrite: true, async);
+
+                byte[] written = File.ReadAllBytes(tempPath);
+                Assert.Equal(s_smallContent, written);
+            }
+            finally
+            {
+                File.Delete(tempPath);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToFile_OverwriteFalse_ThrowsWhenFileExists(bool async)
+        {
+            byte[] zipBytes = CreateZipWithEntries(CompressionLevel.Optimal, seekable: true);
+
+            using MemoryStream archiveStream = new(zipBytes);
+            using ZipStreamReader reader = new(archiveStream);
+
+            ZipForwardReadEntry? entry = await GetNextEntry(reader, async);
+
+            Assert.NotNull(entry);
+
+            string tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            try
+            {
+                File.WriteAllText(tempPath, "existing");
+
+                if (async)
+                    await Assert.ThrowsAsync<IOException>(() => entry.ExtractToFileAsync(tempPath, overwrite: false));
+                else
+                    Assert.Throws<IOException>(() => entry.ExtractToFile(tempPath, overwrite: false));
+            }
+            finally
+            {
+                File.Delete(tempPath);
+            }
+        }
+
+        [Fact]
+        public void Constructor_NullStream_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("stream", () => new ZipStreamReader(null!));
+        }
+
+        [Fact]
+        public void Constructor_UnreadableStream_ThrowsArgumentException()
+        {
+            using MemoryStream ms = new();
+            using WrappedStream unreadable = new(ms, canRead: false, canWrite: true, canSeek: true);
+
+            Assert.Throws<ArgumentException>("stream", () => new ZipStreamReader(unreadable));
+        }
+
+        // ── Sync/async dispatch helpers ──────────────────────────────────────
+
+        private static async ValueTask<ZipForwardReadEntry?> GetNextEntry(
+            ZipStreamReader reader, bool async, bool copyData = false)
+        {
+            return async
+                ? await reader.GetNextEntryAsync(copyData: copyData)
+                : reader.GetNextEntry(copyData: copyData);
+        }
+
+        private static async Task ExtractEntryToFile(
+            ZipForwardReadEntry entry, string destinationFileName, bool overwrite, bool async)
+        {
+            if (async)
+                await entry.ExtractToFileAsync(destinationFileName, overwrite);
+            else
+                entry.ExtractToFile(destinationFileName, overwrite);
+        }
+
+        private static async Task DisposeReader(ZipStreamReader reader, bool async)
+        {
+            if (async)
+                await reader.DisposeAsync();
+            else
+                reader.Dispose();
+        }
+
+        private static async ValueTask<int> ReadStream(Stream stream, byte[] buffer, bool async)
+        {
+            return async
+                ? await stream.ReadAsync(buffer)
+                : stream.Read(buffer);
+        }
+
+        // ── Test data helpers ────────────────────────────────────────────────
 
         private static byte[] CreateZipWithEntries(CompressionLevel compressionLevel, bool seekable)
         {
@@ -528,120 +607,6 @@ namespace System.IO.Compression.Tests
             }
 
             return result.ToArray();
-        }
-
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task ExtractToFile_CreatesFileWithExpectedContent(bool async)
-        {
-            byte[] zipBytes = CreateZipWithEntries(CompressionLevel.Optimal, seekable: true);
-
-            using MemoryStream archiveStream = new(zipBytes);
-            using ZipStreamReader reader = new(archiveStream);
-
-            ZipForwardReadEntry? entry = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
-
-            Assert.NotNull(entry);
-            Assert.Equal("small.txt", entry.FullName);
-
-            string tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            try
-            {
-                if (async)
-                    await entry.ExtractToFileAsync(tempPath, overwrite: true);
-                else
-                    entry.ExtractToFile(tempPath, overwrite: true);
-
-                byte[] written = File.ReadAllBytes(tempPath);
-                Assert.Equal(s_smallContent, written);
-            }
-            finally
-            {
-                File.Delete(tempPath);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task ExtractToFile_OverwriteTrue_ReplacesExistingFile(bool async)
-        {
-            byte[] zipBytes = CreateZipWithEntries(CompressionLevel.Optimal, seekable: true);
-
-            using MemoryStream archiveStream = new(zipBytes);
-            using ZipStreamReader reader = new(archiveStream);
-
-            ZipForwardReadEntry? entry = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
-
-            Assert.NotNull(entry);
-
-            string tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            try
-            {
-                // Create a pre-existing file with different content.
-                File.WriteAllText(tempPath, "old content");
-
-                if (async)
-                    await entry.ExtractToFileAsync(tempPath, overwrite: true);
-                else
-                    entry.ExtractToFile(tempPath, overwrite: true);
-
-                byte[] written = File.ReadAllBytes(tempPath);
-                Assert.Equal(s_smallContent, written);
-            }
-            finally
-            {
-                File.Delete(tempPath);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task ExtractToFile_OverwriteFalse_ThrowsWhenFileExists(bool async)
-        {
-            byte[] zipBytes = CreateZipWithEntries(CompressionLevel.Optimal, seekable: true);
-
-            using MemoryStream archiveStream = new(zipBytes);
-            using ZipStreamReader reader = new(archiveStream);
-
-            ZipForwardReadEntry? entry = async
-                ? await reader.GetNextEntryAsync()
-                : reader.GetNextEntry();
-
-            Assert.NotNull(entry);
-
-            string tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            try
-            {
-                File.WriteAllText(tempPath, "existing");
-
-                if (async)
-                    await Assert.ThrowsAsync<IOException>(() => entry.ExtractToFileAsync(tempPath, overwrite: false));
-                else
-                    Assert.Throws<IOException>(() => entry.ExtractToFile(tempPath, overwrite: false));
-            }
-            finally
-            {
-                File.Delete(tempPath);
-            }
-        }
-
-        [Fact]
-        public void Constructor_NullStream_ThrowsArgumentNullException()
-        {
-            Assert.Throws<ArgumentNullException>("stream", () => new ZipStreamReader(null!));
-        }
-
-        [Fact]
-        public void Constructor_UnreadableStream_ThrowsArgumentException()
-        {
-            using MemoryStream ms = new();
-            using WrappedStream unreadable = new(ms, canRead: false, canWrite: true, canSeek: true);
-
-            Assert.Throws<ArgumentException>("stream", () => new ZipStreamReader(unreadable));
         }
     }
 }

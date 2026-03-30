@@ -383,4 +383,7 @@
   <data name="ZipStreamEncryptedDataDescriptorNotSupported" xml:space="preserve">
     <value>Encrypted entries with data descriptors cannot be read in forward-only mode because the compressed size is unknown.</value>
   </data>
+  <data name="ZipStreamEntryNoDataToExtract" xml:space="preserve">
+    <value>Cannot extract a directory entry or an entry with no data to a file. Check IsDirectory and DataStream before calling ExtractToFile.</value>
+  </data>
 </root>

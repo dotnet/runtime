@@ -71,7 +71,10 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
             throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
         }
 
-        _archiveStream = stream;
+        // ReadAheadStream makes non-seekable streams appear seekable so that
+        // DeflateStream.TryRewindStream can push back unconsumed input after
+        // decompression finishes. Already-seekable streams need no wrapper.
+        _archiveStream = stream.CanSeek ? stream : new ReadAheadStream(stream);
         _leaveOpen = leaveOpen;
         _entryNameEncoding = entryNameEncoding;
     }
@@ -126,8 +129,10 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
 
         bool isEncrypted = (generalPurposeBitFlags & 1) != 0;
 
+        ZipCompressionMethod method = (ZipCompressionMethod)compressionMethod;
+
         Stream? dataStream = CreateDataStream(
-            (ZipCompressionMethod)compressionMethod, compressedSize, uncompressedSize,
+            method, compressedSize, uncompressedSize,
             crc32, hasDataDescriptor, isEncrypted, out CrcValidatingReadStream? crcStream);
 
         Stream? originalDataStream = null;
@@ -141,7 +146,7 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         }
 
         ZipForwardReadEntry entry = new(
-            fullName, (ZipCompressionMethod)compressionMethod, lastModified, crc32,
+            fullName, method, lastModified, crc32,
             compressedSize, uncompressedSize, generalPurposeBitFlags, versionNeeded,
             hasDataDescriptor, dataStream);
 
@@ -221,8 +226,10 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
             method, compressedSize, uncompressedSize, crc32,
             hasDataDescriptor, isEncrypted, out CrcValidatingReadStream? crcStream);
 
+        Stream? originalDataStream = null;
         if (copyData && dataStream is not null)
         {
+            originalDataStream = dataStream;
             MemoryStream ms = new();
             await dataStream.CopyToAsync(ms, cancellationToken).ConfigureAwait(false);
             ms.Position = 0;
@@ -237,6 +244,13 @@ public sealed class ZipStreamReader : IDisposable, IAsyncDisposable
         if (copyData && hasDataDescriptor && crcStream is not null)
         {
             await ReadDataDescriptorAsync(entry, crcStream, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Dispose the original decompression/CRC stream after copying (and after
+        // reading the data descriptor when applicable) to release inflater resources.
+        if (originalDataStream is not null)
+        {
+            await originalDataStream.DisposeAsync().ConfigureAwait(false);
         }
 
         if (!copyData)
