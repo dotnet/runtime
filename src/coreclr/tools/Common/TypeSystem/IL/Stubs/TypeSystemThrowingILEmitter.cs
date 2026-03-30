@@ -65,6 +65,11 @@ namespace Internal.IL.Stubs
             else if (exceptionType == typeof(TypeSystemException.BadImageFormatException))
             {
                 helper = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowBadImageFormatException"u8);
+
+                if (helper.Signature.Length != exception.Arguments.Count + 1)
+                {
+                    helper = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowBadImageFormatExceptionWithArgument"u8);
+                }
             }
             else if (exceptionType == typeof(TypeSystemException.MarshalDirectiveException))
             {

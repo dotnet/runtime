@@ -194,13 +194,24 @@ namespace ILCompiler
                     filePath = Path.GetFullPath(filePath);
                     peReader = OpenPEFile(filePath, out mappedViewAccessor);
 
+                    try
+                    {
 #if !READYTORUN
-                if (peReader.HasMetadata && (peReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == 0)
-                    throw new NotSupportedException($"Error: C++/CLI is not supported: '{filePath}'");
+                    if (peReader.HasMetadata && (peReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == 0)
+                        throw new NotSupportedException($"Error: C++/CLI is not supported: '{filePath}'");
 #endif
+                        pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder())
+                                    ?? OpenAssociatedSymbolFile(filePath, peReader);
 
-                    pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder())
-                                ?? OpenAssociatedSymbolFile(filePath, peReader);
+                        if (!peReader.HasMetadata && !throwOnFailureToLoad)
+                            return null;
+                    }
+                    catch (BadImageFormatException)
+                    {
+                        if (!throwOnFailureToLoad)
+                            return null;
+                        ThrowHelper.ThrowBadImageFormatException(ExceptionStringID.BadImageFormatFileName, filePath);
+                    }
                 }
                 else
                 {
@@ -208,11 +219,6 @@ namespace ILCompiler
                     peReader = oldModuleData.Module.PEReader;
                     mappedViewAccessor = oldModuleData.MappedViewAccessor;
                     pdbReader = oldModuleData.Module.PdbReader;
-                }
-
-                if (!peReader.HasMetadata && !throwOnFailureToLoad)
-                {
-                    return null;
                 }
 
                 EcmaModule module = EcmaModule.Create(this, peReader, containingAssembly: null, pdbReader);

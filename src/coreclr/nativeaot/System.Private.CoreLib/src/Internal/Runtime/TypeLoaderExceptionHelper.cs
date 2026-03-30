@@ -118,6 +118,8 @@ namespace Internal.Runtime
                     return SR.IO_FileNotFound_FileName;
                 case ExceptionStringID.BadImageFormatGeneric:
                     return SR.Arg_BadImageFormatException;
+                case ExceptionStringID.BadImageFormatFileName:
+                    return SR.BadImageFormat_FileName;
                 case ExceptionStringID.MarshalDirectiveGeneric:
                     return SR.Arg_MarshalDirectiveException;
                 case ExceptionStringID.AmbiguousMatchUnsafeAccessor:

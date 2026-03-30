@@ -66,6 +66,12 @@ namespace Internal.TypeSystem
         }
 
         [System.Diagnostics.DebuggerHidden]
+        public static void ThrowBadImageFormatException(ExceptionStringID id, string fileName)
+        {
+            throw new TypeSystemException.BadImageFormatException(id, fileName);
+        }
+
+        [System.Diagnostics.DebuggerHidden]
         public static void ThrowMarshalDirectiveException()
         {
             throw new TypeSystemException.MarshalDirectiveException(ExceptionStringID.MarshalDirectiveGeneric);
