@@ -5032,31 +5032,12 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
                 ULONG32 fetched = 0;
                 IfFailRet(GetCode(pMap->nativeStartOffset, pMap->nativeStartOffset+ARRAY_SIZE(nativeBuffer), ARRAY_SIZE(nativeBuffer), nativeBuffer, &fetched));
 
-                int skipBytes = 0;
-
-#if defined(PSEUDORANDOM_NOP_INSERTION)
-                // Skip nop sleds the JIT adds. These instructions as a security measure,
-                // and incorrectly reports to us the wrong offset of the call instruction.
-                const BYTE nop_opcode = 0x90;
-                while (fetched && nativeBuffer[0] == nop_opcode)
-                {
-                    skipBytes++;
-
-                    for (int j = 1; j < ARRAY_SIZE(nativeBuffer) && nativeBuffer[j] == nop_opcode; ++j)
-                        skipBytes++;
-
-                    // We must have at least one skip byte since the outer while ensures it.  Thus we always need to reread
-                    // the buffer at the end of this loop.
-                    IfFailRet(GetCode(pMap->nativeStartOffset+skipBytes, pMap->nativeStartOffset+skipBytes+ARRAY_SIZE(nativeBuffer), ARRAY_SIZE(nativeBuffer), nativeBuffer, &fetched));
-                }
-#endif
-
                 // Get the length of the call instruction.
                 int offset = GetCallInstructionLength(nativeBuffer, fetched);
                 if (offset == -1)
                     return E_UNEXPECTED; // Could not decode instruction, this should never happen.
 
-                pOffsets[found] = pMap->nativeStartOffset + offset + skipBytes;
+                pOffsets[found] = pMap->nativeStartOffset + offset;
             }
 
             found++;
