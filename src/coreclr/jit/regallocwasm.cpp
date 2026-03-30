@@ -348,6 +348,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForBlockStore(node->AsBlk());
             break;
 
+        case GT_INDEX_ADDR:
+            CollectReferencesForIndexAddr(node->AsIndexAddr());
+            break;
+
         default:
             assert(!node->OperIsLocalStore());
             break;
@@ -387,6 +391,22 @@ void WasmRegAlloc::CollectReferencesForLclHeap(GenTreeOp* lclHeapNode)
         regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
         assert(releasedReg == internalReg);
     }
+}
+
+//------------------------------------------------------------------------
+// CollectReferencesForIndexAddr: Collect virtual register references for an INDEX_ADDR.
+//
+// Reserves temporary registers for bounds-checked INDEX_ADDR operations
+//
+// Arguments:
+//    indexAddrNode - The INDEX_ADDR node
+//
+void WasmRegAlloc::CollectReferencesForIndexAddr(GenTreeIndexAddr* indexAddrNode)
+{
+    // Bounds checking requires both operands be used multiple times.
+    //
+    ConsumeTemporaryRegForOperand(indexAddrNode->Index() DEBUGARG("bounds check"));
+    ConsumeTemporaryRegForOperand(indexAddrNode->Arr() DEBUGARG("bounds check"));
 }
 
 //------------------------------------------------------------------------
@@ -557,6 +577,9 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 
     LIR::ReadOnlyRange storeRange(store, store);
     m_compiler->GetLowering()->LowerRange(m_currentBlock, storeRange);
+
+    // FIXME-WASM: Should we be doing this here?
+    // CollectReferencesForNode(store);
 }
 
 //------------------------------------------------------------------------

@@ -592,6 +592,13 @@ OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, "JitDoOptimizeMaskConversions",
 OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
 OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
                   "JitAsyncDefaultValueAnalysisRange") // Enable async default value analysis based on method hash range
+
+// Enable async preserved value analysis based on method hash range. This
+// analysis computes state that is guaranteed to not have been changed since
+// the last time suspension happened, and skips storing them in the case where
+// a continuation is being reused.
+OPT_CONFIG_STRING(JitAsyncPreservedValueAnalysisRange, "JitAsyncPreservedValueAnalysisRange")
+
 // Enable continuation reuse based on method hash range
 OPT_CONFIG_STRING(JitAsyncReuseContinuationsRange, "JitAsyncReuseContinuationsRange")
 // Save and reuse continuation instances in runtime async functions. Also
