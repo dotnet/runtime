@@ -39,14 +39,13 @@ System.Formats.Cbor.CborWriter</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="System\Formats\Cbor\CborHelpers.netcoreapp.cs" />
     <Compile Include="System\Formats\Cbor\HalfHelpers.netcoreapp.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReader.Simple.netcoreapp.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.netcoreapp.cs" />
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="System\Formats\Cbor\CborHelpers.netstandard.cs" />
+    <Compile Include="System\Formats\Cbor\Polyfills.cs" />
     <Compile Include="System\Formats\Cbor\HalfHelpers.netstandard.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.netstandard.cs" />
   </ItemGroup>
