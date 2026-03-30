@@ -3210,8 +3210,7 @@ SWITCH_OPCODE:
                         }
                         else if (isOpenVirtual)
                         {
-                            callArgsOffset += INTERP_STACK_SLOT_SIZE;
-                            goto CALL_INTERP_METHOD;
+                            goto CALL_DELEGATE_INVOKE;
                         }
                     }
 
@@ -3227,6 +3226,7 @@ SWITCH_OPCODE:
                     }
 
                     // targetMethod holds a pointer to the Invoke method of the delegate, not the final actual target.
+CALL_DELEGATE_INVOKE:
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
                     int8_t* callArgsAddress = LOCAL_VAR_ADDR(callArgsOffset, int8_t);
 
