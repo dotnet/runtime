@@ -64,11 +64,11 @@ namespace Microsoft.Win32.SafeHandles
                     shellExecuteInfo.fMask |= Interop.Shell32.SEE_MASK_FLAG_NO_UI;
 
                 shellExecuteInfo.nShow = ProcessUtils.GetShowWindowFromWindowStyle(startInfo.WindowStyle);
-                if (!ShellExecuteOnSTAThread(&shellExecuteInfo, out int errorCode))
+                if (!ShellExecuteOnSTAThread(shellExecuteInfo, out int errorCode, out IntPtr hProcess, out IntPtr hInstApp))
                 {
                     if (errorCode == 0)
                     {
-                        errorCode = GetShellError(shellExecuteInfo.hInstApp);
+                        errorCode = GetShellError(hInstApp);
                     }
 
                     switch (errorCode)
@@ -88,7 +88,7 @@ namespace Microsoft.Win32.SafeHandles
                 // From https://learn.microsoft.com/windows/win32/api/shellapi/ns-shellapi-shellexecuteinfow:
                 // "In some cases, such as when execution is satisfied through a DDE conversation, no handle will be returned."
                 // Process.Start will return false if the handle is invalid.
-                return new SafeProcessHandle(shellExecuteInfo.hProcess);
+                return new SafeProcessHandle(hProcess);
             }
         }
 
@@ -282,14 +282,14 @@ namespace Microsoft.Win32.SafeHandles
 
         private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
 
-        private static unsafe bool ShellExecuteOnSTAThread(Interop.Shell32.SHELLEXECUTEINFO* executeInfo, out int errorCode)
+        private static unsafe bool ShellExecuteOnSTAThread(Interop.Shell32.SHELLEXECUTEINFO executeInfo, out int errorCode, out IntPtr hProcess, out IntPtr hInstApp)
         {
             bool succeeded = false;
             bool notPresent = false;
             int lastError = 0;
-            nuint executeInfoAddress = (nuint)executeInfo; // cast to nuint to allow delegate capture; safe because Join() keeps the caller's stack frame alive for the thread's lifetime
+            nuint executeInfoAddress = (nuint)(&executeInfo); // cast to nuint to allow delegate capture; safe because Join() keeps this stack frame alive for the thread's lifetime
 
-            unsafe void ShellExecuteFunction()
+            void ShellExecuteFunction()
             {
                 try
                 {
@@ -322,6 +322,8 @@ namespace Microsoft.Win32.SafeHandles
             if (notPresent)
                 throw new PlatformNotSupportedException(SR.UseShellExecuteNotSupported);
 
+            hProcess = executeInfo.hProcess;
+            hInstApp = executeInfo.hInstApp;
             errorCode = lastError;
             return succeeded;
         }
