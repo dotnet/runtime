@@ -29,10 +29,7 @@
 #include "gchelpers.inl"
 #include "eeprofinterfaces.inl"
 #include "frozenobjectheap.h"
-
-#ifdef HAVE_GCCOVER
 #include "cdacstress.h"
-#endif
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
