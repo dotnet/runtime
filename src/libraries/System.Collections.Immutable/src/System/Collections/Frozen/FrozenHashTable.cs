@@ -186,11 +186,7 @@ namespace System.Collections.Frozen
             // If the minimum bucket count combined with hash codes exceeds array length limits,
             // skip the expensive collision-counting loop below — any bucket count it finds
             // would cause Create to fail. Fall back to the next prime above uniqueCodesCount.
-#if NET
             if (minNumBuckets + hashCodes.Length > Array.MaxLength)
-#else
-            if (minNumBuckets + hashCodes.Length > 0x7FFFFFC7)
-#endif
             {
                 return HashHelpers.GetPrime(uniqueCodesCount);
             }

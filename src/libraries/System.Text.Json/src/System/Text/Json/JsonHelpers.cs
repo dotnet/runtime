@@ -247,12 +247,6 @@ namespace System.Text.Json
 #endif
         }
 
-        public static bool IsFinite(double value) =>
-            double.IsFinite(value);
-
-        public static bool IsFinite(float value) =>
-            float.IsFinite(value);
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateInt32MaxArrayLength(uint length)
         {

@@ -162,6 +162,7 @@ namespace Microsoft.Extensions.FileProviders
             string root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(Root));
 
             FileSystemWatcher? watcher;
+#if NET
             //  For browser/iOS/tvOS we will proactively fallback to polling since FileSystemWatcher is not supported.
             if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
             {
@@ -170,6 +171,7 @@ namespace Microsoft.Extensions.FileProviders
                 watcher = null;
             }
             else
+#endif
             {
                 // When UsePollingFileWatcher & UseActivePolling are set, we won't use a FileSystemWatcher.
                 watcher = UsePollingFileWatcher && UseActivePolling ? null : new FileSystemWatcher(root);
