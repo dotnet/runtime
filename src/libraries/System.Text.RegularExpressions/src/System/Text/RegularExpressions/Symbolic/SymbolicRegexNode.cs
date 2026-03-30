@@ -1372,40 +1372,62 @@ namespace System.Text.RegularExpressions.Symbolic
             if (!_info.ContainsEffect)
                 return this;
 
+            // Check the cache to avoid redundant work. The derivative of deeply nested loop patterns
+            // like ((a)*)* produces a DAG with shared sub-trees that differ only in their Effect
+            // wrappers. Without caching, each shared sub-tree is traversed once per reference rather
+            // than once per unique node, leading to exponential time complexity in the nesting depth.
+            if (builder._stripEffectsCache.TryGetValue(this, out SymbolicRegexNode<TSet>? cached))
+                return cached;
+
+            SymbolicRegexNode<TSet> result;
+
             // Recurse over the structure of the node to strip effects
             switch (_kind)
             {
                 case SymbolicRegexNodeKind.Effect:
                     Debug.Assert(_left is not null && _right is not null);
                     // This is the place where the effect (the right child) is getting ignored
-                    return _left.StripEffects(builder);
+                    result = _left.StripEffects(builder);
+                    break;
 
                 case SymbolicRegexNodeKind.Concat:
                     Debug.Assert(_left is not null && _right is not null);
                     Debug.Assert(_left._info.ContainsEffect && !_right._info.ContainsEffect);
-                    return builder.CreateConcat(_left.StripEffects(builder), _right);
+                    result = builder.CreateConcat(_left.StripEffects(builder), _right);
+                    break;
 
                 case SymbolicRegexNodeKind.Alternate:
                     Debug.Assert(_left is not null && _right is not null);
-                    // This iterative handling of nested alternations is important to avoid quadratic work in deduplicating
-                    // the elements. We don't want to omit deduplication here, since he stripping may make nodes equal.
-                    List<SymbolicRegexNode<TSet>> elems = ToList(listKind: SymbolicRegexNodeKind.Alternate);
-                    for (int i = 0; i < elems.Count; i++)
-                        elems[i] = elems[i].StripEffects(builder);
-                    return builder.Alternate(elems);
+                    // Strip effects from each child first, leveraging the cache for shared sub-trees,
+                    // then flatten and deduplicate the results. Stripping before flattening is important:
+                    // the pre-stripped tree may have exponentially many paths that collapse after effects
+                    // are removed, but the cache ensures each unique sub-tree is only processed once.
+                    {
+                        SymbolicRegexNode<TSet> strippedLeft = _left.StripEffects(builder);
+                        SymbolicRegexNode<TSet> strippedRight = _right.StripEffects(builder);
+                        List<SymbolicRegexNode<TSet>> elems = strippedLeft.ToList(listKind: SymbolicRegexNodeKind.Alternate);
+                        strippedRight.ToList(elems, listKind: SymbolicRegexNodeKind.Alternate);
+                        result = builder.Alternate(elems);
+                    }
+                    break;
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
                     Debug.Assert(_left is not null);
-                    return builder.CreateDisableBacktrackingSimulation(_left.StripEffects(builder));
+                    result = builder.CreateDisableBacktrackingSimulation(_left.StripEffects(builder));
+                    break;
 
                 case SymbolicRegexNodeKind.Loop:
                     Debug.Assert(_left is not null);
-                    return builder.CreateLoop(_left.StripEffects(builder), IsLazy, _lower, _upper);
+                    result = builder.CreateLoop(_left.StripEffects(builder), IsLazy, _lower, _upper);
+                    break;
 
                 default:
                     Debug.Fail($"{nameof(StripEffects)}:{_kind}");
                     return null;
             }
+
+            builder._stripEffectsCache[this] = result;
+            return result;
         }
 
         /// <summary>
@@ -2295,8 +2317,26 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         if (_lower is 0 or int.MaxValue)
                         {
-                            // infinite loop has the same size as a *-loop
-                            return _left.CountSingletons();
+                            int bodyCount = _left.CountSingletons();
+
+                            // When an unbounded loop's body contains another unbounded loop, the
+                            // derivative computation creates a 2-way Alternate at each nesting level
+                            // (because the Concat derivative branches when its left side is nullable).
+                            // This means the per-character derivative cost doubles with each such
+                            // nesting level. Account for this so that the NFA size estimate catches
+                            // deeply nested patterns that would cause exponential blowup.
+                            // Note: RegexNode.ReduceLoops already collapses same-laziness non-capturing
+                            // nested loops before the symbolic engine sees them, so this multiplier
+                            // primarily fires for patterns with captures or mixed laziness.
+                            // For capturing patterns like ((a)*)*, the inner loop is wrapped in
+                            // Concat(CaptureStart, Concat(Loop, CaptureEnd)), so we search through
+                            // structural wrappers to find nested unbounded loops.
+                            if (ContainsNestedUnboundedLoop(_left))
+                            {
+                                return Times(2, bodyCount);
+                            }
+
+                            return bodyCount;
                         }
 
                         // the upper bound is not being used, so the lower must be non-zero
@@ -2324,6 +2364,47 @@ namespace System.Text.RegularExpressions.Symbolic
                     // because they contain no children and therefore no singletons
                     return 0;
             }
+        }
+
+        /// <summary>
+        /// Checks whether a node contains an unbounded loop (Loop with _upper == int.MaxValue)
+        /// reachable through structural wrappers (Concat, Effect, DisableBacktrackingSimulation).
+        /// Used by CountSingletons to detect nested unbounded loops even when captures or other
+        /// structural nodes are interposed between the loops.
+        /// </summary>
+        private static bool ContainsNestedUnboundedLoop(SymbolicRegexNode<TSet> node)
+        {
+            Stack<SymbolicRegexNode<TSet>> stack = new();
+            stack.Push(node);
+
+            while (stack.Count > 0)
+            {
+                SymbolicRegexNode<TSet> current = stack.Pop();
+
+                switch (current._kind)
+                {
+                    case SymbolicRegexNodeKind.Loop:
+                        if (current._upper == int.MaxValue)
+                        {
+                            return true;
+                        }
+                        break;
+
+                    case SymbolicRegexNodeKind.Concat:
+                        Debug.Assert(current._left is not null && current._right is not null);
+                        stack.Push(current._right);
+                        stack.Push(current._left);
+                        break;
+
+                    case SymbolicRegexNodeKind.Effect:
+                    case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
+                        Debug.Assert(current._left is not null);
+                        stack.Push(current._left);
+                        break;
+                }
+            }
+
+            return false;
         }
 
         // In case of overflow in m+n, return int.MaxValue
