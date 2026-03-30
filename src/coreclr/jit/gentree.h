@@ -6810,6 +6810,13 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                                    bool       isScalar,
                                                    bool       reverseCond = false);
 
+    static NamedIntrinsic GetHWIntrinsicIdForVecCvt(Compiler* comp,
+                                                    var_types sourceType,
+                                                    var_types targetType,
+                                                    unsigned  simdSize,
+                                                    bool      preferSaturating = false,
+                                                    bool*     isSaturating     = nullptr);
+
     static var_types GetLookupTypeForCmpOp(Compiler*  comp,
                                            genTreeOps oper,
                                            var_types  type,

@@ -22007,35 +22007,17 @@ GenTree* Compiler::gtNewSimdCvtNode(
 
     GenTree* fixupVal;
 
-    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+    bool           isSaturating = false;
+    NamedIntrinsic cvtIntrinsic =
+        GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdSourceBaseType, simdTargetBaseType, simdSize,
+                                                      /* preferSaturating */ true, &isSaturating);
+
+    if (isSaturating)
     {
-        NamedIntrinsic cvtIntrinsic = NI_Illegal;
-        switch (simdTargetBaseType)
-        {
-            case TYP_INT:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation;
-                break;
-
-            case TYP_UINT:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation;
-                break;
-
-            case TYP_LONG:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation;
-                break;
-
-            case TYP_ULONG:
-                cvtIntrinsic = NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation;
-                break;
-
-            default:
-            {
-                unreached();
-            }
-        }
         return gtNewSimdHWIntrinsicNode(type, op1, cvtIntrinsic, simdSourceBaseType, simdSize);
     }
-    else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
     {
         /*Generate the control table for VFIXUPIMMSD/SS
         - For conversion to unsigned
@@ -22103,14 +22085,14 @@ GenTree* Compiler::gtNewSimdCvtNode(
         fixupVal = gtNewSimdCmpOpNode(GT_GE, type, fixupVal, maxVal, simdSourceBaseType, simdSize);
 
         // cast it
-        GenTree* castNode = gtNewSimdCvtNativeNode(type, fixupValDup, simdTargetBaseType, simdSourceBaseType, simdSize);
+        GenTree* castNode = gtNewSimdHWIntrinsicNode(type, fixupValDup, cvtIntrinsic, simdSourceBaseType, simdSize);
 
         // use the fixupVal mask with input value and max value to blend
         return gtNewSimdCndSelNode(type, fixupVal, maxValDup, castNode, simdTargetBaseType, simdSize);
     }
     else
     {
-        return gtNewSimdCvtNativeNode(type, fixupVal, simdTargetBaseType, simdSourceBaseType, simdSize);
+        return gtNewSimdHWIntrinsicNode(type, fixupVal, cvtIntrinsic, simdSourceBaseType, simdSize);
     }
 #elif defined(TARGET_ARM64)
     return gtNewSimdCvtNativeNode(type, op1, simdTargetBaseType, simdSourceBaseType, simdSize);
@@ -22130,206 +22112,8 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(
     assert(varTypeIsFloating(simdSourceBaseType));
     assert(varTypeIsIntegral(simdTargetBaseType));
 
-    // Generate intrinsic needed for conversion
-    NamedIntrinsic hwIntrinsicID = NI_Illegal;
-
-#if defined(TARGET_XARCH)
-    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512) || (simdTargetBaseType == TYP_INT));
-
-    switch (simdSourceBaseType)
-    {
-        case TYP_FLOAT:
-        {
-            switch (simdTargetBaseType)
-            {
-                case TYP_INT:
-                {
-                    switch (simdSize)
-                    {
-                        case 64:
-                        {
-                            hwIntrinsicID = NI_AVX512_ConvertToVector512Int32WithTruncation;
-                            break;
-                        }
-
-                        case 32:
-                        {
-                            hwIntrinsicID = NI_AVX_ConvertToVector256Int32WithTruncation;
-                            break;
-                        }
-
-                        case 16:
-                        {
-                            hwIntrinsicID = NI_X86Base_ConvertToVector128Int32WithTruncation;
-                            break;
-                        }
-
-                        default:
-                            unreached();
-                    }
-                    break;
-                }
-
-                case TYP_UINT:
-                {
-                    switch (simdSize)
-                    {
-                        case 64:
-                        {
-                            hwIntrinsicID = NI_AVX512_ConvertToVector512UInt32WithTruncation;
-                            break;
-                        }
-
-                        case 32:
-                        {
-                            hwIntrinsicID = NI_AVX512_ConvertToVector256UInt32WithTruncation;
-                            break;
-                        }
-
-                        case 16:
-                        {
-                            hwIntrinsicID = NI_AVX512_ConvertToVector128UInt32WithTruncation;
-                            break;
-                        }
-
-                        default:
-                            unreached();
-                    }
-                    break;
-                }
-
-                default:
-                    unreached();
-            }
-            break;
-        }
-
-        case TYP_DOUBLE:
-        {
-            switch (simdTargetBaseType)
-            {
-                case TYP_LONG:
-                {
-                    switch (simdSize)
-                    {
-                        case 64:
-                        {
-                            hwIntrinsicID = NI_AVX512_ConvertToVector512Int64WithTruncation;
-                            break;
-                        }
-
-                        case 32:
-                        {
-                            hwIntrinsicID = NI_AVX512_ConvertToVector256Int64WithTruncation;
-                            break;
-                        }
-
-                        case 16:
-                        {
-                            hwIntrinsicID = NI_AVX512_ConvertToVector128Int64WithTruncation;
-                            break;
-                        }
-
-                        default:
-                            unreached();
-                    }
-                    break;
-                }
-
-                case TYP_ULONG:
-                {
-                    switch (simdSize)
-                    {
-                        case 64:
-                        {
-                            hwIntrinsicID = NI_AVX512_ConvertToVector512UInt64WithTruncation;
-                            break;
-                        }
-
-                        case 32:
-                        {
-                            hwIntrinsicID = NI_AVX512_ConvertToVector256UInt64WithTruncation;
-                            break;
-                        }
-
-                        case 16:
-                        {
-                            hwIntrinsicID = NI_AVX512_ConvertToVector128UInt64WithTruncation;
-                            break;
-                        }
-
-                        default:
-                            unreached();
-                    }
-                    break;
-                }
-
-                default:
-                    unreached();
-            }
-            break;
-        }
-
-        default:
-            unreached();
-    }
-#elif defined(TARGET_ARM64)
-    assert((simdSize == 8) || (simdSize == 16));
-
-    switch (simdSourceBaseType)
-    {
-        case TYP_FLOAT:
-        {
-            switch (simdTargetBaseType)
-            {
-                case TYP_INT:
-                {
-                    hwIntrinsicID = NI_AdvSimd_ConvertToInt32RoundToZero;
-                    break;
-                }
-
-                case TYP_UINT:
-                {
-                    hwIntrinsicID = NI_AdvSimd_ConvertToUInt32RoundToZero;
-                    break;
-                }
-
-                default:
-                    unreached();
-            }
-            break;
-        }
-
-        case TYP_DOUBLE:
-        {
-            switch (simdTargetBaseType)
-            {
-                case TYP_LONG:
-                {
-                    hwIntrinsicID = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar
-                                                    : NI_AdvSimd_Arm64_ConvertToInt64RoundToZero;
-                    break;
-                }
-
-                case TYP_ULONG:
-                {
-                    hwIntrinsicID = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar
-                                                    : NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero;
-                    break;
-                }
-
-                default:
-                    unreached();
-            }
-            break;
-        }
-
-        default:
-            unreached();
-    }
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+    NamedIntrinsic hwIntrinsicID =
+        GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdSourceBaseType, simdTargetBaseType, simdSize);
 
     assert(hwIntrinsicID != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdSourceBaseType, simdSize);
@@ -25304,117 +25088,33 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 
         assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
         var_types tmpSimdType = (simdSize == 64) ? TYP_SIMD32 : TYP_SIMD16;
-
-        NamedIntrinsic intrinsicId;
-        var_types      opBaseType;
+        var_types opBaseType  = TYP_UNDEF;
 
         switch (simdBaseType)
         {
             case TYP_BYTE:
+            case TYP_UBYTE:
             {
-                if (simdSize == 64)
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector256SByte;
-                }
-                else
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector128SByte;
-                }
-
                 opBaseType = TYP_SHORT;
                 break;
             }
 
-            case TYP_UBYTE:
-            {
-                if (simdSize == 64)
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector256Byte;
-                }
-                else
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector128Byte;
-                }
-
-                opBaseType = TYP_USHORT;
-                break;
-            }
-
             case TYP_SHORT:
+            case TYP_USHORT:
             {
-                if (simdSize == 64)
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector256Int16;
-                }
-                else
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector128Int16;
-                }
-
                 opBaseType = TYP_INT;
                 break;
             }
 
-            case TYP_USHORT:
-            {
-                if (simdSize == 64)
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector256UInt16;
-                }
-                else
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector128UInt16;
-                }
-
-                opBaseType = TYP_UINT;
-                break;
-            }
-
             case TYP_INT:
-            {
-                if (simdSize == 64)
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector256Int32;
-                }
-                else
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector128Int32;
-                }
-
-                opBaseType = TYP_LONG;
-                break;
-            }
-
             case TYP_UINT:
             {
-                if (simdSize == 64)
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector256UInt32;
-                }
-                else
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector128UInt32;
-                }
-
-                opBaseType = TYP_ULONG;
+                opBaseType = TYP_LONG;
                 break;
             }
 
             case TYP_FLOAT:
             {
-                if (simdSize == 64)
-                {
-                    intrinsicId = NI_AVX512_ConvertToVector256Single;
-                }
-                else if (simdSize == 32)
-                {
-                    intrinsicId = NI_AVX_ConvertToVector128Single;
-                }
-                else
-                {
-                    intrinsicId = NI_X86Base_ConvertToVector128Single;
-                }
-
                 opBaseType = TYP_DOUBLE;
                 break;
             }
@@ -25424,6 +25124,15 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 unreached();
             }
         }
+
+        if (varTypeIsUnsigned(simdBaseType))
+        {
+            opBaseType = varTypeToUnsigned(opBaseType);
+        }
+
+        NamedIntrinsic intrinsicId =
+            GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, opBaseType, simdBaseType, simdSize);
+        assert(intrinsicId != NI_Illegal);
 
         tmp1 = gtNewSimdHWIntrinsicNode(tmpSimdType, op1, intrinsicId, opBaseType, simdSize);
         tmp2 = gtNewSimdHWIntrinsicNode(tmpSimdType, op2, intrinsicId, opBaseType, simdSize);
@@ -25450,11 +25159,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 // This is the same in principle to the other comments below, however due to
                 // code formatting, its too long to reasonably display here.
                 GenTreeVecCon* vecCon1 = gtNewVconNode(type);
-
-                for (unsigned i = 0; i < (simdSize / 8); i++)
-                {
-                    vecCon1->gtSimdVal.u64[i] = 0x00FF00FF00FF00FF;
-                }
+                vecCon1->EvaluateBroadcastInPlace<uint16_t>(UINT8_MAX);
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
@@ -25487,11 +25192,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 // return Avx2.Permute4x64(tmp3.AsUInt64(), SHUFFLE_WYZX).As<T>();
 
                 GenTreeVecCon* vecCon1 = gtNewVconNode(type);
-
-                for (unsigned i = 0; i < (simdSize / 8); i++)
-                {
-                    vecCon1->gtSimdVal.u64[i] = 0x0000FFFF0000FFFF;
-                }
+                vecCon1->EvaluateBroadcastInPlace<uint32_t>(UINT16_MAX);
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
@@ -25585,11 +25286,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 // return Sse2.PackUnsignedSaturate(tmp1, tmp2).As<T>();
 
                 GenTreeVecCon* vecCon1 = gtNewVconNode(type);
-
-                for (unsigned i = 0; i < (simdSize / 8); i++)
-                {
-                    vecCon1->gtSimdVal.u64[i] = 0x00FF00FF00FF00FF;
-                }
+                vecCon1->EvaluateBroadcastInPlace<uint16_t>(UINT8_MAX);
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
@@ -25615,11 +25312,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 // return Sse2.PackUnsignedSaturate(tmp1, tmp2).As<T>();
 
                 GenTreeVecCon* vecCon1 = gtNewVconNode(type);
-
-                for (unsigned i = 0; i < (simdSize / 8); i++)
-                {
-                    vecCon1->gtSimdVal.u64[i] = 0x0000FFFF0000FFFF;
-                }
+                vecCon1->EvaluateBroadcastInPlace<uint32_t>(UINT16_MAX);
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
@@ -27623,61 +27316,48 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, var_typ
     GenTree* tmp1;
 
 #if defined(TARGET_XARCH)
+    var_types targetType = TYP_UNDEF;
+
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            targetType = TYP_SHORT;
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            targetType = TYP_INT;
+            break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            targetType = TYP_LONG;
+            break;
+        }
+
+        case TYP_FLOAT:
+        {
+            targetType = TYP_DOUBLE;
+            break;
+        }
+
+        default:
+            unreached();
+    }
+
+    intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdBaseType, targetType, simdSize);
+    assert(intrinsic != NI_Illegal);
+
     if (simdSize == 64)
     {
         tmp1 = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseType, simdSize);
 
-        switch (simdBaseType)
-        {
-            case TYP_BYTE:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512Int16;
-                break;
-            }
-
-            case TYP_UBYTE:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512UInt16;
-                break;
-            }
-
-            case TYP_SHORT:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512Int32;
-                break;
-            }
-
-            case TYP_USHORT:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512UInt32;
-                break;
-            }
-
-            case TYP_INT:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512Int64;
-                break;
-            }
-
-            case TYP_UINT:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512UInt64;
-                break;
-            }
-
-            case TYP_FLOAT:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512Double;
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
-
-        assert(intrinsic != NI_Illegal);
         return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseType, simdSize);
     }
     else if (simdSize == 32)
@@ -27686,82 +27366,10 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, var_typ
 
         tmp1 = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseType, simdSize);
 
-        switch (simdBaseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            {
-                intrinsic = NI_AVX2_ConvertToVector256Int16;
-                break;
-            }
-
-            case TYP_SHORT:
-            case TYP_USHORT:
-            {
-                intrinsic = NI_AVX2_ConvertToVector256Int32;
-                break;
-            }
-
-            case TYP_INT:
-            case TYP_UINT:
-            {
-                intrinsic = NI_AVX2_ConvertToVector256Int64;
-                break;
-            }
-
-            case TYP_FLOAT:
-            {
-                intrinsic = NI_AVX_ConvertToVector256Double;
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
-
-        assert(intrinsic != NI_Illegal);
         return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseType, simdSize);
     }
     else
     {
-        switch (simdBaseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            {
-                intrinsic = NI_X86Base_ConvertToVector128Int16;
-                break;
-            }
-
-            case TYP_SHORT:
-            case TYP_USHORT:
-            {
-                intrinsic = NI_X86Base_ConvertToVector128Int32;
-                break;
-            }
-
-            case TYP_INT:
-            case TYP_UINT:
-            {
-                intrinsic = NI_X86Base_ConvertToVector128Int64;
-                break;
-            }
-
-            case TYP_FLOAT:
-            {
-                intrinsic = NI_X86Base_ConvertToVector128Double;
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
-
-        assert(intrinsic != NI_Illegal);
         return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
     }
 #elif defined(TARGET_ARM64)
@@ -27818,61 +27426,48 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, var_typ
     GenTree* tmp1;
 
 #if defined(TARGET_XARCH)
+    var_types targetType = TYP_UNDEF;
+
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            targetType = TYP_SHORT;
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            targetType = TYP_INT;
+            break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            targetType = TYP_LONG;
+            break;
+        }
+
+        case TYP_FLOAT:
+        {
+            targetType = TYP_DOUBLE;
+            break;
+        }
+
+        default:
+            unreached();
+    }
+
+    intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(this, simdBaseType, targetType, simdSize);
+    assert(intrinsic != NI_Illegal);
+
     if (simdSize == 64)
     {
         tmp1 = gtNewSimdGetUpperNode(TYP_SIMD32, op1, simdBaseType, simdSize);
 
-        switch (simdBaseType)
-        {
-            case TYP_BYTE:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512Int16;
-                break;
-            }
-
-            case TYP_UBYTE:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512UInt16;
-                break;
-            }
-
-            case TYP_SHORT:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512Int32;
-                break;
-            }
-
-            case TYP_USHORT:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512UInt32;
-                break;
-            }
-
-            case TYP_INT:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512Int64;
-                break;
-            }
-
-            case TYP_UINT:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512UInt64;
-                break;
-            }
-
-            case TYP_FLOAT:
-            {
-                intrinsic = NI_AVX512_ConvertToVector512Double;
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
-
-        assert(intrinsic != NI_Illegal);
         return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseType, simdSize);
     }
     else if (simdSize == 32)
@@ -27881,42 +27476,6 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, var_typ
 
         tmp1 = gtNewSimdGetUpperNode(TYP_SIMD16, op1, simdBaseType, simdSize);
 
-        switch (simdBaseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            {
-                intrinsic = NI_AVX2_ConvertToVector256Int16;
-                break;
-            }
-
-            case TYP_SHORT:
-            case TYP_USHORT:
-            {
-                intrinsic = NI_AVX2_ConvertToVector256Int32;
-                break;
-            }
-
-            case TYP_INT:
-            case TYP_UINT:
-            {
-                intrinsic = NI_AVX2_ConvertToVector256Int64;
-                break;
-            }
-
-            case TYP_FLOAT:
-            {
-                intrinsic = NI_AVX_ConvertToVector256Double;
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
-
-        assert(intrinsic != NI_Illegal);
         return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseType, simdSize);
     }
     else if (varTypeIsFloating(simdBaseType))
@@ -27926,43 +27485,13 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, var_typ
         GenTree* op1Dup = fgMakeMultiUse(&op1);
 
         tmp1 = gtNewSimdHWIntrinsicNode(type, op1, op1Dup, NI_X86Base_MoveHighToLow, simdBaseType, simdSize);
-        return gtNewSimdHWIntrinsicNode(type, tmp1, NI_X86Base_ConvertToVector128Double, simdBaseType, simdSize);
+        return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseType, simdSize);
     }
     else
     {
         tmp1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode(8), NI_X86Base_ShiftRightLogical128BitLane,
                                         simdBaseType, simdSize);
 
-        switch (simdBaseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            {
-                intrinsic = NI_X86Base_ConvertToVector128Int16;
-                break;
-            }
-
-            case TYP_SHORT:
-            case TYP_USHORT:
-            {
-                intrinsic = NI_X86Base_ConvertToVector128Int32;
-                break;
-            }
-
-            case TYP_INT:
-            case TYP_UINT:
-            {
-                intrinsic = NI_X86Base_ConvertToVector128Int64;
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
-
-        assert(intrinsic != NI_Illegal);
         return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseType, simdSize);
     }
 #elif defined(TARGET_ARM64)
@@ -30719,6 +30248,484 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
     }
 
     return id;
+}
+
+//------------------------------------------------------------------------------
+// GetHWIntrinsicIdForVecCvt: Returns intrinsic ID for vector conversion based
+//    on the source and target types, plus SIMD size.
+//
+// Arguments:
+//    comp             - The compiler instance
+//    sourceType       - The source type for conversion
+//    targetType       - The target type for conversion
+//    simdSize         - The simd size to be converted
+//    preferSaturating - Return a saturating conversion instruction if available
+//    isSaturating     - If passed a valid pointer, on return this value will be
+//                       updated to indicate whether the returned instruction
+//                       performs a saturating conversion.
+//
+// Returns:
+//    The matching intrinsic ID, or NI_Illegal if a matching intrinsic was not found.
+//
+NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForVecCvt(Compiler* comp,
+                                                             var_types sourceType,
+                                                             var_types targetType,
+                                                             unsigned  simdSize,
+                                                             bool      preferSaturating /* = false */,
+                                                             bool*     isSaturating /* = nullptr */)
+{
+    assert(varTypeIsArithmetic(sourceType));
+    assert(varTypeIsArithmetic(targetType));
+
+#if defined(TARGET_XARCH)
+    assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
+    assert((simdSize != 32) || varTypeIsFloating(sourceType) || varTypeIsFloating(targetType) ||
+           comp->compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+    if (preferSaturating)
+    {
+        assert(isSaturating != nullptr);
+
+        if (varTypeIsFloating(sourceType))
+        {
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+            {
+                *isSaturating = true;
+
+                // Convert: vcvttps2[u]dqs/vcvttpd2[u]qqs
+                switch (targetType)
+                {
+                    case TYP_INT:
+                        return NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation;
+
+                    case TYP_UINT:
+                        return NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation;
+
+                    case TYP_LONG:
+                        return NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation;
+
+                    case TYP_ULONG:
+                        return NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation;
+
+                    default:
+                        unreached();
+                }
+            }
+        }
+        else
+        {
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            {
+                *isSaturating = true;
+
+                // Narrow: vpmov[u]swb/vpmov[u]sdw/vpmov[u]sqd
+                switch (sourceType)
+                {
+                    case TYP_SHORT:
+                        return (simdSize == 64) ? NI_AVX512_ConvertToVector256SByteWithSaturation
+                                                : NI_AVX512_ConvertToVector128SByteWithSaturation;
+
+                    case TYP_USHORT:
+                        return (simdSize == 64) ? NI_AVX512_ConvertToVector256ByteWithSaturation
+                                                : NI_AVX512_ConvertToVector128ByteWithSaturation;
+
+                    case TYP_INT:
+                        return (simdSize == 64) ? NI_AVX512_ConvertToVector256Int16WithSaturation
+                                                : NI_AVX512_ConvertToVector128Int16WithSaturation;
+
+                    case TYP_UINT:
+                        return (simdSize == 64) ? NI_AVX512_ConvertToVector256UInt16WithSaturation
+                                                : NI_AVX512_ConvertToVector128UInt16WithSaturation;
+
+                    case TYP_LONG:
+                        return (simdSize == 64) ? NI_AVX512_ConvertToVector256Int32WithSaturation
+                                                : NI_AVX512_ConvertToVector128Int32WithSaturation;
+
+                    case TYP_ULONG:
+                        return (simdSize == 64) ? NI_AVX512_ConvertToVector256UInt32WithSaturation
+                                                : NI_AVX512_ConvertToVector128UInt32WithSaturation;
+
+                    default:
+                        unreached();
+                }
+            }
+        }
+    }
+
+    if (isSaturating != nullptr)
+    {
+        *isSaturating = false;
+    }
+
+    switch (sourceType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            switch (targetType)
+            {
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    // Widen: movsxbw/movzxbw
+                    switch (simdSize)
+                    {
+                        case 64:
+                            return NI_AVX512_ConvertToVector512Int16;
+
+                        case 32:
+                            return NI_AVX2_ConvertToVector256Int16;
+
+                        default:
+                            return NI_X86Base_ConvertToVector128Int16;
+                    }
+                }
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            switch (targetType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        // Narrow: vpmovwb
+                        return (simdSize == 64) ? NI_AVX512_ConvertToVector256Byte : NI_AVX512_ConvertToVector128Byte;
+                    }
+                    break;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    // Widen: movsxwd/movzxwd
+                    switch (simdSize)
+                    {
+                        case 64:
+                            return NI_AVX512_ConvertToVector512Int32;
+
+                        case 32:
+                            return NI_AVX2_ConvertToVector256Int32;
+
+                        default:
+                            return NI_X86Base_ConvertToVector128Int32;
+                    }
+                }
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            switch (targetType)
+            {
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        // Narrow: vpmovdw
+                        return (simdSize == 64) ? NI_AVX512_ConvertToVector256Int16 : NI_AVX512_ConvertToVector128Int16;
+                    }
+                    break;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    // Widen: movsxdq/movzxdq
+                    switch (simdSize)
+                    {
+                        case 64:
+                            return NI_AVX512_ConvertToVector512Int64;
+
+                        case 32:
+                            return NI_AVX2_ConvertToVector256Int64;
+
+                        default:
+                            return NI_X86Base_ConvertToVector128Int64;
+                    }
+                }
+
+                case TYP_FLOAT:
+                {
+                    if (sourceType == TYP_INT)
+                    {
+                        // Convert: cvtdq2ps
+                        switch (simdSize)
+                        {
+                            case 64:
+                                return NI_AVX512_ConvertToVector512Single;
+
+                            case 32:
+                                return NI_AVX_ConvertToVector256Single;
+
+                            default:
+                                return NI_X86Base_ConvertToVector128Single;
+                        }
+                    }
+                    else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        // Convert: vcvt[u]dq2ps
+                        switch (simdSize)
+                        {
+                            case 64:
+                                return NI_AVX512_ConvertToVector512Single;
+
+                            case 32:
+                                return NI_AVX512_ConvertToVector256Single;
+
+                            default:
+                                return NI_AVX512_ConvertToVector128Single;
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            switch (targetType)
+            {
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        // Narrow: vpmovqd
+                        return (simdSize == 64) ? NI_AVX512_ConvertToVector256Int32 : NI_AVX512_ConvertToVector128Int32;
+                    }
+                    break;
+                }
+
+                case TYP_DOUBLE:
+                {
+                    // Convert: vcvt[u]qq2pd
+                    if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        switch (simdSize)
+                        {
+                            case 64:
+                                return NI_AVX512_ConvertToVector512Double;
+
+                            case 32:
+                                return NI_AVX512_ConvertToVector256Double;
+
+                            default:
+                                return NI_AVX512_ConvertToVector128Double;
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+
+        case TYP_FLOAT:
+        {
+            switch (targetType)
+            {
+                case TYP_INT:
+                {
+                    // Convert: cvttps2dq
+                    switch (simdSize)
+                    {
+                        case 64:
+                            return NI_AVX512_ConvertToVector512Int32WithTruncation;
+
+                        case 32:
+                            return NI_AVX_ConvertToVector256Int32WithTruncation;
+
+                        default:
+                            return NI_X86Base_ConvertToVector128Int32WithTruncation;
+                    }
+                }
+
+                case TYP_UINT:
+                {
+                    if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        // Convert: vcvttps2udq
+                        switch (simdSize)
+                        {
+                            case 64:
+                                return NI_AVX512_ConvertToVector512UInt32WithTruncation;
+
+                            case 32:
+                                return NI_AVX512_ConvertToVector256UInt32WithTruncation;
+
+                            default:
+                                return NI_AVX512_ConvertToVector128UInt32WithTruncation;
+                        }
+                    }
+                    break;
+                }
+
+                case TYP_DOUBLE:
+                {
+                    // Widen: cvtps2pd
+                    switch (simdSize)
+                    {
+                        case 64:
+                            return NI_AVX512_ConvertToVector512Double;
+
+                        case 32:
+                            return NI_AVX_ConvertToVector256Double;
+
+                        default:
+                            return NI_X86Base_ConvertToVector128Double;
+                    }
+                }
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+
+        case TYP_DOUBLE:
+        {
+            switch (targetType)
+            {
+                case TYP_LONG:
+                {
+                    if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        // Convert: vcvttpd2qq
+                        switch (simdSize)
+                        {
+                            case 64:
+                                return NI_AVX512_ConvertToVector512Int64WithTruncation;
+
+                            case 32:
+                                return NI_AVX512_ConvertToVector256Int64WithTruncation;
+
+                            default:
+                                return NI_AVX512_ConvertToVector128Int64WithTruncation;
+                        }
+                    }
+                    break;
+                }
+
+                case TYP_ULONG:
+                {
+                    if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        // Convert: vcvttpd2uqq
+                        switch (simdSize)
+                        {
+                            case 64:
+                                return NI_AVX512_ConvertToVector512UInt64WithTruncation;
+
+                            case 32:
+                                return NI_AVX512_ConvertToVector256UInt64WithTruncation;
+
+                            default:
+                                return NI_AVX512_ConvertToVector128UInt64WithTruncation;
+                        }
+                    }
+                    break;
+                }
+
+                case TYP_FLOAT:
+                {
+                    // Narrow: cvtpd2ps
+                    switch (simdSize)
+                    {
+                        case 64:
+                            return NI_AVX512_ConvertToVector256Single;
+
+                        case 32:
+                            return NI_AVX_ConvertToVector128Single;
+
+                        default:
+                            return NI_X86Base_ConvertToVector128Single;
+                    }
+                }
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+
+        default:
+            unreached();
+    }
+#elif defined(TARGET_ARM64)
+    assert((simdSize == 8) || (simdSize == 16));
+    assert(varTypeIsFloating(sourceType) || varTypeIsFloating(targetType));
+
+    if (isSaturating != nullptr)
+    {
+        *isSaturating = true;
+    }
+
+    switch (sourceType)
+    {
+        case TYP_FLOAT:
+        {
+            switch (targetType)
+            {
+                case TYP_INT:
+                    return NI_AdvSimd_ConvertToInt32RoundToZero;
+
+                case TYP_UINT:
+                    return NI_AdvSimd_ConvertToUInt32RoundToZero;
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+
+        case TYP_DOUBLE:
+        {
+            switch (targetType)
+            {
+                case TYP_LONG:
+                    return (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar
+                                           : NI_AdvSimd_Arm64_ConvertToInt64RoundToZero;
+
+                case TYP_ULONG:
+                    return (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar
+                                           : NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero;
+
+                default:
+                    unreached();
+            }
+            break;
+        }
+
+        default:
+            unreached();
+    }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    return NI_Illegal;
 }
 
 //------------------------------------------------------------------------------
