@@ -95,6 +95,9 @@
       <CoreCLRSharedFrameworkPdbDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRSharedFrameworkDir)','PDB'))</CoreCLRSharedFrameworkPdbDir>
       <CoreCLRCrossTargetComponentDir
         Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','$(CoreCLRCrossTargetComponentDirName)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
+      <!-- For Apple mobile the host debugger needs host-platform DAC/DBI to inspect the remote process. -->
+      <CoreCLRHostDebugComponentDir
+        Condition="'$(TargetsAppleMobile)' == 'true'">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', 'osx.$(BuildArchitecture).$(CoreCLRConfiguration)', 'sharedFramework'))</CoreCLRHostDebugComponentDir>
     </PropertyGroup>
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)'))</MonoArtifactsPath>
@@ -139,7 +142,13 @@
         <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
         <IsNative>true</IsNative>
       </CoreCLRCrossTargetFiles>
+
+      <CoreCLRHostDebugFiles Condition="'$(CoreCLRHostDebugComponentDir)' != '' and Exists('$(CoreCLRHostDebugComponentDir)')"
+        Include="$(CoreCLRHostDebugComponentDir)$(LibPrefix)mscordaccore$(LibSuffix)" IsNative="true" />
+      <CoreCLRHostDebugFiles Condition="'$(CoreCLRHostDebugComponentDir)' != '' and Exists('$(CoreCLRHostDebugComponentDir)')"
+        Include="$(CoreCLRHostDebugComponentDir)$(LibPrefix)mscordbi$(LibSuffix)" IsNative="true" />
     </ItemGroup>
+
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <RuntimeFiles Include="$(MonoArtifactsPath)\*.*" Exclude="$(MonoArtifactsPath)\*cdac*" />
       <RuntimeFiles>

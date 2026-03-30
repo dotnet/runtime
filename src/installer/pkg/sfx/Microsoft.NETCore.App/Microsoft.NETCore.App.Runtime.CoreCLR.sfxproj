@@ -91,6 +91,12 @@
       </CoreCLRCrossTargetFiles>
 
       <ReferenceCopyLocalPaths Include="@(CoreCLRCrossTargetFiles)" />
+
+      <CoreCLRHostDebugFiles Condition="'@(CoreCLRHostDebugFiles)' != ''">
+        <TargetPath>tools/osx-$(BuildArchitecture)</TargetPath>
+      </CoreCLRHostDebugFiles>
+      <CoreCLRHostDebugFiles PackOnly="true" />
+      <ReferenceCopyLocalPaths Include="@(CoreCLRHostDebugFiles)" />
     </ItemGroup>
   </Target>
 </Project>
