@@ -743,17 +743,33 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, nameof(other));
 
-            var otherSet = new HashSet<T>(other, origin.EqualityComparer);
-            if (origin.Count != otherSet.Count)
+            if (other is ICollection<T> Collection && Collection.Count != origin.Count) return false;
+            if (other is IReadOnlyCollection<T> ReadOnlyCollection && ReadOnlyCollection.Count != origin.Count) return false;
+
+            bool isCompatible = other switch
             {
-                return false;
+                ImmutableHashSet<T> ImmutableHashSet => ImmutableHashSet.KeyComparer == origin.EqualityComparer,
+                HashSet<T> HashSet => HashSet.Comparer == origin.EqualityComparer,
+                _ => false
+            };
+
+            if (isCompatible)
+            {
+                foreach (T item in other)
+                {
+                    if (!Contains(item, origin)) return false;
+                }
             }
 
-            foreach (T item in otherSet)
+            else
             {
-                if (!Contains(item, origin))
+                var otherSet = new HashSet<T>(other, origin.EqualityComparer);
+
+                if (otherSet.Count != origin.Count) return false;
+
+                foreach (T item in otherSet)
                 {
-                    return false;
+                    if (!Contains(item, origin)) return false;
                 }
             }
             return true;
