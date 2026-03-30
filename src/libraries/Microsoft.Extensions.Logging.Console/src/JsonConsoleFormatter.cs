@@ -171,9 +171,7 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteNumber(key, sbyteValue);
                     break;
                 case char charValue:
-                    Span<char> charSpan = stackalloc char[1];
-                    charSpan[0] = charValue;
-                    writer.WriteString(key, charSpan);
+                    writer.WriteString(key, [charValue]);
                     break;
                 case decimal decimalValue:
                     writer.WriteNumber(key, decimalValue);
