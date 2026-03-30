@@ -112,7 +112,7 @@ namespace System.Transactions
             Transaction? transaction;
             TransactionShim? transactionShim = null;
             Guid txIdentifier = Guid.Empty;
-            OletxTransactionIsolationLevel oletxIsoLevel = OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE;
+            Interop.Xolehlp.OletxTransactionIsolationLevel oletxIsoLevel = Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE;
             OutcomeEnlistment? outcomeEnlistment;
             OletxTransaction? oleTx;
 
@@ -334,7 +334,7 @@ namespace System.Transactions
             bool tooLate = false;
             TransactionShim? transactionShim = null;
             Guid txIdentifier = Guid.Empty;
-            OletxTransactionIsolationLevel oletxIsoLevel = OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE;
+            Interop.Xolehlp.OletxTransactionIsolationLevel oletxIsoLevel = Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE;
             OutcomeEnlistment? outcomeEnlistment = null;
             RealOletxTransaction? realTx = null;
             OletxTransaction? oleTx = null;
@@ -417,7 +417,7 @@ namespace System.Transactions
                     null,
                     null,
                     txIdentifier,
-                    OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE);
+                    Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE);
 
                 oleTx = new OletxTransaction(realTx);
                 transaction = new Transaction(oleTx);
@@ -504,7 +504,7 @@ namespace System.Transactions
             }
 
             Guid identifier;
-            OletxTransactionIsolationLevel oletxIsoLevel;
+            Interop.Xolehlp.OletxTransactionIsolationLevel oletxIsoLevel;
             OutcomeEnlistment outcomeEnlistment;
             TransactionShim? transactionShim = null;
 
