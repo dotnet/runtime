@@ -657,6 +657,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
+                case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                     DwarfHelper.WritePaddedSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
                     return;
                 case RelocType.WASM_TABLE_INDEX_I32:
@@ -781,6 +782,7 @@ namespace ILCompiler.DependencyAnalysis
                     return checked((long)DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32)));
 
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
+                case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                     return DwarfHelper.ReadSLEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32));
 
                 default:

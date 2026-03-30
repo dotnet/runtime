@@ -816,14 +816,15 @@ namespace ILCompiler.ObjectWriter
                             //  global.get __image_base
                             //  i32.const <reloc>
                             //  i32.add
-                            // i32.load 0
-                            // OR:
-                            //  global.get __image_base
-                            //  i32.load memidx=<>, <reloc>
+                            //  i32.load 0
                             // So, the relocated address value should always represent an offset relative to image base. 
                             // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
                             // flag mapping
-                            Debug.Assert(virtualSymbolImageOffset != 0);
+                            if (symbolWebcilSection is null)
+                            {
+                                throw new InvalidDataException(string.Format(SR.WasmMemoryRelocTargetNotInWebcilSection, reloc.SymbolName));
+                            }
+
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
                             break;
                         }
@@ -831,8 +832,11 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_TABLE_INDEX_I64:
                         case RelocType.WASM_TABLE_INDEX_SLEB:
                         {
-                            bool exists = _uniqueSymbols.TryGetValue(reloc.SymbolName.ToString(), out int index);
-                            Debug.Assert(exists, $"Table index for signature symbol definition '{reloc.SymbolName}' not found");
+                            string symbolName = reloc.SymbolName.ToString();
+                            if (!_uniqueSymbols.TryGetValue(symbolName, out int index))
+                            {
+                                throw new InvalidOperationException(string.Format(SR.WasmTableIndexSymbolNotFound, symbolName));
+                            }
 
                             // Here, we are effectively writing a table offset relative to the table_base.
                             // These will need to be fixed up by the runtime after load by adding __image_function_pointer_base
@@ -842,8 +846,12 @@ namespace ILCompiler.ObjectWriter
                         }
                         case RelocType.WASM_FUNCTION_INDEX_LEB:
                         {
-                            bool exists = _uniqueSymbols.TryGetValue(reloc.SymbolName.ToString(), out int index);
-                            Debug.Assert(exists, $"Table index for signature symbol definition '{reloc.SymbolName}' not found");
+                            string symbolName = reloc.SymbolName.ToString();
+                            if (!_uniqueSymbols.TryGetValue(symbolName, out int index))
+                            {
+                                throw new InvalidOperationException(string.Format(SR.WasmFunctionIndexSymbolNotFound, symbolName));
+                            }
+
                             // These are module-local function pointer indices, so we can simply write out the assigned function index
                             // for this particular symbol
                             Relocation.WriteValue(reloc.Type, pData, index);
