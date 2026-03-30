@@ -2604,12 +2604,86 @@ GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTre
     {
         case GT_CALL:
             return optVNBasedFoldExpr_Call(block, parent, tree->AsCall());
-
+        case GT_ADD:
+        case GT_SUB:
+            return optVNBasedFoldAddOrSubExpr(block, parent, tree);
             // We can add more VN-based foldings here.
 
         default:
             break;
     }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
+// optVNBasedFoldAddOrSubExpr: reduce successive variable adds/subs into a single multiply.
+// e.g., i + i + i + i => i * 4.
+// e.g., i - i - i - i => - i * 2.
+//
+// Arguments:
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    tree   -  The ADD/SUB tree.
+//
+// Return Value:
+//    Returns a potentially new or a transformed tree node.
+//    Returns nullptr when no transformation is possible.
+//
+//
+GenTree* Compiler::optVNBasedFoldAddOrSubExpr(BasicBlock* block, GenTree* parent, GenTree* tree)
+{
+    // ADD(_, V0) OR SUB(_, V0) starts the pattern match.
+    if (!tree->OperIs(GT_ADD, GT_SUB) || tree->gtOverflow())
+    {
+        return nullptr;
+    }
+
+    genTreeOps targetOp = tree->OperGet();
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+    // Transforming 64-bit ADD/SUB to 64-bit MUL on 32-bit system results in replacing
+    // ADD/SUB ops with a helper function call. Don't apply optimization in that case.
+    if (tree->TypeIs(TYP_LONG))
+    {
+        return nullptr;
+    }
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+
+    GenTree* lclVarTree = tree->AsOp()->gtOp2;
+    GenTree* consTree   = tree->AsOp()->gtOp1;
+
+    GenTree* op1 = consTree;
+    GenTree* op2 = lclVarTree;
+
+    if (!op2->OperIs(GT_LCL_VAR) || !varTypeIsIntegral(op2))
+    {
+        return nullptr;
+    }
+
+    unsigned lclNum = op2->AsLclVarCommon()->GetLclNum();
+
+    if ((op1->OperIs(GT_LCL_VAR) && op1->AsLclVarCommon()->GetLclNum() == lclNum) ||
+        (op1->OperIs(GT_COMMA) && op1->AsOp()->gtOp1->OperIs(GT_STORE_LCL_VAR) &&
+         op1->AsOp()->gtOp1->AsLclVar()->GetLclNum() == lclNum))
+    {
+        return gtNewOperNode(GT_MUL, tree->TypeGet(), consTree,
+                             gtNewIconNode(targetOp == GT_ADD ? 2 : 0, tree->TypeGet()));
+    }
+    else if (targetOp == GT_SUB && op1->OperIs(GT_CNS_INT) && op1->AsIntCon()->gtIconVal == 0)
+    {
+        return gtNewOperNode(GT_MUL, tree->TypeGet(), op2, gtNewIconNode(-1, tree->TypeGet()));
+    }
+    else if (op1->OperIs(GT_MUL) &&
+             (((op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR) &&
+                op1->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() == lclNum) ||
+               (op1->AsOp()->gtOp1->OperIs(GT_COMMA) && op1->AsOp()->gtOp1->AsOp()->gtOp1->OperIs(GT_STORE_LCL_VAR) &&
+                op1->AsOp()->gtOp1->AsOp()->gtOp1->AsLclVar()->GetLclNum() == lclNum)) &&
+              op1->AsOp()->gtOp2->OperIs(GT_CNS_INT)))
+    {
+        return gtNewOperNode(GT_MUL, tree->TypeGet(), op1->AsOp()->gtOp1,
+                             gtNewIconNode(op1->AsOp()->gtOp2->AsIntCon()->gtIconVal + (targetOp == GT_ADD ? 1 : -1),
+                                           tree->TypeGet()));
+    }
+
     return nullptr;
 }
 
