@@ -67,7 +67,7 @@ class PELoader {
     inline DWORD Signature() { return m_pNT32->Signature; };
     inline BYTE*  base() { return (BYTE*) m_hMod; };
     inline HMODULE getHModule() { return  m_hMod; };
-    inline size_t getFileSize() { return m_FileSize; };
+    inline uint32_t getFileSize() { return (uint32_t)m_FileSize; };
 };
 
 #endif // CEELoad_H
