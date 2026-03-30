@@ -44,7 +44,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        [TestCategory("native")]
+        [TestCategory("coreclr-native")]
         public async Task DllImportWithFunctionPointersCompilesWithoutWarning(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "fnptr");
@@ -64,7 +64,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        [TestCategory("native")]
+        [TestCategory("coreclr-native")]
         public async Task DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(Configuration config, bool aot)
         {
             ProjectInfo info = PrepareProjectForVariadicFunction(config, aot, "fnptr_variadic");
@@ -84,7 +84,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        [TestCategory("native")]
+        [TestCategory("coreclr-native")]
         public async Task DllImportWithFunctionPointers_WarningsAsMessages(Configuration config, bool aot)
         {
             string extraProperties = "<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessage);WASM0001</MSBuildWarningsAsMessages>";

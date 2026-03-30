@@ -136,7 +136,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        [TestCategory("native")]
+        [TestCategory("coreclr-native")]
         public async Task UnmanagedCallback_InFileType(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_filetype");
@@ -156,7 +156,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        [TestCategory("native")]
+        [TestCategory("coreclr-native")]
         public async Task UnmanagedCallersOnly_Namespaced(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_namespace");
@@ -282,7 +282,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(parameters: new object[] { "tr_TR.UTF-8" })]
-        [TestCategory("native")]
+        [TestCategory("coreclr-native")]
         public async Task BuildNativeInNonEnglishCulture(Configuration config, bool aot, string culture)
         {
             // Check that we can generate interp tables in non-english cultures
@@ -383,7 +383,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native")]
+        [TestCategory("coreclr-native")]
         public async Task UCOWithSpecialCharacters(Configuration config, bool aot)
         {
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";

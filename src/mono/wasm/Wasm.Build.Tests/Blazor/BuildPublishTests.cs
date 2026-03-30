@@ -118,7 +118,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Theory]
     [InlineData("", true)] // Default case
     [InlineData("false", false)] // the other case
-    [TestCategory("native")]
+    [TestCategory("coreclr-native")]
     public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
     {
         Configuration config = Configuration.Release;
