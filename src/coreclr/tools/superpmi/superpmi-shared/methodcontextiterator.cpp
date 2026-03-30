@@ -7,24 +7,20 @@
 
 bool MethodContextIterator::Initialize(const char* fileName)
 {
-    m_hFile = CreateFileA(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                          FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (m_hFile == INVALID_HANDLE_VALUE)
+    m_fp = fopen(fileName, "rb");
+    if (m_fp == NULL)
     {
         LogError("Failed to open file '%s'. GetLastError()=%u", fileName, GetLastError());
         return false;
     }
 
-    LARGE_INTEGER DataTemp;
-    if (GetFileSizeEx(m_hFile, &DataTemp) == 0)
-    {
-        LogError("GetFileSizeEx failed. GetLastError()=%u", GetLastError());
-        CloseHandle(m_hFile);
-        m_hFile = INVALID_HANDLE_VALUE;
-        return false;
-    }
-
-    m_fileSize = DataTemp.QuadPart;
+    fseek(m_fp, 0, SEEK_END);
+#ifdef TARGET_WINDOWS
+    m_fileSize = _ftelli64(m_fp);
+#else
+    m_fileSize = ftell(m_fp);
+#endif
+    fseek(m_fp, 0, SEEK_SET);
 
     if (m_progressReport)
     {
@@ -37,14 +33,14 @@ bool MethodContextIterator::Initialize(const char* fileName)
 bool MethodContextIterator::Destroy()
 {
     bool ret = true; // assume success
-    if (m_hFile != INVALID_HANDLE_VALUE)
+    if (m_fp != NULL)
     {
-        if (!CloseHandle(m_hFile))
+        if (fclose(m_fp) != 0)
         {
-            LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+            LogError("fclose failed. errno=%d", errno);
             ret = false;
         }
-        m_hFile = INVALID_HANDLE_VALUE;
+        m_fp = NULL;
     }
     delete m_mc;
     m_mc = nullptr;
@@ -72,19 +68,11 @@ bool MethodContextIterator::MoveNext()
     while (true)
     {
         // Figure out where the pointer is currently.
-        LARGE_INTEGER pos;
-        pos.QuadPart = 0;
-        if (SetFilePointerEx(m_hFile, pos, &m_pos, FILE_CURRENT) == 0)
-        {
-            LogError("SetFilePointerEx failed. GetLastError()=%u", GetLastError());
-            return false; // any failure causes us to bail out.
-        }
-
-        if (m_pos.QuadPart >= m_fileSize)
-        {
-            return false;
-        }
-
+#ifdef TARGET_WINDOWS
+        m_pos = _ftelli64(m_fp);
+#else
+        m_pos = ftell(m_fp);
+#endif // TARGET_WINDOWS
         // Load the current method context.
         m_methodContextNumber++;
 
@@ -99,7 +87,7 @@ bool MethodContextIterator::MoveNext()
             }
         }
 
-        if (!MethodContext::Initialize(m_methodContextNumber, m_hFile, &m_mc))
+        if (!MethodContext::Initialize(m_methodContextNumber, m_fp, &m_mc))
             return false;
 
         // If we have an array of indexes, skip the loaded indexes that have not been specified.
