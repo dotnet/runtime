@@ -38,58 +38,98 @@ function libCoreRunFactory() {
         BrowserHost_ExternalAssemblyProbe: (pathPtr, outDataStartPtr, outSize) => {
             const path = UTF8ToString(pathPtr);
             let wasmPath;
-            if (path.endsWith('.dll')) {
-                wasmPath = path.slice(0, -4) + '.wasm';
-            } else if (path.endsWith('.wasm')) {
+            if (path.endsWith(".dll")) {
+                wasmPath = path.slice(0, -4) + ".wasm";
+            } else if (path.endsWith(".wasm")) {
                 wasmPath = path;
             } else {
                 return false;
             }
-
             let wasmBytes;
             try {
                 wasmBytes = FS.readFile(wasmPath);
             } catch (e) {
                 return false;
             }
-
-            // Synchronously instantiate the webcil WebAssembly module
             const wasmModule = new WebAssembly.Module(wasmBytes);
-            const wasmInstance = new WebAssembly.Instance(wasmModule, {
-                webcil: { memory: wasmMemory }
-            });
+            const tableStartIndex = wasmTable.length;
 
-            const webcilVersion = wasmInstance.exports.webcilVersion.value;
-            if (webcilVersion !== 0) {
-                throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
+            var payloadSize = 0;
+            const sections = WebAssembly.Module.customSections(wasmModule, "webcilMetadata");
+
+            if (sections !== null && sections.length === 1) {
+                const sectionBuffer = sections[0];
+
+                if (sectionBuffer.byteLength >= 8) {
+                    const view = new DataView(sectionBuffer);
+                    const version = view.getUint32(0, true);
+                    const size = view.getUint32(4, true);
+                    if (version >= 1) {
+                        payloadSize = size;
+                    }
+                }
             }
 
-            const sp = stackSave();
-            try {
-                const sizePtr = stackAlloc(4);
-                wasmInstance.exports.getWebcilSize(sizePtr);
-                const payloadSize = HEAPU32[sizePtr >>> 2];
-                if (payloadSize === 0) {
-                    throw new Error("Webcil payload size is 0");
+            var payloadPtr = 0;
+            var wasmInstance;
+            if (payloadSize > 0) {
+                // webcil version 1. This format allows the payload to be allocated before loading the webcilModule, as well as allowing the module to access the stack/table/memory from code
+                const sp = stackSave();
+                try {
+                    const ptrPtr = stackAlloc(4);
+                    if (_posix_memalign(ptrPtr, 16, payloadSize)) {
+                        throw new Error("posix_memalign failed for Webcil payload");
+                    }
+                    payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
+                    wasmInstance = new WebAssembly.Instance(wasmModule, {
+                        webcil: {
+                            memory: wasmMemory,
+                            stackPointer: ___stack_pointer,
+                            table: wasmTable,
+                            tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
+                            imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr)
+                        }});
+                } finally {
+                    stackRestore(sp);
                 }
 
-                const ptrPtr = stackAlloc(4);
-                if (_posix_memalign(ptrPtr, 16, payloadSize)) {
-                    throw new Error("posix_memalign failed for Webcil payload");
+                const webcilVersion = wasmInstance.exports.webcilVersion.value;
+                if (webcilVersion !== 1) {
+                    throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
                 }
-                const payloadPtr = HEAPU32[ptrPtr >>> 2];
-
-                wasmInstance.exports.getWebcilPayload(payloadPtr, payloadSize);
-
-                // Write out parameters: void** data_start, int64_t* size
-                HEAPU32[outDataStartPtr >>> 2] = payloadPtr;
-                HEAPU32[outSize >>> 2] = payloadSize;
-                HEAPU32[(outSize + 4) >>> 2] = 0;
-
-                return true;
-            } finally {
-                stackRestore(sp);
+            } else {
+                // webcil version 0. This format requires the webcilModule to be loaded before the payload can be allocated. Suitable only as a container format for interpreter execution
+                wasmInstance = new WebAssembly.Instance(wasmModule, {
+                webcil: {
+                    memory: wasmMemory
+                }});
+                const webcilVersion = wasmInstance.exports.webcilVersion.value;
+                if (webcilVersion !== 0) {
+                    throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
+                }
+                const sp = stackSave();
+                try {
+                    const sizePtr = stackAlloc(4);
+                    wasmInstance.exports.getWebcilSize(sizePtr);
+                    const payloadSize = HEAPU32[sizePtr >>> 2 >>> 0];
+                    if (payloadSize === 0) {
+                        throw new Error("Webcil payload size is 0");
+                    }
+                    const ptrPtr = stackAlloc(4);
+                    if (_posix_memalign(ptrPtr, 16, payloadSize)) {
+                        throw new Error("posix_memalign failed for Webcil payload");
+                    }
+                    payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
+                } finally {
+                    stackRestore(sp);
+                }
             }
+
+            wasmInstance.exports.getWebcilPayload(payloadPtr, payloadSize);
+            HEAPU32[outDataStartPtr >>> 2 >>> 0] = payloadPtr;
+            HEAPU32[outSize >>> 2 >>> 0] = payloadSize;
+            HEAPU32[(outSize + 4) >>> 2 >>> 0] = 0;
+            return true;
         }
     };
     const patchNODERAWFS = {
