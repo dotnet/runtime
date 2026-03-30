@@ -266,6 +266,26 @@ public class TypeMap
     }
 
     [Fact]
+    public static void Validate_MissingAssemblyTarget_DoesNotAffectGroupsWithoutTargets()
+    {
+        // Validates that groups without TypeMapAssemblyTarget attributes (like TypicalUseCase)
+        // still work correctly alongside groups with failing targets (like UnknownAssemblyReference).
+        // In R2R, groups without assembly targets must have their precached entry emitted so the
+        // runtime doesn't unnecessarily fall back to attribute scanning.
+        Console.WriteLine(nameof(Validate_MissingAssemblyTarget_DoesNotAffectGroupsWithoutTargets));
+
+        Assert.Throws<FileNotFoundException>(() => TypeMapping.GetOrCreateExternalTypeMapping<UnknownAssemblyReference>());
+
+        IReadOnlyDictionary<string, Type> externalMap = TypeMapping.GetOrCreateExternalTypeMapping<TypicalUseCase>();
+        Assert.Equal(typeof(C1), externalMap["1"]);
+        Assert.Equal(typeof(S1), externalMap["2"]);
+
+        IReadOnlyDictionary<Type, Type> proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<TypicalUseCase>();
+        Assert.Equal(typeof(C1), proxyMap[new C1().GetType()]);
+        Assert.Equal(typeof(S1), proxyMap[((object)default(S1)).GetType()]);
+    }
+
+    [Fact]
     public static void Validate_EmptyOrInvalidMappings()
     {
         Console.WriteLine(nameof(Validate_EmptyOrInvalidMappings));
