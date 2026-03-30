@@ -3,23 +3,22 @@
 
 using System.Runtime.InteropServices;
 
-namespace System
-{
-    /// <summary>Provides downlevel polyfills for instance methods on <see cref="HashCode"/>.</summary>
-    internal static class HashCodePolyfills
-    {
-        public static void AddBytes(this ref HashCode hashCode, ReadOnlySpan<byte> value)
-        {
-            while (value.Length >= sizeof(int))
-            {
-                hashCode.Add(MemoryMarshal.Read<int>(value));
-                value = value.Slice(sizeof(int));
-            }
+namespace System;
 
-            foreach (byte b in value)
-            {
-                hashCode.Add(b);
-            }
+/// <summary>Provides downlevel polyfills for instance methods on <see cref="HashCode"/>.</summary>
+internal static class HashCodePolyfills
+{
+    public static void AddBytes(this ref HashCode hashCode, ReadOnlySpan<byte> value)
+    {
+        while (value.Length >= sizeof(int))
+        {
+            hashCode.Add(MemoryMarshal.Read<int>(value));
+            value = value.Slice(sizeof(int));
+        }
+
+        foreach (byte b in value)
+        {
+            hashCode.Add(b);
         }
     }
-}
+}

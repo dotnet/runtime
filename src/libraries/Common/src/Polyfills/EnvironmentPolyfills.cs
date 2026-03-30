@@ -3,21 +3,20 @@
 
 using System.Diagnostics;
 
-namespace System
+namespace System;
+
+/// <summary>Provides downlevel polyfills for static members on <see cref="Environment"/>.</summary>
+internal static class EnvironmentPolyfills
 {
-    /// <summary>Provides downlevel polyfills for static members on <see cref="Environment"/>.</summary>
-    internal static class EnvironmentPolyfills
+    extension(Environment)
     {
-        extension(Environment)
+        public static int ProcessId
         {
-            public static int ProcessId
+            get
             {
-                get
-                {
-                    using Process currentProcess = Process.GetCurrentProcess();
-                    return currentProcess.Id;
-                }
+                using Process currentProcess = Process.GetCurrentProcess();
+                return currentProcess.Id;
             }
         }
     }
-}
+}

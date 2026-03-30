@@ -3,19 +3,18 @@
 
 using System.Runtime.CompilerServices;
 
-namespace System
+namespace System;
+
+/// <summary>Provides downlevel polyfills for static methods on <see cref="double"/>.</summary>
+internal static class DoublePolyfills
 {
-    /// <summary>Provides downlevel polyfills for static methods on <see cref="double"/>.</summary>
-    internal static class DoublePolyfills
+    extension(double)
     {
-        extension(double)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsFinite(double d)
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsFinite(double d)
-            {
-                long bits = BitConverter.DoubleToInt64Bits(d);
-                return ((ulong)~bits & 0x7FF0_0000_0000_0000UL) != 0;
-            }
+            long bits = BitConverter.DoubleToInt64Bits(d);
+            return ((ulong)~bits & 0x7FF0_0000_0000_0000UL) != 0;
         }
     }
-}
+}

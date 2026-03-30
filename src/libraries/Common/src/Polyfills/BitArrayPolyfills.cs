@@ -3,25 +3,24 @@
 
 using System.Collections;
 
-namespace System.Collections
-{
-    /// <summary>Provides downlevel polyfills for instance methods on <see cref="BitArray"/>.</summary>
-    internal static class BitArrayPolyfills
-    {
-        extension(BitArray bitArray)
-        {
-            public bool HasAllSet()
-            {
-                for (int i = 0; i < bitArray.Count; i++)
-                {
-                    if (!bitArray[i])
-                    {
-                        return false;
-                    }
-                }
+namespace System.Collections;
 
-                return true;
+/// <summary>Provides downlevel polyfills for instance methods on <see cref="BitArray"/>.</summary>
+internal static class BitArrayPolyfills
+{
+    extension(BitArray bitArray)
+    {
+        public bool HasAllSet()
+        {
+            for (int i = 0; i < bitArray.Count; i++)
+            {
+                if (!bitArray[i])
+                {
+                    return false;
+                }
             }
+
+            return true;
         }
     }
-}
+}

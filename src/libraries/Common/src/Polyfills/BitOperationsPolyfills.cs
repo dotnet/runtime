@@ -3,11 +3,10 @@
 
 using System.Runtime.CompilerServices;
 
-namespace System.Numerics
+namespace System.Numerics;
+
+internal static class BitOperations
 {
-    internal static class BitOperations
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint RotateLeft(uint value, int offset) => (value << offset) | (value >> (32 - offset));
-    }
-}
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static uint RotateLeft(uint value, int offset) => (value << offset) | (value >> (32 - offset));
+}

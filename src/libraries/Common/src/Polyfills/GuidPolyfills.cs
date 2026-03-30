@@ -4,31 +4,30 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace System
+namespace System;
+
+/// <summary>Provides downlevel polyfills for instance methods on <see cref="Guid"/>.</summary>
+internal static class GuidPolyfills
 {
-    /// <summary>Provides downlevel polyfills for instance methods on <see cref="Guid"/>.</summary>
-    internal static class GuidPolyfills
+    extension(Guid self)
     {
-        extension(Guid self)
+        public bool TryWriteBytes(Span<byte> destination)
         {
-            public bool TryWriteBytes(Span<byte> destination)
+            if (destination.Length < 16)
+                return false;
+
+            ref Guid selfRef = ref Unsafe.AsRef(in self);
+            if (BitConverter.IsLittleEndian)
             {
-                if (destination.Length < 16)
-                    return false;
-
-                ref Guid selfRef = ref Unsafe.AsRef(in self);
-                if (BitConverter.IsLittleEndian)
-                {
-                    MemoryMarshal.Write(destination, ref selfRef);
-                }
-                else
-                {
-                    // slower path for BigEndian
-                    self.ToByteArray().AsSpan().CopyTo(destination);
-                }
-
-                return true;
+                MemoryMarshal.Write(destination, ref selfRef);
             }
+            else
+            {
+                // slower path for BigEndian
+                self.ToByteArray().AsSpan().CopyTo(destination);
+            }
+
+            return true;
         }
     }
-}
+}

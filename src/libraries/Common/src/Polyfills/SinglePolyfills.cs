@@ -3,19 +3,18 @@
 
 using System.Runtime.CompilerServices;
 
-namespace System
+namespace System;
+
+/// <summary>Provides downlevel polyfills for static methods on <see cref="float"/>.</summary>
+internal static class SinglePolyfills
 {
-    /// <summary>Provides downlevel polyfills for static methods on <see cref="float"/>.</summary>
-    internal static class SinglePolyfills
+    extension(float)
     {
-        extension(float)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool IsFinite(float f)
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static unsafe bool IsFinite(float f)
-            {
-                uint bits = *(uint*)&f;
-                return (~bits & 0x7F80_0000U) != 0;
-            }
+            uint bits = *(uint*)&f;
+            return (~bits & 0x7F80_0000U) != 0;
         }
     }
-}
+}
