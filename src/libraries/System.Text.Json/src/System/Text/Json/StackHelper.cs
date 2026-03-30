@@ -11,19 +11,7 @@ namespace System.Text.Json
         /// <summary>Tries to ensure there is sufficient stack to execute the average .NET function.</summary>
         public static bool TryEnsureSufficientExecutionStack()
         {
-#if NET
             return RuntimeHelpers.TryEnsureSufficientExecutionStack();
-#else
-            try
-            {
-                RuntimeHelpers.EnsureSufficientExecutionStack();
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-#endif
         }
     }
 }
