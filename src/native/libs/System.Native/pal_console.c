@@ -42,7 +42,13 @@ int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
 
 int32_t SystemNative_IsATty(intptr_t fd)
 {
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+    // isatty is not supported on these platforms
+    (void)fd;
+    return 0;
+#else
     return isatty(ToFileDescriptor(fd));
+#endif
 }
 
 static char* g_keypadXmit = NULL; // string used to enable application mode, from terminfo
