@@ -8,112 +8,9 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
-    internal static class RsaPaddingProcessor
+    internal static partial class RsaPaddingProcessor
     {
-        // DigestInfo header values taken from https://tools.ietf.org/html/rfc3447#section-9.2, Note 1.
-        private static ReadOnlySpan<byte> DigestInfoMD5 =>
-            [
-                0x30, 0x20, 0x30, 0x0C, 0x06, 0x08, 0x2A, 0x86,
-                0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05, 0x05, 0x00,
-                0x04, 0x10,
-            ];
-
-        private static ReadOnlySpan<byte> DigestInfoSha1 =>
-            [
-                0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03,
-                0x02, 0x1A, 0x05, 0x00, 0x04, 0x14,
-            ];
-
-        private static ReadOnlySpan<byte> DigestInfoSha256 =>
-            [
-                0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
-                0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04,
-                0x20,
-            ];
-
-        private static ReadOnlySpan<byte> DigestInfoSha384 =>
-            [
-                0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
-                0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04,
-                0x30,
-            ];
-
-        private static ReadOnlySpan<byte> DigestInfoSha512 =>
-            [
-                0x30, 0x51, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
-                0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04,
-                0x40,
-            ];
-
-        private static ReadOnlySpan<byte> DigestInfoSha3_256 =>
-            [
-                0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
-                0x01, 0x65, 0x03, 0x04, 0x02, 0x08, 0x05, 0x00, 0x04,
-                0x20,
-            ];
-
-        private static ReadOnlySpan<byte> DigestInfoSha3_384 =>
-            [
-                0x30, 0x41, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
-                0x01, 0x65, 0x03, 0x04, 0x02, 0x09, 0x05, 0x00, 0x04,
-                0x30,
-            ];
-
-        private static ReadOnlySpan<byte> DigestInfoSha3_512 =>
-            [
-                0x30, 0x51, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86, 0x48,
-                0x01, 0x65, 0x03, 0x04, 0x02, 0x0A, 0x05, 0x00, 0x04,
-                0x40,
-            ];
-
         private static ReadOnlySpan<byte> EightZeros => [0, 0, 0, 0, 0, 0, 0, 0];
-
-        private static ReadOnlySpan<byte> GetDigestInfoForAlgorithm(
-            HashAlgorithmName hashAlgorithmName,
-            out int digestLengthInBytes)
-        {
-            switch (hashAlgorithmName.Name)
-            {
-                case HashAlgorithmNames.MD5:
-                    digestLengthInBytes = MD5.HashSizeInBytes;
-                    return DigestInfoMD5;
-                case HashAlgorithmNames.SHA1:
-                    digestLengthInBytes = SHA1.HashSizeInBytes;
-                    return DigestInfoSha1;
-                case HashAlgorithmNames.SHA256:
-                    digestLengthInBytes = SHA256.HashSizeInBytes;
-                    return DigestInfoSha256;
-                case HashAlgorithmNames.SHA384:
-                    digestLengthInBytes = SHA384.HashSizeInBytes;
-                    return DigestInfoSha384;
-                case HashAlgorithmNames.SHA512:
-                    digestLengthInBytes = SHA512.HashSizeInBytes;
-                    return DigestInfoSha512;
-                case HashAlgorithmNames.SHA3_256:
-                    digestLengthInBytes = SHA3_256.HashSizeInBytes;
-                    return DigestInfoSha3_256;
-                case HashAlgorithmNames.SHA3_384:
-                    digestLengthInBytes = SHA3_384.HashSizeInBytes;
-                    return DigestInfoSha3_384;
-                case HashAlgorithmNames.SHA3_512:
-                    digestLengthInBytes = SHA3_512.HashSizeInBytes;
-                    return DigestInfoSha3_512;
-                default:
-                    Debug.Fail("Unknown digest algorithm");
-                    throw new CryptographicException();
-            }
-        }
-
-        internal static int BytesRequiredForBitCount(int keySizeInBits)
-        {
-            return (int)(((uint)keySizeInBits + 7) / 8);
-        }
-
-        internal static int HashLength(HashAlgorithmName hashAlgorithmName)
-        {
-            GetDigestInfoForAlgorithm(hashAlgorithmName, out int hLen);
-            return hLen;
-        }
 
         internal static void PadPkcs1Encryption(
             ReadOnlySpan<byte> source,
@@ -380,8 +277,11 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static void EncodePss(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> mHash, Span<byte> destination, int keySize)
+        internal static void EncodePss(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> mHash, Span<byte> destination, int keySize, int saltLength)
         {
+            const int MaxStackSaltLength = 128;
+
+            int sLen = saltLength;
             int hLen = HashLength(hashAlgorithmName);
 
             // https://tools.ietf.org/html/rfc3447#section-9.1.1
@@ -392,9 +292,6 @@ namespace System.Security.Cryptography
             {
                 throw new CryptographicException(SR.Cryptography_SignHash_WrongSize);
             }
-
-            // In this implementation, sLen is restricted to the length of the input hash.
-            int sLen = hLen;
 
             // 3.  if emLen < hLen + sLen + 2, encoding error.
             //
@@ -426,7 +323,10 @@ namespace System.Security.Cryptography
                 Debug.Assert(hasher.HashLengthInBytes == hLen);
                 // 4. Generate a random salt of length sLen
                 Debug.Assert(hLen is >= 0 and <= 64);
-                Span<byte> salt = stackalloc byte[sLen];
+
+                Span<byte> salt = sLen > MaxStackSaltLength
+                    ? new byte[sLen]
+                    : stackalloc byte[sLen];
                 RandomNumberGenerator.Fill(salt);
 
                 // 5. Let M' = an octet string of 8 zeros concat mHash concat salt
@@ -469,7 +369,7 @@ namespace System.Security.Cryptography
             CryptoPool.Return(dbMaskRented, clearSize: 0);
         }
 
-        internal static bool VerifyPss(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> mHash, ReadOnlySpan<byte> em, int keySize)
+        internal static bool VerifyPss(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> mHash, ReadOnlySpan<byte> em, int keySize, int saltLength)
         {
             int hLen = HashLength(hashAlgorithmName);
 
@@ -485,11 +385,8 @@ namespace System.Security.Cryptography
 
             Debug.Assert(em.Length >= emLen);
 
-            // In this implementation, sLen is restricted to hLen.
-            int sLen = hLen;
-
             // 3. If emLen < hLen + sLen + 2, output "inconsistent" and stop.
-            if (emLen < hLen + sLen + 2)
+            if (emLen < hLen + saltLength + 2)
             {
                 return false;
             }
@@ -538,7 +435,7 @@ namespace System.Security.Cryptography
                     //
                     // Since signature verification is a public key operation there's no need to
                     // use fixed time equality checking here.
-                    for (int i = emLen - hLen - sLen - 2 - 1; i >= 0; --i)
+                    for (int i = emLen - hLen - saltLength - 2 - 1; i >= 0; --i)
                     {
                         if (dbMask[i] != 0)
                         {
@@ -548,13 +445,13 @@ namespace System.Security.Cryptography
 
                     // 10 ("b") If the octet at position emLen - hLen - sLen - 1 (under a 1-indexed scheme)
                     // is not 0x01, output "inconsistent" and stop.
-                    if (dbMask[emLen - hLen - sLen - 2] != 0x01)
+                    if (dbMask[emLen - hLen - saltLength - 2] != 0x01)
                     {
                         return false;
                     }
 
                     // 11. Let salt be the last sLen octets of DB.
-                    ReadOnlySpan<byte> salt = dbMask.Slice(dbMask.Length - sLen);
+                    ReadOnlySpan<byte> salt = dbMask.Slice(dbMask.Length - saltLength);
 
                     // 12/13. Let H' = Hash(eight zeros || mHash || salt)
                     hasher.AppendData(EightZeros);

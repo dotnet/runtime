@@ -720,6 +720,13 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Cryptography\src\Microsoft.Bcl.Cryptography.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.DigestInfo.cs"
+         Link="Common\System\Security\Cryptography\RsaPaddingProcessor.DigestInfo.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HashAlgorithmNames.cs"
+         Link="Common\System\Security\Cryptography\HashAlgorithmNames.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />
   </ItemGroup>
