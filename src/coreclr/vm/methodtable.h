@@ -1027,9 +1027,6 @@ public:
     CorIfaceAttr    GetComInterfaceType();
     void SetComInterfaceType(CorIfaceAttr ItfType);
 
-    OBJECTHANDLE GetOHDelegate();
-    void SetOHDelegate (OBJECTHANDLE _ohDelegate);
-
     CorClassIfaceAttr GetComClassInterfaceType();
     TypeHandle GetDefItfForComClassItf();
 
@@ -1061,9 +1058,6 @@ public:
     ClassFactoryBase       *GetComClassFactory();
     BOOL                    SetComClassFactory(ClassFactoryBase *pFactory);
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-
-    OBJECTREF GetObjCreateDelegate();
-    void SetObjCreateDelegate(OBJECTREF orDelegate);
 
 private:
     // This is for COM Interop backwards compatibility

@@ -1062,7 +1062,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetReferencedAssemblies(QCall::Assembly
         AssemblySpec spec;
         spec.InitializeSpec(mdAssemblyRef, pImport);
 
-        gc.pObj = (ASSEMBLYNAMEREF) AllocateObject(pAsmNameClass);
+        gc.pObj = NULL;
         spec.AssemblyNameInit(&gc.pObj);
 
         gc.ItemArray->SetAt(i, (OBJECTREF) gc.pObj);

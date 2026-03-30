@@ -166,7 +166,9 @@ struct AsyncState
                GenTreeCall*               call,
                CallDefinitionInfo         callDefInfo,
                BasicBlock*                suspensionBB,
-               BasicBlock*                resumptionBB)
+               BasicBlock*                resumptionBB,
+               bool                       resumeReachable,
+               VARSET_TP                  mutatedSincePreviousResumption)
         : Number(number)
         , Layout(layout)
         , CallBlock(callBlock)
@@ -174,6 +176,8 @@ struct AsyncState
         , CallDefInfo(callDefInfo)
         , SuspensionBB(suspensionBB)
         , ResumptionBB(resumptionBB)
+        , ResumeReachable(resumeReachable)
+        , MutatedSincePreviousResumption(mutatedSincePreviousResumption)
     {
     }
 
@@ -184,6 +188,17 @@ struct AsyncState
     CallDefinitionInfo         CallDefInfo;
     BasicBlock*                SuspensionBB;
     BasicBlock*                ResumptionBB;
+    // Is this suspension point reachable after a previous resumption?
+    bool ResumeReachable;
+    // Set of variables that may have been mutated since the previous resumption.
+    VARSET_TP MutatedSincePreviousResumption;
+};
+
+enum class SaveSet
+{
+    All,
+    UnmutatedLocals,
+    MutatedLocals,
 };
 
 class AsyncTransformation
@@ -241,28 +256,34 @@ class AsyncTransformation
                                  BasicBlock*                      suspendBB,
                                  unsigned                         stateNum,
                                  const ContinuationLayout&        layout,
-                                 const ContinuationLayoutBuilder& subLayout);
+                                 const ContinuationLayoutBuilder& subLayout,
+                                 bool                             resumeReachable,
+                                 VARSET_VALARG_TP                 mutatedSinceResumption);
 
     GenTreeCall* CreateAllocContinuationCall(bool                      hasKeepAlive,
                                              GenTree*                  prevContinuation,
                                              const ContinuationLayout& layout);
-    void         FillInDataOnSuspension(GenTreeCall*                     call,
-                                        const ContinuationLayout&        layout,
-                                        const ContinuationLayoutBuilder& subLayout,
-                                        BasicBlock*                      suspendBB);
-    void         RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
-    void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
-                                                GenTreeCall*              call,
-                                                const CallDefinitionInfo& callDefInfo,
-                                                BasicBlock*               suspendBB,
-                                                BasicBlock**              remainder);
-    BasicBlock*  CreateResumptionBlock(BasicBlock* remainder, unsigned stateNum);
-    void         CreateResumption(BasicBlock*                      callBlock,
-                                  GenTreeCall*                     call,
-                                  BasicBlock*                      resumeBB,
-                                  const CallDefinitionInfo&        callDefInfo,
-                                  const ContinuationLayout&        layout,
-                                  const ContinuationLayoutBuilder& subLayout);
+
+    void        FillInDataOnSuspension(GenTreeCall*                     call,
+                                       const ContinuationLayout&        layout,
+                                       const ContinuationLayoutBuilder& subLayout,
+                                       BasicBlock*                      suspendBB,
+                                       VARSET_VALARG_TP                 mutatedSinceResumption,
+                                       SaveSet                          saveSet);
+    SaveSet     GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG_TP mutatedSinceResumption);
+    void        RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
+    void        CreateCheckAndSuspendAfterCall(BasicBlock*               block,
+                                               GenTreeCall*              call,
+                                               const CallDefinitionInfo& callDefInfo,
+                                               BasicBlock*               suspendBB,
+                                               BasicBlock**              remainder);
+    BasicBlock* CreateResumptionBlock(BasicBlock* remainder, unsigned stateNum);
+    void        CreateResumption(BasicBlock*                      callBlock,
+                                 GenTreeCall*                     call,
+                                 BasicBlock*                      resumeBB,
+                                 const CallDefinitionInfo&        callDefInfo,
+                                 const ContinuationLayout&        layout,
+                                 const ContinuationLayoutBuilder& subLayout);
 
     void        RestoreFromDataOnResumption(const ContinuationLayout&        layout,
                                             const ContinuationLayoutBuilder& subLayout,

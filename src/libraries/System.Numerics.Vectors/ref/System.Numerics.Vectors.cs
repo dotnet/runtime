@@ -390,10 +390,13 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> LessThanOrEqual<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> LessThan<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe System.Numerics.Vector<T> Load<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe System.Numerics.Vector<T> LoadAligned<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe System.Numerics.Vector<T> LoadAlignedNonTemporal<T>(T* source) { throw null; }
         public static System.Numerics.Vector<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -491,28 +494,40 @@ namespace System.Numerics
         public static (System.Numerics.Vector<float> Sin, System.Numerics.Vector<float> Cos) SinCos(System.Numerics.Vector<float> vector) { throw null; }
         public static System.Numerics.Vector<T> SquareRoot<T>(System.Numerics.Vector<T> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void Store<T>(this System.Numerics.Vector<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void Store(this System.Numerics.Vector2 source, float* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void Store(this System.Numerics.Vector3 source, float* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void Store(this System.Numerics.Vector4 source, float* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void StoreAligned<T>(this System.Numerics.Vector<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void StoreAligned(this System.Numerics.Vector2 source, float* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void StoreAligned(this System.Numerics.Vector3 source, float* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void StoreAligned(this System.Numerics.Vector4 source, float* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void StoreAlignedNonTemporal<T>(this System.Numerics.Vector<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void StoreAlignedNonTemporal(this System.Numerics.Vector2 source, float* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void StoreAlignedNonTemporal(this System.Numerics.Vector3 source, float* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe void StoreAlignedNonTemporal(this System.Numerics.Vector4 source, float* destination) { throw null; }
         public static void StoreUnsafe<T>(this System.Numerics.Vector<T> source, ref T destination) { throw null; }
         public static void StoreUnsafe(this System.Numerics.Vector2 source, ref float destination) { throw null; }
@@ -688,10 +703,13 @@ namespace System.Numerics
         public static bool LessThanOrEqualAll(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static bool LessThanOrEqualAny(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         [CLSCompliant(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe System.Numerics.Vector2 Load(float* source) { throw null; }
         [CLSCompliant(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe System.Numerics.Vector2 LoadAligned(float* source) { throw null; }
         [CLSCompliant(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe System.Numerics.Vector2 LoadAlignedNonTemporal(float* source) { throw null; }
         public static System.Numerics.Vector2 LoadUnsafe(ref readonly float source) { throw null; }
         [CLSCompliant(false)]
@@ -856,10 +874,13 @@ namespace System.Numerics
         public static bool LessThanOrEqualAll(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public static bool LessThanOrEqualAny(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         [CLSCompliant(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe System.Numerics.Vector3 Load(float* source) { throw null; }
         [CLSCompliant(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe System.Numerics.Vector3 LoadAligned(float* source) { throw null; }
         [CLSCompliant(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe System.Numerics.Vector3 LoadAlignedNonTemporal(float* source) { throw null; }
         public static System.Numerics.Vector3 LoadUnsafe(ref readonly float source) { throw null; }
         [CLSCompliant(false)]
@@ -1028,10 +1049,13 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Log(System.Numerics.Vector4 vector) { throw null; }
         public static System.Numerics.Vector4 Log2(System.Numerics.Vector4 vector) { throw null; }
         [CLSCompliant(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe System.Numerics.Vector4 Load(float* source) { throw null; }
         [CLSCompliant(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe System.Numerics.Vector4 LoadAligned(float* source) { throw null; }
         [CLSCompliant(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public static unsafe System.Numerics.Vector4 LoadAlignedNonTemporal(float* source) { throw null; }
         public static System.Numerics.Vector4 LoadUnsafe(ref readonly float source) { throw null; }
         [CLSCompliant(false)]

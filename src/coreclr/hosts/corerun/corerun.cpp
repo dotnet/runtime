@@ -286,6 +286,10 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
 static char* s_core_libs_path = nullptr;
 static char* s_core_root_path = nullptr;
 
+#ifdef TARGET_BROWSER
+extern "C" bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
+#endif // TARGET_BROWSER
+
 static bool HOST_CONTRACT_CALLTYPE get_native_code_data(
     const host_runtime_contract_native_code_context* context,
     host_runtime_contract_native_code_data* data)
@@ -343,6 +347,11 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
     void** data_start,
     int64_t* size)
 {
+#ifdef TARGET_BROWSER
+    if (BrowserHost_ExternalAssemblyProbe(path, data_start, size))
+        return true;
+#endif // TARGET_BROWSER
+
     // Get just the file name
     const char* name = path;
     const char* pos = strrchr(name, '/');
@@ -424,6 +433,9 @@ static int run(const configuration& config)
     string_t tpa_list;
     string_t app_assemblies_env = pal::getenv(envvar::appAssemblies);
     bool use_external_assembly_probe = false;
+#ifdef TARGET_BROWSER
+    use_external_assembly_probe = true;
+#endif // TARGET_BROWSER
     if (app_assemblies_env.empty() || app_assemblies_env == W("PROPERTY"))
     {
         // Use the TRUSTED_PLATFORM_ASSEMBLIES property to pass the app assemblies to the runtime.
