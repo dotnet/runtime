@@ -5,12 +5,14 @@ include(configure.cmake)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
-    ${CMAKE_CURRENT_LIST_DIR}/trace.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/apphost_trace.c
     ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.cpp
+    ${CLR_SRC_NATIVE_DIR}/minipal/mutex.c
 )
 
 set(HEADERS
+    ${CMAKE_CURRENT_LIST_DIR}/apphost_trace.h
     ${CMAKE_CURRENT_LIST_DIR}/trace.h
     ${CMAKE_CURRENT_LIST_DIR}/utils.h
     ${CMAKE_CURRENT_LIST_DIR}/pal.h
@@ -73,6 +75,7 @@ if(NOT CLR_CMAKE_TARGET_WIN32)
         ${CMAKE_CURRENT_LIST_DIR}/apphost_fx_ver.c
         ${CMAKE_CURRENT_LIST_DIR}/apphost_fxr_resolver.c
         ${CMAKE_CURRENT_LIST_DIR}/apphost_bundle_marker.c
+        ${CLR_SRC_NATIVE_DIR}/minipal/mutex.c
     )
 
     add_library(hostmisc_c OBJECT ${HOSTMISC_C_SOURCES})
