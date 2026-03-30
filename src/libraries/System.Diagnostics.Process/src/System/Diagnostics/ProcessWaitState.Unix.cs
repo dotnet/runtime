@@ -550,7 +550,7 @@ namespace System.Diagnostics
                 if (_usesTerminal)
                 {
                     // Update terminal settings before calling SetExited.
-                    Process.ConfigureTerminalForChildProcesses(-1, configureConsole);
+                    ProcessUtils.ConfigureTerminalForChildProcesses(-1, configureConsole);
                 }
 
                 SetExited();
