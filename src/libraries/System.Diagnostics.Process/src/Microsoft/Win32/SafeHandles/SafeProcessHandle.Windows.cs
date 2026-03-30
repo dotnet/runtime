@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -282,5 +283,49 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
+
+        private void KillCore()
+        {
+            if (!Interop.Kernel32.TerminateProcess(this, -1))
+            {
+                Win32Exception exception = new Win32Exception();
+
+                // Don't throw if the process has already exited.
+                if (exception.NativeErrorCode == Interop.Errors.ERROR_ACCESS_DENIED &&
+                    Interop.Kernel32.GetExitCodeProcess(this, out int exitCode) &&
+                    exitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)
+                {
+                    return;
+                }
+
+                throw exception;
+            }
+        }
+
+        private bool SignalCore(PosixSignal signal)
+        {
+            // On Windows, only SIGKILL is supported, mapped to TerminateProcess.
+            if (signal != PosixSignal.SIGKILL)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            if (!Interop.Kernel32.TerminateProcess(this, -1))
+            {
+                Win32Exception exception = new Win32Exception();
+
+                // Return false if the process has already exited.
+                if (exception.NativeErrorCode == Interop.Errors.ERROR_ACCESS_DENIED &&
+                    Interop.Kernel32.GetExitCodeProcess(this, out int exitCode) &&
+                    exitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)
+                {
+                    return false;
+                }
+
+                throw exception;
+            }
+
+            return true;
+        }
     }
 }
