@@ -94,6 +94,7 @@ set( JIT_SOURCES
   alloc.cpp
   assertionprop.cpp
   async.cpp
+  asyncanalysis.cpp
   bitset.cpp
   block.cpp
   buildstring.cpp

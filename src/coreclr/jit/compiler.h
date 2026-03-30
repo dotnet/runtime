@@ -2941,9 +2941,9 @@ public:
 #ifdef TARGET_WASM
     // Once we have run wasm layout, try regions may no longer be contiguous.
     //
-    bool fgTrysNotContiguous() { return fgIndexToBlockMap != nullptr; }
+    bool fgTrysContiguous() { return fgIndexToBlockMap == nullptr; }
 #else
-    bool fgTrysNotContiguous() { return false; }
+    bool fgTrysContiguous() { return true; }
 #endif
 
     FlowEdge* BlockPredsWithEH(BasicBlock* blk);

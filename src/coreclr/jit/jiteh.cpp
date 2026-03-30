@@ -3460,11 +3460,7 @@ void Compiler::fgVerifyHandlerTab()
 
                 if (fgFuncletsCreated)
                 {
-                    if (fgTrysNotContiguous())
-                    {
-                        // We can't check much in this case.
-                    }
-                    else
+                    if (fgTrysContiguous())
                     {
                         // If both the 'try' region and the outer 'try' region are in the main function area, then we
                         // can do the normal nesting check. Otherwise, it's harder to find a useful assert to make about
@@ -3494,6 +3490,10 @@ void Compiler::fgVerifyHandlerTab()
                             }
                         }
                     }
+                    else
+                    {
+                        // We can't check much in this case.
+                    }
 
                     // With funclets, all we can say about the handler blocks is that they are disjoint from the
                     // enclosing try.
@@ -3502,7 +3502,7 @@ void Compiler::fgVerifyHandlerTab()
                 else
                 {
                     // If we haven't created funclets trys should still be contiguous.
-                    assert(!fgTrysNotContiguous());
+                    assert(fgTrysContiguous());
 
                     // Two 'try' regions can't start at the same block
                     // (by EH normalization).
@@ -3710,7 +3710,7 @@ void Compiler::fgVerifyHandlerTab()
     // Make sure that all blocks have the right index, including those blocks that should have zero (no EH region).
     for (BasicBlock* const block : Blocks())
     {
-        assert(fgTrysNotContiguous() || block->bbTryIndex == blockTryIndex[block->bbNum]);
+        assert(!fgTrysContiguous() || block->bbTryIndex == blockTryIndex[block->bbNum]);
         assert(block->bbHndIndex == blockHndIndex[block->bbNum]);
 
         // Also, since we're walking the blocks, check that all blocks we didn't mark as EH handler 'begin' blocks
