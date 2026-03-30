@@ -261,9 +261,11 @@ namespace ILCompiler.DependencyAnalysis
                         }
 
                         dependencies.Add(factory.ReflectedMethod(setterMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Custom attribute blob");
+                        return true;
                     }
 
-                    return true;
+                    // Property found without a setter - check base type
+                    break;
                 }
             }
 
