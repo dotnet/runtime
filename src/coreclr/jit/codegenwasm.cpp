@@ -3112,7 +3112,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     {
         // Go through and consume the fields in the field list so liveness is correct.
         unsigned regIndex = 0;
-        for (GenTreeFieldList::Use& use : op1->AsFieldList()->Uses())
+        for (GenTreeFieldList::Use& use : actualOp1->AsFieldList()->Uses())
         {
             genConsumeReg(use.GetNode());
             regIndex++;
