@@ -86,8 +86,10 @@ namespace System.Numerics
             Span<uint> lowerDst = bits.Slice(upperLength);
 
             int tmpLength = Math.Min(lowerLength, upperLength);
-            uint[] tmpArray = System.Buffers.ArrayPool<uint>.Shared.Rent(tmpLength);
-            Span<uint> tmp = tmpArray.AsSpan(0, tmpLength);
+            int wordsPerLimb = nint.Size / sizeof(uint);
+            int nuintCount = (tmpLength + wordsPerLimb - 1) / wordsPerLimb;
+            Span<nuint> tmpNuint = BigInteger.RentedBuffer.Create(nuintCount, out BigInteger.RentedBuffer tmpBuffer);
+            Span<uint> tmp = MemoryMarshal.Cast<nuint, uint>(tmpNuint).Slice(0, tmpLength);
 
             if (upperLength < lowerLength)
             {
@@ -102,7 +104,7 @@ namespace System.Numerics
                 tmp.CopyTo(lowerDst);
             }
 
-            System.Buffers.ArrayPool<uint>.Shared.Return(tmpArray);
+            tmpBuffer.Dispose();
         }
 
         private static void LeftShiftSelf32(Span<uint> bits, int shift, out uint carry)
