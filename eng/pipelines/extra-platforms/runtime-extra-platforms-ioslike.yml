@@ -23,9 +23,8 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
-      # - tvos_arm64
+      - ios_arm64
+      - tvos_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -65,9 +64,8 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
-      # - tvos_arm64
+      - ios_arm64
+      - tvos_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -110,9 +108,8 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
-      # - tvos_arm64
+      - ios_arm64
+      - tvos_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -144,9 +141,8 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
-      # - tvos_arm64
+      - ios_arm64
+      - tvos_arm64
     variables:
       - name: timeoutPerTestInMinutes
         value: 60
@@ -183,9 +179,8 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
-      # - tvos_arm64
+      - ios_arm64
+      - tvos_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -227,9 +222,8 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/123796
-      # - ios_arm64
-      # - tvos_arm64
+      - ios_arm64
+      - tvos_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

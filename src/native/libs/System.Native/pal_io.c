@@ -235,6 +235,8 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 #else
     dst->UserFlags = 0;
 #endif
+
+    dst->HardLinkCount = (uint32_t)src->st_nlink;
 }
 
 int32_t SystemNative_Stat(const char* path, FileStatus* output)
@@ -558,6 +560,15 @@ int32_t SystemNative_CloseDir(DIR* dir)
     }
 
     return result;
+}
+
+int32_t SystemNative_IsAtomicNonInheritablePipeCreationSupported(void)
+{
+#if HAVE_PIPE2
+    return 1;
+#else
+    return 0;
+#endif
 }
 
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)

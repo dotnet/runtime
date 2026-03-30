@@ -151,6 +151,7 @@ internal partial class MockDescriptors
             new(nameof(Data.Module.Flags), DataType.uint32),
             new(nameof(Data.Module.LoaderAllocator), DataType.pointer),
             new(nameof(Data.Module.DynamicMetadata), DataType.pointer),
+            new(nameof(Data.Module.SimpleName), DataType.pointer),
             new(nameof(Data.Module.Path), DataType.pointer),
             new(nameof(Data.Module.FileName), DataType.pointer),
             new(nameof(Data.Module.ReadyToRunInfo), DataType.pointer),

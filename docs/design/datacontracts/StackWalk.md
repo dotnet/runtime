@@ -25,6 +25,9 @@ TargetPointer GetMethodDescPtr(TargetPointer framePtr);
 
 // Gets the method desc pointer associated with a given IStackDataFrameHandle
 TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle);
+
+// Gets the instruction pointer from the current frame's context.
+TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 ## Version 1
@@ -377,6 +380,11 @@ This API is implemeted as follows:
 5. Check if the current context IP is a managed context using the ExecutionManager contract. If it is a managed context, use the ExecutionManager context to find the related MethodDesc and return the pointer to it.
 ```csharp
 TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)
+```
+
+`GetInstructionPointer` returns the instruction pointer (IP) from the current frame's context. This is the address of the instruction being executed (or about to be executed) in the method associated with this frame.
+```csharp
+TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
 ```
 
 ### x86 Specifics

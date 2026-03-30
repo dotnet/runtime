@@ -113,7 +113,23 @@ The skill contains baked-in examples and guidelines for writing good proposals (
    - Cover edge cases, null inputs, boundary conditions
    - Test any interaction with existing APIs
 
-4. **Apply the new API throughout the runtime codebase** where relevant. Search (grep/ripgrep) for existing patterns that would benefit from the new API — e.g., manual workarounds, verbose boilerplate, or older idioms that the new API replaces. Include these call-site updates in the prototype commit to demonstrate real-world applicability and exercise the API in diverse contexts.
+4. **Search dotnet/runtime for adoption sites.** Before writing any proposal text, systematically search the entire local repo (grep/ripgrep) for every place the new API could or should be used. This serves two purposes: validating that the API shape works in diverse real-world contexts, and producing the adoption catalog required in the proposal (see Phase 4, section 6).
+
+   **What to search for:**
+   - Manual workarounds, verbose boilerplate, or older idioms that the new API directly replaces
+   - Call sites of the existing APIs being extended (e.g., if adding an overload, find every call to the current overloads)
+   - Patterns that would become simpler, more efficient, or more correct with the new API
+   - Third-party or test code within the repo that exercises the same scenario
+
+   **How to catalog results:**
+   - Record every hit with file path and a one-line description of how the new API applies
+   - Classify each site into one of three categories:
+     - **Updated**: Already converted in the prototype commit (pick a representative set of the most diverse and impactful sites)
+     - **Candidate**: Could be converted but was intentionally deferred (e.g., different area, risk of churn, needs area-owner review)
+     - **Inapplicable**: Initially matched the search but doesn't actually benefit from the new API (brief reason why)
+   - The catalog should be thorough — err on the side of listing too many sites rather than too few
+
+5. **Apply the new API at representative sites.** From the catalog above, convert a diverse, representative set of adoption sites in the prototype commit. Prioritize sites that exercise different aspects of the API (different overloads, edge cases, interaction with other APIs). The remaining "Candidate" sites are listed in the proposal but left unconverted.
 
 #### Prototype Validation (all steps required)
 
@@ -261,6 +277,32 @@ The agent has the burden of proof when claiming absence of risks. Evaluate:
 - TFM compatibility
 
 Write "No response" if there are genuinely no risks, matching the convention used in real `api-approved` issues. Do not inflate this section for straightforward additions.
+
+**6. Usage in dotnet/runtime**
+
+Include the full adoption catalog produced during Phase 2, step 4. This section demonstrates that the API is broadly useful across the runtime codebase and helps area owners discover conversion opportunities in their code.
+
+Format as a table or grouped list:
+
+```markdown
+#### Updated in prototype
+
+| File | Description |
+|------|-------------|
+| `src/libraries/System.Linq/src/System/Linq/Where.cs` | Replaced manual null-check + throw with `ArgumentNullException.ThrowIfNull` |
+| `src/libraries/System.Private.CoreLib/src/System/Collections/Generic/Queue.cs` | Replaced bounds-check boilerplate |
+
+#### Candidates for follow-up
+
+| File | Description | Why deferred |
+|------|-------------|--------------|
+| `src/coreclr/nativeaot/...` | Same pattern as above | Different area owner |
+| `src/mono/...` | Uses equivalent Mono-specific helper | Needs area-owner review |
+```
+
+- Every "Updated" and "Candidate" site from the Phase 2 catalog must appear here.
+- "Inapplicable" sites may be omitted from the proposal unless they illustrate an interesting design boundary (e.g., "this pattern looks like a match but isn't because X" — useful context for reviewers).
+- If no adoption sites were found beyond the target library itself, state that explicitly — it's a signal reviewers will want to see.
 
 #### After Drafting
 
