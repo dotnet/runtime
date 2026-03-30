@@ -10,6 +10,7 @@
 #include "asmconstants.h"
 #ifdef FEATURE_COMINTEROP
 #include "olecontexthelpers.h"
+#include "clrtocomcall.h"
 #endif
 
 #ifdef LOGGING
@@ -1723,6 +1724,31 @@ static PCODE GetCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCallInfo)
     PCODE target = (PCODE)lpVtbl[pCLRToCOMCallInfo->m_cachedComSlot];
     return target;
 }
+
+static PCODE GetLateBoundCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCallInfo)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // calculate the target interface pointer
+    SafeComHolder<IUnknown> pUnk;
+
+    OBJECTREF oref = ObjectToOBJECTREF(pThis);
+    GCPROTECT_BEGIN(oref);
+    pUnk = ComObject::GetComIPFromRCWThrowing(&oref, pCLRToCOMCallInfo->m_pInterfaceMT);
+    GCPROTECT_END();
+
+    LPVOID *lpVtbl = *(LPVOID **)(IUnknown *)pUnk;
+
+
+    PCODE target = (PCODE)lpVtbl[6]; // IDispatch::Invoke's slot
+    return target;
+}
 #endif // FEATURE_COMINTEROP
 
 BOOL ILStubManager::TraceManager(Thread *thread,
@@ -1825,12 +1851,14 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         {
             LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Stub is CLR-to-COM\n"));
             _ASSERTE(pMD->IsCLRToCOMCall());
-            CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)pMD;
-            _ASSERTE(!pCMD->IsStatic() && !pCMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
+            _ASSERTE(!pMD->IsStatic() && !pMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
+
+            DWORD dwStubFlags;
+            CLRToCOMCallInfo* pInfo = CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(pMD, &dwStubFlags);
 
             if (pThis != NULL)
             {
-                target = GetCOMTarget(pThis, pCMD->m_pCLRToCOMCallInfo);
+                target = SF_IsCOMLateBoundStub(dwStubFlags) ? GetLateBoundCOMTarget(pThis, pInfo) : GetCOMTarget(pThis, pInfo);
                 LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM case %p\n", target));
                 trace->InitForUnmanaged(target);
             }
@@ -1930,7 +1958,7 @@ BOOL PInvokeStubManager::DoTraceStub(PCODE stubStartAddress,
 #endif // !DACCESS_COMPILE
 }
 
-// This is used to recognize GenericCLRToCOMCallStub, VarargPInvokeStub, and GenericPInvokeCalliHelper.
+// This is used to recognize VarargPInvokeStub, and GenericPInvokeCalliHelper.
 
 #ifndef DACCESS_COMPILE
 
@@ -1949,8 +1977,6 @@ void InteropDispatchStubManager::Init()
 }
 
 #endif // #ifndef DACCESS_COMPILE
-
-PCODE TheGenericCLRToCOMCallStub(); // clrtocomcall.cpp
 
 #ifndef DACCESS_COMPILE
 static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
@@ -1975,13 +2001,6 @@ BOOL InteropDispatchStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     //@dbgtodo dharvey implement DAC support
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_COMINTEROP
-    if (stubStartAddress == GetEEFuncEntryPoint(GenericCLRToCOMCallStub))
-    {
-        return true;
-    }
-#endif // FEATURE_COMINTEROP
-
     if (IsVarargPInvokeStub(stubStartAddress))
     {
         return true;
@@ -2065,41 +2084,6 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
         trace->InitForUnmanaged(target);
 #endif //defined(TARGET_ARM64) && defined(__APPLE__)
     }
-#ifdef FEATURE_COMINTEROP
-    else
-    {
-        CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)arg;
-        _ASSERTE(pCMD->IsCLRToCOMCall());
-
-        Object * pThis = StubManagerHelpers::GetThisPtr(pContext);
-
-        {
-            if (!pCMD->m_pCLRToCOMCallInfo->m_pInterfaceMT->IsComEventItfType() && (pCMD->m_pCLRToCOMCallInfo->m_pILStub != NULL))
-            {
-                // Early-bound CLR->COM call - continue in the IL stub
-                trace->InitForStub(pCMD->m_pCLRToCOMCallInfo->m_pILStub);
-            }
-            else
-            {
-                // Late-bound CLR->COM call - continue in target's IDispatch::Invoke
-                OBJECTREF oref = ObjectToOBJECTREF(pThis);
-                GCPROTECT_BEGIN(oref);
-
-                MethodTable *pItfMT = pCMD->m_pCLRToCOMCallInfo->m_pInterfaceMT;
-                _ASSERTE(pItfMT->GetComInterfaceType() == ifDispatch);
-
-                SafeComHolder<IUnknown> pUnk = ComObject::GetComIPFromRCWThrowing(&oref, pItfMT);
-                LPVOID *lpVtbl = *(LPVOID **)(IUnknown *)pUnk;
-
-                PCODE target = (PCODE)lpVtbl[6]; // DISPATCH_INVOKE_SLOT;
-                LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: CLR-to-COM late-bound case %p\n", target));
-                trace->InitForUnmanaged(target);
-
-                GCPROTECT_END();
-            }
-        }
-    }
-#endif // FEATURE_COMINTEROP
 
     return TRUE;
 }

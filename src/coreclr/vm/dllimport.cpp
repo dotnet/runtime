@@ -238,30 +238,11 @@ static bool IsSharedStubScenario(DWORD dwStubFlags)
     return true;
 }
 
-class StubState
+class ILStubState
 {
 public:
-    virtual void SetLastError(BOOL fSetLastError) = 0;
-    virtual void BeginEmit(DWORD dwStubFlags) = 0;
-    virtual void MarshalReturn(MarshalInfo* pInfo, int argOffset) = 0;
-    virtual void MarshalArgument(MarshalInfo* pInfo, int argOffset) = 0;
-    virtual void MarshalLCID(int argIdx) = 0;
-    virtual void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc) = 0;
-
-    virtual void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD) = 0;
-
-    virtual void FinishEmit(MethodDesc* pMD) = 0;
-
-    virtual ~StubState()
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-};
-
-class ILStubState : public StubState
-{
+    virtual ~ILStubState() = default;
 protected:
-
     ILStubState(
                 Module* pStubModule,
                 const Signature &signature,
@@ -289,7 +270,7 @@ private:
     }
 
 public:
-    void SetLastError(BOOL fSetLastError)
+    virtual void SetLastError(BOOL fSetLastError)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -309,14 +290,14 @@ public:
     // The second "emittable" ILCodeLabel is at the beginning of the post linker.  It is used to emit code which is
     // not safe to run in the case of an exception.  The rest of the post linker is wrapped in a finally, and it contains
     // with the necessary clean-up which should be executed in both normal and exception cases.
-    void BeginEmit(DWORD dwStubFlags)
+    virtual void BeginEmit(DWORD dwStubFlags)
     {
         WRAPPER_NO_CONTRACT;
         m_slIL.Begin(dwStubFlags);
         _ASSERTE(m_dwStubFlags == dwStubFlags);
     }
 
-    void MarshalReturn(MarshalInfo* pInfo, int argOffset)
+    virtual void MarshalReturn(MarshalInfo* pInfo, int argOffset)
     {
         CONTRACTL
         {
@@ -332,7 +313,7 @@ public:
                                 SF_IsHRESULTSwapping(m_dwStubFlags));
     }
 
-    void MarshalArgument(MarshalInfo* pInfo, int argOffset)
+    virtual void MarshalArgument(MarshalInfo* pInfo, int argOffset)
     {
         CONTRACTL
         {
@@ -344,7 +325,7 @@ public:
         pInfo->GenerateArgumentIL(&m_slIL, argOffset, SF_IsForwardStub(m_dwStubFlags));
     }
 
-    void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc)
+    virtual void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc)
     {
         CONTRACTL
         {
@@ -370,7 +351,7 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
-    void MarshalLCID(int argIdx)
+    virtual void MarshalLCID(int argIdx)
     {
         STANDARD_VM_CONTRACT;
 
@@ -529,7 +510,7 @@ public:
         pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pNewSig, cbNewSig);
     }
 
-    void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD)
+    virtual void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD)
     {
         STANDARD_VM_CONTRACT;
 
@@ -646,7 +627,7 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    void FinishEmit(MethodDesc* pStubMD)
+    virtual void FinishEmit(MethodDesc* pStubMD)
     {
         STANDARD_VM_CONTRACT;
 
@@ -2778,105 +2759,6 @@ void PInvokeStubLinker::EmitLoadStubContext(ILCodeStream* pcsEmit, DWORD dwStubF
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
 }
 
-#ifdef FEATURE_COMINTEROP
-
-class DispatchStubState : public StubState // For CLR-to-COM late-bound/eventing calls
-{
-public:
-    DispatchStubState()
-        : m_dwStubFlags(0),
-          m_lateBoundFlags(0)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    void SetLastError(BOOL fSetLastError)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        CONSISTENCY_CHECK(!fSetLastError);
-    }
-
-    void BeginEmit(DWORD dwStubFlags)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        CONSISTENCY_CHECK(SF_IsCOMStub(dwStubFlags));
-        m_dwStubFlags = dwStubFlags;
-    }
-
-    void MarshalReturn(MarshalInfo* pInfo, int argOffset)
-    {
-        CONTRACTL
-        {
-            STANDARD_VM_CHECK;
-
-            PRECONDITION(CheckPointer(pInfo));
-        }
-        CONTRACTL_END;
-    }
-
-    void MarshalArgument(MarshalInfo* pInfo, int argOffset)
-    {
-        CONTRACTL
-        {
-            STANDARD_VM_CHECK;
-            PRECONDITION(CheckPointer(pInfo));
-        }
-        CONTRACTL_END;
-
-        if (SF_IsCOMLateBoundStub(m_dwStubFlags) && pInfo->GetDispWrapperType() != 0)
-        {
-            m_lateBoundFlags |= CLRToCOMCallInfo::kRequiresArgumentWrapping;
-        }
-    }
-
-    void MarshalLCID(int argIdx)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc)
-    {
-        LIMITED_METHOD_CONTRACT;
-        UNREACHABLE();
-    }
-
-#ifdef FEATURE_COMINTEROP
-    void MarshalHiddenLengthArgument(MarshalInfo *, BOOL)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-    void MarshalFactoryReturn()
-    {
-        LIMITED_METHOD_CONTRACT;
-        UNREACHABLE();
-    }
-#endif // FEATURE_COMINTEROP
-
-    void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD)
-    {
-        LIMITED_METHOD_CONTRACT;
-        UNREACHABLE_MSG("Should never come to DispatchStubState::EmitInvokeTarget");
-    }
-
-    void FinishEmit(MethodDesc *pMD)
-    {
-        STANDARD_VM_CONTRACT;
-
-        // set flags directly on the interop MD
-        _ASSERTE(pMD->IsCLRToCOMCall());
-
-        ((CLRToCOMCallMethodDesc *)pMD)->SetLateBoundFlags(m_lateBoundFlags);
-    }
-
-protected:
-    DWORD        m_dwStubFlags;
-    BYTE         m_lateBoundFlags; // CLRToCOMCallMethodDesc::Flags
-};
-
-#endif // FEATURE_COMINTEROP
-
 namespace
 {
     // Use CorInfoCallConvExtension::Managed as a sentinel represent a user-provided WinApi calling convention.
@@ -3867,7 +3749,7 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
                                                      CorNativeLinkType  nlType,
                                                      CorNativeLinkFlags nlFlags,
                                                      UINT               argidx,  // this is used for reverse pinvoke hresult swapping
-                                                     StubState*         pss,
+                                                     ILStubState*         pss,
                                                      int                argOffset,
                                                      DWORD              dwStubFlags,
                                                      MethodDesc         *pMD,
@@ -4004,7 +3886,7 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
 // Note that this function may now throw if it fails to create
 // a stub.
 //---------------------------------------------------------
-static void CreatePInvokeStubWorker(StubState*               pss,
+static void CreatePInvokeStubWorker(ILStubState*               pss,
                                     StubSigDesc*             pSigDesc,
                                     CorNativeLinkType        nlType,
                                     CorNativeLinkFlags       nlFlags,
@@ -6206,68 +6088,6 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
 
     RETURN pStub;
 }
-
-#ifdef FEATURE_COMINTEROP
-void CreateCLRToDispatchCOMStub(
-            MethodDesc *    pMD,
-            DWORD           dwStubFlags)             // PInvokeStubFlags
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(SF_IsCOMLateBoundStub(dwStubFlags) || SF_IsCOMEventCallStub(dwStubFlags));
-
-    // If we are dealing with a COM event call, then we need to initialize the
-    // COM event call information.
-    if (SF_IsCOMEventCallStub(dwStubFlags))
-    {
-        _ASSERTE(pMD->IsCLRToCOMCall()); //  no generic COM eventing
-        ((CLRToCOMCallMethodDesc *)pMD)->InitComEventCallInfo();
-    }
-
-    // Get the call signature information
-    StubSigDesc sigDesc(pMD);
-
-    int         iLCIDArg = 0;
-    int         numArgs = 0;
-    int         numParamTokens = 0;
-    mdParamDef* pParamTokenArray = NULL;
-
-    CreatePInvokeStubAccessMetadata(&sigDesc,
-                                    CallConv::GetDefaultUnmanagedCallingConvention(),
-                                    &dwStubFlags,
-                                    &iLCIDArg,
-                                    &numArgs);
-
-    numParamTokens = numArgs + 1;
-    pParamTokenArray = (mdParamDef*)_alloca(numParamTokens * sizeof(mdParamDef));
-    CollateParamTokens(sigDesc.m_pModule->GetMDImport(), sigDesc.m_tkMethodDef, numArgs, pParamTokenArray);
-
-    DispatchStubState MyStubState;
-
-    CreatePInvokeStubWorker(&MyStubState,
-                            &sigDesc,
-                            (CorNativeLinkType)0,
-                            (CorNativeLinkFlags)0,
-                            CallConv::GetDefaultUnmanagedCallingConvention(),
-                            dwStubFlags | PINVOKESTUB_FL_COM,
-                            pMD,
-                            pParamTokenArray,
-                            iLCIDArg);
-
-    _ASSERTE(pMD->IsCLRToCOMCall()); // no generic disp-calls
-
-#ifdef TARGET_X86
-    ((CLRToCOMCallMethodDesc *)pMD)->InitStackPop();
-#endif
-}
-
-#endif // FEATURE_COMINTEROP
 
 VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
 {

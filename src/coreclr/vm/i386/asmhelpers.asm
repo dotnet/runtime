@@ -994,50 +994,6 @@ _TheUMEntryPrestub@0 proc public
     jmp     eax     ; Tail Jmp
 _TheUMEntryPrestub@0 endp
 
-ifdef FEATURE_COMINTEROP
-;==========================================================================
-; CLR -> COM generic or late-bound call
-_GenericCLRToCOMCallStub@0 proc public
-
-    STUB_PROLOG
-
-    ; pTransitionBlock
-    mov         esi, esp
-
-    ; return value
-    sub         esp, 8
-
-    ; save pMD
-    mov         ebx, eax
-
-    push        eax                 ; pMD
-    push        esi                 ; pTransitionBlock
-    call        _CLRToCOMWorker@8
-
-    push        eax
-    call        _setFPReturn@12     ; pop & set the return value
-
-    ; From here on, mustn't trash eax:edx
-
-    ; Get pCLRToCOMCallInfo for return thunk
-    mov         ecx, [ebx + CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo]
-    ; Get size of arguments to pop
-    movzx       ecx, word ptr [ecx + CLRToCOMCallInfo__m_cbStackPop]
-    ; Get the return address, pushed registers on stack are 24 bytes big
-    mov         ebx, [esp + 24]
-    ; Set the return address on stack at the last stack slot
-    mov         [esp + ecx + 24], ebx
-
-    STUB_EPILOG_RETURN
-
-    ; Move esp to point to the last stack slot where we put the return
-    ; address earlier
-    lea         esp, [esp + ecx]
-
-    ret
-
-_GenericCLRToCOMCallStub@0 endp
-
 _GenericComCallStub@0 proc public
 
     ; Pop ComCallMethodDesc* pushed by prestub
