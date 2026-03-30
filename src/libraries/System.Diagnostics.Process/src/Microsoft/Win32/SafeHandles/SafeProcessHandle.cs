@@ -93,8 +93,6 @@ namespace Microsoft.Win32.SafeHandles
                 throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
             }
 
-            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
-
             SafeFileHandle? childInputHandle = startInfo.StandardInputHandle;
             SafeFileHandle? childOutputHandle = startInfo.StandardOutputHandle;
             SafeFileHandle? childErrorHandle = startInfo.StandardErrorHandle;

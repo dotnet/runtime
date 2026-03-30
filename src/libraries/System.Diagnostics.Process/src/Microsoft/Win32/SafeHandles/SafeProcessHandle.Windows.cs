@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Security;
 using System.Text;
 
@@ -18,6 +19,8 @@ namespace Microsoft.Win32.SafeHandles
 
         internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
+
             return startInfo.UseShellExecute
                 ? StartWithShellExecuteEx(startInfo)
                 : StartWithCreateProcess(startInfo, stdinHandle, stdoutHandle, stderrHandle);

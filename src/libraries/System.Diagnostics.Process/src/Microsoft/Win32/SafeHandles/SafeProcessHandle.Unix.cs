@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
@@ -59,8 +60,10 @@ namespace Microsoft.Win32.SafeHandles
         // On Unix, we don't use process descriptors yet, so we can't get PID.
         private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
 
-        private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
+
             SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
 
             // For standalone SafeProcessHandle.Start, we dispose the wait state holder immediately.

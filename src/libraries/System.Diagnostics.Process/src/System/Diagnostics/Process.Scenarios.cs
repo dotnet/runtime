@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Collections.Generic;
 using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -35,6 +37,11 @@ namespace System.Diagnostics
         /// that the underlying operating-system resources held by the <see cref="Process"/> object are
         /// released promptly.
         /// </para>
+        /// <para>
+        /// When none of the standard handles (<see cref="ProcessStartInfo.StandardInputHandle"/>,
+        /// <see cref="ProcessStartInfo.StandardOutputHandle"/>, or <see cref="ProcessStartInfo.StandardErrorHandle"/>)
+        /// are provided, the handles are redirected to the null file by default.
+        /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
@@ -42,16 +49,24 @@ namespace System.Diagnostics
         public static int StartAndForget(ProcessStartInfo startInfo)
         {
             ArgumentNullException.ThrowIfNull(startInfo);
+            startInfo.ThrowIfInvalid(out bool anyRedirection);
 
-            if (startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError)
+            if (anyRedirection)
             {
                 throw new InvalidOperationException(SR.StartAndForget_RedirectNotSupported);
             }
 
-            using Process process = new Process();
-            process.StartInfo = startInfo;
-            process.Start();
-            return process.Id;
+            using SafeFileHandle? nullFile = startInfo.StandardInputHandle is null || startInfo.StandardOutputHandle is null || startInfo.RedirectStandardError
+                ? File.OpenNullHandle()
+                : null;
+
+            // Use internal StartCore to avoid the need of modyfing provided ProcessStartInfo
+            using SafeProcessHandle processHandle = SafeProcessHandle.StartCore(startInfo,
+                startInfo.StandardInputHandle ?? nullFile,
+                startInfo.StandardOutputHandle ?? nullFile,
+                startInfo.StandardErrorHandle ?? nullFile);
+
+            return processHandle.ProcessId;
         }
 
         /// <summary>
@@ -77,6 +92,9 @@ namespace System.Diagnostics
         /// <see cref="Start(string)"/> and discarding the returned object, this method guarantees that the
         /// underlying operating-system resources held by the <see cref="Process"/> object are released
         /// promptly.
+        /// </para>
+        /// <para>
+        /// Standard handles are redirected to the null file by default.
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("ios")]
