@@ -426,6 +426,10 @@ protected:
 
     void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 
+#if defined(TARGET_ARM64)
+    void genUnknownSizeFrame();
+#endif
+
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool genInstrWithConstant(instruction ins,
                               emitAttr    attr,
