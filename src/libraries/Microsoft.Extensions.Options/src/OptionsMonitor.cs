@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Options
@@ -21,6 +23,7 @@ namespace Microsoft.Extensions.Options
         private readonly IOptionsFactory<TOptions> _factory;
         private readonly List<IDisposable> _registrations = new List<IDisposable>();
         internal event Action<TOptions, string>? _onChange;
+        private TOptions? _currentValue;
 
         /// <summary>
         /// Initializes a new instance of <see cref="OptionsMonitor{TOptions}"/> with the specified factory, sources, and cache.
@@ -66,6 +69,10 @@ namespace Microsoft.Extensions.Options
             name ??= Options.DefaultName;
             _cache.TryRemove(name);
             TOptions options = Get(name);
+            if (name == Options.DefaultName)
+            {
+                Interlocked.Exchange(ref _currentValue, options);
+            }
             _onChange?.Invoke(options, name);
         }
 
@@ -76,7 +83,15 @@ namespace Microsoft.Extensions.Options
         /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         public TOptions CurrentValue
         {
-            get => Get(Options.DefaultName);
+            get => Volatile.Read(ref _currentValue) ?? InitializeCurrentValue();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private TOptions InitializeCurrentValue()
+        {
+            TOptions value = Get(Options.DefaultName);
+            Interlocked.CompareExchange(ref _currentValue, value, null);
+            return Volatile.Read(ref _currentValue)!;
         }
 
         /// <summary>
