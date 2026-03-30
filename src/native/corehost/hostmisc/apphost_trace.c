@@ -276,6 +276,9 @@ void trace_error_v(const pal_char_t* format, va_list args)
     va_list dup_args;
     va_copy(dup_args, args);
 
+    va_list trace_args;
+    va_copy(trace_args, args);
+
     int count = trace_vsnprintf_len(format, args) + 1;
     pal_char_t* buffer = (pal_char_t*)malloc((size_t)count * sizeof(pal_char_t));
     if (buffer)
@@ -298,15 +301,13 @@ void trace_error_v(const pal_char_t* format, va_list args)
 
         if (g_trace_verbosity && ((g_trace_file != stderr) || g_error_writer != NULL))
         {
-            va_list trace_args;
-            va_copy(trace_args, dup_args);
             trace_file_vprintf(g_trace_file, format, trace_args);
-            va_end(trace_args);
         }
         trace_lock_release();
 
         free(buffer);
     }
+    va_end(trace_args);
     va_end(dup_args);
 }
 
@@ -350,14 +351,9 @@ void trace_warning_v(const pal_char_t* format, va_list args)
 
 void trace_warning(const pal_char_t* format, ...)
 {
-    if (g_trace_verbosity < TRACE_VERBOSITY_WARN)
-        return;
-
     va_list args;
     va_start(args, format);
-    trace_lock_acquire();
-    trace_file_vprintf(g_trace_file, format, args);
-    trace_lock_release();
+    trace_warning_v(format, args);
     va_end(args);
 }
 
