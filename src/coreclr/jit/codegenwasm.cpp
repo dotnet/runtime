@@ -723,10 +723,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             GetEmitter()->emitIns(INS_unreachable);
             break;
 
-        case GT_PINVOKE_PROLOG:
-            // TODO-WASM-CQ re-establish the global stack pointer here?
-            break;
-
         default:
 #ifdef DEBUG
             if (JitConfig.JitWasmNyiToR2RUnsupported())
@@ -1835,7 +1831,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     GenTree* const index = node->Index();
 
     assert(varTypeIsIntegral(index->TypeGet()));
-    var_types indexType = index->TypeGet();
+    var_types indexType = genActualType(index->TypeGet());
 
     // Generate the bounds check if necessary.
     //
@@ -1851,22 +1847,21 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(baseReg));
         GetEmitter()->emitIns_I(ins_Load(TYP_INT), EA_4BYTE, node->gtLenOffset);
 
-        // Extend array length if needed.
+        // If index type is long, extend array length
         if (indexType == TYP_LONG)
         {
             GetEmitter()->emitIns(INS_i64_extend_u_i32);
         }
 
         // compare
-        GetEmitter()->emitIns(indexType == TYP_INT ? INS_i32_ge_u : INS_i64_ge_u);
+        GetEmitter()->emitIns(indexType == TYP_LONG ? INS_i64_ge_u : INS_i32_ge_u);
 
         genJumpToThrowHlpBlk(SCK_RNGCHK_FAIL);
     }
 
     // Zero extend index if necessary.
-    if (genTypeSize(indexType) < TARGET_POINTER_SIZE)
+    if (indexType != TYP_I_IMPL)
     {
-        assert(TARGET_POINTER_SIZE == 8);
         GetEmitter()->emitIns(INS_i64_extend_u_i32);
     }
 
