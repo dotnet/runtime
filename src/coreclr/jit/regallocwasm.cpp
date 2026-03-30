@@ -405,11 +405,8 @@ void WasmRegAlloc::CollectReferencesForIndexAddr(GenTreeIndexAddr* indexAddrNode
 {
     // Bounds checking requires both operands be used multiple times.
     //
-    if (indexAddrNode->IsBoundsChecked())
-    {
-        ConsumeTemporaryRegForOperand(indexAddrNode->Index() DEBUGARG("bounds check"));
-        ConsumeTemporaryRegForOperand(indexAddrNode->Arr() DEBUGARG("bounds check"));
-    }
+    ConsumeTemporaryRegForOperand(indexAddrNode->Index() DEBUGARG("bounds check"));
+    ConsumeTemporaryRegForOperand(indexAddrNode->Arr() DEBUGARG("bounds check"));
 }
 
 //------------------------------------------------------------------------
@@ -580,6 +577,9 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 
     LIR::ReadOnlyRange storeRange(store, store);
     m_compiler->GetLowering()->LowerRange(m_currentBlock, storeRange);
+
+    // FIXME-WASM: Should we be doing this here?
+    // CollectReferencesForNode(store);
 }
 
 //------------------------------------------------------------------------

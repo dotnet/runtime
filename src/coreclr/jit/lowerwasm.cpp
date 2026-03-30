@@ -22,8 +22,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "lower.h"
 
-static void SetMultiplyUsed(GenTree* node)
+static void SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason))
 {
+    JITDUMP("Setting [%06u] as multiply-used: %s\n", Compiler::dspTreeID(node), reason);
     assert(varTypeIsEnregisterable(node));
     assert(!node->isContained());
     node->gtLIRFlags |= LIR::Flags::MultiplyUsed;
@@ -91,7 +92,7 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
     if ((node->gtFlags & GTF_IND_NONFAULTING) == 0)
     {
         // We need to be able to null check the address, and that requires multiple uses of the address operand.
-        SetMultiplyUsed(node->Addr());
+        SetMultiplyUsed(node->Addr() DEBUGARG("LowerStoreIndir faulting Addr"));
     }
 
     ContainCheckStoreIndir(node);
@@ -182,8 +183,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
     if (binOp->gtOverflowEx())
     {
-        SetMultiplyUsed(binOp->gtGetOp1());
-        SetMultiplyUsed(binOp->gtGetOp2());
+        SetMultiplyUsed(binOp->gtGetOp1() DEBUGARG("LowerBinaryArithmetic op1 (overflow exception)"));
+        SetMultiplyUsed(binOp->gtGetOp2() DEBUGARG("LowerBinaryArithmetic op2 (overflow exception)"));
     }
 
     return binOp->gtNext;
@@ -202,12 +203,12 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
     ExceptionSetFlags exSetFlags = divMod->OperExceptions(m_compiler);
     if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
     {
-        SetMultiplyUsed(divMod->gtGetOp1());
-        SetMultiplyUsed(divMod->gtGetOp2());
+        SetMultiplyUsed(divMod->gtGetOp1() DEBUGARG("LowerDivOrMod op1 (arithmetic exception)"));
+        SetMultiplyUsed(divMod->gtGetOp2() DEBUGARG("LowerDivOrMod op2 (arithmetic exception)"));
     }
     else if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
     {
-        SetMultiplyUsed(divMod->gtGetOp2());
+        SetMultiplyUsed(divMod->gtGetOp2() DEBUGARG("LowerDivOrMod op2 (divide by zero exception)"));
     }
 
     ContainCheckDivOrMod(divMod);
@@ -223,6 +224,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
     GenTree* dstAddr = blkNode->Addr();
     GenTree* src     = blkNode->Data();
+
+    // TODO-WASM-CQ: Identify the specific cases where we can skip doing this and still generate valid code
+    // in codegen, i.e. non-faulting destination combined with native opcode. Right now this adds some code
+    // bloat due to creating a temporary for a destination that may only get used once.
+    // We know trivially that we won't nullcheck a destination that is a local variable's address, so we can
+    // skip generating the temporary for that case. If we don't do this, we get an error during regalloc caused
+    // by RewriteLocalStackStore creating and lowering a block store too 'late' to mark the dstAddr as multiply
+    // used successfully.
+    if (!dstAddr->OperIs(GT_LCL_ADDR))
+    {
+        SetMultiplyUsed(dstAddr DEBUGARG("LowerBlockStore destination address"));
+    }
 
     if (blkNode->OperIsInitBlkOp())
     {
@@ -275,17 +288,19 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
-            SetMultiplyUsed(dstAddr);
-            if (src->OperIs(GT_IND))
-            {
-                SetMultiplyUsed(src->gtGetOp1());
-            }
         }
         else
         {
             assert(blkNode->OperIs(GT_STORE_BLK));
             // memory.copy
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        }
+
+        if (src->OperIs(GT_IND))
+        {
+            GenTree* srcAddr = src->gtGetOp1();
+            // TODO-WASM-CQ: Skip doing this if the indirection is nonfaulting and the src is only used once.
+            SetMultiplyUsed(srcAddr DEBUGARG("LowerBlockStore source address (indirection)"));
         }
     }
 }
@@ -316,7 +331,7 @@ void Lowering::LowerCast(GenTree* tree)
 
     if (tree->gtOverflow())
     {
-        SetMultiplyUsed(tree->gtGetOp1());
+        SetMultiplyUsed(tree->gtGetOp1() DEBUGARG("LowerCast op1 (overflow exception)"));
     }
     ContainCheckCast(tree->AsCast());
 }
@@ -347,8 +362,8 @@ void Lowering::LowerIndexAddr(GenTreeIndexAddr* indexAddr)
 {
     if (indexAddr->IsBoundsChecked())
     {
-        SetMultiplyUsed(indexAddr->Arr());
-        SetMultiplyUsed(indexAddr->Index());
+        SetMultiplyUsed(indexAddr->Arr() DEBUGARG("LowerIndexAddr Arr"));
+        SetMultiplyUsed(indexAddr->Index() DEBUGARG("LowerIndexAddr Index"));
     }
 }
 
@@ -647,6 +662,14 @@ void Lowering::AfterLowerBlocks()
             JITDUMP("Replaced [%06u] with a temporary:\n", Compiler::dspTreeID(node));
             DISPNODE(node);
             DISPNODE(lclNode);
+
+            if ((node->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::MultiplyUsed)
+            {
+                JITDUMP("Transferring multiply-used flag from old node to new temporary.\n");
+                node->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+                SetMultiplyUsed(lclNode DEBUGARG("Transferred flag during stackification"));
+            }
+
             return lclNode;
         }
 
@@ -738,6 +761,6 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
     {
         // Prepare for explicit null check
         CallArg* thisArg = call->gtArgs.GetThisArg();
-        SetMultiplyUsed(thisArg->GetNode());
+        SetMultiplyUsed(thisArg->GetNode() DEBUGARG("AfterLowerArgsForCall thisArg (null check)"));
     }
 }

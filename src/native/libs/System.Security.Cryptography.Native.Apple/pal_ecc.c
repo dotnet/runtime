@@ -56,7 +56,7 @@ int32_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey)
     if (attributes == NULL)
         return 0;
 
-    CFNumberRef cfSize = CFDictionaryGetValue(attributes, kSecAttrKeySizeInBits);
+    CFNumberRef cfSize = (CFNumberRef)CFDictionaryGetValue(attributes, kSecAttrKeySizeInBits);
     int size = 0;
 
     if (cfSize != NULL)

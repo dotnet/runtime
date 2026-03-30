@@ -369,6 +369,7 @@ namespace System.Numerics.Tests
 
         [Theory]
         [MemberData(nameof(AssertFailureRegressionTest_InputData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126212", typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
         public static void FastReducer_AssertFailure_RegressionTest(BigInteger value, int exponent, BigInteger modulus)
         {
             // Regression test exercising the code path that was resulting in

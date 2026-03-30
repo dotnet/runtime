@@ -370,7 +370,7 @@ namespace System.Diagnostics
             string? filename;
             string[] argv;
 
-            string[] envp = CreateEnvp(startInfo);
+            IDictionary<string, string?> env = startInfo.Environment;
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
@@ -412,7 +412,7 @@ namespace System.Diagnostics
                     argv = ParseArgv(startInfo);
 
                     isExecuting = ForkAndExecProcess(
-                        startInfo, filename, argv, envp, cwd,
+                        startInfo, filename, argv, env, cwd,
                         setCredentials, userId, groupId, groups,
                         stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
                         throwOnNoExec: false); // return false instead of throwing on ENOEXEC
@@ -425,7 +425,7 @@ namespace System.Diagnostics
                     argv = ParseArgv(startInfo, filename, ignoreArguments: true);
 
                     ForkAndExecProcess(
-                        startInfo, filename, argv, envp, cwd,
+                        startInfo, filename, argv, env, cwd,
                         setCredentials, userId, groupId, groups,
                         stdinHandle, stdoutHandle, stderrHandle, usesTerminal);
                 }
@@ -440,7 +440,7 @@ namespace System.Diagnostics
                 }
 
                 ForkAndExecProcess(
-                    startInfo, filename, argv, envp, cwd,
+                    startInfo, filename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     stdinHandle, stdoutHandle, stderrHandle, usesTerminal);
             }
@@ -450,7 +450,7 @@ namespace System.Diagnostics
 
         private bool ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
-            string[] envp, string? cwd, bool setCredentials, uint userId,
+            IDictionary<string, string?> env, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
             SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
             bool usesTerminal, bool throwOnNoExec = true)
@@ -479,7 +479,7 @@ namespace System.Diagnostics
                 // is used to fork/execve as executing managed code in a forked process is not safe (only
                 // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
                 int errno = Interop.Sys.ForkAndExecProcess(
-                    resolvedFilename, argv, envp, cwd,
+                    resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle);
 
@@ -561,26 +561,6 @@ namespace System.Diagnostics
                 }
             }
             return argvList.ToArray();
-        }
-
-        /// <summary>Converts the environment variables information from a ProcessStartInfo into an envp array.</summary>
-        /// <param name="psi">The ProcessStartInfo.</param>
-        /// <returns>The envp array.</returns>
-        private static string[] CreateEnvp(ProcessStartInfo psi)
-        {
-            var envp = new string[psi.Environment.Count];
-            int index = 0;
-            foreach (KeyValuePair<string, string?> pair in psi.Environment)
-            {
-                // Ignore null values for consistency with Environment.SetEnvironmentVariable
-                if (pair.Value != null)
-                {
-                    envp[index++] = pair.Key + "=" + pair.Value;
-                }
-            }
-            // Resize the array in case we skipped some entries
-            Array.Resize(ref envp, index);
-            return envp;
         }
 
         private static string? ResolveExecutableForShellExecute(string filename, string? workingDirectory)
