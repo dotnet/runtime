@@ -1005,13 +1005,25 @@ struct VMHELPDEF
     bool IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const;
 };
 
+struct VMINTERESTINGJITHELPDEF
+{
+    PCODE pfnWriteBarrier;
+    LPCWSTR name;
+};
+
+#define MAX_INTERESTING_JIT_HELPERS 7
+
 #if defined(DACCESS_COMPILE)
 
 GARY_DECL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
+GARY_DECL(VMINTERESTINGJITHELPDEF, hlpInterestingJitHelpTable, MAX_INTERESTING_JIT_HELPERS);
+GVAL_DECL(int, g_interestingJitHelpCount);
 
 #else
 
 extern "C" const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT];
+extern "C" VMINTERESTINGJITHELPDEF hlpInterestingJitHelpTable[MAX_INTERESTING_JIT_HELPERS];
+extern "C" int g_interestingJitHelpCount;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 extern "C" PCODE hlpFuncEntryPoints[CORINFO_HELP_COUNT];
@@ -1027,6 +1039,7 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
+void SetInterestingJitHelperFunction(void* pFunc, LPCWSTR name);
 
 PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
 bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);

@@ -161,7 +161,7 @@ public enum DataType
     InterfaceEntry,
     ComInterfaceEntry,
     InternalComInterfaceDispatch,
-
+    JitHelperInfo,
 
     /* GC Data Types */
 

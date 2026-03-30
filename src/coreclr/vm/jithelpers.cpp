@@ -2506,6 +2506,24 @@ void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
     hlpDynamicFuncTable[ftnNum].pfnHelper = (PCODE)pFunc;
 }
 
+VMINTERESTINGJITHELPDEF hlpInterestingJitHelpTable[MAX_INTERESTING_JIT_HELPERS];
+int g_interestingJitHelpCount = 0;
+
+void SetInterestingJitHelperFunction(void* pFunc, LPCWSTR name)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(g_interestingJitHelpCount < MAX_INTERESTING_JIT_HELPERS);
+    hlpInterestingJitHelpTable[g_interestingJitHelpCount].pfnWriteBarrier = (PCODE)pFunc;
+    hlpInterestingJitHelpTable[g_interestingJitHelpCount].name = name;
+    g_interestingJitHelpCount++;
+}
+
 PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
 {
     STANDARD_VM_CONTRACT;

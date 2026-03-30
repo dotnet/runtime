@@ -1930,8 +1930,18 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetJitHelperFunctionName(ip, count, name, pNeeded) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetJitHelperFunctionName(ClrDataAddress ip, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] byte[]? name, uint* pNeeded)
+    {
+        // There is deliberately no debug validation here because we change behavior
+        // to only handle the JIT helpers that cannot be handled as unmanaged or managed symbols
+        // and to provide more informative names.
+        if (!_target.Contracts.AuxiliarySymbols.TryGetJitHelperName(ip.ToTargetPointer(_target), out string? helperName))
+            return HResults.E_FAIL;
+
+        OutputBufferHelpers.CopyUtf8StringToBuffer(name, count, pNeeded, helperName);
+
+        return HResults.S_OK;
+    }
     int ISOSDacInterface.GetJitManagerList(uint count, DacpJitManagerInfo* managers, uint* pNeeded)
     {
         int hr = HResults.S_OK;
