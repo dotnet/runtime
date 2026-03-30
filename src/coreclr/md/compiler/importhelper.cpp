@@ -2681,70 +2681,64 @@ HRESULT ImportHelper::ImportTypeRef(
         mdToken     tkImplementation;       // Implementation token for ExportedType.
         if (IsNilToken(tkOuterImportRes))
         {
-            if (pCommonAssemImport != NULL)
-            {                
-                // <REVISIT_TODO>BUG FIX:: URT 13626
-                // Well, before all of the clients generate AR for SPCL reference, it is not true
-                // that tkOuterImportRes == nil will imply that we have to find such an entry in the import manifest!!</REVISIT_TODO>
+            // <REVISIT_TODO>BUG FIX:: URT 13626
+            // Well, before all of the clients generate AR for SPCL reference, it is not true
+            // that tkOuterImportRes == nil will imply that we have to find such an entry in the import manifest!!</REVISIT_TODO>
 
-                // Look for a ExportedType entry in the import Assembly.  Its an error
-                // if we don't find a ExportedType entry.
-                mdExportedType   tkExportedType;
-                hr = pCommonAssemImport->CommonFindExportedType(
-                                        cqaNesterNamespaces[cqaNesters.Size() - 1],
-                                        cqaNesterNames[cqaNesters.Size() - 1],
-                                        mdTokenNil,
-                                        &tkExportedType);
-                if (SUCCEEDED(hr))
+            // Look for a ExportedType entry in the import Assembly.  Its an error
+            // if we don't find a ExportedType entry.
+            mdExportedType   tkExportedType;
+            hr = pCommonAssemImport->CommonFindExportedType(
+                                    cqaNesterNamespaces[cqaNesters.Size() - 1],
+                                    cqaNesterNames[cqaNesters.Size() - 1],
+                                    mdTokenNil,
+                                    &tkExportedType);
+            if (SUCCEEDED(hr))
+            {
+                IfFailGo(pCommonAssemImport->CommonGetExportedTypeProps(
+                    tkExportedType,
+                    NULL,
+                    NULL,
+                    &tkImplementation));
+                if (TypeFromToken(tkImplementation) == mdtFile)
                 {
-                    IfFailGo(pCommonAssemImport->CommonGetExportedTypeProps(
-                        tkExportedType,
-                        NULL,
-                        NULL,
-                        &tkImplementation));
-                    if (TypeFromToken(tkImplementation) == mdtFile)
-                    {
-                        // Type is from a different Assembly.
-                        IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
-                                                            pMiniMdEmit,
-                                                            pCommonAssemImport,
-                                                            pbHashValue,
-                                                            cbHashValue,
-                                                            &tkOuterEmitRes));
-                    }
-                    else if (TypeFromToken(tkImplementation) == mdtAssemblyRef)
-                    {
-                        // This folds into the case where the Type is AssemblyRef.  So
-                        // let it fall through to that case.
+                    // Type is from a different Assembly.
+                    IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
+                                                           pMiniMdEmit,
+                                                           pCommonAssemImport,
+                                                           pbHashValue,
+                                                           cbHashValue,
+                                                           &tkOuterEmitRes));
+                }
+                else if (TypeFromToken(tkImplementation) == mdtAssemblyRef)
+                {
+                    // This folds into the case where the Type is AssemblyRef.  So
+                    // let it fall through to that case.
 
-                        // Remember that this AssemblyRef token is actually from the Manifest scope not
-                        // the module scope!!!
-                        bAssemblyRefFromAssemScope = true;
-                        tkOuterImportRes = tkImplementation;
-                    }
-                    else
-                        _ASSERTE(!"Unexpected ExportedType implementation token.");
+                    // Remember that this AssemblyRef token is actually from the Manifest scope not
+                    // the module scope!!!
+                    bAssemblyRefFromAssemScope = true;
+                    tkOuterImportRes = tkImplementation;
                 }
                 else
-                {
-                    // In this case, we will just move over the TypeRef with Nil ResolutionScope.
-                    hr = NOERROR;
-                    tkOuterEmitRes = mdTokenNil;
-                }
+                    _ASSERTE(!"Unexpected ExportedType implementation token.");
+            }
+            else
+            {
+                // In this case, we will just move over the TypeRef with Nil ResolutionScope.
+                hr = NOERROR;
+                tkOuterEmitRes = mdTokenNil;
             }
         }
         else if (TypeFromToken(tkOuterImportRes) == mdtModule)
         {
-            if (pCommonAssemImport != NULL)
-            {
-                // Type is from a different Assembly.
-                IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
-                                                    pMiniMdEmit,
-                                                    pCommonAssemImport,
-                                                    pbHashValue,
-                                                    cbHashValue,
-                                                    &tkOuterEmitRes));
-            }
+            // Type is from a different Assembly.
+            IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
+                                                   pMiniMdEmit,
+                                                   pCommonAssemImport,
+                                                   pbHashValue,
+                                                   cbHashValue,
+                                                   &tkOuterEmitRes));
         }
         // Not else if, because mdtModule case above could change
         // tkOuterImportRes to an AssemblyRef.
@@ -2849,16 +2843,13 @@ HRESULT ImportHelper::ImportTypeRef(
         }
         else if (TypeFromToken(tkOuterImportRes) == mdtModuleRef)
         {
-            if (pCommonAssemImport != NULL)
-            {
-                // Type is from a different Assembly.
-                IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
-                                                    pMiniMdEmit,
-                                                    pCommonAssemImport,
-                                                    pbHashValue,
-                                                    cbHashValue,
-                                                    &tkOuterEmitRes));
-            }
+            // Type is from a different Assembly.
+            IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
+                                                   pMiniMdEmit,
+                                                   pCommonAssemImport,
+                                                   pbHashValue,
+                                                   cbHashValue,
+                                                   &tkOuterEmitRes));
         }
     }
 
