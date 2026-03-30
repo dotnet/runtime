@@ -467,5 +467,77 @@ namespace System.Formats.Tar.Tests
             Assert.Equal("test content", File.ReadAllText(targetFile2));
             AssertPathsAreNotHardLinked(targetFile1, targetFile2);
         }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void SymbolicLinkExtraction_CopyContents()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            // Create a target file and a symbolic link pointing to it.
+            string targetName = "target.txt";
+            string linkName = "link.txt";
+            string targetContent = "symlink target content";
+            string targetPath = Path.Join(root.Path, targetName);
+            File.WriteAllText(targetPath, targetContent);
+
+            // Create archive with a symlink entry.
+            string archivePath = Path.Join(root.Path, "archive.tar");
+            using (FileStream archiveStream = File.Create(archivePath))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: false))
+            {
+                writer.WriteEntry(targetPath, targetName);
+                PaxTarEntry symLinkEntry = new PaxTarEntry(TarEntryType.SymbolicLink, linkName);
+                symLinkEntry.LinkName = targetName;
+                writer.WriteEntry(symLinkEntry);
+            }
+
+            string destination = Path.Join(root.Path, "destination");
+            Directory.CreateDirectory(destination);
+            TarExtractOptions extractOptions = new TarExtractOptions() { SymbolicLinkMode = TarSymbolicLinkMode.CopyContents };
+            TarFile.ExtractToDirectory(archivePath, destination, extractOptions);
+
+            // Verify the symlink was extracted as a regular file copy.
+            string extractedTarget = Path.Join(destination, targetName);
+            string extractedLink = Path.Join(destination, linkName);
+            Assert.True(File.Exists(extractedTarget));
+            Assert.True(File.Exists(extractedLink));
+            Assert.Equal(targetContent, File.ReadAllText(extractedTarget));
+            Assert.Equal(targetContent, File.ReadAllText(extractedLink));
+            Assert.Null(new FileInfo(extractedLink).LinkTarget);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void SymbolicLinkExtraction_Skip()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            // Create a target file and a symbolic link pointing to it.
+            string targetName = "target.txt";
+            string linkName = "link.txt";
+            string targetPath = Path.Join(root.Path, targetName);
+            File.WriteAllText(targetPath, "target content");
+
+            // Create archive with a symlink entry.
+            string archivePath = Path.Join(root.Path, "archive.tar");
+            using (FileStream archiveStream = File.Create(archivePath))
+            using (TarWriter writer = new TarWriter(archiveStream, TarEntryFormat.Pax, leaveOpen: false))
+            {
+                writer.WriteEntry(targetPath, targetName);
+                PaxTarEntry symLinkEntry = new PaxTarEntry(TarEntryType.SymbolicLink, linkName);
+                symLinkEntry.LinkName = targetName;
+                writer.WriteEntry(symLinkEntry);
+            }
+
+            string destination = Path.Join(root.Path, "destination");
+            Directory.CreateDirectory(destination);
+            TarExtractOptions extractOptions = new TarExtractOptions() { SymbolicLinkMode = TarSymbolicLinkMode.Skip };
+            TarFile.ExtractToDirectory(archivePath, destination, extractOptions);
+
+            // Verify only the target file was extracted, not the symlink.
+            string extractedTarget = Path.Join(destination, targetName);
+            string extractedLink = Path.Join(destination, linkName);
+            Assert.True(File.Exists(extractedTarget));
+            Assert.False(File.Exists(extractedLink), "Symbolic link should have been skipped.");
+        }
     }
 }

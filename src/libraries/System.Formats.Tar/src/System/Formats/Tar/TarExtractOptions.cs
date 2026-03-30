@@ -31,5 +31,23 @@ namespace System.Formats.Tar
                 field = value;
             }
         }
+
+        /// <summary>
+        /// Gets or sets how symbolic link entries are handled when extracting tar archives.
+        /// </summary>
+        /// <value>The default value is <see cref="TarSymbolicLinkMode.PreserveLink"/>.</value>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is not a defined <see cref="TarSymbolicLinkMode"/> value.</exception>
+        public TarSymbolicLinkMode SymbolicLinkMode
+        {
+            get => field;
+            set
+            {
+                if (value is not TarSymbolicLinkMode.PreserveLink and not TarSymbolicLinkMode.CopyContents and not TarSymbolicLinkMode.Skip)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+                field = value;
+            }
+        }
     }
 }

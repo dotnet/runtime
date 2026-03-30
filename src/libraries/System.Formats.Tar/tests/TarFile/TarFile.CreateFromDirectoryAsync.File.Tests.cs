@@ -338,6 +338,65 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public async Task CopyContents_RecursesIntoDirectorySymlinkAsync()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string destinationArchive = Path.Join(root.Path, "destination.tar");
+
+            // External directory with a file inside.
+            string externalDirectory = Path.Join(root.Path, "externalDirectory");
+            Directory.CreateDirectory(externalDirectory);
+            File.WriteAllText(Path.Join(externalDirectory, "file.txt"), "content");
+
+            string sourceDirectoryName = Path.Join(root.Path, "baseDirectory");
+            Directory.CreateDirectory(sourceDirectoryName);
+
+            // Symlink inside source pointing to the external directory.
+            string subDirectory = Path.Join(sourceDirectoryName, "subDirectory");
+            Directory.CreateSymbolicLink(subDirectory, externalDirectory);
+
+            TarWriterOptions options = new TarWriterOptions() { SymbolicLinkMode = TarSymbolicLinkMode.CopyContents };
+            await TarFile.CreateFromDirectoryAsync(sourceDirectoryName, destinationArchive, includeBaseDirectory: false, options);
+
+            await using FileStream archiveStream = File.OpenRead(destinationArchive);
+            await using TarReader reader = new(archiveStream, leaveOpen: false);
+
+            // Expect directory entry for the symlink (treated as a real directory).
+            TarEntry dirEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(dirEntry);
+            Assert.Equal("subDirectory/", dirEntry.Name);
+            Assert.Equal(TarEntryType.Directory, dirEntry.EntryType);
+
+            // Expect the file inside the target directory.
+            TarEntry fileEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(fileEntry);
+            Assert.Equal("subDirectory/file.txt", fileEntry.Name);
+            Assert.True(fileEntry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile);
+
+            Assert.Null(await reader.GetNextEntryAsync());
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public async Task CopyContents_CyclicDirectorySymlink_ThrowsAsync()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string destinationArchive = Path.Join(root.Path, "destination.tar");
+
+            string sourceDirectoryName = Path.Join(root.Path, "baseDirectory");
+            Directory.CreateDirectory(sourceDirectoryName);
+
+            // Symlink inside source pointing back to source — creates a cycle.
+            string cyclicLink = Path.Join(sourceDirectoryName, "cyclicLink");
+            Directory.CreateSymbolicLink(cyclicLink, sourceDirectoryName);
+
+            TarWriterOptions options = new TarWriterOptions() { SymbolicLinkMode = TarSymbolicLinkMode.CopyContents };
+            await Assert.ThrowsAsync<IOException>(() =>
+                TarFile.CreateFromDirectoryAsync(sourceDirectoryName, destinationArchive, includeBaseDirectory: false, options));
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

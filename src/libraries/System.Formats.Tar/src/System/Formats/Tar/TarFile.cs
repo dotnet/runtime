@@ -529,7 +529,9 @@ namespace System.Formats.Tar
                 if (includeBaseDirectory)
                 {
                     writer.WriteEntry(di.FullName, GetEntryNameForBaseDirectory(di.Name));
-                    skipBaseDirRecursion = (di.Attributes & FileAttributes.ReparsePoint) != 0;
+                    // In CopyContents mode, follow directory symlinks; otherwise skip recursion into symlinks.
+                    skipBaseDirRecursion = (di.Attributes & FileAttributes.ReparsePoint) != 0
+                                          && options.SymbolicLinkMode != TarSymbolicLinkMode.CopyContents;
                 }
 
                 if (skipBaseDirRecursion)
@@ -539,7 +541,7 @@ namespace System.Formats.Tar
                 }
 
                 string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
-                foreach ((string fullpath, string entryname) in GetFilesForCreation(sourceDirectoryName, basePath.Length))
+                foreach ((string fullpath, string entryname) in GetFilesForCreation(sourceDirectoryName, basePath.Length, options.SymbolicLinkMode))
                 {
                     writer.WriteEntry(fullpath, entryname);
                 }
@@ -584,7 +586,9 @@ namespace System.Formats.Tar
                 if (includeBaseDirectory)
                 {
                     await writer.WriteEntryAsync(di.FullName, GetEntryNameForBaseDirectory(di.Name), cancellationToken).ConfigureAwait(false);
-                    skipBaseDirRecursion = (di.Attributes & FileAttributes.ReparsePoint) != 0;
+                    // In CopyContents mode, follow directory symlinks; otherwise skip recursion into symlinks.
+                    skipBaseDirRecursion = (di.Attributes & FileAttributes.ReparsePoint) != 0
+                                          && options.SymbolicLinkMode != TarSymbolicLinkMode.CopyContents;
                 }
 
                 if (skipBaseDirRecursion)
@@ -594,39 +598,76 @@ namespace System.Formats.Tar
                 }
 
                 string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
-                foreach ((string fullpath, string entryname) in GetFilesForCreation(sourceDirectoryName, basePath.Length))
+                foreach ((string fullpath, string entryname) in GetFilesForCreation(sourceDirectoryName, basePath.Length, options.SymbolicLinkMode))
                 {
                     await writer.WriteEntryAsync(fullpath, entryname, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
 
-        // Generates a recursive enumeration of the filesystem entries inside the specified source directory, while
-        // making sure that directory symlinks do not get recursed.
-        private static IEnumerable<(string fullpath, string entryname)> GetFilesForCreation(string sourceDirectoryName, int basePathLength)
+        // Generates a recursive enumeration of the filesystem entries inside the specified source directory.
+        // In the default PreserveLink mode, directory symlinks are not recursed.
+        // In CopyContents mode, directory symlinks are followed and their contents are included, with cycle
+        // detection via visitedRealPaths. If a cycle is detected, an IOException is thrown to avoid
+        // producing a non-round-trippable archive.
+        private static IEnumerable<(string fullpath, string entryname)> GetFilesForCreation(
+            string sourceDirectoryName, int basePathLength,
+            TarSymbolicLinkMode symbolicLinkMode = TarSymbolicLinkMode.PreserveLink,
+            HashSet<string>? visitedRealPaths = null)
         {
             // The default order to write a tar archive is to recurse into subdirectories first.
             // This order is expected by 'tar' to restore directory timestamps properly without the user explicitly specifying `--delay-directory-restore`.
             // FileSystemEnumerable RecurseSubdirectories will first write further entries before recursing, so we don't use it here.
 
-            var fse = new FileSystemEnumerable<(string fullpath, string entryname, bool recurse)>(
+            if (symbolicLinkMode == TarSymbolicLinkMode.CopyContents)
+            {
+                // Track the canonical (resolved) path of this directory to detect cyclic symlinks.
+                visitedRealPaths ??= new HashSet<string>(StringComparer.FromComparison(PathInternal.StringComparison));
+                string? resolvedSource = new DirectoryInfo(sourceDirectoryName).ResolveLinkTarget(returnFinalTarget: true)?.FullName;
+                visitedRealPaths.Add(resolvedSource ?? Path.GetFullPath(sourceDirectoryName));
+            }
+
+            var fse = new FileSystemEnumerable<(string fullpath, string entryname, bool recurse, bool isDirSymlink)>(
                 directory: sourceDirectoryName,
                 transform: (ref FileSystemEntry entry) =>
                 {
                     string fullPath = entry.ToFullPath();
-                    bool isRealDirectory = entry.IsDirectory && (entry.Attributes & FileAttributes.ReparsePoint) == 0; // not a symlink.
-                    string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePathLength), appendPathSeparator: isRealDirectory);
-                    return (fullPath, entryName, isRealDirectory);
+                    bool isSymlink = (entry.Attributes & FileAttributes.ReparsePoint) != 0;
+                    bool isRealDirectory = entry.IsDirectory && !isSymlink;
+                    bool isDirSymlink = entry.IsDirectory && isSymlink;
+                    // In CopyContents mode, directory symlinks become directory entries and need a trailing separator.
+                    bool appendSeparator = isRealDirectory || (isDirSymlink && symbolicLinkMode == TarSymbolicLinkMode.CopyContents);
+                    string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePathLength), appendPathSeparator: appendSeparator);
+                    return (fullPath, entryName, isRealDirectory, isDirSymlink);
                 });
 
-            foreach ((string fullpath, string entryname, bool recurse) in fse)
+            foreach ((string fullpath, string entryname, bool recurse, bool isDirSymlink) in fse)
             {
                 yield return (fullpath, entryname);
 
-                // Return entries for the subdirectory.
-                if (recurse)
+                bool shouldRecurse = recurse;
+                if (!shouldRecurse && isDirSymlink && symbolicLinkMode == TarSymbolicLinkMode.CopyContents)
                 {
-                    foreach (var inner in GetFilesForCreation(fullpath, basePathLength))
+                    // In CopyContents mode, follow directory symlinks. Use cycle detection to prevent
+                    // infinite recursion from cyclic symlinks (e.g., a symlink pointing to an ancestor).
+                    string? resolvedPath = new DirectoryInfo(fullpath).ResolveLinkTarget(returnFinalTarget: true)?.FullName;
+                    resolvedPath ??= Path.GetFullPath(fullpath); // fallback if resolution is unavailable
+                    if (visitedRealPaths!.Add(resolvedPath))
+                    {
+                        shouldRecurse = true;
+                    }
+                    else
+                    {
+                        // Cycle detected: the symlink points to a directory already being archived.
+                        // Throw to avoid creating a non-round-trippable archive.
+                        throw new IOException(SR.Format(SR.TarSymbolicLinkCycle, fullpath));
+                    }
+                }
+
+                // Return entries for the subdirectory.
+                if (shouldRecurse)
+                {
+                    foreach (var inner in GetFilesForCreation(fullpath, basePathLength, symbolicLinkMode, visitedRealPaths))
                     {
                         yield return inner;
                     }
@@ -649,9 +690,6 @@ namespace System.Formats.Tar
         {
             VerifyExtractToDirectoryArguments(source, destinationDirectoryFullPath);
 
-            bool overwriteFiles = options.OverwriteFiles;
-            TarHardLinkMode hardLinkMode = options.HardLinkMode;
-
             using TarReader reader = new TarReader(source, leaveOpen);
 
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
@@ -661,7 +699,7 @@ namespace System.Formats.Tar
             {
                 if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                 {
-                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode);
+                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, options, pendingModes, directoryModificationTimes);
                 }
             }
             TarHelpers.SetPendingModes(pendingModes);
@@ -696,9 +734,6 @@ namespace System.Formats.Tar
             VerifyExtractToDirectoryArguments(source, destinationDirectoryFullPath);
             cancellationToken.ThrowIfCancellationRequested();
 
-            bool overwriteFiles = options.OverwriteFiles;
-            TarHardLinkMode hardLinkMode = options.HardLinkMode;
-
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
             var directoryModificationTimes = new Stack<(string, DateTimeOffset)>();
             TarReader reader = new TarReader(source, leaveOpen);
@@ -709,7 +744,7 @@ namespace System.Formats.Tar
                 {
                     if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                     {
-                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode, cancellationToken).ConfigureAwait(false);
+                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, options, pendingModes, directoryModificationTimes, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }

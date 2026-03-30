@@ -109,11 +109,18 @@ namespace System.Formats.Tar
         public TarExtractOptions() { }
         public System.Formats.Tar.TarHardLinkMode HardLinkMode { get { throw null; } set { } }
         public bool OverwriteFiles { get { throw null; } set { } }
+        public System.Formats.Tar.TarSymbolicLinkMode SymbolicLinkMode { get { throw null; } set { } }
     }
     public enum TarHardLinkMode
     {
         PreserveLink = 0,
         CopyContents = 1,
+    }
+    public enum TarSymbolicLinkMode
+    {
+        PreserveLink = 0,
+        CopyContents = 1,
+        Skip = 2,
     }
     public sealed partial class TarReader : System.IAsyncDisposable, System.IDisposable
     {
@@ -142,6 +149,7 @@ namespace System.Formats.Tar
         public TarWriterOptions() { }
         public System.Formats.Tar.TarEntryFormat Format { get { throw null; } set { } }
         public System.Formats.Tar.TarHardLinkMode HardLinkMode { get { throw null; } set { } }
+        public System.Formats.Tar.TarSymbolicLinkMode SymbolicLinkMode { get { throw null; } set { } }
     }
     public sealed partial class UstarTarEntry : System.Formats.Tar.PosixTarEntry
     {

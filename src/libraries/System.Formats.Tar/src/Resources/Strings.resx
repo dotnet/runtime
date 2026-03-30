@@ -214,4 +214,7 @@
   <data name="TarCompressionArchiveDetected" xml:space="preserve">
     <value>The file appears to be a {0} archive. TAR format expected.</value>
   </data>
+  <data name="TarSymbolicLinkCycle" xml:space="preserve">
+    <value>A cyclic symbolic link was detected at '{0}'. Cannot fully archive the directory contents.</value>
+  </data>
 </root>

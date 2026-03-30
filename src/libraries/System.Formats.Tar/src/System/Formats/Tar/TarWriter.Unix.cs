@@ -15,7 +15,8 @@ namespace System.Formats.Tar
         private Dictionary<(long, long), string>? _hardLinkTargets;
 
         // Creates an entry for writing using the specified path and entryName. If this is being called from an async method, FileOptions should contain Asynchronous.
-        private TarEntry ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
+        // Returns null when the entry should be skipped (e.g. symbolic link with TarSymbolicLinkMode.Skip).
+        private TarEntry? ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
         {
             Debug.Assert(!string.IsNullOrEmpty(fullPath));
 
@@ -25,6 +26,30 @@ namespace System.Formats.Tar
             Interop.CheckIo(Interop.Sys.LStat(fullPath, out status));
 
             int fileType = status.Mode & Interop.Sys.FileTypes.S_IFMT;
+
+            // Handle symbolic links according to the configured mode.
+            if (fileType == Interop.Sys.FileTypes.S_IFLNK)
+            {
+                if (_symbolicLinkMode == TarSymbolicLinkMode.Skip)
+                {
+                    return null;
+                }
+
+                if (_symbolicLinkMode == TarSymbolicLinkMode.CopyContents)
+                {
+                    // Follow the symlink: use Stat to get the target's file information.
+                    if (Interop.Sys.Stat(fullPath, out Interop.Sys.FileStatus targetStatus) == 0)
+                    {
+                        status = targetStatus;
+                        fileType = status.Mode & Interop.Sys.FileTypes.S_IFMT;
+                    }
+                    else
+                    {
+                        // Broken symlink: the target does not exist. Write as an empty regular file.
+                        fileType = Interop.Sys.FileTypes.S_IFREG;
+                    }
+                }
+            }
 
             // Track files that have more than one hard link.
             // If we encounter the file again, we'll add a TarEntryType.HardLink.
