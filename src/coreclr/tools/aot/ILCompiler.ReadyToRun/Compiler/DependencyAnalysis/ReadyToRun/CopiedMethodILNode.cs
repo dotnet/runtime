@@ -54,15 +54,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     definedSymbols: new ISymbolDefinitionNode[] { this });
             }
 
-            var rva = _method.MetadataReader.GetMethodDefinition(_method.Handle).RelativeVirtualAddress;
-            var peReader = _method.Module.PEReader;
-            byte[] bodyBytes;
-            {
-                var reader = peReader.GetSectionData(rva).GetReader();
-                int size = MethodBodyBlock.Create(reader).Size;
-                bodyBytes = peReader.GetSectionData(rva).GetReader().ReadBytes(size);
-            }
-
             if (factory.OptimizationFlags.StripILBodies
                 && factory.OptimizationFlags.CompiledMethodDefs is not null
                 && factory.OptimizationFlags.CompiledMethodDefs.Contains(_method)
@@ -70,6 +61,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 && !_method.OwningType.HasInstantiation)
             {
                 return new ObjectData(s_minimalILBody, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
+            }
+
+            var rva = _method.MetadataReader.GetMethodDefinition(_method.Handle).RelativeVirtualAddress;
+            var peReader = _method.Module.PEReader;
+            byte[] bodyBytes;
+            {
+                var reader = peReader.GetSectionData(rva).GetReader();
+                int size = MethodBodyBlock.Create(reader).Size;
+                bodyBytes = peReader.GetSectionData(rva).GetReader().ReadBytes(size);
             }
 
             return new ObjectData(bodyBytes, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
