@@ -41,10 +41,15 @@
                                       '$(Scenario)' == 'WasmTestOnChrome' or 
                                       '$(Scenario)' == 'WasmTestOnFirefox'">true</IsRunningLibraryTests>
 
+    <WasmBatchLibraryTests Condition="'$(WasmBatchLibraryTests)' == '' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(Scenario)' == 'WasmTestOnChrome'">true</WasmBatchLibraryTests>
+    <WasmBatchLibraryTests Condition="'$(WasmBatchLibraryTests)' == ''">false</WasmBatchLibraryTests>
+    <_WasmBatchLargeThreshold Condition="'$(_WasmBatchLargeThreshold)' == ''">52428800</_WasmBatchLargeThreshold>
+
     <HelixExtensionTargets />
     <PrepareForBuildHelixWorkItems_WasmDependsOn>
         PrepareHelixCorrelationPayload_Wasm;
         _AddWorkItemsForLibraryTests;
+        _AddBatchedWorkItemsForLibraryTests;
         _AddWorkItemsForBuildWasmApps
     </PrepareForBuildHelixWorkItems_WasmDependsOn>
 
@@ -172,6 +177,135 @@
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
 
+  <UsingTask TaskName="_GroupWorkItems" TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Items ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <BatchSize ParameterType="System.Int32" Required="false" />
+      <LargeThreshold ParameterType="System.Int64" Required="false" />
+      <GroupedItems ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs">
+<![CDATA[
+if (BatchSize <= 0) BatchSize = 10;
+if (LargeThreshold <= 0) LargeThreshold = 52428800L; // 50MB
+
+var itemsWithSize = new List<(ITaskItem item, long size)>();
+foreach (var item in Items)
+{
+    long size = 0;
+    if (File.Exists(item.ItemSpec))
+    {
+        size = new FileInfo(item.ItemSpec).Length;
+    }
+    itemsWithSize.Add((item, size));
+}
+
+// Sort largest first for greedy bin-packing
+itemsWithSize.Sort((a, b) => b.size.CompareTo(a.size));
+
+var result = new List<ITaskItem>();
+int negativeBatchId = -1;
+
+// Separate large items (each gets its own batch)
+var smallItems = new List<(ITaskItem item, long size)>();
+foreach (var entry in itemsWithSize)
+{
+    if (entry.size > LargeThreshold)
+    {
+        var newItem = new TaskItem(entry.item);
+        newItem.SetMetadata("BatchId", negativeBatchId.ToString());
+        negativeBatchId--;
+        result.Add(newItem);
+    }
+    else
+    {
+        smallItems.Add(entry);
+    }
+}
+
+// Greedy bin-packing for small items
+if (smallItems.Count > 0)
+{
+    int numBatches = Math.Min(BatchSize, smallItems.Count);
+    var batchSizes = new long[numBatches];
+    var batchAssignments = new List<ITaskItem>[numBatches];
+    for (int i = 0; i < numBatches; i++)
+        batchAssignments[i] = new List<ITaskItem>();
+
+    foreach (var entry in smallItems)
+    {
+        // Find batch with smallest total size
+        int minIdx = 0;
+        for (int i = 1; i < numBatches; i++)
+        {
+            if (batchSizes[i] < batchSizes[minIdx])
+                minIdx = i;
+        }
+        batchSizes[minIdx] += entry.size;
+        var newItem = new TaskItem(entry.item);
+        newItem.SetMetadata("BatchId", minIdx.ToString());
+        batchAssignments[minIdx].Add(newItem);
+    }
+
+    for (int i = 0; i < numBatches; i++)
+        result.AddRange(batchAssignments[i]);
+}
+
+GroupedItems = result.ToArray();
+]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <UsingTask TaskName="_ComputeBatchTimeout" TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <GroupedItems ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <BatchIds ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <ItemPrefix ParameterType="System.String" Required="true" />
+      <BatchOutputDir ParameterType="System.String" Required="true" />
+      <TimedItems ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections.Generic" />
+      <Code Type="Fragment" Language="cs">
+<![CDATA[
+var counts = new Dictionary<string, int>();
+foreach (var item in GroupedItems)
+{
+    string bid = item.GetMetadata("BatchId");
+    if (!counts.ContainsKey(bid)) counts[bid] = 0;
+    counts[bid]++;
+}
+
+var result = new List<ITaskItem>();
+foreach (var batchId in BatchIds)
+{
+    string bid = batchId.ItemSpec;
+    int count = counts.ContainsKey(bid) ? counts[bid] : 1;
+    // 20 minutes per suite to account for WASM startup overhead + test execution;
+    // minimum 30 minutes to handle the heaviest individual suites (e.g. Cryptography ~17m)
+    int totalMinutes = Math.Max(30, count * 20);
+    var ts = TimeSpan.FromMinutes(totalMinutes);
+
+    var helixItem = new TaskItem(ItemPrefix + "Batch-" + bid);
+    helixItem.SetMetadata("BatchDir", BatchOutputDir + "batch-" + bid + "/");
+    helixItem.SetMetadata("Timeout", ts.ToString(@"hh\:mm\:ss"));
+    result.Add(helixItem);
+}
+
+TimedItems = result.ToArray();
+]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
   <Target Name="PrepareHelixCorrelationPayload_Wasm">
     <Error Condition="'$(Scenario)' != 'WasmTestOnV8' and 
                       '$(Scenario)' != 'WasmTestOnChrome' and 
@@ -228,7 +362,7 @@
   <Target Name="PrepareForBuildHelixWorkItems_Wasm"
           DependsOnTargets="$(PrepareForBuildHelixWorkItems_WasmDependsOn);$(HelixExtensionTargets)" />
 
-  <Target Name="_AddWorkItemsForLibraryTests" Condition="'$(IsRunningLibraryTests)' == 'true'">
+  <Target Name="_AddWorkItemsForLibraryTests" Condition="'$(IsRunningLibraryTests)' == 'true' and '$(WasmBatchLibraryTests)' != 'true'">
     <ItemGroup Label="Add samples">
       <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'WasmTestOnFirefox'" />
       <_WasmWorkItem Include="$(TestArchiveRoot)chromeonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnChrome'" />
@@ -271,6 +405,80 @@
         <Timeout Condition="'%(FileName)' == 'System.Private.Xml.Tests' and '$(WasmEnableThreads)' == 'true'">01:20:00</Timeout>
       </HelixWorkItem>
 
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_AddBatchedWorkItemsForLibraryTests"
+          Condition="'$(IsRunningLibraryTests)' == 'true' and '$(WasmBatchLibraryTests)' == 'true'">
+
+    <!-- Collect all test ZIPs (batching only runs for Chrome, see WasmBatchLibraryTests condition) -->
+    <ItemGroup>
+      <_WasmBatchWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" />
+      <_WasmBatchWorkItem Include="$(TestArchiveRoot)chromeonly/**/*.zip" />
+    </ItemGroup>
+
+    <!-- Sample apps have different runners (no RunTests.sh), keep them as individual work items -->
+    <ItemGroup>
+      <_WasmBatchSampleZip Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
+
+      <HelixWorkItem Include="@(_WasmBatchSampleZip -> '$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_WasmBatchDefaultItems Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+    </ItemGroup>
+
+    <!-- Batch only test suites (not sample apps) -->
+    <ItemGroup>
+      <_WasmBatchAllItems Include="@(_WasmBatchWorkItem)" />
+      <_WasmBatchAllItems Include="@(_WasmBatchDefaultItems)" />
+    </ItemGroup>
+
+    <!-- Assign batch IDs via greedy bin-packing -->
+    <_GroupWorkItems Items="@(_WasmBatchAllItems)" BatchSize="20" LargeThreshold="$(_WasmBatchLargeThreshold)">
+      <Output TaskParameter="GroupedItems" ItemName="_WasmGroupedItem" />
+    </_GroupWorkItems>
+
+    <!-- Determine unique batch IDs -->
+    <ItemGroup>
+      <_WasmBatchId Include="@(_WasmGroupedItem -> '%(BatchId)')" />
+      <_WasmUniqueBatchId Include="@(_WasmBatchId->Distinct())" />
+    </ItemGroup>
+
+    <!-- Clean stale batch staging from previous runs, then create fresh directories -->
+    <RemoveDir Directories="$(IntermediateOutputPath)helix-batches/" />
+    <MakeDir Directories="$(IntermediateOutputPath)helix-batches/batch-%(_WasmUniqueBatchId.Identity)/" />
+    <Copy SourceFiles="@(_WasmGroupedItem)" DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(BatchId)/" />
+    <Copy SourceFiles="$(RepositoryEngineeringDir)testing/WasmBatchRunner.sh"
+          DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(_WasmUniqueBatchId.Identity)/" />
+
+    <!-- Compute per-batch timeout: 20 minutes per suite, minimum 30 minutes -->
+    <_ComputeBatchTimeout GroupedItems="@(_WasmGroupedItem)" BatchIds="@(_WasmUniqueBatchId)"
+                          ItemPrefix="$(WorkItemPrefix)" BatchOutputDir="$(IntermediateOutputPath)helix-batches/">
+      <Output TaskParameter="TimedItems" ItemName="_WasmTimedBatchItem" />
+    </_ComputeBatchTimeout>
+
+    <!-- Create ZIP archives from batch directories (sendtohelixhelp.proj requires PayloadArchive) -->
+    <ZipDirectory SourceDirectory="%(_WasmTimedBatchItem.BatchDir)"
+                  DestinationFile="$(IntermediateOutputPath)helix-batches/%(_WasmTimedBatchItem.Identity).zip"
+                  Overwrite="true" />
+
+    <!-- Build a batch-specific HelixCommand that runs WasmBatchRunner.sh instead of RunTests.sh -->
+    <Error Condition="!$(HelixCommand.Contains('./RunTests.sh'))"
+           Text="WasmBatchLibraryTests: expected HelixCommand to contain './RunTests.sh'. Got: $(HelixCommand)" />
+    <PropertyGroup>
+      <_WasmBatchHelixCommand>$(HelixCommand.Replace('./RunTests.sh', 'chmod +x WasmBatchRunner.sh &amp;&amp; ./WasmBatchRunner.sh'))</_WasmBatchHelixCommand>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <HelixWorkItem Include="@(_WasmTimedBatchItem)">
+        <PayloadArchive>$(IntermediateOutputPath)helix-batches/%(Identity).zip</PayloadArchive>
+        <Command>$(_WasmBatchHelixCommand)</Command>
+      </HelixWorkItem>
     </ItemGroup>
   </Target>
 </Project>
