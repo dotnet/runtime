@@ -738,7 +738,7 @@ static int FilterInteriorStackRefs(StackRef* refs, int count, Thread* pThread, u
 // so we deduplicate to match.
 //-----------------------------------------------------------------------------
 
-static int CompareStackRefKey(const void* a, const void* b)
+static int __cdecl CompareStackRefKey(const void* a, const void* b)
 {
     const StackRef* refA = static_cast<const StackRef*>(a);
     const StackRef* refB = static_cast<const StackRef*>(b);
