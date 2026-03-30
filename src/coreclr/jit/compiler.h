@@ -5807,6 +5807,9 @@ public:
     // Performs SSA conversion.
     PhaseStatus fgSsaBuild();
 
+    // Split locals whose SSA webs are disjoint into separate locals.
+    PhaseStatus fgSsaWebSplit();
+
     // Reset any data structures to the state expected by "fgSsaBuild", so it can be run again.
     void fgResetForSsa(bool deepClean);
 
