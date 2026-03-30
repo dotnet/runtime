@@ -67,7 +67,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PhysicalFilesWatcher"/> class that watches files in <paramref name="root"/>.
-        /// Wraps an instance of <see cref="System.IO.FileSystemWatcher"/>.
         /// </summary>
         /// <param name="root">The root directory for the watcher.</param>
         /// <param name="fileSystemWatcher">The wrapped watcher that is watching <paramref name="root"/>.</param>
@@ -92,7 +91,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 throw new ArgumentNullException(nameof(root));
             }
 
-            _root = PathUtils.EnsureTrailingSlash(root);
+            _root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(root));
 
             if (fileSystemWatcher != null)
             {
@@ -104,13 +103,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
 #endif
 
                 string fswPath = fileSystemWatcher.Path;
-                if (fswPath.Length > 0 &&
-                    !_root.StartsWith(fswPath, StringComparison.OrdinalIgnoreCase) &&
-                    !fswPath.StartsWith(_root, StringComparison.OrdinalIgnoreCase))
+                if (fswPath.Length > 0)
                 {
-                    throw new ArgumentException(
-                        $"The FileSystemWatcher path '{fswPath}' must be empty, equal to, an ancestor of, or a descendant of the root '{root}'.",
-                        nameof(fileSystemWatcher));
+                    string watcherFullPath = PathUtils.EnsureTrailingSlash(Path.GetFullPath(fswPath));
+
+                    if (!_root.StartsWith(watcherFullPath, StringComparison.OrdinalIgnoreCase) &&
+                        !watcherFullPath.StartsWith(_root, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new ArgumentException(SR.Format(SR.FileSystemWatcherPathError, fswPath, root), nameof(fileSystemWatcher));
+                    }
                 }
 
                 _fileWatcher = fileSystemWatcher;
@@ -357,6 +358,12 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             try
             {
+                // Ignore events outside _root (can happen when the FSW watches an ancestor directory).
+                if (!fullPath.StartsWith(_root, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
                 FileSystemInfo fileSystemInfo = new FileInfo(fullPath) is { Exists: true } fileInfo
                     ? fileInfo
                     : new DirectoryInfo(fullPath);
@@ -736,9 +743,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 // current is the deepest existing ancestor; expected name is its immediate child.
                 _expectedName = GetChildName(current, _targetDirectory);
 
+                bool shouldCancel;
                 lock (_lock)
                 {
-                    SetupWatcherNoLock(current);
+                    shouldCancel = SetupWatcherNoLock(current);
+                }
+
+                if (shouldCancel)
+                {
+                    _cts.Cancel();
                 }
             }
 
@@ -764,7 +777,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
             [UnsupportedOSPlatform("ios")]
             [UnsupportedOSPlatform("tvos")]
             [SupportedOSPlatform("maccatalyst")]
-            private void SetupWatcherNoLock(string watchDir)
+            // Returns true if _cts should be cancelled after releasing the lock.
+            private bool SetupWatcherNoLock(string watchDir)
             {
                 while (true)
                 {
@@ -774,8 +788,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         watchDir = childPath;
                         if (IsTargetDirectory(watchDir))
                         {
-                            _cts.Cancel();
-                            return;
+                            return true;
                         }
 
                         _expectedName = GetChildName(watchDir, _targetDirectory);
@@ -798,8 +811,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     catch (Exception ex) when (ex is ArgumentException or IOException)
                     {
                         newWatcher?.Dispose();
-                        _cts.Cancel();
-                        return;
+                        return true;
                     }
 
                     _watcher = newWatcher;
@@ -808,7 +820,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     string nextDir = Path.Combine(watchDir, _expectedName);
                     if (!Directory.Exists(nextDir))
                     {
-                        return; // watcher is properly set up
+                        return false; // watcher is properly set up
                     }
 
                     // It appeared — dispose this watcher and advance.
@@ -818,8 +830,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
                     if (IsTargetDirectory(watchDir))
                     {
-                        _cts.Cancel();
-                        return;
+                        return true;
                     }
 
                     // In every iteration, _expectedName gets shorter and watchDir gets longer, so the loop can't go on forever.
@@ -839,6 +850,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     return;
                 }
 
+                bool shouldCancel = false;
                 lock (_lock)
                 {
                     if (sender != _watcher || _cts.IsCancellationRequested)
@@ -857,13 +869,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     string createdPath = e.FullPath;
                     if (IsTargetDirectory(createdPath))
                     {
-                        _cts.Cancel();
+                        shouldCancel = true;
                     }
                     else
                     {
                         _expectedName = GetChildName(createdPath, _targetDirectory);
-                        SetupWatcherNoLock(createdPath);
+                        shouldCancel = SetupWatcherNoLock(createdPath);
                     }
+                }
+
+                if (shouldCancel)
+                {
+                    _cts.Cancel();
                 }
             }
 
@@ -883,8 +900,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
                     _watcher?.Dispose();
                     _watcher = null;
-                    _cts.Cancel();
                 }
+
+                _cts.Cancel();
             }
 
             [UnsupportedOSPlatform("browser")]
