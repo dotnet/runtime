@@ -1257,7 +1257,7 @@ namespace System.Text.Json
         /// </remarks>
         public static bool DeepEquals(JsonElement element1, JsonElement element2)
         {
-            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
             {
                 ThrowHelper.ThrowInsufficientExecutionStackException_JsonElementDeepEqualsInsufficientExecutionStack();
             }

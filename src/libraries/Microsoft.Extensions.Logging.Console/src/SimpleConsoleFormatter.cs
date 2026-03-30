@@ -15,12 +15,13 @@ namespace Microsoft.Extensions.Logging.Console
         private const string LoglevelPadding = ": ";
         private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
         private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
+        private static bool IsAndroidOrAppleMobile =>
 #if NET
-        private static bool IsAndroidOrAppleMobile => OperatingSystem.IsAndroid() ||
+                                                      OperatingSystem.IsAndroid() ||
                                                       OperatingSystem.IsTvOS() ||
                                                       OperatingSystem.IsIOS(); // returns true on MacCatalyst
 #else
-        private static bool IsAndroidOrAppleMobile => false;
+                                                      false;
 #endif
         private readonly IDisposable? _optionsReloadToken;
 

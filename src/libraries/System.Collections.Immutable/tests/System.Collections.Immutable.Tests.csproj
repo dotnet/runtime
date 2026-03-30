@@ -19,6 +19,8 @@
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Link="Common\System\Collections\DictionaryExtensions.cs" />
     <!-- Reference internal product components for testing -->
     <Compile Include="..\src\System\Polyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitOperationsPolyfills.cs" Link="Common\Polyfills\BitOperationsPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\CollectionsPolyfills.cs" Link="Common\Polyfills\CollectionsPolyfills.cs" />
     <Compile Include="..\src\System\Collections\Frozen\String\Hashing.cs" Link="System\Collections\Frozen\String\Hashing.cs" />
     <Compile Include="..\src\System\Collections\Frozen\String\KeyAnalyzer.cs" Link="System\Collections\Frozen\String\KeyAnalyzer.cs" />
     <Compile Include="..\src\Validation\Requires.cs" Link="Validation\Requires.cs" />

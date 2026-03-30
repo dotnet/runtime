@@ -6,28 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System
 {
-    internal static class BitConverterPolyfills
-    {
-        extension(BitConverter)
-        {
-            public static uint SingleToUInt32Bits(float value)
-            {
-                unsafe
-                {
-                    return *(uint*)&value;
-                }
-            }
-
-            public static ulong DoubleToUInt64Bits(double value)
-            {
-                unsafe
-                {
-                    return *(ulong*)&value;
-                }
-            }
-        }
-    }
-
+    /// <summary>Provides downlevel polyfills for instance methods on <see cref="Guid"/>.</summary>
     internal static class GuidPolyfills
     {
         extension(Guid self)
