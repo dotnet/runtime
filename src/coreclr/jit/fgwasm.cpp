@@ -74,21 +74,6 @@ FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
     Compiler* const comp = Comp();
     comp->fgInvalidateDfsTree();
 
-    // IIf we have EH, build the try region structure. This requires a DFS so try region
-    // membership can use compressed BV indices. We need this before computing the WasmDFS
-    // (it's ok if this initial DFS is a "full DFS" -- it can also be used to enumerate the
-    // try region blocks in postorder, but we won't need it for that purpose here).
-    //
-    // TODO: find some way to avoid needing this temporary DFS.
-    //
-    if (comp->compHndBBtabCount > 0)
-    {
-        FlowGraphDfsTree*    tempDfs    = comp->fgComputeDfs();
-        FlowGraphTryRegions* tryRegions = FlowGraphTryRegions::Build(comp, tempDfs);
-        comp->fgTryRegions              = tryRegions;
-        comp->fgInvalidateDfsTree();
-    }
-
     BasicBlock** postOrder = new (comp, CMK_WasmCfgLowering) BasicBlock*[comp->fgBBcount];
     bool         hasCycle  = false;
 
@@ -1068,9 +1053,9 @@ PhaseStatus Compiler::fgWasmControlFlow()
     //
     // We don't install our DFS tree as "the" DFS tree as it is non-standard.
     //
-    FgWasm            fgWasm(this);
-    bool              hasBlocksOnlyReachableViaEH = false;
-    FlowGraphDfsTree* dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
+    FgWasm                  fgWasm(this);
+    bool                    hasBlocksOnlyReachableViaEH = false;
+    FlowGraphDfsTree* const dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
 
     if (hasBlocksOnlyReachableViaEH)
     {
@@ -1082,7 +1067,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     }
 
     assert(dfsTree->IsForWasm());
-    FlowGraphNaturalLoops* loops = FlowGraphNaturalLoops::Find(dfsTree);
+    FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
 
     // We should have transformed these away earlier
     //
@@ -1090,12 +1075,16 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
     // Create descriptions of the try regions that can be enumerated in RPO
     //
-    FlowGraphTryRegions* tryRegions = FlowGraphTryRegions::Build(this, dfsTree);
+    FlowGraphTryRegions* const tryRegions = FlowGraphTryRegions::Build(this, dfsTree);
     JITDUMPEXEC(FlowGraphTryRegions::Dump(tryRegions));
 
-    // We should have fixed any multiple-entry try during SCC processing
+    // We cannot handle multiple entry try regions yet.
     //
-    assert(!tryRegions->HasMultipleEntryTryRegions());
+    if (tryRegions->HasMultipleEntryTryRegions())
+    {
+        JITDUMP("\nThere are multiple entry try regions\n");
+        NYI_WASM("Multiple entry try regions");
+    }
 
     // Our interval ends are at the starts of blocks, so we need a block that
     // comes after all existing blocks. So allocate one extra slot.
