@@ -45,6 +45,7 @@ struct PatchpointInfo
         m_keptAliveThisOffset     = -1;
         m_securityCookieOffset    = -1;
         m_monitorAcquiredOffset   = -1;
+        m_calleeSaveFpOffset      = 0;
     }
 
     // Copy
@@ -206,6 +207,19 @@ struct PatchpointInfo
         m_calleeSaveRegisters = registerMask;
     }
 
+    // FP-relative offset to callee-save area in original method.
+    // Used by runtime to restore Tier0's callee-saves during OSR transition.
+    //
+    int32_t CalleeSaveFpOffset() const
+    {
+        return m_calleeSaveFpOffset;
+    }
+
+    void SetCalleeSaveFpOffset(int32_t offset)
+    {
+        m_calleeSaveFpOffset = offset;
+    }
+
     PCODE GetTier0EntryPoint() const
     {
         return m_tier0Version;
@@ -227,6 +241,7 @@ private:
     PCODE    m_tier0Version;
     uint32_t m_numberOfLocals;
     int32_t      m_totalFrameSize;
+    int32_t      m_calleeSaveFpOffset;
     int32_t      m_genericContextArgOffset;
     int32_t      m_keptAliveThisOffset;
     int32_t      m_securityCookieOffset;
