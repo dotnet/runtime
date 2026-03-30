@@ -78,17 +78,17 @@ namespace Microsoft.Win32.SafeHandles
         {
             waitStateHolder = null;
 
-            if (startInfo.UseShellExecute)
-            {
-                return s_startWithShellExecute!(startInfo, stdinHandle, stdoutHandle, stderrHandle);
-            }
-
             if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
             }
 
             ProcessUtils.EnsureInitialized();
+
+            if (startInfo.UseShellExecute)
+            {
+                return s_startWithShellExecute!(startInfo, stdinHandle, stdoutHandle, stderrHandle);
+            }
 
             string? filename;
             string[] argv;
@@ -130,13 +130,6 @@ namespace Microsoft.Win32.SafeHandles
 
         private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
-            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
-            ProcessUtils.EnsureInitialized();
-
             IDictionary<string, string?> env = startInfo.Environment;
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
