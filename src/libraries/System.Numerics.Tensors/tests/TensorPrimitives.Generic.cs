@@ -455,7 +455,10 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<object[]> SpanDestinationFunctionsToTest()
         {
             // The current trigonometric algorithm depends on hardware FMA support for best precision.
-            T? trigTolerance = IsFmaSupported ? null : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
+            // On Apple mobile CoreCLR, the vectorized trig implementations may produce results that
+            // differ from scalar by a few ULPs even with FMA support, so a tolerance is still needed.
+            bool needsTrigTolerance = !IsFmaSupported || (PlatformDetection.IsAppleMobile && PlatformDetection.IsCoreCLR);
+            T? trigTolerance = needsTrigTolerance ? Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f) : null;
 
             yield return Create(TensorPrimitives.Acosh, T.Acosh);
             yield return Create(TensorPrimitives.AcosPi, T.AcosPi);
@@ -570,7 +573,6 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
         public void SpanDestinationFunctions_ValueRange(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {

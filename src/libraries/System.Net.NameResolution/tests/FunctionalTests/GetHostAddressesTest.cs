@@ -132,6 +132,7 @@ namespace System.Net.NameResolution.Tests
         };
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DnsGetHostAddresses_LocalHost_ReturnsSameAsGetHostEntry()
         {
             IPAddress[] addresses = Dns.GetHostAddresses(TestSettings.LocalHost);

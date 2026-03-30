@@ -12,4 +12,10 @@
                       OutputItemType="content"
                       CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <!-- On Apple mobile with aggressive trimming, the Noop.Assembly is loaded dynamically
+       and uses System.Reflection.Emit.AssemblyBuilder. The trimmer cannot see this dependency,
+       so we must explicitly preserve it. -->
+  <ItemGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(TargetsAppleMobile)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
+    <TrimmerRootDescriptor Include="ILLink.Descriptors.xml" />
+  </ItemGroup>
 </Project>

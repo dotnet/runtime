@@ -13,6 +13,9 @@
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">true</PublishReadyToRun>
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRun)' == 'true'">true</PublishReadyToRunComposite>
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRun)' == 'true'">macho</PublishReadyToRunContainerFormat>
+    <!--  We have to set the following two variables until https://github.com/dotnet/runtime/pull/124604 flows to us -->
+    <PublishReadyToRunStripInliningInfo>false</PublishReadyToRunStripInliningInfo>
+    <PublishReadyToRunStripDebugInfo>false</PublishReadyToRunStripDebugInfo>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PublishReadyToRun)' != 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
