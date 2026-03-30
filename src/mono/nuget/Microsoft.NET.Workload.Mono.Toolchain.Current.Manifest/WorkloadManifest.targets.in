@@ -37,7 +37,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
-    <SelfContained>true</SelfContained>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload11)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet10)' == 'true'">$(WasmNativeWorkload10)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet9)' == 'true'">$(WasmNativeWorkload9)</WasmNativeWorkloadAvailable>
@@ -64,7 +63,6 @@
         '$(WasmProfilers)' != '' or
         '$(RunAOTCompilation)' == 'true' or
         '$(WasmBuildNative)' == 'true' or
-        '$(_UsingBlazorOrWasmSdk)' != 'true' or
         '$(EmccInitialHeapSize)' != '' or
         '$(EmccMaximumHeapSize)' != '' " >true</_WasmNativeWorkloadNeeded>
 
