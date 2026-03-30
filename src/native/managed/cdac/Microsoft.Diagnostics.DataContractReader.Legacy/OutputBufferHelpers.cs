@@ -28,7 +28,7 @@ public static class OutputBufferHelpers
     {
         int byteCount = Encoding.UTF8.GetByteCount(str);
         if (neededBufferSize is not null)
-            *neededBufferSize = (uint)(byteCount + 1);
+            *neededBufferSize = checked((uint)(byteCount + 1));
 
         if (stringBuf is not null && bufferSize > 0)
         {

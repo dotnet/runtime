@@ -18,7 +18,7 @@ Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | `AuxiliarySymbolInfo` | `Address` | Code pointer to the dynamically-located helper function |
-| `AuxiliarySymbolInfo` | `Name` | Pointer to a null-terminated wide string with the helper name |
+| `AuxiliarySymbolInfo` | `Name` | Pointer to a null-terminated char string with the helper name |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -48,7 +48,7 @@ bool TryGetAuxiliarySymbolName(TargetPointer ip, out string? symbolName)
 
         if (address == codePointer && namePointer != TargetPointer.Null)
         {
-            symbolName = target.ReadUtf16String(namePointer);
+            symbolName = target.ReadUtf8String(namePointer);
             return true;
         }
     }

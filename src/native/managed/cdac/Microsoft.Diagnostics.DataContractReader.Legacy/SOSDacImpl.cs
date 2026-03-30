@@ -2043,7 +2043,7 @@ public sealed unsafe partial class SOSDacImpl
 
             uint needed = 0;
             OutputBufferHelpers.CopyUtf8StringToBuffer(name, count, &needed, symbolName);
-            if (needed > count)
+            if (needed > count && name != null)
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
             if (pNeeded != null)
                 *pNeeded = needed;
