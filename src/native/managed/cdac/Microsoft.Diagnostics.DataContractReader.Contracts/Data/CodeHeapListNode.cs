@@ -16,6 +16,7 @@ internal sealed class CodeHeapListNode : IData<CodeHeapListNode>
         EndAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(EndAddress)].Offset);
         MapBase = target.ReadPointer(address + (ulong)type.Fields[nameof(MapBase)].Offset);
         HeaderMap = target.ReadPointer(address + (ulong)type.Fields[nameof(HeaderMap)].Offset);
+        Heap = target.ReadPointer(address + (ulong)type.Fields[nameof(Heap)].Offset);
     }
 
     public TargetPointer Next { get; init; }
@@ -25,4 +26,6 @@ internal sealed class CodeHeapListNode : IData<CodeHeapListNode>
     public TargetPointer MapBase { get; init; }
 
     public TargetPointer HeaderMap { get; init; }
+
+    public TargetPointer Heap { get; init; }
 }

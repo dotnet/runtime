@@ -312,6 +312,8 @@ class HostCodeHeap final : public CodeHeap
 
     VPTR_VTABLE_CLASS(HostCodeHeap, CodeHeap)
 
+    friend struct ::cdac_data<HostCodeHeap>;
+
 private:
     // pointer back to jit manager info
     PTR_HeapList m_pHeapList;
@@ -372,6 +374,13 @@ public:
 
     PTR_EECodeGenManager GetJitManager() { return m_pJitManager; }
 }; // class HostCodeHeap
+
+template<>
+struct cdac_data<HostCodeHeap>
+{
+    static constexpr size_t BaseAddress    = offsetof(HostCodeHeap, m_pBaseAddr);
+    static constexpr size_t CurrentAddress = offsetof(HostCodeHeap, m_pLastAvailableCommittedAddr);
+};
 
 //---------------------------------------------------------------------------------------
 //

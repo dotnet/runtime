@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DumpTypes>Heap</DumpTypes>
+    <!-- R2R disabled so all methods are JIT-compiled. -->
+    <R2RModes>Jit</R2RModes>
+  </PropertyGroup>
+</Project>
