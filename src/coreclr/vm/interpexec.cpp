@@ -1159,6 +1159,34 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
         }
     }
     InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // When a MethodImpl .override replaces a virtual method's vtable slot, the overridden
+    // method (decl) may fail to set its interpreter code because SetNativeCodeInterlocked
+    // CAS fails on the shared vtable slot (it contains the overriding method's PE instead
+    // of the expected temporary entry point). Detect this case by checking whether the
+    // vtable slot points to a different method's PortableEntryPoint, and if so, prepare
+    // that method's interpreter code instead.
+    if (targetIp == NULL && !targetMethod->IsInterpreterCodePoisoned()
+        && targetMethod->IsVtableSlot())
+    {
+        PCODE entryPoint = targetMethod->GetMethodEntryPointIfExists();
+        if (entryPoint != (PCODE)NULL)
+        {
+            MethodDesc* pSlotMD = PortableEntryPoint::GetMethodDesc(entryPoint);
+            if (pSlotMD != NULL && pSlotMD != targetMethod
+                && pSlotMD->IsMethodImpl())
+            {
+                targetIp = PrepareInterpreterCode(pSlotMD, pFrame, pInterpreterFrame, ip);
+                if (targetIp != NULL)
+                {
+                    targetMethod->SetInterpreterCode(targetIp);
+                }
+            }
+        }
+    }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
     if (targetIp == NULL)
     {
         // The prestub wasn't able to setup an interpreter code, so it will never be able to.
