@@ -72,7 +72,10 @@ namespace ILVerify
                 results = new[] { new VerificationResult() { Message = e.Message } };
             }
 
-            return results;
+            foreach (var result in results)
+            {
+                yield return result;
+            }
         }
 
         public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle, bool verifyMethods = false)
