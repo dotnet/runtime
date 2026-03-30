@@ -1585,7 +1585,7 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // FEATURE_NATIVEAOT || (TARGET_UNIX && !SOS_TARGET_AMD64)
+#endif // FEATURE_NATIVEAOT, or TARGET_UNIX && !SOS_TARGET_AMD64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -1809,7 +1809,7 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // FEATURE_NATIVEAOT || (TARGET_UNIX && !SOS_TARGET_ARM64)
+#endif // FEATURE_NATIVEAOT, or TARGET_UNIX && !SOS_TARGET_ARM64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -1955,7 +1955,7 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // FEATURE_NATIVEAOT || (TARGET_UNIX && !SOS_TARGET_LOONGARCH64)
+#endif // FEATURE_NATIVEAOT, or TARGET_UNIX && !SOS_TARGET_LOONGARCH64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -2085,7 +2085,7 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // FEATURE_NATIVEAOT || (TARGET_UNIX && !SOS_TARGET_RISCV64)
+#endif // FEATURE_NATIVEAOT, or TARGET_UNIX && !SOS_TARGET_RISCV64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
