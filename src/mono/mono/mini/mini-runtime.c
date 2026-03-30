@@ -3156,6 +3156,7 @@ mono_set_bisect_methods (guint32 opt, const char *method_list_filename)
 		g_hash_table_insert (bisect_methods_hash, g_strdup (method_name), GINT_TO_POINTER (1));
 	}
 	g_assert (feof (file));
+	fclose(file);
 }
 
 gboolean mono_do_single_method_regression = FALSE;
