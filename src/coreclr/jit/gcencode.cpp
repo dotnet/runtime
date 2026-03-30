@@ -2124,21 +2124,35 @@ unsigned PendingArgsStack::pasEnumGCoffs(unsigned iter, unsigned* offs)
 // when reporting interruptible ranges.
 class NoGCRegionEncoder
 {
-    BYTE* dest;
+    BYTE*    dest;
+    unsigned lastSize    = 0;
+    unsigned lastEndOffs = -1;
 public:
-    size_t totalSize;
+    size_t totalSize = 0;
 
     NoGCRegionEncoder(BYTE* dest)
         : dest(dest)
-        , totalSize(0)
     {
     }
 
     // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
     bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
     {
-        totalSize += encodeUnsigned(dest == NULL ? NULL : dest + totalSize, igOffs);
-        totalSize += encodeUnsigned(dest == NULL ? NULL : dest + totalSize, igSize);
+        unsigned size;
+        if (igOffs == lastEndOffs) // Coalesce adjacent intervals by re-encoding the enlarged size.
+        {
+            totalSize -= encodeUnsigned(nullptr, lastSize);
+            size = lastSize + igSize;
+        }
+        else
+        {
+            totalSize += encodeUnsigned(dest == nullptr ? nullptr : dest + totalSize, igOffs);
+            size = igSize;
+        }
+        totalSize += encodeUnsigned(dest == nullptr ? nullptr : dest + totalSize, size);
+
+        lastSize    = size;
+        lastEndOffs = igOffs + igSize;
         return true;
     }
 };

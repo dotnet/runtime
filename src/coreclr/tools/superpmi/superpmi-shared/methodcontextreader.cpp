@@ -353,7 +353,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
 
             MethodContext* mc;
 
-            if (!MethodContext::Initialize(-1, buff, mcb.size, &mc))
+            if (!MethodContext::Initialize(-1, buff, mcb.size, /* readCompileResults */ true, &mc))
                 return MethodContextBuffer(-1);
 
             mc->dumpMethodHashToBuffer(mcHash, MM3_HASH_BUFFER_SIZE);
