@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -213,6 +214,33 @@ namespace System.Diagnostics.Tests
 
             Assert.True(delivered);
             Assert.True(fetchedProcess.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Kill_HandleWithoutTerminatePermission_ThrowsWin32Exception()
+        {
+            Process process = CreateProcess(static () =>
+            {
+                Thread.Sleep(Timeout.Infinite);
+                return RemoteExecutor.SuccessExitCode;
+            });
+            process.Start();
+
+            try
+            {
+                // Open a handle with PROCESS_QUERY_LIMITED_INFORMATION only (no PROCESS_TERMINATE)
+                const int PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+                using SafeProcessHandle limitedHandle = Interop.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, process.Id);
+                Assert.False(limitedHandle.IsInvalid);
+
+                Assert.Throws<Win32Exception>(() => limitedHandle.Kill());
+            }
+            finally
+            {
+                process.Kill();
+                process.WaitForExit();
+            }
         }
     }
 }

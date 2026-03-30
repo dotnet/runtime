@@ -1051,13 +1051,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        private static void SendSignal(PosixSignal signal, Process process)
-        {
-            if (!process.SafeHandle.Signal(signal))
-            {
-                throw new InvalidOperationException($"Failed to send signal {signal} to process {process.Id}");
-            }
-        }
+        private static void SendSignal(PosixSignal signal, Process process) => Assert.True(process.SafeHandle.Signal(signal));
 
         private static unsafe void ReEnableCtrlCHandlerIfNeeded(PosixSignal signal) { }
 
@@ -1102,7 +1096,7 @@ namespace System.Diagnostics.Tests
 
                 AssertRemoteProcessStandardOutputLine(childHandle, ChildReadyMessage, WaitInMS);
 
-                // Send SIGCONT to the child process using SafeProcessHandle.Signal
+                // Send SIGCONT to the child process
                 Assert.True(childHandle.Process.SafeHandle.Signal(PosixSignal.SIGCONT));
 
                 Assert.True(childHandle.Process.WaitForExit(WaitInMS));

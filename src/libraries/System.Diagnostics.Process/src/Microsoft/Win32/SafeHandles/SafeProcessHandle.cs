@@ -127,6 +127,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <remarks>
         /// This method does not throw if the process has already exited.
         /// On Unix, this sends <c>SIGKILL</c> to the process.
+        /// On Windows, the handle must have been opened with <c>PROCESS_TERMINATE</c> access.
         /// </remarks>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
         /// <exception cref="System.ComponentModel.Win32Exception">The process could not be terminated.</exception>
@@ -149,6 +150,7 @@ namespace Microsoft.Win32.SafeHandles
         /// </returns>
         /// <remarks>
         /// On Windows, only <see cref="PosixSignal.SIGKILL"/> is supported and is mapped to <see cref="Kill"/>.
+        /// On Windows, the handle must have been opened with <c>PROCESS_TERMINATE</c> access.
         /// </remarks>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
         /// <exception cref="PlatformNotSupportedException">The specified signal is not supported on this platform.</exception>
