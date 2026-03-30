@@ -793,6 +793,18 @@ Fail
 
         NESTED_END
 
+;; On Input:
+;;    x0                     contains object 'this' pointer
+;;    argument registers     populated as needed
+;;    x11                    contains the address of the indirection cell (with the flags in the low bits)
+;;
+        LEAF_ENTRY JIT_InterfaceDispatchForSlot
+
+        ldr x16, [x11]
+        br x16
+
+        LEAF_END
+
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_READYTORUN

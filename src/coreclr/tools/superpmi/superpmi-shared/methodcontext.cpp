@@ -1242,6 +1242,8 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
 
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ASYNC:
         return "CORJIT_FLAG_ASYNC";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_DISPATCH_HELPERS:
+        return "CORJIT_FLAG_USE_DISPATCH_HELPERS";
 
     default:
         return "<unknown>";
