@@ -355,9 +355,9 @@ CDAC_TYPE_END(SystemDomain)
 
 CDAC_TYPE_BEGIN(Debugger)
 CDAC_TYPE_INDETERMINATE(Debugger)
-CDAC_TYPE_FIELD(Debugger, /*int32*/, LeftSideInitialized, cdac_data<Debugger>::LeftSideInitialized)
-CDAC_TYPE_FIELD(Debugger, /*uint32*/, Defines, cdac_data<Debugger>::Defines)
-CDAC_TYPE_FIELD(Debugger, /*uint32*/, MDStructuresVersion, cdac_data<Debugger>::MDStructuresVersion)
+CDAC_TYPE_FIELD(Debugger, /*int32*/, LeftSideInitialized, offsetof(Debugger, m_fLeftSideInitialized))
+CDAC_TYPE_FIELD(Debugger, /*uint32*/, Defines, offsetof(Debugger, m_defines))
+CDAC_TYPE_FIELD(Debugger, /*uint32*/, MDStructuresVersion, offsetof(Debugger, m_mdDataStructureVersion))
 CDAC_TYPE_END(Debugger)
 
 CDAC_TYPE_BEGIN(ArrayListBase)

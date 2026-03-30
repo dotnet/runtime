@@ -47,7 +47,6 @@
 
 #include "canary.h"
 
-#include "cdacdata.h"
 
 #undef ASSERT
 #define CRASH(x)  _ASSERTE(!(x))
@@ -3030,14 +3029,6 @@ void RedirectedHandledJITCaseForGCStress_StubEnd();
 void NTAPI ApcActivationCallbackStub(ULONG_PTR Parameter);
 void ApcActivationCallbackStubEnd();
 #endif // FEATURE_SPECIAL_USER_MODE_APC
-};
-
-template<>
-struct cdac_data<Debugger>
-{
-    static constexpr size_t LeftSideInitialized = offsetof(Debugger, m_fLeftSideInitialized);
-    static constexpr size_t Defines = offsetof(Debugger, m_defines);
-    static constexpr size_t MDStructuresVersion = offsetof(Debugger, m_mdDataStructureVersion);
 };
 
 

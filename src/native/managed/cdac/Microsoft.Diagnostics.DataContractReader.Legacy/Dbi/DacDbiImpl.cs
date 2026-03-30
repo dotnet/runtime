@@ -19,11 +19,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     //   virtual HRESULT AssignCopy(const WCHAR* psz) = 0;
     // The nint we receive is a pointer to the object, whose first field is the vtable pointer.
     // The vtable has a single entry: a function pointer for AssignCopy.
-    private delegate* unmanaged<nint, char*, int> GetAssignCopyFnPtr(nint stringHolder)
+    // Use Thiscall because this is a C++ virtual method (thiscall on x86, no-op on x64/arm64).
+    private delegate* unmanaged[Thiscall]<nint, char*, int> GetAssignCopyFnPtr(nint stringHolder)
     {
         // stringHolder -> vtable ptr -> first slot is AssignCopy
         nint vtable = *(nint*)stringHolder;
-        return (delegate* unmanaged<nint, char*, int>)(*(nint*)vtable);
+        return (delegate* unmanaged[Thiscall]<nint, char*, int>)(*(nint*)vtable);
     }
 
     private int StringHolderAssignCopy(nint stringHolder, string str)

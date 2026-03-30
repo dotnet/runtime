@@ -23,7 +23,8 @@ internal sealed class NativeStringHolder : IDisposable
     private bool _disposed;
 
     // Delegate matching the native IStringHolder::AssignCopy(this, const WCHAR* psz) signature.
-    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    // Use ThisCall to match the C++ virtual method calling convention (thiscall on x86, no-op on x64/arm64).
+    [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
     private delegate int AssignCopyDelegate(IntPtr thisPtr, IntPtr psz);
 
     public string? Value { get; private set; }
