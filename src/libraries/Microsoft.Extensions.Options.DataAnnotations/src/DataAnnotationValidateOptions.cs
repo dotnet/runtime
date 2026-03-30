@@ -26,14 +26,29 @@ namespace Microsoft.Extensions.Options
         [RequiresUnreferencedCode("The implementation of Validate method on this type will walk through all properties of the passed in options object, and its type cannot be " +
             "statically analyzed so its members may be trimmed.")]
         public DataAnnotationValidateOptions(string? name)
+            : this(name, serviceProvider: null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="DataAnnotationValidateOptions{TOptions}"/> .
+        /// </summary>
+        /// <param name="name">The name of the option.</param>
+        /// <param name="serviceProvider">An <see cref="IServiceProvider"/> to be used for resolving services in <see cref="ValidationContext"/>.</param>
+        [RequiresUnreferencedCode("The implementation of Validate method on this type will walk through all properties of the passed in options object, and its type cannot be " +
+            "statically analyzed so its members may be trimmed.")]
+        public DataAnnotationValidateOptions(string? name, IServiceProvider? serviceProvider)
         {
             Name = name;
+            _serviceProvider = serviceProvider;
         }
 
         /// <summary>
         /// Gets the options name.
         /// </summary>
         public string? Name { get; }
+
+        private readonly IServiceProvider? _serviceProvider;
 
         /// <summary>
         /// Validates a specific named options instance (or all when <paramref name="name"/> is null).
@@ -59,7 +74,7 @@ namespace Microsoft.Extensions.Options
             HashSet<object>? visited = null;
             List<string>? errors = null;
 
-            if (TryValidateOptions(options, options.GetType().Name, validationResults, ref errors, ref visited))
+            if (TryValidateOptions(options, options.GetType().Name, validationResults, ref errors, ref visited, _serviceProvider))
             {
                 return ValidateOptionsResult.Success;
             }
@@ -71,7 +86,7 @@ namespace Microsoft.Extensions.Options
 
         [RequiresUnreferencedCode("This method on this type will walk through all properties of the passed in options object, and its type cannot be " +
             "statically analyzed so its members may be trimmed.")]
-        private static bool TryValidateOptions(object options, string qualifiedName, List<ValidationResult> results, ref List<string>? errors, ref HashSet<object>? visited)
+        private static bool TryValidateOptions(object options, string qualifiedName, List<ValidationResult> results, ref List<string>? errors, ref HashSet<object>? visited, IServiceProvider? serviceProvider)
         {
             Debug.Assert(options is not null);
 
@@ -82,7 +97,7 @@ namespace Microsoft.Extensions.Options
 
             results.Clear();
 
-            bool res = Validator.TryValidateObject(options, new ValidationContext(options), results, validateAllProperties: true);
+            bool res = Validator.TryValidateObject(options, new ValidationContext(options, serviceProvider, null), results, validateAllProperties: true);
             if (!res)
             {
                 errors ??= new List<string>();
@@ -114,7 +129,7 @@ namespace Microsoft.Extensions.Options
                     visited.Add(options);
 
                     results ??= new List<ValidationResult>();
-                    res = TryValidateOptions(value, $"{qualifiedName}.{propertyInfo.Name}", results, ref errors, ref visited) && res;
+                    res = TryValidateOptions(value, $"{qualifiedName}.{propertyInfo.Name}", results, ref errors, ref visited, serviceProvider) && res;
                 }
                 else if (value is IEnumerable enumerable &&
                          propertyInfo.GetCustomAttribute<ValidateEnumeratedItemsAttribute>() is not null)
@@ -126,7 +141,7 @@ namespace Microsoft.Extensions.Options
                     int index = 0;
                     foreach (object item in enumerable)
                     {
-                        res = TryValidateOptions(item, $"{qualifiedName}.{propertyInfo.Name}[{index++}]", results, ref errors, ref visited) && res;
+                        res = TryValidateOptions(item, $"{qualifiedName}.{propertyInfo.Name}[{index++}]", results, ref errors, ref visited, serviceProvider) && res;
                     }
                 }
             }
