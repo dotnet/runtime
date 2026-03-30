@@ -822,7 +822,7 @@ namespace ILCompiler.ObjectWriter
                             // flag mapping
                             if (symbolWebcilSection is null)
                             {
-                                throw new InvalidDataException(string.Format(SR.WasmMemoryRelocTargetNotInWebcilSection, reloc.SymbolName));
+                                throw new InvalidDataException();
                             }
 
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
@@ -835,7 +835,7 @@ namespace ILCompiler.ObjectWriter
                             string symbolName = reloc.SymbolName.ToString();
                             if (!_uniqueSymbols.TryGetValue(symbolName, out int index))
                             {
-                                throw new InvalidOperationException(string.Format(SR.WasmTableIndexSymbolNotFound, symbolName));
+                                throw new InvalidOperationException();
                             }
 
                             // Here, we are effectively writing a table offset relative to the table_base.
@@ -849,7 +849,7 @@ namespace ILCompiler.ObjectWriter
                             string symbolName = reloc.SymbolName.ToString();
                             if (!_uniqueSymbols.TryGetValue(symbolName, out int index))
                             {
-                                throw new InvalidOperationException(string.Format(SR.WasmFunctionIndexSymbolNotFound, symbolName));
+                                throw new InvalidOperationException();
                             }
 
                             // These are module-local function pointer indices, so we can simply write out the assigned function index
