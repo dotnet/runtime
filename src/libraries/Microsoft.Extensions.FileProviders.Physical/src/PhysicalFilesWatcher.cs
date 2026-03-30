@@ -345,6 +345,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
             CancelAll(_filePathTokenLookup);
             CancelAll(_wildcardTokenLookup);
 
+            TryDisableFileSystemWatcher();
+
             static void CancelAll(ConcurrentDictionary<string, ChangeTokenInfo> tokens)
             {
                 foreach (KeyValuePair<string, ChangeTokenInfo> entry in tokens)
