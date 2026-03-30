@@ -141,12 +141,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         }
 
         /// <inheritdoc />
-        public override DirectoryInfoBase? GetDirectory(string path)
+        public override DirectoryInfoBase GetDirectory(string path)
         {
+            string combinedPath = Path.Combine(FullName, path);
+            string normPath = Path.GetFullPath(combinedPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
             bool isParentPath = string.Equals(path, "..", StringComparison.Ordinal);
-            string? combinedPath = isParentPath ? Path.GetDirectoryName(FullName) : Path.Combine(FullName, path);
-            string? normPath = combinedPath?.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-            return normPath == null ? null : new InMemoryDirectoryInfo(normPath, _files, true, _comparisonType, isParentPath);
+            return new InMemoryDirectoryInfo(normPath, _files, true, _comparisonType, isParentPath);
         }
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public override FileInfoBase? GetFile(string path)
         {
             string combinedPath = Path.Combine(FullName, path);
-            string normPath = combinedPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            string normPath = Path.GetFullPath(combinedPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
             foreach (string file in _files)
             {
                 if (string.Equals(file, normPath))
