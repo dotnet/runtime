@@ -136,7 +136,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.GetModuleByAddress(ClrDataAddress address, DacComNullableByRef<IXCLRDataModule> mod)
         => _legacyProcess is not null ? _legacyProcess.GetModuleByAddress(address, mod) : HResults.E_NOTIMPL;
 
-    internal sealed class EnumMethodInstances
+    internal sealed class EnumMethodInstances : IEnum<MethodDescHandle>
     {
         private readonly Target _target;
         private readonly TargetPointer _mainMethodDesc;
@@ -144,7 +144,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         private readonly ILoader _loader;
         private readonly IRuntimeTypeSystem _rts;
         private readonly ICodeVersions _cv;
-        public IEnumerator<MethodDescHandle> methodEnumerator = Enumerable.Empty<MethodDescHandle>().GetEnumerator();
+        public IEnumerator<MethodDescHandle> Enumerator { get; set; } = Enumerable.Empty<MethodDescHandle>().GetEnumerator();
         public TargetPointer LegacyHandle { get; set; } = TargetPointer.Null;
 
         public EnumMethodInstances(Target target, TargetPointer methodDesc, TargetPointer appDomain)
@@ -174,7 +174,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 return HResults.S_FALSE;
             }
 
-            methodEnumerator = IterateMethodInstances().GetEnumerator();
+            Enumerator = IterateMethodInstances().GetEnumerator();
 
             return HResults.S_OK;
         }
@@ -361,8 +361,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 EnumMethodInstances emi = new(_target, methodDesc, TargetPointer.Null);
                 emi.LegacyHandle = handleLocal;
 
-                GCHandle gcHandle = GCHandle.Alloc(emi);
-                *handle = (ulong)GCHandle.ToIntPtr(gcHandle).ToInt64();
+                *handle = (ulong)((IEnum<MethodDescHandle>)emi).GetHandle();
                 hr = emi.Start();
             }
         }
@@ -402,9 +401,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
         try
         {
-            if (emi.methodEnumerator.MoveNext())
+            if (emi.Enumerator.MoveNext())
             {
-                MethodDescHandle methodDesc = emi.methodEnumerator.Current;
+                MethodDescHandle methodDesc = emi.Enumerator.Current;
                 method.Interface = new ClrDataMethodInstance(_target, methodDesc, emi._appDomain, legacyMethod);
             }
             else
