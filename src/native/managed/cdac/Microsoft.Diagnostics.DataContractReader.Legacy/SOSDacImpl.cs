@@ -81,7 +81,8 @@ public sealed unsafe partial class SOSDacImpl
         _objectMethodTable = new Lazy<TargetPointer>(
             () => _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable)));
 
-        // Get all the interfaces for delegating to the legacy DAC
+        // Get all the interfaces for delegating to the legacy
+        // DAC
         if (legacyObj is not null)
         {
             _legacyImpl = legacyObj as ISOSDacInterface;
