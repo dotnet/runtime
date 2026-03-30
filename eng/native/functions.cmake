@@ -551,6 +551,16 @@ function(install_clr)
       get_symbol_file_name(${targetName} symbolFile)
     endif()
 
+    # For static libraries on Android, strip debug info at install time and save
+    # the debug symbols as a separate .dbg file for the symbols package.
+    set(staticLibSymbolFile "")
+    if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS
+        AND "${targetType}" STREQUAL "STATIC_LIBRARY"
+        AND CMAKE_OBJCOPY
+        AND CLR_CMAKE_TARGET_ANDROID)
+      set(staticLibSymbolFile "$<TARGET_FILE:${targetName}>.dbg")
+    endif()
+
     if (${INSTALL_CLR_OPTIONAL})
       set(INSTALL_CLR_OPTIONAL "OPTIONAL")
     else()
@@ -577,9 +587,24 @@ function(install_clr)
       else()
         # We don't need to install the export libraries for our DLLs
         # since they won't be directly linked against.
+        if (NOT "${staticLibSymbolFile}" STREQUAL "")
+          # For static libraries: save unstripped copy as .dbg, then strip and install
+          install(CODE
+          "
+            set(source_file \"$<TARGET_FILE:${targetName}>\")
+            set(symbol_file \"${staticLibSymbolFile}\")
+            message(STATUS \"Stripping debug symbols from $<TARGET_FILE_NAME:${targetName}> into $<TARGET_FILE_NAME:${targetName}>.dbg\")
+            execute_process(COMMAND ${CMAKE_OBJCOPY} --only-keep-debug \${source_file} \${symbol_file})
+            execute_process(COMMAND ${CMAKE_OBJCOPY} --strip-debug \${source_file})
+          "
+          COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        endif()
         install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
         if (NOT "${symbolFile}" STREQUAL "")
           install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
+        endif()
+        if (NOT "${staticLibSymbolFile}" STREQUAL "")
+          install_symbol_file(${staticLibSymbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT} ${INSTALL_CLR_OPTIONAL})
         endif()
       endif()
 
