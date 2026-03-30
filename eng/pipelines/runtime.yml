@@ -945,13 +945,13 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
-            - WasmTestOnFirefox
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
+          shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
@@ -996,13 +996,15 @@ extends:
         parameters:
           platforms:
             - browser_wasm
-            - browser_wasm_win
           nameSuffix: _Smoke_AOT
           runAOT: true
           buildAOTOnHelix: false
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          scenarios:
+            - WasmTestOnChrome
+            - WasmTestOnFirefox
 
       # For Wasm.Build.Tests - runtime pack builds
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
@@ -1071,8 +1073,6 @@ extends:
           - android_arm64
           variables:
             # map dependencies variables to local variables
-            - name: librariesContainsChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
             - name: monoContainsChange
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
           jobParameters:
@@ -1082,9 +1082,7 @@ extends:
             timeoutInMinutes: 120
             condition: >-
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
             postBuildSteps:
@@ -1094,7 +1092,6 @@ extends:
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
                   condition: >-
                     or(
-                    eq(variables['librariesContainsChange'], true),
                     eq(variables['monoContainsChange'], true),
                     eq(variables['isRollingBuild'], true))
 
@@ -1933,7 +1930,8 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build and test Mono Minijit with the libraries testss
+      # Build and test Mono Minijit with the libraries tests
+      # linux_arm64 runs on both library and mono changes
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1943,6 +1941,33 @@ extends:
           runtimeFlavor: mono
           platforms:
             - linux_arm64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: Mono_MiniJIT_LibrariesTests
+            buildArgs: -s mono+libs+libs.tests -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
+            timeoutInMinutes: 480
+            # extra steps, run tests
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Mono_Minijit_$(_BuildConfig)
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
+      # Additional Mono Minijit platforms - only when mono explicitly changes
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          runtimeFlavor: mono
+          platforms:
             - linux_x64
             - osx_x64
             #- windows_x64
@@ -1959,6 +1984,5 @@ extends:
                   testRunNamePrefixSuffix: Mono_Minijit_$(_BuildConfig)
             condition: >-
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
