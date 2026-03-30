@@ -3153,15 +3153,21 @@ namespace System.Numerics
         {
             if (value._bits is null)
             {
-                return nint.LeadingZeroCount(value._sign);
+                // For small values stored in _sign, use 32-bit counting to match the
+                // behavior when _bits was uint[] (where each limb was always 32-bit).
+                return uint.LeadingZeroCount((uint)value._sign);
             }
 
-            // When the value is positive, we just need to get the lzcnt of the most significant bits.
             // When negative, two's complement has infinite sign-extension of 1-bits, so LZC is always 0.
+            if (value._sign < 0)
+            {
+                return 0;
+            }
 
-            return (value._sign >= 0)
-                ? BitOperations.LeadingZeroCount(value._bits[^1])
-                : 0;
+            // When positive, count leading zeros in the most significant 32-bit word.
+            // The & 31 maps the result to 32-bit word semantics: on 64-bit, when the
+            // upper half is zero, LZC is 32 + uint_lzc, and (32 + x) & 31 == x.
+            return BitOperations.LeadingZeroCount(value._bits[^1]) & 31;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
@@ -3169,7 +3175,7 @@ namespace System.Numerics
         {
             if (value._bits is null)
             {
-                return nint.PopCount(value._sign);
+                return int.PopCount(value._sign);
             }
 
             ulong result = 0;
@@ -3186,31 +3192,53 @@ namespace System.Numerics
             }
             else
             {
-                // When the value is negative, we need to popcount the two's complement representation
-                // We'll do this "inline" to avoid needing to unnecessarily allocate.
+                // When the value is negative, we compute PopCount of the two's complement
+                // representation using 32-bit word semantics.
+                //
+                // Using the identity: PopCount(2^W - m) = W - PopCount(m) - TZC(m) + 1
+                // where W is the total width in terms of 32-bit words and m is the magnitude.
+                //
+                // This avoids platform-dependent results from complementing nuint limbs,
+                // since ~(nuint) fills upper bits with 1s on 64-bit when the magnitude
+                // only uses the lower 32 bits.
 
-                int i = 0;
-                nuint part;
+                ulong magnitudePopCount = 0;
+                ulong magnitudeTZC = 0;
+                bool foundNonZero = false;
 
-                do
+                for (int i = 0; i < value._bits.Length; i++)
                 {
-                    // Simply process bits, adding the carry while the previous value is zero
+                    nuint part = value._bits[i];
+                    magnitudePopCount += (ulong)BitOperations.PopCount(part);
 
-                    part = ~value._bits[i] + 1;
-                    result += (ulong)BitOperations.PopCount(part);
-
-                    i++;
+                    if (!foundNonZero)
+                    {
+                        if (part == 0)
+                        {
+                            magnitudeTZC += (uint)BigIntegerCalculator.BitsPerLimb;
+                        }
+                        else
+                        {
+                            magnitudeTZC += (ulong)BitOperations.TrailingZeroCount(part);
+                            foundNonZero = true;
+                        }
+                    }
                 }
-                while ((part == 0) && (i < value._bits.Length));
 
-                while (i < value._bits.Length)
+                // Compute W: total width in terms of 32-bit words.
+                // On 64-bit, each nuint holds two 32-bit words, except the MSL's upper
+                // half is excluded when it's zero (matching the original uint[] layout).
+                int wordCount = value._bits.Length;
+                if (Environment.Is64BitProcess)
                 {
-                    // Then process the remaining bits only utilizing the one's complement
-
-                    part = ~value._bits[i];
-                    result += (ulong)BitOperations.PopCount(part);
-                    i++;
+                    wordCount *= 2;
+                    if ((uint)(value._bits[^1] >> BitsPerUInt32) == 0)
+                    {
+                        wordCount--;
+                    }
                 }
+
+                result = (ulong)wordCount * BitsPerUInt32 - magnitudePopCount - magnitudeTZC + 1;
             }
 
             return result;
@@ -3228,9 +3256,9 @@ namespace System.Numerics
 
             if (value._bits is null)
             {
-                nuint rs = BitOperations.RotateLeft((nuint)value._sign, rotateAmount);
+                uint rs = uint.RotateLeft((uint)value._sign, rotateAmount);
                 return neg
-                    ? new BigInteger((nint)rs)
+                    ? new BigInteger((int)rs)
                     : new BigInteger(rs);
             }
 
@@ -3249,9 +3277,9 @@ namespace System.Numerics
 
             if (value._bits is null)
             {
-                nuint rs = BitOperations.RotateRight((nuint)value._sign, rotateAmount);
+                uint rs = uint.RotateRight((uint)value._sign, rotateAmount);
                 return neg
-                    ? new BigInteger((nint)rs)
+                    ? new BigInteger((int)rs)
                     : new BigInteger(rs);
             }
 
@@ -3263,45 +3291,108 @@ namespace System.Numerics
             Debug.Assert(bits.Length > 0);
             Debug.Assert(Math.Abs(rotateLeftAmount) <= 0x80000000);
 
-            int zLength = bits.Length;
-            int leadingZeroCount = negative ? bits.IndexOfAnyExcept(0u) : 0;
-
-            if (negative && (nint)bits[^1] < 0
-                && (leadingZeroCount != bits.Length - 1 || bits[^1] != ((nuint)1 << (BigIntegerCalculator.BitsPerLimb - 1))))
+            // Determine the number of 32-bit words in the magnitude.
+            // On 64-bit, each nuint limb holds two 32-bit words; the MSL's upper
+            // half may be zero (matching the original uint[] layout).
+            int wordCount;
+            if (Environment.Is64BitProcess)
             {
-                // For a shift of N x BitsPerLimb bit,
-                // We check for a special case where its sign bit could be outside the nuint array after 2's complement conversion.
-                // For example given [nuint.MaxValue, nuint.MaxValue, nuint.MaxValue], its 2's complement is [0x01, 0x00, 0x00]
-                // After a BitsPerLimb bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
-                // The expected result is [0x00, 0x00, nuint.MaxValue] (2's complement) or [0x00, 0x00, 0x01] when converted back
-                // If the 2's component's last element is a 0, we will track the sign externally
-                ++zLength;
+                wordCount = bits.Length * 2;
+                if ((uint)(bits[^1] >> BitsPerUInt32) == 0)
+                {
+                    wordCount--;
+                }
+            }
+            else
+            {
+                wordCount = bits.Length;
             }
 
-            Span<nuint> zd = RentedBuffer.Create(zLength, out RentedBuffer zdBuffer);
+            // Allocate the result buffer with one extra word for possible sign-extension,
+            // and work directly in it to avoid a temporary array.
+            int maxWordCount = wordCount + 1;
+            int zLimbCount = Environment.Is64BitProcess ? (maxWordCount + 1) / 2 : maxWordCount;
+            Span<nuint> zd = RentedBuffer.Create(zLimbCount, out RentedBuffer zdBuffer);
 
-            zd[^1] = 0;
+            // Copy input magnitude and zero any extra limbs for sign extension / partial last limb.
             bits.CopyTo(zd);
+            zd.Slice(bits.Length).Clear();
+
+            // On big-endian 64-bit, swap uint halves within each limb so that
+            // MemoryMarshal.Cast<nuint, uint> yields words in low-to-high order.
+            if (Environment.Is64BitProcess && !BitConverter.IsLittleEndian)
+            {
+                for (int i = 0; i < zd.Length; i++)
+                {
+                    nuint limb = zd[i];
+                    zd[i] = ((limb & 0xFFFFFFFF) << BitsPerUInt32) | (limb >> BitsPerUInt32);
+                }
+            }
+
+            // Get a Span<uint> working view directly into the nuint buffer.
+            Span<uint> allWords = MemoryMarshal.Cast<nuint, uint>(zd);
+
+            int zWordCount = wordCount;
+
+            // For negative values, find the index of the first non-zero word.
+            Span<uint> wordsSpan = allWords.Slice(0, wordCount);
+            int leadingZeroCount = negative ? wordsSpan.IndexOfAnyExcept(0u) : 0;
+
+            if (negative && (int)allWords[zWordCount - 1] < 0
+                && (leadingZeroCount != zWordCount - 1 || allWords[zWordCount - 1] != UInt32HighBit))
+            {
+                // For a shift of N x 32 bit,
+                // We check for a special case where its sign bit could be outside the uint array after 2's complement conversion.
+                // For example given [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF], its 2's complement is [0x01, 0x00, 0x00]
+                // After a 32 bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
+                // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
+                // If the 2's complement's last element is a 0, we will track the sign externally
+                ++zWordCount;
+            }
 
             if (negative)
             {
-                Debug.Assert((uint)leadingZeroCount < (uint)zd.Length);
+                Debug.Assert((uint)leadingZeroCount < (uint)zWordCount);
 
-                // Same as NumericsHelpers.DangerousMakeTwosComplement(zd);
-                // Leading zero count is already calculated.
-                zd[leadingZeroCount] = (nuint)(-(nint)zd[leadingZeroCount]);
-                NumericsHelpers.DangerousMakeOnesComplement(zd.Slice(leadingZeroCount + 1));
+                // Two's complement conversion on the 32-bit word view.
+                allWords[leadingZeroCount] = (uint)(-(int)allWords[leadingZeroCount]);
+                for (int i = leadingZeroCount + 1; i < zWordCount; i++)
+                {
+                    allWords[i] = ~allWords[i];
+                }
             }
 
-            BigIntegerCalculator.RotateLeft(zd, rotateLeftAmount);
+            Span<uint> zwSpan = allWords.Slice(0, zWordCount);
 
-            if (negative && (nint)zd[^1] < 0)
+            BigIntegerCalculator.RotateLeft32(zwSpan, rotateLeftAmount);
+
+            if (negative && (int)zwSpan[^1] < 0)
             {
-                NumericsHelpers.DangerousMakeTwosComplement(zd);
+                // Convert back from two's complement on the 32-bit word view.
+                int firstNonZero = zwSpan.IndexOfAnyExcept(0u);
+
+                if ((uint)firstNonZero < (uint)zWordCount)
+                {
+                    allWords[firstNonZero] = (uint)(-(int)allWords[firstNonZero]);
+                    for (int j = firstNonZero + 1; j < zWordCount; j++)
+                    {
+                        allWords[j] = ~allWords[j];
+                    }
+                }
             }
             else
             {
                 negative = false;
+            }
+
+            // On big-endian 64-bit, swap uint halves back to restore correct nuint layout.
+            if (Environment.Is64BitProcess && !BitConverter.IsLittleEndian)
+            {
+                for (int i = 0; i < zd.Length; i++)
+                {
+                    nuint limb = zd[i];
+                    zd[i] = ((limb & 0xFFFFFFFF) << BitsPerUInt32) | (limb >> BitsPerUInt32);
+                }
             }
 
             BigInteger result = new(zd, negative);
@@ -3316,7 +3407,7 @@ namespace System.Numerics
         {
             if (value._bits is null)
             {
-                return nint.TrailingZeroCount(value._sign);
+                return int.TrailingZeroCount(value._sign);
             }
 
             ulong result = 0;
