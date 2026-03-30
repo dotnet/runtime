@@ -6,7 +6,7 @@
 // but we need to perform TLS without an actual connection so that we can expose
 // it as the SslStream abstraction. This implementation uses a workaround: we
 // create a dummy UDP connection that will never be used.
-// 
+//
 // The trick works by layering a custom framer on top of this dummy connection,
 // then adding TLS on top of the framer. The framer intercepts the raw TLS data
 // and exposes it to SslStream, preventing it from ever reaching the underlying
@@ -109,7 +109,7 @@ static CFStringRef ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFra
         }
         return NULL;
     }
-    
+
     outError->errorCode = nw_error_get_error_code(error);
     nw_error_domain_t domain = nw_error_get_error_domain(error);
     outError->errorDomain = (int32_t)domain;
@@ -119,7 +119,7 @@ static CFStringRef ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFra
         outError->errorMessage = strerror(outError->errorCode);
         return NULL;
     }
-    
+
     // Get error message from CoreFoundation error if available
     CFStringRef descriptionToRelease = NULL;
     CFErrorRef cfError = nw_error_copy_cf_error(error);
@@ -146,7 +146,7 @@ static CFStringRef ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFra
     {
         outError->errorMessage = NULL;
     }
-    
+
     return descriptionToRelease;
 }
 
@@ -201,7 +201,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
         {
             uint16_t cipherSuite = (uint16_t)cipherSuites[i];
             LOG_INFO(context, "Appending cipher suite: 0x%04x", cipherSuite);
-            sec_protocol_options_append_tls_ciphersuite(sec_options, cipherSuite);
+            sec_protocol_options_append_tls_ciphersuite(sec_options, (tls_ciphersuite_t)cipherSuite);
         }
     }
 
@@ -210,12 +210,12 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     {
         // Extract acceptable issuers from metadata
         CFMutableArrayRef acceptableIssuers = NULL;
-        
+
         if (metadata != NULL)
         {
             // Create array to hold distinguished names
             acceptableIssuers = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
-            
+
             // Access distinguished names from the metadata
             sec_protocol_metadata_access_distinguished_names(metadata, ^(dispatch_data_t dn)
             {
@@ -223,30 +223,36 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
                 const void* dnBytes = NULL;
                 size_t dnLength = 0;
                 dispatch_data_t contiguousDN = dispatch_data_create_map(dn, &dnBytes, &dnLength);
-                
+
                 if (dnBytes != NULL && dnLength > 0)
-                {   
+                {
                     CFDataRef dnData = CFDataCreate(NULL, (const UInt8*)dnBytes, (CFIndex)dnLength);
                     if (dnData != NULL)
                     {
-                        CFArrayAppendValue(acceptableIssuers, dnData);
+                        if (acceptableIssuers != NULL)
+                        {
+                            CFArrayAppendValue(acceptableIssuers, dnData);
+                        }
                         CFRelease(dnData);
                     }
                 }
-                
+
                 if (contiguousDN != NULL)
                 {
                     dispatch_release(contiguousDN);
                 }
             });
         }
-        
+
         // Call the managed callback to get the client identity
         void* identity = _challengeFunc(context, acceptableIssuers);
-        
+
         // Clean up
-        CFRelease(acceptableIssuers);
-        
+        if (acceptableIssuers != NULL)
+        {
+            CFRelease(acceptableIssuers);
+        }
+
         if (identity != NULL)
         {
             // Convert to sec_identity_t and set it
@@ -260,7 +266,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
 
             return;
         }
-        
+
         complete(NULL);
     }, _tlsQueue);
 
@@ -370,7 +376,7 @@ PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, voi
         return -1;
     }
 
-    nw_framer_async(framer, ^(void) 
+    nw_framer_async(framer, ^(void)
     {
         nw_framer_deliver_input(framer, buffer, (size_t)bufferLength, message, bufferLength > 0 ? FALSE : TRUE);
         completionCallback(context, NULL);
@@ -423,7 +429,7 @@ PALEXPORT int AppleCryptoNative_NwConnectionStart(nw_connection_t connection, vo
             }
             break;
         }
-        
+
         // Release CFString if we created one
         if (cfStringToRelease != NULL)
         {
@@ -457,14 +463,14 @@ PALEXPORT void AppleCryptoNative_NwConnectionSend(nw_connection_t connection, vo
         PAL_NetworkFrameworkError errorInfo;
         CFStringRef cfStringToRelease = ExtractNetworkFrameworkError(error, &errorInfo);
         completionCallback(context, error != NULL ? &errorInfo : NULL);
-        
+
         // Release CFString if we created one
         if (cfStringToRelease != NULL)
         {
             CFRelease(cfStringToRelease);
         }
     });
-    
+
     // Release our reference to dispatch_data - nw_connection_send retains it
     dispatch_release(data);
 }

@@ -396,5 +396,35 @@ namespace System
                 *pException = ex;
             }
         }
+
+        // See clrex.cpp for native version.
+        internal enum ArgumentExceptionKind
+        {
+            Argument,
+            ArgumentNull,
+            ArgumentOutOfRange
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateArgumentException(ArgumentExceptionKind kind, char* pResourceName, char* pParamName, object* pThrowable, Exception* pException)
+        {
+            try
+            {
+                string? message = pResourceName is not null ? SR.GetResourceString(new string(pResourceName)) : null;
+                string? paramName = pParamName is not null ? new string(pParamName) : null;
+
+                Debug.Assert(Enum.IsDefined(kind));
+                *pThrowable = kind switch
+                {
+                    ArgumentExceptionKind.ArgumentNull => new ArgumentNullException(paramName, message),
+                    ArgumentExceptionKind.ArgumentOutOfRange => new ArgumentOutOfRangeException(paramName, message),
+                    _ /* ArgumentExceptionKind.Argument */ => new ArgumentException(message, paramName)
+                };
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

@@ -116,27 +116,27 @@ variables:
   - name: helix_linux_x64_debian_latest
     value: (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
 
-  # Oldest: 12
+  # Oldest: 13
   - name: helix_linux_x64_debian_oldest
-    value: (Debian.12.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-amd64
+    value: (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
 
   # Fedora x64
   # Latest: 43
   - name: helix_linux_x64_fedora_latest
     value: (Fedora.43.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-43-helix-amd64
 
-  # Oldest: 42
+  # Oldest: 43
   - name: helix_linux_x64_fedora_oldest
-    value: (Fedora.42.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-42-helix-amd64
+    value: (Fedora.43.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-43-helix-amd64
 
   # openSUSE x64
   # Latest: 16.0
   - name: helix_linux_x64_opensuse_latest
     value: (openSUSE.16.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64
 
-  # Oldest: 15.5
+  # Oldest: 16.0
   - name: helix_linux_x64_opensuse_oldest
-    value: (openSUSE.15.5.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.5-helix-amd64
+    value: (openSUSE.16.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64
 
   # CentOS Stream x64
   # Latest: 10
@@ -155,12 +155,12 @@ variables:
   - name: helix_linux_arm32_latest_internal
     value: (Debian.13.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
-  # Oldest: Debian 12
+  # Oldest: Debian 13
   - name: helix_linux_arm32_oldest
-    value: (Debian.12.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7
+    value: (Debian.13.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   - name: helix_linux_arm32_oldest_internal
-    value: (Debian.12.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7
+    value: (Debian.13.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   # Linux ARM64
   # Latest: Ubuntu 26.04

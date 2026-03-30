@@ -6836,9 +6836,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
-        case GT_EMITNOP:
-        case GT_PINVOKE_PROLOG:
-        case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
         case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
@@ -10494,9 +10491,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
-        case GT_EMITNOP:
-        case GT_PINVOKE_PROLOG:
-        case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
         case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
@@ -12541,7 +12535,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
         case GT_MEMORYBARRIER:
-        case GT_PINVOKE_PROLOG:
         case GT_JMPTABLE:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -33814,7 +33807,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             case NI_Vector512_WithElement:
 #endif
             {
-                if ((cnsNode != op1) || !op3->OperIsConst())
+                if ((cnsNode != op1) || !op2->IsCnsIntOrI() || !op3->OperIsConst())
                 {
                     break;
                 }
