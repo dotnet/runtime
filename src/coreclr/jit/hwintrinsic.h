@@ -885,6 +885,7 @@ struct HWIntrinsicInfo
 
 #ifdef TARGET_XARCH
             case NI_X86Base_DivRem:
+            case NI_X86Base_X64_BigMul:
             case NI_X86Base_X64_DivRem:
                 return 2;
 #endif // TARGET_XARCH
