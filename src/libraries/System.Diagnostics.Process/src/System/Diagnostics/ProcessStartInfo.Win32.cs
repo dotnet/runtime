@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -47,14 +46,5 @@ namespace System.Diagnostics
             }
         }
 
-        public bool UseShellExecute
-        {
-            get;
-            set
-            {
-                SafeProcessHandle.EnsureShellExecuteFunc();
-                field = value;
-            }
-        }
     }
 }

@@ -232,6 +232,16 @@ namespace System.Diagnostics
         public bool ErrorDialog { get; set; }
         public IntPtr ErrorDialogParentHandle { get; set; }
 
+        public bool UseShellExecute
+        {
+            get;
+            set
+            {
+                SafeProcessHandle.EnsureShellExecuteFunc();
+                field = value;
+            }
+        }
+
         [AllowNull]
         public string UserName
         {
