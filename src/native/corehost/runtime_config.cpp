@@ -353,7 +353,7 @@ bool runtime_config_t::ensure_dev_config_parsed()
     // runtimeconfig.dev.json is never bundled into the single-file app.
     // So, only a file on disk is processed.
     json_parser_t json;
-    if (!json.parse_file(m_dev_path))
+    if (!json.parse_fully_trusted_file(m_dev_path))
     {
         return false;
     }
@@ -407,7 +407,7 @@ bool runtime_config_t::ensure_parsed()
     }
 
     json_parser_t json;
-    if (!json.parse_file(m_path))
+    if (!json.parse_fully_trusted_file(m_path))
     {
         trace::error(_X("Failed to parse file [%s]. %s"), m_path.c_str(), json.get_error_message().c_str());
         return false;

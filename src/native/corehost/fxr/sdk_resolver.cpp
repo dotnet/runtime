@@ -337,7 +337,7 @@ sdk_resolver::global_file_info sdk_resolver::parse_global_file(const pal::string
     // After we're done parsing `global_file_path`, none of its contents will be referenced
     // from the data private to json_parser_t; it's safe to declare it on the stack.
     json_parser_t json;
-    if (!json.parse_file(global_file_path))
+    if (!json.parse_fully_trusted_file(global_file_path))
     {
         ret.error_message = json.get_error_message();
         ret.state = global_file_info::state::invalid_json;
