@@ -70,6 +70,8 @@ public:
     virtual HandleType HandleFetchType(OBJECTHANDLE handle);
 
     virtual void TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2);
+
+    virtual void DestroyHandleOfTypeLocked(OBJECTHANDLE handle, HandleType type);
 };
 
 #endif  // GCHANDLETABLE_H_

@@ -2173,19 +2173,14 @@ int Thread::DecExternalCount(BOOL holdingLock)
         // that is holding a reference to us. To make sure that we are not the
         // ones keeping the exposed object alive we need to remove the strong
         // reference we have to it.
-        if ((retVal == 1) && ((*((void**)m_StrongHndToExposedObject)) != NULL))
+        // m_StrongHndToExposedObject may already be NULL if CooperativeCleanup
+        // destroyed it earlier during OnThreadTerminate.
+        if ((retVal == 1) && (m_StrongHndToExposedObject != NULL) && ((*((void**)m_StrongHndToExposedObject)) != NULL))
         {
-            // Switch back to cooperative mode to manipulate the object.
-
-            // Don't want to switch back to COOP until we let go of the lock
-            // however we are allowed to call StoreObjectInHandle here in preemptive
-            // mode because we are setting the value to NULL.
-            CONTRACT_VIOLATION(ModeViolation);
-
-            // Clear the handle and leave the lock.
-            // We do not have to DisablePreemptiveGC here, because
-            // we just want to put NULL into a handle.
-            StoreObjectInHandle(m_StrongHndToExposedObject, NULL);
+            // Destroy the strong handle under the handle table lock to avoid
+            // racing with GC relocating the handle value in preemptive mode.
+            DestroyHandleInPreemptiveMode(m_StrongHndToExposedObject, HNDTYPE_STRONG);
+            m_StrongHndToExposedObject = NULL;
 
             tsLock.Release();
 
@@ -2194,8 +2189,6 @@ int Thread::DecExternalCount(BOOL holdingLock)
             {
                 pCurThread->DisablePreemptiveGC();
             }
-
-            GCX_ASSERT_COOP();
 
             return retVal;
         }
@@ -2292,11 +2285,26 @@ Thread::~Thread()
 
     if (!IsAtProcessExit())
     {
-        // Destroy any handles that we're using to hold onto exception objects
-        SafeSetThrowables(NULL);
+        // Destroy any remaining handles that weren't cleaned up by CooperativeCleanup.
+        // Use DestroyHandleInPreemptiveMode since the destructor can run outside
+        // cooperative mode (e.g., if HasStarted failed and CooperativeCleanup was skipped).
+        if (m_LastThrownObjectHandle != NULL &&
+            !CLRException::IsPreallocatedExceptionHandle(m_LastThrownObjectHandle))
+        {
+            DestroyHandleInPreemptiveMode(m_LastThrownObjectHandle, HNDTYPE_DEFAULT);
+            m_LastThrownObjectHandle = NULL;
+        }
 
-        DestroyShortWeakHandle(m_ExposedObject);
-        DestroyStrongHandle(m_StrongHndToExposedObject);
+        if (m_ExposedObject != NULL)
+        {
+            DestroyHandleInPreemptiveMode(m_ExposedObject, HNDTYPE_WEAK_SHORT);
+            m_ExposedObject = NULL;
+        }
+        if (m_StrongHndToExposedObject != NULL)
+        {
+            DestroyHandleInPreemptiveMode(m_StrongHndToExposedObject, HNDTYPE_STRONG);
+            m_StrongHndToExposedObject = NULL;
+        }
     }
 
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
@@ -2584,6 +2592,16 @@ void Thread::CooperativeCleanup()
     OBJECTREF threadObjMaybe = GetExposedObjectRaw();
     if (threadObjMaybe != NULL)
         ((THREADBASEREF)threadObjMaybe)->SetIsDead();
+
+    // Destroy handles that we're using to hold onto exception objects.
+    // This runs under GCX_COOP() above, so it is safe to destroy handles here.
+    SafeSetThrowables(NULL);
+
+    // Note: m_ExposedObject and m_StrongHndToExposedObject are intentionally
+    // NOT destroyed here. They are still needed by CleanupDetachedThreads()
+    // which calls IncExternalCount(), GetExposedObject(), and the managed
+    // OnThreadExiting callback after the thread has detached.
+    // These handles are destroyed later in ~Thread() via DestroyHandleInPreemptiveMode.
 }
 
 // See general comments on thread destruction (code:#threadDestruction) above.

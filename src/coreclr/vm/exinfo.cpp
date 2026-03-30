@@ -76,7 +76,16 @@ void ExInfo::ReleaseResources()
     {
         if (!CLRException::IsPreallocatedExceptionHandle(m_hThrowable))
         {
-            DestroyHandle(m_hThrowable);
+            Thread *pThread = GetThreadNULLOk();
+            if (pThread != NULL)
+            {
+                GCX_COOP();
+                DestroyHandle(m_hThrowable);
+            }
+            else
+            {
+                DestroyHandleInPreemptiveMode(m_hThrowable, HNDTYPE_DEFAULT);
+            }
         }
         m_hThrowable = NULL;
     }

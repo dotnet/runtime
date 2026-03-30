@@ -10984,16 +10984,18 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             OBJECTHANDLE objectHandle = pEvent->DisposeHandle.vmObjectHandle.GetRawPtr();
             CorDebugHandleType handleType = pEvent->DisposeHandle.handleType;
 
+            // Use the preemptive-mode-safe variant because this can run on
+            // the native debugger helper thread which has no managed Thread.
             switch (handleType)
             {
             case HANDLE_STRONG:
-                DestroyStrongHandle(objectHandle);
+                DestroyHandleInPreemptiveMode(objectHandle, HNDTYPE_STRONG);
                 break;
             case HANDLE_WEAK_TRACK_RESURRECTION:
-                DestroyLongWeakHandle(objectHandle);
+                DestroyHandleInPreemptiveMode(objectHandle, HNDTYPE_WEAK_LONG);
                 break;
             case HANDLE_PINNED:
-                DestroyPinningHandle(objectHandle);
+                DestroyHandleInPreemptiveMode(objectHandle, HNDTYPE_PINNED);
                 break;
             default:
                 pEvent->hr = E_INVALIDARG;
@@ -12304,7 +12306,7 @@ HRESULT Debugger::UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF
         }
         else
         {
-            DestroyLongWeakHandle(objHandle);
+            DestroyHandleInPreemptiveMode(objHandle, HNDTYPE_WEAK_LONG);
         }
     }
     else
@@ -12313,7 +12315,7 @@ HRESULT Debugger::UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF
         {
             m_pForceCatchHandlerFoundEventsTable->Remove(objHandle);
         }
-        DestroyLongWeakHandle(objHandle);
+        DestroyHandleInPreemptiveMode(objHandle, HNDTYPE_WEAK_LONG);
     }
     return S_OK;
 }

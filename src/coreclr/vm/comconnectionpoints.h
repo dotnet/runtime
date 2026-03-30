@@ -50,7 +50,15 @@ struct ConnectionCookie
     ~ConnectionCookie()
     {
         WRAPPER_NO_CONTRACT;
-        DestroyHandle(m_hndEventProvObj);
+        if (GetThreadNULLOk() != NULL)
+        {
+            GCX_COOP();
+            DestroyHandle(m_hndEventProvObj);
+        }
+        else
+        {
+            DestroyHandleInPreemptiveMode(m_hndEventProvObj, HNDTYPE_DEFAULT);
+        }
     }
 
     // Currently called only from Cooperative mode.

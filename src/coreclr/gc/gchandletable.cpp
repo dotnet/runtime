@@ -222,3 +222,8 @@ void GCHandleManager::TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t 
     ::Ref_TraceRefCountHandles(callback, param1, param2);
 }
 
+void GCHandleManager::DestroyHandleOfTypeLocked(OBJECTHANDLE handle, HandleType type)
+{
+    ::HndDestroyHandleLocked(::HndGetHandleTable(handle), type, handle);
+}
+

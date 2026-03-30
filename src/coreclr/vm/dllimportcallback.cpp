@@ -319,7 +319,15 @@ void UMEntryThunkData::Terminate()
 
     if (pObjectHandle != NULL)
     {
-        DestroyLongWeakHandle(pObjectHandle);
+        if (GetThreadNULLOk() != NULL)
+        {
+            GCX_COOP();
+            DestroyLongWeakHandle(pObjectHandle);
+        }
+        else
+        {
+            DestroyHandleInPreemptiveMode(pObjectHandle, HNDTYPE_WEAK_LONG);
+        }
     }
 
     s_thunkFreeList.AddToList(this);

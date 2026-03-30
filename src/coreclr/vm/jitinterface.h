@@ -386,12 +386,17 @@ public:
 
     virtual ~CEEInfo()
     {
-        LIMITED_METHOD_CONTRACT;
+        CONTRACTL {
+            NOTHROW;
+            GC_TRIGGERS;
+        }
+        CONTRACTL_END;
 
 #if !defined(DACCESS_COMPILE)
         // Free all handles used by JIT
         if (m_pJitHandles != nullptr)
         {
+            GCX_COOP();
             OBJECTHANDLE* elements = m_pJitHandles->GetElements();
             unsigned count = m_pJitHandles->GetCount();
             for (unsigned i = 0; i < count; i++)
