@@ -1,9 +1,30 @@
 ---
 name: add-new-jit-ee-api
-description: Add a new API to the JIT-VM (aka JIT-EE) interface in the codebase.
+description: >
+  Add a new API to the JIT-VM (aka JIT-EE) interface in dotnet/runtime.
+  USE FOR: extending ICorStaticInfo with new methods, adding JIT-to-runtime
+  interface APIs across all layers (corinfo.h, jitinterface.cpp, CorInfoImpl.cs,
+  SuperPMI), implementing cross-layer JIT interface changes with ThunkGenerator.
+  DO NOT USE FOR: JIT code generation logic, runtime GC or type system changes,
+  debugging existing JIT-EE implementations, or modifying compiler internals
+  unrelated to the interface contract.
 ---
 
 # JIT-EE Interface extension
+
+## When to Use This Skill
+
+- Adding a new method to `ICorStaticInfo` / `ICorDynamicInfo` in `corinfo.h`
+- Given a C-like signature to integrate across the full JIT-VM stack
+- Implementing SuperPMI record/replay for a new JIT-EE API
+- Updating `ThunkInput.txt` and running the thunk generator
+- Files mentioned: `corinfo.h`, `jitinterface.cpp`, `methodcontext.cpp`, `ThunkInput.txt`
+
+## Stopping Conditions
+
+- ✅ **Stop after step 5** if the user only needs the interface + VM stub (no SuperPMI). Ask before proceeding to step 6.
+- ✅ **Stop after step 8** if implementations use `NotImplementedException()` / `UNREACHABLE()`. The scaffolding is complete.
+- ❌ **Never skip a layer** — partial implementations break SuperPMI replay. All files in the checklist must be updated.
 
 #### 1 — Goal
 
@@ -82,132 +103,14 @@ Implement the API if asked, leave the NotImplementedException() otherwise.
 
 Implement the API if asked, leave the UNREACHABLE() otherwise.
 
-6. Now implement the most complex part - SuperPMI. SuperPMI acts as a (de)serializer for JIT-VM queries in order
-to then replay them without the actual VM to speed up jit-diffs and other scenarios. All parameters and return
-values recorded/restored using special primitve types and helpers. We need to update the following files:
+6. **SuperPMI integration** — the most complex part. SuperPMI records and replays JIT-VM queries for jit-diffs.
+You need to update 4 shared files (`agnostic.h`, `lwmlist.h`, `methodcontext.h`, `methodcontext.cpp`) plus 2 shim files.
+Each new API needs a `rec*`/`dmp*`/`rep*` method triplet and a `Packet_*` enum entry.
+See `references/superpmi-integration.md` for the full file-by-file walkthrough and code templates.
 
-* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
-* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`:
-* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`:
-* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
+7. Add a replay function to `<repo_root>/src/coreclr/tools/superpmi/superpmi/icorjitinfo.cpp` that calls the `rep*` method. See `references/superpmi-integration.md` Step 7.
 
-Go through each of them one by one.
-
-* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
-Define two `Agnostic_*` types for input arguments and another one for output parameters (return value, output arguments).
- Do not create them if one of the generics ones can be re-used such as `DLD`, `DD`, `DLDL`, etc. Use `DWORD*`
- like types for integers. Inspect the whole file to see how other APIs are defined.
-
-* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`:
-Add a new entry to the `LWM` list. Example:
-
-```diff
-+LWM(GetUnboxedEntry, DWORDLONG, DLD);
-```
-
-NOTE: Use upper-case for the first letter of the API name here.
-Add the new record after the very last LWM one.
-
-* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`:
-Define 3 methods in this header file inside `class MethodContext` class (at the end of its definition).
-
-The methods are prefixed with `rec*` (record), `dmp*` (dump to console) and `rep*` (replay). Example
-
-```diff
-+   void recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg, CORINFO_METHOD_HANDLE result);
-+   void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
-+   CORINFO_METHOD_HANDLE repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
-```
-Now add a new element to `enum mcPackets` enum in the same file. Example:
-
-```diff
-+   Packet_GetUnboxedEntry = <last value + 1>,
-```
-
-* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
-Add the implementation of the 3 methods to `methodcontext.cpp` at the end of it.
-Consider other similar methods in the file for reference. Do not change implementations of other methods in the file. Example:
-
-```diff
-+void MethodContext::recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
-+                                      bool*                 requiresInstMethodTableArg,
-+                                      CORINFO_METHOD_HANDLE result)
-+{
-+    // Initialize the "input - output" map if it is not already initialized
-+    if (GetUnboxedEntry == nullptr)
-+    {
-+        GetUnboxedEntry = new LightWeightMap<DWORDLONG, DLD>();
-+    }
-+
-+    // Create a key out of the input arguments
-+    DWORDLONG key = CastHandle(ftn);
-+    DLD       value;
-+    value.A = CastHandle(result);
-+
-+    // Create a value out of the return value and out parameters
-+    if (requiresInstMethodTableArg != nullptr)
-+    {
-+        value.B = (DWORD)*requiresInstMethodTableArg ? 1 : 0;
-+    }
-+    else
-+    {
-+        value.B = 0;
-+    }
-+
-+    // Save it to the map
-+    GetUnboxedEntry->Add(key, value);
-+    DEBUG_REC(dmpGetUnboxedEntry(key, value));
-+}
-+void MethodContext::dmpGetUnboxedEntry(DWORDLONG key, DLD value)
-+{
-+   // Dump key and value to the console for debug purposes.
-+   printf("GetUnboxedEntry ftn-%016" PRIX64 ", result-%016" PRIX64 ", requires-inst-%u", key, value.A, value.B);
-+}
-+CORINFO_METHOD_HANDLE MethodContext::repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
-+{
-+   // Create a key out of the input arguments
-+   DWORDLONG key = CastHandle(ftn);
-+
-+   // Perform the lookup to obtain the value (output arguments and return value)
-+   DLD value = LookupByKeyOrMiss(GetUnboxedEntry, key, ": key %016" PRIX64 "", key);
-+   DEBUG_REP(dmpGetUnboxedEntry(key, value));
-+
-+   // propagate result to output arguments and return value (if exists)
-+   if (requiresInstMethodTableArg != nullptr)
-+   {
-+       *requiresInstMethodTableArg = (value.B == 1);
-+   }
-+   return (CORINFO_METHOD_HANDLE)(value.A);
-+}
-```
-
-7. Add a new function to `<repo_root>/src/coreclr/tools/superpmi/superpmi/icorjitinfo.cpp` that calls the `rep*` method. Example:
-
-```diff
-+CORINFO_METHOD_HANDLE MyICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
-+{
-+   jitInstance->mc->cr->AddCall("getUnboxedEntry");
-+   CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetUnboxedEntry(ftn, requiresInstMethodTableArg);
-+   return result;
-+}
-```
-
-8. Add a new function to `<repo_root>/src/coreclr/tools/superpmi/superpmi-shim-collector/icorjitinfo.cpp` that calls the `rec*` method. Example:
-
-```diff
-+CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
-+{
-+   mc->cr->AddCall("getUnboxedEntry");
-+   bool                  localRequiresInstMethodTableArg = false;
-+   CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getUnboxedEntry(ftn, &localRequiresInstMethodTableArg);
-+   mc->recGetUnboxedEntry(ftn, &localRequiresInstMethodTableArg, result);
-+   if (requiresInstMethodTableArg != nullptr)
-+   {
-+       *requiresInstMethodTableArg = localRequiresInstMethodTableArg;
-+   }
-+   return result;
-+}
-```
+8. Add a collector function to `<repo_root>/src/coreclr/tools/superpmi/superpmi-shim-collector/icorjitinfo.cpp` that calls the real API then `rec*`. See `references/superpmi-integration.md` Step 8.
 
 #### 4 — Definition of Done (self-check list)
 
