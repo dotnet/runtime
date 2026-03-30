@@ -146,7 +146,7 @@ static int ReadThreadContextCallback(uint32_t threadId, uint32_t contextFlags, u
 // Minimal ICLRDataTarget implementation for loading the legacy DAC in-process.
 // Routes ReadVirtual/GetThreadContext to the same callbacks as the cDAC.
 //-----------------------------------------------------------------------------
-class InProcessDataTarget : public ICLRDataTarget
+class InProcessDataTarget : public ICLRDataTarget, public ICLRRuntimeLocator
 {
     volatile LONG m_refCount;
 public:
@@ -161,6 +161,12 @@ public:
             AddRef();
             return S_OK;
         }
+        if (riid == __uuidof(ICLRRuntimeLocator))
+        {
+            *ppObj = static_cast<ICLRRuntimeLocator*>(this);
+            AddRef();
+            return S_OK;
+        }
         *ppObj = nullptr;
         return E_NOINTERFACE;
     }
@@ -170,6 +176,14 @@ public:
         ULONG c = InterlockedDecrement(&m_refCount);
         if (c == 0) delete this;
         return c;
+    }
+
+    // ICLRRuntimeLocator — provides the CLR base address directly so the DAC
+    // does not fall back to GetImageBase (which needs GetModuleHandleW, unavailable on Linux).
+    HRESULT STDMETHODCALLTYPE GetRuntimeBase(CLRDATA_ADDRESS* baseAddress) override
+    {
+        *baseAddress = (CLRDATA_ADDRESS)GetCurrentModuleBase();
+        return S_OK;
     }
 
     HRESULT STDMETHODCALLTYPE GetMachineType(ULONG32* machineType) override
@@ -194,10 +208,8 @@ public:
 
     HRESULT STDMETHODCALLTYPE GetImageBase(LPCWSTR imagePath, CLRDATA_ADDRESS* baseAddress) override
     {
-        HMODULE hMod = GetModuleHandleW(imagePath);
-        if (hMod == NULL) return E_FAIL;
-        *baseAddress = (CLRDATA_ADDRESS)hMod;
-        return S_OK;
+        // Not needed — the DAC uses ICLRRuntimeLocator::GetRuntimeBase() instead.
+        return E_NOTIMPL;
     }
 
     HRESULT STDMETHODCALLTYPE ReadVirtual(CLRDATA_ADDRESS address, BYTE* buffer, ULONG32 bytesRequested, ULONG32* bytesRead) override
