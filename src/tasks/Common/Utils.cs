@@ -98,7 +98,6 @@ internal static class Utils
             RedirectStandardInput = true,
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8,
-            StandardInputEncoding = Encoding.UTF8,
             Arguments = args,
         };
 
