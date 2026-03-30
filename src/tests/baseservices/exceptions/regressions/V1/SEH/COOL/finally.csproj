@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
+    <AssemblyName>COOL_finally</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="finally.cs" />

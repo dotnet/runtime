@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <CLRTestPriority>1</CLRTestPriority>
+    <AssemblyName>GCHandle_Target</AssemblyName>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
