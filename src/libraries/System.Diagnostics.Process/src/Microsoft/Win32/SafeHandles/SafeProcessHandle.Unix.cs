@@ -74,6 +74,11 @@ namespace Microsoft.Win32.SafeHandles
         {
             waitStateHolder = null;
 
+            if (startInfo.UseShellExecute)
+            {
+                return s_startWithShellExecute!(startInfo, stdinHandle, stdoutHandle, stderrHandle);
+            }
+
             if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
@@ -105,63 +110,92 @@ namespace Microsoft.Win32.SafeHandles
                 || (stdoutHandle is not null && Interop.Sys.IsATty(stdoutHandle))
                 || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle));
 
-            if (startInfo.UseShellExecute)
+            filename = ProcessUtils.ResolvePath(startInfo.FileName);
+            argv = ProcessUtils.ParseArgv(startInfo);
+            if (Directory.Exists(filename))
             {
-                string verb = startInfo.Verb;
-                if (verb != string.Empty &&
-                    !string.Equals(verb, "open", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new Win32Exception(Interop.Errors.ERROR_NO_ASSOCIATION);
-                }
+                throw new Win32Exception(SR.DirectoryNotValidAsInput);
+            }
 
-                // On Windows, UseShellExecute of executables and scripts causes those files to be executed.
-                // To achieve this on Unix, we check if the file is executable (x-bit).
-                // Some files may have the x-bit set even when they are not executable. This happens for example
-                // when a Windows filesystem is mounted on Linux. To handle that, treat it as a regular file
-                // when exec returns ENOEXEC (file format cannot be executed).
-                filename = ProcessUtils.ResolveExecutableForShellExecute(startInfo.FileName, cwd);
-                if (filename != null)
-                {
-                    argv = ProcessUtils.ParseArgv(startInfo);
+            return ForkAndExecProcess(
+                startInfo, filename, argv, env, cwd,
+                setCredentials, userId, groupId, groups,
+                stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
+                out waitStateHolder);
+        }
 
-                    SafeProcessHandle processHandle = ForkAndExecProcess(
-                        startInfo, filename, argv, env, cwd,
-                        setCredentials, userId, groupId, groups,
-                        stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                        out waitStateHolder,
-                        throwOnNoExec: false); // return invalid handle instead of throwing on ENOEXEC
+        internal static void EnsureShellExecuteFunc() =>
+            s_startWithShellExecute ??= StartWithShellExecute;
 
-                    if (!processHandle.IsInvalid)
-                    {
-                        return processHandle;
-                    }
-                }
+        private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        {
+            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
 
-                // use default program to open file/url
-                filename = Process.GetPathToOpenFile();
-                argv = ProcessUtils.ParseArgv(startInfo, filename, ignoreArguments: true);
+            ProcessUtils.EnsureInitialized();
 
-                return ForkAndExecProcess(
+            IDictionary<string, string?> env = startInfo.Environment;
+            string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
+
+            bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
+            uint userId = 0;
+            uint groupId = 0;
+            uint[]? groups = null;
+            if (setCredentials)
+            {
+                (userId, groupId, groups) = ProcessUtils.GetUserAndGroupIds(startInfo);
+            }
+
+            bool usesTerminal = (stdinHandle is not null && Interop.Sys.IsATty(stdinHandle))
+                || (stdoutHandle is not null && Interop.Sys.IsATty(stdoutHandle))
+                || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle));
+
+            string verb = startInfo.Verb;
+            if (verb != string.Empty &&
+                !string.Equals(verb, "open", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Win32Exception(Interop.Errors.ERROR_NO_ASSOCIATION);
+            }
+
+            // On Windows, UseShellExecute of executables and scripts causes those files to be executed.
+            // To achieve this on Unix, we check if the file is executable (x-bit).
+            // Some files may have the x-bit set even when they are not executable. This happens for example
+            // when a Windows filesystem is mounted on Linux. To handle that, treat it as a regular file
+            // when exec returns ENOEXEC (file format cannot be executed).
+            string? filename = ProcessUtils.ResolveExecutableForShellExecute(startInfo.FileName, cwd);
+            if (filename != null)
+            {
+                string[] argv = ProcessUtils.ParseArgv(startInfo);
+
+                SafeProcessHandle processHandle = ForkAndExecProcess(
                     startInfo, filename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                    out waitStateHolder);
-            }
-            else
-            {
-                filename = ProcessUtils.ResolvePath(startInfo.FileName);
-                argv = ProcessUtils.ParseArgv(startInfo);
-                if (Directory.Exists(filename))
-                {
-                    throw new Win32Exception(SR.DirectoryNotValidAsInput);
-                }
+                    out ProcessWaitState.Holder? waitStateHolder,
+                    throwOnNoExec: false); // return invalid handle instead of throwing on ENOEXEC
 
-                return ForkAndExecProcess(
-                    startInfo, filename, argv, env, cwd,
-                    setCredentials, userId, groupId, groups,
-                    stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                    out waitStateHolder);
+                waitStateHolder?.Dispose();
+
+                if (!processHandle.IsInvalid)
+                {
+                    return processHandle;
+                }
             }
+
+            // use default program to open file/url
+            filename = Process.GetPathToOpenFile();
+            string[] openFileArgv = ProcessUtils.ParseArgv(startInfo, filename, ignoreArguments: true);
+
+            SafeProcessHandle result = ForkAndExecProcess(
+                startInfo, filename, openFileArgv, env, cwd,
+                setCredentials, userId, groupId, groups,
+                stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
+                out ProcessWaitState.Holder? waitStateHolder2);
+
+            waitStateHolder2?.Dispose();
+            return result;
         }
 
         private static SafeProcessHandle ForkAndExecProcess(

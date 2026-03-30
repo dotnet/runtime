@@ -21,6 +21,10 @@ namespace Microsoft.Win32.SafeHandles
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
 
+        // Allows for StartWithShellExecute (and its dependencies) to be trimmed when
+        // UseShellExecute is not being used.
+        internal static Func<ProcessStartInfo, SafeFileHandle?, SafeFileHandle?, SafeFileHandle?, SafeProcessHandle>? s_startWithShellExecute;
+
         /// <summary>
         /// Gets the process ID.
         /// </summary>

@@ -20,11 +20,14 @@ namespace Microsoft.Win32.SafeHandles
         internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             return startInfo.UseShellExecute
-                ? StartWithShellExecute(startInfo)
+                ? s_startWithShellExecute!(startInfo, stdinHandle, stdoutHandle, stderrHandle)
                 : StartWithCreateProcess(startInfo, stdinHandle, stdoutHandle, stderrHandle);
         }
 
-        private static unsafe SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo)
+        internal static void EnsureShellExecuteFunc() =>
+            s_startWithShellExecute ??= StartWithShellExecute;
+
+        private static unsafe SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
                 throw new InvalidOperationException(SR.CantStartAsUser);
@@ -64,11 +67,47 @@ namespace Microsoft.Win32.SafeHandles
                     shellExecuteInfo.fMask |= Interop.Shell32.SEE_MASK_FLAG_NO_UI;
 
                 shellExecuteInfo.nShow = ProcessUtils.GetShowWindowFromWindowStyle(startInfo.WindowStyle);
-                if (!ShellExecuteOnSTAThread(shellExecuteInfo, out int errorCode, out IntPtr hProcess, out IntPtr hInstApp))
+
+                bool succeeded = false;
+                int lastError = 0;
+                nuint executeInfoAddress = (nuint)(&shellExecuteInfo); // cast to nuint to allow delegate capture; safe because Join() keeps this stack frame alive for the thread's lifetime
+
+                void ShellExecuteFunction()
                 {
+                    try
+                    {
+                        if (!(succeeded = Interop.Shell32.ShellExecuteExW((Interop.Shell32.SHELLEXECUTEINFO*)executeInfoAddress)))
+                            lastError = Marshal.GetLastWin32Error();
+                    }
+                    catch (EntryPointNotFoundException)
+                    {
+                        lastError = Interop.Errors.ERROR_CALL_NOT_IMPLEMENTED;
+                    }
+                }
+
+                // ShellExecute() requires STA in order to work correctly.
+                if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
+                {
+                    Thread executionThread = new Thread(ShellExecuteFunction)
+                    {
+                        IsBackground = true,
+                        Name = ".NET Process STA"
+                    };
+                    executionThread.SetApartmentState(ApartmentState.STA);
+                    executionThread.Start();
+                    executionThread.Join();
+                }
+                else
+                {
+                    ShellExecuteFunction();
+                }
+
+                if (!succeeded)
+                {
+                    int errorCode = lastError;
                     if (errorCode == 0)
                     {
-                        errorCode = GetShellError(hInstApp);
+                        errorCode = GetShellError(shellExecuteInfo.hInstApp);
                     }
 
                     switch (errorCode)
@@ -88,7 +127,7 @@ namespace Microsoft.Win32.SafeHandles
                 // From https://learn.microsoft.com/windows/win32/api/shellapi/ns-shellapi-shellexecuteinfow:
                 // "In some cases, such as when execution is satisfied through a DDE conversation, no handle will be returned."
                 // Process.Start will return false if the handle is invalid.
-                return new SafeProcessHandle(hProcess);
+                return new SafeProcessHandle(shellExecuteInfo.hProcess);
             }
         }
 
@@ -281,49 +320,6 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
-
-        private static unsafe bool ShellExecuteOnSTAThread(Interop.Shell32.SHELLEXECUTEINFO executeInfo, out int errorCode, out IntPtr hProcess, out IntPtr hInstApp)
-        {
-            bool succeeded = false;
-            int lastError = 0;
-            nuint executeInfoAddress = (nuint)(&executeInfo); // cast to nuint to allow delegate capture; safe because Join() keeps this stack frame alive for the thread's lifetime
-
-            void ShellExecuteFunction()
-            {
-                try
-                {
-                    if (!(succeeded = Interop.Shell32.ShellExecuteExW((Interop.Shell32.SHELLEXECUTEINFO*)executeInfoAddress)))
-                        lastError = Marshal.GetLastWin32Error();
-                }
-                catch (EntryPointNotFoundException)
-                {
-                    lastError = Interop.Errors.ERROR_CALL_NOT_IMPLEMENTED;
-                }
-            }
-
-            // ShellExecute() requires STA in order to work correctly.
-            if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
-            {
-                Thread executionThread = new Thread(ShellExecuteFunction)
-                {
-                    IsBackground = true,
-                    Name = ".NET Process STA"
-                };
-                executionThread.SetApartmentState(ApartmentState.STA);
-                executionThread.Start();
-                executionThread.Join();
-            }
-            else
-            {
-                ShellExecuteFunction();
-            }
-
-            hProcess = executeInfo.hProcess;
-            hInstApp = executeInfo.hInstApp;
-            errorCode = lastError;
-            return succeeded;
-        }
-
         private static int GetShellError(IntPtr error)
         {
             return (long)error switch

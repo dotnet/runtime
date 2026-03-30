@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using System.Security;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -41,7 +42,15 @@ namespace System.Diagnostics
             set { throw new PlatformNotSupportedException(SR.Format(SR.ProcessStartSingleFeatureNotSupported, nameof(UseCredentialsForNetworkingOnly))); }
         }
 
-        public bool UseShellExecute { get; set; }
+        public bool UseShellExecute
+        {
+            get;
+            set
+            {
+                SafeProcessHandle.EnsureShellExecuteFunc();
+                field = value;
+            }
+        }
 
         public string[] Verbs => Array.Empty<string>();
 
