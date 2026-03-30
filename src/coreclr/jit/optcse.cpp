@@ -1868,8 +1868,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             // more exceptions (NullRef) so we abandon this CSE.
             // If we don't mark CALL ALLOC_HELPER as a CSE candidate, we are able
             // to use GT_IND(x) in [2] as a CSE def.
-            if (call->IsHelperCall() &&
-                Compiler::s_helperCallProperties.IsAllocator(m_compiler->eeGetHelperNum(call->gtCallMethHnd)))
+            if (call->IsHelperCall() && Compiler::s_helperCallProperties.IsAllocator(call->GetHelperNum()))
             {
                 return false;
             }

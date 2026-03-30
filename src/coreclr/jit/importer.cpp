@@ -1428,7 +1428,7 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 
     if (tree->IsHelperCall())
     {
-        switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
+        switch (tree->AsCall()->GetHelperNum())
         {
             case CORINFO_HELP_ISINSTANCEOFINTERFACE:
             case CORINFO_HELP_ISINSTANCEOFARRAY:

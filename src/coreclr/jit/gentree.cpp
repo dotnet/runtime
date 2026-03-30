@@ -1948,16 +1948,15 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
         {
             // A few special cases exist that can't be found by signature alone, so we handle
             // those explicitly here instead.
-            needsVzeroupper = IsHelperCall(comp, CORINFO_HELP_BULK_WRITEBARRIER);
+            needsVzeroupper = IsHelperCall(CORINFO_HELP_BULK_WRITEBARRIER);
 
             // Most other helpers are well known to not use any floating-point or SIMD logic internally, but
             // a few do exist so we need to ensure they are handled. They are identified by taking or
             // returning a floating-point or SIMD type, regardless of how it is actually passed/returned but
             // are excluded if we know they are implemented in managed.
-            checkSignature = !needsVzeroupper && !IsHelperCall(comp, CORINFO_HELP_DBL2INT_OVF) &&
-                             !IsHelperCall(comp, CORINFO_HELP_DBL2LNG_OVF) &&
-                             !IsHelperCall(comp, CORINFO_HELP_DBL2UINT_OVF) &&
-                             !IsHelperCall(comp, CORINFO_HELP_DBL2ULNG_OVF);
+            checkSignature = !needsVzeroupper && !IsHelperCall(CORINFO_HELP_DBL2INT_OVF) &&
+                             !IsHelperCall(CORINFO_HELP_DBL2LNG_OVF) && !IsHelperCall(CORINFO_HELP_DBL2UINT_OVF) &&
+                             !IsHelperCall(CORINFO_HELP_DBL2ULNG_OVF);
             break;
         }
 
@@ -2039,7 +2038,7 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
 {
     if (IsHelperCall())
     {
-        return compiler->s_helperCallProperties.IsPure(compiler->eeGetHelperNum(gtCallMethHnd));
+        return compiler->s_helperCallProperties.IsPure(GetHelperNum());
     }
     // If needed, we can annotate other special intrinsic methods as pure as well.
     return IsSpecialIntrinsic(compiler, NI_System_Type_GetTypeFromHandle);
@@ -2067,7 +2066,7 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
 
         if (call->IsHelperCall())
         {
-            CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+            CorInfoHelpFunc helper = call->GetHelperNum();
             switch (helper)
             {
                 case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
@@ -2233,7 +2232,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
         return true;
     }
 
-    CorInfoHelpFunc       helper           = compiler->eeGetHelperNum(gtCallMethHnd);
+    CorInfoHelpFunc       helper           = GetHelperNum();
     HelperCallProperties& helperProperties = compiler->s_helperCallProperties;
 
     // We definitely care about the side effects if MutatesHeap is true
@@ -2388,14 +2387,14 @@ bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler) const
 // IsHelperCall: Determine if this GT_CALL node is a specific helper call.
 //
 // Arguments:
-//     compiler - the compiler instance so that we can call eeFindHelper
+//     helper - the CorInfoFunc helper
 //
 // Return Value:
 //     Returns true if this GT_CALL node is a call to the specified helper.
 //
-bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
+bool GenTreeCall::IsHelperCall(unsigned helper) const
 {
-    return IsHelperCall(compiler->eeFindHelper(helper));
+    return IsHelperCall(Compiler::eeFindHelper(helper));
 }
 
 //-------------------------------------------------------------------------
@@ -2409,12 +2408,7 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
 //
 bool GenTreeCall::IsRuntimeLookupHelperCall(Compiler* compiler) const
 {
-    if (!IsHelperCall())
-    {
-        return false;
-    }
-
-    switch (compiler->eeGetHelperNum(gtCallMethHnd))
+    switch (GetHelperNum())
     {
         case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
         case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
@@ -2503,7 +2497,7 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     }
     else
     {
-        if (!Compare(c1->gtCallAddr, c2->gtCallAddr))
+        if (!Compare(c1->gtControlExpr, c2->gtControlExpr))
         {
             return false;
         }
@@ -3543,7 +3537,7 @@ AGAIN:
 
             if (tree->AsCall()->gtCallType == CT_INDIRECT)
             {
-                temp = tree->AsCall()->gtCallAddr;
+                temp = tree->AsCall()->gtControlExpr;
                 assert(temp);
                 hash = genTreeHashAdd(hash, gtHashValue(temp));
             }
@@ -6149,7 +6143,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             if (call->gtCallType == CT_INDIRECT)
             {
-                GenTree* indirect = call->gtCallAddr;
+                GenTree* indirect = call->gtControlExpr;
 
                 lvl2 = gtSetEvalOrder(indirect);
                 if (level < lvl2)
@@ -6970,11 +6964,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
                 *pUse = &call->gtControlExpr;
                 return true;
             }
-            if ((call->gtCallType == CT_INDIRECT) && (operand == call->gtCallAddr))
-            {
-                *pUse = &call->gtCallAddr;
-                return true;
-            }
             for (CallArg& arg : call->gtArgs.Args())
             {
                 if (arg.GetEarlyNode() == operand)
@@ -7310,7 +7299,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
         case GT_CALL:
             CorInfoHelpFunc helper;
-            helper = comp->eeGetHelperNum(this->AsCall()->gtCallMethHnd);
+            helper = AsCall()->GetHelperNum();
             if (helper == CORINFO_HELP_UNDEF)
             {
                 return ExceptionSetFlags::UnknownException;
@@ -8565,22 +8554,23 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     if (callType == CT_INDIRECT || callType == CT_HELPER)
         node->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
-    node->gtCallType    = callType;
-    node->gtCallMethHnd = callHnd;
+    node->gtCallType = callType;
     INDEBUG(node->callSig = nullptr;)
     node->tailCallInfo    = nullptr;
     node->gtRetClsHnd     = nullptr;
-    node->gtControlExpr   = nullptr;
     node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
     INDEBUG(node->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     node->gtInlineInfoCount = 0;
 
     if (callType == CT_INDIRECT)
     {
-        node->gtCallCookie = nullptr;
+        node->gtCallCookie  = nullptr;
+        node->gtControlExpr = (GenTree*)callHnd;
     }
     else
     {
+        node->gtCallMethHnd = callHnd;
+        node->gtControlExpr = nullptr;
         node->ClearInlineInfo();
     }
     node->gtReturnType = type;
@@ -10182,7 +10172,6 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     if (tree->gtCallType == CT_INDIRECT)
     {
         copy->gtCallCookie = tree->gtCallCookie;
-        copy->gtCallAddr   = gtCloneExpr(tree->gtCallAddr);
     }
     else
     {
@@ -10899,31 +10888,12 @@ void GenTreeUseEdgeIterator::AdvanceCall()
         case CALL_CONTROL_EXPR:
             if (call->gtControlExpr != nullptr)
             {
-                if (call->gtCallType == CT_INDIRECT)
-                {
-                    m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ADDRESS>;
-                }
-                else
-                {
-                    m_advance = &GenTreeUseEdgeIterator::Terminate;
-                }
-                m_edge = &call->gtControlExpr;
-                return;
+                m_edge    = &call->gtControlExpr;
+                m_advance = &GenTreeUseEdgeIterator::Terminate;
             }
-            else if (call->gtCallType != CT_INDIRECT)
+            else
             {
                 m_state = -1;
-                return;
-            }
-            FALLTHROUGH;
-
-        case CALL_ADDRESS:
-            assert(call->gtCallType == CT_INDIRECT);
-
-            m_advance = &GenTreeUseEdgeIterator::Terminate;
-            if (call->gtCallAddr != nullptr)
-            {
-                m_edge = &call->gtCallAddr;
             }
             return;
 
@@ -13191,23 +13161,17 @@ void Compiler::gtDispTree(GenTree*                    tree,
 
                 gtDispArgList(call, lastChild, indentStack);
 
-                if (call->gtCallType == CT_INDIRECT)
+                for (CallArg& arg : call->gtArgs.LateArgs())
                 {
-                    gtDispChild(call->gtCallAddr, indentStack, (call->gtCallAddr == lastChild) ? IIArcBottom : IIArc,
-                                "calli tgt", topOnly);
+                    IndentInfo arcType = (arg.GetLateNode() == lastChild) ? IIArcBottom : IIArc;
+                    gtGetLateArgMsg(call, &arg, buf, sizeof(buf));
+                    gtDispChild(arg.GetLateNode(), indentStack, arcType, buf, topOnly);
                 }
 
                 if (call->gtControlExpr != nullptr)
                 {
                     gtDispChild(call->gtControlExpr, indentStack,
                                 (call->gtControlExpr == lastChild) ? IIArcBottom : IIArc, "control expr", topOnly);
-                }
-
-                for (CallArg& arg : call->gtArgs.LateArgs())
-                {
-                    IndentInfo arcType = (arg.GetLateNext() == nullptr) ? IIArcBottom : IIArc;
-                    gtGetLateArgMsg(call, &arg, buf, sizeof(buf));
-                    gtDispChild(arg.GetLateNode(), indentStack, arcType, buf, topOnly);
                 }
             }
         }
@@ -13717,11 +13681,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
         if (nodeIsCall)
         {
             GenTreeCall* call = node->AsCall();
-            if (operand == call->gtCallAddr)
-            {
-                displayOperand(operand, "calli tgt", operandArc, indentStack, prefixIndent);
-            }
-            else if (operand == call->gtControlExpr)
+            if (operand == call->gtControlExpr)
             {
                 displayOperand(operand, "control expr", operandArc, indentStack, prefixIndent);
             }
@@ -15201,7 +15161,7 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
 
     GenTreeCall* const call = op->AsCall();
 
-    if (!call->IsHelperCall(this, CORINFO_HELP_BOX_NULLABLE))
+    if (!call->IsHelperCall(CORINFO_HELP_BOX_NULLABLE))
     {
         return tree;
     }
@@ -15327,7 +15287,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
             // so we can't remove the box.
             if (newobjCall->gtArgs.IsEmpty())
             {
-                assert(newobjCall->IsHelperCall(this, CORINFO_HELP_READYTORUN_NEW));
+                assert(newobjCall->IsHelperCall(CORINFO_HELP_READYTORUN_NEW));
                 JITDUMP(" bailing; newobj via R2R helper\n");
                 return nullptr;
             }
@@ -17939,8 +17899,8 @@ Compiler::TypeProducerKind Compiler::gtGetTypeProducerKind(GenTree* tree)
 
 bool Compiler::gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call)
 {
-    return call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE) ||
-           call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL);
+    return call->IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE) ||
+           call->IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL);
 }
 
 //------------------------------------------------------------------------
@@ -17958,11 +17918,11 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInf
 {
     CorInfoHelpFunc helper = CORINFO_HELP_UNDEF;
 
-    if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE))
+    if (call->IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE))
     {
         helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
     }
-    else if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL))
+    else if (call->IsHelperCall(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL))
     {
         helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL;
     }
