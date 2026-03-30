@@ -84,6 +84,9 @@ namespace System.Runtime
         private static IntPtr RhpCidResolve_Worker(object pObject, IntPtr pCell)
         {
             DispatchCellInfo cellInfo;
+            // We're passing the type manager of the object, but we need a type manager associated with
+            // the dispatch cell region. This is fine for now since we don't worry about multifile scenarios much.
+            // We'll need an API to find the right containing section in multimodule.
             GetDispatchCellInfo(pObject.GetMethodTable()->TypeManager, pCell, out cellInfo);
 
             IntPtr pTargetCode = RhResolveDispatchWorker(pObject, (void*)pCell, ref cellInfo);
