@@ -216,6 +216,12 @@
   <data name="CantSetHandleAndRedirect" xml:space="preserve">
     <value>The StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties cannot be used together with the corresponding RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties.</value>
   </data>
+  <data name="InheritedHandlesRequiresCreateProcess" xml:space="preserve">
+    <value>The InheritedHandles property cannot be used when UseShellExecute is set to true.</value>
+  </data>
+  <data name="InheritedHandlesNotSupportedWithCredentials" xml:space="preserve">
+    <value>The InheritedHandles property cannot be used together with the UserName, Password, or Domain properties.</value>
+  </data>
   <data name="CantSetRedirectForSafeProcessHandleStart" xml:space="preserve">
     <value>The RedirectStandardInput, RedirectStandardOutput, and RedirectStandardError properties cannot be used by SafeProcessHandle.Start. Use the StandardInputHandle, StandardOutputHandle, and StandardErrorHandle properties.</value>
   </data>

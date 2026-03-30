@@ -373,6 +373,11 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.CantRedirectStreams);
             }
 
+            if (UseShellExecute && _inheritedHandles is not null && _inheritedHandles.Count > 0)
+            {
+                throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
+            }
+
             if (anyHandle)
             {
                 if (StandardInputHandle is not null && RedirectStandardInput)

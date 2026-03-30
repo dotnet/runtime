@@ -183,6 +183,12 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (hasInheritedHandles)
                 {
+                    if (startInfo.UserName.Length != 0)
+                    {
+                        // CreateProcessWithLogonW does not support PROC_THREAD_ATTRIBUTE_HANDLE_LIST.
+                        throw new InvalidOperationException(SR.InheritedHandlesNotSupportedWithCredentials);
+                    }
+
                     // Use STARTUPINFOEX with PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance
                     // to only the explicitly specified handles.
                     retVal = StartWithCreateProcessEx(startInfo, ref startupInfo, ref processInfo,
@@ -474,35 +480,46 @@ namespace Microsoft.Win32.SafeHandles
                 if (handle is null || handle.IsInvalid || handle.IsClosed)
                     continue;
 
-                IntPtr handlePtr = handle.DangerousGetHandle();
-
-                // Check if this handle is already in the list (avoid duplicates)
-                bool isDuplicate = false;
-                for (int i = 0; i < handleCount; i++)
+                // Prevent handle from being disposed while we use the raw pointer.
+                // DangerousAddRef must be called before DangerousGetHandle to avoid a race
+                // where the handle is closed between the null check and the pointer read.
+                bool refAdded = false;
+                try
                 {
-                    if (handlesToInherit[i] == handlePtr)
+                    handle.DangerousAddRef(ref refAdded);
+                    IntPtr handlePtr = handle.DangerousGetHandle();
+
+                    // Check if this handle is already in the list (avoid duplicates)
+                    bool isDuplicate = false;
+                    for (int i = 0; i < handleCount; i++)
                     {
-                        isDuplicate = true;
-                        break;
+                        if (handlesToInherit[i] == handlePtr)
+                        {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+
+                    if (!isDuplicate)
+                    {
+                        // Enable inheritance on this handle so the child process can use it
+                        if (!Interop.Kernel32.SetHandleInformation(
+                            handle,
+                            Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
+                            Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT))
+                        {
+                            throw new Win32Exception(Marshal.GetLastWin32Error());
+                        }
+
+                        handlesToRelease[handleIndex++] = handle;
+                        handlesToInherit[handleCount++] = handlePtr;
+                        refAdded = false; // transferred ownership to handlesToRelease
                     }
                 }
-
-                if (!isDuplicate)
+                finally
                 {
-                    // Enable inheritance on this handle so the child process can use it
-                    if (!Interop.Kernel32.SetHandleInformation(
-                        handle,
-                        Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
-                        Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT))
-                    {
-                        throw new Win32Exception(Marshal.GetLastWin32Error());
-                    }
-
-                    // Prevent handle from being disposed while we use the raw pointer
-                    bool ignore = false;
-                    handle.DangerousAddRef(ref ignore);
-                    handlesToRelease[handleIndex++] = handle;
-                    handlesToInherit[handleCount++] = handlePtr;
+                    if (refAdded)
+                        handle.DangerousRelease();
                 }
             }
         }

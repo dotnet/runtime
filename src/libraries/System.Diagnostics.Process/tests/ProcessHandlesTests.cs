@@ -319,28 +319,32 @@ namespace System.Diagnostics.Tests
 
             startInfo.InheritedHandles = new List<SafeHandle> { pipeWrite };
 
+            Process? process1 = null;
+            Process? process2 = null;
             using (pipeRead)
             using (pipeWrite)
             {
-                // Start process1 with pipeWrite in InheritedHandles - it will hold the write end of the pipe.
-                using Process process1 = Process.Start(startInfo)!;
-                pipeWrite.Close(); // close parent's copy
-
-                // Start process2 WITHOUT InheritedHandles - it should NOT inherit pipeWrite.
-                ProcessStartInfo startInfo2 = OperatingSystem.IsWindows()
-                    ? new("cmd") { ArgumentList = { "/c", "ping -n 30 127.0.0.1 > nul" } }
-                    : new("sh") { ArgumentList = { "-c", "sleep 30" } };
-
-                using Process process2 = Process.Start(startInfo2)!;
-
                 try
                 {
+                    // Start process1 with pipeWrite in InheritedHandles - it will hold the write end of the pipe.
+                    process1 = Process.Start(startInfo)!;
+                    pipeWrite.Close(); // close parent's copy
+
+                    // Start process2 WITHOUT InheritedHandles - it should NOT inherit pipeWrite.
+                    ProcessStartInfo startInfo2 = OperatingSystem.IsWindows()
+                        ? new("cmd") { ArgumentList = { "/c", "ping -n 30 127.0.0.1 > nul" } }
+                        : new("sh") { ArgumentList = { "-c", "sleep 30" } };
+
+                    process2 = Process.Start(startInfo2)!;
+
                     // The pipe should still be open because process1 holds the write end.
+                    // Use a stream that won't dispose pipeRead (the outer using does that).
                     using FileStream pipeStream = new(pipeRead, FileAccess.Read);
                     Task<int> readTask = pipeStream.ReadAsync(new byte[1]).AsTask();
 
-                    // Allow some time - no EOF should arrive yet.
-                    Task firstCompleted = await Task.WhenAny(readTask, Task.Delay(200));
+                    // Allow time for child processes to start up and inherit handles.
+                    // No EOF should arrive yet since process1 still holds the write end.
+                    Task firstCompleted = await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromSeconds(1)));
                     Assert.NotSame(readTask, firstCompleted); // pipe still open
 
                     // Kill process1 - the pipe write end is now closed (process2 didn't inherit it).
@@ -353,10 +357,12 @@ namespace System.Diagnostics.Tests
                 }
                 finally
                 {
-                    process1.Kill();
-                    process2.Kill();
-                    process1.WaitForExit();
-                    process2.WaitForExit();
+                    process1?.Kill();
+                    process2?.Kill();
+                    process1?.WaitForExit();
+                    process2?.WaitForExit();
+                    process1?.Dispose();
+                    process2?.Dispose();
                 }
             }
         }
