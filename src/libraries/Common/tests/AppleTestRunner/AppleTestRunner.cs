@@ -143,7 +143,7 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
         {
             foreach (Assembly assembly in s_testAssemblies)
             {
-                yield return new TestAssemblyInfo(assembly, assembly.GetName().Name!);
+                yield return new TestAssemblyInfo(assembly, assembly.GetName().Name! + ".dll");
             }
         }
         else
