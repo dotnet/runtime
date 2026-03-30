@@ -43,6 +43,7 @@ function print_usage {
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'
     echo '  --interpreter                    : Runs the tests with the interpreter enabled'
     echo '  --node                           : Runs the tests with NodeJS (wasm only)'
+    echo '  --tree=<path>                    : Only run tests under the specified subtree (e.g. JIT/Regression)'
     echo '  --limitedDumpGeneration          : '
 }
 
@@ -73,6 +74,7 @@ runSequential=0
 runincontext=0
 tieringtest=0
 nativeaottest=0
+treeSubtree=
 
 for i in "$@"
 do
@@ -188,6 +190,9 @@ do
             ;;
         --runnativeaottests)
             nativeaottest=1
+            ;;
+        --tree=*)
+            treeSubtree=${i#*=}
             ;;
         --interpreter)
             export RunInterpreter=1
@@ -314,6 +319,11 @@ fi
 if [[ -n "$RunWithNodeJS" ]]; then
     echo "Running tests with NodeJS"
     runtestPyArguments+=("--node")
+fi
+
+if [[ -n "$treeSubtree" ]]; then
+    echo "Running tests under subtree   : ${treeSubtree}"
+    runtestPyArguments+=("--tree" "$treeSubtree")
 fi
 
 # Default to python3 if it is installed
