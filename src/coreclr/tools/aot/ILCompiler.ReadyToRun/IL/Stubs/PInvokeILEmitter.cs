@@ -56,6 +56,14 @@ namespace Internal.IL.Stubs
 
             callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(rawTargetMethod));
 
+            if (MarshalHelpers.ShouldCheckForPendingException(context.Target, _importMetadata))
+            {
+                MetadataType objcMarshalType = context.SystemModule.GetKnownType(
+                    "System.Runtime.InteropServices.ObjectiveC"u8, "ObjectiveCMarshal"u8);
+                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
+                    objcMarshalType.GetKnownMethod("ThrowPendingExceptionObject"u8, null)));
+            }
+
             static PInvokeTargetNativeMethod AllocateTargetNativeMethod(MethodDesc targetMethod, MethodSignature nativeSigArg)
             {
                 var contextMethods = s_contexts.GetOrCreateValue(targetMethod.Context);
@@ -70,9 +78,6 @@ namespace Internal.IL.Stubs
         private MethodIL EmitIL()
         {
             if (!_importMetadata.Flags.PreserveSig)
-                throw new NotSupportedException();
-
-            if (MarshalHelpers.ShouldCheckForPendingException(_targetMethod.Context.Target, _importMetadata))
                 throw new NotSupportedException();
 
             if (_targetMethod.IsUnmanagedCallersOnly)
@@ -142,7 +147,9 @@ namespace Internal.IL.Stubs
 
         public PInvokeILStubMethodIL(ILStubMethodIL methodIL) : base(methodIL)
         {
-            IsMarshallingRequired = Marshaller.IsMarshallingRequired(methodIL.OwningMethod);
+            MethodDesc method = methodIL.OwningMethod;
+            IsMarshallingRequired = Marshaller.IsMarshallingRequired(method)
+                || MarshalHelpers.ShouldCheckForPendingException(method.Context.Target, method.GetPInvokeMethodMetadata());
         }
     }
 }
