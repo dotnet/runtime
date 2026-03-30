@@ -3,6 +3,7 @@ set(SOURCES
     dn-u16.cpp
     dn-stdio.cpp
     memory.cpp
+    dn-memmap.cpp
 )
 
 add_library(coreclrminipal_objects

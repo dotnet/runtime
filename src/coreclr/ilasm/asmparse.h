@@ -7,6 +7,8 @@
 #define asmparse_h
 
 #include <stdio.h>		// for FILE
+#include <winwrap.h>
+#include <dn-memmap.h>
 
 #include "assembler.h"	// for ErrorReporter Labels
 //class Assembler;
@@ -95,9 +97,8 @@ class MappedFileStream : public ReadStream {
 public:
     MappedFileStream(_In_ __nullterminated WCHAR* wFileName)
         : m_fileNameUtf8(NULL)
-        , m_hFile(INVALID_HANDLE_VALUE)
+        , m_File(nullptr)
         , m_FileSize(0)
-        , m_hMapFile(NULL)
     {
         m_pStart = open(wFileName);
         m_pCurr = m_pStart;
@@ -112,20 +113,8 @@ public:
     }
     ~MappedFileStream()
     {
-        if (m_hFile != INVALID_HANDLE_VALUE)
-        {
-            if (m_pStart)
-                UnmapViewOfFile((void*)m_pStart);
-            if (m_hMapFile)
-                CloseHandle(m_hMapFile);
-            CloseHandle(m_hFile);
-
-            m_pStart = NULL;
-            m_hMapFile = NULL;
-            m_hFile = INVALID_HANDLE_VALUE;
-            m_FileSize = 0;
-        }
-
+        if (m_File)
+            delete m_File;
         if (m_fileNameUtf8 != NULL)
             delete [] m_fileNameUtf8;
     }
@@ -171,37 +160,27 @@ public:
 	}
 
 private:
-    char* map_file()
-    {
-        DWORD dwFileSizeLow;
-
-        dwFileSizeLow = GetFileSize( m_hFile, NULL);
-        if (dwFileSizeLow == INVALID_FILE_SIZE)
-            return NULL;
-        m_FileSize = dwFileSizeLow;
-
-        // No difference between A and W in this case: last param (LPCTSTR) is NULL
-        m_hMapFile = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-        if (m_hMapFile == NULL)
-            return NULL;
-
-        return (char*)(HMODULE) MapViewOfFile(m_hMapFile, FILE_MAP_READ, 0, 0, 0);
-    }
     char* open(const WCHAR* moduleName)
     {
         _ASSERTE(moduleName);
         if (!moduleName)
             return NULL;
 
-        m_hFile = WszCreateFile(moduleName, GENERIC_READ, FILE_SHARE_READ,
-                             0, OPEN_EXISTING, 0, 0);
-        return (m_hFile == INVALID_HANDLE_VALUE) ? NULL : map_file();
+        m_File = CreateMappedFile(moduleName);
+        if (m_File == nullptr)
+        {
+            m_File = nullptr;
+            m_FileSize = 0;
+            return nullptr;
+        }
+
+        m_FileSize = (DWORD)m_File->Size();
+        return (char*)m_File->Address();
     }
 
     char*	m_fileNameUtf8; // FileName (for error reporting)
-    HANDLE  m_hFile;                 // File we are reading from
+    MemoryMappedFile* m_File; // File we are reading from
     DWORD   m_FileSize;
-    HANDLE  m_hMapFile;
     char*   m_pStart;
     char*   m_pEnd;
     char*   m_pCurr;
