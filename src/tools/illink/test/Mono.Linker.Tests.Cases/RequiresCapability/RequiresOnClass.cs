@@ -1418,11 +1418,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--")]
-            [ExpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119290")]
             class ClassWithWarningOnGenericArgumentConstructor_NewAndAnnotation : RequiresNewAndConstructors<ClassWithRequires>
             {
                 [ExpectedWarning("IL2026", "--ClassWithRequires--")]
-                [ExpectedWarning("IL2026", "--ClassWithRequires--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/119290")]
                 public ClassWithWarningOnGenericArgumentConstructor_NewAndAnnotation()
                 {
                 }

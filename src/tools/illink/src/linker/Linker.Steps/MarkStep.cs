@@ -2940,8 +2940,16 @@ namespace Mono.Linker.Steps
 
                 MarkRelevantToVariantCasting(argumentTypeDef);
 
+                // Only mark the default constructor for new() constraint if the parameter doesn't have
+                // a PublicParameterlessConstructor annotation, which would already handle it via GenericArgumentDataFlow
                 if (parameter?.HasDefaultConstructorConstraint == true)
-                    MarkDefaultConstructor(argumentTypeDef, new DependencyInfo(DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance), origin);
+                {
+                    var annotatedMemberTypes = Context.Annotations.FlowAnnotations.GetGenericParameterAnnotation(parameter);
+                    if (!annotatedMemberTypes.HasFlag(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor))
+                    {
+                        MarkDefaultConstructor(argumentTypeDef, new DependencyInfo(DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance), origin);
+                    }
+                }
             }
         }
 
