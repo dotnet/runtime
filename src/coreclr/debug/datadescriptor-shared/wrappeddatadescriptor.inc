@@ -4,6 +4,53 @@
 // No include guards. This file is included multiple times.
 // Wraps datadescriptor.inc to define and undefine macros used in the file.
 
+// Field type annotation defines. In debug/checked builds, these expand to type
+// names that appear in the data descriptor blob's string pool. In release builds,
+// they expand to nothing, keeping the blob compact.
+// Primitive types use T_<TYPE> (e.g., T_UINT32, T_POINTER).
+// Inline struct types use TYPE(<name>) (e.g., TYPE(GCHandle), TYPE(CodePointer)).
+// Cross-descriptor struct types use EXTERN_TYPE(<name>) -- same as TYPE() but not
+// validated within this descriptor (the type is declared in a different descriptor).
+// Array types use T_ARRAY(<type>) where <type> is another type define
+// (e.g., T_ARRAY(T_UINT8), T_ARRAY(TYPE(StressLogModuleDesc))).
+// T_ARRAY always expands to pointer in the blob since arrays are accessed via pointers.
+// These are defined once here and persist across multiple inclusions.
+#ifndef T_UINT8
+#ifdef _DEBUG
+#define T_UINT8    uint8
+#define T_UINT16   uint16
+#define T_UINT32   uint32
+#define T_UINT64   uint64
+#define T_INT8     int8
+#define T_INT16    int16
+#define T_INT32    int32
+#define T_INT64    int64
+#define T_NUINT    nuint
+#define T_NINT     nint
+#define T_POINTER  pointer
+#define T_BOOL     bool
+#define TYPE(name)          name
+#define EXTERN_TYPE(name)   name
+#define T_ARRAY(name)       pointer
+#else
+#define T_UINT8
+#define T_UINT16
+#define T_UINT32
+#define T_UINT64
+#define T_INT8
+#define T_INT16
+#define T_INT32
+#define T_INT64
+#define T_NUINT
+#define T_NINT
+#define T_POINTER
+#define T_BOOL
+#define TYPE(name)
+#define EXTERN_TYPE(name)
+#define T_ARRAY(name)
+#endif
+#endif
+
 #ifndef CDAC_BASELINE
 #define CDAC_BASELINE(identifier)
 #endif
