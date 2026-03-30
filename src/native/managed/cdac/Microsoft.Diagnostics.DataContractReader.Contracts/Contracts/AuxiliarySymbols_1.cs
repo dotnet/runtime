@@ -14,28 +14,28 @@ internal readonly struct AuxiliarySymbols_1 : IAuxiliarySymbols
         _target = target;
     }
 
-    bool IAuxiliarySymbols.TryGetJitHelperName(TargetPointer ip, [NotNullWhen(true)] out string? helperName)
+    bool IAuxiliarySymbols.TryGetAuxiliarySymbolName(TargetPointer ip, [NotNullWhen(true)] out string? symbolName)
     {
-        helperName = null;
+        symbolName = null;
 
         TargetCodePointer codePointer = CodePointerUtils.CodePointerFromAddress(ip, _target);
 
-        TargetPointer helperArrayPtr = _target.ReadGlobalPointer(Constants.Globals.InterestingJitHelpers);
-        int helperCount = _target.Read<int>(_target.ReadGlobalPointer(Constants.Globals.InterestingJitHelperCount));
+        TargetPointer helperArrayPtr = _target.ReadGlobalPointer(Constants.Globals.AuxiliarySymbols);
+        int helperCount = _target.Read<int>(_target.ReadGlobalPointer(Constants.Globals.AuxiliarySymbolCount));
 
-        Target.TypeInfo typeInfo = _target.GetTypeInfo(DataType.JitHelperInfo);
+        Target.TypeInfo typeInfo = _target.GetTypeInfo(DataType.AuxiliarySymbolInfo);
         uint entrySize = typeInfo.Size!.Value;
 
         for (int i = 0; i < helperCount; i++)
         {
             TargetPointer entryAddr = helperArrayPtr + (ulong)(i * entrySize);
-            Data.JitHelperInfo entry = _target.ProcessedData.GetOrAdd<Data.JitHelperInfo>(entryAddr);
+            Data.AuxiliarySymbolInfo entry = _target.ProcessedData.GetOrAdd<Data.AuxiliarySymbolInfo>(entryAddr);
 
             if (entry.Address == codePointer)
             {
                 if (entry.Name != TargetPointer.Null)
                 {
-                    helperName = _target.ReadUtf16String(entry.Name);
+                    symbolName = _target.ReadUtf8String(entry.Name);
                     return true;
                 }
 

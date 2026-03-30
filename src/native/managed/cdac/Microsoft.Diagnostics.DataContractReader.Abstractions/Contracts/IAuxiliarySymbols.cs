@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface IAuxiliarySymbols : IContract
 {
     static string IContract.Name { get; } = nameof(AuxiliarySymbols);
-    bool TryGetJitHelperName(TargetPointer ip, [NotNullWhen(true)] out string? helperName) => throw new NotImplementedException();
+    bool TryGetAuxiliarySymbolName(TargetPointer ip, [NotNullWhen(true)] out string? symbolName) => throw new NotImplementedException();
 }
 
 public readonly struct AuxiliarySymbols : IAuxiliarySymbols

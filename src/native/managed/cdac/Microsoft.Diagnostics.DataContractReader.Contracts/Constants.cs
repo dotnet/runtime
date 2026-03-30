@@ -154,8 +154,8 @@ public static class Constants
         public const string HandlesPerBlock = nameof(HandlesPerBlock);
         public const string BlockInvalid = nameof(BlockInvalid);
         public const string TotalCpuCount = nameof(TotalCpuCount);
-        public const string InterestingJitHelpers = nameof(InterestingJitHelpers);
-        public const string InterestingJitHelperCount = nameof(InterestingJitHelperCount);
+        public const string AuxiliarySymbols = nameof(AuxiliarySymbols);
+        public const string AuxiliarySymbolCount = nameof(AuxiliarySymbolCount);
     }
     public static class FieldNames
     {

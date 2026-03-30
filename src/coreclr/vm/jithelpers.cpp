@@ -2506,10 +2506,10 @@ void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
     hlpDynamicFuncTable[ftnNum].pfnHelper = (PCODE)pFunc;
 }
 
-VMINTERESTINGJITHELPDEF hlpInterestingJitHelpTable[MAX_INTERESTING_JIT_HELPERS];
-int g_interestingJitHelpCount = 0;
+VMAUXILIARYSYMBOLDEF hlpAuxiliarySymbolTable[MAX_AUXILIARY_SYMBOLS];
+int g_auxiliarySymbolCount = 0;
 
-void SetInterestingJitHelperFunction(void* pFunc, LPCWSTR name)
+void SetAuxiliarySymbol(void* pFunc, const char* name)
 {
     CONTRACTL
     {
@@ -2518,10 +2518,10 @@ void SetInterestingJitHelperFunction(void* pFunc, LPCWSTR name)
     }
     CONTRACTL_END;
 
-    _ASSERTE(g_interestingJitHelpCount < MAX_INTERESTING_JIT_HELPERS);
-    hlpInterestingJitHelpTable[g_interestingJitHelpCount].pfnWriteBarrier = (PCODE)pFunc;
-    hlpInterestingJitHelpTable[g_interestingJitHelpCount].name = name;
-    g_interestingJitHelpCount++;
+    _ASSERTE(g_auxiliarySymbolCount < MAX_AUXILIARY_SYMBOLS);
+    hlpAuxiliarySymbolTable[g_auxiliarySymbolCount].pfnAuxiliarySymbol = (PCODE)pFunc;
+    hlpAuxiliarySymbolTable[g_auxiliarySymbolCount].name = name;
+    g_auxiliarySymbolCount++;
 }
 
 PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)

@@ -24,7 +24,7 @@ public static class OutputBufferHelpers
         }
     }
 
-    public static unsafe void CopyUtf8StringToBuffer(byte[]? stringBuf, uint bufferSize, uint* neededBufferSize, string str)
+    public static unsafe void CopyUtf8StringToBuffer(byte* stringBuf, uint bufferSize, uint* neededBufferSize, string str)
     {
         int byteCount = Encoding.UTF8.GetByteCount(str);
         if (neededBufferSize is not null)
@@ -33,11 +33,9 @@ public static class OutputBufferHelpers
         if (stringBuf is not null && bufferSize > 0)
         {
             int maxBytes = Math.Min(byteCount, (int)bufferSize - 1);
-            fixed (byte* pBuf = stringBuf)
-            {
-                Encoding.UTF8.GetBytes(str.AsSpan(), new Span<byte>(pBuf, maxBytes));
-                pBuf[maxBytes] = 0;
-            }
+            Span<byte> target = new Span<byte>(stringBuf, checked(maxBytes));
+            Encoding.UTF8.GetEncoder().Convert(str.AsSpan(), target, true, out _, out int bytesWritten, out _);
+            stringBuf[bytesWritten] = (byte)'\0';
         }
     }
 }

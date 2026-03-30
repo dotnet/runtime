@@ -1239,11 +1239,11 @@ CDAC_TYPE_FIELD(WebcilSectionHeader, /*uint32*/, PointerToRawData, offsetof(Webc
 CDAC_TYPE_END(WebcilSectionHeader)
 #endif
 
-CDAC_TYPE_BEGIN(JitHelperInfo)
-CDAC_TYPE_SIZE(sizeof(VMINTERESTINGJITHELPDEF))
-CDAC_TYPE_FIELD(JitHelperInfo, /*pointer*/, Address, offsetof(VMINTERESTINGJITHELPDEF, pfnWriteBarrier))
-CDAC_TYPE_FIELD(JitHelperInfo, /*pointer*/, Name, offsetof(VMINTERESTINGJITHELPDEF, name))
-CDAC_TYPE_END(JitHelperInfo)
+CDAC_TYPE_BEGIN(AuxiliarySymbolInfo)
+CDAC_TYPE_SIZE(sizeof(VMAUXILIARYSYMBOLDEF))
+CDAC_TYPE_FIELD(AuxiliarySymbolInfo, /*pointer*/, Address, offsetof(VMAUXILIARYSYMBOLDEF, pfnAuxiliarySymbol))
+CDAC_TYPE_FIELD(AuxiliarySymbolInfo, /*pointer*/, Name, offsetof(VMAUXILIARYSYMBOLDEF, name))
+CDAC_TYPE_END(AuxiliarySymbolInfo)
 
 CDAC_TYPES_END()
 
@@ -1414,8 +1414,8 @@ CDAC_GLOBAL(SyncBlockHashCodeMask, uint32, MASK_HASHCODE)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
-CDAC_GLOBAL_POINTER(InterestingJitHelpers, &::hlpInterestingJitHelpTable)
-CDAC_GLOBAL_POINTER(InterestingJitHelperCount, &::g_interestingJitHelpCount)
+CDAC_GLOBAL_POINTER(AuxiliarySymbols, &::hlpAuxiliarySymbolTable)
+CDAC_GLOBAL_POINTER(AuxiliarySymbolCount, &::g_auxiliarySymbolCount)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(CCWNumInterfaces, uint32, cdac_data<ComCallWrapper>::NumInterfaces)
 CDAC_GLOBAL(CCWThisMask, nuint, cdac_data<ComCallWrapper>::ThisMask)

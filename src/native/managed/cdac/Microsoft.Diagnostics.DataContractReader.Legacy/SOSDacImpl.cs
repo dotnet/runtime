@@ -1925,17 +1925,30 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.GetJitHelperFunctionName(ClrDataAddress ip, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] byte[]? name, uint* pNeeded)
+    int ISOSDacInterface.GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded)
     {
         // There is deliberately no debug validation here because we change behavior
         // to only handle the JIT helpers that cannot be handled as unmanaged or managed symbols
         // and to provide more informative names.
-        if (!_target.Contracts.AuxiliarySymbols.TryGetJitHelperName(ip.ToTargetPointer(_target), out string? helperName))
-            return HResults.E_FAIL;
+        int hr = HResults.S_OK;
+        try
+        {
+            if (!_target.Contracts.AuxiliarySymbols.TryGetAuxiliarySymbolName(ip.ToTargetPointer(_target), out string? symbolName))
+                throw new ArgumentException();
 
-        OutputBufferHelpers.CopyUtf8StringToBuffer(name, count, pNeeded, helperName);
+            uint needed = 0;
+            OutputBufferHelpers.CopyUtf8StringToBuffer(name, count, &needed, symbolName);
+            if (needed > count)
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            if (pNeeded != null)
+                *pNeeded = needed;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
 
-        return HResults.S_OK;
+        return hr;
     }
     int ISOSDacInterface.GetJitManagerList(uint count, DacpJitManagerInfo* managers, uint* pNeeded)
     {

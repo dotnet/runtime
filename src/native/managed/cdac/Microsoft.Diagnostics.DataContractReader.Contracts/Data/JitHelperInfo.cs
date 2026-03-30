@@ -3,14 +3,14 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class JitHelperInfo : IData<JitHelperInfo>
+internal sealed class AuxiliarySymbolInfo : IData<AuxiliarySymbolInfo>
 {
-    static JitHelperInfo IData<JitHelperInfo>.Create(Target target, TargetPointer address)
-        => new JitHelperInfo(target, address);
+    static AuxiliarySymbolInfo IData<AuxiliarySymbolInfo>.Create(Target target, TargetPointer address)
+        => new AuxiliarySymbolInfo(target, address);
 
-    public JitHelperInfo(Target target, TargetPointer address)
+    public AuxiliarySymbolInfo(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.JitHelperInfo);
+        Target.TypeInfo type = target.GetTypeInfo(DataType.AuxiliarySymbolInfo);
 
         Address = target.ReadCodePointer(address + (ulong)type.Fields[nameof(Address)].Offset);
         Name = target.ReadPointer(address + (ulong)type.Fields[nameof(Name)].Offset);
