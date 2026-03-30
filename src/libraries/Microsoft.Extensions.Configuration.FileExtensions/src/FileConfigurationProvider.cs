@@ -55,12 +55,14 @@ namespace Microsoft.Extensions.Configuration
 
         private void Load(bool reload)
         {
+            bool updated = false;
             IFileInfo? file = Source.FileProvider?.GetFileInfo(Source.Path ?? string.Empty);
             if (file == null || !file.Exists)
             {
                 if (Source.Optional || reload) // Always optional on reload
                 {
                     Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                    updated = true;
                 }
                 else
                 {
@@ -93,23 +95,38 @@ namespace Microsoft.Extensions.Configuration
                     return fileInfo.CreateReadStream();
                 }
 
-                using Stream stream = OpenRead(file);
                 try
                 {
-                    Load(stream);
+                    using Stream stream = OpenRead(file);
+                    try
+                    {
+                        Load(stream);
+                        updated = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (reload)
+                        {
+                            Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+                            updated = true;
+                        }
+                        string filePath = file.PhysicalPath ?? Source.Path ?? file.Name;
+                        throw new InvalidDataException(SR.Format(SR.Error_FailedToLoad, filePath), ex);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    if (reload)
-                    {
-                        Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-                    }
-                    var exception = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
-                    HandleException(ExceptionDispatchInfo.Capture(exception));
+                    // We do not reset Data here. We reset Data only for exceptions from Load (inner try
+                    // block) such as parse errors. For (possibly transient) IO Exceptions from OpenRead
+                    // we preserve the original configuration.
+                    HandleException(ExceptionDispatchInfo.Capture(ex));
                 }
             }
-            // REVIEW: Should we raise this in the base as well / instead?
-            OnReload();
+            if (updated)
+            {
+                // REVIEW: Should we raise this in the base as well / instead?
+                OnReload();
+            }
         }
 
         /// <summary>
@@ -122,6 +139,9 @@ namespace Microsoft.Extensions.Configuration
         /// <exception cref="InvalidDataException">An exception was thrown by the concrete implementation of the
         /// <see cref="Load()"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
         /// if you need more control over the exception.</exception>
+        /// <exception cref="IOException">An exception was thrown when opening the file. Use the source
+        /// <see cref="FileConfigurationSource.OnLoadException"/> callback if you need more control over the
+        /// exception.</exception>
         public override void Load()
         {
             Load(reload: false);
