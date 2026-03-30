@@ -9524,8 +9524,7 @@ inline bool GenTree::OperIsInitBlkOp()
         return false;
     }
     GenTree* src       = Data();
-    bool     isInitBlk = src->TypeIs(TYP_INT);
-    assert(isInitBlk == src->gtSkipReloadOrCopy()->IsInitVal());
+    bool     isInitBlk = src->TypeIs(TYP_INT) && src->gtSkipReloadOrCopy()->IsInitVal();
 
     return isInitBlk;
 }

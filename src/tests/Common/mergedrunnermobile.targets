@@ -22,7 +22,8 @@
 
   <Target Name="_AddRuntimeLibsToPublishAssets" BeforeTargets="PrepareForPublish" DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild;ResolveRuntimeFilesFromLocalBuild">
     <ItemGroup>
-      <RuntimePackAsset Include="@(RuntimeFiles);@(LibrariesRuntimeFiles)" AssetType="runtime" />
+      <RuntimePackAsset Include="@(RuntimeFiles);@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll'" AssetType="runtime" />
+      <RuntimePackAsset Include="@(RuntimeFiles);@(LibrariesRuntimeFiles)" Condition="'%(Extension)' != '.dll'" AssetType="native" />
     </ItemGroup>
   </Target>
 

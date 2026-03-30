@@ -390,5 +390,48 @@ namespace System.Formats.Tar.Tests
             Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
             Assert.True(File.Exists(linkPath), $"{linkPath}' does not exist.");
         }
+
+        [Fact]
+        public async Task HardLinkExtraction_CopyContentsAsync()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            // Create hardlinked dir1/file.txt and dir2/linked.txt.
+            string sourceDir1 = Path.Join(root.Path, "source", "dir1");
+            string sourceDir2 = Path.Join(root.Path, "source", "dir2");
+            Directory.CreateDirectory(sourceDir1);
+            Directory.CreateDirectory(sourceDir2);
+            string sourceFile1 = Path.Join(sourceDir1, "file.txt");
+            File.WriteAllText(sourceFile1, "test content");
+            string sourceFile2 = Path.Join(sourceDir2, "linked.txt");
+            File.CreateHardLink(sourceFile2, sourceFile1);
+
+            // Create archive with hard link preservation.
+            string archivePath = Path.Join(root.Path, "archive.tar");
+            TarWriterOptions writerOptions = new TarWriterOptions() { Format = TarEntryFormat.Pax, HardLinkMode = TarHardLinkMode.PreserveLink };
+            using (FileStream archiveStream = File.Create(archivePath))
+            using (TarWriter writer = new TarWriter(archiveStream, writerOptions, leaveOpen: false))
+            {
+                writer.WriteEntry(sourceDir1, "dir1");
+                writer.WriteEntry(sourceFile1, "dir1/file.txt");
+                writer.WriteEntry(sourceDir2, "dir2");
+                writer.WriteEntry(sourceFile2, "dir2/linked.txt");
+            }
+
+            // Extract archive with CopyContents mode.
+            string destination = Path.Join(root.Path, "destination");
+            Directory.CreateDirectory(destination);
+            TarExtractOptions extractOptions = new TarExtractOptions() { HardLinkMode = TarHardLinkMode.CopyContents };
+            await TarFile.ExtractToDirectoryAsync(archivePath, destination, extractOptions);
+
+            // Verify extracted files are independent copies.
+            string targetFile1 = Path.Join(destination, "dir1", "file.txt");
+            string targetFile2 = Path.Join(destination, "dir2", "linked.txt");
+            Assert.True(File.Exists(targetFile1));
+            Assert.True(File.Exists(targetFile2));
+            Assert.Equal("test content", File.ReadAllText(targetFile1));
+            Assert.Equal("test content", File.ReadAllText(targetFile2));
+            AssertPathsAreNotHardLinked(targetFile1, targetFile2);
+        }
     }
 }
