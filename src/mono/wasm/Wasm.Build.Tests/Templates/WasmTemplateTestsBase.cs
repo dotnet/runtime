@@ -20,9 +20,9 @@ namespace Wasm.Build.Tests;
 
 public class WasmTemplateTestsBase : BuildTestBase
 {
-    private readonly WasmSdkBasedProjectProvider _provider;
     private readonly string _extraBuildArgsBuild = "-p:WasmEnableHotReload=false";
     private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false -p:WasmEnableHotReload=false";
+    private readonly WasmSdkBasedProjectProvider _provider;
     protected readonly PublishOptions _defaultPublishOptions;
     protected readonly BuildOptions _defaultBuildOptions;
     protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
@@ -119,8 +119,6 @@ public class WasmTemplateTestsBase : BuildTestBase
             extraProperties +=
             """
                 <WasmBundlerFriendlyBootConfig>true</WasmBundlerFriendlyBootConfig>
-                <WasmFingerprintAssets>false</WasmFingerprintAssets>
-                <CompressionEnabled>false</CompressionEnabled>
             """;
         }
 
@@ -190,9 +188,10 @@ public class WasmTemplateTestsBase : BuildTestBase
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
         Configuration configuration,
+        bool noDefaultOptions = false,
         bool? isNativeBuild = null,
         bool? wasmFingerprintDotnetJs = null) => // null for unset properties
-        BuildProjectCore(info, configuration, _defaultBuildOptions, isNativeBuild, wasmFingerprintDotnetJs);
+        BuildProjectCore(info, configuration, noDefaultOptions ? new BuildOptions() : _defaultBuildOptions, isNativeBuild, wasmFingerprintDotnetJs);
 
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
@@ -236,9 +235,9 @@ public class WasmTemplateTestsBase : BuildTestBase
             return (_projectDir, res.Output);
         }
 
-        if (EnvironmentVariables.UseJavascriptBundler && buildOptions.IsPublish)
+        if (EnvironmentVariables.UseJavascriptBundler)
         {
-            string publicWwwrootDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(configuration, forPublish: true), ".."));
+            string publicWwwrootDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(configuration, forPublish: buildOptions.IsPublish), ".."));
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "package.json"), Path.Combine(publicWwwrootDir, "package.json"));
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "JavascriptBundlers", "rollup.config.mjs"), Path.Combine(publicWwwrootDir, "rollup.config.mjs"));
 
@@ -339,29 +338,35 @@ public class WasmTemplateTestsBase : BuildTestBase
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
     public virtual async Task<RunResult> RunForBuildWithDotnetRun(RunOptions runOptions)
-        => await BrowserRun(runOptions with { Host = RunHost.DotnetRun });
+        => await BrowserRun(runOptions with { Host = RunHost.DotnetRun }, forPublish: false);
 
     public virtual async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
-        => await BrowserRun(runOptions with { Host = RunHost.WebServer });
+        => await BrowserRun(runOptions with { Host = RunHost.WebServer }, forPublish: true);
 
-    private async Task<RunResult> BrowserRun(RunOptions runOptions)
+    public virtual async Task<RunResult> RunForBuildWithWebServer(RunOptions runOptions)
+        => await BrowserRun(runOptions with { Host = RunHost.WebServer }, forPublish: false);
+
+    private async Task<RunResult> BrowserRun(RunOptions runOptions, bool forPublish)
     {
+        string wwwrootDir = Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish), "..");
         if (EnvironmentVariables.UseJavascriptBundler)
         {
-            runOptions = runOptions with { CustomBundleDir = Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..", "public")) };
+            runOptions = runOptions with { CustomBundleDir = Path.GetFullPath(Path.Combine(wwwrootDir, "public")) };
         }
+
+        string workingDirectory = !string.IsNullOrEmpty(runOptions.CustomBundleDir)
+            ? runOptions.CustomBundleDir
+            : forPublish
+                ? Path.GetFullPath(wwwrootDir)
+                : _projectDir;
 
         return runOptions.Host switch
         {
             RunHost.DotnetRun =>
-                    await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir, runOptions),
+                await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", workingDirectory, runOptions),
 
             RunHost.WebServer =>
-                    await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
-                        string.IsNullOrEmpty(runOptions.CustomBundleDir) ?
-                            Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
-                            runOptions.CustomBundleDir,
-                         runOptions),
+                await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files", workingDirectory, runOptions),
 
             _ => throw new NotImplementedException(runOptions.Host.ToString())
         };
@@ -478,6 +483,9 @@ public class WasmTemplateTestsBase : BuildTestBase
             runOptions.OnErrorMessage?.Invoke(msg);
         }
     }
+
+    public string GetBootConfigPath(string binFrameworkDir, string? bootConfigFileName = null) =>
+        _provider.GetBootConfigPath(binFrameworkDir, bootConfigFileName);
 
     public string GetBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null) =>
         _provider.GetBinFrameworkDir(config, forPublish, framework ?? DefaultTargetFramework, projectDir);
