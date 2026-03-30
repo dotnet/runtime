@@ -122,7 +122,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         /// <summary>
-        /// Terminates the process immediately.
+        /// Sends a request to the OS to terminate the process.
         /// </summary>
         /// <remarks>
         /// This method does not throw if the process has already exited.
@@ -136,7 +136,7 @@ namespace Microsoft.Win32.SafeHandles
         public void Kill()
         {
             Validate();
-            KillCore();
+            SignalCore(PosixSignal.SIGKILL);
         }
 
         /// <summary>
@@ -145,10 +145,10 @@ namespace Microsoft.Win32.SafeHandles
         /// <param name="signal">The signal to send.</param>
         /// <returns>
         /// <see langword="true"/> if the signal was sent successfully;
-        /// <see langword="false"/> if the process has already exited and the signal was not delivered.
+        /// <see langword="false"/> if the process has already exited (or never existed) and the signal was not delivered.
         /// </returns>
         /// <remarks>
-        /// On Windows, only <see cref="PosixSignal.SIGKILL"/> is supported and is mapped to <c>TerminateProcess</c>.
+        /// On Windows, only <see cref="PosixSignal.SIGKILL"/> is supported and is mapped to <see cref="Kill"/>.
         /// </remarks>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
         /// <exception cref="PlatformNotSupportedException">The specified signal is not supported on this platform.</exception>

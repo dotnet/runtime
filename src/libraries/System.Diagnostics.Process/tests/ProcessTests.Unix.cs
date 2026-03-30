@@ -15,6 +15,7 @@ using System.Security;
 using Xunit;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tests
 {
@@ -1114,8 +1115,8 @@ namespace System.Diagnostics.Tests
 
                 AssertRemoteProcessStandardOutputLine(childHandle, ChildReadyMessage, WaitInMS);
 
-                // Send SIGCONT to the child process
-                SendSignal(PosixSignal.SIGCONT, childHandle.Process.Id);
+                // Send SIGCONT to the child process using SafeProcessHandle.Signal
+                Assert.True(childHandle.Process.SafeHandle.Signal(PosixSignal.SIGCONT));
 
                 Assert.True(childHandle.Process.WaitForExit(WaitInMS));
                 Assert.Equal(RemotelyInvokable.SuccessExitCode, childHandle.Process.ExitCode);
