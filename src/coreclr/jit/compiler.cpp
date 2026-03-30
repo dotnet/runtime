@@ -4857,6 +4857,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // update the flowgraph if we modified it during the optimization phase
                 //
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
+
+                // Clean up unreachable blocks.
+                // In opt-repeat builds, RecomputeFlowGraphAnnotations() will call
+                // fgDfsBlocksAndRemove() when resetting annotations between iterations.
+                // To avoid doing this expensive work twice per iteration, only run this
+                // phase on non-optRepeat builds or on the final optRepeat iteration.
+                //
+                if (!opts.optRepeat || (opts.optRepeatIteration == opts.optRepeatCount))
+                {
+                    DoPhase(this, PHASE_OPT_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
+                    fgInvalidateDfsTree();
+                }
             }
 
             // Iterate if requested, resetting annotations first.
@@ -6629,7 +6641,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
     else
     {
-        info.compFlags = info.compCompHnd->getMethodAttribs(info.compMethodHnd);
+        info.compFlags    = info.compCompHnd->getMethodAttribs(info.compMethodHnd);
         compInlineContext = m_inlineStrategy->GetRootContext();
     }
 
