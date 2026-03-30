@@ -46,9 +46,12 @@ type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint
 interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
+    /**
+     * @deprecated This method is no longer supported and will be removed in a future version.
+     */
+    withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
      * "command line" arguments for the Main() method.
      * @param args
@@ -466,7 +469,6 @@ declare const enum GlobalizationMode {
 }
 type DotnetModuleConfig = {
     config?: LoaderConfig;
-    configSrc?: string;
     onConfigLoaded?: (config: LoaderConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
