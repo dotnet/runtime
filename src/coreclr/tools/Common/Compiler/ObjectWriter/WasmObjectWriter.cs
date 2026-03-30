@@ -833,11 +833,7 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_TABLE_INDEX_SLEB:
                         {
                             string symbolName = reloc.SymbolName.ToString();
-                            if (!_uniqueSymbols.TryGetValue(symbolName, out int index))
-                            {
-                                throw new InvalidOperationException();
-                            }
-
+                            int index = _uniqueSymbols[symbolName];
                             // Here, we are effectively writing a table offset relative to the table_base.
                             // These will need to be fixed up by the runtime after load by adding __image_function_pointer_base
                             // TODO-WASM: We need to emit these for fixup with an addend at runtime
@@ -847,10 +843,7 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_FUNCTION_INDEX_LEB:
                         {
                             string symbolName = reloc.SymbolName.ToString();
-                            if (!_uniqueSymbols.TryGetValue(symbolName, out int index))
-                            {
-                                throw new InvalidOperationException();
-                            }
+                            int index = _uniqueSymbols[symbolName];
 
                             // These are module-local function pointer indices, so we can simply write out the assigned function index
                             // for this particular symbol
