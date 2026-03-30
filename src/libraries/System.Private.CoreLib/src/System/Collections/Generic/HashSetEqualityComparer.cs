@@ -22,35 +22,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
-
-            // If both sets use the same comparer, they're equal if they're the same
-            // size and one is a "subset" of the other.
-            if (HashSet<T>.EqualityComparersAreEqual(x, y))
-            {
-                return x.Count == y.Count && y.IsSubsetOfHashSetWithSameComparer(x);
-            }
-
-            // Otherwise, do an O(N^2) match.
-            foreach (T yi in y)
-            {
-                bool found = false;
-                foreach (T xi in x)
-                {
-                    if (defaultComparer.Equals(yi, xi))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found)
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return x.SetEquals(y);
         }
 
         public int GetHashCode(HashSet<T>? obj)
