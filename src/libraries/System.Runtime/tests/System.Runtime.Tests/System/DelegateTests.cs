@@ -1277,7 +1277,7 @@ namespace System.Tests
                 () => Delegate.CreateDelegate(typeof(NullableIntToString), num, mi));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
+        [Fact]
         public static void CreateDelegate_ClosedOverNull_InstanceMethod()
         {
             MethodInfo mi = typeof(C).GetMethod(nameof(C.IsThisNull));
@@ -1286,7 +1286,7 @@ namespace System.Tests
             Assert.True(del());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
+        [Fact]
         public static void CreateDelegate_ClosedOverNull_InstanceMethodViaMethodInfoCreateDelegate()
         {
             MethodInfo mi = typeof(C).GetMethod(nameof(C.IsThisNull));

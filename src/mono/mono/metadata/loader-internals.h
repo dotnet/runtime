@@ -53,6 +53,7 @@ typedef struct {
 	GHashTable *runtime_invoke_signature_cache;
 	GHashTable *runtime_invoke_sig_cache;
 	GHashTable *delegate_abstract_invoke_cache;
+	GHashTable *delegate_closed_over_null_cache;
 
 	/*
 	 * indexed by SignaturePointerPair

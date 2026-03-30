@@ -142,6 +142,7 @@ typedef enum {
 	/* Subtypes of MONO_WRAPPER_DELEGATE_INVOKE */
 	WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL,
 	WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND,
+	WRAPPER_SUBTYPE_DELEGATE_INVOKE_CLOSED_OVER_NULL,
 	/* Subtypes of MONO_WRAPPER_OTHER */
 	WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG,
 	WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG,
@@ -506,7 +507,7 @@ MonoMethod *
 mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del);
 
 MonoMethod *
-mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method);
+mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, gboolean closed_over_null, MonoMethod *target_method);
 
 WrapperSubtype
 mono_marshal_get_delegate_invoke_subtype (MonoMethod *method, MonoDelegate *del);
