@@ -192,11 +192,12 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (!GetRealCodeHeader(rangeSection, codeStart, out realCodeHeader) || realCodeHeader == null)
                 return;
 
-            if (realCodeHeader.JitEHInfo == null)
+            if (realCodeHeader.EHInfo == TargetPointer.Null)
                 return;
 
-            TargetNUInt numEHInfos = Target.ReadNUInt(realCodeHeader.JitEHInfo.Address - (ulong)Target.PointerSize);
-            startAddr = realCodeHeader.JitEHInfo.Clauses;
+            Data.EEILException ehInfo = Target.ProcessedData.GetOrAdd<Data.EEILException>(realCodeHeader.EHInfo);
+            TargetNUInt numEHInfos = Target.ReadNUInt(ehInfo.Address - (ulong)Target.PointerSize);
+            startAddr = ehInfo.Clauses;
             endAddr = startAddr + numEHInfos.Value * Target.GetTypeInfo(DataType.EEExceptionClause).Size!.Value;
         }
     }

@@ -63,6 +63,7 @@ internal readonly struct Thread_1 : IThread
         }
 
         return new ThreadData(
+            threadPointer,
             thread.Id,
             thread.OSId,
             (ThreadState)thread.State,

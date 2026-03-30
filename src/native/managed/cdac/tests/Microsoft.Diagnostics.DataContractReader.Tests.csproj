@@ -8,6 +8,8 @@
   <ItemGroup>
     <!-- DumpTests is a separate test project with its own csproj -->
     <Compile Remove="DumpTests\**" />
+    <!-- StressTests contains debuggee console apps and scripts, not unit tests -->
+    <Compile Remove="StressTests\**" />
   </ItemGroup>
 
   <Import Project="..\..\subproject.props" />

@@ -31,6 +31,8 @@ internal struct ARMContext : IPlatformContext
     public readonly uint Size => 0x1a0;
     public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
 
+    public readonly int StackPointerRegister => 13;
+
     public TargetPointer StackPointer
     {
         readonly get => new(Sp);

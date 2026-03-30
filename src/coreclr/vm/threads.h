@@ -3773,6 +3773,8 @@ struct cdac_data<Thread>
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
         "Thread::m_ExceptionState is of type ThreadExceptionState");
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
+    static constexpr size_t DebuggerFilterContext = offsetof(Thread, m_debuggerFilterContext);
+    static constexpr size_t ProfilerFilterContext = offsetof(Thread, m_pProfilerFilterContext);
     #ifndef TARGET_UNIX
     static constexpr size_t TEB = offsetof(Thread, m_pTEB);
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)

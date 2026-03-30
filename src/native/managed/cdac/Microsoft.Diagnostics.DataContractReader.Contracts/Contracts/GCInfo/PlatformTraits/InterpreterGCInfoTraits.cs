@@ -40,4 +40,7 @@ internal class InterpreterGCInfoTraits : IGCInfoTraits
     public static int NUM_INTERRUPTIBLE_RANGES_ENCBASE => 1;
 
     public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => false;
+
+    // Interpreter doesn't use physical registers for GC slots
+    public static bool IsScratchRegister(uint regNum) => false;
 }

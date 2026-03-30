@@ -40,4 +40,33 @@ internal class AMD64GCInfoTraits : IGCInfoTraits
     public static int NUM_INTERRUPTIBLE_RANGES_ENCBASE => 1;
 
     public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => true;
+
+    // Preserved (non-scratch): rbx(3), rbp(5), rsi(6), rdi(7), r12(12)-r15(15)
+    // On Unix ABI, rsi(6) and rdi(7) are scratch, but the GCInfo encoder
+    // uses the Windows ABI register numbering for all platforms.
+    public static bool IsScratchRegister(uint regNum)
+    {
+        const uint preservedMask =
+            (1u << 3)   // rbx
+            | (1u << 5) // rbp
+            | (1u << 6) // rsi (Windows ABI)
+            | (1u << 7) // rdi (Windows ABI)
+            | (1u << 12) // r12
+            | (1u << 13) // r13
+            | (1u << 14) // r14
+            | (1u << 15); // r15
+        return (preservedMask & (1u << (int)regNum)) == 0;
+    }
+
+    // AMD64 has a fixed stack parameter scratch area (shadow space + outgoing args).
+    // Stack slots with GC_SP_REL base and offset in [0, scratchAreaSize) are scratch slots.
+    // This matches the native IsScratchStackSlot which computes GetStackSlot and checks
+    // pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea.
+    public static bool IsScratchStackSlot(int spOffset, uint spBase, uint fixedStackParameterScratchArea)
+    {
+        // GC_SP_REL = 1
+        return spBase == 1
+            && spOffset >= 0
+            && (uint)spOffset < fixedStackParameterScratchArea;
+    }
 }

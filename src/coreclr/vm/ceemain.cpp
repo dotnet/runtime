@@ -209,6 +209,10 @@
 
 #include "genanalysis.h"
 
+#ifdef HAVE_GCCOVER
+#include "cdacstress.h"
+#endif
+
 HRESULT EEStartup();
 
 
@@ -963,6 +967,10 @@ void EEStartupHelper()
 
 #ifdef HAVE_GCCOVER
         MethodDesc::Init();
+        if (CdacStress::IsEnabled())
+        {
+            CdacStress::Initialize();
+        }
 #endif
 
         Assembly::Initialize();
@@ -1243,6 +1251,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         // Indicate the EE is the shut down phase.
         InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Start);
+
+#ifdef HAVE_GCCOVER
+        CdacStress::Shutdown();
+#endif
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)
         {
