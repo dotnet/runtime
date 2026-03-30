@@ -3,20 +3,28 @@
 
 using System;
 using System.Collections.Generic;
+#if !ILTRIM
 using System.Collections.Immutable;
 using System.Data.Common;
+#endif
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+#if !ILTRIM
 using ILLink.Shared.TrimAnalysis;
+#endif
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+#if !ILTRIM
 using Mono.Linker;
+#endif
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+#if !ILTRIM
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+#endif
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner.ILVerification;
@@ -28,7 +36,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
     {
         readonly BaseAssemblyResolver _originalsResolver;
         readonly BaseAssemblyResolver _linkedResolver;
+#if !ILTRIM
         readonly TypeNameResolver _linkedTypeNameResolver;
+#endif
         readonly ReaderParameters _originalReaderParameters;
         readonly ReaderParameters _linkedReaderParameters;
 
@@ -50,7 +60,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
             _originalsResolver = originalsResolver;
             _linkedResolver = linkedResolver;
+#if !ILTRIM
             _linkedTypeNameResolver = new TypeNameResolver(new TestResolver(), new TestAssemblyNameResolver(_linkedResolver));
+#endif
             _originalReaderParameters = originalReaderParameters;
             _linkedReaderParameters = linkedReaderParameters;
         }
@@ -123,7 +135,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     }
                     CreateILChecker().Check(linkResult, original);
 
+#if !ILTRIM
                     VerifyExpectedDependencyTrace(linkResult.MetadataProvider, linkResult.OutputAssemblyPath);
+#endif
                 }
 
                 VerifyLinkingOfOtherAssemblies(original);
@@ -315,14 +329,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         protected virtual void AdditionalChecking(TrimmedTestCaseResult linkResult, AssemblyDefinition original)
         {
+#if !ILTRIM
             bool checkRemainingErrors = !HasAttribute(linkResult.TestCase.FindTypeDefinition(original), nameof(SkipRemainingErrorsValidationAttribute));
             VerifyLoggedMessages(original, linkResult.Logger, checkRemainingErrors);
             VerifyRecordedDependencies(original, linkResult.Customizations.DependencyRecorder);
+#endif
         }
 
         protected virtual void InitialChecking(TrimmedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
         {
+#if !ILTRIM
             ValidateTypeRefsHaveValidAssemblyRefs(linked);
+#endif
         }
 
         void VerifyLinkingOfOtherAssemblies(AssemblyDefinition original)
@@ -354,6 +372,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         }
 
                         var expectedTypeName = checkAttrInAssembly.ConstructorArguments[1].Value.ToString();
+#if ILTRIM
+                        TypeDefinition linkedType = linkedAssembly.MainModule.GetType(expectedTypeName);
+#else
                         TypeReference linkedTypeRef = null;
                         try
                         {
@@ -375,6 +396,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
                             linkedType = exportedType?.Resolve();
                         }
+#endif
 
                         switch (attributeTypeName)
                         {
@@ -900,6 +922,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             yield return assembly;
         }
 
+#if !ILTRIM
         void VerifyLoggedMessages(AssemblyDefinition original, TrimmingTestLogger logger, bool checkRemainingErrors)
         {
             ImmutableArray<MessageContainer> allMessages = logger.GetLoggedMessages();
@@ -1286,6 +1309,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             Assert.That(File.ReadAllLines(tracePath), Is.EquivalentTo(
                 File.ReadAllLines(expectedTracePath)));
         }
+#endif
 
         void VerifyExpectedInstructionSequenceOnMemberInAssembly(CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
         {
@@ -1310,6 +1334,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             Assert.Fail($"Invalid test assertion.  No method named `{memberName}` exists on the original type `{originalType}`");
         }
 
+#if !ILTRIM
         static string GetFullMemberNameFromDefinition(IMetadataTokenProvider member)
         {
             return GetFullMemberNameFromDefinition(member, out _);
@@ -1365,6 +1390,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             throw new NotImplementedException($"Getting the full member name has not been implemented for {member}");
         }
+#endif
 
         protected TypeDefinition GetOriginalTypeFromInAssemblyAttribute(CustomAttribute inAssemblyAttribute)
         {
