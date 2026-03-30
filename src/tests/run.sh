@@ -20,7 +20,10 @@ function print_usage {
     echo '  --coreRootDir=<path>             : Directory to the CORE_ROOT location.'
     echo '  --enableEventLogging             : Enable event logging through LTTNG.'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
+    echo '  --parallel=<type>                : Run tests in parallel (none, collections, assemblies, all) (default: collections).'
     echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
+    echo '  --runlargeversionbubblecrossgen2tests : (Experimental) Runs Crossgen2 tests with large version bubble enabled'
+    echo '  --composite                      : (Experimental) Use Crossgen2 composite mode for tests'
     echo '  --synthesizepgo                  : Runs the tests allowing crossgen2 to synthesize PGO data'
     echo '  --jitstress=<n>                  : Runs the tests with DOTNET_JitStress=n'
     echo '  --jitstressregs=<n>              : Runs the tests with DOTNET_JitStressRegs=n'
@@ -43,7 +46,7 @@ function print_usage {
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'
     echo '  --interpreter                    : Runs the tests with the interpreter enabled'
     echo '  --node                           : Runs the tests with NodeJS (wasm only)'
-    echo '  --limitedDumpGeneration          : '
+    echo '  --limitedDumpGeneration          : Limits the number of core dumps generated for this test run'
 }
 
 # Exit code constants
@@ -70,9 +73,12 @@ verbose=0
 ilasmroundtrip=
 printLastResultsOnly=
 runSequential=0
+parallelType=
 runincontext=0
 tieringtest=0
 nativeaottest=0
+largeversionbubble=0
+compositemode=0
 
 for i in "$@"
 do
@@ -153,11 +159,21 @@ do
         --runcrossgen2tests)
             export RunCrossGen2=1
             ;;
+        --runlargeversionbubblecrossgen2tests)
+            export RunCrossGen2=1
+            largeversionbubble=1
+            ;;
+        --composite)
+            compositemode=1
+            ;;
         --synthesizepgo)
             export CrossGen2SynthesizePgo=1
             ;;
         --sequential)
             runSequential=1
+            ;;
+        --parallel=*)
+            parallelType=${i#*=}
             ;;
         --useServerGC)
             export DOTNET_gcServer=1
@@ -275,12 +291,24 @@ if [ "$runSequential" -ne 0 ]; then
     runtestPyArguments+=("--sequential")
 fi
 
+if [[ -n "$parallelType" ]]; then
+    runtestPyArguments+=("-parallel" "$parallelType")
+fi
+
 if [[ -n "$printLastResultsOnly" ]]; then
     runtestPyArguments+=("--analyze_results_only")
 fi
 
 if [[ -n "$RunCrossGen2" ]]; then
     runtestPyArguments+=("--run_crossgen2_tests")
+fi
+
+if [[ "$largeversionbubble" -ne 0 ]]; then
+    runtestPyArguments+=("--large_version_bubble")
+fi
+
+if [[ "$compositemode" -ne 0 ]]; then
+    runtestPyArguments+=("--composite")
 fi
 
 if [[ -n "$CrossGen2SynthesizePgo" ]]; then
@@ -298,7 +326,7 @@ fi
 
 if [[ "$tieringtest" -ne 0 ]]; then
     echo "Running to encourage tier1 rejitting"
-    runtestPyArguments+=("--tieringtest")
+    runtestPyArguments+=("--tiering_test")
 fi
 
 if [[ "$nativeaottest" -ne 0 ]]; then
