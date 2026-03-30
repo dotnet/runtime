@@ -61,7 +61,7 @@ namespace Microsoft.Win32.SafeHandles
 
         // Allows for StartWithShellExecute (and its dependencies) to be trimmed when UseShellExecute is not being used.
         // On Unix, standard I/O handles are passed through to the shell process.
-        internal static Func<ProcessStartInfo, SafeFileHandle?, SafeFileHandle?, SafeFileHandle?, SafeProcessHandle>? s_startWithShellExecute;
+        private static Func<ProcessStartInfo, SafeFileHandle?, SafeFileHandle?, SafeFileHandle?, SafeProcessHandle>? s_startWithShellExecute;
 
         private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
