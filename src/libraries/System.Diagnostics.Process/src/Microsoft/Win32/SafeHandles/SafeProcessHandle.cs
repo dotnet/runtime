@@ -12,12 +12,35 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
+        private int _processId = -1;
+
+        /// <summary>
+        /// Gets the process ID.
+        /// </summary>
+        public int ProcessId
+        {
+            get
+            {
+                Validate();
+
+                if (_processId == -1)
+                {
+                    _processId = GetProcessIdCore();
+                }
+
+                return _processId;
+
+            }
+            private set => _processId = value;
+        }
 
         /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeHandle" />.
@@ -41,6 +64,68 @@ namespace Microsoft.Win32.SafeHandles
             : base(ownsHandle)
         {
             SetHandle(existingHandle);
+        }
+
+        /// <summary>
+        /// Starts a process using the specified <see cref="ProcessStartInfo"/>.
+        /// </summary>
+        /// <param name="startInfo">The process start information.</param>
+        /// <returns>A <see cref="SafeProcessHandle"/> representing the started process.</returns>
+        /// <remarks>
+        /// On Windows, when <see cref="ProcessStartInfo.UseShellExecute"/> is <see langword="true"/>,
+        /// the process is started using ShellExecuteEx. In some cases, such as when execution
+        /// is satisfied through a DDE conversation, the returned handle will be invalid.
+        /// </remarks>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static SafeProcessHandle Start(ProcessStartInfo startInfo)
+        {
+            ArgumentNullException.ThrowIfNull(startInfo);
+            startInfo.ThrowIfInvalid(out bool anyRedirection);
+
+            if (anyRedirection)
+            {
+                // Process has .StandardInput, .StandardOutput, or .StandardError APIs that can express
+                // redirection of streams, but SafeProcessHandle doesn't.
+                // The caller can provide handles via the StandardInputHandle, StandardOutputHandle,
+                // and StandardErrorHandle properties.
+                throw new InvalidOperationException(SR.CantSetRedirectForSafeProcessHandleStart);
+            }
+
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
+
+            SafeFileHandle? childInputHandle = startInfo.StandardInputHandle;
+            SafeFileHandle? childOutputHandle = startInfo.StandardOutputHandle;
+            SafeFileHandle? childErrorHandle = startInfo.StandardErrorHandle;
+
+            if (!startInfo.UseShellExecute)
+            {
+                if (childInputHandle is null && !OperatingSystem.IsAndroid())
+                {
+                    childInputHandle = Console.OpenStandardInputHandle();
+                }
+
+                if (childOutputHandle is null && !OperatingSystem.IsAndroid())
+                {
+                    childOutputHandle = Console.OpenStandardOutputHandle();
+                }
+
+                if (childErrorHandle is null && !OperatingSystem.IsAndroid())
+                {
+                    childErrorHandle = Console.OpenStandardErrorHandle();
+                }
+            }
+
+            return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle);
+        }
+
+        private void Validate()
+        {
+            if (IsInvalid)
+            {
+                throw new InvalidOperationException(SR.InvalidProcessHandle);
+            }
         }
     }
 }
