@@ -49,7 +49,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PhysicalFilesWatcher"/> class that watches files in <paramref name="root"/>.
-        /// Wraps an instance of <see cref="System.IO.FileSystemWatcher"/>.
         /// </summary>
         /// <param name="root">The root directory for the watcher.</param>
         /// <param name="fileSystemWatcher">The wrapped watcher that's watching <paramref name="root"/>.</param>
@@ -343,9 +342,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private void OnError(object sender, ErrorEventArgs e)
         {
             // Notify all cache entries on error.
-            foreach (string path in _filePathTokenLookup.Keys)
+            CancelAll(_filePathTokenLookup);
+            CancelAll(_wildcardTokenLookup);
+
+            static void CancelAll(ConcurrentDictionary<string, ChangeTokenInfo> tokens)
             {
-                ReportChangeForMatchedEntries(path);
+                foreach (KeyValuePair<string, ChangeTokenInfo> entry in tokens)
+                {
+                    if (tokens.TryRemove(entry.Key, out ChangeTokenInfo matchInfo))
+                    {
+                        CancelToken(matchInfo);
+                    }
+                }
             }
         }
 
@@ -758,7 +766,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             // Returns the name of the immediate child of existingAncestor on the path to target.
             private static string GetChildName(string existingAncestor, string target)
             {
-                Debug.Assert(target.StartsWith(existingAncestor, StringComparison.Ordinal));
+                Debug.Assert(target.StartsWith(existingAncestor, StringComparison.OrdinalIgnoreCase));
 
                 ReadOnlySpan<char> remaining = target.AsSpan(existingAncestor.Length).TrimStart(PathUtils.PathSeparators);
                 int separator = remaining.IndexOfAny(PathUtils.PathSeparators);
