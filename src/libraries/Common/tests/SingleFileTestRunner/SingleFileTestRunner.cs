@@ -4,12 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit.Internal;
 using Xunit.Runner.Common;
 using Xunit.Runner.InProc.SystemConsole;
+using Xunit.Sdk;
 
 // @TODO medium-to-longer term, we should try to get rid of the special-unicorn-single-file runner in favor of making the real runner work for single file.
 // https://github.com/dotnet/runtime/issues/70432
@@ -29,8 +30,7 @@ public static class SingleFileTestRunner
         Environment.SetEnvironmentVariable("TEST_READY_TO_RUN_MODE", "1");
 #endif
 
-        // In NativeAOT, Assembly.Location returns empty string. xunit v4
-        // handles this internally; the path is only used as a display name.
+        // Use Assembly.Location which now returns Environment.ProcessPath in NativeAOT
         var processPath = testAssembly.Location;
 
         string? xmlResultFileName = null;
@@ -56,9 +56,9 @@ public static class SingleFileTestRunner
         }
 
         var project = new XunitProject();
-        var targetFramework = testAssembly.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName ?? "";
+        var targetFramework = testAssembly.GetTargetFramework();
         var projectAssembly = new XunitProjectAssembly(
-            project, processPath, new AssemblyMetadata(4, targetFramework))
+            project, processPath, new AssemblyMetadata(3, targetFramework))
         {
             Assembly = testAssembly
         };
@@ -68,9 +68,8 @@ public static class SingleFileTestRunner
             foreach (var value in values)
                 projectAssembly.Configuration.Filters.AddExcludedTraitFilter(key, value);
 
-        var resultWriters = new Dictionary<string, IResultWriter>();
         if (xmlResultFileName is not null)
-            resultWriters.Add(xmlResultFileName, new XmlV2ResultWriter());
+            project.Configuration.Output.Add("xml", xmlResultFileName);
 
         project.Add(projectAssembly);
         project.RunnerReporter = new DefaultRunnerReporter();
@@ -96,8 +95,7 @@ public static class SingleFileTestRunner
                 NullSourceInformationProvider.Instance, cts);
 
             failCount = await projectRunner.Run(
-                projectAssembly, reporterMessageHandler, null, logger,
-                resultWriters, pipelineStartup, null);
+                projectAssembly, reporterMessageHandler, null, logger, pipelineStartup);
         }
         finally
         {
