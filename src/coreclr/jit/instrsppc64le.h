@@ -38,6 +38,12 @@ INST(ori,   	  "ori",   	  0, 	  D_FORM,   	0x60000000)
 INST(oris,  	  "oris",  	  0, 	  D_FORM,   	0x64000000)
 INST(sldi,  	  "sldi",  	  0, 	  MD_FORM,  	0x78000000)  // rldicr
 INST(cmpdi,  	  "cmpdi",  	  0, 	  D_FORM,   	0x2C200000)  // cmpi with L=1
+INST(lbz,	  "lbz",	  0,	  D_FORM,	0x88000000)
+INST(lhz,	  "lhz",	  0,	  D_FORM,	0xA0000000)
+INST(lha,	  "lha",	  0,	  D_FORM,	0xA8000000)
+INST(lwz,	  "lwz",	  0,	  D_FORM,	0x80000000)
+INST(lwa,	  "lwa",	  0,	  DS_FORM,	0xE8000000)
+INST(ld,	  "ld",		  0,	  DS_FORM,	0xE8000000)
 
 // clang-format on
 /*****************************************************************************/

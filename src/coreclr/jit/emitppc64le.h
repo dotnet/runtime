@@ -163,7 +163,7 @@ void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
 
 bool emitIns_valid_imm_for_li(ssize_t imm);
 
-
+void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 
 
 #endif

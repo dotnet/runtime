@@ -517,8 +517,29 @@ instruction CodeGen::genGetVolatileLdStIns(instruction   currentIns,
 //
 void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(tree->OperIs(GT_IND));
+
+#ifdef FEATURE_SIMD
+    if (tree->TypeGet() == TYP_SIMD12)
+    {
+	abort();
+    }
+#endif
+
+    var_types   type      = tree->TypeGet();
+    instruction ins       = ins_Load(type);
+    regNumber   targetReg = tree->GetRegNum();
+
+    genConsumeAddress(tree->Addr());
+
+    if (tree->IsVolatile())
+    {
+        abort();
+    }
+
+    GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), targetReg, tree);
+
+    genProduceReg(tree);
 }
 
 

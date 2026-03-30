@@ -409,7 +409,32 @@ void emitter::emitSetShortJump(instrDescJmp* id)
     _ASSERTE(!"NYI");
 }
 
+void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir)
+{
+    GenTree* addr = indir->Addr();
 
+    if (addr->isContained())
+    {
+	abort();
+    }
+    else
+    {
+#ifdef DEBUG
+        if (addr->OperIs(GT_LCL_ADDR))
+        {
+            // If the local var is a gcref or byref, the local var better be untracked, because we have
+            // no logic here to track local variable lifetime changes, like we do in the contained case
+            // above. E.g., for a `str r0,[r1]` for byref `r1` to local `V01`, we won't store the local
+            // `V01` and so the emitter can't update the GC lifetime for `V01` if this is a variable birth.
+            LclVarDsc* varDsc = emitComp->lvaGetDesc(addr->AsLclVarCommon());
+            assert(!varDsc->lvTracked);
+        }
+#endif // DEBUG
+
+	// Then load/store dataReg from/to [addrReg]
+        emitIns_R_R(ins, attr, dataReg, addr->GetRegNum());
+    }
+}
 
 /*****************************************************************************
  *

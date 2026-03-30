@@ -1873,6 +1873,29 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         {
             ins = INS_ld; // default ld.
         }
+#elif defined(TARGET_POWERPC64)
+	if (varTypeIsByte(srcType))
+        {
+                ins = INS_lbz;
+        }
+        else if (varTypeIsShort(srcType))
+        {
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_lhz;
+            else
+                ins = INS_lha;
+        }
+        else if (TYP_INT == srcType)
+        {
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_lwz;
+            else
+                ins = INS_lwa;
+        }
+        else
+        {
+            ins = INS_ld;
+        }
 #else
         NYI("ins_Load");
 #endif
