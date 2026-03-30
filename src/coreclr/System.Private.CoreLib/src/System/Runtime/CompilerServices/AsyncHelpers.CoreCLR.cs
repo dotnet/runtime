@@ -239,12 +239,15 @@ namespace System.Runtime.CompilerServices
 
 #if !NATIVEAOT
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_AddContinuationToExInternal")]
+        [RequiresUnsafe]
         private static unsafe partial void AddContinuationToExInternal(void* diagnosticIP, ObjectHandleOnStack ex);
 
+        [RequiresUnsafe]
         internal static unsafe void AddContinuationToExInternal(void* diagnosticIP, Exception e)
             => AddContinuationToExInternal(diagnosticIP, ObjectHandleOnStack.Create(ref e));
 #endif
 
+        [RequiresUnsafe]
         private static unsafe Continuation AllocContinuation(Continuation prevContinuation, MethodTable* contMT)
         {
 #if NATIVEAOT
@@ -257,6 +260,7 @@ namespace System.Runtime.CompilerServices
         }
 
 #if !NATIVEAOT
+        [RequiresUnsafe]
         private static unsafe Continuation AllocContinuationMethod(Continuation prevContinuation, MethodTable* contMT, int keepAliveOffset, MethodDesc* method)
         {
             LoaderAllocator loaderAllocator = RuntimeMethodHandle.GetLoaderAllocator(new RuntimeMethodHandleInternal((IntPtr)method));
@@ -266,6 +270,7 @@ namespace System.Runtime.CompilerServices
             return newContinuation;
         }
 
+        [RequiresUnsafe]
         private static unsafe Continuation AllocContinuationClass(Continuation prevContinuation, MethodTable* contMT, int keepAliveOffset, MethodTable* methodTable)
         {
             IntPtr loaderAllocatorHandle = methodTable->GetLoaderAllocatorHandle();

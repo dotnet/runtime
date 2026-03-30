@@ -39,13 +39,6 @@ struct RhEHClause
 
 struct PAL_SEHException;
 
-struct LastReportedFuncletInfo
-{
-    PCODE IP;
-    TADDR FP;
-    uint32_t Flags;
-};
-
 struct ExInfo
 {
     friend struct ::cdac_data<ExInfo>;

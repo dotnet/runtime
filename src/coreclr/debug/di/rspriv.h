@@ -117,7 +117,7 @@ class CordbEval;
 class RSLock;
 class NeuterList;
 
-class IDacDbiInterface;
+struct IDacDbiInterface;
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
 class DbgTransportTarget;

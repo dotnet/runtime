@@ -15,12 +15,12 @@ namespace System.Numerics
 
         private readonly ref struct FastReducer
         {
-            private readonly ReadOnlySpan<uint> _modulus;
-            private readonly ReadOnlySpan<uint> _mu;
-            private readonly Span<uint> _q1;
-            private readonly Span<uint> _q2;
+            private readonly ReadOnlySpan<nuint> _modulus;
+            private readonly ReadOnlySpan<nuint> _mu;
+            private readonly Span<nuint> _q1;
+            private readonly Span<nuint> _q2;
 
-            public FastReducer(ReadOnlySpan<uint> modulus, Span<uint> r, Span<uint> mu, Span<uint> q1, Span<uint> q2)
+            public FastReducer(ReadOnlySpan<nuint> modulus, Span<nuint> r, Span<nuint> mu, Span<nuint> q1, Span<nuint> q2)
             {
                 Debug.Assert(!modulus.IsEmpty);
                 Debug.Assert(r.Length == modulus.Length * 2 + 1);
@@ -28,10 +28,11 @@ namespace System.Numerics
                 Debug.Assert(q1.Length == modulus.Length * 2 + 2);
                 Debug.Assert(q2.Length == modulus.Length * 2 + 2);
 
-                // Let r = 4^k, with 2^k > m
-                r[r.Length - 1] = 1;
+                // Barrett reduction: precompute mu = floor(4^k / m), where k = modulus.Length.
+                // Start by setting r = 4^k (a 1 in the highest position of a 2k+1 limb number).
+                r[^1] = 1;
 
-                // Let mu = 4^k / m
+                // Compute mu = floor(r / m)
                 DivRem(r, modulus, mu);
                 _modulus = modulus;
 
@@ -41,13 +42,15 @@ namespace System.Numerics
                 _mu = mu.Slice(0, ActualLength(mu));
             }
 
-            public int Reduce(Span<uint> value)
+            public int Reduce(Span<nuint> value)
             {
                 Debug.Assert(value.Length <= _modulus.Length * 2);
 
                 // Trivial: value is shorter
                 if (value.Length < _modulus.Length)
+                {
                     return value.Length;
+                }
 
                 // Let q1 = v/2^(k-1) * mu
                 _q1.Clear();
@@ -58,14 +61,14 @@ namespace System.Numerics
                 int l2 = DivMul(_q1.Slice(0, l1), _modulus, _q2, _modulus.Length + 1);
 
                 // Let v = (v - q2) % 2^(k+1) - i*m
-                var length = SubMod(value, _q2.Slice(0, l2), _modulus, _modulus.Length + 1);
+                int length = SubMod(value, _q2.Slice(0, l2), _modulus, _modulus.Length + 1);
                 value = value.Slice(length);
                 value.Clear();
 
                 return length;
             }
 
-            private static int DivMul(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits, int k)
+            private static int DivMul(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits, int k)
             {
                 Debug.Assert(!right.IsEmpty);
                 Debug.Assert(!bits.IsEmpty);
@@ -73,7 +76,7 @@ namespace System.Numerics
 
                 // Executes the multiplication algorithm for left and right,
                 // but skips the first k limbs of left, which is equivalent to
-                // preceding division by 2^(32*k). To spare memory allocations
+                // preceding division by 2^(BitsPerLimb*k). To spare memory allocations
                 // we write the result to an already allocated memory.
 
                 if (left.Length > k)
@@ -89,17 +92,30 @@ namespace System.Numerics
                 return 0;
             }
 
-            private static int SubMod(Span<uint> left, ReadOnlySpan<uint> right, ReadOnlySpan<uint> modulus, int k)
+            private static int SubMod(Span<nuint> left, ReadOnlySpan<nuint> right, ReadOnlySpan<nuint> modulus, int k)
             {
                 // Executes the subtraction algorithm for left and right,
                 // but considers only the first k limbs, which is equivalent to
-                // preceding reduction by 2^(32*k). Furthermore, if left is
+                // preceding reduction by 2^(BitsPerLimb*k). Furthermore, if left is
                 // still greater than modulus, further subtractions are used.
 
                 if (left.Length > k)
+                {
                     left = left.Slice(0, k);
+                }
+
                 if (right.Length > k)
+                {
                     right = right.Slice(0, k);
+                }
+
+                // Barrett's quotient estimate may overshoot by up to 2, so right
+                // can exceed left by up to 2*modulus. Compensate by adding modulus
+                // until left >= right before subtracting.
+                while (CompareActual(left, right) < 0)
+                {
+                    AddSelf(left, modulus);
+                }
 
                 SubtractSelf(left, right);
                 left = left.Slice(0, ActualLength(left));
