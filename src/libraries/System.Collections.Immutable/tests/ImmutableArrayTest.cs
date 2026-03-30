@@ -1438,6 +1438,8 @@ namespace System.Collections.Immutable.Tests
             yield return new object[] { s_empty, 0, new uint[] { 1, 2, 3 } };
             yield return new object[] { s_manyElements, 0, new uint[] { 4, 5, 6 } };
             yield return new object[] { s_manyElements, 3, new uint[] { 4, 5, 6 } };
+            yield return new object[] { s_manyElements, 0, new Dictionary<int, int> { [4] = 0, [5] = 0 }.Keys };
+            yield return new object[] { s_manyElements, 3, new Dictionary<int, int> { [4] = 0, [5] = 0 }.Keys };
         }
 
         [Theory]

@@ -102,8 +102,8 @@ namespace System.Collections.Immutable
             Debug.Assert(array != null);
             Debug.Assert(arrayIndex >= 0 && arrayIndex <= array.Length);
 
-            // IList is the GCD of what the following types implement.
-            if (sequence is IList<T>)
+            // Optimized paths for well-known types, all other ICollection<T> implementations use the generic CopyTo fallback.
+            if (sequence is ICollection<T>)
             {
                 if (sequence is List<T> list)
                 {
@@ -126,6 +126,18 @@ namespace System.Collections.Immutable
                     Array.Copy(immutable.array!, 0, array, arrayIndex, immutable.Length);
                     return true;
                 }
+
+#if !NET
+                // On .NET Framework, if 'sequence' is actually a covariant array (for example, string[] used as ICollection<object>),
+                // its ICollection<T>.CopyTo implementation may call Array.Copy and throw an ArrayTypeMismatchException when copying into a T[].
+                if (sequence is Array)
+                {
+                    return false;
+                }
+#endif
+
+                ((ICollection<T>)sequence).CopyTo(array, arrayIndex);
+                return true;
             }
 
             return false;
