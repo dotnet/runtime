@@ -200,6 +200,11 @@ inline
 bool
 ep_rt_config_value_get_enable_stackwalk (void);
 
+static
+inline
+uint32_t
+ep_rt_config_value_get_buffer_guard_level (void);
+
 /*
  * EventPipeSampleProfiler.
  */
@@ -701,6 +706,26 @@ void
 ep_rt_volatile_store_ptr_without_barrier (
 	volatile void **ptr,
 	void *value);
+
+/*
+ * Memory Protection
+ */
+
+static
+inline
+bool
+ep_rt_vprotect (
+	void *addr,
+	size_t length,
+	EventPipePageProtection protection);
+
+/*
+ * Fail fast
+ */
+
+static
+void
+ep_rt_fatal_error_with_message (const ep_char8_t *message);
 
 /*
  * Enter/Exit spin lock helper used with error handling macros.
