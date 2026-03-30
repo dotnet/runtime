@@ -53,6 +53,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(_fileInfo) ?? _fileInfo.LastWriteTimeUtc;
             }
 
+            // This is not thread-safe, but that's not an issue since DirectoryInfos are cheap and interchangeable.
             _directoryInfo ??= new DirectoryInfo(_fileInfo.FullName);
             _directoryInfo.Refresh();
 

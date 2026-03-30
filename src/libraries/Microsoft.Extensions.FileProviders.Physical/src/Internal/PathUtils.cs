@@ -32,7 +32,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
         internal static string EnsureTrailingSlash(string path)
         {
             if (!string.IsNullOrEmpty(path) &&
-                path[path.Length - 1] != Path.DirectorySeparatorChar)
+                path[path.Length - 1] != Path.DirectorySeparatorChar &&
+                path[path.Length - 1] != Path.AltDirectorySeparatorChar)
             {
                 return path + Path.DirectorySeparatorChar;
             }

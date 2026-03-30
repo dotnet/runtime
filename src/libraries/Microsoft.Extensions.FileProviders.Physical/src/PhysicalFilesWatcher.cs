@@ -92,9 +92,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 throw new ArgumentNullException(nameof(root));
             }
 
-            _root = root.Length > 0 && root[root.Length - 1] != Path.DirectorySeparatorChar && root[root.Length - 1] != Path.AltDirectorySeparatorChar
-                ? root + Path.DirectorySeparatorChar
-                : root;
+            _root = PathUtils.EnsureTrailingSlash(root);
 
             if (fileSystemWatcher != null)
             {
@@ -319,11 +317,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         OnFileSystemEntryChange(newLocation);
                     }
                 }
-                catch (Exception ex) when (
-                    ex is IOException ||
-                    ex is SecurityException ||
-                    ex is DirectoryNotFoundException ||
-                    ex is UnauthorizedAccessException)
+                catch (Exception ex) when (ex is IOException or SecurityException or DirectoryNotFoundException or UnauthorizedAccessException)
                 {
                     // Swallow the exception.
                 }
@@ -537,6 +531,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
                                     needsRootWatcher = true;
                                     _rootWasUnavailable = true;
                                 }
+                                else
+                                {
+                                    throw;
+                                }
                             }
                         }
                     }
@@ -588,9 +586,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 _rootCreationWatcher = newWatcher;
             }
 
-            // If the token is already cancelled (e.g. setup error because the ancestor directory
-            // also doesn't exist), don't register a callback — it would fire synchronously and
-            // could cause a tight retry loop.
+            // If the token is already cancelled (e.g. setup error),
+            // don't register a callback - it would fire synchronously and could cause a tight retry loop.
             if (newWatcher.Token.IsCancellationRequested)
             {
                 // If _root appeared during setup, enable the FSW now.
@@ -732,21 +729,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 string current = _targetDirectory;
                 while (!Directory.Exists(current))
                 {
-                    string? parent = Path.GetDirectoryName(current);
-                    if (parent is null)
-                    {
-                        break;
-                    }
-
-                    current = parent;
-                }
-
-                // If no existing ancestor was found (e.g. unmounted drive), cancel immediately.
-                if (!Directory.Exists(current))
-                {
-                    _expectedName = string.Empty;
-                    _cts.Cancel();
-                    return;
+                    // If no existing ancestor was found (e.g. unmounted drive on Windows), throw.
+                    current = Path.GetDirectoryName(current) ?? throw new DirectoryNotFoundException(SR.Format(SR.RootDirectoryMissing, current));
                 }
 
                 // current is the deepest existing ancestor; expected name is its immediate child.
@@ -785,8 +769,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 while (true)
                 {
                     // Fast-forward through directories that already exist.
-                    string childPath = Path.Combine(watchDir, _expectedName);
-                    while (Directory.Exists(childPath))
+                    while (Path.Combine(watchDir, _expectedName) is var childPath && Directory.Exists(childPath))
                     {
                         watchDir = childPath;
                         if (IsTargetDirectory(watchDir))
@@ -796,7 +779,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         }
 
                         _expectedName = GetChildName(watchDir, _targetDirectory);
-                        childPath = Path.Combine(watchDir, _expectedName);
                     }
 
                     // Start watching for the next expected directory.
@@ -823,8 +805,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     _watcher = newWatcher;
 
                     // Post-start race check: the directory may have appeared during setup.
-                    childPath = Path.Combine(watchDir, _expectedName);
-                    if (!Directory.Exists(childPath))
+                    string nextDir = Path.Combine(watchDir, _expectedName);
+                    if (!Directory.Exists(nextDir))
                     {
                         return; // watcher is properly set up
                     }
@@ -832,7 +814,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     // It appeared — dispose this watcher and advance.
                     _watcher.Dispose();
                     _watcher = null;
-                    watchDir = childPath;
+                    watchDir = nextDir;
 
                     if (IsTargetDirectory(watchDir))
                     {
@@ -840,6 +822,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         return;
                     }
 
+                    // In every iteration, _expectedName gets shorter and watchDir gets longer, so the loop can't go on forever.
                     _expectedName = GetChildName(watchDir, _targetDirectory);
                 }
             }
