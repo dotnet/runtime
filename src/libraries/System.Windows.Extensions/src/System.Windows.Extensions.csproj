@@ -92,6 +92,10 @@ System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescript
              Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\StreamPolyfills.cs" Link="Common\Polyfills\StreamPolyfills.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Avoid a product dependency to System.Drawing.Common, this reference is only needed for TypeForwards -->
     <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Drawing.Common.csproj" PrivateAssets="all" />

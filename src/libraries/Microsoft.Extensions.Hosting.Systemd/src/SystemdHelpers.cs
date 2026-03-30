@@ -5,9 +5,6 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
-#if !NET
-using System.Diagnostics;
-#endif
 
 namespace Microsoft.Extensions.Hosting.Systemd
 {

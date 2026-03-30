@@ -23,5 +23,8 @@
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <Compile Include="$(CoreLibSharedDir)System\Marvin.cs" Link="Common\System\Marvin.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)Polyfills\DateTimeOffsetPolyfills.cs" Link="Common\Polyfills\DateTimeOffsetPolyfills.cs" />
+  </ItemGroup>
 
 </Project>
