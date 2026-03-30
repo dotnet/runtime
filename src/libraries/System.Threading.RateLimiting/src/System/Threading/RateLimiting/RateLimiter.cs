@@ -39,6 +39,14 @@ namespace System.Threading.RateLimiting
                 throw new ArgumentException("Must pass in at least 1 limiter.", nameof(limiters));
             }
 
+            foreach (RateLimiter limiter in limiters)
+            {
+                if (limiter is ReplenishingRateLimiter)
+                {
+                    return new ChainedReplenishingRateLimiter(limiters);
+                }
+            }
+
             return new ChainedRateLimiter(limiters);
         }
 

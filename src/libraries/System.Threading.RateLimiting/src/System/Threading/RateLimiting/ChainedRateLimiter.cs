@@ -24,13 +24,51 @@ namespace System.Threading.RateLimiting
         public override RateLimiterStatistics? GetStatistics()
         {
             ThrowIfDisposed();
+            return GetStatisticsCore(_limiters);
+        }
 
+        public override TimeSpan? IdleDuration
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return GetIdleDurationCore(_limiters);
+            }
+        }
+
+        protected override RateLimitLease AttemptAcquireCore(int permitCount)
+        {
+            ThrowIfDisposed();
+            return AttemptAcquireChained(_limiters, permitCount);
+        }
+
+        protected override async ValueTask<RateLimitLease> AcquireAsyncCore(int permitCount, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            return await AcquireAsyncChained(_limiters, permitCount, cancellationToken).ConfigureAwait(false);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _disposed = true;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(ChainedRateLimiter));
+            }
+        }
+
+        internal static RateLimiterStatistics GetStatisticsCore(RateLimiter[] limiters)
+        {
             long lowestAvailablePermits = long.MaxValue;
             long currentQueuedCount = 0;
             long totalFailedLeases = 0;
             long innerMostSuccessfulLeases = 0;
 
-            foreach (RateLimiter limiter in _limiters)
+            foreach (RateLimiter limiter in limiters)
             {
                 if (limiter.GetStatistics() is { } statistics)
                 {
@@ -54,50 +92,47 @@ namespace System.Threading.RateLimiting
             };
         }
 
-        public override TimeSpan? IdleDuration
+        internal static TimeSpan? GetIdleDurationCore(RateLimiter[] limiters)
         {
-            get
+            TimeSpan? lowestIdleDuration = null;
+
+            foreach (RateLimiter limiter in limiters)
             {
-                ThrowIfDisposed();
-
-                TimeSpan? lowestIdleDuration = null;
-
-                foreach (RateLimiter limiter in _limiters)
+                TimeSpan? idleDuration = limiter.IdleDuration;
+                if (idleDuration is null)
                 {
-                    if (limiter.IdleDuration is { } idleDuration)
-                    {
-                        if (lowestIdleDuration is null || idleDuration < lowestIdleDuration)
-                        {
-                            lowestIdleDuration = idleDuration;
-                        }
-                    }
+                    // The chain should not be considered idle if any of its children is not idle.
+                    return null;
                 }
 
-                return lowestIdleDuration;
+                if (lowestIdleDuration is null || idleDuration < lowestIdleDuration)
+                {
+                    lowestIdleDuration = idleDuration;
+                }
             }
+
+            return lowestIdleDuration;
         }
 
-        protected override RateLimitLease AttemptAcquireCore(int permitCount)
+        internal static RateLimitLease AttemptAcquireChained(RateLimiter[] limiters, int permitCount)
         {
-            ThrowIfDisposed();
-
             RateLimitLease[]? leases = null;
 
-            for (int i = 0; i < _limiters.Length; i++)
+            for (int i = 0; i < limiters.Length; i++)
             {
                 RateLimitLease? lease = null;
                 Exception? exception = null;
 
                 try
                 {
-                    lease = _limiters[i].AttemptAcquire(permitCount);
+                    lease = limiters[i].AttemptAcquire(permitCount);
                 }
                 catch (Exception ex)
                 {
                     exception = ex;
                 }
 
-                RateLimitLease? notAcquiredLease = CommonAcquireLogic(exception, lease, ref leases, i, _limiters.Length);
+                RateLimitLease? notAcquiredLease = CommonAcquireLogic(exception, lease, ref leases, i, limiters.Length);
 
                 if (notAcquiredLease is not null)
                 {
@@ -108,27 +143,25 @@ namespace System.Threading.RateLimiting
             return new CombinedRateLimitLease(leases!);
         }
 
-        protected override async ValueTask<RateLimitLease> AcquireAsyncCore(int permitCount, CancellationToken cancellationToken)
+        internal static async ValueTask<RateLimitLease> AcquireAsyncChained(RateLimiter[] limiters, int permitCount, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
-
             RateLimitLease[]? leases = null;
 
-            for (int i = 0; i < _limiters.Length; i++)
+            for (int i = 0; i < limiters.Length; i++)
             {
                 RateLimitLease? lease = null;
                 Exception? exception = null;
 
                 try
                 {
-                    lease = await _limiters[i].AcquireAsync(permitCount, cancellationToken).ConfigureAwait(false);
+                    lease = await limiters[i].AcquireAsync(permitCount, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     exception = ex;
                 }
 
-                RateLimitLease? notAcquiredLease = CommonAcquireLogic(exception, lease, ref leases, i, _limiters.Length);
+                RateLimitLease? notAcquiredLease = CommonAcquireLogic(exception, lease, ref leases, i, limiters.Length);
 
                 if (notAcquiredLease is not null)
                 {
@@ -137,19 +170,6 @@ namespace System.Threading.RateLimiting
             }
 
             return new CombinedRateLimitLease(leases!);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            _disposed = true;
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(ChainedRateLimiter));
-            }
         }
 
         internal static RateLimitLease? CommonAcquireLogic(Exception? ex, RateLimitLease? lease, ref RateLimitLease[]? leases, int index, int length)
