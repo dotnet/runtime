@@ -138,46 +138,52 @@ namespace System
         [UnmanagedCallersOnly]
         [StackTraceHidden]
         [RequiresUnsafe]
-        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue, char** pRawArguments, int commandArgCount, int skipArgs)
+        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue)
         {
-            string[]? argument = null;
-            if (hasArgument)
+            CallEntryPointImpl(entryPoint, pArgument, hasArgument, hasReturnValue, pReturnValue);
+        }
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        [RequiresUnsafe]
+        internal static unsafe void CallEntryPointWithCatch(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue, Exception* pException)
+        {
+            try
             {
-                if (pArgument is not null)
-                {
-                    argument = *pArgument;
-                }
-                else
-                {
-                    int argCount = commandArgCount - skipArgs;
-                    argument = argCount <= 0 ? [] : new string[argCount];
-                    for (int i = 0; i < argCount; i++)
-                    {
-                        argument[i] = new string(pRawArguments[i + skipArgs]);
-                    }
-                }
+                CallEntryPointImpl(entryPoint, pArgument, hasArgument, hasReturnValue, pReturnValue);
             }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [StackTraceHidden]
+        [RequiresUnsafe]
+        private static unsafe void CallEntryPointImpl(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue)
+        {
+            string[]? argument = pArgument is not null ? *pArgument : null;
 
             if (hasArgument)
             {
                 if (hasReturnValue)
                 {
-                    *pReturnValue = ((delegate* managed<string[]?, int>)entryPoint)(argument);
+                    *pReturnValue = ((delegate*<string[]?, int>)entryPoint)(argument);
                 }
                 else
                 {
-                    ((delegate* managed<string[]?, void>)entryPoint)(argument);
+                    ((delegate*<string[]?, void>)entryPoint)(argument);
                 }
             }
             else
             {
                 if (hasReturnValue)
                 {
-                    *pReturnValue = ((delegate* managed<int>)entryPoint)();
+                    *pReturnValue = ((delegate*<int>)entryPoint)();
                 }
                 else
                 {
-                    ((delegate* managed<void>)entryPoint)();
+                    ((delegate*<void>)entryPoint)();
                 }
             }
         }
@@ -189,7 +195,7 @@ namespace System
         {
             try
             {
-                return ((delegate* managed<string?, int>)entryPoint)(pArgument is not null ? new string(pArgument) : null);
+                return ((delegate*<string?, int>)entryPoint)(pArgument is not null ? new string(pArgument) : null);
             }
             catch (Exception ex)
             {
