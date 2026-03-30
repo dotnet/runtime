@@ -437,6 +437,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 try
                 {
+                    // This iterates through all file system entries under the root directory, which can be expensive if there are many of them.
+                    // However, this is only called if the root directory was missing and was just created, so it is expected that there won't be many entries at this point.
                     foreach (string fullPath in
                         Directory.EnumerateFileSystemEntries(_root, "*", SearchOption.AllDirectories))
                     {
