@@ -389,8 +389,8 @@ add_signal_handler (int signo, MonoSignalHandler handler, int flags)
 	}
 }
 
-static void
-remove_signal_handler (int signo)
+void
+mono_runtime_posix_remove_signal_handler (int signo)
 {
 	struct sigaction sa;
 	struct sigaction *saved_action = get_saved_signal_handler (signo);

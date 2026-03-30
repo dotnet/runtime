@@ -49,6 +49,7 @@ public partial class ApkBuilder
     public bool IsLibraryMode { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
+    public ITaskItem[] ExtraNativeSources { get; set; } = Array.Empty<ITaskItem>();
     public string[] NativeDependencies { get; set; } = Array.Empty<string>();
     public string RuntimeFlavor { get; set; } = nameof(RuntimeFlavorEnum.Mono);
 
@@ -357,10 +358,21 @@ public partial class ApkBuilder
                 "monodroid-coreclr.c" : (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
             string runtimeInclude = string.Join(" ", runtimeHeaders.Select(h => $"\"{NormalizePathToUnix(h)}\""));
 
+            var extraSources = new StringBuilder();
+            foreach (ITaskItem item in ExtraNativeSources)
+            {
+                string src = item.ItemSpec;
+                string dst = Path.Combine(OutputDir, Path.GetFileName(src));
+                if (File.Exists(src))
+                    File.Copy(src, dst, true);
+                extraSources.AppendLine($"    {Path.GetFileName(src)}");
+            }
+
             string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
                 .Replace("%RuntimeInclude%", runtimeInclude)
                 .Replace("%NativeLibrariesToLink%", NormalizePathToUnix(nativeLibraries))
                 .Replace("%MONODROID_SOURCE%", monodroidSource)
+                .Replace("%ExtraSources%", extraSources.ToString().TrimEnd())
                 .Replace("%AotSources%", NormalizePathToUnix(aotSources))
                 .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c")
                 .Replace("%APP_LINKER_ARGS%", extraLinkerArgs.ToString());
