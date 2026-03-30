@@ -4476,6 +4476,11 @@ void CodeGen::genPushCalleeSavedRegisters()
     }
 #endif // DEBUG
 
+    if (m_compiler->IsAot())
+    {
+        GetEmitter()->emitPacInProlog();
+    }
+
     // The frameType number is arbitrary, is defined below, and corresponds to one of the frame styles we
     // generate based on various sizes.
     int frameType = 0;
@@ -4533,9 +4538,20 @@ void CodeGen::genPushCalleeSavedRegisters()
 
             assert(totalFrameSize <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
 
-            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -totalFrameSize,
-                                          INS_OPTS_PRE_INDEX);
-            m_compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
+            if (JitConfig.JitPacEnabled() != 0 && !m_compiler->IsAot())
+            {
+                // Avoid pre-indexed variant of store to save FP/LR when PAC is enabled.
+                genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+                GetEmitter()->emitPacInProlog();
+                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
+                m_compiler->unwindSaveRegPair(REG_FP, REG_LR, 0);
+            }
+            else
+            {
+                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -totalFrameSize,
+                                              INS_OPTS_PRE_INDEX);
+                m_compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
+            }
 
             maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                          // We've already saved FP/LR
             offset = (int)m_compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // 2 for FP/LR
@@ -4586,6 +4602,10 @@ void CodeGen::genPushCalleeSavedRegisters()
 
                 assert(m_compiler->lvaOutgoingArgSpaceSize + 2 * REGSIZE_BYTES <= (unsigned)totalFrameSize);
 
+                if (!m_compiler->IsAot())
+                {
+                    GetEmitter()->emitPacInProlog();
+                }
                 GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
                                               m_compiler->lvaOutgoingArgSpaceSize);
                 m_compiler->unwindSaveRegPair(REG_FP, REG_LR, m_compiler->lvaOutgoingArgSpaceSize);
@@ -4700,6 +4720,10 @@ void CodeGen::genPushCalleeSavedRegisters()
     }
     else
     {
+        if (!m_compiler->IsAot())
+        {
+            GetEmitter()->emitPacInProlog();
+        }
         // No frame pointer (no chaining).
         assert((maskSaveRegsInt & RBM_FP) == 0);
         assert((maskSaveRegsInt & RBM_LR) != 0);
