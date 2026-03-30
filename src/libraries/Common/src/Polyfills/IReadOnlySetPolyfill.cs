@@ -1,6 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// This file defines the IReadOnlySet<T> interface for downlevel targets
+// where it doesn't exist. Unlike extension()-based polyfills, this uses
+// #if !NET because the entire type is missing on netstandard2.0 — there
+// is nothing to extend.
+
 #if !NET
 
 namespace System.Collections.Generic

@@ -27,7 +27,7 @@ namespace System.IO
             }
 
             public Task CopyToAsync(Stream destination, CancellationToken cancellationToken) =>
-                stream.CopyToAsync(destination, 81_920, cancellationToken);
+                stream.CopyToAsync(destination, 81_920, cancellationToken); // 81_920 is the default buffer size used by Stream.CopyToAsync on .NET
         }
     }
 }

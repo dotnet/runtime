@@ -10,7 +10,14 @@ namespace System
     {
         extension(Environment)
         {
-            public static int ProcessId => Process.GetCurrentProcess().Id;
+            public static int ProcessId
+            {
+                get
+                {
+                    using Process currentProcess = Process.GetCurrentProcess();
+                    return currentProcess.Id;
+                }
+            }
         }
     }
 }
