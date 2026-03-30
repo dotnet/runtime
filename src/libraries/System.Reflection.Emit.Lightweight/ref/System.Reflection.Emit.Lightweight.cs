@@ -19,12 +19,15 @@ namespace System.Reflection.Emit
         public int GetTokenFor(System.RuntimeTypeHandle type) { throw null; }
         public int GetTokenFor(string literal) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize) { }
         public void SetCode(byte[]? code, int maxStackSize) { }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe void SetExceptions(byte* exceptions, int exceptionsSize) { }
         public void SetExceptions(byte[]? exceptions) { }
         [System.CLSCompliantAttribute(false)]
+        [System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute]
         public unsafe void SetLocalSignature(byte* localSignature, int signatureSize) { }
         public void SetLocalSignature(byte[]? localSignature) { }
     }

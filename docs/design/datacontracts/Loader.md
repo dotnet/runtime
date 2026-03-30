@@ -69,6 +69,7 @@ IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
+bool TryGetSimpleName(ModuleHandle handle, out string simpleName);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
@@ -102,6 +103,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
 | `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
+| `Module` | `SimpleName` | Simple name of the Module (UTF-8, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
 | `Module` | `AvailableTypeParams` | Pointer to an EETypeHashTable |
 | `Module` | `InstMethodHashTable` | Pointer to an InstMethodHashTable |
@@ -573,6 +575,16 @@ private static ModuleFlags GetFlags(uint flags)
 ModuleFlags GetFlags(ModuleHandle handle)
 {
     return GetFlags(target.Read<uint>(handle.Address + /* Module::Flags offset */));
+}
+
+bool TryGetSimpleName(ModuleHandle handle, out string simpleName)
+{
+    TargetPointer simpleNameStart = target.ReadPointer(handle.Address + /* Module::SimpleName offset */);
+    if (simpleNameStart == TargetPointer.Null)
+        return false;
+    byte[] simpleNameBytes = // Read<byte> from target starting at simpleNameStart until null terminator
+    simpleName = // convert to string, throw on invalid UTF-8
+    return true;
 }
 
 string GetPath(ModuleHandle handle)

@@ -6,4 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader;
 public static class CorDbgHResults
 {
     public const int CORDBG_E_READVIRTUAL_FAILURE = unchecked((int)0x80131c49);
+    public const int ERROR_BUFFER_OVERFLOW = unchecked((int)0x8007006F); // HRESULT_FROM_WIN32(ERROR_BUFFER_OVERFLOW)
 }
