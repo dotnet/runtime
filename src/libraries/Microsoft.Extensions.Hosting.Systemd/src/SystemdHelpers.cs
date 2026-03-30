@@ -34,21 +34,39 @@ namespace Microsoft.Extensions.Hosting.Systemd
                 return false;
             }
 
-            // To support containerized systemd services, check if we're the main process (PID 1)
-            // and if there are systemd environment variables defined for notifying the service
-            // manager, or passing listen handles.
 #if NET
             int processId = Environment.ProcessId;
 #else
             int processId = Process.GetCurrentProcess().Id;
 #endif
 
-            if (processId == 1)
+            // Preferred detection method: compare SYSTEMD_EXEC_PID to the current PID.
+            // Works even when ProtectProc=invisible hides /proc entries.
+            string? systemdExecPid = Environment.GetEnvironmentVariable(SystemdConstants.SystemdExecPid);
+            if (!string.IsNullOrEmpty(systemdExecPid))
             {
-                return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NOTIFY_SOCKET")) ||
-                       !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LISTEN_PID"));
+                if (int.TryParse(systemdExecPid, NumberStyles.None, CultureInfo.InvariantCulture, out int execPid))
+                {
+                    if (execPid == processId)
+                    {
+                        return true;
+                    }
+                    // Mismatch: fall through to PID 1 / legacy checks
+                }
+                // Malformed value: don't trust it, fall through to legacy detection.
             }
 
+            // To support containerized systemd services (e.g. Podman with --sdnotify=container),
+            // check if we're the main process (PID 1) and if there are systemd environment
+            // variables defined for notifying the service manager, or passing listen handles.
+            if (processId == 1)
+            {
+                return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(SystemdConstants.NotifySocket)) ||
+                       !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(SystemdConstants.ListenPid));
+            }
+
+            // Legacy detection for systemd < 248 (e.g. Ubuntu 20.04, Debian 11).
+            // Note: silently returns false when ProtectProc=invisible is set.
             try
             {
                 // Check whether our direct parent is 'systemd'.
@@ -62,6 +80,27 @@ namespace Microsoft.Extensions.Hosting.Systemd
             }
 
             return false;
+        }
+
+        private static readonly bool _isSystemdNotify = GetIsSystemdNotify();
+        /// <summary>
+        /// Checks if the current process has systemd notify enabled.
+        /// </summary>
+        /// <returns>
+        /// <see langword="true" /> if the current process has systemd notify enabled; otherwise, <see langword="false" />.
+        /// </returns>
+        internal static bool IsSystemdNotify() => _isSystemdNotify;
+
+        private static bool GetIsSystemdNotify()
+        {
+            // No point in testing anything unless it's Unix
+            if (Environment.OSVersion.Platform != PlatformID.Unix)
+            {
+                return false;
+            }
+            // Checks whether NOTIFY_SOCKET is set, indicating the service manager expects sd_notify notifications.
+            string? socketPath = Environment.GetEnvironmentVariable(SystemdConstants.NotifySocket);
+            return !string.IsNullOrEmpty(socketPath);
         }
     }
 }
