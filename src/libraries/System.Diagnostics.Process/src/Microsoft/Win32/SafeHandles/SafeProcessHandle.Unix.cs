@@ -59,6 +59,31 @@ namespace Microsoft.Win32.SafeHandles
         // On Unix, we don't use process descriptors yet, so we can't get PID.
         private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
 
+        private bool SignalCore(PosixSignal signal)
+        {
+            int signalNumber = Interop.Sys.GetPlatformSignalNumber(signal);
+            if (signalNumber == 0)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            int killResult = Interop.Sys.Kill(ProcessId, (Interop.Sys.Signals)signalNumber);
+            if (killResult != 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                // Return false if the process has already exited (or never existed).
+                if (errorInfo.Error == Interop.Error.ESRCH)
+                {
+                    return false;
+                }
+
+                throw new Win32Exception(errorInfo.RawErrno); // same exception as on Windows
+            }
+
+            return true;
+        }
+
         private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, out ProcessWaitState.Holder? waitStateHolder);

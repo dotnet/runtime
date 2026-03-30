@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -93,6 +95,124 @@ namespace System.Diagnostics.Tests
             };
 
             Assert.Throws<InvalidOperationException>(() => SafeProcessHandle.Start(startInfo));
+        }
+
+        [Fact]
+        public void Kill_InvalidHandle_ThrowsInvalidOperationException()
+        {
+            using SafeProcessHandle invalidHandle = new SafeProcessHandle();
+            Assert.Throws<InvalidOperationException>(() => invalidHandle.Kill());
+        }
+
+        [Fact]
+        public void Signal_InvalidHandle_ThrowsInvalidOperationException()
+        {
+            using SafeProcessHandle invalidHandle = new SafeProcessHandle();
+            Assert.Throws<InvalidOperationException>(() => invalidHandle.Signal(PosixSignal.SIGKILL));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Kill_RunningProcess_Terminates()
+        {
+            Process process = CreateProcess(static () =>
+            {
+                Thread.Sleep(Timeout.Infinite);
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
+            using Process fetchedProcess = Process.GetProcessById(processHandle.ProcessId);
+
+            processHandle.Kill();
+
+            Assert.True(fetchedProcess.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Kill_AlreadyExited_DoesNotThrow()
+        {
+            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            process.Start();
+            SafeProcessHandle handle = process.SafeHandle;
+
+            Assert.True(process.WaitForExit(WaitInMS));
+
+            // Kill after the process has exited should not throw.
+            handle.Kill();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Signal_SIGKILL_RunningProcess_ReturnsTrue()
+        {
+            Process process = CreateProcess(static () =>
+            {
+                Thread.Sleep(Timeout.Infinite);
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
+            using Process fetchedProcess = Process.GetProcessById(processHandle.ProcessId);
+
+            bool delivered = processHandle.Signal(PosixSignal.SIGKILL);
+
+            Assert.True(delivered);
+            Assert.True(fetchedProcess.WaitForExit(WaitInMS));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Signal_SIGKILL_AlreadyExited_ReturnsFalse()
+        {
+            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            process.Start();
+            SafeProcessHandle handle = process.SafeHandle;
+
+            Assert.True(process.WaitForExit(WaitInMS));
+
+            // Signal after the process has exited should return false.
+            Assert.False(handle.Signal(PosixSignal.SIGKILL));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Signal_NonSIGKILL_OnWindows_ThrowsPlatformNotSupportedException()
+        {
+            Process process = CreateProcess(static () =>
+            {
+                Thread.Sleep(Timeout.Infinite);
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
+            using Process fetchedProcess = Process.GetProcessById(processHandle.ProcessId);
+
+            try
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => processHandle.Signal(PosixSignal.SIGTERM));
+            }
+            finally
+            {
+                processHandle.Kill();
+                fetchedProcess.WaitForExit(WaitInMS);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.Windows, "SIGTERM is not supported on Windows.")]
+        public void Signal_SIGTERM_RunningProcess_ReturnsTrue()
+        {
+            Process process = CreateProcess(static () =>
+            {
+                Thread.Sleep(Timeout.Infinite);
+                return RemoteExecutor.SuccessExitCode;
+            });
+
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
+            using Process fetchedProcess = Process.GetProcessById(processHandle.ProcessId);
+
+            bool delivered = processHandle.Signal(PosixSignal.SIGTERM);
+
+            Assert.True(delivered);
+            Assert.True(fetchedProcess.WaitForExit(WaitInMS));
         }
     }
 }
