@@ -3983,7 +3983,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE)
 					encode_value (info ? info->subtype : 0, p, &p);
 
-				if (info && info->subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL)
+				if (info && (info->subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL || info->subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_CLOSED_OVER_NULL))
 					encode_klass_ref (acfg, info->d.delegate_invoke.method->klass, p, &p);
 				else
 					encode_signature (acfg, sig, p, &p);
@@ -5098,7 +5098,7 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 				inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
 				g_assert (is_ok (error)); /* FIXME don't swallow the error */
 
-				m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, NULL);
+				m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, FALSE, NULL);
 
 				gshared = mini_get_shared_method_full (m, SHARE_MODE_NONE, error);
 				mono_error_assert_ok (error);
@@ -5112,7 +5112,36 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 					inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
 					g_assert (is_ok (error)); /* FIXME don't swallow the error */
 
-					m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, NULL);
+					m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, FALSE, NULL);
+
+					gshared = mini_get_shared_method_full (m, SHARE_MODE_GSHAREDVT, error);
+					mono_error_assert_ok (error);
+
+					add_extra_method (acfg, gshared);
+				}
+			}
+
+			/* closed_over_null variant for generic delegates */
+			{
+				create_ref_shared_inst (acfg, method, &ctx);
+
+				inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
+				g_assert (is_ok (error));
+
+				m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, TRUE, NULL);
+
+				gshared = mini_get_shared_method_full (m, SHARE_MODE_NONE, error);
+				mono_error_assert_ok (error);
+
+				add_extra_method (acfg, gshared);
+
+				if (acfg->jit_opts & MONO_OPT_GSHAREDVT) {
+					create_gsharedvt_inst (acfg, method, &ctx);
+
+					inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
+					g_assert (is_ok (error));
+
+					m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, TRUE, NULL);
 
 					gshared = mini_get_shared_method_full (m, SHARE_MODE_GSHAREDVT, error);
 					mono_error_assert_ok (error);
@@ -5129,9 +5158,13 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 
 			sig = mono_method_signature_internal (method);
 			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0])) && !m_type_is_byref (sig->params [0])) {
-				m = mono_marshal_get_delegate_invoke_internal (method, TRUE, FALSE, NULL);
+				m = mono_marshal_get_delegate_invoke_internal (method, TRUE, FALSE, FALSE, NULL);
 				add_method (acfg, m);
 			}
+
+			/* closed_over_null variant */
+			m = mono_marshal_get_delegate_invoke_internal (method, TRUE, FALSE, TRUE, NULL);
+			add_method (acfg, m);
 
 			method = try_get_method_nofail (klass, "BeginInvoke", -1, 0);
 			if (method)
@@ -5163,7 +5196,7 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 					/* Add wrappers needed by mono_ftnptr_to_delegate () */
 					invoke = mono_get_delegate_invoke_internal (klass);
 					wrapper = mono_marshal_get_native_func_wrapper_aot (klass);
-					del_invoke = mono_marshal_get_delegate_invoke_internal (invoke, FALSE, TRUE, wrapper);
+					del_invoke = mono_marshal_get_delegate_invoke_internal (invoke, FALSE, TRUE, FALSE, wrapper);
 					add_method (acfg, wrapper);
 					add_method (acfg, del_invoke);
 				}

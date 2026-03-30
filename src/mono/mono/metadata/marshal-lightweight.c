@@ -2056,10 +2056,21 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 			mono_mb_emit_byte (mb, CEE_MONO_LDVIRTFTN_DELEGATE);
 			mono_mb_emit_op (mb, CEE_CALLI, target_method_sig);
 		} else {
+			/* closed_over_null: call the instance method with null as 'this'
+			 * Use an indirect call through method_ptr so the wrapper can be AOT-compiled
+			 * without embedding a specific target method.
+			 */
 			mono_mb_emit_byte (mb, CEE_LDNULL);
 			for (i = 0; i < sig->param_count; ++i)
 				mono_mb_emit_ldarg (mb, i + 1);
-			mono_mb_emit_op (mb, CEE_CALL, target_method);
+			mono_mb_emit_ldarg (mb, 0);
+			mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, extra_arg));
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
+			mono_mb_emit_ldarg (mb, 0);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_LD_DELEGATE_METHOD_PTR);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_op (mb, CEE_MONO_CALLI_EXTRA_ARG, sig);
 		}
 	} else {
 		if (static_method_with_first_arg_bound) {

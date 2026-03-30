@@ -1320,7 +1320,13 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL) {
 						klass = decode_klass_ref (module, p, &p, error);
 						invoke = mono_get_delegate_invoke_internal (klass);
-						ref->method = mono_marshal_get_delegate_invoke_internal(invoke, TRUE, FALSE, NULL);
+						ref->method = mono_marshal_get_delegate_invoke_internal(invoke, TRUE, FALSE, FALSE, NULL);
+						break;
+					}
+					if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_CLOSED_OVER_NULL) {
+						klass = decode_klass_ref (module, p, &p, error);
+						invoke = mono_get_delegate_invoke_internal (klass);
+						ref->method = mono_marshal_get_delegate_invoke_internal(invoke, TRUE, FALSE, TRUE, NULL);
 						break;
 					}
 

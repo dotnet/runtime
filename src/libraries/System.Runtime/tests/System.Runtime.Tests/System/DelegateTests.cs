@@ -1276,6 +1276,24 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(
                 () => Delegate.CreateDelegate(typeof(NullableIntToString), num, mi));
         }
+
+        [Fact]
+        public static void CreateDelegate_ClosedOverNull_InstanceMethod()
+        {
+            MethodInfo mi = typeof(C).GetMethod(nameof(C.IsThisNull));
+            Func<bool> del = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), null, mi);
+            Assert.Null(del.Target);
+            Assert.True(del());
+        }
+
+        [Fact]
+        public static void CreateDelegate_ClosedOverNull_InstanceMethodViaMethodInfoCreateDelegate()
+        {
+            MethodInfo mi = typeof(C).GetMethod(nameof(C.IsThisNull));
+            Func<bool> del = mi.CreateDelegate<Func<bool>>(null);
+            Assert.Null(del.Target);
+            Assert.True(del());
+        }
         #endregion Tests
 
         #region Test Setup
@@ -1368,6 +1386,11 @@ namespace System.Tests
 
             public static void S(C c)
             {
+            }
+
+            public bool IsThisNull()
+            {
+                return this is null;
             }
 
             private void PrivateInstance()
