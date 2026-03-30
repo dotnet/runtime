@@ -8,6 +8,7 @@
 #include <assert.h>
 
 static int HasNoPrivateKey(const RSA* rsa);
+static int CheckLegacyPrivateKeyAvailable(EVP_PKEY* pkey);
 
 EVP_PKEY* CryptoNative_EvpPKeyCreateRsa(RSA* currentKey)
 {
@@ -144,11 +145,8 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
     // see: https://github.com/dotnet/runtime/issues/53345
     if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM)
     {
-        const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
-
-        if (rsa == NULL || HasNoPrivateKey(rsa))
+        if (!CheckLegacyPrivateKeyAvailable(pkey))
         {
-            ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
             goto done;
         }
     }
@@ -288,11 +286,8 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
     // see: https://github.com/dotnet/runtime/issues/53345
     if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM)
     {
-        const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
-
-        if (rsa == NULL || HasNoPrivateKey(rsa))
+        if (!CheckLegacyPrivateKeyAvailable(pkey))
         {
-            ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
             goto done;
         }
     }
@@ -360,6 +355,28 @@ done:
     }
 
     return ret;
+}
+
+// On OpenSSL < 3.0, check that the legacy RSA key has a private key available.
+// Only call this for OpenSSL < 3.0.
+// Returns 1 if the check passes, 0 if no private key.
+static int CheckLegacyPrivateKeyAvailable(EVP_PKEY* pkey)
+{
+    if (!API_EXISTS(EVP_PKEY_get0_RSA))
+    {
+        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        return 0;
+    }
+
+    const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+    if (rsa == NULL || HasNoPrivateKey(rsa))
+    {
+        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        return 0;
+    }
+
+    return 1;
 }
 
 static int HasNoPrivateKey(const RSA* rsa)

@@ -375,6 +375,177 @@ done:
     return ret;
 }
 
+// EVP-based version of QuickRsaCheck for OpenSSL 3.0+ where legacy RSA APIs may not be available.
+// Uses EVP_PKEY_get_bn_param to extract RSA key components.
+static int32_t QuickRsaCheckEvp(const EVP_PKEY* pkey, bool isPublic)
+{
+    BIGNUM* n = NULL;
+    BIGNUM* e = NULL;
+    BIGNUM* d = NULL;
+    BIGNUM* p = NULL;
+    BIGNUM* q = NULL;
+    BIGNUM* dp = NULL;
+    BIGNUM* dq = NULL;
+    BIGNUM* inverseQ = NULL;
+    BN_CTX* ctx = NULL;
+    BIGNUM* x = NULL;
+    BIGNUM* y = NULL;
+    BIGNUM* pM1 = NULL;
+    BIGNUM* qM1 = NULL;
+    int ret = 0;
+
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_N, &n) ||
+        !EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_E, &e))
+    {
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        goto done;
+    }
+
+    if (BN_is_zero(n))
+    {
+        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DECODE_ERROR, __FILE__, __LINE__);
+        goto done;
+    }
+
+    if (BN_num_bits(n) > OPENSSL_RSA_MAX_MODULUS_BITS)
+    {
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_MODULUS_TOO_LARGE, __FILE__, __LINE__);
+        goto done;
+    }
+
+    if (BN_is_one(e) || !BN_is_odd(e))
+    {
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_BAD_E_VALUE, __FILE__, __LINE__);
+        goto done;
+    }
+
+    if (isPublic)
+    {
+        ret = 1;
+        goto done;
+    }
+
+    // Try to get private key parameter d. If not available, fall back to EVP_PKEY_check.
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_D, &d))
+    {
+        ERR_clear_error();
+        ret = -1;
+        goto done;
+    }
+
+    // Try to get factors p and q.
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR1, &p) ||
+        !EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR2, &q))
+    {
+        ERR_clear_error();
+        ret = -1;
+        goto done;
+    }
+
+    if (BN_cmp(d, n) >= 0)
+    {
+        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DECODE_ERROR, __FILE__, __LINE__);
+        goto done;
+    }
+
+    if ((ctx = BN_CTX_new()) == NULL ||
+        (x = BN_new()) == NULL ||
+        (y = BN_new()) == NULL ||
+        (pM1 = BN_new()) == NULL ||
+        (qM1 = BN_new()) == NULL)
+    {
+        goto done;
+    }
+
+    if (!BN_mul(x, p, q, ctx))
+    {
+        goto done;
+    }
+
+    if (BN_cmp(x, n) != 0)
+    {
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_N_DOES_NOT_EQUAL_P_Q, __FILE__, __LINE__);
+        goto done;
+    }
+
+    if (!BN_sub(pM1, p, BN_value_one()) || !BN_sub(qM1, q, BN_value_one()) || !Lcm(pM1, qM1, ctx, x))
+    {
+        goto done;
+    }
+
+    if (!BN_mod_mul(y, d, e, x, ctx))
+    {
+        goto done;
+    }
+
+    if (!BN_is_one(y))
+    {
+        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_D_E_NOT_CONGRUENT_TO_1, __FILE__, __LINE__);
+        goto done;
+    }
+
+    // CRT parameters are optional.
+    if (EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_EXPONENT1, &dp) &&
+        EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_EXPONENT2, &dq) &&
+        EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_COEFFICIENT1, &inverseQ))
+    {
+        if (!BN_div(NULL, x, d, pM1, ctx))
+        {
+            goto done;
+        }
+
+        if (BN_cmp(x, dp) != 0)
+        {
+            ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_DMP1_NOT_CONGRUENT_TO_D, __FILE__, __LINE__);
+            goto done;
+        }
+
+        if (!BN_div(NULL, x, d, qM1, ctx))
+        {
+            goto done;
+        }
+
+        if (BN_cmp(x, dq) != 0)
+        {
+            ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_DMQ1_NOT_CONGRUENT_TO_D, __FILE__, __LINE__);
+            goto done;
+        }
+
+        if (!BN_mod_inverse(x, q, p, ctx))
+        {
+            goto done;
+        }
+
+        if (BN_cmp(x, inverseQ) != 0)
+        {
+            ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_IQMP_NOT_INVERSE_OF_Q, __FILE__, __LINE__);
+            goto done;
+        }
+    }
+    else
+    {
+        // If we couldn't get all CRT params, clear errors from the attempts and skip CRT checks.
+        ERR_clear_error();
+    }
+
+    ret = 1;
+done:
+    BN_clear_free(n);
+    BN_clear_free(e);
+    BN_clear_free(d);
+    BN_clear_free(p);
+    BN_clear_free(q);
+    BN_clear_free(dp);
+    BN_clear_free(dq);
+    BN_clear_free(inverseQ);
+    if (x) BN_clear_free(x);
+    if (y) BN_clear_free(y);
+    if (pM1) BN_clear_free(pM1);
+    if (qM1) BN_clear_free(qM1);
+    if (ctx) BN_CTX_free(ctx);
+    return ret;
+}
+
 static bool CheckKey(EVP_PKEY* key, int32_t algId, bool isPublic, int32_t (*check_func)(EVP_PKEY_CTX*))
 {
     if (algId != NID_undef && EVP_PKEY_get_base_id(key) != algId)
@@ -388,30 +559,46 @@ static bool CheckKey(EVP_PKEY* key, int32_t algId, bool isPublic, int32_t (*chec
     // OpenSSL 3 correctly fails with with an invalid modulus error.
     if (algId == NID_rsaEncryption)
     {
-        const RSA* rsa = EVP_PKEY_get0_RSA(key);
+        int32_t result;
 
-        // If we can get the RSA object, use that for a faster path to validating the key that skips primality tests.
-        if (rsa != NULL)
+        if (API_EXISTS(EVP_PKEY_get_bn_param))
         {
-            //  0 = key check failed
-            //  1 = key check passed
-            // -1 = could not assess private key.
-            int32_t result = QuickRsaCheck(rsa, isPublic);
-
-            if (result == 0)
-            {
-                return false;
-            }
-            if (result == 1)
-            {
-                return true;
-            }
-
-            // -1 falls though.
-            // If the fast check was indeterminate, fall though and use the OpenSSL routine.
-            // Clear out any errors we may have accumulated in our check.
-            ERR_clear_error();
+            // OpenSSL 3.0+: use EVP_PKEY_get_bn_param to extract RSA components directly.
+            result = QuickRsaCheckEvp(key, isPublic);
         }
+        else if (API_EXISTS(EVP_PKEY_get0_RSA))
+        {
+            const RSA* rsa = EVP_PKEY_get0_RSA(key);
+
+            if (rsa != NULL)
+            {
+                result = QuickRsaCheck(rsa, isPublic);
+            }
+            else
+            {
+                // Could not get RSA object, fall through to EVP_PKEY_check.
+                result = -1;
+            }
+        }
+        else
+        {
+            // Neither API available, fall through to EVP_PKEY_check.
+            result = -1;
+        }
+
+        if (result == 0)
+        {
+            return false;
+        }
+        if (result == 1)
+        {
+            return true;
+        }
+
+        // -1 falls though.
+        // If the fast check was indeterminate, fall though and use the OpenSSL routine.
+        // Clear out any errors we may have accumulated in our check.
+        ERR_clear_error();
     }
 
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(key, NULL);
