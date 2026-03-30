@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <GCStressIncompatible>true</GCStressIncompatible>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <NoWarn>$(NoWarn);xUnit1013</NoWarn>
     <!-- This test takes a very long time when run with runincontext -->

@@ -71,6 +71,8 @@ namespace Tracing.Tests
         private static int messageIterations = 100;
         private static readonly DateTime ThePast = DateTime.UtcNow;
 
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

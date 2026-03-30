@@ -3,7 +3,6 @@
     <!-- Needed for GCStressIncompatible and others -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- This test provides no interesting scenarios for GCStress -->
-    <GCStressIncompatible>true</GCStressIncompatible>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
     <DefineConstants>$(DefineConstants);IS_TESTER_APP</DefineConstants>

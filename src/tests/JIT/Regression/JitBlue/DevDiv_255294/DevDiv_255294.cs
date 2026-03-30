@@ -12,6 +12,7 @@ public class Test_DevDiv_255294
 
     [OuterLoop]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/44341 The test causes OutOfMemory exception in crossgen mode.", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
+    [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
     [Fact]
     public static int TestEntryPoint()
     {

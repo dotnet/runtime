@@ -13,6 +13,7 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .imagebase 0x00400000
 .file alignment 0x00000200
 .subsystem 0x0003
@@ -209,6 +210,10 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
+      string('This test is not compatible with GC stress.')
+      int32(0xC0) // AnyGCStress
+    }
     .entrypoint
     .maxstack  5
     .locals init (class cs1 V_0,

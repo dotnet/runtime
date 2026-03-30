@@ -7,7 +7,6 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <NativeAotIncompatible>true</NativeAotIncompatible>
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="tests_d.ilproj" Aliases="tests_d" />

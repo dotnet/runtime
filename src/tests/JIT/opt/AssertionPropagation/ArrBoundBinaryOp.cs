@@ -11,6 +11,7 @@ public class Program
 {
     private static int returnCode = 100;
 
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint()
     {

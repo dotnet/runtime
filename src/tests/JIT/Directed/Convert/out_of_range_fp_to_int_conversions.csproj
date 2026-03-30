@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, JitOptimizationSensitive, CMakeProjectReference -->
+    <!-- Needed for GCStressIncompatible, CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <Optimize>True</Optimize>
     <!-- This test can run for a very long time in stress modes -->
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="out_of_range_fp_to_int_conversions.cs" />

@@ -81,7 +81,6 @@ When one of the following settings is already required for a given test, the fol
 
 - Prevent a test from running under GCStress: add `<GCStressIncompatible>true</GCStressIncompatible>`
 - Prevent a test from running running under JIT stress modes: add `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
-- Prevent a test from running under HeapVerify: add `<HeapVerifyIncompatible>true</HeapVerifyIncompatible>`
 
 Note that these properties can be conditional, e.g.:
 ```
