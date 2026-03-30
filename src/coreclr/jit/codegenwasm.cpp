@@ -3108,18 +3108,18 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 
     assert(regCount <= MAX_RET_REG_COUNT);
 
-    if (op1->OperIsFieldList())
+    if (actualOp1->OperIsFieldList())
     {
         // Go through and consume the fields in the field list so liveness is correct.
         unsigned regIndex = 0;
         for (GenTreeFieldList::Use& use : op1->AsFieldList()->Uses())
         {
-            GenTree*  fieldNode = use.GetNode();
-            regNumber sourceReg = genConsumeReg(fieldNode);
+            genConsumeReg(use.GetNode());
             regIndex++;
         }
 
-        // We should only have one field in the field list.
+        // We should only have one field in the field list, and MAX_RET_REG_COUNT is 1 on Wasm.
+        assert(regIndex == regCount);
         assert(regIndex == 1);
 
         // The field list's individual fields should have preceded us in LIR and code to push them onto the stack
