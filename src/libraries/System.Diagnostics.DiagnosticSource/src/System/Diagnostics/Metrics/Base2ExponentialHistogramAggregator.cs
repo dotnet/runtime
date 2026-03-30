@@ -267,14 +267,8 @@ namespace System.Diagnostics.Metrics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsFinite(double value)
-        {
-#if NET
-            return double.IsFinite(value);
-#else
-            return !double.IsInfinity(value) && !double.IsNaN(value);
-#endif
-        }
+        private static bool IsFinite(double value) =>
+            double.IsFinite(value);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LeadingZero64(long value)

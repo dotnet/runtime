@@ -37,11 +37,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
             // To support containerized systemd services, check if we're the main process (PID 1)
             // and if there are systemd environment variables defined for notifying the service
             // manager, or passing listen handles.
-#if NET
             int processId = Environment.ProcessId;
-#else
-            int processId = Process.GetCurrentProcess().Id;
-#endif
 
             if (processId == 1)
             {

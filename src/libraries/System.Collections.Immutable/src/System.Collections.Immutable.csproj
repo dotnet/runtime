@@ -167,6 +167,8 @@ The System.Collections.Immutable library is built-in as part of the shared frame
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CollectionBuilderAttribute.cs" Link="System\Runtime\CompilerServices\CollectionBuilderAttribute.cs" />
+    <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\CollectionsPolyfills.cs" Link="Common\Polyfills\CollectionsPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">

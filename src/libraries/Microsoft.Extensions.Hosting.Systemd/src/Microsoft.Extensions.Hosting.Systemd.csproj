@@ -10,6 +10,7 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Remove="SystemdLifetime.netcoreapp.cs" />
+    <Compile Include="$(CommonPath)Polyfills\EnvironmentPolyfills.cs" Link="Common\Polyfills\EnvironmentPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

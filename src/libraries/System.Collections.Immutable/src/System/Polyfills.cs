@@ -1,23 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
-#if !NET
-    internal static class KeyValuePairExtensions
-    {
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> source, out TKey key, out TValue value)
-        {
-            key = source.Key;
-            value = source.Value;
-        }
-    }
-#endif
-
 #if !NET
     internal interface IReadOnlySet<T> : IReadOnlyCollection<T>
     {

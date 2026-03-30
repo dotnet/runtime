@@ -57,11 +57,7 @@ namespace System.Collections.Frozen
             //   into hashCodes of the head element of that bucket's chain.
             // - nexts: the ith element stores the index of the next item in the chain.
             // Use long to check for overflow before allocating - very large collections can overflow int.
-#if NET
             if ((long)numBuckets + hashCodes.Length > Array.MaxLength)
-#else
-            if ((long)numBuckets + hashCodes.Length > 0x7FFFFFC7)
-#endif
             {
                 throw new OutOfMemoryException();
             }
