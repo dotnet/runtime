@@ -55,6 +55,7 @@ void AndroidCryptoNative_EcKeyDestroy(EC_KEY* r)
             ReleaseGRef(env, r->keyPair);
             ReleaseGRef(env, r->curveParameters);
             free(r);
+            AndroidCryptoNative_MaybeTriggerJavaGC(env);
         }
     }
 }

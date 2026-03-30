@@ -108,7 +108,7 @@ namespace System.Security.Cryptography.Tests
         {
             AsymmetricSignatureDeformatter def;
             SignatureDescription sig = new SignatureDescription();
-            DSA dsa = DSA.Create();
+            using DSA dsa = DSA.Create();
 
             // Deformatter with all properties null
             AssertExtensions.Throws<ArgumentNullException>("name", () => sig.CreateDeformatter(dsa));
@@ -157,7 +157,7 @@ namespace System.Security.Cryptography.Tests
         public void Formatter()
         {
             SignatureDescription sig = new SignatureDescription();
-            DSA dsa = DSA.Create();
+            using DSA dsa = DSA.Create();
 
             // Formatter with all properties null
             AssertExtensions.Throws<ArgumentNullException>("name", () => sig.CreateFormatter(dsa));

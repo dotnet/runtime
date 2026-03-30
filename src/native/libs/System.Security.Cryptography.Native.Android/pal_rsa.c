@@ -83,6 +83,7 @@ PALEXPORT void AndroidCryptoNative_RsaDestroy(RSA* rsa)
             ReleaseGRef(env, rsa->privateKey);
             ReleaseGRef(env, rsa->publicKey);
             free(rsa);
+            AndroidCryptoNative_MaybeTriggerJavaGC(env);
         }
     }
 }
