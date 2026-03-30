@@ -36,7 +36,7 @@ namespace System.Diagnostics
         private int ParentProcessId => GetProcInfo().ParentPid;
 
         /// <summary>Gets execution path</summary>
-        internal static string? GetPathToOpenFile()
+        private static string? GetPathToOpenFile()
         {
             return ProcessUtils.FindProgramInPath("xdg-open");
         }

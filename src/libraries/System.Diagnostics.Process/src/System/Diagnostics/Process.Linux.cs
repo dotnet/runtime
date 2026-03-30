@@ -103,7 +103,7 @@ namespace System.Diagnostics
             GetStat().ppid;
 
         /// <summary>Gets execution path</summary>
-        internal static string? GetPathToOpenFile()
+        private static string? GetPathToOpenFile()
         {
             ReadOnlySpan<string> allowedProgramsToRun = ["xdg-open", "gnome-open", "kfmclient"];
             foreach (var program in allowedProgramsToRun)

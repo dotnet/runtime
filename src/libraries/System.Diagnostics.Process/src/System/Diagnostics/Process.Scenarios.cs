@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Runtime.Versioning;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
@@ -49,8 +48,10 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.StartAndForget_RedirectNotSupported);
             }
 
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(startInfo);
-            return processHandle.ProcessId;
+            using Process process = new Process();
+            process.StartInfo = startInfo;
+            process.Start();
+            return process.Id;
         }
 
         /// <summary>
