@@ -20,7 +20,7 @@ The contract depends on the following globals
 
 | Global Name | Type | Description |
 | --- | --- | --- |
-| `Debugger` | TargetPointer | Pointer to the Debugger instance |
+| `Debugger` | TargetPointer | Address of the pointer to the Debugger instance (`&g_pDebugger`) |
 | `CLRJitAttachState` | TargetPointer | Pointer to the CLR JIT attach state flags |
 | `MetadataUpdatesApplied` | TargetPointer | Pointer to the g_metadataUpdatesApplied flag |
 
@@ -36,7 +36,12 @@ The contract additionally depends on these data descriptors
 bool TryGetDebuggerData(out DebuggerData data)
 {
     data = default;
-    TargetPointer debuggerPtr = target.ReadGlobalPointer("Debugger");
+    // The Debugger global points to g_pDebugger (a pointer-to-pointer).
+    // First read gets the address of g_pDebugger, second dereferences it.
+    TargetPointer debuggerPtrPtr = target.ReadGlobalPointer("Debugger");
+    if (debuggerPtrPtr == TargetPointer.Null)
+        return false;
+    TargetPointer debuggerPtr = target.ReadPointer(debuggerPtrPtr);
     if (debuggerPtr == TargetPointer.Null)
         return false;
     int leftSideInitialized = target.Read<int>(debuggerPtr + /* Debugger::LeftSideInitialized offset */);
