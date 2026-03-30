@@ -351,12 +351,17 @@ namespace Microsoft.Win32.SafeHandles
         private static unsafe void AddHandleToInheritList(SafeFileHandle? handle, IntPtr* handlesToInherit, ref int handleCount)
         {
             if (handle is null || handle.IsInvalid)
+            {
                 return;
+            }
 
             IntPtr h = handle.DangerousGetHandle();
             for (int i = 0; i < handleCount; i++)
             {
-                if (handlesToInherit[i] == h) return; // already in list
+                if (handlesToInherit[i] == h)
+                {
+                    return; // already in list
+                }
             }
             handlesToInherit[handleCount++] = h;
         }

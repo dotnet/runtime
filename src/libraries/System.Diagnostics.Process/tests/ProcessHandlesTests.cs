@@ -15,9 +15,6 @@ namespace System.Diagnostics.Tests
     [SkipOnPlatform(TestPlatforms.Android, "sh is not available on Android")]
     public class ProcessHandlesTests : ProcessTestBase
     {
-        // Exit code used by the remote child when the pipe handle was NOT inherited
-        private const int HandleNotInheritedExitCode = RemoteExecutor.SuccessExitCode + 1;
-
         [Theory]
         [InlineData(true, false)]
         [InlineData(true, true)]
@@ -32,8 +29,7 @@ namespace System.Diagnostics.Tests
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe, asyncRead: readAsync);
 
             startInfo.StandardOutputHandle = writePipe;
-            if (restrictHandles)
-                startInfo.InheritedHandles = [writePipe];
+            startInfo.InheritedHandles = restrictHandles ? [] : null;
 
             using (readPipe)
             using (writePipe)
@@ -71,8 +67,7 @@ namespace System.Diagnostics.Tests
 
             startInfo.StandardOutputHandle = outputWrite;
             startInfo.StandardErrorHandle = errorWrite;
-            if (restrictHandles)
-                startInfo.InheritedHandles = [outputWrite, errorWrite];
+            startInfo.InheritedHandles = restrictHandles ? [] : null;
 
             using (outputRead)
             using (outputWrite)
@@ -118,8 +113,7 @@ namespace System.Diagnostics.Tests
 
             startInfo.StandardOutputHandle = writePipe;
             startInfo.StandardErrorHandle = writePipe;
-            if (restrictHandles)
-                startInfo.InheritedHandles = [writePipe];
+            startInfo.InheritedHandles = restrictHandles ? [] : null;
 
             using (readPipe)
             using (writePipe)
@@ -151,8 +145,7 @@ namespace System.Diagnostics.Tests
             startInfo.StandardInputHandle = Console.OpenStandardInputHandle();
             startInfo.StandardOutputHandle = Console.OpenStandardOutputHandle();
             startInfo.StandardErrorHandle = Console.OpenStandardErrorHandle();
-            if (restrictHandles)
-                startInfo.InheritedHandles = [startInfo.StandardInputHandle!, startInfo.StandardOutputHandle!, startInfo.StandardErrorHandle!];
+            startInfo.InheritedHandles = restrictHandles ? [] : null;
 
             using Process process = Process.Start(startInfo)!;
 
@@ -219,11 +212,8 @@ namespace System.Diagnostics.Tests
                 consumerInfo.StandardInputHandle = readPipe;
                 consumerInfo.StandardOutputHandle = outputHandle;
 
-                if (restrictHandles)
-                {
-                    producerInfo.InheritedHandles = [writePipe];
-                    consumerInfo.InheritedHandles = [readPipe, outputHandle];
-                }
+                producerInfo.InheritedHandles = restrictHandles ? [] : null;
+                consumerInfo.InheritedHandles = restrictHandles ? [] : null;
 
                 using Process producer = Process.Start(producerInfo)!;
                 writePipe.Close(); // close the parent copy of child handle
@@ -354,6 +344,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false, true)]   // InheritedHandles is null -> inherited (default behavior)
         public async Task InheritedHandles_CanRestrictHandleInheritance(bool addHandleToList, bool nullList)
         {
+            const int HandleNotInheritedExitCode = RemoteExecutor.SuccessExitCode + 1;
             bool expectInherited = addHandleToList || nullList;
 
             // Create an inheritable pipe. The child process will try to open the write end

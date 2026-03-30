@@ -24,6 +24,9 @@
 #if HAVE_CLOSE_RANGE_SYSCALL && !HAVE_CLOSE_RANGE
 #include <sys/syscall.h>
 #endif
+#if (HAVE_CLOSE_RANGE || HAVE_CLOSE_RANGE_SYSCALL) && !defined(CLOSE_RANGE_CLOEXEC)
+#define CLOSE_RANGE_CLOEXEC (1U << 2)
+#endif
 #include <pthread.h>
 
 #if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
@@ -206,6 +209,23 @@ handler_from_sigaction (struct sigaction *sa)
         return sa->sa_handler;
     }
 }
+
+#if HAVE_FDWALK
+// Callback used with fdwalk() on Illumos/Solaris to set FD_CLOEXEC on all file descriptors >= 3.
+static int SetCloexecForFd(void* context, int fd)
+{
+    (void)context;
+    if (fd >= 3)
+    {
+        int flags = fcntl(fd, F_GETFD);
+        if (flags != -1)
+        {
+            fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
+        }
+    }
+    return 0;
+}
+#endif
 
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
@@ -520,19 +540,16 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             // set CLOEXEC on all FDs >= 3 in one call. FDs 0-2 are stdin/stdout/stderr.
             // This must be called AFTER the dup2 calls above so that if stdinFd/stdoutFd/stderrFd
             // are >= 3, they don't get CLOEXEC set before being duplicated to 0/1/2.
-#ifndef CLOSE_RANGE_CLOEXEC
-#define CLOSE_RANGE_CLOEXEC (1U << 2)
-#endif
             close_range(3, ~0U, CLOSE_RANGE_CLOEXEC);
             // Ignore errors - if close_range returns error at runtime, continue anyway
 #elif HAVE_CLOSE_RANGE_SYSCALL
             // On Linux with older glibc that doesn't expose close_range() as a function,
             // use the raw syscall number if the kernel supports it (kernel >= 5.9).
-#ifndef CLOSE_RANGE_CLOEXEC
-#define CLOSE_RANGE_CLOEXEC (1U << 2)
-#endif
             syscall(__NR_close_range, 3, ~0U, CLOSE_RANGE_CLOEXEC);
             // Ignore errors - if the kernel doesn't support it, continue anyway
+#elif HAVE_FDWALK
+            // On Illumos/Solaris, use fdwalk() to set FD_CLOEXEC on all open fds >= 3.
+            fdwalk(SetCloexecForFd, NULL);
 #endif
 
             // Remove CLOEXEC from user-provided inherited file descriptors so they survive execve.

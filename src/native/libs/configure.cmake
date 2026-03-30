@@ -212,6 +212,11 @@ check_symbol_exists(
     "sys/syscall.h"
     HAVE_CLOSE_RANGE_SYSCALL)
 
+# fdwalk is available on Illumos/Solaris and is used as a fallback when close_range is not available.
+check_function_exists(
+    fdwalk
+    HAVE_FDWALK)
+
 check_symbol_exists(
     getmntinfo
     "sys/types.h;sys/mount.h"
