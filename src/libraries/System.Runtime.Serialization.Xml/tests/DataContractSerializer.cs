@@ -1335,6 +1335,61 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_MyDataContractResolver_NoStreamingContext()
+    {
+        var myresolver = new MyResolver();
+        var settings = new DataContractSerializerSettings() { DataContractResolver = myresolver, KnownTypes = new Type[] { typeof(MyOtherType) } };
+        var input = new MyType_NoStreamingContext() { Value = new MyOtherType() { Str = "Hello World" } };
+        var output = DataContractSerializerHelper.SerializeAndDeserialize<MyType_NoStreamingContext>(input, @"<MyType_NoStreamingContext xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Value i:type=""MyOtherType""><Str>Hello World</Str></Value></MyType_NoStreamingContext>", settings);
+
+        Assert.True(myresolver.ResolveNameInvoked, "myresolver.ResolveNameInvoked is false");
+        Assert.True(myresolver.TryResolveTypeInvoked, "myresolver.TryResolveTypeInvoked is false");
+        Assert.True(myresolver.DeclaredTypeIsNotNull, "myresolver.DeclaredTypeIsNotNull is false");
+        Assert.True(input.OnSerializingMethodInvoked, "input.OnSerializingMethodInvoked is false");
+        Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
+        Assert.True(output.OnDeserializingMethodInvoked, "output.OnDeserializingMethodInvoked is false");
+        Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
+    }
+
+    [Fact]
+    public static void DCS_InvalidEventMethods()
+    {
+        var obj1 = new MyType_InvalidEventMethods_OnSerializing();
+        var dcs1 = new DataContractSerializer(obj1.GetType());
+        var obj2 = new MyType_InvalidEventMethods_OnSerialized();
+        var dcs2 = new DataContractSerializer(obj2.GetType());
+        var obj3 = new MyType_InvalidEventMethods_OnDeserializing();
+        var dcs3 = new DataContractSerializer(obj3.GetType());
+        var obj4 = new MyType_InvalidEventMethods_OnDeserialized();
+        var dcs4 = new DataContractSerializer(obj4.GetType());
+
+        using var ms = new MemoryStream();
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            dcs1.WriteObject(ms, obj1);
+        });
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            dcs2.WriteObject(ms, obj2);
+        });
+
+        // I understand the deserialization API is "ReadObject", but an error is thrown at "WriteObject" also.
+        // So, it is unable to create sample XML data automatically, or we don't need to prepare it manually.
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            dcs3.WriteObject(ms, obj3);
+        });
+
+        Assert.Throws<InvalidDataContractException>(() =>
+        {
+            dcs4.WriteObject(ms, obj4);
+        });
+    }
+
+    [Fact]
     public static void DCS_WriteObject_Use_DataContractResolver()
     {
         var settings = new DataContractSerializerSettings() { DataContractResolver = null, KnownTypes = new Type[] { typeof(MyOtherType) } };
