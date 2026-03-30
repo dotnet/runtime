@@ -2032,9 +2032,6 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded)
     {
-        // There is deliberately no debug validation here because we change behavior
-        // to only handle the JIT helpers that cannot be handled as unmanaged or managed symbols
-        // and to provide more informative names.
         int hr = HResults.S_OK;
         try
         {
@@ -2052,6 +2049,24 @@ public sealed unsafe partial class SOSDacImpl
         {
             hr = ex.HResult;
         }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            byte[]? nameLocal = name != null && count > 0 ? new byte[count] : null;
+            uint neededLocal;
+            int hrLocal;
+            fixed (byte* ptr = nameLocal)
+            {
+                hrLocal = _legacyImpl.GetJitHelperFunctionName(ip, count, ptr, &neededLocal);
+            }
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+                Debug.Assert(name == null || new ReadOnlySpan<byte>(name, (int)neededLocal).SequenceEqual(nameLocal!.AsSpan(0, (int)neededLocal)));
+            }
+        }
+#endif
 
         return hr;
     }

@@ -2507,7 +2507,7 @@ void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
 }
 
 VMAUXILIARYSYMBOLDEF hlpAuxiliarySymbolTable[MAX_AUXILIARY_SYMBOLS];
-int g_auxiliarySymbolCount = 0;
+DWORD g_auxiliarySymbolCount = 0;
 
 void SetAuxiliarySymbol(void* pFunc, const char* name)
 {

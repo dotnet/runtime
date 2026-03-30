@@ -21,12 +21,12 @@ internal readonly struct AuxiliarySymbols_1 : IAuxiliarySymbols
         TargetCodePointer codePointer = CodePointerUtils.CodePointerFromAddress(ip, _target);
 
         TargetPointer helperArrayPtr = _target.ReadGlobalPointer(Constants.Globals.AuxiliarySymbols);
-        int helperCount = _target.Read<int>(_target.ReadGlobalPointer(Constants.Globals.AuxiliarySymbolCount));
+        uint helperCount = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.AuxiliarySymbolCount));
 
         Target.TypeInfo typeInfo = _target.GetTypeInfo(DataType.AuxiliarySymbolInfo);
         uint entrySize = typeInfo.Size!.Value;
 
-        for (int i = 0; i < helperCount; i++)
+        for (uint i = 0; i < helperCount; i++)
         {
             TargetPointer entryAddr = helperArrayPtr + (ulong)(i * entrySize);
             Data.AuxiliarySymbolInfo entry = _target.ProcessedData.GetOrAdd<Data.AuxiliarySymbolInfo>(entryAddr);

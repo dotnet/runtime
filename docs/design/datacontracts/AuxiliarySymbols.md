@@ -36,11 +36,11 @@ bool TryGetAuxiliarySymbolName(TargetPointer ip, out string? symbolName)
     TargetCodePointer codePointer = CodePointerFromAddress(ip);
 
     TargetPointer helperArray = target.ReadGlobalPointer("AuxiliarySymbols");
-    int count = target.Read<int>(target.ReadGlobalPointer("AuxiliarySymbolCount"));
+    uint count = target.Read<uint>(target.ReadGlobalPointer("AuxiliarySymbolCount"));
 
     uint entrySize = /* AuxiliarySymbolInfo size */;
 
-    for (int i = 0; i < count; i++)
+    for (uint i = 0; i < count; i++)
     {
         TargetPointer entryAddr = helperArray + (i * entrySize);
         TargetCodePointer address = target.ReadCodePointer(entryAddr + /* AuxiliarySymbolInfo::Address offset */);

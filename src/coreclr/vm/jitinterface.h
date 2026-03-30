@@ -1008,7 +1008,7 @@ struct VMHELPDEF
 struct VMAUXILIARYSYMBOLDEF
 {
     PCODE pfnAuxiliarySymbol;
-    const char* name;
+    PTR_CSTR name;
 };
 
 #define MAX_AUXILIARY_SYMBOLS 7
@@ -1017,13 +1017,13 @@ struct VMAUXILIARYSYMBOLDEF
 
 GARY_DECL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
 GARY_DECL(VMAUXILIARYSYMBOLDEF, hlpAuxiliarySymbolTable, MAX_AUXILIARY_SYMBOLS);
-GVAL_DECL(int, g_auxiliarySymbolCount);
+GVAL_DECL(DWORD, g_auxiliarySymbolCount);
 
 #else
 
 extern "C" const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT];
 extern "C" VMAUXILIARYSYMBOLDEF hlpAuxiliarySymbolTable[MAX_AUXILIARY_SYMBOLS];
-extern "C" int g_auxiliarySymbolCount;
+extern "C" DWORD g_auxiliarySymbolCount;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 extern "C" PCODE hlpFuncEntryPoints[CORINFO_HELP_COUNT];

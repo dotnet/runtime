@@ -65,8 +65,8 @@ public class AuxiliarySymbolsTests
         }
 
         // Allocate global for the count
-        MockMemorySpace.HeapFragment countFragment = allocator.Allocate(sizeof(int), "HelperCount");
-        targetTestHelpers.Write(countFragment.Data, helpers.Length);
+        MockMemorySpace.HeapFragment countFragment = allocator.Allocate(sizeof(uint), "HelperCount");
+        targetTestHelpers.Write(countFragment.Data, (uint)helpers.Length);
         builder.AddHeapFragment(countFragment);
 
         (string Name, ulong Value)[] globals =
