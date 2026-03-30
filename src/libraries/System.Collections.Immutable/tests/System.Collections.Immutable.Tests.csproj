@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Link="Common\System\Collections\DictionaryExtensions.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DictionaryPolyfills.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Link="Common\Polyfills\DictionaryPolyfills.cs" />
     <!-- Reference internal product components for testing -->
     <Compile Include="..\src\System\Polyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\BitOperationsPolyfills.cs" Link="Common\Polyfills\BitOperationsPolyfills.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
