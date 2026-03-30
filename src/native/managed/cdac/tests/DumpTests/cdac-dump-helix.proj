@@ -155,13 +155,21 @@
   <Target Name="_CreateHelixWorkItems"
           DependsOnTargets="_AddPerDebuggeeCommands"
           BeforeTargets="CoreTest">
+    <!-- Force-evaluate _DumpInfoJson (which contains @() item transforms) into a flat string. -->
+    <CreateProperty Value="$(_DumpInfoCommandWindows)">
+      <Output TaskParameter="Value" PropertyName="_EvalDumpInfoCommandWindows" />
+    </CreateProperty>
+    <CreateProperty Value="$(_DumpInfoCommandUnix)">
+      <Output TaskParameter="Value" PropertyName="_EvalDumpInfoCommandUnix" />
+    </CreateProperty>
+
     <!-- Post-dump-gen commands added here so they follow per-debuggee commands in order. -->
     <ItemGroup>
       <!-- Write dump metadata file for the test harness. -->
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="$(_DumpInfoCommandWindows)" />
+          Include="$(_EvalDumpInfoCommandWindows)" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="$(_DumpInfoCommandUnix)" />
+          Include="$(_EvalDumpInfoCommandUnix)" />
     </ItemGroup>
 
     <!-- Test mode only: run xunit, capture exit code, propagate after archive. -->
