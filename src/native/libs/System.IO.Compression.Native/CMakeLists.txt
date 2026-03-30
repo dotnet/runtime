@@ -24,10 +24,14 @@ if (NOT CLR_CMAKE_USE_SYSTEM_ZSTD)
     include(${CLR_SRC_NATIVE_DIR}/external/zstd.cmake)
 endif()
 
+if (NOT CLR_CMAKE_USE_SYSTEM_LZMA)
+    include(${CLR_SRC_NATIVE_DIR}/external/xz.cmake)
+endif()
+
 if (STATIC_LIBS_ONLY)
     # For every vendored library that we're actually vendoring (and not referencing the system one)
     # mark it as "no interprocedural optimization" so that it's compatible with our NativeAOT shipping story.
-    foreach(VENDORED_LIB IN LISTS BROTLI_LIBRARIES ITEMS libzstd_static zlib)
+    foreach(VENDORED_LIB IN LISTS BROTLI_LIBRARIES ITEMS libzstd_static zlib liblzma)
         if (TARGET ${VENDORED_LIB})
             set_target_properties(${VENDORED_LIB} PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
         endif()
@@ -83,7 +87,12 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             target_link_libraries(System.IO.Compression.Native PRIVATE libzstd_static)
         endif()
 
-        if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI AND NOT CLR_CMAKE_USE_SYSTEM_ZSTD)
+        if (NOT CLR_CMAKE_USE_SYSTEM_LZMA)
+            target_link_libraries(System.IO.Compression.Native PRIVATE liblzma)
+            target_include_directories(System.IO.Compression.Native PRIVATE ${LZMA_INCLUDE_DIRS})
+        endif()
+
+        if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI AND NOT CLR_CMAKE_USE_SYSTEM_ZSTD AND NOT CLR_CMAKE_USE_SYSTEM_LZMA)
             set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/System.IO.Compression.Native_unixexports.src)
             set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/System.IO.Compression.Native.exports)
             generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
@@ -121,6 +130,11 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         target_link_libraries(System.IO.Compression.Native-Static PUBLIC libzstd_static)
     endif()
 
+    if (NOT CLR_CMAKE_USE_SYSTEM_LZMA)
+        target_link_libraries(System.IO.Compression.Native-Static PUBLIC liblzma)
+        target_include_directories(System.IO.Compression.Native-Static PUBLIC ${LZMA_INCLUDE_DIRS})
+    endif()
+
     set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native CLEAN_DIRECT_OUTPUT 1)
     target_link_libraries(System.IO.Compression.Native-Static
         PUBLIC
@@ -143,6 +157,10 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (NOT CLR_CMAKE_USE_SYSTEM_ZSTD)
         install (TARGETS libzstd_static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+    endif()
+
+    if (NOT CLR_CMAKE_USE_SYSTEM_LZMA)
+        install (TARGETS liblzma DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
     endif()
 
     if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
@@ -176,6 +194,11 @@ else ()
             target_link_libraries(System.IO.Compression.Native PUBLIC libzstd_static)
         endif()
 
+        if (NOT CLR_CMAKE_USE_SYSTEM_LZMA)
+            target_link_libraries(System.IO.Compression.Native PUBLIC liblzma)
+            target_include_directories(System.IO.Compression.Native PUBLIC ${LZMA_INCLUDE_DIRS})
+        endif()
+
         target_include_directories(System.IO.Compression.Native PUBLIC ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native PUBLIC ${BROTLI_LIBRARIES})
     endif ()
@@ -197,6 +220,11 @@ else ()
         target_link_libraries(System.IO.Compression.Native-Static PUBLIC libzstd_static)
     endif()
 
+    if (NOT CLR_CMAKE_USE_SYSTEM_LZMA)
+        target_link_libraries(System.IO.Compression.Native-Static PUBLIC liblzma)
+        target_include_directories(System.IO.Compression.Native-Static PUBLIC ${LZMA_INCLUDE_DIRS})
+    endif()
+
     target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
     target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
 
@@ -212,6 +240,11 @@ else ()
 
         if (NOT CLR_CMAKE_USE_SYSTEM_ZSTD)
             target_link_libraries(System.IO.Compression.Native.Aot PUBLIC libzstd_static)
+        endif()
+
+        if (NOT CLR_CMAKE_USE_SYSTEM_LZMA)
+            target_link_libraries(System.IO.Compression.Native.Aot PUBLIC liblzma)
+            target_include_directories(System.IO.Compression.Native.Aot PUBLIC ${LZMA_INCLUDE_DIRS})
         endif()
 
         target_include_directories(System.IO.Compression.Native.Aot PUBLIC ${BROTLI_INCLUDE_DIRS})
@@ -246,6 +279,9 @@ else ()
         endif()
         if (NOT CLR_CMAKE_USE_SYSTEM_ZSTD)
             install_static_library(libzstd_static aotsdk nativeaot)
+        endif()
+        if (NOT CLR_CMAKE_USE_SYSTEM_LZMA)
+            install_static_library(liblzma aotsdk nativeaot)
         endif()
     endif()
 

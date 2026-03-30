@@ -302,6 +302,9 @@
     <!-- zstd-specific files -->
     <PlatformManifestFileEntry Include="libzstd.a" IsNative="true" />
     <PlatformManifestFileEntry Include="zstd_static.lib" IsNative="true" />
+    <!-- xz/lzma-specific files -->
+    <PlatformManifestFileEntry Include="liblzma.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="lzma.lib" IsNative="true" />
   </ItemGroup>
 
  <ItemGroup>

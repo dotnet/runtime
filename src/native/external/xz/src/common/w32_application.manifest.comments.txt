@@ -1,0 +1,192 @@
+
+Windows application manifest for UTF-8 and long paths
+=====================================================
+
+The .manifest file is embedded as is in the executables, thus
+the comments are here in a separate file. These comments were
+written in context of XZ Utils but might be useful when porting
+other command line tools from POSIX environments to Windows.
+
+    NOTE: On Cygwin and MSYS2, command line arguments and file
+    system access aren't tied to a Windows code page. Cygwin
+    and MSYS2 include a default application manifest. Replacing
+    it doesn't seem useful and might even be harmful if Cygwin
+    and MSYS2 some day change their default manifest.
+
+
+UTF-8 code page
+---------------
+
+On Windows, command line applications can use main() or wmain().
+With the Windows-specific wmain(), argv contains UTF-16 code units
+which is the native encoding on Windows. With main(), argv uses the
+system active code page by default. It typically is a legacy code
+page like Windows-1252.
+
+    NOTE: On POSIX, argv for main() is constructed by the calling
+    process. On Windows, argv is constructed by a new process
+    itself: a program receives the command line as a single string,
+    and the startup code splits it into individual arguments,
+    including quote removal and wildcard expansion. Then main() or
+    wmain() is called.
+
+This application manifest forces the process code page to UTF-8
+when the application runs on Windows 10 version 1903 or later.
+This is useful for programs that use main():
+
+  * UTF-8 allows such programs to access files whose names contain
+    characters that don't exist in the current legacy code page.
+    However, filenames on Windows may contain unpaired surrogates
+    (invalid UTF-16). Such files cannot be accesses even with the
+    UTF-8 code page.
+
+  * UTF-8 avoids a security issue in command line argument handling:
+    If a command line contains Unicode characters (for example,
+    filenames) that don't exist in the current legacy code page,
+    the characters are converted to similar-looking characters
+    with best-fit mapping. Some best-fit mappings result in ASCII
+    characters that change the meaning of the command line, which
+    can be exploited with malicious filenames. For example:
+
+      - Double quote (") breaks quoting and makes argument
+        injection possible.
+
+      - Question mark (?) is a wildcard character which may
+        expand to one or more filenames.
+
+      - Forward slash (/) makes a directory traversal attack
+        possible. This character can appear in a dangerous way
+        even from a wildcard expansion; a look-alike character
+        doesn't need to be passed directly on the command line.
+
+    UTF-8 avoids best-fit mappings. However, it's still not
+    perfect. Unpaired surrogates (invalid UTF-16) on the command
+    line (including those from wildcard expansion) are converted
+    to the replacement character U+FFFD. Thus, filenames with
+    different unpaired surrogates appear identical when converted
+    to the UTF-8 code page and aren't distinguishable from
+    filenames that contain the actual replacement character U+FFFD.
+
+    FindFirstFileA() and FindFirstFileExA() also suffer from the above
+    issue where unpaired surrogates become U+FFFD. Another issue is
+    that filenames may require more bytes in UTF-8 than in a legacy
+    code page. In UTF-8, a very long filename may exceed MAX_PATH bytes
+    and thus these APIs cannot list such filenames anymore because
+    WIN32_FIND_DATAA has a member "CHAR cFileName[MAX_PATH]".
+
+If different programs use different code pages, compatibility issues
+are possible. For example, if one program produces a list of
+filenames and another program reads it, both programs should use
+the same code page because the code page affects filenames in the
+char-based file system APIs.
+
+If building with a MinGW-w64 toolchain, it is strongly recommended
+to use UCRT instead of the old MSVCRT. For example, with the UTF-8
+code page, MSVCRT doesn't convert non-ASCII characters correctly
+when writing to console with printf(). With UCRT it works.
+
+
+Long path names
+---------------
+
+The manifest enables support for path names longer than 260 wide
+characters (UTF-16 code units) if the feature has been enabled in
+the Windows registry. Omit the longPathAware element from the manifest
+if the application isn't compatible with it. For example, some uses
+of MAX_PATH might be a sign of incompatibility.
+
+Note that UTF-8 encoded filenames can exceed MAX_PATH (260) bytes when
+the UTF-16 form is still within MAX_PATH wide characters. In this
+situation the application doesn't need to be long path aware: functions
+like _open() work with UTF-8 names that exceed MAX_PATH bytes if the
+wide character form stays within MAX_PATH wide characters. (MAX_PATH
+includes the terminating null character.)
+
+Documentation of the registry setting:
+https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry#enable-long-paths-in-windows-10-version-1607-and-later
+
+
+Summary of the manifest contents
+--------------------------------
+
+See also Microsoft's documentation:
+https://learn.microsoft.com/en-us/windows/win32/sbscs/application-manifests
+
+assemblyIdentity (omitted)
+
+    This is documented as mandatory but not all apps in the real world
+    have it, and of those that do, not all put an up-to-date version
+    number there. Things seem to work correctly without
+    <assemblyIdentity> so let's keep this simpler and omit it.
+
+compatibility
+
+    Declare the application compatible with different Windows versions.
+    Without this, Windows versions newer than Vista will run the
+    application using Vista as the Operating System Context.
+
+trustInfo
+
+    Declare the application as UAC-compliant. This avoids file system
+    and registry virtualization that Windows otherwise does with 32-bit
+    executables to make some ancient applications work. UAC-compliancy
+    also stops Windows from using heuristics based on the filename
+    (like setup.exe) to guess when elevated privileges might be
+    needed which would then bring up the UAC prompt.
+
+longPathAware
+
+    Declare the application as long path aware. This way many file
+    system operations aren't limited to MAX_PATH (260) wide characters
+    (including the terminating null character). The feature has to be
+    enabled in the Windows registry too.
+
+activeCodePage
+
+    Force the process code page to UTF-8 on Windows 10 version 1903
+    and later. For example:
+
+      - main() gets the command line arguments in UTF-8 instead of
+        in a legacy code page.
+
+      - File system APIs that take char-based strings use UTF-8
+        instead of a legacy code page.
+
+      - Text written to the console via stdio.h's stdout or stderr
+        (like calling printf()) are expected to be in UTF-8.
+
+
+CMake notes
+-----------
+
+As of CMake 3.30, one can add a .manifest file as a source file but
+it only works with MSVC; it's ignored with MinGW-w64 toolchains.
+Embedding the manifest with a resource file works with all
+toolchains. However, then the default manifest needs to be
+disabled with MSVC in CMakeLists.txt to avoid duplicate
+manifests which would break the build.
+
+w32_application.manifest.rc:
+
+    #include <winresrc.h>
+    CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "w32_application.manifest"
+
+Or the same thing without the #include:
+
+    1 24 "w32_application.manifest"
+
+CMakeLists.txt:
+
+    if(MSVC)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:NO")
+    endif()
+
+    add_executable(foo foo.c)
+
+    # WIN32 isn't set on Cygwin or MSYS2, thus if(WIN32) is correct here.
+    if(WIN32)
+        target_sources(foo PRIVATE w32_application.manifest.rc)
+        set_source_files_properties(w32_application.manifest.rc PROPERTIES
+            OBJECT_DEPENDS w32_application.manifest
+        )
+    endif()
