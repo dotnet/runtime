@@ -21,14 +21,6 @@ namespace System.Threading.Tasks
     /// </summary>
     internal sealed class ThreadPoolTaskScheduler : TaskScheduler
     {
-        /// <summary>
-        /// Constructs a new ThreadPool task scheduler object
-        /// </summary>
-        internal ThreadPoolTaskScheduler()
-        {
-            _ = Id; // force ID creation of the default scheduler
-        }
-
         // static delegate for threads allocated to handle LongRunning tasks.
         private static readonly ParameterizedThreadStart s_longRunningThreadWork = static s =>
         {
