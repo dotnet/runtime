@@ -62,6 +62,7 @@ create_socket (const char *hostname, const int port)
     serv_addr.sin_addr.s_addr = inet_addr (hostname);
 
     if (connect (sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+    	close(sockfd);
         g_warning ("cfg_dump: Connect Failed: %s", strerror (errno));
         return -2;
     }
