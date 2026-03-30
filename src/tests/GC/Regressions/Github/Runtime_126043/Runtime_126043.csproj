@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for setting env vars for the test -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
+    <Optimize>True</Optimize>
+    <CLRTestPriority>1</CLRTestPriority>
+
+    <CLRTestBatchPreCommands><![CDATA[
+      $(CLRTestBatchPreCommands)
+      set DOTNET_gcServer=1
+      set DOTNET_GCHeapCount=1
+      set DOTNET_GCRegionSize=400000
+      ]]></CLRTestBatchPreCommands>
+    <CLRTestBashPreCommands><![CDATA[
+      $(CLRTestBashPreCommands)
+      export DOTNET_gcServer=1
+      export DOTNET_GCHeapCount=1
+      export DOTNET_GCRegionSize=400000
+      ]]></CLRTestBashPreCommands>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>
