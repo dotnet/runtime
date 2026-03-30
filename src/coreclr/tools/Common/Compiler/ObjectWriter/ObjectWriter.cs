@@ -189,19 +189,17 @@ namespace ILCompiler.ObjectWriter
                 // Resolve the relocation to already defined symbol and write it into data
                 fixed (byte* pData = data)
                 {
-                    // RyuJIT generates the Thumb bit in the addend and we also get it from
-                    // the symbol value. The AAELF ABI specification defines the R_ARM_THM_JUMP24
-                    // and R_ARM_THM_MOVW_PREL_NC relocations using the formula ((S + A) | T) – P.
-                    // The thumb bit is thus supposed to be only added once.
-                    // For R_ARM_THM_JUMP24 the thumb bit cannot be encoded, so mask it out.
-                    //
-                    // R2R doesn't use add the thumb bit to the symbol value, so we don't need to do this here.
 #if !READYTORUN
-                    long maskThumbBitOut = relocType is IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
-                    long maskThumbBitIn = relocType is IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
+                    // ILC defines method symbols with the thumb bit (+1) set per the AAELF ABI
+                    // convention. For BRANCH24, the encoding cannot represent the thumb bit
+                    // (per AAELF formula ((S + A) | T) – P), so strip it from the symbol value.
+                    // For MOV32, the thumb bit can be encoded, so use the symbol value as-is.
+                    // R2R doesn't add the thumb bit to the symbol value.
+                    long symbolValue = relocType is IMAGE_REL_BASED_THUMB_BRANCH24
+                        ? definedSymbol.Value & ~1L
+                        : definedSymbol.Value;
 #else
-                    long maskThumbBitOut = 0;
-                    long maskThumbBitIn = 0;
+                    long symbolValue = definedSymbol.Value;
 #endif
                     long adjustedAddend = addend;
 
@@ -213,9 +211,8 @@ namespace ILCompiler.ObjectWriter
                         _ => 0
                     };
 
-                    adjustedAddend += definedSymbol.Value & ~maskThumbBitOut;
+                    adjustedAddend += symbolValue;
                     adjustedAddend += Relocation.ReadValue(relocType, (void*)pData);
-                    adjustedAddend |= definedSymbol.Value & maskThumbBitIn;
                     adjustedAddend -= offset;
 
                     if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && !Relocation.FitsInThumb2BlRel24((int)adjustedAddend))
