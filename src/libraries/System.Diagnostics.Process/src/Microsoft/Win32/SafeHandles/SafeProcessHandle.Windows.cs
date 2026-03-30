@@ -285,7 +285,6 @@ namespace Microsoft.Win32.SafeHandles
         private static unsafe bool ShellExecuteOnSTAThread(Interop.Shell32.SHELLEXECUTEINFO executeInfo, out int errorCode, out IntPtr hProcess, out IntPtr hInstApp)
         {
             bool succeeded = false;
-            bool notPresent = false;
             int lastError = 0;
             nuint executeInfoAddress = (nuint)(&executeInfo); // cast to nuint to allow delegate capture; safe because Join() keeps this stack frame alive for the thread's lifetime
 
@@ -298,7 +297,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 catch (EntryPointNotFoundException)
                 {
-                    notPresent = true;
+                    lastError = Interop.Errors.ERROR_CALL_NOT_IMPLEMENTED;
                 }
             }
 
@@ -318,9 +317,6 @@ namespace Microsoft.Win32.SafeHandles
             {
                 ShellExecuteFunction();
             }
-
-            if (notPresent)
-                throw new PlatformNotSupportedException(SR.UseShellExecuteNotSupported);
 
             hProcess = executeInfo.hProcess;
             hInstApp = executeInfo.hInstApp;
