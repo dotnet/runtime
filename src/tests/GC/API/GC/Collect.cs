@@ -12,7 +12,7 @@ public class Test_Collect {
 
         Object obj1 = new Object();
         int[] array = new int[25];
-        
+
         int gen1 = GC.GetGeneration(array);
 
         Console.WriteLine("Array is in generation: " + gen1);
@@ -20,6 +20,10 @@ public class Test_Collect {
 
         int gen2 = GC.GetGeneration(array);
         Console.WriteLine("Array is in generation: " + gen2);
+
+        // Intentional crash to generate a dump for diag-perf-ai E2E testing.
+        Console.WriteLine("About to FailFast to force a crash dump...");
+        Environment.FailFast("Intentional crash for diag-perf-ai E2E testing");
 
         if(((gen1==2) && (gen2==2)) || (gen2>gen1)) {    // was already in gen 2!
             Console.WriteLine("Test for GC.Collect() passed!");
