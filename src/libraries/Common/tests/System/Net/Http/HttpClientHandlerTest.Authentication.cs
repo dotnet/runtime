@@ -559,7 +559,7 @@ namespace System.Net.Http.Functional.Tests
             // We skip the test unless it is running on a Windows client machine. That is because only Windows
             // automatically registers an SPN for HTTP/<hostname> of the machine. This will enable Kerberos to properly
             // work with the loopback proxy server.
-            Assert.SkipUnless(PlatformDetection.IsWindows || !PlatformDetection.IsNotWindowsNanoServer, "Test can only run on domain joined Windows client machine");
+            Assert.SkipUnless(PlatformDetection.IsWindows && PlatformDetection.IsNotWindowsNanoServer, "Test can only run on domain joined Windows client machine");
 
             var options = new LoopbackProxyServer.Options { AuthenticationSchemes = AuthenticationSchemes.Negotiate };
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
