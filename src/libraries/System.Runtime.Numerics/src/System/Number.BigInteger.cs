@@ -346,7 +346,7 @@ namespace System
             // since the D&C algorithm reuses Multiply/Square/Divide on these spans.
             scoped Span<nuint> base1E9;
 
-            ReadOnlySpan<byte> intDigits= number.Digits.Slice(0, Math.Min(number.Scale, number.DigitsCount));
+            ReadOnlySpan<byte> intDigits = number.Digits.Slice(0, Math.Min(number.Scale, number.DigitsCount));
             int intDigitsEnd = intDigits.IndexOf<byte>(0);
             if (intDigitsEnd < 0)
             {
@@ -1111,44 +1111,43 @@ namespace System
             public const nuint TenPowMaxPartial = 1000000000;
             public const int MaxPartialDigits = 9;
 
-            private PowersOf1e9(nuint[] pow1E9)
+            private PowersOf1e9(ReadOnlySpan<nuint> pow1E9)
             {
                 this.pow1E9 = pow1E9;
             }
 
             public static PowersOf1e9 GetCached(int bufferLength)
             {
+                // Only cache buffers large enough to contain computed powers.
+                // Small buffers (≤ LeadingPowers1E9.Length) aren't populated by
+                // the constructor — it uses the static LeadingPowers1E9 directly.
+                if (bufferLength <= LeadingPowers1E9.Length)
+                {
+                    return new PowersOf1e9(LeadingPowers1E9);
+                }
+
                 nuint[]? cached = s_cachedPowersOf1e9;
                 if (cached is not null && cached.Length >= bufferLength)
                 {
                     return new PowersOf1e9(cached);
                 }
+                Debug.Assert(cached is null || bufferLength > cached.Length);
 
                 nuint[] buffer = new nuint[bufferLength];
-                PowersOf1e9 result = new((Span<nuint>)buffer);
+                Build(buffer, cached ?? LeadingPowers1E9);
 
-                // Only cache buffers large enough to contain computed powers.
-                // Small buffers (≤ LeadingPowers1E9.Length) aren't populated by
-                // the constructor — it uses the static LeadingPowers1E9 directly.
-                if (buffer.Length > LeadingPowers1E9.Length &&
-                    (cached is null || buffer.Length > cached.Length))
-                {
-                    // The write is safe without explicit memory barriers because:
-                    // 1. The array is fully initialized before being stored.
-                    // 2. On ARM64, the .NET GC write barrier uses stlr (store-release),
-                    //    providing release semantics for reference-type stores.
-                    // 3. Readers have a data dependency (load reference -> access elements),
-                    //    providing natural acquire ordering on all architectures.
-                    s_cachedPowersOf1e9 = buffer;
-                }
-
-                return result;
+                // reftype field assignments have Store-Release semantics in .NET, so no volatile is needed.
+                s_cachedPowersOf1e9 = buffer;
+                return new(buffer);
             }
 
             /// <summary>
             /// Pre-calculated cumulative lengths into <see cref="pow1E9"/>.
-            /// <c>pow1E9[Indexes[i-1]..Indexes[i]]</c> equals <c>1000000000^(1&lt;&lt;i)</c>.
+            /// <c>pow1E9[Indexes[i]..Indexes[i+1]]&lt;&lt;(BitsPerLimb*OmittedLength(i))</c> equals <c>1000000000^(1&lt;&lt;i)</c>.
             /// </summary>
+            /// <remarks>
+            /// Satisfies the following relationship <c>Indexes[i+1] - Indexes[i] == Math.Ceiling(Math.Log2(1000000000) * (1u&lt;&lt;i) / BitsPerLimb - OmittedLength(i))</c>.
+            /// </remarks>
             private static ReadOnlySpan<int> Indexes => nint.Size == 8 ? Indexes64 : Indexes32;
 
             private static ReadOnlySpan<int> Indexes32 =>
@@ -1224,8 +1223,7 @@ namespace System
             ];
 
             /// <summary>
-            /// Pre-computed leading powers of 10^9 for small exponents. Entries up to
-            /// <c>1000000000^(1&lt;&lt;5)</c> are stored directly because their low limb is never zero.
+            /// Pre-computed leading powers of 10^9 for small exponents.
             /// </summary>
             private static ReadOnlySpan<nuint> LeadingPowers1E9 => nint.Size == 8
                 ? MemoryMarshal.Cast<ulong, nuint>(LeadingPowers1E9_64)
@@ -1319,30 +1317,32 @@ namespace System
                 1892883497866839537,
             ];
 
-            public PowersOf1e9(Span<nuint> pow1E9)
+            private static void Build(Span<nuint> buffer, ReadOnlySpan<nuint> cached)
             {
-                Debug.Assert(pow1E9.Length >= 1);
+                Debug.Assert(buffer.Length > cached.Length);
+                Debug.Assert(cached.Length >= LeadingPowers1E9.Length);
                 Debug.Assert(Indexes[6] == LeadingPowers1E9.Length);
-                if (pow1E9.Length <= LeadingPowers1E9.Length)
+                Debug.Assert(Indexes.Contains(buffer.Length - 1));
+
+                cached.CopyTo(buffer);
+
+                int start = 6;
+                for (int i = 7; i < Indexes.Length && Indexes[i] <= cached.Length; i++)
                 {
-                    this.pow1E9 = LeadingPowers1E9;
-                    return;
+                    start = i;
                 }
 
-                LeadingPowers1E9.CopyTo(pow1E9.Slice(0, LeadingPowers1E9.Length));
-                this.pow1E9 = pow1E9;
-
-                ReadOnlySpan<nuint> src = pow1E9.Slice(Indexes[5], Indexes[6] - Indexes[5]);
-                int toExclusive = Indexes[6];
-                for (int i = 6; i + 1 < Indexes.Length; i++)
+                ReadOnlySpan<nuint> src = buffer.Slice(Indexes[start - 1], Indexes[start] - Indexes[start - 1]);
+                int toExclusive = Indexes[start];
+                for (int i = start; i + 1 < Indexes.Length; i++)
                 {
                     Debug.Assert(2 * src.Length - (Indexes[i + 1] - Indexes[i]) is 0 or 1);
-                    if (pow1E9.Length - toExclusive < (src.Length << 1))
+                    if (buffer.Length - toExclusive < (src.Length << 1))
                     {
                         break;
                     }
 
-                    Span<nuint> dst = pow1E9.Slice(toExclusive, src.Length << 1);
+                    Span<nuint> dst = buffer.Slice(toExclusive, src.Length << 1);
                     BigIntegerCalculator.Square(src, dst);
 
                     // When 9*(1<<(i-1)) is not evenly divisible by BitsPerLimb, the stored
@@ -1358,8 +1358,8 @@ namespace System
 
                     int from = toExclusive;
                     toExclusive = Indexes[i + 1];
-                    src = pow1E9.Slice(from, toExclusive - from);
-                    Debug.Assert(toExclusive == pow1E9.Length || pow1E9[toExclusive] == 0);
+                    src = buffer.Slice(from, toExclusive - from);
+                    Debug.Assert(toExclusive == buffer.Length || buffer[toExclusive] == 0);
                 }
             }
 
