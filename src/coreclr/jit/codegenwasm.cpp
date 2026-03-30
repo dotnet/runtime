@@ -723,10 +723,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             GetEmitter()->emitIns(INS_unreachable);
             break;
 
-        case GT_PINVOKE_PROLOG:
-            // TODO-WASM-CQ re-establish the global stack pointer here?
-            break;
-
         default:
 #ifdef DEBUG
             if (JitConfig.JitWasmNyiToR2RUnsupported())
