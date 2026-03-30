@@ -95,6 +95,8 @@ internal static class Utils
             CreateNoWindow = true,
             RedirectStandardError = true,
             RedirectStandardOutput = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
             RedirectStandardInput = inputProvider != null,
             Arguments = args,
         };

@@ -220,10 +220,11 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}\"{CompilerBinaryPath}\" {args}");
 
                     // On Windows, the emsdk ships emcc.bat to invoke emcc. Use 'cmd' to execute the batch file.
+                    // Switch to UTF-8 code page to enable cmd to handle non-ASCII paths.
                     string processPath = CompilerBinaryPath;
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        args = $"/c \"\"{CompilerBinaryPath}\" {args}\"";
+                        args = $"/c \"chcp 65001 > nul && \"{CompilerBinaryPath}\" {args}\"";
                         processPath = "cmd";
                     }
 
