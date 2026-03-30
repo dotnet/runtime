@@ -142,9 +142,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            // DomainAssembly is a tiny struct with a single field: PTR_Assembly m_pAssembly at offset 0.
-            // So vmDomainAssembly points to a pointer to the Assembly.
-            *vmAssembly = _target.ReadPointer(new TargetPointer(vmDomainAssembly)).Value;
+            // In modern .NET, VMPTR_DomainAssembly is effectively a Module pointer.
+            // Use the Loader contract to navigate Module -> Assembly.
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmDomainAssembly));
+            *vmAssembly = loader.GetAssembly(handle).Value;
         }
         catch (System.Exception ex)
         {
@@ -319,12 +321,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            // DomainAssembly has a single field: PTR_Assembly m_pAssembly at offset 0.
-            // Then Assembly::GetModule() returns m_pModule.
-            TargetPointer assemblyPtr = _target.ReadPointer(new TargetPointer(vmDomainAssembly));
-            Contracts.ILoader loader = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(assemblyPtr);
-            *pModule = loader.GetModule(handle).Value;
+            // In modern .NET, VMPTR_DomainAssembly is effectively a Module pointer.
+            // This is an identity operation.
+            *pModule = vmDomainAssembly;
         }
         catch (System.Exception ex)
         {
@@ -953,8 +952,18 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetAppDomainIdFromVmObjectHandle(ulong vmHandle, uint* pRetVal)
     {
-        *pRetVal = 1;
+        *pRetVal = 0;
         int hr = HResults.S_OK;
+        try
+        {
+            // In modern .NET there is only one AppDomain (id=1).
+            // Return 0 for null handles to match native behavior.
+            *pRetVal = vmHandle != 0 ? 1u : 0u;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
 #if DEBUG
         if (_legacy is not null)
         {
@@ -1324,10 +1333,29 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly)
     {
-        // Module::GetDomainAssembly() reads m_pDomainAssembly which is not in the cDAC
-        // data descriptor. Fall back to legacy until the field is added.
         *pVmDomainAssembly = 0;
-        return _legacy is not null ? _legacy.GetDomainAssemblyFromModule(vmModule, pVmDomainAssembly) : HResults.E_NOTIMPL;
+        int hr = HResults.S_OK;
+        try
+        {
+            // In modern .NET, VMPTR_DomainAssembly is effectively a Module pointer.
+            // This is an identity operation.
+            *pVmDomainAssembly = vmModule;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong daLocal;
+            int hrLocal = _legacy.GetDomainAssemblyFromModule(vmModule, &daLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pVmDomainAssembly == daLocal, $"cDAC: {*pVmDomainAssembly:x}, DAC: {daLocal:x}");
+        }
+#endif
+        return hr;
     }
 
     public int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState)

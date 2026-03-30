@@ -42,8 +42,12 @@ public class DebuggerTests
         helpers.Write(debuggerFrag.Data.AsSpan(debuggerLayout.Fields[nameof(Data.Debugger.MDStructuresVersion)].Offset, sizeof(uint)), mdStructuresVersion);
         memBuilder.AddHeapFragment(debuggerFrag);
 
-        // ReadGlobalPointer returns the value directly (no indirection)
-        builder.AddGlobals((Constants.Globals.Debugger, debuggerFrag.Address));
+        // g_pDebugger is a pointer-to-Debugger. The global stores the address of g_pDebugger,
+        // so ReadGlobalPointer returns the location, and ReadPointer dereferences it.
+        MockMemorySpace.HeapFragment debuggerPtrFrag = allocator.Allocate((ulong)helpers.PointerSize, "g_pDebugger");
+        helpers.WritePointer(debuggerPtrFrag.Data, debuggerFrag.Address);
+        memBuilder.AddHeapFragment(debuggerPtrFrag);
+        builder.AddGlobals((Constants.Globals.Debugger, debuggerPtrFrag.Address));
 
         if (attachStateFlags.HasValue)
         {
@@ -68,9 +72,16 @@ public class DebuggerTests
 
     private static TestPlaceholderTarget BuildNullDebuggerTarget(MockTarget.Architecture arch)
     {
+        TargetTestHelpers helpers = new(arch);
         var builder = new TestPlaceholderTarget.Builder(arch);
-        // Register Debugger global as null pointer
-        builder.AddGlobals((Constants.Globals.Debugger, 0));
+        MockMemorySpace.Builder memBuilder = builder.MemoryBuilder;
+        MockMemorySpace.BumpAllocator allocator = memBuilder.CreateAllocator(0x1_0000, 0x2_0000);
+
+        // g_pDebugger is a pointer-to-Debugger that contains null.
+        MockMemorySpace.HeapFragment debuggerPtrFrag = allocator.Allocate((ulong)helpers.PointerSize, "g_pDebugger");
+        helpers.WritePointer(debuggerPtrFrag.Data, 0);
+        memBuilder.AddHeapFragment(debuggerPtrFrag);
+        builder.AddGlobals((Constants.Globals.Debugger, debuggerPtrFrag.Address));
         builder.AddContract<IDebugger>(target => ((IContractFactory<IDebugger>)new DebuggerFactory()).CreateContract(target, 1));
 
         return builder.Build();
