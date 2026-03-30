@@ -10,7 +10,5 @@ namespace TestApp
 {
     internal partial class MyContext
     {
-        private static readonly global::System.Text.Json.JsonEncodedText PropName_Name = global::System.Text.Json.JsonEncodedText.Encode("Name");
-        private static readonly global::System.Text.Json.JsonEncodedText PropName_Age = global::System.Text.Json.JsonEncodedText.Encode("Age");
     }
 }

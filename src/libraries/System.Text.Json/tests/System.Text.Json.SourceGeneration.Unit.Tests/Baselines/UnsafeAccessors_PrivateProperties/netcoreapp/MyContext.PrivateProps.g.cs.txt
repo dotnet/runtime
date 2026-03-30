@@ -55,10 +55,10 @@ namespace TestApp
                 IsVirtual = false,
                 DeclaringType = typeof(global::TestApp.PrivateProps),
                 Converter = null,
-                Getter = static obj => __get_PrivateProps_Name((global::TestApp.PrivateProps)obj),
-                Setter = static (obj, value) => __set_PrivateProps_Name((global::TestApp.PrivateProps)obj, value!),
+                Getter = null,
+                Setter = null,
                 IgnoreCondition = null,
-                HasJsonInclude = true,
+                HasJsonInclude = false,
                 IsExtensionData = false,
                 NumberHandling = null,
                 PropertyName = "Name",
@@ -75,10 +75,10 @@ namespace TestApp
                 IsVirtual = false,
                 DeclaringType = typeof(global::TestApp.PrivateProps),
                 Converter = null,
-                Getter = static obj => __get_PrivateProps_Age((global::TestApp.PrivateProps)obj),
-                Setter = static (obj, value) => __set_PrivateProps_Age((global::TestApp.PrivateProps)obj, value!),
+                Getter = null,
+                Setter = null,
                 IgnoreCondition = null,
-                HasJsonInclude = true,
+                HasJsonInclude = false,
                 IsExtensionData = false,
                 NumberHandling = null,
                 PropertyName = "Age",
@@ -103,19 +103,8 @@ namespace TestApp
             
             writer.WriteStartObject();
 
-            writer.WriteString(PropName_Name, __get_PrivateProps_Name(((global::TestApp.PrivateProps)value)));
-            writer.WriteNumber(PropName_Age, __get_PrivateProps_Age(((global::TestApp.PrivateProps)value)));
 
             writer.WriteEndObject();
         }
-
-        [global::System.Runtime.CompilerServices.UnsafeAccessorAttribute(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Name")]
-        private static extern string __get_PrivateProps_Name(global::TestApp.PrivateProps obj);
-        [global::System.Runtime.CompilerServices.UnsafeAccessorAttribute(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Name")]
-        private static extern void __set_PrivateProps_Name(global::TestApp.PrivateProps obj, string value);
-        [global::System.Runtime.CompilerServices.UnsafeAccessorAttribute(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Age")]
-        private static extern int __get_PrivateProps_Age(global::TestApp.PrivateProps obj);
-        [global::System.Runtime.CompilerServices.UnsafeAccessorAttribute(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Age")]
-        private static extern void __set_PrivateProps_Age(global::TestApp.PrivateProps obj, int value);
     }
 }
