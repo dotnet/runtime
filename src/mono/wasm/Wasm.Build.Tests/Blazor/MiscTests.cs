@@ -122,9 +122,7 @@ public class MiscTests : BlazorWasmTestBase
         string client2Dir = Path.Combine(rootDir, "Client2");
 
         string command = publish ? "publish" : "build";
-        string logDir = Path.Combine(s_buildEnv.LogRootPath, id);
-        Directory.CreateDirectory(logDir);
-        string logPath = Path.Combine(logDir, $"{id}-{config}-{command}.binlog");
+        string logPath = Path.Combine(_logPath, $"{id}-{config}-{command}.binlog");
         using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(serverDir);
         _ = cmd
