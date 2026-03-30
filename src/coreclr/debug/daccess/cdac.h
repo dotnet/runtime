@@ -50,6 +50,7 @@ public:
     }
 
     void CreateSosInterface(IUnknown** sos);
+    void CreateDacDbiInterface(IUnknown** dbi);
 
 private:
     CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, IUnknown* legacyImpl);

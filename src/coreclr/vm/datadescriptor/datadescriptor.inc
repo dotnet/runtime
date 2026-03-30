@@ -354,6 +354,13 @@ CDAC_TYPE_FIELD(SystemDomain, /*GlobalLoaderAllocator*/, GlobalLoaderAllocator, 
 CDAC_TYPE_FIELD(SystemDomain, /*pointer*/, SystemAssembly, cdac_data<SystemDomain>::SystemAssembly)
 CDAC_TYPE_END(SystemDomain)
 
+CDAC_TYPE_BEGIN(Debugger)
+CDAC_TYPE_INDETERMINATE(Debugger)
+CDAC_TYPE_FIELD(Debugger, /*int32*/, LeftSideInitialized, cdac_data<Debugger>::LeftSideInitialized)
+CDAC_TYPE_FIELD(Debugger, /*uint32*/, Defines, cdac_data<Debugger>::Defines)
+CDAC_TYPE_FIELD(Debugger, /*uint32*/, MDStructuresVersion, cdac_data<Debugger>::MDStructuresVersion)
+CDAC_TYPE_END(Debugger)
+
 CDAC_TYPE_BEGIN(ArrayListBase)
 CDAC_TYPE_INDETERMINATE(ArrayListBase)
 CDAC_TYPE_FIELD(ArrayListBase, /*uint32*/, Count, cdac_data<ArrayListBase>::Count)
@@ -1290,6 +1297,9 @@ CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomainPtr)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
+CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
+CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
+CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
 
 // Add FrameIdentifier for all defined Frame types. Used to differentiate Frame objects.
 #define FRAME_TYPE_NAME(frameType) \
@@ -1434,6 +1444,7 @@ CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
 CDAC_GLOBAL_CONTRACT(ComWrappers, 1)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(DacStreams, 1)
+CDAC_GLOBAL_CONTRACT(Debugger, 1)
 CDAC_GLOBAL_CONTRACT(DebugInfo, 2)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
 CDAC_GLOBAL_CONTRACT(Exception, 1)
