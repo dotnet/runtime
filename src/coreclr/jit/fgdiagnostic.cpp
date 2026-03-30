@@ -3929,6 +3929,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
 //    - all statements in the block are linked correctly
 //    - check statements flags
 //    - check nodes gtNext and gtPrev values, if the node list is threaded
+//    - no invalid statements given the block kind
 //
 // Arguments:
 //    block  - the block to check statements in
@@ -3963,6 +3964,22 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         else
         {
             noway_assert(block->lastStmt() == stmt);
+        }
+
+        // Block that isn't BBJ_RETURN should not contain GT_RETURN node.
+        if (!block->KindIs(BBJ_RETURN))
+        {
+            GenTree* tree = stmt->GetRootNode();
+            assert(!tree->OperIs(GT_RETURN) && "GT_RETURN node found in a block that isn't BBJ_RETURN");
+        }
+
+        // If the block contains a GT_RETURN node it should be last.
+        if (block->KindIs(BBJ_RETURN))
+        {
+            GenTree* tree          = stmt->GetRootNode();
+            bool     isReturn      = tree->OperIs(GT_RETURN);
+            bool     isNotLastStmt = stmt->GetNextStmt() != nullptr;
+            assert(!(isReturn && isNotLastStmt) && "GT_RETURN node found that is not the last statement in the block");
         }
 
         // For each statement check that the exception flags are properly set
