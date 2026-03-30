@@ -21,21 +21,6 @@ internal static partial class Interop
             int creationFlags,
             IntPtr environmentBlock,
             string? lpCurrentDirectory,
-            ref Interop.Kernel32.STARTUPINFO lpStartupInfo,
-            ref Interop.Kernel32.PROCESS_INFORMATION lpProcessInformation);
-
-        [LibraryImport(Libraries.Advapi32, EntryPoint = "CreateProcessWithLogonW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool CreateProcessWithLogonW(
-            string userName,
-            string domain,
-            IntPtr password,
-            LogonFlags logonFlags,
-            string? appName,
-            char* cmdLine,
-            int creationFlags,
-            IntPtr environmentBlock,
-            string? lpCurrentDirectory,
             ref Interop.Kernel32.STARTUPINFOEX lpStartupInfo,
             ref Interop.Kernel32.PROCESS_INFORMATION lpProcessInformation);
 

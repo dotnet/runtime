@@ -15,10 +15,15 @@ namespace System.Diagnostics.Tests
     [SkipOnPlatform(TestPlatforms.Android, "sh is not available on Android")]
     public class ProcessHandlesTests : ProcessTestBase
     {
+        // Exit code used by the remote child when the pipe handle was NOT inherited
+        private const int HandleNotInheritedExitCode = RemoteExecutor.SuccessExitCode + 1;
+
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task CanRedirectOutputToPipe(bool readAsync)
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public async Task CanRedirectOutputToPipe(bool readAsync, bool restrictHandles)
         {
             ProcessStartInfo startInfo = OperatingSystem.IsWindows()
                 ? new("cmd") { ArgumentList = { "/c", "echo Test" } }
@@ -27,6 +32,8 @@ namespace System.Diagnostics.Tests
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe, asyncRead: readAsync);
 
             startInfo.StandardOutputHandle = writePipe;
+            if (restrictHandles)
+                startInfo.InheritedHandles = [writePipe];
 
             using (readPipe)
             using (writePipe)
@@ -49,9 +56,11 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task CanRedirectOutputAndErrorToDifferentPipes(bool readAsync)
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public async Task CanRedirectOutputAndErrorToDifferentPipes(bool readAsync, bool restrictHandles)
         {
             ProcessStartInfo startInfo = OperatingSystem.IsWindows()
                 ? new("cmd") { ArgumentList = { "/c", "echo Hello from stdout && echo Error from stderr 1>&2" } }
@@ -62,6 +71,8 @@ namespace System.Diagnostics.Tests
 
             startInfo.StandardOutputHandle = outputWrite;
             startInfo.StandardErrorHandle = errorWrite;
+            if (restrictHandles)
+                startInfo.InheritedHandles = [outputWrite, errorWrite];
 
             using (outputRead)
             using (outputWrite)
@@ -89,9 +100,11 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task CanRedirectOutputAndErrorToSamePipe(bool readAsync)
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public async Task CanRedirectOutputAndErrorToSamePipe(bool readAsync, bool restrictHandles)
         {
             ProcessStartInfo startInfo = OperatingSystem.IsWindows()
                 ? new("cmd") { ArgumentList = { "/c", "echo Hello from stdout && echo Error from stderr 1>&2" } }
@@ -105,6 +118,8 @@ namespace System.Diagnostics.Tests
 
             startInfo.StandardOutputHandle = writePipe;
             startInfo.StandardErrorHandle = writePipe;
+            if (restrictHandles)
+                startInfo.InheritedHandles = [writePipe];
 
             using (readPipe)
             using (writePipe)
@@ -123,9 +138,11 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task CanRedirectToInheritedHandles(bool useAsync)
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public async Task CanRedirectToInheritedHandles(bool useAsync, bool restrictHandles)
         {
             ProcessStartInfo startInfo = OperatingSystem.IsWindows()
                 ? new("cmd") { ArgumentList = { "/c", "exit 42" } }
@@ -134,6 +151,8 @@ namespace System.Diagnostics.Tests
             startInfo.StandardInputHandle = Console.OpenStandardInputHandle();
             startInfo.StandardOutputHandle = Console.OpenStandardOutputHandle();
             startInfo.StandardErrorHandle = Console.OpenStandardErrorHandle();
+            if (restrictHandles)
+                startInfo.InheritedHandles = [startInfo.StandardInputHandle!, startInfo.StandardOutputHandle!, startInfo.StandardErrorHandle!];
 
             using Process process = Process.Start(startInfo)!;
 
@@ -149,8 +168,10 @@ namespace System.Diagnostics.Tests
             Assert.Equal(42, process.ExitCode);
         }
 
-        [Fact]
-        public async Task CanImplementPiping()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CanImplementPiping(bool restrictHandles)
         {
             SafeFileHandle readPipe = null!;
             SafeFileHandle writePipe = null!;
@@ -197,6 +218,12 @@ namespace System.Diagnostics.Tests
 
                 consumerInfo.StandardInputHandle = readPipe;
                 consumerInfo.StandardOutputHandle = outputHandle;
+
+                if (restrictHandles)
+                {
+                    producerInfo.InheritedHandles = [writePipe];
+                    consumerInfo.InheritedHandles = [readPipe, outputHandle];
+                }
 
                 using Process producer = Process.Start(producerInfo)!;
                 writePipe.Close(); // close the parent copy of child handle
@@ -325,7 +352,7 @@ namespace System.Diagnostics.Tests
         [InlineData(true, false)]   // handle in InheritedHandles list -> inherited
         [InlineData(false, false)]  // InheritedHandles is empty list -> not inherited
         [InlineData(false, true)]   // InheritedHandles is null -> inherited (default behavior)
-        public void InheritedHandles_CanRestrictHandleInheritance(bool addHandleToList, bool nullList)
+        public async Task InheritedHandles_CanRestrictHandleInheritance(bool addHandleToList, bool nullList)
         {
             bool expectInherited = addHandleToList || nullList;
 
@@ -339,12 +366,12 @@ namespace System.Diagnostics.Tests
             if (addHandleToList)
             {
                 // Explicitly list the pipe handle so the child can inherit it
-                options.StartInfo.InheritedHandles = new List<SafeHandle> { pipeServer.ClientSafePipeHandle };
+                options.StartInfo.InheritedHandles = [pipeServer.ClientSafePipeHandle];
             }
             else if (!nullList)
             {
                 // Empty list: restrict inheritance; the pipe handle will NOT be inherited
-                options.StartInfo.InheritedHandles = new List<SafeHandle>();
+                options.StartInfo.InheritedHandles = [];
             }
             // else: null (default) - inheritable handles are inherited by default
 
@@ -353,18 +380,18 @@ namespace System.Diagnostics.Tests
                 {
                     // Try to write to the pipe via the inherited handle.
                     // If the handle was inherited, the write succeeds.
-                    // If not inherited (e.g., empty InheritedHandles list), opening the client
-                    // pipe will fail with an exception; we catch it and return success anyway.
+                    // If not inherited, opening the client pipe will fail.
                     try
                     {
                         using AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, handleStr);
                         client.WriteByte(42);
+                        return RemoteExecutor.SuccessExitCode;
                     }
                     catch
                     {
                         // Handle was not inherited - expected when InheritedHandles is an empty list
+                        return HandleNotInheritedExitCode;
                     }
-                    return RemoteExecutor.SuccessExitCode;
                 },
                 clientHandleStr,
                 options);
@@ -373,26 +400,15 @@ namespace System.Diagnostics.Tests
 
             // Wait for child to complete
             remoteHandle.Process.WaitForExit();
+            int exitCode = remoteHandle.Process.ExitCode;
 
-            // After the child exits:
-            // - If inherited: the pipe write end was held by the child; after child exits, it's closed -> EOF
-            //   AND we should have received the byte the child wrote
-            // - If not inherited: the write end was never held by the child; after DisposeLocalCopyOfClientHandle
-            //   the write end is fully closed -> EOF immediately
-            //
-            // Use Task.Run with a timeout to avoid blocking indefinitely in unexpected edge cases.
-            int byteRead = Task.Run(() => pipeServer.ReadByte()).GetAwaiter().GetResult();
+            // Read from the pipe asynchronously
+            byte[] buffer = new byte[1];
+            int bytesRead = await pipeServer.ReadAsync(buffer);
 
-            if (expectInherited)
-            {
-                // Child successfully wrote byte 42
-                Assert.Equal(42, byteRead);
-            }
-            else
-            {
-                // Pipe write end was never open in child -> EOF
-                Assert.Equal(-1, byteRead);
-            }
+            Assert.Equal(expectInherited ? 1 : 0, bytesRead);
+            Assert.Equal(expectInherited ? 42 : 0, bytesRead > 0 ? buffer[0] : 0);
+            Assert.Equal(expectInherited ? RemoteExecutor.SuccessExitCode : HandleNotInheritedExitCode, exitCode);
         }
     }
 }

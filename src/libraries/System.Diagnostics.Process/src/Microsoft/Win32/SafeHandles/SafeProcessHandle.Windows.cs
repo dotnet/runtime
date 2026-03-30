@@ -115,7 +115,7 @@ namespace Microsoft.Win32.SafeHandles
             SafeFileHandle? inheritableStdoutHandle = null;
             SafeFileHandle? inheritableStderrHandle = null;
 
-            System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle>? inheritedHandles = startInfo.InheritedHandles;
+            IList<SafeHandle>? inheritedHandles = startInfo.InheritedHandles;
             bool hasInheritedHandles = inheritedHandles is not null;
 
             // When InheritedHandles is set, we use PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance.
@@ -136,7 +136,7 @@ namespace Microsoft.Win32.SafeHandles
 
             void* attributeListBuffer = null;
             Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST attributeList = default;
-            System.Runtime.InteropServices.SafeHandle?[]? handlesToRelease = null;
+            SafeHandle?[]? handlesToRelease = null;
             IntPtr* handlesToInherit = null;
 
             try
@@ -188,76 +188,22 @@ namespace Microsoft.Win32.SafeHandles
                 // inheritance to only the explicitly specified handles.
                 if (hasInheritedHandles)
                 {
-                    int stdioCount = (stdinHandle is not null ? 1 : 0)
+                    int maxHandleCount = (stdinHandle is not null ? 1 : 0)
                         + (stdoutHandle is not null ? 1 : 0)
-                        + (stderrHandle is not null ? 1 : 0);
-                    int maxHandleCount = stdioCount + inheritedHandles!.Count;
+                        + (stderrHandle is not null ? 1 : 0)
+                        + inheritedHandles!.Count;
                     handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)Math.Max(1, maxHandleCount), (nuint)sizeof(IntPtr));
 
                     int handleCount = 0;
 
                     // Add the effective stdio handles (already made inheritable via DuplicateAsInheritableIfNeeded)
-                    if (stdinHandle is not null)
-                    {
-                        IntPtr h = (inheritableStdinHandle ?? stdinHandle).DangerousGetHandle();
-                        if (h != IntPtr.Zero && h != new IntPtr(-1))
-                            handlesToInherit[handleCount++] = h;
-                    }
-                    if (stdoutHandle is not null)
-                    {
-                        IntPtr h = (inheritableStdoutHandle ?? stdoutHandle).DangerousGetHandle();
-                        if (h != IntPtr.Zero && h != new IntPtr(-1))
-                        {
-                            bool isDuplicate = false;
-                            for (int i = 0; i < handleCount; i++)
-                            {
-                                if (handlesToInherit[i] == h) { isDuplicate = true; break; }
-                            }
-                            if (!isDuplicate)
-                                handlesToInherit[handleCount++] = h;
-                        }
-                    }
-                    if (stderrHandle is not null)
-                    {
-                        IntPtr h = (inheritableStderrHandle ?? stderrHandle).DangerousGetHandle();
-                        if (h != IntPtr.Zero && h != new IntPtr(-1))
-                        {
-                            bool isDuplicate = false;
-                            for (int i = 0; i < handleCount; i++)
-                            {
-                                if (handlesToInherit[i] == h) { isDuplicate = true; break; }
-                            }
-                            if (!isDuplicate)
-                                handlesToInherit[handleCount++] = h;
-                        }
-                    }
+                    AddHandleToInheritList(inheritableStdinHandle ?? stdinHandle, handlesToInherit, ref handleCount);
+                    AddHandleToInheritList(inheritableStdoutHandle ?? stdoutHandle, handlesToInherit, ref handleCount);
+                    AddHandleToInheritList(inheritableStderrHandle ?? stderrHandle, handlesToInherit, ref handleCount);
 
                     PrepareHandleAllowList(inheritedHandles, handlesToInherit, ref handleCount, ref handlesToRelease);
 
-                    // Create the attribute list with one entry for PROC_THREAD_ATTRIBUTE_HANDLE_LIST
-                    nuint size = 0;
-                    Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST emptyList = default;
-                    Interop.Kernel32.InitializeProcThreadAttributeList(emptyList, 1, 0, ref size);
-
-                    attributeListBuffer = NativeMemory.Alloc(size);
-                    attributeList.AttributeList = (IntPtr)attributeListBuffer;
-
-                    if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeList, 1, 0, ref size))
-                    {
-                        throw new Win32Exception(Marshal.GetLastWin32Error());
-                    }
-
-                    if (!Interop.Kernel32.UpdateProcThreadAttribute(
-                        attributeList,
-                        0,
-                        (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
-                        handlesToInherit,
-                        (nuint)(handleCount * sizeof(IntPtr)),
-                        null,
-                        0))
-                    {
-                        throw new Win32Exception(Marshal.GetLastWin32Error());
-                    }
+                    BuildProcThreadAttributeList(handlesToInherit, handleCount, ref attributeListBuffer, ref attributeList);
                 }
 
                 startupInfoEx.lpAttributeList = attributeList;
@@ -399,16 +345,66 @@ namespace Microsoft.Win32.SafeHandles
             return procSH;
         }
 
+        /// <summary>
+        /// Adds a handle to the inherit list if it is valid and not already present.
+        /// </summary>
+        private static unsafe void AddHandleToInheritList(SafeFileHandle? handle, IntPtr* handlesToInherit, ref int handleCount)
+        {
+            if (handle is null || handle.IsInvalid)
+                return;
+
+            IntPtr h = handle.DangerousGetHandle();
+            for (int i = 0; i < handleCount; i++)
+            {
+                if (handlesToInherit[i] == h) return; // already in list
+            }
+            handlesToInherit[handleCount++] = h;
+        }
+
+        /// <summary>
+        /// Creates and populates a PROC_THREAD_ATTRIBUTE_LIST with a PROC_THREAD_ATTRIBUTE_HANDLE_LIST entry.
+        /// </summary>
+        private static unsafe void BuildProcThreadAttributeList(
+            IntPtr* handlesToInherit,
+            int handleCount,
+            ref void* attributeListBuffer,
+            ref Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST attributeList)
+        {
+            nuint size = 0;
+            Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST emptyList = default;
+            Interop.Kernel32.InitializeProcThreadAttributeList(emptyList, 1, 0, ref size);
+
+            attributeListBuffer = NativeMemory.Alloc(size);
+            attributeList.AttributeList = (IntPtr)attributeListBuffer;
+
+            if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeList, 1, 0, ref size))
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
+
+            if (!Interop.Kernel32.UpdateProcThreadAttribute(
+                attributeList,
+                0,
+                (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+                handlesToInherit,
+                (nuint)(handleCount * sizeof(IntPtr)),
+                null,
+                0))
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
+        }
+
         private static unsafe void PrepareHandleAllowList(
-            System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle> inheritedHandles,
+            IList<SafeHandle> inheritedHandles,
             IntPtr* handlesToInherit,
             ref int handleCount,
-            ref System.Runtime.InteropServices.SafeHandle?[]? handlesToRelease)
+            ref SafeHandle?[]? handlesToRelease)
         {
-            handlesToRelease = new System.Runtime.InteropServices.SafeHandle[inheritedHandles.Count];
+            handlesToRelease = new SafeHandle[inheritedHandles.Count];
             int handleIndex = 0;
 
-            foreach (System.Runtime.InteropServices.SafeHandle handle in inheritedHandles)
+            foreach (SafeHandle handle in inheritedHandles)
             {
                 if (handle is null || handle.IsInvalid || handle.IsClosed)
                     continue;
@@ -457,9 +453,9 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private static void CleanupHandles(System.Runtime.InteropServices.SafeHandle?[] handlesToRelease)
+        private static void CleanupHandles(SafeHandle?[] handlesToRelease)
         {
-            foreach (System.Runtime.InteropServices.SafeHandle? safeHandle in handlesToRelease)
+            foreach (SafeHandle? safeHandle in handlesToRelease)
             {
                 if (safeHandle is null)
                 {
