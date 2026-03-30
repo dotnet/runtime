@@ -2681,6 +2681,12 @@ HRESULT ImportHelper::ImportTypeRef(
         mdToken     tkImplementation;       // Implementation token for ExportedType.
         if (IsNilToken(tkOuterImportRes))
         {
+            _ASSERTE(pCommonAssemImport != NULL);
+            if (pCommonAssemImport == NULL)
+            {
+                IfFailGo(E_UNEXPECTED);
+            }
+
             // <REVISIT_TODO>BUG FIX:: URT 13626
             // Well, before all of the clients generate AR for SPCL reference, it is not true
             // that tkOuterImportRes == nil will imply that we have to find such an entry in the import manifest!!</REVISIT_TODO>
@@ -2732,6 +2738,12 @@ HRESULT ImportHelper::ImportTypeRef(
         }
         else if (TypeFromToken(tkOuterImportRes) == mdtModule)
         {
+            _ASSERTE(pCommonAssemImport != NULL);
+            if (pCommonAssemImport == NULL)
+            {
+                IfFailGo(E_UNEXPECTED);
+            }
+
             // Type is from a different Assembly.
             IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
                                                    pMiniMdEmit,
@@ -2843,6 +2855,12 @@ HRESULT ImportHelper::ImportTypeRef(
         }
         else if (TypeFromToken(tkOuterImportRes) == mdtModuleRef)
         {
+            _ASSERTE(pCommonAssemImport != NULL);
+            if (pCommonAssemImport == NULL)
+            {
+                IfFailGo(E_UNEXPECTED);
+            }
+
             // Type is from a different Assembly.
             IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
                                                    pMiniMdEmit,
