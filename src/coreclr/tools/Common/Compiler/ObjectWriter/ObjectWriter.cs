@@ -401,14 +401,15 @@ namespace ILCompiler.ObjectWriter
 
                 ISymbolNode symbolNode = node as ISymbolNode;
 
-#if !READYTORUN
-                ISymbolNode deduplicatedSymbolNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode);
-                if (deduplicatedSymbolNode != symbolNode)
+                if (symbolNode is not null)
                 {
-                    dumper?.ReportFoldedNode(_nodeFactory, node, deduplicatedSymbolNode);
-                    continue;
+                    ISymbolNode deduplicatedSymbolNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbolNode);
+                    if (deduplicatedSymbolNode != symbolNode)
+                    {
+                        dumper?.ReportFoldedNode(_nodeFactory, node, deduplicatedSymbolNode);
+                        continue;
+                    }
                 }
-#endif
 
                 ObjectData nodeContents = node.GetData(_nodeFactory);
 
@@ -565,10 +566,8 @@ namespace ILCompiler.ObjectWriter
                     continue;
                 }
 
-#if !READYTORUN
                 startNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, startNode);
                 endNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, endNode);
-#endif
                 Utf8String startNodeName = GetMangledName(startNode);
                 Utf8String endNodeName = GetMangledName(endNode);
 
@@ -587,11 +586,7 @@ namespace ILCompiler.ObjectWriter
                 ArrayBuilder<Relocation> checksumRelocationsBuilder = default;
                 foreach (Relocation reloc in blockToRelocate.Relocations)
                 {
-#if READYTORUN
-                    ISymbolNode relocTarget = reloc.Target;
-#else
                     ISymbolNode relocTarget = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, reloc.Target);
-#endif
 
                     if (reloc.RelocType == RelocType.IMAGE_REL_FILE_CHECKSUM_CALLBACK)
                     {

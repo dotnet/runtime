@@ -1,0 +1,68 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+
+using ILCompiler.DependencyAnalysis;
+
+namespace ILCompiler.DependencyAnalysis.ReadyToRun
+{
+    public sealed class CopiedMethodILDeduplicator : IObjectDataDeduplicator
+    {
+        private readonly Func<IEnumerable<CopiedMethodILNode>> _nodesProvider;
+
+        public CopiedMethodILDeduplicator(Func<IEnumerable<CopiedMethodILNode>> nodesProvider)
+        {
+            _nodesProvider = nodesProvider;
+        }
+
+        public void DeduplicatePass(NodeFactory factory, Dictionary<ISymbolNode, ISymbolNode> previousSymbolRemapping, Dictionary<ISymbolNode, ISymbolNode> symbolRemapping)
+        {
+            var hashSet = new HashSet<InternKey>(new InternComparer());
+
+            foreach (CopiedMethodILNode node in _nodesProvider())
+            {
+                var key = new InternKey(node, factory);
+                if (hashSet.TryGetValue(key, out InternKey existing))
+                {
+                    symbolRemapping.TryAdd(node, existing.Node);
+                }
+                else
+                {
+                    hashSet.Add(key);
+                }
+            }
+        }
+
+        private sealed class InternKey
+        {
+            public CopiedMethodILNode Node { get; }
+            public int HashCode { get; }
+            public byte[] Data { get; }
+
+            public InternKey(CopiedMethodILNode node, NodeFactory factory)
+            {
+                Node = node;
+
+                Data = node.GetData(factory, relocsOnly: false).Data;
+                var hashCode = new HashCode();
+                hashCode.AddBytes(Data);
+                HashCode = hashCode.ToHashCode();
+            }
+        }
+
+        private sealed class InternComparer : IEqualityComparer<InternKey>
+        {
+            public int GetHashCode(InternKey key) => key.HashCode;
+
+            public bool Equals(InternKey a, InternKey b)
+            {
+                if (a.HashCode != b.HashCode)
+                    return false;
+
+                return a.Data.AsSpan().SequenceEqual(b.Data);
+            }
+        }
+    }
+}
