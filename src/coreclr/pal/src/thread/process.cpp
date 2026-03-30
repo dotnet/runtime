@@ -2037,14 +2037,37 @@ PAL_GetTransportName(
         }
     }
 
-    if (strncat_s(formatBuffer, MAX_TRANSPORT_NAME_LENGTH, IpcNameFormat, strlen(IpcNameFormat)) == STRUNCATE)
+    // Format the IPC name into a temporary buffer to avoid treating the temp path as a format string.
+    // This prevents issues when TMPDIR contains format specifiers (e.g., "/tmp/%d").
+    PathCharString ipcNameString;
+    char *ipcName = ipcNameString.OpenStringBuffer(MAX_TRANSPORT_NAME_LENGTH-1);
+    if (ipcName == nullptr)
+    {
+        ERROR("Out Of Memory");
+        return;
+    }
+
+    int chars = snprintf(ipcName, MAX_TRANSPORT_NAME_LENGTH, IpcNameFormat, prefix, id, disambiguationKey, suffix);
+    if (chars < 0 || (unsigned int)chars >= MAX_TRANSPORT_NAME_LENGTH)
+    {
+        ERROR("IPC name formatting failed or was too large");
+        return;
+    }
+    ipcNameString.CloseBuffer(chars);
+
+    // Concatenate the temp path and the formatted IPC name
+    if (strncat_s(formatBuffer, MAX_TRANSPORT_NAME_LENGTH, ipcName, chars) == STRUNCATE)
     {
         ERROR("TransportPipeName was larger than MAX_TRANSPORT_NAME_LENGTH");
         return;
     }
 
-    int chars = snprintf(name, MAX_TRANSPORT_NAME_LENGTH, formatBuffer, prefix, id, disambiguationKey, suffix);
-    _ASSERTE(chars > 0 && (unsigned int)chars < MAX_TRANSPORT_NAME_LENGTH);
+    // Copy the final result to the output buffer
+    if (strcpy_s(name, MAX_TRANSPORT_NAME_LENGTH, formatBuffer) != 0)
+    {
+        ERROR("Failed to copy TransportPipeName to output buffer");
+        return;
+    }
 }
 
 /*++
