@@ -192,5 +192,51 @@ namespace System.Text.Json.Serialization.Tests
 
             public record InnerRecord(int Foo, string Bar);
         }
+
+        [Theory]
+        [InlineData(typeof(ClassWithInitOnlyPropertyDefaults))]
+        [InlineData(typeof(StructWithInitOnlyPropertyDefaults))]
+        public async Task InitOnlyPropertyDefaultValues_PreservedWhenMissingFromJson(Type type)
+        {
+            // When no properties are present in JSON, C# default values should be preserved.
+            object obj = await Serializer.DeserializeWrapper("{}", type);
+            Assert.Equal("DefaultName", (string)type.GetProperty("Name").GetValue(obj));
+            Assert.Equal(42, (int)type.GetProperty("Number").GetValue(obj));
+        }
+
+        [Theory]
+        [InlineData(typeof(ClassWithInitOnlyPropertyDefaults))]
+        [InlineData(typeof(StructWithInitOnlyPropertyDefaults))]
+        public async Task InitOnlyPropertyDefaultValues_OverriddenWhenPresentInJson(Type type)
+        {
+            // When properties are present in JSON, specified values should be used.
+            object obj = await Serializer.DeserializeWrapper("""{"Name":"Override","Number":99}""", type);
+            Assert.Equal("Override", (string)type.GetProperty("Name").GetValue(obj));
+            Assert.Equal(99, (int)type.GetProperty("Number").GetValue(obj));
+        }
+
+        [Theory]
+        [InlineData(typeof(ClassWithInitOnlyPropertyDefaults))]
+        [InlineData(typeof(StructWithInitOnlyPropertyDefaults))]
+        public async Task InitOnlyPropertyDefaultValues_PartialOverride(Type type)
+        {
+            // When only some properties are present in JSON, the rest should keep defaults.
+            object obj = await Serializer.DeserializeWrapper("""{"Number":99}""", type);
+            Assert.Equal("DefaultName", (string)type.GetProperty("Name").GetValue(obj));
+            Assert.Equal(99, (int)type.GetProperty("Number").GetValue(obj));
+        }
+
+        public class ClassWithInitOnlyPropertyDefaults
+        {
+            public string Name { get; init; } = "DefaultName";
+            public int Number { get; init; } = 42;
+        }
+
+        public struct StructWithInitOnlyPropertyDefaults
+        {
+            public StructWithInitOnlyPropertyDefaults() { }
+            public string Name { get; init; } = "DefaultName";
+            public int Number { get; init; } = 42;
+        }
     }
 }

@@ -255,6 +255,68 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """, nameof(OutParameterWithUnsupportedType));
         }
 
+        [Fact]
+        public void UnsafeAccessors_PrivateProperties()
+        {
+            VerifyAgainstBaseline("""
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(PrivateProps))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                    public class PrivateProps
+                    {
+                        [JsonInclude]
+                        private string Name { get; set; }
+                        [JsonInclude]
+                        private int Age { get; set; }
+                    }
+                }
+                """, nameof(UnsafeAccessors_PrivateProperties));
+        }
+
+        [Fact]
+        public void UnsafeAccessors_InaccessibleConstructor()
+        {
+            VerifyAgainstBaseline("""
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(InaccessibleCtor))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                    public class InaccessibleCtor
+                    {
+                        [JsonConstructor]
+                        private InaccessibleCtor(string name, int value)
+                        {
+                            Name = name;
+                            Value = value;
+                        }
+                        public string Name { get; }
+                        public int Value { get; }
+                    }
+                }
+                """, nameof(UnsafeAccessors_InaccessibleConstructor));
+        }
+
+        [Fact]
+        public void UnsafeAccessors_InitOnlyProperties()
+        {
+            VerifyAgainstBaseline("""
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(InitOnlyProps))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                    public class InitOnlyProps
+                    {
+                        public string Name { get; init; }
+                        public int Count { get; init; }
+                    }
+                }
+                """, nameof(UnsafeAccessors_InitOnlyProperties));
+        }
+
         #region Baseline comparison infrastructure
 
         private static readonly string s_baselinesRelativePath = IO.Path.Combine(
