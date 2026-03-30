@@ -20,11 +20,11 @@ namespace Microsoft.Win32.SafeHandles
         internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             return startInfo.UseShellExecute
-                ? StartWithShellExecuteEx(startInfo)
+                ? StartWithShellExecute(startInfo)
                 : StartWithCreateProcess(startInfo, stdinHandle, stdoutHandle, stderrHandle);
         }
 
-        private static unsafe SafeProcessHandle StartWithShellExecuteEx(ProcessStartInfo startInfo)
+        private static unsafe SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo)
         {
             if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
                 throw new InvalidOperationException(SR.CantStartAsUser);
