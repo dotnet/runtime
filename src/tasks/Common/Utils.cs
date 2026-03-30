@@ -95,9 +95,10 @@ internal static class Utils
             CreateNoWindow = true,
             RedirectStandardError = true,
             RedirectStandardOutput = true,
+            RedirectStandardInput = true,
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8,
-            RedirectStandardInput = inputProvider != null,
+            StandardInputEncoding = Encoding.UTF8,
             Arguments = args,
         };
 
@@ -155,6 +156,7 @@ internal static class Utils
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         inputProvider?.Invoke(process.StandardInput.BaseStream);
+        process.StandardInput.Close();
         process.WaitForExit();
 
         logger.LogMessage(debugMessageImportance, $"{msgPrefix}Exit code: {process.ExitCode}");
