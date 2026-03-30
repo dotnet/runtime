@@ -28,14 +28,8 @@ namespace System.Diagnostics
         /// <para>
         /// This method is designed for fire-and-forget scenarios where the caller wants to launch a process
         /// and does not need to interact with it further. It starts the process, captures its process ID,
-        /// disposes the <see cref="Process"/> instance to release all associated resources, and returns the
-        /// process ID. The started process continues to run independently.
-        /// </para>
-        /// <para>
-        /// Calling this method ensures proper resource cleanup on the caller's side: unlike calling
-        /// <see cref="Start(ProcessStartInfo)"/> and discarding the returned object, this method guarantees
-        /// that the underlying operating-system resources held by the <see cref="Process"/> object are
-        /// released promptly.
+        /// releases all associated resources, and returns the process ID. The started process continues to
+        /// run independently.
         /// </para>
         /// <para>
         /// When none of the standard handles (<see cref="ProcessStartInfo.StandardInputHandle"/>,
@@ -60,7 +54,7 @@ namespace System.Diagnostics
                 ? File.OpenNullHandle()
                 : null;
 
-            // Use internal StartCore to avoid the need of modyfing provided ProcessStartInfo
+            // Use internal StartCore to avoid the need of modifying provided ProcessStartInfo
             using SafeProcessHandle processHandle = SafeProcessHandle.StartCore(startInfo,
                 startInfo.StandardInputHandle ?? nullFile,
                 startInfo.StandardOutputHandle ?? nullFile,
@@ -84,14 +78,8 @@ namespace System.Diagnostics
         /// <para>
         /// This method is designed for fire-and-forget scenarios where the caller wants to launch a process
         /// and does not need to interact with it further. It starts the process, captures its process ID,
-        /// disposes the <see cref="Process"/> instance to release all associated resources, and returns the
-        /// process ID. The started process continues to run independently.
-        /// </para>
-        /// <para>
-        /// Calling this method ensures proper resource cleanup on the caller's side: unlike calling
-        /// <see cref="Start(string)"/> and discarding the returned object, this method guarantees that the
-        /// underlying operating-system resources held by the <see cref="Process"/> object are released
-        /// promptly.
+        /// releases all associated resources, and returns the process ID. The started process continues to
+        /// run independently.
         /// </para>
         /// <para>
         /// Standard handles are redirected to the null file by default.

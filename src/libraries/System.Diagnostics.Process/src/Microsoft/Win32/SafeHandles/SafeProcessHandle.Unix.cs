@@ -77,6 +77,8 @@ namespace Microsoft.Win32.SafeHandles
         {
             waitStateHolder = null;
 
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
+
             if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
             {
                 throw new PlatformNotSupportedException();
