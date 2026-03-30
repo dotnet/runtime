@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -137,33 +136,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => _legacy is not null ? _legacy.GetAppDomainObject(vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
 
     public int GetAssemblyFromDomainAssembly(ulong vmDomainAssembly, ulong* vmAssembly)
-    {
-        *vmAssembly = 0;
-        int hr = HResults.S_OK;
-        try
-        {
-            // In modern .NET, VMPTR_DomainAssembly is effectively a Module pointer.
-            // Use the Loader contract to navigate Module -> Assembly.
-            Contracts.ILoader loader = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmDomainAssembly));
-            *vmAssembly = loader.GetAssembly(handle).Value;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong assemblyLocal;
-            int hrLocal = _legacy.GetAssemblyFromDomainAssembly(vmDomainAssembly, &assemblyLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*vmAssembly == assemblyLocal, $"cDAC: {*vmAssembly:x}, DAC: {assemblyLocal:x}");
-        }
-#endif
-        return hr;
-    }
+        => _legacy is not null ? _legacy.GetAssemblyFromDomainAssembly(vmDomainAssembly, vmAssembly) : HResults.E_NOTIMPL;
 
     public int IsAssemblyFullyTrusted(ulong vmDomainAssembly, Interop.BOOL* pResult)
     {
@@ -316,31 +289,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         => _legacy is not null ? _legacy.GetDomainAssemblyData(vmDomainAssembly, pData) : HResults.E_NOTIMPL;
 
     public int GetModuleForDomainAssembly(ulong vmDomainAssembly, ulong* pModule)
-    {
-        *pModule = 0;
-        int hr = HResults.S_OK;
-        try
-        {
-            // In modern .NET, VMPTR_DomainAssembly is effectively a Module pointer.
-            // This is an identity operation.
-            *pModule = vmDomainAssembly;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong moduleLocal;
-            int hrLocal = _legacy.GetModuleForDomainAssembly(vmDomainAssembly, &moduleLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pModule == moduleLocal, $"cDAC: {*pModule:x}, DAC: {moduleLocal:x}");
-        }
-#endif
-        return hr;
-    }
+        => _legacy is not null ? _legacy.GetModuleForDomainAssembly(vmDomainAssembly, pModule) : HResults.E_NOTIMPL;
 
     public int GetAddressType(ulong address, int* pRetVal)
         => _legacy is not null ? _legacy.GetAddressType(address, pRetVal) : HResults.E_NOTIMPL;
@@ -372,45 +321,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData)
-    {
-        int hr = HResults.S_OK;
-        try
-        {
-            Contracts.ILoader loader = _target.Contracts.Loader;
-            var callback = (delegate* unmanaged<ulong, nint, void>)fpCallback;
-            IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
-                new TargetPointer(vmAppDomain),
-                AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeLoading | AssemblyIterationFlags.IncludeExecution);
-            foreach (Contracts.ModuleHandle module in modules)
-            {
-                // The callback expects VMPTR_DomainAssembly which is the Module pointer
-                // (DomainAssembly == Module in modern .NET)
-                callback(module.Address.Value, pUserData);
-            }
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-        return hr;
-    }
+        => _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData)
-    {
-        int hr = HResults.S_OK;
-        try
-        {
-            // In modern .NET each assembly has a single module, and vmAssembly is the
-            // VMPTR_DomainAssembly, which is equivalent to the module pointer.
-            var callback = (delegate* unmanaged<ulong, nint, void>)fpCallback;
-            callback(vmAssembly, pUserData);
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-        return hr;
-    }
+        => _legacy is not null ? _legacy.EnumerateModulesInAssembly(vmAssembly, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int RequestSyncAtEvent()
         => _legacy is not null ? _legacy.RequestSyncAtEvent() : HResults.E_NOTIMPL;
@@ -1332,31 +1246,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly)
-    {
-        *pVmDomainAssembly = 0;
-        int hr = HResults.S_OK;
-        try
-        {
-            // In modern .NET, VMPTR_DomainAssembly is effectively a Module pointer.
-            // This is an identity operation.
-            *pVmDomainAssembly = vmModule;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong daLocal;
-            int hrLocal = _legacy.GetDomainAssemblyFromModule(vmModule, &daLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pVmDomainAssembly == daLocal, $"cDAC: {*pVmDomainAssembly:x}, DAC: {daLocal:x}");
-        }
-#endif
-        return hr;
-    }
+        => _legacy is not null ? _legacy.GetDomainAssemblyFromModule(vmModule, pVmDomainAssembly) : HResults.E_NOTIMPL;
 
     public int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState)
         => _legacy is not null ? _legacy.ParseContinuation(continuationAddress, pDiagnosticIP, pNextContinuation, pState) : HResults.E_NOTIMPL;
