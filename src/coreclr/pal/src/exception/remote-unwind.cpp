@@ -2202,9 +2202,9 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
         }
     }
 
-#if HAVE_GET_PROC_INFO_IN_RANGE || !defined(HOST_UNIX)
+#if HAVE_GET_PROC_INFO_IN_RANGE || defined(__APPLE__) || !defined(HOST_UNIX)
     return unw_get_proc_info_in_range(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
-#else // HAVE_GET_PROC_INFO_IN_RANGE || !defined(HOST_UNIX)
+#else // HAVE_GET_PROC_INFO_IN_RANGE || defined(__APPLE__) || !defined(HOST_UNIX)
 
     // This branch is executed when using llvm-libunwind (macOS and similar platforms)
     // or HP-libunwind version 1.6 and earlier.
