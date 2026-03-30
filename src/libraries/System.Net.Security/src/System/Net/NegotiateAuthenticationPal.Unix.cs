@@ -55,10 +55,10 @@ namespace System.Net
                 // GSSAPI shim may not be available on some platforms (Linux Bionic)
                 return new UnsupportedNegotiateAuthenticationPal(clientOptions);
             }
-            catch (TypeInitializationException tie)
+            catch (TypeInitializationException tie) when (tie.InnerException is DllNotFoundException)
             {
                 // GSSAPI native library (e.g. libgssapi_krb5) may not be available on the system
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, tie);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, tie.InnerException);
                 return new UnsupportedNegotiateAuthenticationPal(clientOptions);
             }
         }
@@ -84,10 +84,10 @@ namespace System.Net
                 // GSSAPI shim may not be available on some platforms (Linux Bionic)
                 return new UnsupportedNegotiateAuthenticationPal(serverOptions);
             }
-            catch (TypeInitializationException tie)
+            catch (TypeInitializationException tie) when (tie.InnerException is DllNotFoundException)
             {
                 // GSSAPI native library (e.g. libgssapi_krb5) may not be available on the system
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, tie);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, tie.InnerException);
                 return new UnsupportedNegotiateAuthenticationPal(serverOptions);
             }
         }
@@ -786,7 +786,8 @@ namespace System.Net
             }
             catch (Exception e) when (e is EntryPointNotFoundException || e is DllNotFoundException || e is TypeInitializationException)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, e);
+                Exception logException = e is TypeInitializationException tie ? tie.InnerException ?? e : e;
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, logException);
                 // libSystem.Net.Security.Native is not available
                 return false;
             }

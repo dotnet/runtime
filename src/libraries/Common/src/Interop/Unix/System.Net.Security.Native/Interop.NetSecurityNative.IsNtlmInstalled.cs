@@ -22,17 +22,15 @@ internal static partial class Interop
 
         internal static class GssInitializer
         {
-            static GssInitializer()
-            {
-                if (EnsureGssInitialized() != 0)
-                {
-                    throw new InvalidOperationException();
-                }
-            }
+            private const string GssApiLibraryName = "libgssapi_krb5.so.2";
+            private static readonly bool s_isInitialized = EnsureGssInitialized() == 0;
 
             internal static void Initialize()
             {
-                // No-op that exists to provide a hook for other static constructors.
+                if (!s_isInitialized)
+                {
+                    throw new DllNotFoundException(GssApiLibraryName);
+                }
             }
         }
     }
