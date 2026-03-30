@@ -518,16 +518,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genAsyncResumeInfo(treeNode->AsVal());
             break;
 
-        case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
-                          ~fullIntArgRegMask(m_compiler->info.compCallConv)) == 0);
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-            // the runtime side requires the codegen here to be consistent
-            emit->emitDisableRandomNops();
-#endif // PSEUDORANDOM_NOP_INSERTION
-            break;
-
         case GT_LABEL:
             genPendingCallLabel = genCreateTempLabel();
 #if defined(TARGET_ARM)
@@ -3435,33 +3425,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         {
             // Generate a direct call to a non-virtual user defined or helper method
             assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
+            assert(call->gtDirectCallAddress != nullptr);
 
-#ifdef FEATURE_READYTORUN
-            if (call->gtEntryPoint.addr != NULL)
-            {
-                assert(call->gtEntryPoint.accessType == IAT_VALUE);
-                params.addr = call->gtEntryPoint.addr;
-            }
-            else
-#endif // FEATURE_READYTORUN
-                if (call->IsHelperCall())
-                {
-                    CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
-                    noway_assert(helperNum != CORINFO_HELP_UNDEF);
+            params.addr = call->gtDirectCallAddress;
 
-                    CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-                    params.addr                       = helperLookup.addr;
-                    assert(helperLookup.accessType == IAT_VALUE);
-                }
-                else
-                {
-                    // Direct call to a non-virtual user function.
-                    params.addr = call->gtDirectCallAddress;
-                }
-
-            assert(params.addr != nullptr);
-
-// Non-virtual direct call to known addresses
 #ifdef TARGET_ARM
             if (!validImmForBL((ssize_t)params.addr))
             {

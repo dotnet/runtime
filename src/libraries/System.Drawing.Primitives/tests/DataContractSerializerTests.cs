@@ -32,7 +32,7 @@ namespace System.Drawing.Primitives.Tests
             };
             for (int i = 0; i < objs.Length; i++)
             {
-                Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<Point>(objs[i], serializedStrings[i]), objs[i]);
+                Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<Point>(objs[i], serializedStrings[i]), objs[i]);
             }
         }
 
@@ -53,7 +53,7 @@ namespace System.Drawing.Primitives.Tests
             };
             for (int i = 0; i < objs.Length; i++)
             {
-                Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<PointF>(objs[i], serializedStrings[i]), objs[i]);
+                Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<PointF>(objs[i], serializedStrings[i]), objs[i]);
             }
         }
 
@@ -76,7 +76,7 @@ namespace System.Drawing.Primitives.Tests
             };
             for (int i = 0; i < objs.Length; i++)
             {
-                Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<Rectangle>(objs[i], serializedStrings[i]), objs[i]);
+                Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<Rectangle>(objs[i], serializedStrings[i]), objs[i]);
             }
         }
 
@@ -97,7 +97,7 @@ namespace System.Drawing.Primitives.Tests
             };
             for (int i = 0; i < objs.Length; i++)
             {
-                Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<RectangleF>(objs[i], serializedStrings[i]), objs[i]);
+                Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<RectangleF>(objs[i], serializedStrings[i]), objs[i]);
             }
         }
 
@@ -118,7 +118,7 @@ namespace System.Drawing.Primitives.Tests
             };
             for (int i = 0; i < objs.Length; i++)
             {
-                Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<Size>(objs[i], serializedStrings[i]), objs[i]);
+                Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<Size>(objs[i], serializedStrings[i]), objs[i]);
             }
         }
 
@@ -139,7 +139,7 @@ namespace System.Drawing.Primitives.Tests
             };
             for (int i = 0; i < objs.Length; i++)
             {
-                Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<SizeF>(objs[i], serializedStrings[i]), objs[i]);
+                Assert.Equal(DataContractSerializerHelper.SerializeAndDeserialize<SizeF>(objs[i], serializedStrings[i]), objs[i]);
             }
         }
     }

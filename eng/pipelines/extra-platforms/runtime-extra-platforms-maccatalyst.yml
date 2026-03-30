@@ -162,7 +162,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             buildAllTestsAsStandalone: true
-            testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
+            testBuildArgs: tree nativeaot/MobileSmokeTest /p:BuildNativeAOTRuntimePack=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
 
 #
@@ -201,7 +201,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             buildAllTestsAsStandalone: true
-            testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true /p:DevTeamProvisioning=adhoc /p:EnableAppSandbox=true
+            testBuildArgs: tree nativeaot/MobileSmokeTest /p:BuildNativeAOTRuntimePack=true /p:DevTeamProvisioning=adhoc /p:EnableAppSandbox=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
 
 #

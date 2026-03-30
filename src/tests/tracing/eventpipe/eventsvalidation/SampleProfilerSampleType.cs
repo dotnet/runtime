@@ -8,6 +8,7 @@ using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tracing;
+using TestLibrary;
 using Tracing.Tests.Common;
 using Xunit;
 

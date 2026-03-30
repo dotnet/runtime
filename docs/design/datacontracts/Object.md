@@ -16,6 +16,10 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
 
 // Get built-in COM data for the object if available. Returns false if address does not represent a COM object using built-in COM.
 bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
+
+// Try to get the runtime-assigned hash code for the object. Returns 0 if the runtime has not
+// assigned a default hash code. This will never be 0 for objects that have been hashed.
+int TryGetHashCode(TargetPointer address);
 ```
 
 ## Version 1
@@ -28,6 +32,8 @@ Data descriptors used:
 | `String` | `m_FirstChar` | First character of the string - `m_StringLength` can be used to read the full string (encoded in UTF-16) |
 | `String` | `m_StringLength` | Length of the string in characters (encoded in UTF-16) |
 | `SyncTableEntry` | `SyncBlock` | `SyncBlock` corresponding to the entry |
+| `ObjectHeader` | `SyncBlockValue` | Sync block value from the object header |
+| `SyncBlock` | `HashCode` | Hash code stored in the sync block |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -40,6 +46,7 @@ Global variables used:
 | `SyncBlockValueToObjectOffset` | uint16 | Offset from the sync block value (in the object header) to the object itself |
 | `SyncBlockIsHashOrSyncBlockIndex` | uint32 | Check bit indicating that the sync block value represents either a hash code or a sync block index rather than a thin-lock state. |
 | `SyncBlockIsHashCode` | uint32 | Check bit that, when `SyncBlockIsHashOrSyncBlockIndex` is set, specifies that the remaining bits hold the hash code; when clear, the remaining bits hold the sync block index. |
+| `SyncBlockHashCodeMask` | uint32 | Mask for extracting the hash code from the sync block value. |
 | `SyncBlockIndexMask` | uint32 | The mask for sync block index field. |
 
 Contracts used:
@@ -129,5 +136,28 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
     // Delegate to the SyncBlock contract so that the interop data can also be read directly
     // from a sync block address without going through the object (e.g. during cleanup).
     return target.Contracts.SyncBlock.GetBuiltInComData(syncBlockPtr, out rcw, out ccw, out ccf);
+}
+
+int TryGetHashCode(TargetPointer address)
+{
+    // Read the sync block value from the ObjectHeader preceding the object
+    uint syncBlockValue = target.Read<uint>(address - /* ObjectHeader size */ + /* ObjectHeader::SyncBlockValue offset */);
+
+    if ((syncBlockValue & target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex")) == 0)
+        return 0;
+
+    if ((syncBlockValue & target.ReadGlobal<uint>("SyncBlockIsHashCode")) != 0)
+    {
+        // Hash code is stored inline in the sync block value
+        return (int)(syncBlockValue & target.ReadGlobal<uint>("SyncBlockHashCodeMask"));
+    }
+
+    // Hash code is stored in the sync block
+    uint index = syncBlockValue & target.ReadGlobal<uint>("SyncBlockIndexMask");
+    TargetPointer syncBlock = target.Contracts.SyncBlock.GetSyncBlock(index);
+    if (syncBlock == TargetPointer.Null)
+        return 0;
+
+    return (int)target.Read<uint>(syncBlock + /* SyncBlock::HashCode offset */);
 }
 ```

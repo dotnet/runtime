@@ -125,7 +125,9 @@ DWORD GetCurrentExceptionCode();
 // ---------------------------------------------------------------------------
 
 class Exception;
+#ifdef TARGET_WINDOWS
 class SEHException;
+#endif // TARGET_WINDOWS
 
 
 // Exception hierarchy:
@@ -465,6 +467,7 @@ class COMException : public HRException
 // SEHException class.  Implements exception API for SEH exception info
 // ---------------------------------------------------------------------------
 
+#ifdef TARGET_WINDOWS
 class SEHException : public Exception
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
@@ -502,6 +505,7 @@ class SEHException : public Exception
         return new SEHException(&m_exception);
     }
 };
+#endif // TARGET_WINDOWS
 
 // ---------------------------------------------------------------------------
 // DelegatingException class.  Implements exception API for "foreign" exceptions.
@@ -1264,6 +1268,7 @@ inline COMException::COMException(HRESULT hr, IErrorInfo *pErrorInfo)
 }
 #endif // FEATURE_COMINTEROP
 
+#ifdef TARGET_WINDOWS
 inline SEHException::SEHException()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1275,6 +1280,7 @@ inline SEHException::SEHException(EXCEPTION_RECORD *pointers, T_CONTEXT *pContex
     LIMITED_METHOD_CONTRACT;
     memcpy(&m_exception, pointers, sizeof(EXCEPTION_RECORD));
 }
+#endif // TARGET_WINDOWS
 
 // The exception throwing helpers are intentionally not inlined
 // Exception throwing is a rare slow codepath that should be optimized for code size

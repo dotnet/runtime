@@ -266,6 +266,19 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
     return threadLocalStaticBase;
 }
 
+TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
+{
+    TargetPointer exceptionTrackerPtr = target.ReadPointer(threadPointer + /*Thread::ExceptionTracker offset */);
+    if (exceptionTrackerPtr == TargetPointer.Null)
+        return TargetPointer.Null;
+    TargetPointer thrownObjectHandle = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ThrownObjectHandle offset */);
+
+    if (thrownObjectHandle == TargetPointer.Null || target.ReadPointer(thrownObjectHandle) == TargetPointer.Null)
+        return TargetPointer.Null;
+
+    return thrownObjectHandle;
+}
+
 byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
 {
     TargetPointer readFrom;

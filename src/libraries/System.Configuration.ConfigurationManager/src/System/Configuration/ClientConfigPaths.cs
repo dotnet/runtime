@@ -23,7 +23,7 @@ namespace System.Configuration
         private const string UrlDesc = "Url";
         private const string PathDesc = "Path";
 
-        private static volatile ClientConfigPaths s_current;
+        private static ClientConfigPaths s_current;
         private static volatile bool s_currentIncludesUserConfig;
 
         private readonly bool _includesUserConfig;

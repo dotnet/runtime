@@ -120,6 +120,9 @@ DEFINE_DACVAR(PTR_SystemDomain, SystemDomain__m_pSystemDomain, SystemDomain::m_p
 DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 #endif
 DEFINE_DACVAR(DWORD, dac__g_TlsIndex, g_TlsIndex)
+#ifdef TARGET_WINDOWS
+DEFINE_DACVAR(DWORD, dac___tls_index, ::_tls_index)
+#endif
 DEFINE_DACVAR(DWORD, dac__g_offsetOfCurrentThreadInfo, g_offsetOfCurrentThreadInfo)
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEHClass, ::g_pEHClass)

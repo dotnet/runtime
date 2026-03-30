@@ -114,6 +114,8 @@ public readonly struct GCOomData
     HandleType[] GetSupportedHandleTypes();
     // Converts integer types into HandleType enum
     HandleType[] GetHandleTypes(uint[] types);
+    // Gets the extra info (user data) associated with a dependent handle
+    TargetNUInt GetHandleExtraInfo(TargetPointer handle);
     // Gets the global allocation context pointer and limit
     void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit);
 ```
@@ -222,6 +224,7 @@ Global variables used:
 | `HandleMaxInternalTypes` | uint | GC | Number of handle types (length of `TableSegment.RgTail`) |
 | `HandlesPerBlock` | uint | GC | Number of handles in each handle block |
 | `BlockInvalid` | byte | GC | Sentinel value indicating an invalid handle block index |
+| `HandleSegmentSize` | uint | GC | Size of a handle table segment |
 | `DebugDestroyedHandleValue` | TargetPointer | GC | Sentinel handle value used for destroyed handles |
 | `FeatureCOMInterop` | byte | VM | Non-zero when COM interop support is enabled |
 | `FeatureComWrappers` | byte | VM | Non-zero when `ComWrappers` support is enabled |
@@ -738,5 +741,35 @@ void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointe
     TargetPointer globalAllocContextAddress = target.ReadGlobalPointer("GlobalAllocContext");
     allocPtr = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Pointer offset */);
     allocLimit = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Limit offset */);
+}
+```
+
+GetHandleExtraInfo
+```csharp
+TargetNUInt IGC.GetHandleExtraInfo(TargetPointer handle)
+{
+    // Handle table segments are aligned to their size ("HandleSegmentSize").
+    // The segment base is found by masking the handle address.
+    // User data blocks are stored in TableSegment.RgUserData, indexed by block number.
+    // The block and intra-block index are computed from the handle's position within the segment.
+
+    uint segmentSize = target.ReadGlobal<uint>("HandleSegmentSize");
+    TargetPointer segment = handle & ~(ulong)(segmentSize - 1);
+
+    uint headerSize = /* TableSegment::RgValue offset */;
+    uint handlesPerBlock = target.ReadGlobal<uint>("HandlesPerBlock");
+
+    uint handleIndex = (uint)((handle - segment - headerSize) / (uint)target.PointerSize);
+    uint block = handleIndex / handlesPerBlock;
+    uint intraBlockIndex = handleIndex % handlesPerBlock;
+
+    byte userDataBlockIndex = target.Read<byte>(segment + /* TableSegment::RgUserData offset */ + block);
+    if (userDataBlockIndex == target.ReadGlobal<byte>("BlockInvalid"))
+        return new TargetNUInt(0);
+
+    uint offset = userDataBlockIndex * handlesPerBlock + intraBlockIndex;
+    TargetPointer extraInfoAddr = segment + headerSize + offset * (uint)target.PointerSize;
+
+    return target.ReadNUInt(extraInfoAddr);
 }
 ```

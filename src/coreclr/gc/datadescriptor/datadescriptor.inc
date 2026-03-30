@@ -121,6 +121,7 @@ CDAC_GLOBAL(DebugDestroyedHandleValue, /*uintptr_t*/, (uintptr_t)DEBUG_Destroyed
 #else
 CDAC_GLOBAL(DebugDestroyedHandleValue, /*uintptr_t*/, (uintptr_t)(0))
 #endif
+CDAC_GLOBAL(HandleSegmentSize, /*uint32*/, HANDLE_SEGMENT_SIZE)
 CDAC_GLOBAL(HandleBlocksPerSegment, /*uint32*/, HANDLE_BLOCKS_PER_SEGMENT)
 CDAC_GLOBAL(HandleMaxInternalTypes, /*uint32*/, HANDLE_MAX_INTERNAL_TYPES)
 CDAC_GLOBAL(HandlesPerBlock, /*uint32*/, HANDLE_HANDLES_PER_BLOCK)

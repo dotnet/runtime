@@ -34,6 +34,8 @@ namespace System
         "FREEBSD"
 #elif TARGET_NETBSD
         "NETBSD"
+#elif TARGET_OPENBSD
+        "OPENBSD"
 #elif TARGET_ILLUMOS
         "ILLUMOS"
 #elif TARGET_SOLARIS
@@ -193,6 +195,17 @@ namespace System
         /// </summary>
         public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
             => IsFreeBSD() && IsOSVersionAtLeast(major, minor, build, revision);
+
+        /// <summary>
+        /// Indicates whether the current application is running on FreeBSD.
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsOpenBSD() =>
+#if TARGET_OPENBSD
+            true;
+#else
+            false;
+#endif
 
         /// <summary>
         /// Indicates whether the current application is running on Android.

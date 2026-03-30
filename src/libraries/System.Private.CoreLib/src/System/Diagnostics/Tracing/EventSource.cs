@@ -356,7 +356,7 @@ namespace System.Diagnostics.Tracing
         {
             ArgumentNullException.ThrowIfNull(eventSourceType);
 
-            EventSourceAttribute? attrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute));
+            EventSourceAttribute? attrib = (EventSourceAttribute?)EventSourceHelpers.GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute));
             string name = eventSourceType.Name;
             if (attrib != null)
             {
@@ -412,6 +412,7 @@ namespace System.Diagnostics.Tracing
         {
             return GenerateManifest(eventSourceType, assemblyPathToIncludeInManifest, EventManifestOptions.None);
         }
+
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
         /// documented at in EventManifest Schema https://learn.microsoft.com/windows/desktop/WES/eventmanifestschema-schema.
@@ -441,7 +442,7 @@ namespace System.Diagnostics.Tracing
 
             ArgumentNullException.ThrowIfNull(eventSourceType);
 
-            byte[]? manifestBytes = CreateManifestAndDescriptors(eventSourceType, assemblyPathToIncludeInManifest, null, flags);
+            byte[]? manifestBytes = EventSourceHelpers.CreateManifestAndDescriptors(eventSourceType, assemblyPathToIncludeInManifest, null, flags);
             return (manifestBytes == null) ? null : Encoding.UTF8.GetString(manifestBytes, 0, manifestBytes.Length);
         }
 
@@ -1263,7 +1264,7 @@ namespace System.Diagnostics.Tracing
                 set => m_Reserved = value;
             }
 
-#region private
+            #region private
             /// <summary>
             /// Initializes the members of this EventData object to point at a previously-pinned
             /// tracelogging-compatible metadata blob.
@@ -1271,6 +1272,7 @@ namespace System.Diagnostics.Tracing
             /// <param name="pointer">Pinned tracelogging-compatible metadata blob.</param>
             /// <param name="size">The size of the metadata blob.</param>
             /// <param name="reserved">Value for reserved: 2 for per-provider metadata, 1 for per-event metadata</param>
+            [RequiresUnsafe]
             internal unsafe void SetMetadata(byte* pointer, int size, int reserved)
             {
                 this.m_Ptr = (ulong)pointer;
@@ -1319,6 +1321,7 @@ namespace System.Diagnostics.Tracing
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         protected unsafe void WriteEventCore(int eventId, int eventDataCount, EventData* data)
         {
             WriteEventWithRelatedActivityIdCore(eventId, null, eventDataCount, data);
@@ -1354,6 +1357,7 @@ namespace System.Diagnostics.Tracing
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventData* data)
         {
             if (IsEnabled())
@@ -1565,10 +1569,11 @@ namespace System.Diagnostics.Tracing
             // NOTE: we nop out this method body if !IsSupported using ILLink.Substitutions.
             this.Dispose(false);
         }
-#endregion
+        #endregion
 
-#region private
+        #region private
 
+        [RequiresUnsafe]
         private unsafe void WriteEventRaw(
             string? eventName,
             ref EventDescriptor eventDescriptor,
@@ -1757,7 +1762,7 @@ namespace System.Diagnostics.Tracing
         {
             ArgumentNullException.ThrowIfNull(eventSourceType);
 
-            EventSourceAttribute? attrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
+            EventSourceAttribute? attrib = (EventSourceAttribute?)EventSourceHelpers.GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
             if (attrib != null && attrib.Name != null)
                 return attrib.Name;
 
@@ -1786,6 +1791,7 @@ namespace System.Diagnostics.Tracing
             return new Guid(bytes.Slice(0, 16));
         }
 
+        [RequiresUnsafe]
         private static unsafe void DecodeObjects(object?[] decodedObjects, Type[] parameterTypes, EventData* data)
         {
             for (int i = 0; i < decodedObjects.Length; i++, data++)
@@ -1954,6 +1960,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [Conditional("DEBUG")]
+        [RequiresUnsafe]
         private static unsafe void AssertValidString(EventData* data)
         {
             Debug.Assert(data->Size >= 0 && data->Size % 2 == 0, "String size should be even");
@@ -1984,6 +1991,7 @@ namespace System.Diagnostics.Tracing
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
+        [RequiresUnsafe]
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
         {
             if (IsEnabled())
@@ -2147,6 +2155,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        [RequiresUnsafe]
         private unsafe void WriteToAllListeners(EventWrittenEventArgs eventCallbackArgs, int eventDataCount, EventData* data)
         {
             Debug.Assert(m_eventData != null);
@@ -2891,7 +2900,7 @@ namespace System.Diagnostics.Tracing
             {
                 // get the metadata via reflection.
                 Debug.Assert(m_rawManifest == null);
-                m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
+                m_rawManifest = EventSourceHelpers.CreateManifestAndDescriptors(this.GetType(), Name, this);
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
@@ -3030,66 +3039,388 @@ namespace System.Diagnostics.Tracing
             return false;
         }
 
-        // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
-        // When that is the case, we have the build the custom assemblies on a member by hand.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
-            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                            "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
-                            "access this member and is safe to call.")]
-        internal static Attribute? GetCustomAttributeHelper(
-            MemberInfo member,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties)]
-            Type attributeType,
-            EventManifestOptions flags = EventManifestOptions.None)
+        private static class EventSourceHelpers
         {
-            Debug.Assert(attributeType == typeof(EventAttribute) || attributeType == typeof(EventSourceAttribute));
-            // AllowEventSourceOverride is an option that allows either Microsoft.Diagnostics.Tracing or
-            // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
-            if (!member.Module.Assembly.ReflectionOnly && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
+            // Use reflection to look at the attributes of a class, and generate a manifest for it (as UTF8) and
+            // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
+            // at run time.  'source' is the event source to place the descriptors.  If it is null,
+            // then the descriptors are not created, and just the manifest is generated.
+            public static byte[]? CreateManifestAndDescriptors(
+                [DynamicallyAccessedMembers(ManifestMemberTypes)]
+                Type eventSourceType,
+                string? eventSourceDllName,
+                EventSource? source,
+                EventManifestOptions flags = EventManifestOptions.None)
             {
-                // Let the runtime do the work for us, since we can execute code in this context.
-                return member.GetCustomAttribute(attributeType, inherit: false);
-            }
+                ManifestBuilder? manifest = null;
+                bool bNeedsManifest = source != null ? !source.SelfDescribingEvents : true;
+                Exception? exception = null; // exception that might get raised during validation b/c we couldn't/didn't recover from a previous error
+                byte[]? res = null;
 
-            foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(member))
-            {
-                if (AttributeTypeNamesMatch(attributeType, data.Constructor.ReflectedType!))
+                if (eventSourceType.IsAbstract && (flags & EventManifestOptions.Strict) == 0)
+                    return null;
+
+                try
                 {
-                    Attribute? attr = null;
-
-                    Debug.Assert(data.ConstructorArguments.Count <= 1);
-
-                    if (data.ConstructorArguments.Count == 1)
+                    MethodInfo[] methods = eventSourceType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    EventAttribute defaultEventAttribute;
+                    int eventId = 1;        // The number given to an event that does not have a explicitly given ID.
+                    Dictionary<int, EventMetadata>? eventData = null;
+                    Dictionary<string, string>? eventsByName = null;
+                    if (source != null || (flags & EventManifestOptions.Strict) != 0)
                     {
-                        attr = (Attribute?)Activator.CreateInstance(attributeType, [data.ConstructorArguments[0].Value]);
+                        eventData = new Dictionary<int, EventMetadata>();
+                        ref EventMetadata newEventMetadata = ref CollectionsMarshal.GetValueRefOrAddDefault(eventData, 0, out _);
+                        newEventMetadata.Name = ""; // Event 0 is the 'write messages string' event, and has an empty name.
                     }
-                    else if (data.ConstructorArguments.Count == 0)
+
+                    // See if we have localization information.
+                    ResourceManager? resources = null;
+                    EventSourceAttribute? eventSourceAttrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
+                    if (eventSourceAttrib != null && eventSourceAttrib.LocalizationResources != null)
+                        resources = new ResourceManager(eventSourceAttrib.LocalizationResources, eventSourceType.Assembly);
+
+                    if (source?.GetType() == typeof(NativeRuntimeEventSource))
                     {
-                        attr = (Attribute?)Activator.CreateInstance(attributeType);
+                        // Don't emit nor generate the manifest for NativeRuntimeEventSource i.e., Microsoft-Windows-DotNETRuntime.
+                        manifest = new ManifestBuilder(resources, flags);
+                        bNeedsManifest = false;
+                    }
+                    else
+                    {
+                        // Try to get name and GUID directly from the source. Otherwise get it from the Type's attribute.
+                        string providerName = source?.Name ?? GetName(eventSourceType, flags);
+                        Guid providerGuid = source?.Guid ?? GetGuid(eventSourceType);
+
+                        manifest = new ManifestBuilder(providerName, providerGuid, eventSourceDllName, resources, flags);
                     }
 
-                    if (attr != null)
+                    // Add an entry unconditionally for event ID 0 which will be for a string message.
+                    manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
+                    manifest.AddEventParameter(typeof(string), "message");
+                    manifest.EndEvent();
+
+                    // eventSourceType must be sealed and must derive from this EventSource
+                    if ((flags & EventManifestOptions.Strict) != 0)
                     {
-                        foreach (CustomAttributeNamedArgument namedArgument in data.NamedArguments)
+                        bool typeMatch = GetEventSourceBaseType(eventSourceType, (flags & EventManifestOptions.AllowEventSourceOverride) != 0, eventSourceType.Assembly.ReflectionOnly) != null;
+
+                        if (!typeMatch)
                         {
-                            PropertyInfo p = attributeType.GetProperty(namedArgument.MemberInfo.Name, BindingFlags.Public | BindingFlags.Instance)!;
-                            object value = namedArgument.TypedValue.Value!;
+                            manifest.ManifestError(SR.EventSource_TypeMustDeriveFromEventSource);
+                        }
+                        if (!eventSourceType.IsAbstract && !eventSourceType.IsSealed)
+                        {
+                            manifest.ManifestError(SR.EventSource_TypeMustBeSealedOrAbstract);
+                        }
+                    }
 
-                            if (p.PropertyType.IsEnum)
+                    // Collect task, opcode, keyword and channel information
+                    foreach (string providerEnumKind in (ReadOnlySpan<string>)["Keywords", "Tasks", "Opcodes"])
+                    {
+                        Type? nestedType = eventSourceType.GetNestedType(providerEnumKind);
+                        if (nestedType != null)
+                        {
+                            if (eventSourceType.IsAbstract)
                             {
-                                string val = value.ToString()!;
-                                value = Enum.Parse(p.PropertyType, val);
+                                manifest.ManifestError(SR.Format(SR.EventSource_AbstractMustNotDeclareKTOC, nestedType.Name));
+                            }
+                            else
+                            {
+                                foreach (FieldInfo staticField in nestedType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+                                {
+                                    AddProviderEnumKind(manifest, staticField, providerEnumKind);
+                                }
+                            }
+                        }
+                    }
+                    // ensure we have keywords for the session-filtering reserved bits
+                    {
+                        manifest.AddKeyword("Session3", (long)0x1000 << 32);
+                        manifest.AddKeyword("Session2", (long)0x2000 << 32);
+                        manifest.AddKeyword("Session1", (long)0x4000 << 32);
+                        manifest.AddKeyword("Session0", (long)0x8000 << 32);
+                    }
+
+                    if (eventSourceType != typeof(EventSource))
+                    {
+                        for (int i = 0; i < methods.Length; i++)
+                        {
+                            MethodInfo method = methods[i];
+
+                            // Compat: until v4.5.1 we ignored any non-void returning methods as well as virtual methods for
+                            // the only reason of limiting the number of methods considered to be events. This broke a common
+                            // design of having event sources implement specific interfaces. To fix this in a compatible way
+                            // we will now allow both non-void returning and virtual methods to be Event methods, as long
+                            // as they are marked with the [Event] attribute
+                            if (/* method.IsVirtual || */ method.IsStatic)
+                            {
+                                continue;
                             }
 
-                            p.SetValue(attr, value, null);
-                        }
+                            // Get the EventDescriptor (from the Custom attributes)
+                            EventAttribute? eventAttribute = (EventAttribute?)GetCustomAttributeHelper(method, typeof(EventAttribute), flags);
 
-                        return attr;
+                            if (eventSourceType.IsAbstract)
+                            {
+                                if (eventAttribute != null)
+                                {
+                                    manifest.ManifestError(SR.Format(SR.EventSource_AbstractMustNotDeclareEventMethods, method.Name, eventAttribute.EventId));
+                                }
+                                continue;
+                            }
+                            else if (eventAttribute == null)
+                            {
+                                // Methods that don't return void can't be events, if they're NOT marked with [Event].
+                                // (see Compat comment above)
+                                if (method.ReturnType != typeof(void))
+                                {
+                                    continue;
+                                }
+
+                                // Continue to ignore virtual methods if they do NOT have the [Event] attribute
+                                // (see Compat comment above)
+                                if (method.IsVirtual)
+                                {
+                                    continue;
+                                }
+
+                                // If we explicitly mark the method as not being an event, then honor that.
+                                if (IsCustomAttributeDefinedHelper(method, typeof(NonEventAttribute), flags))
+                                    continue;
+
+                                defaultEventAttribute = new EventAttribute(eventId);
+                                eventAttribute = defaultEventAttribute;
+                            }
+                            else if (eventAttribute.EventId <= 0)
+                            {
+                                manifest.ManifestError(SR.EventSource_NeedPositiveId, true);
+                                continue;   // don't validate anything else for this event
+                            }
+                            if (method.Name.LastIndexOf('.') >= 0)
+                            {
+                                manifest.ManifestError(SR.Format(SR.EventSource_EventMustNotBeExplicitImplementation, method.Name, eventAttribute.EventId));
+                            }
+
+                            eventId++;
+                            string eventName = method.Name;
+
+                            if (eventAttribute.Opcode == EventOpcode.Info)      // We are still using the default opcode.
+                            {
+                                // By default pick a task ID derived from the EventID, starting with the highest task number and working back
+                                bool noTask = (eventAttribute.Task == EventTask.None);
+                                if (noTask)
+                                    eventAttribute.Task = (EventTask)(0xFFFE - eventAttribute.EventId);
+
+                                // Unless we explicitly set the opcode to Info (to override the auto-generate of Start or Stop opcodes,
+                                // pick a default opcode based on the event name (either Info or start or stop if the name ends with that suffix).
+                                if (!eventAttribute.IsOpcodeSet)
+                                    eventAttribute.Opcode = GetOpcodeWithDefault(EventOpcode.Info, eventName);
+
+                                // Make the stop opcode have the same task as the start opcode.
+                                if (noTask)
+                                {
+                                    if (eventAttribute.Opcode == EventOpcode.Start)
+                                    {
+                                        if (eventName.EndsWith(ActivityStartSuffix, StringComparison.Ordinal))
+                                        {
+                                            string taskName = eventName[..^ActivityStartSuffix.Length]; // Remove the Start suffix to get the task name
+
+                                            // Add a task that is just the task name for the start event.   This suppress the auto-task generation
+                                            // That would otherwise happen (and create 'TaskName'Start as task name rather than just 'TaskName'
+                                            manifest.AddTask(taskName, (int)eventAttribute.Task);
+                                        }
+                                    }
+                                    else if (eventAttribute.Opcode == EventOpcode.Stop)
+                                    {
+                                        // Find the start associated with this stop event.  We require start to be immediately before the stop
+                                        int startEventId = eventAttribute.EventId - 1;
+                                        Debug.Assert(0 <= startEventId);
+                                        if (eventData != null)
+                                        {
+                                            ref EventMetadata startEventMetadata = ref CollectionsMarshal.GetValueRefOrNullRef(eventData, startEventId);
+                                            if (!Unsafe.IsNullRef(ref startEventMetadata))
+                                            {
+                                                // If you remove the Stop and add a Start does that name match the Start Event's Name?
+                                                // Ideally we would throw an error
+                                                if (startEventMetadata.Descriptor.Opcode == (byte)EventOpcode.Start &&
+                                                    startEventMetadata.Name.EndsWith(ActivityStartSuffix, StringComparison.Ordinal) &&
+                                                    eventName.EndsWith(ActivityStopSuffix, StringComparison.Ordinal) &&
+                                                    startEventMetadata.Name.AsSpan()[..^ActivityStartSuffix.Length].SequenceEqual(
+                                                        eventName.AsSpan()[..^ActivityStopSuffix.Length]))
+                                                {
+                                                    // Make the stop event match the start event
+                                                    eventAttribute.Task = (EventTask)startEventMetadata.Descriptor.Task;
+                                                    noTask = false;
+                                                }
+                                            }
+                                        }
+                                        if (noTask && (flags & EventManifestOptions.Strict) != 0)        // Throw an error if we can compatibly.
+                                        {
+                                            throw new ArgumentException(SR.EventSource_StopsFollowStarts);
+                                        }
+                                    }
+                                }
+                            }
+
+                            ParameterInfo[] args = method.GetParameters();
+
+                            bool hasRelatedActivityID = RemoveFirstArgIfRelatedActivityId(ref args);
+                            if (!(source != null && source.SelfDescribingEvents))
+                            {
+                                manifest.StartEvent(eventName, eventAttribute);
+                                for (int fieldIdx = 0; fieldIdx < args.Length; fieldIdx++)
+                                {
+                                    manifest.AddEventParameter(args[fieldIdx].ParameterType, args[fieldIdx].Name!);
+                                }
+                                manifest.EndEvent();
+                            }
+
+                            if (source != null || (flags & EventManifestOptions.Strict) != 0)
+                            {
+                                Debug.Assert(eventData != null);
+                                // Do checking for user errors (optional, but not a big deal so we do it).
+                                DebugCheckEvent(ref eventsByName, eventData, method, eventAttribute, manifest, flags);
+
+                                // add the channel keyword for Event Viewer channel based filters. This is added for creating the EventDescriptors only
+                                // and is not required for the manifest
+                                if (eventAttribute.Channel != EventChannel.None)
+                                {
+                                    unchecked
+                                    {
+                                        eventAttribute.Keywords |= (EventKeywords)manifest.GetChannelKeyword(eventAttribute.Channel, (ulong)eventAttribute.Keywords);
+                                    }
+                                }
+
+                                if (manifest.HasResources)
+                                {
+                                    string eventKey = "event_" + eventName;
+                                    if (manifest.GetLocalizedMessage(eventKey, CultureInfo.CurrentUICulture, etwFormat: false) is string msg)
+                                    {
+                                        // overwrite inline message with the localized message
+                                        eventAttribute.Message = msg;
+                                    }
+                                }
+
+                                AddEventDescriptor(ref eventData, eventName, eventAttribute, args, hasRelatedActivityID);
+                            }
+                        }
+                    }
+
+                    // Tell the TraceLogging stuff where to start allocating its own IDs.
+                    NameInfo.ReserveEventIDsBelow(eventId);
+
+                    if (source != null)
+                    {
+                        Debug.Assert(eventData != null);
+                        source.m_eventData = eventData;     // officially initialize it. We do this at most once (it is racy otherwise).
+                        source.m_channelData = manifest.GetChannelData();
+                    }
+
+                    // if this is an abstract event source we've already performed all the validation we can
+                    if (!eventSourceType.IsAbstract && (source == null || !source.SelfDescribingEvents))
+                    {
+                        bNeedsManifest = (flags & EventManifestOptions.OnlyIfNeededForRegistration) == 0 || manifest.GetChannelData().Length > 0;
+
+                        // if the manifest is not needed and we're not requested to validate the event source return early
+                        if (!bNeedsManifest && (flags & EventManifestOptions.Strict) == 0)
+                            return null;
+
+                        res = manifest.CreateManifest();
+                        res = (res.Length > 0) ? res : null;
                     }
                 }
+                catch (Exception e)
+                {
+                    // if this is a runtime manifest generation let the exception propagate
+                    if ((flags & EventManifestOptions.Strict) == 0)
+                        throw;
+                    // else store it to include it in the Argument exception we raise below
+                    exception = e;
+                }
+
+                if ((flags & EventManifestOptions.Strict) != 0 && (manifest?.Errors.Count > 0 || exception != null))
+                {
+                    string msg = string.Empty;
+
+                    if (manifest?.Errors.Count > 0)
+                    {
+                        bool firstError = true;
+                        foreach (string error in manifest.Errors)
+                        {
+                            if (!firstError)
+                                msg += Environment.NewLine;
+                            firstError = false;
+                            msg += error;
+                        }
+                    }
+                    else
+                        msg = "Unexpected error: " + exception!.Message;
+
+                    throw new ArgumentException(msg, exception);
+                }
+
+                return bNeedsManifest ? res : null;
             }
 
-            return null;
+
+            // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
+            // When that is the case, we have the build the custom assemblies on a member by hand.
+            internal static Attribute? GetCustomAttributeHelper(
+                MemberInfo member,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties)]
+                Type attributeType,
+                EventManifestOptions flags = EventManifestOptions.None)
+            {
+                Debug.Assert(attributeType == typeof(EventAttribute) || attributeType == typeof(EventSourceAttribute));
+                // AllowEventSourceOverride is an option that allows either Microsoft.Diagnostics.Tracing or
+                // System.Diagnostics.Tracing EventSource to be considered valid.  This should not mattter anywhere but in Microsoft.Diagnostics.Tracing (nuget package).
+                if (!member.Module.Assembly.ReflectionOnly && (flags & EventManifestOptions.AllowEventSourceOverride) == 0)
+                {
+                    // Let the runtime do the work for us, since we can execute code in this context.
+                    return member.GetCustomAttribute(attributeType, inherit: false);
+                }
+
+                foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(member))
+                {
+                    if (AttributeTypeNamesMatch(attributeType, data.Constructor.ReflectedType!))
+                    {
+                        Attribute? attr = null;
+
+                        Debug.Assert(data.ConstructorArguments.Count <= 1);
+
+                        if (data.ConstructorArguments.Count == 1)
+                        {
+                            attr = (Attribute?)Activator.CreateInstance(attributeType, [data.ConstructorArguments[0].Value]);
+                        }
+                        else if (data.ConstructorArguments.Count == 0)
+                        {
+                            attr = (Attribute?)Activator.CreateInstance(attributeType);
+                        }
+
+                        if (attr != null)
+                        {
+                            foreach (CustomAttributeNamedArgument namedArgument in data.NamedArguments)
+                            {
+                                PropertyInfo p = attributeType.GetProperty(namedArgument.MemberInfo.Name, BindingFlags.Public | BindingFlags.Instance)!;
+                                object value = namedArgument.TypedValue.Value!;
+
+                                if (p.PropertyType.IsEnum)
+                                {
+                                    string val = value.ToString()!;
+                                    value = Enum.Parse(p.PropertyType, val);
+                                }
+
+                                p.SetValue(attr, value, null);
+                            }
+
+                            return attr;
+                        }
+                    }
+                }
+
+                return null;
+            }
         }
 
         /// <summary>
@@ -3145,332 +3476,6 @@ namespace System.Diagnostics.Tracing
                 }
             }
             return ret;
-        }
-
-        // Use reflection to look at the attributes of a class, and generate a manifest for it (as UTF8) and
-        // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
-        // at run time.  'source' is the event source to place the descriptors.  If it is null,
-        // then the descriptors are not created, and just the manifest is generated.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
-            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                            "has dynamically accessed members requirements, but its use of this method satisfies " +
-                            "these requirements because it passes in the result of GetType with the same annotations.")]
-        private static byte[]? CreateManifestAndDescriptors(
-            [DynamicallyAccessedMembers(ManifestMemberTypes)]
-            Type eventSourceType,
-            string? eventSourceDllName,
-            EventSource? source,
-            EventManifestOptions flags = EventManifestOptions.None)
-        {
-            ManifestBuilder? manifest = null;
-            bool bNeedsManifest = source != null ? !source.SelfDescribingEvents : true;
-            Exception? exception = null; // exception that might get raised during validation b/c we couldn't/didn't recover from a previous error
-            byte[]? res = null;
-
-            if (eventSourceType.IsAbstract && (flags & EventManifestOptions.Strict) == 0)
-                return null;
-
-            try
-            {
-                MethodInfo[] methods = eventSourceType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                EventAttribute defaultEventAttribute;
-                int eventId = 1;        // The number given to an event that does not have a explicitly given ID.
-                Dictionary<int, EventMetadata>? eventData = null;
-                Dictionary<string, string>? eventsByName = null;
-                if (source != null || (flags & EventManifestOptions.Strict) != 0)
-                {
-                    eventData = new Dictionary<int, EventMetadata>();
-                    ref EventMetadata newEventMetadata = ref CollectionsMarshal.GetValueRefOrAddDefault(eventData, 0, out _);
-                    newEventMetadata.Name = ""; // Event 0 is the 'write messages string' event, and has an empty name.
-                }
-
-                // See if we have localization information.
-                ResourceManager? resources = null;
-                EventSourceAttribute? eventSourceAttrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
-                if (eventSourceAttrib != null && eventSourceAttrib.LocalizationResources != null)
-                    resources = new ResourceManager(eventSourceAttrib.LocalizationResources, eventSourceType.Assembly);
-
-                if (source?.GetType() == typeof(NativeRuntimeEventSource))
-                {
-                    // Don't emit nor generate the manifest for NativeRuntimeEventSource i.e., Microsoft-Windows-DotNETRuntime.
-                    manifest = new ManifestBuilder(resources, flags);
-                    bNeedsManifest = false;
-                }
-                else
-                {
-                    // Try to get name and GUID directly from the source. Otherwise get it from the Type's attribute.
-                    string providerName = source?.Name ?? GetName(eventSourceType, flags);
-                    Guid providerGuid = source?.Guid ?? GetGuid(eventSourceType);
-
-                    manifest = new ManifestBuilder(providerName, providerGuid, eventSourceDllName, resources, flags);
-                }
-
-                // Add an entry unconditionally for event ID 0 which will be for a string message.
-                manifest.StartEvent("EventSourceMessage", new EventAttribute(0) { Level = EventLevel.LogAlways, Task = (EventTask)0xFFFE });
-                manifest.AddEventParameter(typeof(string), "message");
-                manifest.EndEvent();
-
-                // eventSourceType must be sealed and must derive from this EventSource
-                if ((flags & EventManifestOptions.Strict) != 0)
-                {
-                    bool typeMatch = GetEventSourceBaseType(eventSourceType, (flags & EventManifestOptions.AllowEventSourceOverride) != 0, eventSourceType.Assembly.ReflectionOnly) != null;
-
-                    if (!typeMatch)
-                    {
-                        manifest.ManifestError(SR.EventSource_TypeMustDeriveFromEventSource);
-                    }
-                    if (!eventSourceType.IsAbstract && !eventSourceType.IsSealed)
-                    {
-                        manifest.ManifestError(SR.EventSource_TypeMustBeSealedOrAbstract);
-                    }
-                }
-
-                // Collect task, opcode, keyword and channel information
-                foreach (string providerEnumKind in (ReadOnlySpan<string>)["Keywords", "Tasks", "Opcodes"])
-                {
-                    Type? nestedType = eventSourceType.GetNestedType(providerEnumKind);
-                    if (nestedType != null)
-                    {
-                        if (eventSourceType.IsAbstract)
-                        {
-                            manifest.ManifestError(SR.Format(SR.EventSource_AbstractMustNotDeclareKTOC, nestedType.Name));
-                        }
-                        else
-                        {
-                            foreach (FieldInfo staticField in nestedType.GetFields(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
-                            {
-                                AddProviderEnumKind(manifest, staticField, providerEnumKind);
-                            }
-                        }
-                    }
-                }
-                // ensure we have keywords for the session-filtering reserved bits
-                {
-                    manifest.AddKeyword("Session3", (long)0x1000 << 32);
-                    manifest.AddKeyword("Session2", (long)0x2000 << 32);
-                    manifest.AddKeyword("Session1", (long)0x4000 << 32);
-                    manifest.AddKeyword("Session0", (long)0x8000 << 32);
-                }
-
-                if (eventSourceType != typeof(EventSource))
-                {
-                    for (int i = 0; i < methods.Length; i++)
-                    {
-                        MethodInfo method = methods[i];
-
-                        // Compat: until v4.5.1 we ignored any non-void returning methods as well as virtual methods for
-                        // the only reason of limiting the number of methods considered to be events. This broke a common
-                        // design of having event sources implement specific interfaces. To fix this in a compatible way
-                        // we will now allow both non-void returning and virtual methods to be Event methods, as long
-                        // as they are marked with the [Event] attribute
-                        if (/* method.IsVirtual || */ method.IsStatic)
-                        {
-                            continue;
-                        }
-
-                        // Get the EventDescriptor (from the Custom attributes)
-                        EventAttribute? eventAttribute = (EventAttribute?)GetCustomAttributeHelper(method, typeof(EventAttribute), flags);
-
-                        if (eventSourceType.IsAbstract)
-                        {
-                            if (eventAttribute != null)
-                            {
-                                manifest.ManifestError(SR.Format(SR.EventSource_AbstractMustNotDeclareEventMethods, method.Name, eventAttribute.EventId));
-                            }
-                            continue;
-                        }
-                        else if (eventAttribute == null)
-                        {
-                            // Methods that don't return void can't be events, if they're NOT marked with [Event].
-                            // (see Compat comment above)
-                            if (method.ReturnType != typeof(void))
-                            {
-                                continue;
-                            }
-
-                            // Continue to ignore virtual methods if they do NOT have the [Event] attribute
-                            // (see Compat comment above)
-                            if (method.IsVirtual)
-                            {
-                                continue;
-                            }
-
-                            // If we explicitly mark the method as not being an event, then honor that.
-                            if (IsCustomAttributeDefinedHelper(method, typeof(NonEventAttribute), flags))
-                                continue;
-
-                            defaultEventAttribute = new EventAttribute(eventId);
-                            eventAttribute = defaultEventAttribute;
-                        }
-                        else if (eventAttribute.EventId <= 0)
-                        {
-                            manifest.ManifestError(SR.EventSource_NeedPositiveId, true);
-                            continue;   // don't validate anything else for this event
-                        }
-                        if (method.Name.LastIndexOf('.') >= 0)
-                        {
-                            manifest.ManifestError(SR.Format(SR.EventSource_EventMustNotBeExplicitImplementation, method.Name, eventAttribute.EventId));
-                        }
-
-                        eventId++;
-                        string eventName = method.Name;
-
-                        if (eventAttribute.Opcode == EventOpcode.Info)      // We are still using the default opcode.
-                        {
-                            // By default pick a task ID derived from the EventID, starting with the highest task number and working back
-                            bool noTask = (eventAttribute.Task == EventTask.None);
-                            if (noTask)
-                                eventAttribute.Task = (EventTask)(0xFFFE - eventAttribute.EventId);
-
-                            // Unless we explicitly set the opcode to Info (to override the auto-generate of Start or Stop opcodes,
-                            // pick a default opcode based on the event name (either Info or start or stop if the name ends with that suffix).
-                            if (!eventAttribute.IsOpcodeSet)
-                                eventAttribute.Opcode = GetOpcodeWithDefault(EventOpcode.Info, eventName);
-
-                            // Make the stop opcode have the same task as the start opcode.
-                            if (noTask)
-                            {
-                                if (eventAttribute.Opcode == EventOpcode.Start)
-                                {
-                                    if (eventName.EndsWith(ActivityStartSuffix, StringComparison.Ordinal))
-                                    {
-                                        string taskName = eventName[..^ActivityStartSuffix.Length]; // Remove the Start suffix to get the task name
-
-                                        // Add a task that is just the task name for the start event.   This suppress the auto-task generation
-                                        // That would otherwise happen (and create 'TaskName'Start as task name rather than just 'TaskName'
-                                        manifest.AddTask(taskName, (int)eventAttribute.Task);
-                                    }
-                                }
-                                else if (eventAttribute.Opcode == EventOpcode.Stop)
-                                {
-                                    // Find the start associated with this stop event.  We require start to be immediately before the stop
-                                    int startEventId = eventAttribute.EventId - 1;
-                                    Debug.Assert(0 <= startEventId);
-                                    if (eventData != null)
-                                    {
-                                        ref EventMetadata startEventMetadata = ref CollectionsMarshal.GetValueRefOrNullRef(eventData, startEventId);
-                                        if (!Unsafe.IsNullRef(ref startEventMetadata))
-                                        {
-                                            // If you remove the Stop and add a Start does that name match the Start Event's Name?
-                                            // Ideally we would throw an error
-                                            if (startEventMetadata.Descriptor.Opcode == (byte)EventOpcode.Start &&
-                                                startEventMetadata.Name.EndsWith(ActivityStartSuffix, StringComparison.Ordinal) &&
-                                                eventName.EndsWith(ActivityStopSuffix, StringComparison.Ordinal) &&
-                                                startEventMetadata.Name.AsSpan()[..^ActivityStartSuffix.Length].SequenceEqual(
-                                                    eventName.AsSpan()[..^ActivityStopSuffix.Length]))
-                                            {
-                                                // Make the stop event match the start event
-                                                eventAttribute.Task = (EventTask)startEventMetadata.Descriptor.Task;
-                                                noTask = false;
-                                            }
-                                        }
-                                    }
-                                    if (noTask && (flags & EventManifestOptions.Strict) != 0)        // Throw an error if we can compatibly.
-                                    {
-                                        throw new ArgumentException(SR.EventSource_StopsFollowStarts);
-                                    }
-                                }
-                            }
-                        }
-
-                        ParameterInfo[] args = method.GetParameters();
-
-                        bool hasRelatedActivityID = RemoveFirstArgIfRelatedActivityId(ref args);
-                        if (!(source != null && source.SelfDescribingEvents))
-                        {
-                            manifest.StartEvent(eventName, eventAttribute);
-                            for (int fieldIdx = 0; fieldIdx < args.Length; fieldIdx++)
-                            {
-                                manifest.AddEventParameter(args[fieldIdx].ParameterType, args[fieldIdx].Name!);
-                            }
-                            manifest.EndEvent();
-                        }
-
-                        if (source != null || (flags & EventManifestOptions.Strict) != 0)
-                        {
-                            Debug.Assert(eventData != null);
-                            // Do checking for user errors (optional, but not a big deal so we do it).
-                            DebugCheckEvent(ref eventsByName, eventData, method, eventAttribute, manifest, flags);
-
-                            // add the channel keyword for Event Viewer channel based filters. This is added for creating the EventDescriptors only
-                            // and is not required for the manifest
-                            if (eventAttribute.Channel != EventChannel.None)
-                            {
-                                unchecked
-                                {
-                                    eventAttribute.Keywords |= (EventKeywords)manifest.GetChannelKeyword(eventAttribute.Channel, (ulong)eventAttribute.Keywords);
-                                }
-                            }
-
-                            if (manifest.HasResources)
-                            {
-                                string eventKey = "event_" + eventName;
-                                if (manifest.GetLocalizedMessage(eventKey, CultureInfo.CurrentUICulture, etwFormat: false) is string msg)
-                                {
-                                    // overwrite inline message with the localized message
-                                    eventAttribute.Message = msg;
-                                }
-                            }
-
-                            AddEventDescriptor(ref eventData, eventName, eventAttribute, args, hasRelatedActivityID);
-                        }
-                    }
-                }
-
-                // Tell the TraceLogging stuff where to start allocating its own IDs.
-                NameInfo.ReserveEventIDsBelow(eventId);
-
-                if (source != null)
-                {
-                    Debug.Assert(eventData != null);
-                    source.m_eventData = eventData;     // officially initialize it. We do this at most once (it is racy otherwise).
-                    source.m_channelData = manifest.GetChannelData();
-                }
-
-                // if this is an abstract event source we've already performed all the validation we can
-                if (!eventSourceType.IsAbstract && (source == null || !source.SelfDescribingEvents))
-                {
-                    bNeedsManifest = (flags & EventManifestOptions.OnlyIfNeededForRegistration) == 0 || manifest.GetChannelData().Length > 0;
-
-                    // if the manifest is not needed and we're not requested to validate the event source return early
-                    if (!bNeedsManifest && (flags & EventManifestOptions.Strict) == 0)
-                        return null;
-
-                    res = manifest.CreateManifest();
-                    res = (res.Length > 0) ? res : null;
-                }
-            }
-            catch (Exception e)
-            {
-                // if this is a runtime manifest generation let the exception propagate
-                if ((flags & EventManifestOptions.Strict) == 0)
-                    throw;
-                // else store it to include it in the Argument exception we raise below
-                exception = e;
-            }
-
-            if ((flags & EventManifestOptions.Strict) != 0 && (manifest?.Errors.Count > 0 || exception != null))
-            {
-                string msg = string.Empty;
-
-                if (manifest?.Errors.Count > 0)
-                {
-                    bool firstError = true;
-                    foreach (string error in manifest.Errors)
-                    {
-                        if (!firstError)
-                            msg += Environment.NewLine;
-                        firstError = false;
-                        msg += error;
-                    }
-                }
-                else
-                    msg = "Unexpected error: " + exception!.Message;
-
-                throw new ArgumentException(msg, exception);
-            }
-
-            return bNeedsManifest ? res : null;
         }
 
         private static bool RemoveFirstArgIfRelatedActivityId(ref ParameterInfo[] args)
@@ -3917,6 +3922,7 @@ namespace System.Diagnostics.Tracing
 
 #if CORECLR
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void InitializeDefaultEventSources(Exception* pException)
         {
             try
@@ -4320,6 +4326,7 @@ namespace System.Diagnostics.Tracing
             TimeStamp = DateTime.UtcNow;
         }
 
+        [RequiresUnsafe]
         internal unsafe EventWrittenEventArgs(EventSource eventSource, int eventId, Guid* pActivityID, Guid* pChildActivityID)
             : this(eventSource, eventId)
         {

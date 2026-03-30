@@ -126,6 +126,7 @@ namespace System.Reflection.Emit
         internal static partial void SetClassLayout(QCallModule module, int tk, PackingSize iPackingSize, int iTypeSize);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetConstantValue")]
+        [RequiresUnsafe]
         private static unsafe partial void SetConstantValue(QCallModule module, int tk, int corType, void* pValue);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetPInvokeData", StringMarshalling = StringMarshalling.Utf16)]

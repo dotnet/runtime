@@ -9,6 +9,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -308,6 +309,7 @@ namespace System
         public static int MaxGeneration => GetMaxGeneration();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
+        [RequiresUnsafe]
         private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
 
         private static unsafe uint RunFinalizers()
@@ -759,6 +761,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnableNoGCRegionCallback")]
+        [RequiresUnsafe]
         private static unsafe partial EnableNoGCRegionCallbackStatus _EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, long totalSize);
 
         internal static long GetGenerationBudget(int generation)
@@ -871,6 +874,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void ConfigCallback(void* configurationContext, byte* name, byte* publicKey, GCConfigurationType type, long data)
         {
             // If the public key is null, it means that the corresponding configuration isn't publicly available
@@ -932,6 +936,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]
+        [RequiresUnsafe]
         internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, byte*, byte*, GCConfigurationType, long, void> callback);
 
         internal enum RefreshMemoryStatus
