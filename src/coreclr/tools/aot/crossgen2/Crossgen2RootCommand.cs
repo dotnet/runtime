@@ -153,7 +153,7 @@ namespace ILCompiler
             new("--determinism-stress");
 
         public Option<bool> StripILBodies { get; } =
-            new("--strip-il-bodies") { Description = "Replace IL method bodies with a minimal stub in the output image" };
+            new("--strip-il-bodies") { Description = SR.StripILBodiesOption };
 
         public bool CompositeOrInputBubble { get; private set; }
         public OptimizationMode OptimizationMode { get; private set; }

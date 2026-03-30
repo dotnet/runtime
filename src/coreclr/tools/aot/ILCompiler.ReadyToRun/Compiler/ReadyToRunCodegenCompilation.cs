@@ -489,6 +489,21 @@ namespace ILCompiler
 
             NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true, CompiledMethodDefs = compiledMethodDefs };
 
+            if (optimizationFlags.StripILBodies)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_StrippedILBodies;
+            }
+
+            if (optimizationFlags.StripInliningInfo)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_StrippedInliningInfo;
+            }
+
+            if (optimizationFlags.StripDebugInfo)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_StrippedDebugInfo;
+            }
+
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
 
             bool isNativeCompositeImage = false;
