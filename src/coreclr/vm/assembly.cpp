@@ -1171,40 +1171,51 @@ extern "C" void SystemJS_ResolveMainPromise(int exitCode);
 
 static void RunMainInternal(Param* pParam)
 {
-    MethodDescCallSite  threadStart(pParam->pFD);
-
     PTRARRAYREF StrArgArray = NULL;
     GCPROTECT_BEGIN(StrArgArray);
 
-    // Build the parameter array and invoke the method.
-    if (pParam->EntryType == EntryManagedMain)
+    // If managed args were supplied by host, pass them through directly.
+    // Otherwise, managed side will materialize string[] from raw argv.
+    if (pParam->EntryType == EntryManagedMain && pParam->stringArgs != NULL)
     {
-        if (pParam->stringArgs == NULL) {
-            // Allocate a COM Array object with enough slots for cCommandArgs - 1
-            StrArgArray = (PTRARRAYREF) AllocateObjectArray((pParam->cCommandArgs - pParam->numSkipArgs), g_pStringClass);
-
-            // Create Stringrefs for each of the args
-            for (DWORD arg = pParam->numSkipArgs; arg < pParam->cCommandArgs; arg++) {
-                STRINGREF sref = StringObject::NewString(pParam->wzArgs[arg]);
-                StrArgArray->SetAt(arg - pParam->numSkipArgs, (OBJECTREF) sref);
-            }
-        }
-        else
-            StrArgArray = *pParam->stringArgs;
+        StrArgArray = *pParam->stringArgs;
     }
 
-    ARG_SLOT stackVar = ObjToArgSlot(StrArgArray);
+    pParam->pFD->EnsureActive();
+    PCODE entryPoint = pParam->pFD->GetSingleCallableAddrOfCode();
 
-    if (pParam->pFD->IsVoid())
+    BOOL hasArgument = (pParam->EntryType == EntryManagedMain);
+    BOOL hasReturnValue = !pParam->pFD->IsVoid();
+
+    if (!hasReturnValue)
     {
         // Set the return value to 0 instead of returning random junk
         *pParam->piRetVal = 0;
-        threadStart.Call(&stackVar);
+    }
+
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions))
+    {
+        UnmanagedCallersOnlyCaller callEntryPointWithCatch(METHOD__ENVIRONMENT__CALL_ENTRY_POINT_WITH_CATCH);
+        callEntryPointWithCatch.InvokeThrowing(
+            static_cast<INT_PTR>(entryPoint),
+            &StrArgArray,
+            CLR_BOOL_ARG(hasArgument),
+            CLR_BOOL_ARG(hasReturnValue),
+            pParam->piRetVal);
     }
     else
     {
-        // Call the main method
-        *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
+        UnmanagedCallersOnlyCaller callEntryPoint(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
+        callEntryPoint.InvokeUnhandled(
+            static_cast<INT_PTR>(entryPoint),
+            &StrArgArray,
+            CLR_BOOL_ARG(hasArgument),
+            CLR_BOOL_ARG(hasReturnValue),
+            pParam->piRetVal);
+    }
+
+    if (hasReturnValue)
+    {
         SetLatchedExitCode(*pParam->piRetVal);
     }
 

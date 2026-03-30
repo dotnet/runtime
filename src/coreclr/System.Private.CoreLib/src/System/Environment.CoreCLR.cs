@@ -134,5 +134,74 @@ namespace System
                 *pException = ex;
             }
         }
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        [RequiresUnsafe]
+        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue)
+        {
+            CallEntryPointImpl(entryPoint, pArgument, hasArgument, hasReturnValue, pReturnValue);
+        }
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        [RequiresUnsafe]
+        internal static unsafe void CallEntryPointWithCatch(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue, Exception* pException)
+        {
+            try
+            {
+                CallEntryPointImpl(entryPoint, pArgument, hasArgument, hasReturnValue, pReturnValue);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [StackTraceHidden]
+        [RequiresUnsafe]
+        private static unsafe void CallEntryPointImpl(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue)
+        {
+            string[]? argument = pArgument is not null ? *pArgument : null;
+
+            if (hasArgument)
+            {
+                if (hasReturnValue)
+                {
+                    *pReturnValue = ((delegate*<string[]?, int>)entryPoint)(argument);
+                }
+                else
+                {
+                    ((delegate*<string[]?, void>)entryPoint)(argument);
+                }
+            }
+            else
+            {
+                if (hasReturnValue)
+                {
+                    *pReturnValue = ((delegate*<int>)entryPoint)();
+                }
+                else
+                {
+                    ((delegate*<void>)entryPoint)();
+                }
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        [RequiresUnsafe]
+        internal static unsafe int CallEntryPointUtf16StringRetInt(IntPtr entryPoint, char* pArgument, Exception* pException)
+        {
+            try
+            {
+                return ((delegate*<string?, int>)entryPoint)(pArgument is not null ? new string(pArgument) : null);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return 1; // EXIT_FAILURE
+            }
+        }
     }
 }

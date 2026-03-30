@@ -89,6 +89,23 @@ namespace System.Diagnostics
                 {
                     _numOfFrames = 0;
                 }
+
+                // StackTraceHidden filtering is primarily applied during formatting (ToString).
+                // For current-thread captures, also trim hidden trailing frames so internal
+                // bridge helpers don't become the terminal frame in GetFrame/FrameCount usage.
+                if (e == null)
+                {
+                    while (_numOfFrames > 0)
+                    {
+                        MethodBase? terminalMethod = StackF.GetMethodBase(_methodsToSkip + _numOfFrames - 1);
+                        if (terminalMethod is null || ShowInStackTrace(terminalMethod))
+                        {
+                            break;
+                        }
+
+                        _numOfFrames--;
+                    }
+                }
             }
         }
     }
