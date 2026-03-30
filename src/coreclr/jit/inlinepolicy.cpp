@@ -1487,6 +1487,12 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             }
             break;
         }
+        case InlineObservation::CALLEE_FORCE_INLINE_CALL:
+        {
+            // Track cumulative IL size of force-inlined callees (AggressiveInlining or below ALWAYS_INLINE_SIZE).
+            m_ForceInlineCallSize += (unsigned)value;
+            break;
+        }
         default:
             DefaultPolicy::NoteInt(obs, value);
             break;
@@ -1534,6 +1540,13 @@ unsigned ExtendedDefaultPolicy::EstimatedTotalILSize() const
     // Foldable switches are usually able to fold more than foldable branches
     //
     codeSize -= (INT64)m_FoldableSwitch * 70;
+
+    // Calls to force-inlined methods (AggressiveInlining or below ALWAYS_INLINE_SIZE)
+    // will cascade — each such callee is likely to be inlined and bring its own IL.
+    // Add friction to account for this expansion so the budget reflects the true cost.
+    // m_ForceInlineCallSize accumulates the IL sizes of force-inline callees.
+    //
+    codeSize += (INT64)(m_ForceInlineCallSize * 0.5);
 
     // Assume we can't fold more than 70% of IL
     //

@@ -21,6 +21,17 @@ bool WrapICorJitInfo::isIntrinsic(
     return temp;
 }
 
+bool WrapICorJitInfo::tryGetMethodILSize(
+          CORINFO_METHOD_HANDLE ftn,
+          uint32_t* pILSize,
+          bool* pIsAggressiveInline)
+{
+    API_ENTER(tryGetMethodILSize);
+    bool temp = wrapHnd->tryGetMethodILSize(ftn, pILSize, pIsAggressiveInline);
+    API_LEAVE(tryGetMethodILSize);
+    return temp;
+}
+
 bool WrapICorJitInfo::notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn)
 {
