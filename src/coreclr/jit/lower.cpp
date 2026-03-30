@@ -5660,6 +5660,9 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     DISPTREERANGE(BlockRange(), lclStore);
     JITDUMP("\n");
 
+    // Try to coalesce adjacent GT_STORE_LCL_FLD nodes into a single wider store.
+    LowerStoreLclFldCoalescing(lclStore);
+
     TryRetypingFloatingPointStoreToIntegerStore(lclStore);
 
     GenTree*   src           = lclStore->gtGetOp1();
@@ -10876,6 +10879,606 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 }
 
 //------------------------------------------------------------------------
+// LowerStoreLclFldCoalescing: If the given GT_STORE_LCL_FLD node is preceded by another
+//    GT_STORE_LCL_FLD to the same local at an adjacent offset with constant data, merge
+//    them into a single wider store. This avoids store-forwarding stalls when the struct
+//    is later read back at the wider width.
+//
+//    Example:
+//
+//    *  STORE_LCL_FLD int    V04 [+0]
+//    \--*  CNS_INT   int    0x1
+//
+//    *  STORE_LCL_FLD int    V04 [+4]
+//    \--*  CNS_INT   int    0x2
+//
+//    After coalescing:
+//
+//    *  STORE_LCL_FLD long   V04 [+0]
+//    \--*  CNS_INT   long   0x200000001
+//
+// Arguments:
+//    store - the current GT_STORE_LCL_FLD node
+//
+void Lowering::LowerStoreLclFldCoalescing(GenTreeLclVarCommon* store)
+{
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (!m_compiler->opts.OptimizationEnabled())
+    {
+        return;
+    }
+
+    if (!store->OperIs(GT_STORE_LCL_FLD))
+    {
+        return;
+    }
+
+    do
+    {
+        if (!store->OperIs(GT_STORE_LCL_FLD))
+        {
+            return;
+        }
+
+        var_types currType   = store->TypeGet();
+        unsigned  currLclNum = store->GetLclNum();
+        unsigned  currOffset = store->AsLclFld()->GetLclOffs();
+
+        if (!varTypeIsIntegral(currType) && !varTypeIsSIMD(currType))
+        {
+            return;
+        }
+
+        // Make sure the current node's tree range is closed (no unexpected interleaved nodes).
+        bool               isClosedRange = false;
+        LIR::ReadOnlyRange currRange     = BlockRange().GetTreeRange(store, &isClosedRange);
+        if (!isClosedRange)
+        {
+            return;
+        }
+
+        // Look backward for a previous GT_STORE_LCL_FLD, skipping NOPs and IL_OFFSETs.
+        GenTree* prevTree = currRange.FirstNode()->gtPrev;
+        while ((prevTree != nullptr) && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
+        {
+            prevTree = prevTree->gtPrev;
+        }
+
+        if ((prevTree == nullptr) || !prevTree->OperIs(GT_STORE_LCL_FLD))
+        {
+            break;
+        }
+
+        GenTreeLclFld* prevStore = prevTree->AsLclFld();
+
+        // Must be the same local variable.
+        if (prevStore->GetLclNum() != currLclNum)
+        {
+            break;
+        }
+
+        // Both stores must be the same type.
+        var_types prevType = prevStore->TypeGet();
+        if (prevType != currType)
+        {
+            // Special case: a wider constant store followed by a narrower constant store
+            // that's fully contained within the wider store's range. We can splice the narrow
+            // value into the wider constant, eliminating the narrow store.
+            // Example: STORE_LCL_FLD int [+0] = 0;   STORE_LCL_FLD ubyte [+0] = 1
+            //       => STORE_LCL_FLD int [+0] = 1
+            // Example: STORE_LCL_FLD int [+0] = 256; STORE_LCL_FLD ubyte [+0] = 0
+            //       => STORE_LCL_FLD int [+0] = 256  (narrow store is redundant)
+            unsigned prevSize   = genTypeSize(prevType);
+            unsigned prevOffset = prevStore->GetLclOffs();
+
+            if (varTypeIsIntegral(prevType) && varTypeIsIntegral(currType) && prevSize > genTypeSize(currType) &&
+                currOffset >= prevOffset && (currOffset + genTypeSize(currType)) <= (prevOffset + prevSize))
+            {
+                GenTree* prevValue = prevStore->Data();
+                GenTree* currValue = store->Data();
+
+                bool               isPrevClosedRange = false;
+                LIR::ReadOnlyRange prevRange         = BlockRange().GetTreeRange(prevStore, &isPrevClosedRange);
+                if (!isPrevClosedRange)
+                {
+                    return;
+                }
+
+                if (prevValue->IsCnsIntOrI() && !prevValue->AsIntCon()->ImmedValNeedsReloc(m_compiler) &&
+                    currValue->IsCnsIntOrI() && !currValue->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+                {
+                    unsigned insertBitOffset = (currOffset - prevOffset) * BITS_PER_BYTE;
+                    unsigned narrowBits      = genTypeSize(currType) * BITS_PER_BYTE;
+                    size_t   narrowMask      = (~(size_t(0)) >> (sizeof(size_t) * BITS_PER_BYTE - narrowBits));
+                    size_t   narrowVal       = (size_t)currValue->AsIntCon()->IconValue() & narrowMask;
+                    size_t   wideVal         = (size_t)prevValue->AsIntCon()->IconValue();
+
+                    // Clear the bits in the wide value where the narrow value will be inserted,
+                    // then OR in the narrow value.
+                    size_t clearMask = ~(narrowMask << insertBitOffset);
+                    size_t combined  = (wideVal & clearMask) | (narrowVal << insertBitOffset);
+
+                    JITDUMP("Folding narrow constant store into wider constant store:\n");
+                    JITDUMP("  Wide store: V%02u [+%u] %s = %lld\n", currLclNum, prevOffset, varTypeName(prevType),
+                            (int64_t)prevValue->AsIntCon()->IconValue());
+                    JITDUMP("  Narrow store: V%02u [+%u] %s = %lld\n", currLclNum, currOffset, varTypeName(currType),
+                            (int64_t)currValue->AsIntCon()->IconValue());
+                    JITDUMP("  Combined value: %lld\n", (int64_t)combined);
+
+                    // Remove the previous (wider) store.
+                    BlockRange().Remove(prevRange.FirstNode(), prevRange.LastNode());
+
+                    // Update the current store to be the wider type with the combined value.
+                    store->AsLclFld()->SetLclOffs(prevOffset);
+                    store->gtType                    = prevType;
+                    currValue->gtType                = prevType;
+                    currValue->AsIntCon()->gtIconVal = (ssize_t)combined;
+                    currValue->ClearContained();
+
+                    // Continue to try further coalescing with the now-widened store.
+                    continue;
+                }
+            }
+
+            break;
+        }
+
+        // The offsets must be adjacent (differ by exactly the type size).
+        unsigned prevOffset = prevStore->GetLclOffs();
+        if (abs((int)prevOffset - (int)currOffset) != (int)genTypeSize(currType))
+        {
+            break;
+        }
+
+        GenTree* currValue = store->Data();
+        GenTree* prevValue = prevStore->Data();
+
+        // Previous store's tree range must also be closed.
+        bool               isPrevClosedRange = false;
+        LIR::ReadOnlyRange prevRange         = BlockRange().GetTreeRange(prevStore, &isPrevClosedRange);
+        if (!isPrevClosedRange)
+        {
+            break;
+        }
+
+        bool isCurrConst = currValue->OperIsConst() &&
+                           !(currValue->IsCnsIntOrI() && currValue->AsIntCon()->ImmedValNeedsReloc(m_compiler));
+        bool isPrevConst = prevValue->OperIsConst() &&
+                           !(prevValue->IsCnsIntOrI() && prevValue->AsIntCon()->ImmedValNeedsReloc(m_compiler));
+
+        // Determine the new wider type.
+        var_types newType = TYP_UNDEF;
+        switch (currType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                newType = TYP_USHORT;
+                break;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                newType = TYP_INT;
+                break;
+
+#ifdef TARGET_64BIT
+            case TYP_INT:
+                newType = TYP_LONG;
+                break;
+
+#if defined(FEATURE_HW_INTRINSICS)
+            case TYP_LONG:
+                newType = TYP_SIMD16;
+                break;
+
+#if defined(TARGET_AMD64)
+            case TYP_SIMD16:
+                if (m_compiler->getPreferredVectorByteLength() >= 32)
+                {
+                    newType = TYP_SIMD32;
+                    break;
+                }
+                return;
+
+            case TYP_SIMD32:
+                if (m_compiler->getPreferredVectorByteLength() >= 64)
+                {
+                    newType = TYP_SIMD64;
+                    break;
+                }
+                return;
+#endif // TARGET_AMD64
+#endif // FEATURE_HW_INTRINSICS
+#endif // TARGET_64BIT
+
+            default:
+                return;
+        }
+
+        assert(newType != TYP_UNDEF);
+
+        // Both constants: combine via bit manipulation (existing path).
+        if (isCurrConst && isPrevConst)
+        {
+            JITDUMP("Coalescing two GT_STORE_LCL_FLD stores into a single wider store:\n");
+            JITDUMP("  Previous store: V%02u [+%u] %s\n", currLclNum, prevOffset, varTypeName(prevType));
+            JITDUMP("  Current store:  V%02u [+%u] %s\n", currLclNum, currOffset, varTypeName(currType));
+            JITDUMP("  New type: %s\n", varTypeName(newType));
+
+            BlockRange().Remove(prevRange.FirstNode(), prevRange.LastNode());
+
+            unsigned newOffset = min(prevOffset, currOffset);
+            store->AsLclFld()->SetLclOffs(newOffset);
+            store->gtType = newType;
+            currValue->ClearContained();
+
+#if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
+            if (varTypeIsSIMD(currType))
+            {
+                int8_t* lowerCns = prevValue->AsVecCon()->gtSimdVal.i8;
+                int8_t* upperCns = currValue->AsVecCon()->gtSimdVal.i8;
+
+                if (prevOffset > currOffset)
+                {
+                    std::swap(lowerCns, upperCns);
+                }
+
+                simd_t   newCns   = {};
+                uint32_t oldWidth = genTypeSize(currType);
+                memcpy(newCns.i8, lowerCns, oldWidth);
+                memcpy(newCns.i8 + oldWidth, upperCns, oldWidth);
+
+                currValue->AsVecCon()->gtSimdVal = newCns;
+                currValue->gtType                = newType;
+                continue;
+            }
+#endif
+
+            size_t lowerCns = (size_t)prevValue->AsIntCon()->IconValue();
+            size_t upperCns = (size_t)currValue->AsIntCon()->IconValue();
+
+            if (prevOffset > currOffset)
+            {
+                std::swap(lowerCns, upperCns);
+            }
+
+#if defined(TARGET_64BIT) && defined(FEATURE_HW_INTRINSICS)
+            if (varTypeIsSIMD(newType))
+            {
+                int8_t val[16];
+                memcpy(val, &lowerCns, 8);
+                memcpy(val + 8, &upperCns, 8);
+                GenTreeVecCon* vecCns = m_compiler->gtNewVconNode(newType, &val);
+
+                BlockRange().InsertAfter(currValue, vecCns);
+                BlockRange().Remove(currValue);
+                store->Data() = vecCns;
+                continue;
+            }
+#endif // TARGET_64BIT && FEATURE_HW_INTRINSICS
+
+            size_t mask = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(currType)) * BITS_PER_BYTE;
+            lowerCns &= mask;
+            upperCns &= mask;
+
+            size_t val = (lowerCns | (upperCns << (genTypeSize(currType) * BITS_PER_BYTE)));
+            JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
+
+            currValue->AsIntCon()->gtIconVal = (ssize_t)val;
+            currValue->gtType                = newType;
+            continue;
+        }
+
+        if (TryCoalesceNonConstStoreLclFld(store, prevStore, currType, newType))
+        {
+            return;
+        }
+        return;
+
+    } while (true);
+
+    TryForwardConstantStoreLclFld(store);
+
+#endif // TARGET_XARCH || TARGET_ARM64
+}
+
+//------------------------------------------------------------------------
+// TryCoalesceNonConstStoreLclFld: Try to coalesce two adjacent non-constant
+//    GT_STORE_LCL_FLD stores into a single wider store by composing the two
+//    register values via cast + shift + OR. Only handles int+int -> long.
+//
+//    This is only profitable when a wider read follows, which would otherwise
+//    cause a store-forwarding stall.
+//
+// Arguments:
+//    store    - the current GT_STORE_LCL_FLD node
+//    prevStore - the previous GT_STORE_LCL_FLD node (same local, adjacent offset)
+//    currType  - the type of both stores (must be TYP_INT)
+//    newType   - the wider type to coalesce into (must be TYP_LONG)
+//
+// Return Value:
+//    true if the coalescing was performed, false otherwise.
+//
+bool Lowering::TryCoalesceNonConstStoreLclFld(GenTreeLclVarCommon* store,
+                                              GenTreeLclFld*       prevStore,
+                                              var_types            currType,
+                                              var_types            newType)
+{
+#ifdef TARGET_64BIT
+    // For now, restrict to int+int -> long which is the dominant case
+    // and avoids complications with small type register widening.
+    if (currType != TYP_INT || newType != TYP_LONG)
+    {
+        return false;
+    }
+
+    unsigned currLclNum = store->GetLclNum();
+    unsigned currOffset = store->AsLclFld()->GetLclOffs();
+    unsigned prevOffset = prevStore->GetLclOffs();
+
+    // Non-constant coalescing increases code size (adds cast+shift+or instructions).
+    // Only do it if we can see that the local is read back at a wider width within
+    // the next few instructions, which would cause a store-forwarding stall.
+    {
+        unsigned  newOffset      = min(prevOffset, currOffset);
+        unsigned  combinedSize   = genTypeSize(currType) * 2;
+        bool      foundWiderRead = false;
+        GenTree*  scanNode       = store->gtNext;
+        const int scanLimit      = 20;
+
+        for (int scanCount = 0; scanNode != nullptr && scanCount < scanLimit; scanCount++)
+        {
+            // Check for a local read from the same variable that overlaps our store range
+            // at a wider width.
+            if (scanNode->OperIsLocalRead() && scanNode->AsLclVarCommon()->GetLclNum() == currLclNum)
+            {
+                unsigned readOffset = scanNode->AsLclVarCommon()->GetLclOffs();
+                unsigned readSize   = genTypeSize(scanNode->TypeGet());
+                if (readSize == 0 && scanNode->TypeIs(TYP_STRUCT))
+                {
+                    readSize = scanNode->AsLclVarCommon()->GetLayout(m_compiler)->GetSize();
+                }
+
+                // Does this read overlap our combined store range and is it wider?
+                if (readSize > genTypeSize(currType) && readOffset <= newOffset &&
+                    (readOffset + readSize) >= (newOffset + combinedSize))
+                {
+                    foundWiderRead = true;
+                    break;
+                }
+            }
+
+            // Stop at stores to the same local (would invalidate the forwarding scenario).
+            if (scanNode->OperIsLocalStore() && scanNode->AsLclVarCommon()->GetLclNum() == currLclNum)
+            {
+                break;
+            }
+
+            scanNode = scanNode->gtNext;
+        }
+
+        if (!foundWiderRead)
+        {
+            JITDUMP("Skipping non-const GT_STORE_LCL_FLD coalescing: no wider read found within %d nodes\n", scanLimit);
+            return false;
+        }
+    }
+
+    GenTree* currValue = store->Data();
+    GenTree* prevValue = prevStore->Data();
+
+    // Both values must have closed tree ranges so we can safely relocate them.
+    bool isCurrValueClosed = false;
+    bool isPrevValueClosed = false;
+    BlockRange().GetTreeRange(currValue, &isCurrValueClosed);
+    BlockRange().GetTreeRange(prevValue, &isPrevValueClosed);
+    if (!isCurrValueClosed || !isPrevValueClosed)
+    {
+        return false;
+    }
+
+    // Removing the previous store moves it past the current store's data evaluation.
+    // This is unsafe if the data tree has side effects or references the same local.
+    if ((currValue->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+    {
+        return false;
+    }
+    if ((prevValue->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+    {
+        return false;
+    }
+
+    var_types prevType = prevStore->TypeGet();
+    JITDUMP("Coalescing two non-const GT_STORE_LCL_FLD stores via shift+OR:\n");
+    JITDUMP("  Previous store: V%02u [+%u] %s\n", currLclNum, prevOffset, varTypeName(prevType));
+    JITDUMP("  Current store:  V%02u [+%u] %s\n", currLclNum, currOffset, varTypeName(currType));
+    JITDUMP("  New type: %s\n", varTypeName(newType));
+
+    // Identify which value goes in the low bits and which in the high bits.
+    GenTree* lowValue  = (prevOffset < currOffset) ? prevValue : currValue;
+    GenTree* highValue = (prevOffset < currOffset) ? currValue : prevValue;
+
+    // Clear containment flags — the values may have been marked contained for
+    // the original stores but need to be uncontained for the new CAST/OR tree.
+    lowValue->ClearContained();
+    highValue->ClearContained();
+
+    // Remove the previous store node, keeping its data subtree in the LIR.
+    prevStore->Data() = nullptr;
+    BlockRange().Remove(prevStore);
+
+    // Zero-extend both values to the new wider type (int -> long).
+    unsigned shiftBits = genTypeSize(currType) * BITS_PER_BYTE;
+
+    if (genTypeSize(newType) > genTypeSize(genActualType(lowValue)))
+    {
+        GenTree* castLow = m_compiler->gtNewCastNode(newType, lowValue, true, newType);
+        BlockRange().InsertBefore(store, castLow);
+        LowerNode(castLow);
+        lowValue = castLow;
+    }
+
+    if (genTypeSize(newType) > genTypeSize(genActualType(highValue)))
+    {
+        GenTree* castHigh = m_compiler->gtNewCastNode(newType, highValue, true, newType);
+        BlockRange().InsertBefore(store, castHigh);
+        LowerNode(castHigh);
+        highValue = castHigh;
+    }
+
+    // Shift the high value left.
+    GenTree* shiftAmount = m_compiler->gtNewIconNode((ssize_t)shiftBits);
+    GenTree* shifted     = m_compiler->gtNewOperNode(GT_LSH, newType, highValue, shiftAmount);
+    BlockRange().InsertBefore(store, shiftAmount, shifted);
+    LowerNode(shifted);
+
+    // OR the low and shifted-high values.
+    GenTree* combined = m_compiler->gtNewOperNode(GT_OR, newType, lowValue, shifted);
+    BlockRange().InsertBefore(store, combined);
+    LowerNode(combined);
+
+    // Update the current store to use the combined value at the lower offset.
+    unsigned newOffset = min(prevOffset, currOffset);
+    store->AsLclFld()->SetLclOffs(newOffset);
+    store->gtType = newType;
+    store->Data() = combined;
+
+    JITDUMP("Coalesced two non-const stores into a single store via shift+OR\n");
+    return true;
+#else
+    return false;
+#endif // TARGET_64BIT
+}
+
+//------------------------------------------------------------------------
+// TryForwardConstantStoreLclFld: After store coalescing/folding, if the resulting store
+//    writes a constant to a non-address-exposed local, look ahead for a load from the same
+//    local that is fully contained within the store's range. If found, replace the load with
+//    the appropriate portion of the constant value.
+//
+// Arguments:
+//    store - the GT_STORE_LCL_FLD node with a constant value
+//
+void Lowering::TryForwardConstantStoreLclFld(GenTreeLclVarCommon* store)
+{
+    if (!store->OperIs(GT_STORE_LCL_FLD) || !store->Data()->IsCnsIntOrI() ||
+        store->Data()->AsIntCon()->ImmedValNeedsReloc(m_compiler) || m_compiler->lvaVarAddrExposed(store->GetLclNum()))
+    {
+        return;
+    }
+
+    unsigned  lclNum    = store->GetLclNum();
+    unsigned  offset    = store->AsLclFld()->GetLclOffs();
+    var_types storeType = store->TypeGet();
+    unsigned  storeSize = genTypeSize(storeType);
+
+    GenTree*  scanNode  = store->gtNext;
+    const int scanLimit = 20;
+
+    for (int scanCount = 0; (scanNode != nullptr) && (scanCount < scanLimit); scanCount++)
+    {
+        // Found a read from the same local that may overlap our store.
+        if (scanNode->OperIs(GT_LCL_VAR, GT_LCL_FLD) && scanNode->OperIsLocalRead() &&
+            scanNode->AsLclVarCommon()->GetLclNum() == lclNum)
+        {
+            unsigned readOffset = scanNode->AsLclVarCommon()->GetLclOffs();
+            unsigned readSize   = genTypeSize(scanNode->TypeGet());
+            if (readSize == 0 && scanNode->TypeIs(TYP_STRUCT))
+            {
+                readSize = scanNode->AsLclVarCommon()->GetLayout(m_compiler)->GetSize();
+            }
+
+            // The read must be fully contained within the store's range.
+            if (readOffset < offset || (readOffset + readSize) > (offset + storeSize))
+            {
+                break;
+            }
+
+            // Only forward to integral-typed reads. For struct-typed reads, allow
+            // forwarding when the struct fits in a register and the read doesn't
+            // feed a PUTARG_STK (where struct vs int ABI may differ).
+            if (!varTypeIsIntegral(scanNode->TypeGet()))
+            {
+                if (!scanNode->TypeIs(TYP_STRUCT))
+                {
+                    break;
+                }
+                ClassLayout* layout = scanNode->AsLclVarCommon()->GetLayout(m_compiler);
+                if (layout == nullptr || layout->GetRegisterType() == TYP_UNDEF)
+                {
+                    break;
+                }
+                // Small structs (< 4 bytes) have complications with STORE_BLK
+                // decomposition into promoted field stores.
+                if (layout->GetSize() < 4)
+                {
+                    break;
+                }
+                // Don't forward if the struct read feeds a PUTARG_STK — struct vs int
+                // may have different calling conventions (especially on x86).
+                LIR::Use checkUse;
+                if (BlockRange().TryGetUse(scanNode, &checkUse) &&
+                    checkUse.User()->OperIs(GT_PUTARG_STK))
+                {
+                    break;
+                }
+            }
+
+            // Extract the portion of the constant that corresponds to the read.
+            ssize_t  fullVal   = store->Data()->AsIntCon()->IconValue();
+            unsigned bitOffset = (readOffset - offset) * BITS_PER_BYTE;
+            size_t readMask = (readSize >= sizeof(size_t)) ? ~(size_t)0 : ((size_t)1 << (readSize * BITS_PER_BYTE)) - 1;
+            ssize_t forwardVal = (ssize_t)(((size_t)fullVal >> bitOffset) & readMask);
+
+            // For signed small types, sign-extend the extracted value to match
+            // the GT_LCL_FLD load semantics.
+            var_types loadType = scanNode->TypeGet();
+            if (varTypeIsIntegral(loadType) && varTypeIsSmall(loadType) && !varTypeIsUnsigned(loadType) &&
+                readSize < sizeof(ssize_t))
+            {
+                unsigned loadBits = readSize * BITS_PER_BYTE;
+                ssize_t  signBit  = (ssize_t)1 << (loadBits - 1);
+                if ((forwardVal & signBit) != 0)
+                {
+                    forwardVal |= ~(((ssize_t)1 << loadBits) - 1);
+                }
+            }
+
+            // For the forwarded constant, use the actual register type.
+            var_types fwdType = varTypeIsIntegral(scanNode->TypeGet()) ? genActualType(scanNode->TypeGet()) : storeType;
+
+            JITDUMP("Forwarding constant store [%06u] to load [%06u] for V%02u[+%u]: "
+                    "store value 0x%llx, forwarded value 0x%llx (read offset +%u, size %u)\n",
+                    m_compiler->dspTreeID(store), m_compiler->dspTreeID(scanNode), lclNum, readOffset,
+                    (unsigned long long)(size_t)fullVal, (unsigned long long)(size_t)forwardVal, readOffset, readSize);
+
+            // Replace the load with a new constant, if the load has a user.
+            LIR::Use use;
+            if (BlockRange().TryGetUse(scanNode, &use))
+            {
+                // Create a new constant node and insert it in place of the load.
+                // Mark it with GTF_ICON_STRUCT_INIT_VAL so that TryTransformStoreObjAsStoreInd
+                // uses it as-is instead of treating the low byte as a fill pattern.
+                GenTree* newConst = m_compiler->gtNewIconNode(forwardVal, fwdType);
+                newConst->gtFlags |= GTF_ICON_STRUCT_INIT_VAL;
+                BlockRange().InsertAfter(scanNode, newConst);
+                use.ReplaceWith(newConst);
+                BlockRange().Remove(scanNode);
+            }
+
+            break;
+        }
+
+        // Stop at stores to the same local (would change the value).
+        if (scanNode->OperIsLocalStore() && scanNode->AsLclVarCommon()->GetLclNum() == lclNum)
+        {
+            break;
+        }
+
+        scanNode = scanNode->gtNext;
+    }
+}
+
+//------------------------------------------------------------------------
 // LowerStoreIndirCommon: a common logic to lower StoreIndir.
 //
 // Arguments:
@@ -11851,13 +12454,24 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         {
             BlockRange().Remove(src);
             src = src->gtGetOp1();
+            blkNode->SetData(src);
         }
 
-        uint8_t  initVal = static_cast<uint8_t>(src->AsIntCon()->IconValue());
-        GenTree* cnsVec  = m_compiler->gtNewConWithPattern(regType, initVal);
-        BlockRange().InsertAfter(src, cnsVec);
-        BlockRange().Remove(src);
-        blkNode->SetData(cnsVec);
+        // If the constant was produced by store-load bypass (GTF_ICON_STRUCT_INIT_VAL),
+        // it already holds the complete struct value — don't reinterpret the low byte
+        // as a fill pattern.
+        if ((src->gtFlags & GTF_ICON_STRUCT_INIT_VAL) != 0)
+        {
+            src->ChangeType(regType);
+        }
+        else
+        {
+            uint8_t  initVal = static_cast<uint8_t>(src->AsIntCon()->IconValue());
+            GenTree* cnsVec  = m_compiler->gtNewConWithPattern(regType, initVal);
+            BlockRange().InsertAfter(src, cnsVec);
+            BlockRange().Remove(src);
+            blkNode->SetData(cnsVec);
+        }
     }
     else if (varTypeIsStruct(src))
     {

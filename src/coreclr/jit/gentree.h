@@ -519,6 +519,7 @@ enum GenTreeFlags : unsigned
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
+    GTF_ICON_STRUCT_INIT_VAL    = 0x00400000, // GT_CNS_INT -- constant is a full struct init value, not a byte pattern
 
     GTF_OVERFLOW                = 0x10000000, // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                               // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
