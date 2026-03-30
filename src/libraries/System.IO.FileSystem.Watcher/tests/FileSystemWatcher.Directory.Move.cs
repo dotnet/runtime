@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.XUnitExtensions;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -173,7 +174,13 @@ namespace System.IO.Tests
             Action action = () => Array.ForEach(dirs, dir => Directory.Move(dir.DirectoryInWatchedDir, dir.DirectoryInUnwatchedDir));
 
             // Filter out Created events as there is a race-condition when moving a directory and then observing a parent folder. It receives Create event although Watcher is not registered yet.
-            Func<FiredEvent, bool>? isFilteredOut = skipOldEvents ? x => x.EventType == WatcherChangeTypes.Created : null;
+            // Also filter out duplicate events as Mac FSEvents can deliver the same Deleted event multiple times.
+            Func<FiredEvent, bool>? isFilteredOut = null;
+            if (skipOldEvents)
+            {
+                var seenEvents = new ConcurrentDictionary<FiredEvent, bool>();
+                isFilteredOut = x => x.EventType == WatcherChangeTypes.Created || !seenEvents.TryAdd(x, true);
+            }
 
             IEnumerable<FiredEvent> events = ExpectEvents(watcher, filesCount, action, isFilteredOut);
 
