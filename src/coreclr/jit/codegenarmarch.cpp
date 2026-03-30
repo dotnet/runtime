@@ -3177,13 +3177,13 @@ void CodeGen::genCall(GenTreeCall* call)
             else
 #endif
                 if (varTypeUsesFloatArgReg(returnType))
-                {
-                    returnReg = REG_FLOATRET;
-                }
-                else
-                {
-                    returnReg = REG_INTRET;
-                }
+            {
+                returnReg = REG_FLOATRET;
+            }
+            else
+            {
+                returnReg = REG_INTRET;
+            }
 
             if (call->GetRegNum() != returnReg)
             {

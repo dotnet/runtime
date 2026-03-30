@@ -239,20 +239,20 @@ int LinearScan::BuildCall(GenTreeCall* call)
     else
 #endif
         if (!hasMultiRegRetVal)
+    {
+        if (varTypeUsesFloatArgReg(registerType))
         {
-            if (varTypeUsesFloatArgReg(registerType))
-            {
-                singleDstCandidates = RBM_FLOATRET.GetFloatRegSet();
-            }
-            else if (registerType == TYP_LONG)
-            {
-                singleDstCandidates = RBM_LNGRET.GetIntRegSet();
-            }
-            else
-            {
-                singleDstCandidates = RBM_INTRET.GetIntRegSet();
-            }
+            singleDstCandidates = RBM_FLOATRET.GetFloatRegSet();
         }
+        else if (registerType == TYP_LONG)
+        {
+            singleDstCandidates = RBM_LNGRET.GetIntRegSet();
+        }
+        else
+        {
+            singleDstCandidates = RBM_INTRET.GetIntRegSet();
+        }
+    }
 
     srcCount += BuildCallArgUses(call);
 
