@@ -68,11 +68,6 @@
   <Import Project="$(DumpTestsPayload)/debuggee-metadata.props" />
   <Import Project="$(MSBuildThisFileDirectory)EnableUnsignedDac.props" />
 
-  <!-- Build the JSON array of expected debuggees for dump-info.json. -->
-  <PropertyGroup>
-    <_DebuggeeJsonArray>@(_Debuggee->'{"name":"%(Identity)","dumpDir":"%(DumpDir)","r2rDir":"%(R2RDir)"}', ',')</_DebuggeeJsonArray>
-  </PropertyGroup>
-
   <!--
     Helix work item command lines, following patterns in helixpublishwitharcade.proj.
 
@@ -81,10 +76,7 @@
   -->
 
   <PropertyGroup>
-    <_DumpInfoJson>{"os":"$(TargetOS)","arch":"$(TargetArchitecture)","debuggees":[$(_DebuggeeJsonArray)]}</_DumpInfoJson>
     <_HelixCommandFile>$(DumpTestsPayload)/HelixCommand.txt</_HelixCommandFile>
-    <_DumpInfoCommandWindows>echo $(_DumpInfoJson)&gt; %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\dump-info.json</_DumpInfoCommandWindows>
-    <_DumpInfoCommandUnix>echo '$(_DumpInfoJson)' &gt; $HELIX_WORKITEM_PAYLOAD/dumps/local/dump-info.json</_DumpInfoCommandUnix>
   </PropertyGroup>
 
   <!--
@@ -155,21 +147,22 @@
   <Target Name="_CreateHelixWorkItems"
           DependsOnTargets="_AddPerDebuggeeCommands"
           BeforeTargets="CoreTest">
-    <!-- Force-evaluate _DumpInfoJson (which contains @() item transforms) into a flat string. -->
-    <CreateProperty Value="$(_DumpInfoCommandWindows)">
-      <Output TaskParameter="Value" PropertyName="_EvalDumpInfoCommandWindows" />
-    </CreateProperty>
-    <CreateProperty Value="$(_DumpInfoCommandUnix)">
-      <Output TaskParameter="Value" PropertyName="_EvalDumpInfoCommandUnix" />
+    <!--
+      Evaluate the @(_Debuggee) item transform into a flat string for the dump-info echo command.
+      CreateProperty with a bare @() transform (no surrounding text) works inside Targets;
+      mixing @() with other strings in Include/Value attributes would cause MSB4012.
+    -->
+    <CreateProperty Value="@(_Debuggee->'{ &quot;name&quot;: &quot;%(Identity)&quot;, &quot;dumpDir&quot;: &quot;%(DumpDir)&quot;, &quot;r2rDir&quot;: &quot;%(R2RDir)&quot; }', ',')">
+      <Output TaskParameter="Value" PropertyName="_EvalDebuggeeJsonArray" />
     </CreateProperty>
 
     <!-- Post-dump-gen commands added here so they follow per-debuggee commands in order. -->
     <ItemGroup>
       <!-- Write dump metadata file for the test harness. -->
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="$(_EvalDumpInfoCommandWindows)" />
+          Include="echo {&quot;os&quot;:&quot;$(TargetOS)&quot;,&quot;arch&quot;:&quot;$(TargetArchitecture)&quot;,&quot;debuggees&quot;:[$(_EvalDebuggeeJsonArray)]}&gt; %25HELIX_WORKITEM_PAYLOAD%25\dumps\local\dump-info.json" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="$(_EvalDumpInfoCommandUnix)" />
+          Include="echo '{&quot;os&quot;:&quot;$(TargetOS)&quot;,&quot;arch&quot;:&quot;$(TargetArchitecture)&quot;,&quot;debuggees&quot;:[$(_EvalDebuggeeJsonArray)]}' &gt; $HELIX_WORKITEM_PAYLOAD/dumps/local/dump-info.json" />
     </ItemGroup>
 
     <!-- Test mode only: run xunit, capture exit code, propagate after archive. -->
@@ -199,7 +192,7 @@
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="%25ComSpec%25 /C exit %25test_exit_code%25" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="set_return() { return $1; }" />
+          Include="set_return() { return $1%3B }" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="set_return $test_exit_code" />
     </ItemGroup>
