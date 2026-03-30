@@ -21,7 +21,8 @@ namespace Microsoft.Extensions.DependencyInjection
             " members may be trimmed.")]
         public static OptionsBuilder<TOptions> ValidateDataAnnotations<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOptions>(this OptionsBuilder<TOptions> optionsBuilder) where TOptions : class
         {
-            optionsBuilder.Services.AddSingleton<IValidateOptions<TOptions>>(new DataAnnotationValidateOptions<TOptions>(optionsBuilder.Name));
+            optionsBuilder.Services.AddSingleton<IValidateOptions<TOptions>>(
+                sp => new DataAnnotationValidateOptions<TOptions>(optionsBuilder.Name, sp));
             return optionsBuilder;
         }
     }

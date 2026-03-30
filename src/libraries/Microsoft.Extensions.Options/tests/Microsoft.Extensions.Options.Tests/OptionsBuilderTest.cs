@@ -814,5 +814,53 @@ namespace Microsoft.Extensions.Options.Tests
 
             Assert.NotNull(value);
         }
+
+        [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+        public class RequiresServiceAttribute : ValidationAttribute
+        {
+            protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+            {
+                var service = validationContext.GetService(typeof(SomeService));
+                return service is SomeService someService && someService.Stuff == "stuff"
+                    ? ValidationResult.Success
+                    : new ValidationResult("SomeService not resolved correctly");
+            }
+        }
+
+        private class AnnotatedOptionsWithServiceDependency
+        {
+            [RequiresService]
+            public string Required { get; set; }
+        }
+
+        [Fact]
+        public void ValidateDataAnnotations_ServiceProviderIsAvailableInValidationContext()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton(new SomeService("stuff"));
+            services.AddOptions<AnnotatedOptionsWithServiceDependency>()
+                .Configure(o => o.Required = "value")
+                .ValidateDataAnnotations();
+
+            var sp = services.BuildServiceProvider();
+
+            var value = sp.GetRequiredService<IOptions<AnnotatedOptionsWithServiceDependency>>().Value;
+            Assert.NotNull(value);
+        }
+
+        [Fact]
+        public void ValidateDataAnnotations_ServiceProviderFailsWhenServiceNotAvailableInValidationContext()
+        {
+            var services = new ServiceCollection();
+            // Don't register SomeService
+            services.AddOptions<AnnotatedOptionsWithServiceDependency>()
+                .Configure(o => o.Required = "value")
+                .ValidateDataAnnotations();
+
+            var sp = services.BuildServiceProvider();
+
+            var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<AnnotatedOptionsWithServiceDependency>>().Value);
+            Assert.Contains("SomeService not resolved correctly", error.Message);
+        }
     }
 }
