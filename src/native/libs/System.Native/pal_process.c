@@ -515,19 +515,22 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         // Restrict handle inheritance when inheritedFdCount >= 0
         if (inheritedFdCount >= 0)
         {
-#ifndef CLOSE_RANGE_CLOEXEC
-#define CLOSE_RANGE_CLOEXEC (1U << 2)
-#endif
 #if HAVE_CLOSE_RANGE
             // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34),
             // set CLOEXEC on all FDs >= 3 in one call. FDs 0-2 are stdin/stdout/stderr.
             // This must be called AFTER the dup2 calls above so that if stdinFd/stdoutFd/stderrFd
             // are >= 3, they don't get CLOEXEC set before being duplicated to 0/1/2.
+#ifndef CLOSE_RANGE_CLOEXEC
+#define CLOSE_RANGE_CLOEXEC (1U << 2)
+#endif
             close_range(3, ~0U, CLOSE_RANGE_CLOEXEC);
             // Ignore errors - if close_range returns error at runtime, continue anyway
 #elif HAVE_CLOSE_RANGE_SYSCALL
             // On Linux with older glibc that doesn't expose close_range() as a function,
             // use the raw syscall number if the kernel supports it (kernel >= 5.9).
+#ifndef CLOSE_RANGE_CLOEXEC
+#define CLOSE_RANGE_CLOEXEC (1U << 2)
+#endif
             syscall(__NR_close_range, 3, ~0U, CLOSE_RANGE_CLOEXEC);
             // Ignore errors - if the kernel doesn't support it, continue anyway
 #endif
