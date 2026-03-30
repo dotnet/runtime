@@ -1260,7 +1260,7 @@ SWITCH_OPCODE:
                     InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
 
                     int32_t bypassOpcode = 0;
-                    
+
                     // After debugger callback, check if bypass was set on the thread context
                     if (pThreadContext->HasBypass(ip, &bypassOpcode))
                     {
@@ -3208,6 +3208,10 @@ SWITCH_OPCODE:
                             pThreadContext->pStackPointer = stack + pMethod->allocaSize;
                             break;
                         }
+                        else if (isOpenVirtual)
+                        {
+                            goto CALL_DELEGATE_INVOKE;
+                        }
                     }
 
                     OBJECTREF targetMethodObj = (*delegateObj)->GetTarget();
@@ -3222,6 +3226,7 @@ SWITCH_OPCODE:
                     }
 
                     // targetMethod holds a pointer to the Invoke method of the delegate, not the final actual target.
+CALL_DELEGATE_INVOKE:
                     targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
                     int8_t* callArgsAddress = LOCAL_VAR_ADDR(callArgsOffset, int8_t);
 
