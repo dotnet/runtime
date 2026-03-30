@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -209,19 +210,31 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 string tmpObjFile = Path.GetTempFileName();
                 try
                 {
-                    string command = $"\"{CompilerBinaryPath}\" {Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
+                    string args = $"{Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
                     var startTime = DateTime.Now;
 
                     // Log the command in a compact format which can be copy pasted
                     StringBuilder envStr = new StringBuilder(string.Empty);
                     foreach (var key in envVarsDict.Keys)
                         envStr.Append($"{key}={envVarsDict[key]} ");
-                    Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}{command}");
-                    (int exitCode, string output) = Utils.RunShellCommand(
+                    Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}\"{CompilerBinaryPath}\" {args}");
+
+                    // On Windows, the emsdk ships emcc.bat to invoke emcc. Use 'cmd' to execute the batch file.
+                    // Switch to UTF-8 code page to enable cmd to handle non-ASCII paths.
+                    string processPath = CompilerBinaryPath;
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        args = $"/c \"chcp 65001 > nul && \"{CompilerBinaryPath}\" {args}\"";
+                        processPath = "cmd";
+                    }
+
+                    (int exitCode, string output) = Utils.TryRunProcess(
                                                             Log,
-                                                            command,
+                                                            processPath,
+                                                            args,
                                                             envVarsDict,
                                                             workingDir: Environment.CurrentDirectory,
+                                                            silent: false,
                                                             logStdErrAsMessage: true,
                                                             debugMessageImportance: messageImportance,
                                                             label: Path.GetFileName(srcFile));
