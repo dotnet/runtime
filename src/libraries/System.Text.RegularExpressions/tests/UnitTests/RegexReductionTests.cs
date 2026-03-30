@@ -481,6 +481,17 @@ namespace System.Text.RegularExpressions.Tests
         // Shared-prefix extraction skips non-text branches and factors later text branches
         [InlineData("[^x]|ab|ac", "[^x]|a[bc]")]
         [InlineData("[^x]|\\ab|\\ac", "[^x]|\\a[bc]")]
+        // Shared-suffix anchor extraction pulls common trailing anchors out of alternation branches
+        [InlineData(@"abc\z|xyz\z", @"(?:abc|xyz)\z")]
+        [InlineData(@"abc$|xyz$", @"(?:abc|xyz)$")]
+        [InlineData(@"\d{5}$|\d{5}-\d{4}$", @"(?:\d{5}|\d{5}-\d{4})$")]
+        [InlineData(@"abc\b|xyz\b", @"(?:abc|xyz)\b")]
+        [InlineData(@"abc\B|xyz\B", @"(?:abc|xyz)\B")]
+        [InlineData(@"abc$|xyz$|def$", @"(?:abc|xyz|def)$")]
+        [InlineData(@"a$|b$|c$", @"[abc]$")]
+        // Shared-suffix anchor extraction with partial matches only factors contiguous branches
+        [InlineData(@"abc$|xyz$|def", @"(?:abc|xyz)$|def")]
+        [InlineData(@"abc|xyz$|def$", @"abc|(?:xyz|def)$")]
         public void PatternsReduceIdentically(string actual, string expected)
         {
             // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.
@@ -503,6 +514,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("ab|a|ac|d", "(?>ab?|d)")]                                  // same redundant Atomic removal, within a larger Alternate
         [InlineData("a?b|a??b", "(?>a?(?>b))")]                                 // greedy/lazy branches merge after atomic promotion; FinalReduce converts single-char [b] to b
         [InlineData("[ab]?c|[ab]??c", "(?>[ab]?(?>c))")]                        // same single-char class simplification with set loop prefix
+        [InlineData(@"\d{5}$|\d{5}-\d{4}$", @"\d{5}(?:-\d{4})??$")]            // suffix anchor extraction + prefix extraction via FinalReduce
         public void PatternsReduceIdentically_Compiled(string actual, string expected)
         {
             // FinalReduce: post-FinalOptimize re-reduction only applies to Compiled/source generator.
@@ -686,6 +698,10 @@ namespace System.Text.RegularExpressions.Tests
         // After alternation prefix extraction, optional patterns should differ from non-optional
         [InlineData("(?i)(?:ab|abc)d", "(?i)abcd")]
         [InlineData("(?:[ab][0-9]|[ab])x", "[ab][0-9]x")]
+        // Suffix extraction should not merge branches with different trailing anchors
+        [InlineData(@"abc$|xyz\z", @"(?:abc|xyz)$")]
+        // Non-anchor trailing nodes: distribution is limited by heuristic (too many trailing nodes or branches)
+        [InlineData(@"abcxy|defxy|ghixy|jklxy|mnoxy|pqrxy", @"(?:abc|def|ghi|jkl|mno|pqr)xy")]
         public void PatternsReduceDifferently(string actual, string expected)
         {
             // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.
