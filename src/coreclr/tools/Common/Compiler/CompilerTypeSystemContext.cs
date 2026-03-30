@@ -202,6 +202,9 @@ namespace ILCompiler
 #endif
                         pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder())
                                     ?? OpenAssociatedSymbolFile(filePath, peReader);
+
+                        if (!peReader.HasMetadata && !throwOnFailureToLoad)
+                            return null;
                     }
                     catch (BadImageFormatException)
                     {
@@ -216,11 +219,6 @@ namespace ILCompiler
                     peReader = oldModuleData.Module.PEReader;
                     mappedViewAccessor = oldModuleData.MappedViewAccessor;
                     pdbReader = oldModuleData.Module.PdbReader;
-                }
-
-                if (!peReader.HasMetadata && !throwOnFailureToLoad)
-                {
-                    return null;
                 }
 
                 EcmaModule module = EcmaModule.Create(this, peReader, containingAssembly: null, pdbReader);
