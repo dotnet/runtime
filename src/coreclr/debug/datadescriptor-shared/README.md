@@ -39,7 +39,7 @@ providing type information for diagnostic validation in debug builds.
 
 These defines are declared in `wrappeddatadescriptor.inc` and are available to all `.inc` files:
 
-| Define | Debug expansion | Description |
+| Define | Expansion | Description |
 |--------|----------------|-------------|
 | `T_UINT8` | `uint8` | 8-bit unsigned integer |
 | `T_UINT16` | `uint16` | 16-bit unsigned integer |
@@ -54,13 +54,19 @@ These defines are declared in `wrappeddatadescriptor.inc` and are available to a
 | `T_POINTER` | `pointer` | Target pointer |
 | `T_BOOL` | `bool` | Boolean |
 | `TYPE(name)` | `name` | Inline struct type declared with `CDAC_TYPE_BEGIN` in the same descriptor |
-| `EXTERN_TYPE(name)` | `name` | Cross-descriptor struct type (not validated locally) |
+| `EXTERN_TYPE(name)` | `name` | Type not validated locally (cross-descriptor or well-known) |
 | `T_ARRAY(type)` | `pointer` | Array of the given element type. Expands to `pointer` in the blob |
+
+These defines always expand to the type name in all build configurations. Whether the
+type name string is included in the binary blob is controlled by `CDAC_STRINGIFY_TYPE`
+in `datadescriptor.cpp` (currently debug/checked builds only; release builds emit `""`
+to keep the blob compact).
 
 `TYPE(name)` references are validated at compile time in debug builds via
 `cdactypevalidation.inc`. If the name does not match any `CDAC_TYPE_BEGIN` in the same
 descriptor, a `static_assert` failure is produced. Use `EXTERN_TYPE(name)` for types
-declared in a different descriptor (e.g., GC referencing a VM type).
+declared in a different descriptor or for well-known types that don't have a
+`CDAC_TYPE_BEGIN` in the current descriptor.
 
 `T_ARRAY(type)` accepts any type define as its element type (e.g., `T_ARRAY(T_UINT8)`,
 `T_ARRAY(TYPE(StressLogModuleDesc))`). The inner type is validated but the array itself
