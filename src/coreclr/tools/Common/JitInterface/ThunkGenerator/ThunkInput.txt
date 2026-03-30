@@ -325,6 +325,7 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE    field,  BoolStar pIsSpeculative);
     CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO       *pSig, CORINFO_METHOD_HANDLE   methHnd, void                  **ppIndirection);
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE   module, mdToken                 metaTok, void                  **ppValue);
+    CORINFO_OBJECT_HANDLE constructDelegateLiteral(CORINFO_METHOD_HANDLE method, CORINFO_CLASS_HANDLE delegateType);
     InfoAccessType emptyStringLiteral(void                  **ppValue);
     uint32_t getFieldThreadLocalStoreID (CORINFO_FIELD_HANDLE    field, void                  **ppIndirection);
     CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE  methHnd, CORINFO_CLASS_HANDLE   clsHnd, CORINFO_METHOD_HANDLE  targetMethodHnd, DelegateCtorArgs *     pCtorData);

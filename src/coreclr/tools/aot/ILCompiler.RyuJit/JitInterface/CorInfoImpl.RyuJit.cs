@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using Internal.IL;
 using Internal.ReadyToRunConstants;
@@ -39,6 +41,8 @@ namespace Internal.JitInterface
         private DebugVarInfo[] _debugVarInfos;
         private readonly UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private bool _isFallbackBodyCompilation;
+        private readonly ConcurrentDictionary<MethodDesc, int> _delegateId = new();
+        private int _nextMethodId;
 
         public CorInfoImpl(RyuJitCompilation compilation)
             : this()
@@ -874,6 +878,68 @@ namespace Internal.JitInterface
             }
             ppValue = (void*)ObjectToHandle(stringObject);
             return stringObject.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
+        }
+
+        private CORINFO_OBJECT_STRUCT_* constructDelegateLiteral(CORINFO_METHOD_STRUCT_* methodHandle, CORINFO_CLASS_STRUCT_* delegateType)
+        {
+            MethodDesc method = HandleToObject(methodHandle);
+            TypeDesc type = HandleToObject(delegateType);
+
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                return null;
+            }
+
+            Debug.Assert(type.IsDelegate);
+
+            if (type is not MetadataType metadataType)
+            {
+                return null;
+            }
+
+            MethodDesc invokeMethod = metadataType.GetMethod("Invoke"u8, null);
+            Debug.Assert(invokeMethod is not null);
+
+            var signature = method.Signature;
+
+            int invokeCount = invokeMethod.Signature.Length;
+            int paramCount = signature.Length;
+            bool isStatic = method.Signature.IsStatic;
+            if (!isStatic)
+            {
+                paramCount++; // count 'this'
+            }
+
+            bool isOpen = invokeCount == paramCount;
+
+            // reject cases needing valid instances
+            if (!isOpen)
+            {
+                // we block delegates closed over null valuetypes since we'd just always NRE in the unboxing stub
+                if (isStatic)
+                {
+                    if (paramCount == 0 || signature[0].IsValueType)
+                    {
+                        return null;
+                    }
+                }
+                else
+                {
+                    TypeDesc declaringType = method.OwningType;
+                    // reject instance methods on static types, those require proper targets
+                    if (declaringType is null || declaringType.IsValueType || declaringType.HasInstantiation)
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            int allocationSiteId = _delegateId.GetOrAdd(method, static (_, compiler) => Interlocked.Increment(ref compiler._nextMethodId), this);
+            TypePreinit.ISerializableReference reference = TypePreinit.GetLambdaDelegate(type, method, metadataType);
+            FrozenObjectNode delegateObject = _compilation.NodeFactory.SerializedFrozenObject(metadataType, allocationSiteId, reference);
+
+            Debug.Assert(!delegateObject.RepresentsIndirectionCell);
+            return ObjectToHandle(delegateObject);
         }
 
         private enum RhEHClauseKind

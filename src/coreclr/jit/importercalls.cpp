@@ -3640,6 +3640,38 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetDelegate:
+            {
+                assert(sig->sigInst.methInstCount == 1);
+
+                GenTree* op1 = impStackTop(1).val;
+                if (!op1->OperIs(GT_FTN_ADDR))
+                {
+                    JITDUMP("Delegate literals require a direct ftn ptr\n");
+                    return nullptr;
+                }
+
+                CORINFO_METHOD_HANDLE targetMethod = op1->AsFptrVal()->gtFptrMethod;
+
+                CORINFO_SIG_INFO exactSig;
+                info.compCompHnd->getMethodSig(pResolvedToken->hMethod, &exactSig);
+                CORINFO_CLASS_HANDLE delegateType = exactSig.sigInst.methInst[0];
+
+                CORINFO_OBJECT_HANDLE delegate = info.compCompHnd->constructDelegateLiteral(targetMethod, delegateType);
+
+                if (delegate == NO_OBJECT_HANDLE)
+                {
+                    JITDUMP("VM failed to allocate the delegate literal\n");
+                    return nullptr;
+                }
+
+                JITDUMP("Optimized frozen delegate creation\n");
+                retNode = gtNewIconEmbObjHndNode(delegate);
+                impPopStack();
+                impPopStack();
+                break;
+            }
+
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
             {
                 GenTree* op1 = impPopStack().val;
@@ -10926,6 +10958,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "InitializeArray") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray;
+                            }
+                            else if (strcmp(methodName, "GetDelegate") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetDelegate;
                             }
                             else if (strcmp(methodName, "IsKnownConstant") == 0)
                             {

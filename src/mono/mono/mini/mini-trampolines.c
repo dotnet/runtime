@@ -993,7 +993,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	MonoMethod *method = NULL;
 	ERROR_DECL (error);
 	gboolean multicast, callvirt = FALSE;
-	gboolean closed_static = FALSE, closed_over_null = FALSE;
+	gboolean is_open = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
 	gboolean need_unbox_tramp = FALSE;
 	gboolean enable_caching = TRUE;
@@ -1071,12 +1071,13 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 		}
 
 		callvirt = !delegate->target && sig->hasthis;
-		if (callvirt)
-			closed_over_null = tramp_info->invoke_sig->param_count == sig->param_count;
-		if (m_method_is_static (method) && sig->param_count == tramp_info->invoke_sig->param_count + 1)
-			closed_static = TRUE;
 
-		if (callvirt && !closed_over_null) {
+		guint32 param_count = sig->param_count;
+		if (sig->hasthis)
+			param_count++;
+		is_open = tramp_info->invoke_sig->param_count == param_count;
+
+		if (callvirt && is_open) {
 			/*
 			 * The delegate needs to make a virtual call to the target method using its
 			 * first argument as the receiver. This is hard to support in full-aot, so
@@ -1136,10 +1137,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 
 	multicast = ((MonoMulticastDelegate*)delegate)->delegates != NULL;
 	if (!multicast && !callvirt) {
-		if (closed_static)
-			invoke_impl = impl_this;
-		else
-			invoke_impl = delegate->target ? impl_this : impl_nothis;
+		invoke_impl = is_open ? impl_nothis : impl_this;
 	}
 
 	if (!invoke_impl) {
