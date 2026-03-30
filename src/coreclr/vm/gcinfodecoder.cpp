@@ -1559,13 +1559,7 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#ifdef FEATURE_NATIVEAOT
-    // In NativeAOT, volatile register save locations can be NULL if the register was not
-    // captured (e.g., in a voluntary preemptive transition frame that only saves callee-saved
-    // registers). Skip reporting if the save location is not available.
-    if (pObjRef == NULL)
-        return;
-#elif defined(TARGET_UNIX) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1585,7 +1579,7 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // FEATURE_NATIVEAOT, or TARGET_UNIX && !SOS_TARGET_AMD64
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT && !SOS_TARGET_AMD64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -1694,13 +1688,6 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#ifdef FEATURE_NATIVEAOT
-    // In NativeAOT, volatile register save locations can be NULL if the register was not
-    // captured (e.g., in a voluntary preemptive transition frame that only saves callee-saved
-    // registers). Skip reporting if the save location is not available.
-    if (pObjRef == NULL)
-        return;
-#endif // FEATURE_NATIVEAOT
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -1783,13 +1770,7 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#ifdef FEATURE_NATIVEAOT
-    // In NativeAOT, volatile register save locations can be NULL if the register was not
-    // captured (e.g., in a voluntary preemptive transition frame that only saves callee-saved
-    // registers). Skip reporting if the save location is not available.
-    if (pObjRef == NULL)
-        return;
-#elif defined(TARGET_UNIX) && !defined(SOS_TARGET_ARM64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_ARM64)
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1809,7 +1790,7 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // FEATURE_NATIVEAOT, or TARGET_UNIX && !SOS_TARGET_ARM64
+#endif // TARGET_UNIX && !SOS_TARGET_ARM64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -1928,13 +1909,7 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#ifdef FEATURE_NATIVEAOT
-    // In NativeAOT, volatile register save locations can be NULL if the register was not
-    // captured (e.g., in a voluntary preemptive transition frame that only saves callee-saved
-    // registers). Skip reporting if the save location is not available.
-    if (pObjRef == NULL)
-        return;
-#elif defined(TARGET_UNIX) && !defined(SOS_TARGET_LOONGARCH64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_LOONGARCH64)
 
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
@@ -1955,7 +1930,7 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // FEATURE_NATIVEAOT, or TARGET_UNIX && !SOS_TARGET_LOONGARCH64
+#endif // TARGET_UNIX && !SOS_TARGET_LOONGARCH64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -2058,13 +2033,7 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#ifdef FEATURE_NATIVEAOT
-    // In NativeAOT, volatile register save locations can be NULL if the register was not
-    // captured (e.g., in a voluntary preemptive transition frame that only saves callee-saved
-    // registers). Skip reporting if the save location is not available.
-    if (pObjRef == NULL)
-        return;
-#elif defined(TARGET_UNIX) && !defined(SOS_TARGET_RISCV64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_RISCV64)
 
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
@@ -2085,7 +2054,7 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // FEATURE_NATIVEAOT, or TARGET_UNIX && !SOS_TARGET_RISCV64
+#endif // TARGET_UNIX && !SOS_TARGET_RISCV64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))

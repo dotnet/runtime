@@ -1370,6 +1370,18 @@ public:
         UNREFERENCED_PARAMETER(pRegisterSet);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        // Restore the volatile argument registers that the thunk saved, so that the GC
+        // can find and update any live GC references in them for the managed caller frame.
+        pRegisterSet->pRdi = GET_POINTER_TO_FIELD(m_intArgRegs[0]); // rdi (arg 0)
+        pRegisterSet->pRsi = GET_POINTER_TO_FIELD(m_intArgRegs[1]); // rsi (arg 1)
+        pRegisterSet->pRcx = GET_POINTER_TO_FIELD(m_intArgRegs[2]); // rcx (arg 2)
+        pRegisterSet->pRdx = GET_POINTER_TO_FIELD(m_intArgRegs[3]); // rdx (arg 3)
+        pRegisterSet->pR8  = GET_POINTER_TO_FIELD(m_intArgRegs[4]); // r8  (arg 4)
+        pRegisterSet->pR9  = GET_POINTER_TO_FIELD(m_intArgRegs[5]); // r9  (arg 5)
+    }
+
 #elif defined(TARGET_AMD64)
 
     // Conservative GC reporting must be applied to everything between the base of the
@@ -1394,6 +1406,16 @@ public:
         UNREFERENCED_PARAMETER(pRegisterSet);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        // Restore the volatile argument registers that the thunk saved, so that the GC
+        // can find and update any live GC references in them for the managed caller frame.
+        pRegisterSet->pRcx = GET_POINTER_TO_FIELD(m_intArgRegs[0]); // rcx (arg 0)
+        pRegisterSet->pRdx = GET_POINTER_TO_FIELD(m_intArgRegs[1]); // rdx (arg 1)
+        pRegisterSet->pR8  = GET_POINTER_TO_FIELD(m_intArgRegs[2]); // r8  (arg 2)
+        pRegisterSet->pR9  = GET_POINTER_TO_FIELD(m_intArgRegs[3]); // r9  (arg 3)
+    }
+
 #elif defined(TARGET_ARM)
 
     // Conservative GC reporting must be applied to everything between the base of the
@@ -1416,6 +1438,16 @@ public:
         pRegisterSet->pR11 = GET_POINTER_TO_FIELD(m_pushedR11);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        // Restore the volatile argument registers that the thunk saved, so that the GC
+        // can find and update any live GC references in them for the managed caller frame.
+        pRegisterSet->pR0 = GET_POINTER_TO_FIELD(m_intArgRegs[0]); // r0 (arg 0)
+        pRegisterSet->pR1 = GET_POINTER_TO_FIELD(m_intArgRegs[1]); // r1 (arg 1)
+        pRegisterSet->pR2 = GET_POINTER_TO_FIELD(m_intArgRegs[2]); // r2 (arg 2)
+        pRegisterSet->pR3 = GET_POINTER_TO_FIELD(m_intArgRegs[3]); // r3 (arg 3)
+    }
+
 #elif defined(TARGET_X86)
 
     // Conservative GC reporting must be applied to everything between the base of the
@@ -1435,6 +1467,15 @@ public:
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
         pRegisterSet->pRbp = GET_POINTER_TO_FIELD(m_pushedEBP);
+    }
+
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        // Restore the volatile argument registers that the thunk saved, so that the GC
+        // can find and update any live GC references in them for the managed caller frame.
+        // Note: the thunk saves edx first (lower address), then ecx.
+        pRegisterSet->pRdx = GET_POINTER_TO_FIELD(m_intArgRegs[0]); // edx (arg 1 in __fastcall)
+        pRegisterSet->pRcx = GET_POINTER_TO_FIELD(m_intArgRegs[1]); // ecx (arg 0 in __fastcall)
     }
 
 #elif defined(TARGET_ARM64)
@@ -1460,6 +1501,21 @@ public:
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        // Restore the volatile argument registers that the thunk saved, so that the GC
+        // can find and update any live GC references in them for the managed caller frame.
+        pRegisterSet->pX0 = GET_POINTER_TO_FIELD(m_intArgRegs[0]); // x0 (arg 0)
+        pRegisterSet->pX1 = GET_POINTER_TO_FIELD(m_intArgRegs[1]); // x1 (arg 1)
+        pRegisterSet->pX2 = GET_POINTER_TO_FIELD(m_intArgRegs[2]); // x2 (arg 2)
+        pRegisterSet->pX3 = GET_POINTER_TO_FIELD(m_intArgRegs[3]); // x3 (arg 3)
+        pRegisterSet->pX4 = GET_POINTER_TO_FIELD(m_intArgRegs[4]); // x4 (arg 4)
+        pRegisterSet->pX5 = GET_POINTER_TO_FIELD(m_intArgRegs[5]); // x5 (arg 5)
+        pRegisterSet->pX6 = GET_POINTER_TO_FIELD(m_intArgRegs[6]); // x6 (arg 6)
+        pRegisterSet->pX7 = GET_POINTER_TO_FIELD(m_intArgRegs[7]); // x7 (arg 7)
+        pRegisterSet->pX8 = GET_POINTER_TO_FIELD(m_intArgRegs[8]); // x8 (indirect result)
+    }
+
 #elif defined(TARGET_LOONGARCH64)
 
     // Conservative GC reporting must be applied to everything between the base of the
@@ -1480,6 +1536,21 @@ public:
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
+    }
+
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        // Restore the volatile argument registers that the thunk saved, so that the GC
+        // can find and update any live GC references in them for the managed caller frame.
+        // In LoongArch64 ABI, a0-a7 are r4-r11.
+        pRegisterSet->pR4  = GET_POINTER_TO_FIELD(m_intArgRegs[0]); // a0/r4  (arg 0)
+        pRegisterSet->pR5  = GET_POINTER_TO_FIELD(m_intArgRegs[1]); // a1/r5  (arg 1)
+        pRegisterSet->pR6  = GET_POINTER_TO_FIELD(m_intArgRegs[2]); // a2/r6  (arg 2)
+        pRegisterSet->pR7  = GET_POINTER_TO_FIELD(m_intArgRegs[3]); // a3/r7  (arg 3)
+        pRegisterSet->pR8  = GET_POINTER_TO_FIELD(m_intArgRegs[4]); // a4/r8  (arg 4)
+        pRegisterSet->pR9  = GET_POINTER_TO_FIELD(m_intArgRegs[5]); // a5/r9  (arg 5)
+        pRegisterSet->pR10 = GET_POINTER_TO_FIELD(m_intArgRegs[6]); // a6/r10 (arg 6)
+        pRegisterSet->pR11 = GET_POINTER_TO_FIELD(m_intArgRegs[7]); // a7/r11 (arg 7)
     }
 
 #elif defined(TARGET_RISCV64)
@@ -1504,6 +1575,20 @@ public:
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        // Restore the volatile argument registers that the thunk saved, so that the GC
+        // can find and update any live GC references in them for the managed caller frame.
+        pRegisterSet->pA0 = GET_POINTER_TO_FIELD(m_intArgRegs[0]); // a0 (arg 0)
+        pRegisterSet->pA1 = GET_POINTER_TO_FIELD(m_intArgRegs[1]); // a1 (arg 1)
+        pRegisterSet->pA2 = GET_POINTER_TO_FIELD(m_intArgRegs[2]); // a2 (arg 2)
+        pRegisterSet->pA3 = GET_POINTER_TO_FIELD(m_intArgRegs[3]); // a3 (arg 3)
+        pRegisterSet->pA4 = GET_POINTER_TO_FIELD(m_intArgRegs[4]); // a4 (arg 4)
+        pRegisterSet->pA5 = GET_POINTER_TO_FIELD(m_intArgRegs[5]); // a5 (arg 5)
+        pRegisterSet->pA6 = GET_POINTER_TO_FIELD(m_intArgRegs[6]); // a6 (arg 6)
+        pRegisterSet->pA7 = GET_POINTER_TO_FIELD(m_intArgRegs[7]); // a7 (arg 7)
+    }
+
 #elif defined(TARGET_WASM)
 private:
     // WASMTODO: #error NYI for this arch
@@ -1514,6 +1599,12 @@ public:
     PTR_uintptr_t get_LowerBoundForConservativeReporting() { PORTABILITY_ASSERT("@TODO: FIXME:WASM"); return NULL; }
 
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
+    {
+        UNREFERENCED_PARAMETER(pRegisterSet);
+        PORTABILITY_ASSERT("@TODO: FIXME:WASM");
+    }
+
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
     {
         UNREFERENCED_PARAMETER(pRegisterSet);
         PORTABILITY_ASSERT("@TODO: FIXME:WASM");
@@ -1551,6 +1642,7 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
     UniversalTransitionStackFrame * stackFrame = (PTR_UniversalTransitionStackFrame)m_RegDisplay.SP;
 
     stackFrame->UnwindNonVolatileRegisters(&m_RegDisplay);
+    stackFrame->UnwindVolatileArgRegisters(&m_RegDisplay);
 
     PTR_uintptr_t addressOfPushedCallerIP = stackFrame->get_AddressOfPushedCallerIP();
     m_RegDisplay.SetIP(PCODEToPINSTR(*addressOfPushedCallerIP));
