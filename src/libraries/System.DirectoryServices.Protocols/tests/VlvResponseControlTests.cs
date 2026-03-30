@@ -305,6 +305,7 @@ namespace System.DirectoryServices.Protocols.Tests
             => VerifyResponseControl(value, targetPosition, contentCount, result, contextId);
 
         [Theory]
+        [SkipOnCoreClr("netfx-only test")]
         [MemberData(nameof(NonconformantControlValues))]
         public void NonconformantResponseControlParsedSuccessfully(byte[] value, int targetPosition, int contentCount, ResultCode result, byte[] contextId)
             => VerifyResponseControl(value, targetPosition, contentCount, result, contextId);

@@ -19,5 +19,63 @@
     <RunArguments>$(TargetPath) --settings:$(OutDir).runsettings</RunArguments>
   </PropertyGroup>
 
+  <!--
+    The xunit.v3.core.mtp-v1 package's buildTransitive props unconditionally
+    set UseAppHost=true.  Override UseAppHost=false here (in targets, imported
+    after NuGet package props) so our value wins.  Library tests run via
+    dotnet exec or Helix.  Mobile/WASM tests use OutputType=Library.
+    NativeAOT generates native executables directly via ILC.  None of these
+    need an apphost.
+
+    For non-NativeAOT SingleFile tests, tests.singlefile.targets already
+    sets UseAppHost=true and SelfContained=true, which is correct.  The
+    TestSingleFile condition preserves that, and the NativeAOT condition
+    overrides it back to false.
+
+    When SelfContained=true (e.g., mobile/WASM builds set this via
+    tests.props, NativeAOT sets it via tests.singlefile.targets), the SDK
+    checks _RuntimeIdentifierUsesAppHost to decide whether NETSDK1067
+    applies.  Set it to false to prevent the error.
+
+    NativeAOT and mobile/WASM test projects become Exe (xunit v3) and
+    self-contained, so the SDK validates referenced Exe projects for
+    SelfContained consistency (NETSDK1150).  Disable that check since
+    test helper Exe projects aren't self-contained.
+  -->
+  <PropertyGroup Condition="'$(TestSingleFile)' != 'true'">
+    <UseAppHost>false</UseAppHost>
+    <_RuntimeIdentifierUsesAppHost Condition="'$(SelfContained)' == 'true'">false</_RuntimeIdentifierUsesAppHost>
+    <ValidateExecutableReferencesMatchSelfContained Condition="'$(SelfContained)' == 'true'">false</ValidateExecutableReferencesMatchSelfContained>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
+    <UseAppHost>false</UseAppHost>
+    <_RuntimeIdentifierUsesAppHost>false</_RuntimeIdentifierUsesAppHost>
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+  </PropertyGroup>
+
+  <!--
+    The xunit.v3.core.mtp-v1 package injects DefaultRunnerReporters.cs into
+    compilation. On mobile/WASM, the compilation environment may lack the
+    netstandard reference that xunit.v3.runner.common.dll depends on, causing
+    CS0012. Since mobile/WASM tests use custom test runners and don't need the
+    built-in runner reporters, disable them.
+  -->
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <XunitRegisterBuiltInRunnerReporters>false</XunitRegisterBuiltInRunnerReporters>
+  </PropertyGroup>
+
+  <!--
+    Override the xunit.v3.core.mtp-v1 validation target. The original target
+    errors when OutputType != Exe or UseAppHost != true on .NETCoreApp. In
+    dotnet/runtime, mobile and browser-wasm platforms legitimately use
+    OutputType=Library (they have custom test runners), and library tests use
+    UseAppHost=false (they are executed via dotnet exec or archived for Helix).
+    This target replaces the NuGet package's original.
+  -->
+  <Target Name="_XunitValidateBuild" BeforeTargets="BeforeBuild" Condition=" '$(TargetFramework)' != '' ">
+    <Error Text="xUnit.net v3 test projects must be executable (set project property '&lt;OutputType&gt;Exe&lt;/OutputType&gt;'). If this is not a test project, reference xunit.v3.extensibility.core instead."
+           Condition=" '$(OutputType)' != 'Exe' AND '$(TargetsMobile)' != 'true' " />
+  </Target>
+
   <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets" />
 </Project>

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -82,7 +83,7 @@ namespace System.Security.Cryptography.Tests
             VerifyKbkdf(expected, key, HashAlgorithmName.SHA256, label.ToCharArray(), context.ToCharArray());
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(nameof(HashAlgorithmName.SHA1), 512 / 8 - 1, new byte[] { 0xc9, 0x0f, 0x9d, 0x91, 0x85, 0xe5, 0xeb, 0x9b })]
         [InlineData(nameof(HashAlgorithmName.SHA1), 512 / 8, new byte[] { 0x7b, 0xdb, 0x38, 0x28, 0xc0, 0x9f, 0x49, 0x05 })]
         [InlineData(nameof(HashAlgorithmName.SHA1), 512 / 8 + 1, new byte[] { 0x6c, 0x3a, 0xba, 0x28, 0x38, 0xad, 0x51, 0x2c })]
@@ -113,7 +114,7 @@ namespace System.Security.Cryptography.Tests
                 (hashAlgorithmName == "SHA3-384" && !SHA3_384.IsSupported) ||
                 (hashAlgorithmName == "SHA3-512" && !SHA3_512.IsSupported))
             {
-                throw new SkipTestException($"Algorithm '{hashAlgorithmName}' is not supported on the current platform.");
+                throw SkipException.ForSkip($"Algorithm '{hashAlgorithmName}' is not supported on the current platform.");
             }
 #endif
 

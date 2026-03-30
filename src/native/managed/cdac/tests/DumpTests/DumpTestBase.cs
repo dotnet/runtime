@@ -9,12 +9,13 @@ using System.Runtime.CompilerServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Base class for dump-based cDAC integration tests.
-/// Each test is a <c>[ConditionalTheory]</c> parameterized by <see cref="TestConfiguration"/>.
+/// Each test is a <c>[Theory]</c> parameterized by <see cref="TestConfiguration"/>.
 /// Call <see cref="InitializeDumpTest"/> at the start of every test method to load
 /// the dump and evaluate skip attributes such as <see cref="SkipOnVersionAttribute"/>.
 /// </summary>
@@ -95,7 +96,7 @@ public abstract class DumpTestBase : IDisposable
             if (_dumpInfo is not null && _dumpInfo.IsDumpExpected(debuggeeName, dumpType, config.R2RMode))
                 Assert.Fail($"Expected {config.R2RMode}/{dumpType} dump for {debuggeeName} but not found: {dumpPath}");
 
-            throw new SkipTestException($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
+            throw SkipException.ForSkip($"No {config.R2RMode} dump for {debuggeeName}: {dumpPath}");
         }
 
         _host = ClrMdDumpHost.Open(dumpPath);
@@ -120,14 +121,11 @@ public abstract class DumpTestBase : IDisposable
 
     /// <summary>
     /// Checks the calling test method for skip attributes and throws
-    /// <see cref="SkipTestException"/> if the current configuration matches.
+    /// <see cref="SkipException"/> if the current configuration matches.
     /// </summary>
     private void EvaluateSkipAttributes(TestConfiguration config, string callerName, string? dumpType = null)
     {
-        if (config.RuntimeVersion is "net10.0" && (dumpType ?? DumpType) == "heap")
-        {
-            throw new SkipTestException($"[net10.0] Skipping heap dump tests due to outdated dump generation.");
-        }
+        Assert.SkipWhen(config.RuntimeVersion is "net10.0" && (dumpType ?? DumpType) == "heap", $"[net10.0] Skipping heap dump tests due to outdated dump generation.");
 
         MethodInfo? method = GetType().GetMethod(callerName, BindingFlags.Public | BindingFlags.Instance);
         if (method is null)
@@ -135,8 +133,7 @@ public abstract class DumpTestBase : IDisposable
 
         foreach (SkipOnVersionAttribute attr in method.GetCustomAttributes<SkipOnVersionAttribute>())
         {
-            if (string.Equals(attr.Version, config.RuntimeVersion, StringComparison.OrdinalIgnoreCase))
-                throw new SkipTestException($"[{config.RuntimeVersion}] {attr.Reason}");
+            Assert.SkipWhen(string.Equals(attr.Version, config.RuntimeVersion, StringComparison.OrdinalIgnoreCase), $"[{config.RuntimeVersion}] {attr.Reason}");
         }
 
         if (_dumpInfo is not null)
@@ -145,13 +142,11 @@ public abstract class DumpTestBase : IDisposable
             {
                 if (attr.IncludeOnly is not null)
                 {
-                    if (!string.Equals(attr.IncludeOnly, _dumpInfo.Os, StringComparison.OrdinalIgnoreCase))
-                        throw new SkipTestException($"[{_dumpInfo.Os}] {attr.Reason}");
+                    Assert.SkipUnless(string.Equals(attr.IncludeOnly, _dumpInfo.Os, StringComparison.OrdinalIgnoreCase), $"[{_dumpInfo.Os}] {attr.Reason}");
                 }
                 else if (attr.Os is not null)
                 {
-                    if (string.Equals(attr.Os, _dumpInfo.Os, StringComparison.OrdinalIgnoreCase))
-                        throw new SkipTestException($"[{_dumpInfo.Os}] {attr.Reason}");
+                    Assert.SkipWhen(string.Equals(attr.Os, _dumpInfo.Os, StringComparison.OrdinalIgnoreCase), $"[{_dumpInfo.Os}] {attr.Reason}");
                 }
             }
         }
@@ -172,7 +167,7 @@ public abstract class DumpTestBase : IDisposable
 
     /// <summary>
     /// Returns the R2R modes to test against. Both modes are always tested;
-    /// dumps that don't exist for a given mode are skipped via <see cref="SkipTestException"/>.
+    /// dumps that don't exist for a given mode are skipped via <see cref="SkipException"/>.
     /// </summary>
     private static IEnumerable<string> GetR2RModes()
     {

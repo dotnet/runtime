@@ -632,15 +632,12 @@ namespace System.Threading.Channels.Tests
             r.GetAwaiter().GetResult();
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void AllowSynchronousContinuations_CompletionTask_ContinuationsInvokedAccordingToSetting(bool allowSynchronousContinuations)
         {
-            if (!allowSynchronousContinuations && !PlatformDetection.IsMultithreadingSupported)
-            {
-                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
-            }
+            Assert.SkipUnless(allowSynchronousContinuations && !PlatformDetection.IsMultithreadingSupported, nameof(PlatformDetection.IsMultithreadingSupported));
 
             var c = Channel.CreateBounded<int>(new BoundedChannelOptions(1) { AllowSynchronousContinuations = allowSynchronousContinuations });
 

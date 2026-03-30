@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using Xunit.Sdk;
 using System.Runtime.InteropServices;
 using System.Buffers;
 using Microsoft.DotNet.XUnitExtensions;
@@ -72,7 +73,7 @@ namespace System.SpanTests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Unable to allocate 4GB of memory");
+                throw SkipException.ForSkip("Unable to allocate 4GB of memory");
             }
 
             try
@@ -100,7 +101,7 @@ namespace System.SpanTests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Unable to allocate 2GB of memory");
+                throw SkipException.ForSkip("Unable to allocate 2GB of memory");
             }
 
             try

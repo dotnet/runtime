@@ -10,8 +10,6 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Runtime.Serialization.Schema.Tests
 {
     // TODO - Add a test covering 'ISerializationCodeDomSurrogateProvider'/ProcessImportedType - There was nothing in NetFx test suites for this.

@@ -87,7 +87,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         static JSObject _module;
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             if (_module == null)
             {
@@ -95,7 +95,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
-        public Task DisposeAsync() => Task.CompletedTask;
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 
     public static partial class TimersJS

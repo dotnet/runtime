@@ -3,7 +3,7 @@
 
 using System;
 using System.Text;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace Microsoft.Extensions.Logging.Testing.Tests
 {
@@ -14,6 +14,24 @@ namespace Microsoft.Extensions.Logging.Testing.Tests
         public bool Throw { get; set; }
 
         public string Output => _output.ToString();
+
+        public void Write(string message)
+        {
+            if (Throw)
+            {
+                throw new Exception("Boom!");
+            }
+            _output.Append(message);
+        }
+
+        public void Write(string format, params object[] args)
+        {
+            if (Throw)
+            {
+                throw new Exception("Boom!");
+            }
+            _output.Append(string.Format(format, args));
+        }
 
         public void WriteLine(string message)
         {

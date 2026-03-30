@@ -14,8 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
-
+using Xunit.Sdk;
 namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
@@ -53,7 +52,7 @@ namespace System.Net.Security.Tests
             _certificates = setup;
         }
 
-        [ConditionalFact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Linux)] // This only applies where OpenSsl is used.
         public async Task SslStream_SendReceiveOverNetworkStream_AuthenticationException()
         {
@@ -77,7 +76,7 @@ namespace System.Net.Security.Tests
             }
             else
             {
-                throw new SkipTestException("Did not find disjoined sets");
+                throw SkipException.ForSkip("Did not find disjoined sets");
             }
 
             TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
@@ -749,15 +748,12 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SslStream_ServerUntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
-            if (usePartialChain && OperatingSystem.IsAndroid())
-            {
-                throw new SkipTestException("Android does not support partial chain validation.");
-            }
+            Assert.SkipWhen(usePartialChain && OperatingSystem.IsAndroid(), "Android does not support partial chain validation.");
 
             int split = Random.Shared.Next(0, _certificates.ServerChain.Count - 1);
 
@@ -1135,10 +1131,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task DisableUnusedRsaPadding_Connects(bool clientDisable, bool serverDisable)
         {
-            if (PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsOpenSsl3)
-            {
-                throw new SkipTestException("OpenSSL 3.0 or later is required.");
-            }
+            Assert.SkipWhen(PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsOpenSsl3, "OpenSSL 3.0 or later is required.");
 
             (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
 
@@ -1176,10 +1169,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task DisableUsedRsaPadding_Throws(bool clientDisable, bool serverDisable)
         {
-            if (PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsOpenSsl3)
-            {
-                throw new SkipTestException("OpenSSL 3.0 or later is required.");
-            }
+            Assert.SkipWhen(PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsOpenSsl3, "OpenSSL 3.0 or later is required.");
 
             (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
 

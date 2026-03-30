@@ -159,11 +159,13 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Theory]
+        [SkipOnCoreClr("netfx-only test")]
         [MemberData(nameof(ConformantControlValues))]
         public void ConformantResponseControlParsedSuccessfully(byte[] value, ResultCode expectedResultCode)
             => VerifyResponseControl(value, expectedResultCode);
 
         [Theory]
+        [SkipOnCoreClr("netfx-only test")]
         [MemberData(nameof(NonconformantControlValues))]
         public void NonconformantResponseControlParsedSuccessfully(byte[] value, ResultCode expectedResultCode)
             => VerifyResponseControl(value, expectedResultCode);

@@ -3,6 +3,7 @@
     <NoWarn>$(NoWarn),0168,0169,0414,0219,0649</NoWarn>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>DbConnectionStringBuilderTrimmingTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Data\Common\DataColumnMappingTest.cs" />

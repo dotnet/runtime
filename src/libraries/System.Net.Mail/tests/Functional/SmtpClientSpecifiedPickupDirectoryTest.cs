@@ -10,8 +10,6 @@ using System.Net.Mail.Tests;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Mail.Tests
 {
     public abstract class SmtpClientSpecifiedPickupDirectoryTest<T> : LoopbackServerTestBase<T> where T : ISendMethodProvider

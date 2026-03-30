@@ -577,10 +577,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void DroppedIncompleteStateMachine_RaisesIncompleteAsyncMethodEvent()
         {
-            if (!PlatformDetection.IsPreciseGcSupported)
-            {
-                throw new SkipTestException("Test requires precise GC");
-            }
+            Assert.SkipUnless(PlatformDetection.IsPreciseGcSupported, "Test requires precise GC");
 
             RemoteExecutor.Invoke(() =>
             {

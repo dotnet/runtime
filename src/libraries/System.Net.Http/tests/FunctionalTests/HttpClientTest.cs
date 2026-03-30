@@ -14,7 +14,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using static System.Net.Test.Common.Configuration.Http;
 
 namespace System.Net.Http.Functional.Tests

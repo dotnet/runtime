@@ -5,6 +5,7 @@ using System;
 using System.Reflection;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 #pragma warning disable 0219  // field is never used
 
@@ -20,7 +21,7 @@ namespace System.Reflection.Tests
 
             var il = mb.GetILAsByteArray();
             if (il?.Length == 1 && il[0] == 0x2a) // ILStrip replaces method bodies with the 'ret' IL opcode i.e. 0x2a
-                throw new SkipTestException("The method body was processed using ILStrip.");
+                throw SkipException.ForSkip("The method body was processed using ILStrip.");
 
             Assert.True(mb.InitLocals);  // local variables are initialized
 #if DEBUG

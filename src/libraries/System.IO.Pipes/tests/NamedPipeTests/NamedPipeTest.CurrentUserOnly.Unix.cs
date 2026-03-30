@@ -7,8 +7,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.IO.Pipes.Tests
 {
     /// <summary>
@@ -37,10 +35,7 @@ namespace System.IO.Pipes.Tests
             PipeOptions serverPipeOptions, PipeOptions clientPipeOptions, PipeDirection clientPipeDirection)
         {
             bool isRoot = Environment.IsPrivilegedProcess;
-            if (clientPipeOptions == PipeOptions.CurrentUserOnly && isRoot)
-            {
-                throw new SkipTestException("Current user is root, RemoteExecutor is unable to use a different user for CurrentUserOnly.");
-            }
+            Assert.SkipWhen(clientPipeOptions == PipeOptions.CurrentUserOnly && isRoot, "Current user is root, RemoteExecutor is unable to use a different user for CurrentUserOnly.");
 
             // Use an absolute path, otherwise, the test can fail if the remote invoker and test runner have
             // different working and/or temp directories.

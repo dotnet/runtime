@@ -31,7 +31,7 @@ namespace System.Net.Security.Tests
             return (bool)info.GetType().GetProperty("TlsResumed").GetValue(info);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/103449", TestPlatforms.Windows)]
@@ -69,10 +69,7 @@ namespace System.Net.Security.Tests
                     server.AuthenticateAsServerAsync(serverOptions));
 
             //Assert.True(CheckResumeFlag(client));
-            if (!CheckResumeFlag(client))
-            {
-                throw new SkipTestException("Unable to resume test session");
-            }
+            Assert.SkipUnless(CheckResumeFlag(client), "Unable to resume test session");
             Assert.True(CheckResumeFlag(server));
             await client.ShutdownAsync();
             await server.ShutdownAsync();

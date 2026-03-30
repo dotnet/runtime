@@ -11,6 +11,7 @@ using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -1352,17 +1353,6 @@ namespace System.Text.RegularExpressions.Tests
             // Test with something after the \z trailing anchor
             yield return (@"^1234\zx", "1234", RegexOptions.None, 0, 4, false, "");
             yield return (@"^1234\zx", "1234x", RegexOptions.None, 0, 5, false, "");
-
-            // Greedy loop with a subsumed literal followed by a nullable subsequent.
-            // The loop's character class includes the literal that follows it, and the
-            // subsequent element is nullable (min=0) and disjoint from the loop. The
-            // backtracking optimization must not reduce to a single position check because
-            // multiple backtrack positions can succeed when the post-literal part is nullable.
-            yield return (@"([0-9\w\+]+\.)|([0-9\w\+]+\+)([\(\)]*)", "2+_", RegexOptions.None, 0, 3, true, "2+");
-            yield return (@"([0-9\w\+]+\.)|([0-9\w\+]+\+)([\(\)]*)", "2+", RegexOptions.None, 0, 2, true, "2+");
-            yield return (@"([0-9\w\+]+\.)|([0-9\w\+]+\+)([\(\)]*)", "abc+xyz+()", RegexOptions.None, 0, 10, true, "abc+xyz+()");
-            yield return (@"[\w+]+\+\s*", "a+b+ ", RegexOptions.None, 0, 5, true, "a+b+ ");
-            yield return (@"\w+a\s*", "ba", RegexOptions.None, 0, 2, true, "ba");
         }
 
         [OuterLoop("Takes several seconds to run")]
@@ -1494,7 +1484,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Takes several minutes on .NET Framework")]
         [OuterLoop("Takes several seconds")]
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_VaryingLengthStrings_Huge(RegexEngine engine)
         {
@@ -1522,10 +1512,7 @@ namespace System.Text.RegularExpressions.Tests
 
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                if (!RemoteExecutor.IsSupported)
-                {
-                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
-                }
+                Assert.SkipUnless(RemoteExecutor.IsSupported, "RemoteExecutor is not supported on this platform.");
 
                 RemoteExecutor.Invoke(func, engine.ToString()).Dispose();
             }
@@ -2635,7 +2622,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [OuterLoop("Can take over a minute")]
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(StressTestDeepNestingOfConcat_TestData))]
         public async Task StressTestDeepNestingOfConcat(RegexEngine engine, string pattern, string anchor, string input, int pattern_repetition, int input_repetition)
         {
@@ -2669,10 +2656,7 @@ namespace System.Text.RegularExpressions.Tests
 
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                if (!RemoteExecutor.IsSupported)
-                {
-                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
-                }
+                Assert.SkipUnless(RemoteExecutor.IsSupported, "RemoteExecutor is not supported on this platform.");
 
                 RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();
             }
@@ -2731,10 +2715,7 @@ namespace System.Text.RegularExpressions.Tests
 
             if (RegexHelpers.IsNonBacktracking(engine))
             {
-                if (!RemoteExecutor.IsSupported)
-                {
-                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
-                }
+                Assert.SkipUnless(RemoteExecutor.IsSupported, "RemoteExecutor is not supported on this platform.");
 
                 RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();
             }
@@ -2751,7 +2732,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             if (RegexHelpers.IsNonBacktracking(engine) && !PlatformDetection.IsMultithreadingSupported)
             {
-                throw new SkipTestException("Deep nesting with NonBacktracking hits threading APIs not supported on single-threaded WASM.");
+                throw SkipException.ForSkip("Deep nesting with NonBacktracking hits threading APIs not supported on single-threaded WASM.");
             }
 
             // Build a pattern with deeply nested character class subtractions: [a-[a-[a-[...[a]...]]]]

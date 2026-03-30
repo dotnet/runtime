@@ -10,8 +10,6 @@ using System.Net.Mail.Tests;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Mail.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;

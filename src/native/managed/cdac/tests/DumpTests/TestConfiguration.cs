@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
@@ -44,7 +44,7 @@ public sealed class TestConfiguration : IXunitSerializable
 
     public void Deserialize(IXunitSerializationInfo info)
     {
-        RuntimeVersion = info.GetValue<string>(nameof(RuntimeVersion));
-        R2RMode = info.GetValue<string>(nameof(R2RMode));
+        RuntimeVersion = info.GetValue<string>(nameof(RuntimeVersion)) ?? string.Empty;
+        R2RMode = info.GetValue<string>(nameof(R2RMode)) ?? string.Empty;
     }
 }

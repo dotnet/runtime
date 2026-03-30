@@ -80,11 +80,12 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.True(RuntimeFeature.IsSupported(probedValue));
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public static void DynamicCode_ContextSwitch(bool isDynamicCodeSupported)
         {
+            Assert.SkipUnless(RemoteExecutor.IsSupported, "Requires IsSupported");
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
 

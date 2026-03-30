@@ -1433,15 +1433,12 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public void SignHash_NullSignature_Fails(bool usePss)
         {
-            if (!SupportsPss)
-            {
-                throw new SkipTestException("Platform does not support PSS");
-            }
+            Assert.SkipUnless(SupportsPss, "Platform does not support PSS");
 
             RSASignaturePadding padding = usePss ? RSASignaturePadding.Pss : RSASignaturePadding.Pkcs1;
 
@@ -1464,15 +1461,12 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public void SignData_NullSignature_Fails(bool usePss)
         {
-            if (!SupportsPss)
-            {
-                throw new SkipTestException("Platform does not support PSS");
-            }
+            Assert.SkipUnless(SupportsPss, "Platform does not support PSS");
 
             RSASignaturePadding padding = usePss ? RSASignaturePadding.Pss : RSASignaturePadding.Pkcs1;
 

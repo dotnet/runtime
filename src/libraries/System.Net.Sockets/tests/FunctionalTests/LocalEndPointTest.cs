@@ -3,8 +3,6 @@
 
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Sockets.Tests
 {
     // The test class is declared non-parallel because of possible IPv4/IPv6 port-collision on Unix:

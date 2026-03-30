@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.Tests
 {
     public sealed class CThreads

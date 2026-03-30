@@ -10,7 +10,6 @@ using System.Net.Http.WinHttpHandlerUnitTests;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Http.Tests
 {

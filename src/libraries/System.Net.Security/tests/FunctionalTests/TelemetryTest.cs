@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Security.Tests
 {
@@ -177,7 +178,7 @@ namespace System.Net.Security.Tests
 
                     VerifyEventCounters(events, shouldHaveFailures: false);
                 }
-                catch (SkipTestException)
+                catch (SkipException)
                 {
                     // Don't throw inside RemoteExecutor if SslStream_StreamToStream_Authentication_Success chose to skip the test
                 }
