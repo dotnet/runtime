@@ -216,6 +216,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetRLimit)
     DllImportEntry(SystemNative_SetRLimit)
     DllImportEntry(SystemNative_Kill)
+    DllImportEntry(SystemNative_GetPlatformSIGSTOP)
     DllImportEntry(SystemNative_GetPid)
     DllImportEntry(SystemNative_GetSid)
     DllImportEntry(SystemNative_SysLog)

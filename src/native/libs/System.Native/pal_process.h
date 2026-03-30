@@ -57,13 +57,6 @@ typedef enum
     PAL_RLIMIT_NOFILE = 9,  // Number of open files
 } RLimitResources;
 
-typedef enum
-{
-    PAL_NONE = 0,
-    PAL_SIGKILL = 9, /* kill the specified process */
-    PAL_SIGSTOP = 19,
-} Signals;
-
 /**
  * Constants for passing to the first parameter of syslog.
  * These are a combination of flags where the lower bits are
@@ -154,6 +147,11 @@ PALEXPORT int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLi
  * Returns 0 on success; on failure, -1 is returned and errno is set
  */
 PALEXPORT int32_t SystemNative_Kill(int32_t pid, int32_t signal);
+
+/**
+ * Returns the platform-native signal number for SIGSTOP.
+ */
+PALEXPORT int32_t SystemNative_GetPlatformSIGSTOP(void);
 
 /**
  * Returns the Process ID of the current executing process.

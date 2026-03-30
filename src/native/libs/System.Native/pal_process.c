@@ -3,7 +3,6 @@
 
 #include "pal_config.h"
 #include "pal_process.h"
-#include "pal_signal.h"
 #include "pal_io.h"
 #include "pal_utilities.h"
 
@@ -699,41 +698,12 @@ int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limit
 
 int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
-    if (signal < 0)
-    {
-        // Managed PosixSignal enum uses negative values for named signals.
-        // Convert to the native signal number.
-        signal = SystemNative_GetPlatformSignalNumber((PosixSignal)signal);
-        if (signal == 0)
-        {
-            errno = EINVAL;
-            return -1;
-        }
-    }
-    else
-    {
-        switch (signal)
-        {
-            case PAL_NONE:
-                 signal = 0;
-                 break;
-
-            case PAL_SIGKILL:
-                 signal = SIGKILL;
-                 break;
-
-            case PAL_SIGSTOP:
-                 signal = SIGSTOP;
-                 break;
-
-            default:
-                 assert_msg(false, "Unknown signal", signal);
-                 errno = EINVAL;
-                 return -1;
-        }
-    }
-
     return kill(pid, signal);
+}
+
+int32_t SystemNative_GetPlatformSIGSTOP(void)
+{
+    return SIGSTOP;
 }
 
 int32_t SystemNative_GetPid(void)
