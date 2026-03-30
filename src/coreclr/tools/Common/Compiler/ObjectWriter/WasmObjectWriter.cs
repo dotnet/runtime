@@ -810,8 +810,7 @@ namespace ILCompiler.ObjectWriter
                             long fileOffset = symbolWebcilSection.Header.PointerToRawData + definedSymbol.Value;
                             Relocation.WriteValue(reloc.Type, pData, fileOffset + addend);
                             break;
-                        case RelocType.WASM_MEMORY_ADDR_LEB:
-                        case RelocType.WASM_MEMORY_ADDR_SLEB:
+                        case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                         {
                             // These relocs should be for cases of the form:
                             //  global.get __image_base
@@ -828,8 +827,8 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
                             break;
                         }
-                        case RelocType.WASM_TABLE_INDEX_U32:
-                        case RelocType.WASM_TABLE_INDEX_U64:
+                        case RelocType.WASM_TABLE_INDEX_I32:
+                        case RelocType.WASM_TABLE_INDEX_I64:
                         case RelocType.WASM_TABLE_INDEX_SLEB:
                         {
                             bool exists = _uniqueSymbols.TryGetValue(reloc.SymbolName.ToString(), out int index);
