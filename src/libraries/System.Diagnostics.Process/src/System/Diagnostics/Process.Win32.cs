@@ -20,175 +20,22 @@ namespace System.Diagnostics
         private bool _haveResponding;
         private bool _responding;
 
-        private static bool SupportsAtomicNonInheritablePipeCreation => true;
-
         private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
-            return startInfo.UseShellExecute
-                ? StartWithShellExecuteEx(startInfo)
-                : StartWithCreateProcess(startInfo, stdinHandle, stdoutHandle, stderrHandle);
-        }
+            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle);
 
-        private unsafe bool StartWithShellExecuteEx(ProcessStartInfo startInfo)
-        {
-            if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
-                throw new InvalidOperationException(SR.CantStartAsUser);
-
-            if (startInfo.StandardInputEncoding != null)
-                throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
-
-            if (startInfo.StandardErrorEncoding != null)
-                throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
-
-            if (startInfo.StandardOutputEncoding != null)
-                throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
-
-            if (startInfo._environmentVariables != null)
-                throw new InvalidOperationException(SR.CantUseEnvVars);
-
-            string arguments = startInfo.BuildArguments();
-
-            fixed (char* fileName = startInfo.FileName.Length > 0 ? startInfo.FileName : null)
-            fixed (char* verb = startInfo.Verb.Length > 0 ? startInfo.Verb : null)
-            fixed (char* parameters = arguments.Length > 0 ? arguments : null)
-            fixed (char* directory = startInfo.WorkingDirectory.Length > 0 ? startInfo.WorkingDirectory : null)
+            if (startedProcess.IsInvalid)
             {
-                Interop.Shell32.SHELLEXECUTEINFO shellExecuteInfo = new Interop.Shell32.SHELLEXECUTEINFO()
-                {
-                    cbSize = (uint)sizeof(Interop.Shell32.SHELLEXECUTEINFO),
-                    lpFile = fileName,
-                    lpVerb = verb,
-                    lpParameters = parameters,
-                    lpDirectory = directory,
-                    fMask = Interop.Shell32.SEE_MASK_NOCLOSEPROCESS | Interop.Shell32.SEE_MASK_FLAG_DDEWAIT
-                };
-
-                if (startInfo.ErrorDialog)
-                    shellExecuteInfo.hwnd = startInfo.ErrorDialogParentHandle;
-                else
-                    shellExecuteInfo.fMask |= Interop.Shell32.SEE_MASK_FLAG_NO_UI;
-
-                shellExecuteInfo.nShow = GetShowWindowFromWindowStyle(startInfo.WindowStyle);
-                ShellExecuteHelper executeHelper = new ShellExecuteHelper(&shellExecuteInfo);
-                if (!executeHelper.ShellExecuteOnSTAThread())
-                {
-                    int errorCode = executeHelper.ErrorCode;
-                    if (errorCode == 0)
-                    {
-                        errorCode = GetShellError(shellExecuteInfo.hInstApp);
-                    }
-
-                    switch (errorCode)
-                    {
-                        case Interop.Errors.ERROR_CALL_NOT_IMPLEMENTED:
-                            // This happens on Windows Nano
-                            throw new PlatformNotSupportedException(SR.UseShellExecuteNotSupported);
-                        default:
-                            string nativeErrorMessage = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
-                                ? SR.InvalidApplication
-                                : GetErrorMessage(errorCode);
-
-                            throw CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, startInfo.WorkingDirectory);
-                    }
-                }
-
-                if (shellExecuteInfo.hProcess != IntPtr.Zero)
-                {
-                    SetProcessHandle(new SafeProcessHandle(shellExecuteInfo.hProcess));
-                    return true;
-                }
+                Debug.Assert(startInfo.UseShellExecute);
+                return false;
             }
 
-            return false;
-        }
-
-        private static int GetShowWindowFromWindowStyle(ProcessWindowStyle windowStyle) => windowStyle switch
-        {
-            ProcessWindowStyle.Hidden => Interop.Shell32.SW_HIDE,
-            ProcessWindowStyle.Minimized => Interop.Shell32.SW_SHOWMINIMIZED,
-            ProcessWindowStyle.Maximized => Interop.Shell32.SW_SHOWMAXIMIZED,
-            _ => Interop.Shell32.SW_SHOWNORMAL,
-        };
-
-        private static int GetShellError(IntPtr error)
-        {
-            switch ((long)error)
+            SetProcessHandle(startedProcess);
+            if (!startInfo.UseShellExecute)
             {
-                case Interop.Shell32.SE_ERR_FNF:
-                    return Interop.Errors.ERROR_FILE_NOT_FOUND;
-                case Interop.Shell32.SE_ERR_PNF:
-                    return Interop.Errors.ERROR_PATH_NOT_FOUND;
-                case Interop.Shell32.SE_ERR_ACCESSDENIED:
-                    return Interop.Errors.ERROR_ACCESS_DENIED;
-                case Interop.Shell32.SE_ERR_OOM:
-                    return Interop.Errors.ERROR_NOT_ENOUGH_MEMORY;
-                case Interop.Shell32.SE_ERR_DDEFAIL:
-                case Interop.Shell32.SE_ERR_DDEBUSY:
-                case Interop.Shell32.SE_ERR_DDETIMEOUT:
-                    return Interop.Errors.ERROR_DDE_FAIL;
-                case Interop.Shell32.SE_ERR_SHARE:
-                    return Interop.Errors.ERROR_SHARING_VIOLATION;
-                case Interop.Shell32.SE_ERR_NOASSOC:
-                    return Interop.Errors.ERROR_NO_ASSOCIATION;
-                case Interop.Shell32.SE_ERR_DLLNOTFOUND:
-                    return Interop.Errors.ERROR_DLL_NOT_FOUND;
-                default:
-                    return (int)(long)error;
+                SetProcessId(startedProcess.ProcessId);
             }
-        }
-
-        internal sealed unsafe class ShellExecuteHelper
-        {
-            private readonly Interop.Shell32.SHELLEXECUTEINFO* _executeInfo;
-            private bool _succeeded;
-            private bool _notpresent;
-
-            public ShellExecuteHelper(Interop.Shell32.SHELLEXECUTEINFO* executeInfo)
-            {
-                _executeInfo = executeInfo;
-            }
-
-            private void ShellExecuteFunction()
-            {
-                try
-                {
-                    if (!(_succeeded = Interop.Shell32.ShellExecuteExW(_executeInfo)))
-                        ErrorCode = Marshal.GetLastWin32Error();
-                }
-                catch (EntryPointNotFoundException)
-                {
-                    _notpresent = true;
-                }
-            }
-
-            public bool ShellExecuteOnSTAThread()
-            {
-                // ShellExecute() requires STA in order to work correctly.
-
-                if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
-                {
-                    ThreadStart threadStart = new ThreadStart(ShellExecuteFunction);
-                    Thread executionThread = new Thread(threadStart)
-                    {
-                        IsBackground = true,
-                        Name = ".NET Process STA"
-                    };
-                    executionThread.SetApartmentState(ApartmentState.STA);
-                    executionThread.Start();
-                    executionThread.Join();
-                }
-                else
-                {
-                    ShellExecuteFunction();
-                }
-
-                if (_notpresent)
-                    throw new PlatformNotSupportedException(SR.UseShellExecuteNotSupported);
-
-                return _succeeded;
-            }
-
-            public int ErrorCode { get; private set; }
+            return true;
         }
 
         private string GetMainWindowTitle()

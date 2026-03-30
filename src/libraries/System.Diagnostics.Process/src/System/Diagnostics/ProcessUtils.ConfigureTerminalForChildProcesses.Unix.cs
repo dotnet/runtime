@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace System.Diagnostics
 {
-    public partial class Process
+    internal static partial class ProcessUtils
     {
         private static int s_childrenUsingTerminalCount;
 
@@ -17,7 +17,7 @@ namespace System.Diagnostics
             int childrenUsingTerminalRemaining = Interlocked.Add(ref s_childrenUsingTerminalCount, increment);
             if (increment > 0)
             {
-                Debug.Assert(ProcessUtils.s_processStartLock.IsReadLockHeld);
+                Debug.Assert(s_processStartLock.IsReadLockHeld);
                 Debug.Assert(configureConsole);
 
                 // At least one child is using the terminal.
@@ -25,7 +25,7 @@ namespace System.Diagnostics
             }
             else
             {
-                Debug.Assert(ProcessUtils.s_processStartLock.IsWriteLockHeld);
+                Debug.Assert(s_processStartLock.IsWriteLockHeld);
 
                 if (childrenUsingTerminalRemaining == 0 && configureConsole)
                 {
@@ -44,7 +44,7 @@ namespace System.Diagnostics
         private static void DelayedSigChildConsoleConfiguration()
         {
             // Lock to avoid races with Process.Start
-            ProcessUtils.s_processStartLock.EnterWriteLock();
+            s_processStartLock.EnterWriteLock();
             try
             {
                 if (s_childrenUsingTerminalCount == 0)
@@ -55,7 +55,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                ProcessUtils.s_processStartLock.ExitWriteLock();
+                s_processStartLock.ExitWriteLock();
             }
         }
 
