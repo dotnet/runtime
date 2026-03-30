@@ -579,6 +579,8 @@ Flag discrepancies with the following severity:
 - **Consider NativeAOT parity for runtime changes.** When changing CoreCLR behavior, verify whether the same change is needed for NativeAOT.
   > "The code you have changed is not used on NativeAOT. Do we need the same change for NativeAOT as well?" — jkotas
 
+- **R2R and NativeAOT P/Invoke IL emission must stay aligned.** When adding new IL stub logic to the R2R `PInvokeILEmitter` (e.g., platform-specific exception checks, new marshalling helpers), verify the same logic exists in the shared `Common/TypeSystem/IL/Stubs/PInvokeILEmitter.cs` used by NativeAOT. Divergence between the two emitters causes subtle behavioral differences between R2R and NativeAOT compilation modes.
+
 - **Keep interpreter behavior consistent with the regular JIT.** Follow the same patterns, naming, error codes (`CORJIT_BADCODE`), and macros (`NO_WAY`). Use `FEATURE_INTERPRETER` guards.
   > "Should we call it NO_WAY like in a regular JIT? I think the more similar the interpreter JIT to the regular JIT, the better." — jkotas
 
@@ -630,6 +632,10 @@ Flag discrepancies with the following severity:
 
 - **Follow naming conventions for regression test directories.** In `src/tests/Regressions/coreclr/`, use `GitHub_<issue_number>` for the directory and `test<issue_number>` for the test name.
   > "Please follow the pre-existing pattern for naming. The directory name should be GitHub_122933 and the test name should be test122933." — jkotas
+
+- **R2R map validation must check `MethodWithGCInfo`, not `MethodFixupSignature`.** When a ReadyToRun test asserts a method was precompiled into the R2R image, the assertion must check for `MethodWithGCInfo` entries in the crossgen2 `--map` output. `MethodFixupSignature` and `DelayLoadHelperImport` entries are metadata references that exist regardless of whether the method body was actually compiled to native code. See `src/tests/readytorun/README.md` for details.
+
+- **R2R tests that change P/Invoke compilation behavior need both map validation and runtime verification.** A map test proves stubs were precompiled; a runtime test proves they work correctly. For example, adding R2R support for a new P/Invoke category should include both a `--map` check (proving precompilation) and verification that the precompiled stub's behavior matches the JIT-compiled version (e.g., exception propagation, marshalling correctness).
 
 ---
 
@@ -729,3 +735,11 @@ Flag discrepancies with the following severity:
 
 - **Prefer 4-byte `BOOL` for native interop marshalling.** Use `UnmanagedType.Bool`. Verify P/Invoke return types match native signatures exactly—mismatches may work on 64-bit but fail on 32-bit/WASM.
   > "bool marshalling has always been bug prone area. The 4-byte bool (UnmanagedType.Bool) tends to be the least bug-prone option." — jkotas
+
+- **R2R P/Invoke stubs that call CoreLib helpers require `--inputbubble`.** When crossgen2 generates IL stubs that reference CoreLib methods (e.g., `ThrowPendingExceptionObject` for ObjC exception checks, `SetLastError` support), the input assembly must be compiled with `--inputbubble` so crossgen2 can create cross-module fixups. Without it, `ModuleTokenResolver.GetModuleTokenForMethod` throws `NotImplementedException` for methods the input assembly doesn't already reference. See `docs/design/features/readytorun-pinvoke.md`.
+
+- **Verify `IsMarshallingRequired` prevents JIT from inlining past R2R P/Invoke stubs.** When a P/Invoke stub contains safety logic (exception checks, GC transitions), `PInvokeILStubMethodIL.IsMarshallingRequired` must return `true`. The JIT checks `pInvokeMarshalingRequired` to decide whether to use the precompiled stub or inline a raw native call (`GTF_CALL_UNMANAGED`). If `IsMarshallingRequired` is `false` for a blittable P/Invoke, the JIT will inline the raw call and silently skip the stub's safety logic.
+
+- **Separate marshalling requirements from platform-specific stub requirements.** `Marshaller.IsMarshallingRequired` should only return `true` when actual data marshalling is needed (non-blittable parameters, `SetLastError`, non-`PreserveSig`). Platform-specific stub requirements — like ObjC pending exception checks — are not marshalling concerns and should not be injected into `Marshaller.IsMarshallingRequired`. Instead, set `PInvokeILStubMethodIL.IsMarshallingRequired` directly. Mixing these concerns creates fragile transitive coupling: if the marshalling check is later cleaned up (because the P/Invoke is blittable), the platform-specific JIT inlining protection silently breaks. Check whether the safety invariant depends on a check being in the right abstraction layer or merely happens to work via a side effect in a different layer.
+
+- **P/Invoke platform detection strings must match `MarshalHelpers.cs` exactly.** `ShouldCheckForPendingException` in `MarshalHelpers.cs` matches specific module paths (e.g., `"/usr/lib/libobjc.dylib"`) and entrypoint prefixes (e.g., `"objc_msgSend"`). Using an alias like `"libobjc.dylib"` in a `DllImport` attribute will bypass the detection entirely, causing the platform-specific code path to never trigger.
