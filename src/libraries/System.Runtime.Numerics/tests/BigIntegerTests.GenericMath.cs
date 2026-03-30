@@ -308,6 +308,19 @@ namespace System.Numerics.Tests
             // -(2^64): one's complement of upper limbs = all 1s, lowest limb = 0 → PopCount depends on limb count
             Assert.Equal((BigInteger)32, BigInteger.PopCount(-BigInteger.Parse("010000000000000000", Globalization.NumberStyles.HexNumber)));
 
+            // Mixed-bit negative multiword cases: exercises the PopCount formula
+            // PopCount(2^W - m) = W - PopCount(m) - TZC(m) + 1 with non-trivial magnitudePopCount and magnitudeTZC.
+            // -(2^32 + 7): magnitude [0x00000007, 0x00000001], W=64, PopCount(m)=4, TZC(m)=0 → 64-4-0+1 = 61
+            Assert.Equal((BigInteger)61, BigInteger.PopCount(-(BigInteger.Pow(2, 32) + 7)));
+            // -(2^33 + 5): magnitude [0x00000005, 0x00000002], W=64, PopCount(m)=3, TZC(m)=0 → 64-3-0+1 = 62
+            Assert.Equal((BigInteger)62, BigInteger.PopCount(-(BigInteger.Pow(2, 33) + 5)));
+            // -(2^64 + 3): magnitude [0x00000003, 0x00000000, 0x00000001], W=96, PopCount(m)=3, TZC(m)=0 → 96-3-0+1 = 94
+            Assert.Equal((BigInteger)94, BigInteger.PopCount(-(BigInteger.Pow(2, 64) + 3)));
+            // -(2^64 + 4): magnitude with non-trivial TZC, W=96, PopCount(m)=2, TZC(m)=2 → 96-2-2+1 = 93
+            Assert.Equal((BigInteger)93, BigInteger.PopCount(-(BigInteger.Pow(2, 64) + 4)));
+            // -(2^65 + 12): magnitude with mixed bits and TZC=2, W=96, PopCount(m)=3, TZC(m)=2 → 96-3-2+1 = 92
+            Assert.Equal((BigInteger)92, BigInteger.PopCount(-(BigInteger.Pow(2, 65) + 12)));
+
             // Results must be the same on 32-bit and 64-bit platforms.
             Assert.Equal((BigInteger)0, BigInteger.PopCount(BigInteger.Zero));
             Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.One));
