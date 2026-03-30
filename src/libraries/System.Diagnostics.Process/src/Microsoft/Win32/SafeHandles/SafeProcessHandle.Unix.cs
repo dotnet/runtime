@@ -64,7 +64,7 @@ namespace Microsoft.Win32.SafeHandles
             SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
 
             // For standalone SafeProcessHandle.Start, we dispose the wait state holder immediately.
-            // The DangerousAddRef on the SafeWaitHandle (Unix) keeps the OS handle alive.
+            // The DangerousAddRef on the SafeWaitHandle (Unix) keeps the handle alive.
             waitStateHolder?.Dispose();
 
             return startedProcess;
