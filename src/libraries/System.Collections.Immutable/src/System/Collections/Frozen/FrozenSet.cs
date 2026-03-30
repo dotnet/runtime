@@ -238,7 +238,9 @@ namespace System.Collections.Frozen
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
     [DebuggerDisplay("Count = {Count}")]
     public abstract partial class FrozenSet<T> : ISet<T>,
+#if NET
         IReadOnlySet<T>,
+#endif
         IReadOnlyCollection<T>, ICollection
     {
         /// <summary>Initialize the set.</summary>
