@@ -59,6 +59,10 @@ namespace Microsoft.Win32.SafeHandles
         // On Unix, we don't use process descriptors yet, so we can't get PID.
         private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
 
+        // Allows for StartWithShellExecute (and its dependencies) to be trimmed when UseShellExecute is not being used.
+        // On Unix, standard I/O handles are passed through to the shell process.
+        internal static Func<ProcessStartInfo, SafeFileHandle?, SafeFileHandle?, SafeFileHandle?, SafeProcessHandle>? s_startWithShellExecute;
+
         private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             SafeProcessHandle startedProcess = StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
@@ -123,9 +127,6 @@ namespace Microsoft.Win32.SafeHandles
                 stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
                 out waitStateHolder);
         }
-
-        internal static void EnsureShellExecuteFunc() =>
-            s_startWithShellExecute ??= StartWithShellExecute;
 
         private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {

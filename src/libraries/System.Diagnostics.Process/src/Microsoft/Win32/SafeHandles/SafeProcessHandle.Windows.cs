@@ -17,10 +17,14 @@ namespace Microsoft.Win32.SafeHandles
             return Interop.Kernel32.CloseHandle(handle);
         }
 
+        // Allows for StartWithShellExecute (and its dependencies) to be trimmed when UseShellExecute is not being used.
+        // On Windows, StartWithShellExecute does not use standard I/O handles.
+        internal static Func<ProcessStartInfo, SafeProcessHandle>? s_startWithShellExecute;
+
         internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             if (startInfo.UseShellExecute)
-                return s_startWithShellExecute!(startInfo, stdinHandle, stdoutHandle, stderrHandle);
+                return s_startWithShellExecute!(startInfo);
 
             // See knowledge base article Q190351 for an explanation of the following code.  Noteworthy tricky points:
             //    * The handles are duplicated as inheritable before they are passed to CreateProcess so
@@ -207,10 +211,7 @@ namespace Microsoft.Win32.SafeHandles
             return procSH;
         }
 
-        internal static void EnsureShellExecuteFunc() =>
-            s_startWithShellExecute ??= StartWithShellExecute;
-
-        private static unsafe SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        private static unsafe SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo)
         {
             if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
                 throw new InvalidOperationException(SR.CantStartAsUser);
@@ -311,26 +312,25 @@ namespace Microsoft.Win32.SafeHandles
                 // "In some cases, such as when execution is satisfied through a DDE conversation, no handle will be returned."
                 // Process.Start will return false if the handle is invalid.
                 return new SafeProcessHandle(shellExecuteInfo.hProcess);
+
+                static int GetShellError(IntPtr error) =>
+                    (long)error switch
+                    {
+                        Interop.Shell32.SE_ERR_FNF => Interop.Errors.ERROR_FILE_NOT_FOUND,
+                        Interop.Shell32.SE_ERR_PNF => Interop.Errors.ERROR_PATH_NOT_FOUND,
+                        Interop.Shell32.SE_ERR_ACCESSDENIED => Interop.Errors.ERROR_ACCESS_DENIED,
+                        Interop.Shell32.SE_ERR_OOM => Interop.Errors.ERROR_NOT_ENOUGH_MEMORY,
+                        Interop.Shell32.SE_ERR_DDEFAIL or
+                        Interop.Shell32.SE_ERR_DDEBUSY or
+                        Interop.Shell32.SE_ERR_DDETIMEOUT => Interop.Errors.ERROR_DDE_FAIL,
+                        Interop.Shell32.SE_ERR_SHARE => Interop.Errors.ERROR_SHARING_VIOLATION,
+                        Interop.Shell32.SE_ERR_NOASSOC => Interop.Errors.ERROR_NO_ASSOCIATION,
+                        Interop.Shell32.SE_ERR_DLLNOTFOUND => Interop.Errors.ERROR_DLL_NOT_FOUND,
+                        _ => (int)(long)error,
+                    };
             }
         }
 
         private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
-        private static int GetShellError(IntPtr error)
-        {
-            return (long)error switch
-            {
-                Interop.Shell32.SE_ERR_FNF => Interop.Errors.ERROR_FILE_NOT_FOUND,
-                Interop.Shell32.SE_ERR_PNF => Interop.Errors.ERROR_PATH_NOT_FOUND,
-                Interop.Shell32.SE_ERR_ACCESSDENIED => Interop.Errors.ERROR_ACCESS_DENIED,
-                Interop.Shell32.SE_ERR_OOM => Interop.Errors.ERROR_NOT_ENOUGH_MEMORY,
-                Interop.Shell32.SE_ERR_DDEFAIL or
-                Interop.Shell32.SE_ERR_DDEBUSY or
-                Interop.Shell32.SE_ERR_DDETIMEOUT => Interop.Errors.ERROR_DDE_FAIL,
-                Interop.Shell32.SE_ERR_SHARE => Interop.Errors.ERROR_SHARING_VIOLATION,
-                Interop.Shell32.SE_ERR_NOASSOC => Interop.Errors.ERROR_NO_ASSOCIATION,
-                Interop.Shell32.SE_ERR_DLLNOTFOUND => Interop.Errors.ERROR_DLL_NOT_FOUND,
-                _ => (int)(long)error,
-            };
-        }
     }
 }
