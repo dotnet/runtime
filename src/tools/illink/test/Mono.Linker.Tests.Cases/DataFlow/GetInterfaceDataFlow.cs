@@ -16,6 +16,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             GetInterface_Name.Test();
             GetInterface_Name_IgnoreCase.Test();
+            GetInterfaceMap_DataFlow.Test();
         }
 
         class GetInterface_Name
@@ -181,6 +182,44 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 TestWithAll(typeof(TestType));
                 TestKnownType();
                 TestMultipleValues(0, typeof(TestType));
+            }
+        }
+
+        class GetInterfaceMap_DataFlow
+        {
+            [ExpectedWarning("IL2072", nameof(Type.GetInterfaceMap))]
+            static void TestDirectCall()
+            {
+                var @interface = typeof(TestType).GetInterfaces()[0];
+                _ = typeof(TestType).GetInterfaceMap(@interface);
+            }
+
+            [ExpectedWarning("IL2072", nameof(Type.GetInterfaceMap))]
+            static void TestFieldAccess()
+            {
+                var @interface = typeof(TestType).GetInterfaces()[0];
+                _ = typeof(TestType).GetInterfaceMap(@interface).TargetMethods;
+            }
+
+            [ExpectedWarning("IL2072", nameof(Type.GetInterfaceMap))]
+            static void TestMultipleFieldAccess()
+            {
+                var @interface = typeof(TestType).GetInterfaces()[0];
+                _ = typeof(TestType).GetInterfaceMap(@interface).TargetMethods.Length;
+            }
+
+            static void TestWithAnnotation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
+            {
+                _ = typeof(TestType).GetInterfaceMap(interfaceType);
+                _ = typeof(TestType).GetInterfaceMap(interfaceType).TargetMethods;
+            }
+
+            public static void Test()
+            {
+                TestDirectCall();
+                TestFieldAccess();
+                TestMultipleFieldAccess();
+                TestWithAnnotation(null);
             }
         }
 
