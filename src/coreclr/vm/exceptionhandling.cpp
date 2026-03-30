@@ -3684,23 +3684,9 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
         }
         else
         {
-            // The debugger explicitly checks that the notification refers to a FuncEvalFrame in case an exception becomes unhandled in a func eval.
-            // We need to do the notification here before we start propagating the exception through native frames, since that will remove
-            // all managed frames from the stack and the debugger would not see the failure location.
-            if (pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION)
-            {
-                Frame* pFrame = pThis->m_crawl.GetFrame();
-                // If the frame is ProtectValueClassFrame, move to the next one as we want to report the FuncEvalFrame
-                if (pFrame->GetFrameIdentifier() == FrameIdentifier::ProtectValueClassFrame)
-                {
-                    pFrame = pFrame->PtrNextFrame();
-                    _ASSERTE(pFrame != FRAME_TOP);
-                }
-                if ((pFrame->GetFrameIdentifier() == FrameIdentifier::FuncEvalFrame) || IsTopmostDebuggerU2MCatchHandlerFrame(pFrame))
-                {
-                    EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pExInfo->m_ptrs, pFrame);
-                }
-            }
+            // FuncEvalFrame / DebuggerU2MCatchHandlerFrame detection has been moved to SfiNextWorker
+            // where it runs during pass 1 at the native transition boundary with live iterator state.
+            // See the DEBUGGING_SUPPORTED block in SfiNextWorker's isPropagatingToNativeCode path.
         }
     }
 }
@@ -4052,6 +4038,29 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
 #endif
                 }
             }
+
+            // When the exception is propagating to native code during pass 1, notify the debugger if the next
+            // explicit frame is a FuncEvalFrame or DebuggerU2MCatchHandlerFrame. The debugger needs this notification
+            // while the managed stack frames are still present so it can inspect the failure location.
+            // This was previously done in NotifyExceptionPassStarted using stale StackFrameIterator state, but the
+            // iterator is no longer guaranteed to be in SFITER_FRAME_FUNCTION state at that point. Here, we have
+            // live iterator state and direct access to the frame chain.
+#if defined(DEBUGGING_SUPPORTED)
+            if (pTopExInfo->m_passNumber == 1 && pFrame != FRAME_TOP)
+            {
+                Frame* pNotifyFrame = pFrame;
+                // Skip ProtectValueClassFrame — we want to report the FuncEvalFrame behind it
+                if (pNotifyFrame->GetFrameIdentifier() == FrameIdentifier::ProtectValueClassFrame)
+                {
+                    pNotifyFrame = pNotifyFrame->PtrNextFrame();
+                    _ASSERTE(pNotifyFrame != FRAME_TOP);
+                }
+                if ((pNotifyFrame->GetFrameIdentifier() == FrameIdentifier::FuncEvalFrame) || IsTopmostDebuggerU2MCatchHandlerFrame(pNotifyFrame))
+                {
+                    EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs, pNotifyFrame);
+                }
+            }
+#endif // DEBUGGING_SUPPORTED
 
             *pfIsExceptionIntercepted = FALSE;
 
