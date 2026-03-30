@@ -2255,7 +2255,7 @@ class FlowGraphTryRegion
 
     // Edges from blocks outside the try region to blocks inside the try region.
     // This includes edges from any catch handler, and edges from some ancestor
-    // region to some decendant region.
+    // region to some descendant region.
     jitstd::vector<FlowEdge*> m_entryEdges;
 
     bool m_requiresRuntimeResumption;
@@ -2295,7 +2295,7 @@ public:
         return m_ehDsc->HasCatchHandler();
     }
 
-    const jitstd::vector<FlowEdge*>& EntryEdges()
+    const jitstd::vector<FlowEdge*>& EntryEdges() const
     {
         return m_entryEdges;
     }

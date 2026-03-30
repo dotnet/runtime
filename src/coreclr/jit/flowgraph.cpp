@@ -7770,7 +7770,7 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 // FlowGraphTryRegion::NumBlocks: Return the number of blocks in the try region.
 //
 // Returns:
-//    Number of blcoks in the region at the time of FlowGraphTryRegions::Build
+//    Number of blocks in the region at the time of FlowGraphTryRegions::Build
 //    Includes blocks in enclosed try regions. Includes blocks in enclosed
 //    handler regions, if FlowGraphTryRegions::Build was called with includeHandlerBlocks == true.
 //
