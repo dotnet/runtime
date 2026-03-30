@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <linux_ChromeVersion>146.0.7680.80</linux_ChromeVersion>
+    <linux_ChromeVersion>146.0.7680.153</linux_ChromeVersion>
     <linux_ChromeRevision>1582197</linux_ChromeRevision>
     <linux_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1582214</linux_ChromeBaseSnapshotUrl>
     <linux_V8Version>14.6.202</linux_V8Version>
