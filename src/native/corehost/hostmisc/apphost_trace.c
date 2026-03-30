@@ -17,13 +17,30 @@
 #define trace_snprintf(buf, count, fmt, ...) _snwprintf_s(buf, count, _TRUNCATE, fmt, __VA_ARGS__)
 #define trace_strlen wcslen
 #else
-#include "apphost_pal.h"
-#define trace_getenv(name, buf, buf_len) pal_getenv(name, buf, buf_len)
-#define trace_xtoi(s) pal_xtoi(s)
+#define trace_xtoi(s) atoi(s)
 #define trace_vsnprintf_len(fmt, args) vsnprintf(NULL, 0, fmt, args)
 #define trace_vsnprintf(buf, count, fmt, args) vsnprintf(buf, (size_t)(count), fmt, args)
 #define trace_snprintf(buf, count, fmt, ...) snprintf(buf, (size_t)(count), fmt, __VA_ARGS__)
 #define trace_strlen strlen
+
+static bool trace_getenv(const char* name, char* recv, size_t recv_len)
+{
+    if (recv_len > 0)
+        recv[0] = '\0';
+
+    const char* result = getenv(name);
+    if (result != NULL && result[0] != '\0')
+    {
+        size_t len = strlen(result);
+        if (len >= recv_len)
+            return false;
+
+        memcpy(recv, result, len + 1);
+        return true;
+    }
+
+    return false;
+}
 #endif
 
 #define TRACE_VERBOSITY_WARN 2
