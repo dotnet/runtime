@@ -560,19 +560,92 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     }
 #endif // _DEBUG
 
+    // Classify the method's return type to determine if it needs async variant handling.
+    // For runtime-async methods (IsMiAsync) that return Task/ValueTask, we need to create
+    // two MethodDescs: the task-returning variant and the async call variant.
+    ULONG sigLen;
+    PCCOR_SIGNATURE pMemberSignature;
+    if (FAILED(pImport->GetSigOfMethodDef(methodDef, &sigLen, &pMemberSignature)))
+        return COR_E_BADIMAGEFORMAT;
+
+    ULONG offsetOfAsyncDetails = 0;
+    bool returnsValueTask = false;
+    MethodReturnKind returnKind;
+    {
+        // ClassifyMethodReturnKind calls IsTypeDefOrRefImplementedInSystemModule which
+        // does type resolution that may trigger GC. We're in a GC_NOTRIGGER scope because
+        // the CLR is suspended for debugging, but this resolution is safe since we're only
+        // resolving well-known system types (Task/ValueTask). This mirrors the existing
+        // CONTRACT_VIOLATION(GCViolation) in ApplyEditAndContinue.
+        CONTRACT_VIOLATION(GCViolation);
+        returnKind = ClassifyMethodReturnKind(
+            SigPointer(pMemberSignature, sigLen), pModule, &offsetOfAsyncDetails, &returnsValueTask);
+    }
+
+    bool isAsyncTaskReturning = IsMiAsync(dwImplFlags) && IsTaskReturning(returnKind);
+
+    // Create the primary MethodDesc (task-returning variant for async, or the only variant for non-async)
+    AsyncMethodFlags primaryAsyncFlags = AsyncMethodFlags::None;
+    if (isAsyncTaskReturning)
+    {
+        // For IsMiAsync + task-returning: the task-returning variant is a thunk,
+        // the real IL body belongs to the async variant.
+        primaryAsyncFlags = AsyncMethodFlags::ReturnsTaskOrValueTask | AsyncMethodFlags::Thunk;
+    }
+    else if (IsMiAsync(dwImplFlags))
+    {
+        // IsMiAsync but not task-returning: infrastructure async method (e.g. Await helpers)
+        primaryAsyncFlags = AsyncMethodFlags::AsyncCall;
+    }
+
     MethodDesc* pNewMD;
-    if (FAILED(hr = AddMethodDesc(pMT, methodDef, dwImplFlags, dwMemberAttrs, &pNewMD)))
+    if (FAILED(hr = AddMethodDesc(pMT, methodDef, dwImplFlags, dwMemberAttrs,
+                                  primaryAsyncFlags, NULL, 0, &pNewMD)))
     {
         LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod failed: 0x%08x\n", hr));
         return hr;
     }
 
-    // Store the new MethodDesc into the collection for this class
+    // Store the task-returning (or only) variant in the module's method lookup.
+    // The async variant is found via IntroducedMethodIterator, not stored here.
     pModule->EnsureMethodDefCanBeStored(methodDef);
     pModule->EnsuredStoreMethodDef(methodDef, pNewMD);
 
     LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Added pMD:%p for token 0x%08x\n",
         pNewMD, methodDef));
+
+    // For runtime-async task-returning methods, create the async call variant.
+    // This mirrors what MethodTableBuilder does in the second pass of its method enumeration loop.
+    if (isAsyncTaskReturning)
+    {
+        AsyncMethodFlags asyncFlags = AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant;
+        if (returnsValueTask)
+            asyncFlags |= AsyncMethodFlags::IsAsyncVariantForValueTask;
+
+        // For IsMiAsync methods, the async variant has the real IL body (not a thunk).
+        // The task-returning variant above is the thunk.
+
+        // Construct the async variant signature by stripping the Task/ValueTask wrapper.
+        ULONG cAsyncSig;
+        BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
+                                   nullptr, &cAsyncSig);
+
+        LoaderAllocator* pAllocator = pMT->GetLoaderAllocator();
+        BYTE* pNewSig = (BYTE*)(void*)pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cAsyncSig));
+        BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
+                                   pNewSig, &cAsyncSig);
+
+        MethodDesc* pAsyncVariantMD;
+        if (FAILED(hr = AddMethodDesc(pMT, methodDef, dwImplFlags, dwMemberAttrs,
+                                      asyncFlags, pNewSig, cAsyncSig, &pAsyncVariantMD)))
+        {
+            LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod failed to add async variant: 0x%08x\n", hr));
+            return hr;
+        }
+
+        LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Added async variant pMD:%p for token 0x%08x\n",
+            pAsyncVariantMD, methodDef));
+    }
 
     // If the type is generic, then we need to update all existing instantiated types
     if (pMT->IsGenericTypeDefinition())
@@ -607,7 +680,8 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
                 }
 
                 MethodDesc* pNewMDUnused;
-                if (FAILED(AddMethodDesc(pMTMaybe, methodDef, dwImplFlags, dwMemberAttrs, &pNewMDUnused)))
+                if (FAILED(AddMethodDesc(pMTMaybe, methodDef, dwImplFlags, dwMemberAttrs,
+                                         primaryAsyncFlags, NULL, 0, &pNewMDUnused)))
                 {
                     LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod failed: 0x%08x\n", hr));
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST,
@@ -634,6 +708,9 @@ HRESULT EEClass::AddMethodDesc(
     mdMethodDef methodDef,
     DWORD dwImplFlags,
     DWORD dwMemberAttrs,
+    AsyncMethodFlags asyncFlags,
+    PCCOR_SIGNATURE pAsyncSig,
+    DWORD cbAsyncSig,
     MethodDesc** ppNewMD)
 {
     CONTRACTL
@@ -660,16 +737,12 @@ HRESULT EEClass::AddMethodDesc(
     if (FAILED(hr = pImport->GetSigOfMethodDef(methodDef, &sigLen, &sig)))
         return hr;
 
-    if (IsMiAsync(dwImplFlags))
-    {
-        LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
-        return E_FAIL;
-    }
-
     uint32_t callConv = CorSigUncompressData(sig);
     DWORD classification = (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
         ? mcInstantiated
         : mcIL;
+
+    bool hasAsyncData = (asyncFlags != AsyncMethodFlags::None);
 
     LoaderAllocator* pAllocator = pMT->GetLoaderAllocator();
 
@@ -684,7 +757,7 @@ HRESULT EEClass::AddMethodDesc(
                                                             classification,
                                                             TRUE, // fNonVtableSlot
                                                             TRUE, // fNativeCodeSlot
-                                                            FALSE, /* HasAsyncMethodData */
+                                                            hasAsyncData, /* HasAsyncMethodData */
                                                             pMT,
                                                             &dummyAmTracker);
 
@@ -733,8 +806,8 @@ HRESULT EEClass::AddMethodDesc(
                                 0,      // RVA - non-zero only for PInvoke
                                 pImport,
                                 NULL,
-                                Signature(),
-                                AsyncMethodFlags::None
+                                Signature(pAsyncSig, cbAsyncSig),
+                                asyncFlags
                                 COMMA_INDEBUG(debug_szMethodName)
                                 COMMA_INDEBUG(pMT->GetDebugClassName())
                                 COMMA_INDEBUG(NULL)
