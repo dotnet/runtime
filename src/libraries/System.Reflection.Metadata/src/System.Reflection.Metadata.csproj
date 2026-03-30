@@ -93,6 +93,7 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\PortableExecutable\ResourceSectionBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\SectionLocation.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\BlobUtilities.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\Polyfills.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
   </ItemGroup>
 
   <ItemGroup>

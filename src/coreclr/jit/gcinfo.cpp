@@ -416,6 +416,7 @@ GCInfo::regPtrDsc* GCInfo::gcRegPtrAllocDsc()
 struct NoGCRegionCounter
 {
     unsigned noGCRegionCount;
+    unsigned lastEndOffs = -1;
 
     NoGCRegionCounter()
         : noGCRegionCount(0)
@@ -425,7 +426,11 @@ struct NoGCRegionCounter
     // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
     bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
     {
-        noGCRegionCount++;
+        if (lastEndOffs != igOffs)
+        {
+            noGCRegionCount++;
+        }
+        lastEndOffs = igOffs + igSize;
         return true;
     }
 };

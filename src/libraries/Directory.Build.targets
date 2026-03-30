@@ -127,9 +127,21 @@
                                                 '$(IsGeneratorProject)' != 'true'">true</SkipTargetingPackShimReferences>
   </PropertyGroup>
 
-  <!-- Enable runtime async for source projects when UseRuntimeAsync is set. -->
-  <PropertyGroup Condition="'$(UseRuntimeAsync)' == 'true' and '$(IsSourceProject)' == 'true'">
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+  <!-- Define a shared predicate for platforms that support runtime async. -->
+  <PropertyGroup Condition="'$(RuntimeAsyncSupported)' == ''">
+    <RuntimeAsyncSupported Condition="'$(TargetOS)' != 'browser'
+      and '$(TargetOS)' != 'wasi'
+      and '$(TargetOS)' != 'android'
+      and '$(TargetsAppleMobile)' != 'true'
+      and '$(RuntimeFlavor)' != 'Mono'">true</RuntimeAsyncSupported>
+  </PropertyGroup>
+
+  <!-- Enable runtime async for netcoreapp source projects, excluding unsupported platforms and OOB packages. -->
+  <PropertyGroup Condition="'$(IsNETCoreAppSrc)' == 'true'
+    and '$(IsPackable)' != 'true'
+    and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))
+    and '$(UseRuntimeAsync)' != 'false'
+    and '$(RuntimeAsyncSupported)' == 'true'">
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
