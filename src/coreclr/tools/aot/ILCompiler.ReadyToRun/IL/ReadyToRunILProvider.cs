@@ -120,6 +120,20 @@ namespace Internal.IL
                 return InterlockedIntrinsics.EmitIL(_compilationModuleGroup, method);
             }
 
+            if (mdType.Namespace.SequenceEqual("System.Collections.Generic"u8))
+            {
+                if (mdType.Name.SequenceEqual("Comparer`1"u8))
+                {
+                    if (method.Name.SequenceEqual("Create"u8))
+                        return ComparerIntrinsics.EmitComparerCreate(method);
+                }
+                else if (mdType.Name.SequenceEqual("EqualityComparer`1"u8))
+                {
+                    if (method.Name.SequenceEqual("Create"u8))
+                        return ComparerIntrinsics.EmitEqualityComparerCreate(method);
+                }
+            }
+
             return null;
         }
 
