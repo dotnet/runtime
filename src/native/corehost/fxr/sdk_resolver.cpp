@@ -179,7 +179,7 @@ void sdk_resolver::print_resolution_error(const pal::string_t& dotnet_root, cons
         trace::error(_X("\nInstalled SDKs:"));
         sdk_exists = sdk_info::print_all_sdks(dotnet_root, _X(""));
         if (!sdk_exists)
-            trace::error(no_sdk_message);
+            trace::error(_X("%s"), no_sdk_message);
 
         trace::error(_X(""));
         if (has_global_file)

@@ -392,9 +392,11 @@ inline bool IsServerHeap()
 
 #ifdef SIMPLE_DPRINTF
 
+#include <minipal/types.h>
+
 HRESULT initialize_log_file();
 void flush_gc_log (bool);
-void GCLog (const char *fmt, ... );
+void GCLog (const char *fmt, ... ) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 #define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #define SIMPLE_DPRINTF_ARG(x) , x
 

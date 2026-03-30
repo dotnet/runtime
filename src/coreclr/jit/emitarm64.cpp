@@ -12810,11 +12810,11 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
         {
             if (isAddrOffset)
             {
-                printf("0x%llX", imm);
+                printf("0x%zX", (size_t)imm);
             }
             else
             {
-                printf("0x%llx", imm);
+                printf("0x%zx", (size_t)imm);
             }
         }
         else
@@ -12833,7 +12833,7 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
  */
 void emitter::emitDispElementIndex(const ssize_t imm, const bool addComma)
 {
-    printf("[%d]", imm);
+    printf("[%zd]", (size_t)imm);
 
     if (addComma)
     {
@@ -12913,7 +12913,7 @@ void emitter::emitDispCond(insCond cond)
                                       "hi", "ls", "ge", "lt", "gt", "le", "AL", "NV"}; // The last two are invalid
     unsigned           imm         = (unsigned)cond;
     assert((0 <= imm) && (imm < ArrLen(armCond)));
-    printf(armCond[imm]);
+    printf("%s", armCond[imm]);
 }
 
 /*****************************************************************************
@@ -12926,7 +12926,7 @@ void emitter::emitDispFlags(insCflags flags)
                                        "n", "nv", "nc", "ncv", "nz", "nzv", "nzc", "nzcv"};
     unsigned           imm          = (unsigned)flags;
     assert((0 <= imm) && (imm < ArrLen(armFlags)));
-    printf(armFlags[imm]);
+    printf("%s", armFlags[imm]);
 }
 
 /*****************************************************************************
@@ -12939,7 +12939,7 @@ void emitter::emitDispBarrier(insBarrier barrier)
                                           "#8", "ishld", "ishst", "ish", "#12", "ld",    "st",    "sy"};
     unsigned           imm             = (unsigned)barrier;
     assert((0 <= imm) && (imm < ArrLen(armBarriers)));
-    printf(armBarriers[imm]);
+    printf("%s", armBarriers[imm]);
 }
 
 /*****************************************************************************
@@ -12996,7 +12996,7 @@ void emitter::emitDispExtendOpts(insOpts opt)
 void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 {
     emitAttr size = EA_SIZE(attr);
-    printf(emitRegName(reg, size));
+    printf("%s", emitRegName(reg, size));
 
     if (addComma)
         emitDispComma();
@@ -13008,7 +13008,7 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 void emitter::emitDispVectorReg(regNumber reg, insOpts opt, bool addComma)
 {
     assert(isVectorRegister(reg));
-    printf(emitVectorRegName(reg));
+    printf("%s", emitVectorRegName(reg));
     emitDispArrangement(opt);
 
     if (addComma)
@@ -13021,7 +13021,7 @@ void emitter::emitDispVectorReg(regNumber reg, insOpts opt, bool addComma)
 void emitter::emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma)
 {
     assert(isVectorRegister(reg));
-    printf(emitVectorRegName(reg));
+    printf("%s", emitVectorRegName(reg));
     emitDispElemsize(elemsize);
     printf("[%d]", (int)index);
 
@@ -13066,7 +13066,7 @@ void emitter::emitDispVectorElemList(
     printf("{");
     for (unsigned i = 0; i < listSize; i++)
     {
-        printf(emitVectorRegName(currReg));
+        printf("%s", emitVectorRegName(currReg));
         emitDispElemsize(elemsize);
         const bool notLastRegister = (i != listSize - 1);
         if (notLastRegister)
@@ -13141,7 +13141,7 @@ void emitter::emitDispArrangement(insOpts opt)
             assert(!"Invalid insOpt");
     }
     printf(".");
-    printf(str);
+    printf("%s", str);
 }
 
 //------------------------------------------------------------------------
@@ -13171,7 +13171,7 @@ void emitter::emitDispElemsize(emitAttr elemsize)
             break;
     }
 
-    printf(str);
+    printf("%s", str);
 }
 
 //------------------------------------------------------------------------
@@ -13183,7 +13183,7 @@ void emitter::emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAt
     assert((imm & 0x003F) == imm);
     assert(((imm & 0x0020) == 0) || (size == EA_8BYTE));
 
-    printf(emitRegName(reg, size));
+    printf("%s", emitRegName(reg, size));
 
     if (imm > 0)
     {
@@ -13299,14 +13299,14 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
 
         if (insOptsPreIndex(opt))
         {
-            printf(operStr);
+            printf("%s", operStr);
         }
 
         emitDispReg(reg, EA_8BYTE, false);
 
         if (insOptsPostIndex(opt))
         {
-            printf(operStr);
+            printf("%s", operStr);
         }
 
         if (insOptsIndexed(opt))
@@ -13720,7 +13720,7 @@ void emitter::emitDispInsHelp(
                     printf("@RWD%02u", doffs);
 
                 if (imm != 0)
-                    printf("%+Id", imm);
+                    printf("%+zd", (size_t)imm);
             }
             else
             {
