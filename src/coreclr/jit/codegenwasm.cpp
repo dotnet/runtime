@@ -3098,6 +3098,38 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 
 void CodeGen::genStructReturn(GenTree* treeNode)
 {
+    assert(treeNode->OperIs(GT_RETURN));
+
+    GenTree* op1       = treeNode->AsOp()->GetReturnValue();
+    GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+
+    const ReturnTypeDesc& retTypeDesc = m_compiler->compRetTypeDesc;
+    const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
+
+    assert(regCount <= MAX_RET_REG_COUNT);
+
+    if (op1->OperIsFieldList())
+    {
+        // Go through and consume the fields in the field list so liveness is correct.
+        unsigned regIndex = 0;
+        for (GenTreeFieldList::Use& use : op1->AsFieldList()->Uses())
+        {
+            GenTree*  fieldNode = use.GetNode();
+            regNumber sourceReg = genConsumeReg(fieldNode);
+            regIndex++;
+        }
+
+        // We should only have one field in the field list.
+        assert(regIndex == 1);
+
+        // The field list's individual fields should have preceded us in LIR and code to push them onto the stack
+        // should already have been generated. We should also only have one field (see MAX_RET_REG_COUNT assert,
+        // above.) As a result, all we need to do is generate a return opcode.
+        GetEmitter()->emitIns(INS_return);
+
+        return;
+    }
+
     NYI_WASM("genStructReturn");
 }
 
