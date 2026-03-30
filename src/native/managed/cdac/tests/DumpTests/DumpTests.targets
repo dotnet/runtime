@@ -3,9 +3,9 @@
     DumpTests.targets — Builds debuggee apps, runs them to produce crash dumps,
     and makes dump paths available to the test project.
 
-    Dump output: $(DumpOutputDir)/{RuntimeVersion}/{DumpType}/{DebuggeeName}/{DebuggeeName}.dmp
+    Dump output: $(DumpOutputDir)/{RuntimeVersion}/{DumpType}/{R2RMode}/{DebuggeeName}/{DebuggeeName}.dmp
 
-    Each Debuggee × RuntimeVersion × DumpType combination produces one dump.
+    Each Debuggee × RuntimeVersion × DumpType × R2RMode combination produces one dump.
     Dump generation does NOT happen during Build — invoke GenerateAllDumps explicitly.
 
     Debuggees are auto-discovered from the Debuggees/ subdirectory. Each debuggee csproj
@@ -13,6 +13,12 @@
       "Heap"       — heap dump only (type 2, default)
       "Full"       — full dump only (type 4)
       "Heap;Full"  — both heap and full dumps
+
+    Each debuggee csproj can also set an R2RModes property to control ReadyToRun behavior:
+      "R2R"        — run with ReadyToRun enabled (default)
+      "Jit"        — run with DOTNET_ReadyToRun=0 (force JIT compilation)
+      "R2R;Jit"    — both modes
+    Binaries are always compiled with R2R; this property controls runtime behavior only.
 
     Properties:
       DumpOutputDir          — Where dumps are written (default: artifacts/dumps/cdac/)
@@ -62,21 +68,22 @@
     <DumpRuntimeVersion Include="$(DumpVersions)" />
   </ItemGroup>
 
-  <!--
-    On Windows, heap dumps (type 2) require the DAC (mscordaccore.dll) which is unsigned
-    in local/CI builds. Set the DisableAuxProviderSignatureCheck registry value so that
-    MiniDumpWriteDump accepts the unsigned DAC. Windows 11+ / Server 2022+ only.
+  <!-- Unsigned DAC registry commands (shared with cdac-dump-helix.proj) -->
+  <Import Project="EnableUnsignedDac.props" />
 
-    This is opt-in via /p:SetDisableAuxProviderSignatureCheck=true to avoid surprising
-    machine-wide registry changes during a normal build.
+  <!--
+    On Windows, set the DisableAuxProviderSignatureCheck registry key so that
+    MiniDumpWriteDump accepts the unsigned locally-built DAC for heap dumps.
+    Opt-in via /p:SetDisableAuxProviderSignatureCheck=true.
   -->
   <Target Name="_EnableUnsignedDacWindows"
           BeforeTargets="GenerateAllDumps"
           Condition="'$(HostOS)' == 'windows' AND '$(SetDisableAuxProviderSignatureCheck)' == 'true'">
-    <Exec Command="reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
-          IgnoreExitCode="true"
-          IgnoreStandardErrorWarningFormat="true" />
-    <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
+    <Exec Command="$(DacRegAdd)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" />
+    <!-- WoW64 view only needed for x86 processes -->
+    <Exec Command="$(DacRegAdd32)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true"
+          Condition="'$(TargetArchitecture)' == 'x86'" />
+    <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: $(DacRegAdd) (and for x86: $(DacRegAdd32))"
              Importance="normal" />
   </Target>
 
@@ -106,7 +113,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForDebuggee"
-             Properties="DebuggeeName=%(_DebuggeeWithDumpTypes.Identity);_DebuggeeDumpTypes=%(_DebuggeeWithDumpTypes.DumpTypes)" />
+             Properties="DebuggeeName=%(_DebuggeeWithDumpTypes.Identity);_DebuggeeDumpTypes=%(_DebuggeeWithDumpTypes.DumpTypes);_DebuggeeR2RModes=%(_DebuggeeWithDumpTypes.R2RModes)" />
 
     <!-- Write dump-info.json into each version directory so tests can determine
          the OS/arch the dumps were generated on. -->
@@ -117,25 +124,50 @@
 
   <!-- Writes dump-info.json for a single runtime version directory. -->
   <Target Name="_WriteDumpInfo">
+    <MSBuild Projects="@(DebuggeeCsproj)"
+             Targets="GetDumpTypes"
+             Properties="Configuration=$(DebuggeeConfiguration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_DumpInfoDebuggeeTypes" />
+    </MSBuild>
+
+    <ItemGroup>
+      <!-- Exclude heap entries for net10.0 — heap dumps are not generated for that version. -->
+      <_DumpInfoHeap Include="@(_DumpInfoDebuggeeTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Heap')) AND '$(DumpRuntimeVersion)' != 'net10.0'" DumpDir="heap" />
+      <_DumpInfoFull Include="@(_DumpInfoDebuggeeTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Full'))" DumpDir="full" />
+      <_DumpInfoByType Include="@(_DumpInfoHeap);@(_DumpInfoFull)" />
+      <_DumpInfoR2R Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('R2R'))" R2RDir="r2r" />
+      <_DumpInfoJit Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('Jit'))" R2RDir="jit" />
+      <_DumpInfoAll Include="@(_DumpInfoR2R);@(_DumpInfoJit)" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_VersionDir>$([MSBuild]::NormalizeDirectory('$(DumpOutputDir)', '$(DumpRuntimeVersion)'))</_VersionDir>
       <_DumpInfoFile>$([MSBuild]::NormalizePath('$(_VersionDir)', 'dump-info.json'))</_DumpInfoFile>
       <_DumpOS>$(HostOS)</_DumpOS>
       <_DumpArch>$(_HostArch)</_DumpArch>
+      <_DebuggeeJsonArray>@(_DumpInfoAll->'{"name":"%(Identity)","dumpDir":"%(DumpDir)","r2rDir":"%(R2RDir)"}', ',')</_DebuggeeJsonArray>
     </PropertyGroup>
     <MakeDir Directories="$(_VersionDir)" />
     <WriteLinesToFile File="$(_DumpInfoFile)" Overwrite="true"
-                     Lines='{%0a  "os": "$(_DumpOS)",%0a  "arch": "$(_DumpArch)"%0a}'
-                     Condition="!Exists('$(_DumpInfoFile)')" />
+                     Lines='{%0a  "os": "$(_DumpOS)",%0a  "arch": "$(_DumpArch)",%0a  "debuggees": [$(_DebuggeeJsonArray)]%0a}' />
     <Message Text="Wrote dump-info.json: $(_DumpInfoFile) (os=$(_DumpOS), arch=$(_DumpArch))"
-             Condition="!Exists('$(_DumpInfoFile)')" Importance="high" />
+             Importance="high" />
   </Target>
 
-  <!-- Build all debuggees without running them (for Helix payload preparation).
-       Uses dotnet build (via Exec) to ensure implicit NuGet restore, matching
-       the pattern in _GenerateLocalDump. Invoke explicitly: dotnet msbuild /t:BuildDebuggeesOnly -->
+  <!-- Build all debuggees with R2R without running them (for Helix payload preparation).
+       Uses dotnet publish (via Exec) with ReadyToRun enabled to produce R2R-compiled
+       framework-dependent binaries. Invoke explicitly: dotnet msbuild /t:BuildDebuggeesOnly -->
   <Target Name="BuildDebuggeesOnly">
-    <Exec Command="&quot;$(_DotNetExe)&quot; build &quot;%(DebuggeeCsproj.Identity)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) --nologo" />
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_PublishSingleDebuggee"
+             Properties="_DebuggeeCsproj=%(DebuggeeCsproj.Identity);DebuggeeName=%(DebuggeeCsproj.Filename)" />
+  </Target>
+
+  <Target Name="_PublishSingleDebuggee">
+    <PropertyGroup>
+      <_PublishOutDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)'))</_PublishOutDir>
+    </PropertyGroup>
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --no-self-contained /p:PublishReadyToRun=true --nologo -o &quot;$(_PublishOutDir)&quot;" />
   </Target>
 
   <Target Name="_GenerateDumpsForDebuggee">
@@ -147,7 +179,7 @@
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForDumpType"
-             Properties="DebuggeeName=$(DebuggeeName);_DumpTypeName=%(_DumpTypeItem.Identity)" />
+             Properties="DebuggeeName=$(DebuggeeName);_DumpTypeName=%(_DumpTypeItem.Identity);_DebuggeeR2RModes=$(_DebuggeeR2RModes)" />
   </Target>
 
   <Target Name="_GenerateDumpsForDumpType">
@@ -159,15 +191,37 @@
       <_DumpTypeDirName Condition="'$(_DumpTypeName)' == 'Full'">full</_DumpTypeDirName>
     </PropertyGroup>
 
+    <!-- Expand R2RModes (e.g. "R2R;Jit") into individual _R2RModeItem entries -->
+    <ItemGroup>
+      <_R2RModeItem Remove="@(_R2RModeItem)" />
+      <_R2RModeItem Include="$(_DebuggeeR2RModes)" />
+    </ItemGroup>
+
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_GenerateDumpsForR2RMode"
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RModeName=%(_R2RModeItem.Identity)" />
+  </Target>
+
+  <Target Name="_GenerateDumpsForR2RMode">
+    <!-- Map R2R mode name to DOTNET_ReadyToRun value and directory name -->
+    <PropertyGroup>
+      <_R2RValue Condition="'$(_R2RModeName)' == 'R2R'">1</_R2RValue>
+      <_R2RValue Condition="'$(_R2RModeName)' == 'Jit'">0</_R2RValue>
+      <_R2RDirName Condition="'$(_R2RModeName)' == 'R2R'">r2r</_R2RDirName>
+      <_R2RDirName Condition="'$(_R2RModeName)' == 'Jit'">jit</_R2RDirName>
+    </PropertyGroup>
+
+    <Error Condition="'$(_R2RValue)' == '' Or '$(_R2RDirName)' == ''"
+           Text="Invalid R2R mode '$(_R2RModeName)' specified for debuggee '$(DebuggeeName)'. Supported values: 'R2R', 'Jit'." />
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateSingleDump"
-             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);DumpRuntimeVersion=%(DumpRuntimeVersion.Identity)" />
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);_R2RValue=$(_R2RValue);_R2RDirName=$(_R2RDirName);DumpRuntimeVersion=%(DumpRuntimeVersion.Identity)" />
   </Target>
 
   <Target Name="_GenerateSingleDump">
     <PropertyGroup>
       <_DebuggeeDir>$([MSBuild]::NormalizeDirectory('$(DebuggeesDir)', '$(DebuggeeName)'))</_DebuggeeDir>
-      <_DumpDir>$([MSBuild]::NormalizeDirectory('$(DumpOutputDir)', '$(DumpRuntimeVersion)', '$(_DumpTypeDirName)', '$(DebuggeeName)'))</_DumpDir>
+      <_DumpDir>$([MSBuild]::NormalizeDirectory('$(DumpOutputDir)', '$(DumpRuntimeVersion)', '$(_DumpTypeDirName)', '$(_R2RDirName)', '$(DebuggeeName)'))</_DumpDir>
       <_DumpFile>$([MSBuild]::NormalizePath('$(_DumpDir)', '$(DebuggeeName).dmp'))</_DumpFile>
     </PropertyGroup>
 
@@ -180,18 +234,18 @@
     <!-- Determine build/run strategy based on runtime version -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateLocalDump"
-             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile)"
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue)"
              Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'local'" />
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GeneratePublishedDump"
-             Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=$(DumpRuntimeVersion);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile)"
+             Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=$(DumpRuntimeVersion);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile);_R2RValue=$(_R2RValue)"
              Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'net10.0' AND '$(_DumpTypeName)' != 'Heap'" />
 
     <Message Text="Dump created: $(_DumpFile)" Importance="high" Condition="Exists('$(_DumpFile)')" />
   </Target>
 
-  <!-- Local build: framework-dependent, run with testhost -->
+  <!-- Local build: framework-dependent R2R publish, run with testhost -->
   <Target Name="_GenerateLocalDump">
     <PropertyGroup>
       <_DebuggeeBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)'))</_DebuggeeBinDir>
@@ -200,7 +254,7 @@
       <_DebuggeeCsproj>$([MSBuild]::NormalizePath('$(_DebuggeeDir)', '$(DebuggeeName).csproj'))</_DebuggeeCsproj>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(_DotNetExe)&quot; build &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) --nologo"
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) -r $(PortableTargetRid) --no-self-contained /p:PublishReadyToRun=true --nologo -o &quot;$(_DebuggeeBinDir)&quot;"
           WorkingDirectory="$(_DebuggeeDir)" />
 
     <MakeDir Directories="$(_DumpDir)" />
@@ -208,12 +262,12 @@
     <Exec Command="&quot;$(_TestHostDotNet)&quot; exec &quot;$(_DebuggeeDll)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
-          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile)" />
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile);DOTNET_ReadyToRun=$(_R2RValue)" />
 
     <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>
 
-  <!-- Released runtime: self-contained publish, run the exe directly -->
+  <!-- Released runtime: self-contained publish with R2R, run the exe directly -->
   <Target Name="_GeneratePublishedDump">
     <PropertyGroup>
       <_PublishDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(DumpRuntimeVersion)-publish'))</_PublishDir>
@@ -221,7 +275,7 @@
       <_PublishedExe>$([MSBuild]::NormalizePath('$(_PublishDir)', '$(DebuggeeName)$(ExeSuffix)'))</_PublishedExe>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(DumpRuntimeVersion) -r $(PortableTargetRid) --self-contained --nologo -o &quot;$(_PublishDir)&quot;"
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(DumpRuntimeVersion) -r $(PortableTargetRid) --self-contained /p:PublishReadyToRun=true --nologo -o &quot;$(_PublishDir)&quot;"
           WorkingDirectory="$(_DebuggeeDir)" />
 
     <MakeDir Directories="$(_DumpDir)" />
@@ -229,7 +283,7 @@
     <Exec Command="&quot;$(_PublishedExe)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
-          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile)" />
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile);DOTNET_ReadyToRun=$(_R2RValue)" />
 
     <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>
