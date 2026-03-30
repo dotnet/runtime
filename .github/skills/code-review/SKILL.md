@@ -98,12 +98,12 @@ When the environment supports launching sub-agents with different models (e.g., 
 
 When presenting the final review (whether as a PR comment or as output to the user), use the following structure. This ensures consistency across reviews and makes the output easy to scan.
 
-> 📝 **AI-generated content disclosure:** When posting review content to GitHub (PR review comments, PR comments) under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
+> 📝 **AI-generated content disclosure:** When posting review content to GitHub (PR review comments, PR comments) under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app (e.g., `github-actions[bot]`, `copilot`) — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) at the bottom of the content indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
 
 ### Structure
 
 ```
-## 🤖 Copilot Code Review — PR #<number>
+## Copilot Code Review
 
 ### Holistic Assessment
 
@@ -114,6 +114,8 @@ When presenting the final review (whether as a PR comment or as output to the us
 **Summary**: <✅ LGTM / ⚠️ Needs Human Review / ⚠️ Needs Changes / ❌ Reject>. <2-3 sentence summary of the overall verdict and key points. If "Needs Human Review," explicitly state which findings you are uncertain about and what a human reviewer should focus on.>
 
 ---
+<details>
+  <summary>Detailed Findings</summary>
 
 ### Detailed Findings
 
@@ -122,6 +124,11 @@ When presenting the final review (whether as a PR comment or as output to the us
 <Explanation with specifics. Reference code, line numbers, interleavings, etc.>
 
 (Repeat for each finding category. Group related findings under a single heading.)
+
+</details>
+
+<!-- AI disclosure note: place any AI-generated content disclosure below this line. -->
+<!-- Example: > [!NOTE] This review was created by GitHub Copilot. -->
 ```
 
 ### Guidelines
