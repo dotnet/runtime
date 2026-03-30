@@ -708,7 +708,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             var matcher = new Matcher();
             matcher.AddInclude($"**{separator}*.cs");
 
-            IEnumerable<string> files = GetFileList(Path.GetPathRoot(rootDir), separator);
+            IEnumerable<string> files = GetFileList(Path.GetPathRoot(rootDir)!, separator);
             PatternMatchingResult results = matcher.Match(rootDir, files);
 
             IEnumerable<string> actual = results.Files.Select(match => match.Path);
@@ -824,12 +824,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             {
                 // Windows-like absolute paths are not supported on Unix.
                 string fakeWindowsPath = "C:\\This\\is\\a\\nested\\windows-like\\path\\somefile.cs";
-                Assert.True(fileMatcher.Match(Path.GetPathRoot(fakeWindowsPath), fakeWindowsPath).HasMatches);
+                Assert.True(fileMatcher.Match(Path.GetPathRoot(fakeWindowsPath)!, fakeWindowsPath).HasMatches);
             }
             
             // Unix-like absolute paths are treated as relative paths on Windows.
             string fakeUnixPath = "/This/is/a/nested/unix-like/path/somefile.cs";
-            Assert.True(fileMatcher.Match(Path.GetPathRoot(fakeUnixPath), fakeUnixPath).HasMatches);
+            Assert.True(fileMatcher.Match(Path.GetPathRoot(fakeUnixPath)!, fakeUnixPath).HasMatches);
         }
 
         [Fact] // https://github.com/dotnet/runtime/issues/36415
@@ -1005,6 +1005,22 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             };
 
             AssertExtensions.CollectionEqual(expected, actual, StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void VerifyInMemoryDirectoryInfo_ParentPatternMatches()
+        {
+            string rootDir = "/Folder1";
+            string[] files = ["/Folder1/File1.txt", "/Folder2/File2.txt"];
+
+            var matcher = new Matcher();
+            matcher.AddInclude("../Folder2/**");
+
+            var result = matcher.Execute(new InMemoryDirectoryInfo(rootDir, files));
+
+            Assert.True(result.HasMatches);
+            Assert.Single(result.Files);
+            Assert.Equal("../Folder2/File2.txt", result.Files.First().Path);
         }
     }
 }

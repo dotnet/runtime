@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         {
         }
 
-        private InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files, bool normalized, StringComparison comparisonType)
+        private InMemoryDirectoryInfo(string rootDir, IEnumerable<string>? files, bool normalized, StringComparison comparisonType, bool isParentPath = false)
         {
             if (string.IsNullOrEmpty(rootDir))
             {
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
 
             files ??= new List<string>();
 
-            Name = Path.GetFileName(rootDir);
+            Name = isParentPath ? ".." : Path.GetFileName(rootDir);
             if (normalized)
             {
                 _files = files;
@@ -141,17 +141,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         }
 
         /// <inheritdoc />
-        public override DirectoryInfoBase GetDirectory(string path)
+        public override DirectoryInfoBase? GetDirectory(string path)
         {
-            if (string.Equals(path, "..", StringComparison.Ordinal))
-            {
-                return new InMemoryDirectoryInfo(Path.Combine(FullName, path), _files, true, _comparisonType);
-            }
-            else
-            {
-                string normPath = Path.GetFullPath(path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
-                return new InMemoryDirectoryInfo(normPath, _files, true, _comparisonType);
-            }
+            bool isParentPath = string.Equals(path, "..", StringComparison.Ordinal);
+            string? combinedPath = isParentPath ? Path.GetDirectoryName(FullName) : Path.Combine(FullName, path);
+            string? normPath = combinedPath?.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            return normPath == null ? null : new InMemoryDirectoryInfo(normPath, _files, true, _comparisonType, isParentPath);
         }
 
         /// <summary>
@@ -161,7 +156,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <returns>Instance of <see cref="FileInfoBase"/> if the file exists, null otherwise.</returns>
         public override FileInfoBase? GetFile(string path)
         {
-            string normPath = Path.GetFullPath(path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
+            string combinedPath = Path.Combine(FullName, path);
+            string normPath = combinedPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
             foreach (string file in _files)
             {
                 if (string.Equals(file, normPath))
