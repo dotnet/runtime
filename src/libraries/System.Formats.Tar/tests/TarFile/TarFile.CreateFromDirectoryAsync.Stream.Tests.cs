@@ -107,5 +107,26 @@ namespace System.Formats.Tar.Tests
                 }
             }
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task CreateFromDirectoryAsync_UsesWriterOptions(bool toggle)
+        {
+            // Toggle an option property to verify changing options changes the produced archive.
+            bool preserveLinks = toggle;
+
+            using TempDirectory source = CreateSourceDirectoryForCreateFromDirectory_UsesWriterOptions();
+
+            TarWriterOptions options = new TarWriterOptions()
+            {
+                HardLinkMode = preserveLinks ? TarHardLinkMode.PreserveLink : TarHardLinkMode.CopyContents
+            };
+
+            await using MemoryStream archive = new MemoryStream();
+            await TarFile.CreateFromDirectoryAsync(source.Path, archive, includeBaseDirectory: false, options);
+
+            VerifyCreateFromDirectory_UsesWriterOptions(archive, preserveLinks);
+        }
     }
 }

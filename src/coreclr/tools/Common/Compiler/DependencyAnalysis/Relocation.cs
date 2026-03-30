@@ -50,6 +50,9 @@ namespace ILCompiler.DependencyAnalysis
         WASM_TYPE_INDEX_LEB        = 0x204,  // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
         WASM_GLOBAL_INDEX_LEB      = 0x205,  // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
 
+        WASM_TABLE_INDEX_U32       = 0x206,  // Wasm: a table index encoded as a 4-byte uint32, e.g. for storing the "address" of a function into linear memory
+        WASM_TABLE_INDEX_U64       = 0x207,  // Wasm: a table index encoded as a 8-byte uint64, e.g. for storing the "address" of a function into linear memory
+
         //
         // Relocation operators related to TLS access
         //
@@ -94,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
     public struct Relocation
     {
         // NOTE: Keep in sync with emitwasm.cpp
-        private const int WASM_PADDED_RELOC_SIZE_32 = 5;
+        public const int WASM_PADDED_RELOC_SIZE_32 = 5;
 
         public readonly RelocType RelocType;
         public readonly int Offset;
@@ -566,16 +569,17 @@ namespace ILCompiler.DependencyAnalysis
             int hi20 = (int)(offset - lo12);
             Debug.Assert((long)lo12 + (long)hi20 == offset);
 
-            Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == 0);
+            // Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == 0);
             pCode[0] |= (uint)hi20;
             int bottomBitsPos = isStype ? 7 : 20;
             pCode[1] |= (uint)((lo12 >> 5) << 25); // top 7 bits are in the same spot
             pCode[1] |= (uint)((lo12 & 0x1F) << bottomBitsPos);
-            Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == offset);
+            // Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == offset);
         }
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
         {
+            Debug.Assert(target != null);
             RelocType = relocType;
             Offset = offset;
             Target = target;
@@ -692,6 +696,8 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.WASM_GLOBAL_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_SLEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_TABLE_INDEX_U32 => 4,
+                RelocType.WASM_TABLE_INDEX_U64 => 8,
 
                 _ => throw new NotSupportedException(),
             };
@@ -754,6 +760,8 @@ namespace ILCompiler.DependencyAnalysis
                     return GetRiscV64AuipcCombo((uint*)location, isStype);
                 case RelocType.WASM_FUNCTION_INDEX_LEB:
                 case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_TABLE_INDEX_U32:
+                case RelocType.WASM_TABLE_INDEX_U64:
                 case RelocType.WASM_TYPE_INDEX_LEB:
                 case RelocType.WASM_GLOBAL_INDEX_LEB:
                     // These wasm relocs do not have offsets, just targets

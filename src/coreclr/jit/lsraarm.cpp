@@ -685,7 +685,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RECORD_ASYNC_RESUME:
         case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
-        case GT_PINVOKE_PROLOG:
         case GT_JCC:
         case GT_SETCC:
         case GT_MEMORYBARRIER:
