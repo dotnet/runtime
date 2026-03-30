@@ -28,7 +28,6 @@ namespace System.Diagnostics
         private string? _verb;
         private Collection<string>? _argumentList;
         private ProcessWindowStyle _windowStyle;
-        private IList<SafeHandle>? _inheritedHandles;
 
         internal DictionaryWrapper? _environmentVariables;
 
@@ -207,6 +206,13 @@ namespace System.Diagnostics
         /// and the handles from this list. If the list is empty, only the standard handles are inherited.
         /// </para>
         /// <para>
+        /// The handles specified in this list are always inherited by the child process on all supported platforms.
+        /// However, the restriction that prevents other handles from being inherited is only enforced on platforms
+        /// that have the necessary OS support. On platforms without such support (for example, Linux kernels older
+        /// than 5.9 without the <c>close_range</c> syscall), other inheritable file descriptors may still be
+        /// inherited by the child process even when this property is set.
+        /// </para>
+        /// <para>
         /// Handles in this list should not have inheritance enabled beforehand.
         /// If they do, they could be unintentionally inherited by other processes started concurrently with different APIs,
         /// which may lead to security or resource management issues.
@@ -228,11 +234,7 @@ namespace System.Diagnostics
         /// A list of <see cref="SafeHandle"/> objects to be explicitly inherited by the child process,
         /// or <see langword="null"/> to use the default handle inheritance behavior.
         /// </value>
-        public IList<SafeHandle>? InheritedHandles
-        {
-            get => _inheritedHandles;
-            set => _inheritedHandles = value;
-        }
+        public IList<SafeHandle>? InheritedHandles { get; set; }
 
         public Encoding? StandardInputEncoding { get; set; }
 
@@ -373,7 +375,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.CantRedirectStreams);
             }
 
-            if (UseShellExecute && _inheritedHandles is not null && _inheritedHandles.Count > 0)
+            if (UseShellExecute && InheritedHandles is not null && InheritedHandles.Count > 0)
             {
                 throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
             }

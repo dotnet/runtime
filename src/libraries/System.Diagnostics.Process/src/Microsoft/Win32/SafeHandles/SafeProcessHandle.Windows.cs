@@ -105,7 +105,7 @@ namespace Microsoft.Win32.SafeHandles
             var commandLine = new ValueStringBuilder(stackalloc char[256]);
             ProcessUtils.BuildCommandLine(startInfo, ref commandLine);
 
-            Interop.Kernel32.STARTUPINFO startupInfo = default;
+            Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
             Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
             Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
             SafeProcessHandle procSH = new SafeProcessHandle();
@@ -133,9 +133,15 @@ namespace Microsoft.Win32.SafeHandles
                 // into multiple child processes.
                 ProcessUtils.s_processStartLock.EnterWriteLock();
             }
+
+            void* attributeListBuffer = null;
+            Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST attributeList = default;
+            System.Runtime.InteropServices.SafeHandle?[]? handlesToRelease = null;
+            IntPtr* handlesToInherit = null;
+
             try
             {
-                startupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
+                startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
 
                 if (stdinHandle is not null || stdoutHandle is not null || stderrHandle is not null)
                 {
@@ -145,22 +151,22 @@ namespace Microsoft.Win32.SafeHandles
                     ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref inheritableStdoutHandle);
                     ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref inheritableStderrHandle);
 
-                    startupInfo.hStdInput = (inheritableStdinHandle ?? stdinHandle).DangerousGetHandle();
-                    startupInfo.hStdOutput = (inheritableStdoutHandle ?? stdoutHandle).DangerousGetHandle();
-                    startupInfo.hStdError = (inheritableStderrHandle ?? stderrHandle).DangerousGetHandle();
+                    startupInfoEx.StartupInfo.hStdInput = (inheritableStdinHandle ?? stdinHandle).DangerousGetHandle();
+                    startupInfoEx.StartupInfo.hStdOutput = (inheritableStdoutHandle ?? stdoutHandle).DangerousGetHandle();
+                    startupInfoEx.StartupInfo.hStdError = (inheritableStderrHandle ?? stderrHandle).DangerousGetHandle();
 
                     // If STARTF_USESTDHANDLES is not set, the new process will inherit the standard handles.
-                    startupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
+                    startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
                 }
 
                 if (startInfo.WindowStyle != ProcessWindowStyle.Normal)
                 {
-                    startupInfo.wShowWindow = (short)ProcessUtils.GetShowWindowFromWindowStyle(startInfo.WindowStyle);
-                    startupInfo.dwFlags |= Interop.Advapi32.StartupInfoOptions.STARTF_USESHOWWINDOW;
+                    startupInfoEx.StartupInfo.wShowWindow = (short)ProcessUtils.GetShowWindowFromWindowStyle(startInfo.WindowStyle);
+                    startupInfoEx.StartupInfo.dwFlags |= Interop.Advapi32.StartupInfoOptions.STARTF_USESHOWWINDOW;
                 }
 
                 // set up the creation flags parameter
-                int creationFlags = 0;
+                int creationFlags = Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT;
                 if (startInfo.CreateNoWindow) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NO_WINDOW;
                 if (startInfo.CreateNewProcessGroup) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NEW_PROCESS_GROUP;
 
@@ -178,25 +184,88 @@ namespace Microsoft.Win32.SafeHandles
                     workingDirectory = null;
                 }
 
+                // When InheritedHandles is set, build a PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict
+                // inheritance to only the explicitly specified handles.
+                if (hasInheritedHandles)
+                {
+                    int stdioCount = (stdinHandle is not null ? 1 : 0)
+                        + (stdoutHandle is not null ? 1 : 0)
+                        + (stderrHandle is not null ? 1 : 0);
+                    int maxHandleCount = stdioCount + inheritedHandles!.Count;
+                    handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)Math.Max(1, maxHandleCount), (nuint)sizeof(IntPtr));
+
+                    int handleCount = 0;
+
+                    // Add the effective stdio handles (already made inheritable via DuplicateAsInheritableIfNeeded)
+                    if (stdinHandle is not null)
+                    {
+                        IntPtr h = (inheritableStdinHandle ?? stdinHandle).DangerousGetHandle();
+                        if (h != IntPtr.Zero && h != new IntPtr(-1))
+                            handlesToInherit[handleCount++] = h;
+                    }
+                    if (stdoutHandle is not null)
+                    {
+                        IntPtr h = (inheritableStdoutHandle ?? stdoutHandle).DangerousGetHandle();
+                        if (h != IntPtr.Zero && h != new IntPtr(-1))
+                        {
+                            bool isDuplicate = false;
+                            for (int i = 0; i < handleCount; i++)
+                            {
+                                if (handlesToInherit[i] == h) { isDuplicate = true; break; }
+                            }
+                            if (!isDuplicate)
+                                handlesToInherit[handleCount++] = h;
+                        }
+                    }
+                    if (stderrHandle is not null)
+                    {
+                        IntPtr h = (inheritableStderrHandle ?? stderrHandle).DangerousGetHandle();
+                        if (h != IntPtr.Zero && h != new IntPtr(-1))
+                        {
+                            bool isDuplicate = false;
+                            for (int i = 0; i < handleCount; i++)
+                            {
+                                if (handlesToInherit[i] == h) { isDuplicate = true; break; }
+                            }
+                            if (!isDuplicate)
+                                handlesToInherit[handleCount++] = h;
+                        }
+                    }
+
+                    PrepareHandleAllowList(inheritedHandles, handlesToInherit, ref handleCount, ref handlesToRelease);
+
+                    // Create the attribute list with one entry for PROC_THREAD_ATTRIBUTE_HANDLE_LIST
+                    nuint size = 0;
+                    Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST emptyList = default;
+                    Interop.Kernel32.InitializeProcThreadAttributeList(emptyList, 1, 0, ref size);
+
+                    attributeListBuffer = NativeMemory.Alloc(size);
+                    attributeList.AttributeList = (IntPtr)attributeListBuffer;
+
+                    if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeList, 1, 0, ref size))
+                    {
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                    }
+
+                    if (!Interop.Kernel32.UpdateProcThreadAttribute(
+                        attributeList,
+                        0,
+                        (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+                        handlesToInherit,
+                        (nuint)(handleCount * sizeof(IntPtr)),
+                        null,
+                        0))
+                    {
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                    }
+                }
+
+                startupInfoEx.lpAttributeList = attributeList;
+
                 bool retVal;
                 int errorCode = 0;
 
-                if (hasInheritedHandles)
-                {
-                    if (startInfo.UserName.Length != 0)
-                    {
-                        // CreateProcessWithLogonW does not support PROC_THREAD_ATTRIBUTE_HANDLE_LIST.
-                        throw new InvalidOperationException(SR.InheritedHandlesNotSupportedWithCredentials);
-                    }
-
-                    // Use STARTUPINFOEX with PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance
-                    // to only the explicitly specified handles.
-                    retVal = StartWithCreateProcessEx(startInfo, ref startupInfo, ref processInfo,
-                        ref unused_SecAttrs, inheritedHandles!, inheritableStdinHandle, inheritableStdoutHandle,
-                        inheritableStderrHandle, stdinHandle, stdoutHandle, stderrHandle,
-                        commandLine, creationFlags, environmentBlock, workingDirectory, out errorCode);
-                }
-                else if (startInfo.UserName.Length != 0)
+                if (startInfo.UserName.Length != 0)
                 {
                     if (startInfo.Password != null && startInfo.PasswordInClearText != null)
                     {
@@ -237,7 +306,7 @@ namespace Microsoft.Win32.SafeHandles
                                 creationFlags,
                                 (IntPtr)environmentBlockPtr,
                                 workingDirectory,
-                                ref startupInfo,        // pointer to STARTUPINFO
+                                ref startupInfoEx,      // pointer to STARTUPINFOEX
                                 ref processInfo         // pointer to PROCESS_INFORMATION
                             );
                             if (!retVal)
@@ -263,9 +332,9 @@ namespace Microsoft.Win32.SafeHandles
                             ref unused_SecAttrs, // address to thread security attributes.
                             true,                // handle inheritance flag
                             creationFlags,       // creation flags
-                            (IntPtr)environmentBlockPtr, // pointer to new environment block
+                            environmentBlockPtr, // pointer to new environment block
                             workingDirectory,    // pointer to current directory name
-                            ref startupInfo,     // pointer to STARTUPINFO
+                            ref startupInfoEx,   // pointer to STARTUPINFOEX
                             ref processInfo      // pointer to PROCESS_INFORMATION
                         );
                         if (!retVal)
@@ -300,6 +369,19 @@ namespace Microsoft.Win32.SafeHandles
                 inheritableStdoutHandle?.Dispose();
                 inheritableStderrHandle?.Dispose();
 
+                NativeMemory.Free(handlesToInherit);
+
+                if (attributeListBuffer != null)
+                {
+                    Interop.Kernel32.DeleteProcThreadAttributeList(attributeList);
+                    NativeMemory.Free(attributeListBuffer);
+                }
+
+                if (handlesToRelease is not null)
+                {
+                    CleanupHandles(handlesToRelease);
+                }
+
                 if (hasInheritedHandles)
                 {
                     ProcessUtils.s_processStartLock.ExitReadLock();
@@ -315,155 +397,6 @@ namespace Microsoft.Win32.SafeHandles
             Debug.Assert(!procSH.IsInvalid);
             procSH.ProcessId = (int)processInfo.dwProcessId;
             return procSH;
-        }
-
-        /// <summary>
-        /// Starts the process using STARTUPINFOEX and PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict
-        /// handle inheritance to only the explicitly specified handles.
-        /// </summary>
-        private static unsafe bool StartWithCreateProcessEx(
-            ProcessStartInfo startInfo,
-            ref Interop.Kernel32.STARTUPINFO startupInfo,
-            ref Interop.Kernel32.PROCESS_INFORMATION processInfo,
-            ref Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs,
-            System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle> inheritedHandles,
-            SafeFileHandle? inheritableStdinHandle,
-            SafeFileHandle? inheritableStdoutHandle,
-            SafeFileHandle? inheritableStderrHandle,
-            SafeFileHandle? stdinHandle,
-            SafeFileHandle? stdoutHandle,
-            SafeFileHandle? stderrHandle,
-            ValueStringBuilder commandLine,
-            int creationFlags,
-            string? environmentBlock,
-            string? workingDirectory,
-            out int errorCode)
-        {
-            errorCode = 0;
-            void* attributeListBuffer = null;
-            Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST attributeList = default;
-            System.Runtime.InteropServices.SafeHandle?[]? handlesToRelease = null;
-
-            // Determine the maximum number of handles: up to 3 stdio + all user-provided handles
-            int stdioCount = (stdinHandle is not null ? 1 : 0)
-                + (stdoutHandle is not null ? 1 : 0)
-                + (stderrHandle is not null ? 1 : 0);
-            int maxHandleCount = stdioCount + inheritedHandles.Count;
-            IntPtr* handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)Math.Max(1, maxHandleCount), (nuint)sizeof(IntPtr));
-
-            try
-            {
-                int handleCount = 0;
-
-                // Add the effective stdio handles (already made inheritable via DuplicateAsInheritableIfNeeded)
-                if (stdinHandle is not null)
-                {
-                    IntPtr h = (inheritableStdinHandle ?? stdinHandle).DangerousGetHandle();
-                    if (h != IntPtr.Zero && h != new IntPtr(-1))
-                        handlesToInherit[handleCount++] = h;
-                }
-                if (stdoutHandle is not null)
-                {
-                    IntPtr h = (inheritableStdoutHandle ?? stdoutHandle).DangerousGetHandle();
-                    if (h != IntPtr.Zero && h != new IntPtr(-1))
-                    {
-                        // Avoid duplicates
-                        bool isDuplicate = false;
-                        for (int i = 0; i < handleCount; i++)
-                        {
-                            if (handlesToInherit[i] == h) { isDuplicate = true; break; }
-                        }
-                        if (!isDuplicate)
-                            handlesToInherit[handleCount++] = h;
-                    }
-                }
-                if (stderrHandle is not null)
-                {
-                    IntPtr h = (inheritableStderrHandle ?? stderrHandle).DangerousGetHandle();
-                    if (h != IntPtr.Zero && h != new IntPtr(-1))
-                    {
-                        bool isDuplicate = false;
-                        for (int i = 0; i < handleCount; i++)
-                        {
-                            if (handlesToInherit[i] == h) { isDuplicate = true; break; }
-                        }
-                        if (!isDuplicate)
-                            handlesToInherit[handleCount++] = h;
-                    }
-                }
-
-                // Add and prepare the user-provided InheritedHandles
-                PrepareHandleAllowList(inheritedHandles, handlesToInherit, ref handleCount, ref handlesToRelease);
-
-                // Create the attribute list
-                nuint size = 0;
-                Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST emptyList = default;
-                Interop.Kernel32.InitializeProcThreadAttributeList(emptyList, 1, 0, ref size);
-
-                attributeListBuffer = NativeMemory.Alloc(size);
-                attributeList.AttributeList = (IntPtr)attributeListBuffer;
-
-                if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeList, 1, 0, ref size))
-                {
-                    errorCode = Marshal.GetLastWin32Error();
-                    return false;
-                }
-
-                if (!Interop.Kernel32.UpdateProcThreadAttribute(
-                    attributeList,
-                    0,
-                    (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
-                    handlesToInherit,
-                    (nuint)(handleCount * sizeof(IntPtr)),
-                    null,
-                    0))
-                {
-                    errorCode = Marshal.GetLastWin32Error();
-                    return false;
-                }
-
-                Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
-                startupInfoEx.StartupInfo = startupInfo;
-                startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
-                startupInfoEx.lpAttributeList = attributeList;
-
-                creationFlags |= Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT;
-
-                commandLine.NullTerminate();
-                fixed (char* environmentBlockPtr = environmentBlock)
-                fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
-                {
-                    bool retVal = Interop.Kernel32.CreateProcess(
-                        null,
-                        commandLinePtr,
-                        ref secAttrs,
-                        ref secAttrs,
-                        true,
-                        creationFlags,
-                        environmentBlockPtr,
-                        workingDirectory,
-                        ref startupInfoEx,
-                        ref processInfo);
-                    if (!retVal)
-                        errorCode = Marshal.GetLastWin32Error();
-                    return retVal;
-                }
-            }
-            finally
-            {
-                NativeMemory.Free(handlesToInherit);
-
-                if (attributeListBuffer != null)
-                {
-                    Interop.Kernel32.DeleteProcThreadAttributeList(attributeList);
-                    NativeMemory.Free(attributeListBuffer);
-                }
-
-                if (handlesToRelease is not null)
-                {
-                    CleanupHandles(handlesToRelease);
-                }
-            }
         }
 
         private static unsafe void PrepareHandleAllowList(

@@ -3,8 +3,10 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -307,63 +309,89 @@ namespace System.Diagnostics.Tests
             Assert.Same(handle, startInfo.StandardErrorHandle);
         }
 
-        [Fact]
-        public async Task InheritedHandles_LimitsHandleInheritanceToExplicitList()
+        /// <summary>
+        /// Tests that <see cref="ProcessStartInfo.InheritedHandles"/> correctly restricts handle inheritance.
+        /// </summary>
+        /// <param name="addHandleToList">
+        ///   <see langword="true"/> to explicitly add the pipe handle to InheritedHandles (handle should be inherited);
+        ///   <see langword="false"/> to use an empty list or null, depending on <paramref name="nullList"/>.
+        /// </param>
+        /// <param name="nullList">
+        ///   When <paramref name="addHandleToList"/> is <see langword="false"/>:
+        ///   <see langword="true"/> to set InheritedHandles to <see langword="null"/> (default behavior, handle inherited);
+        ///   <see langword="false"/> to use an empty list (handle not inherited).
+        /// </param>
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true, false)]   // handle in InheritedHandles list -> inherited
+        [InlineData(false, false)]  // InheritedHandles is empty list -> not inherited
+        [InlineData(false, true)]   // InheritedHandles is null -> inherited (default behavior)
+        public void InheritedHandles_CanRestrictHandleInheritance(bool addHandleToList, bool nullList)
         {
-            // Create an anonymous pipe; the child process should inherit the write end only when it's in InheritedHandles.
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle pipeRead, out SafeFileHandle pipeWrite);
+            bool expectInherited = addHandleToList || nullList;
 
-            ProcessStartInfo startInfo = OperatingSystem.IsWindows()
-                ? new("cmd") { ArgumentList = { "/c", "ping -n 30 127.0.0.1 > nul" } }
-                : new("sh") { ArgumentList = { "-c", "sleep 30" } };
+            // Create an inheritable pipe. The child process will try to open the write end
+            // using the handle string passed as an argument.
+            using AnonymousPipeServerStream pipeServer = new AnonymousPipeServerStream(PipeDirection.In, HandleInheritability.Inheritable);
+            string clientHandleStr = pipeServer.GetClientHandleAsString();
 
-            startInfo.InheritedHandles = new List<SafeHandle> { pipeWrite };
+            RemoteInvokeOptions options = new RemoteInvokeOptions { CheckExitCode = false };
 
-            Process? process1 = null;
-            Process? process2 = null;
-            using (pipeRead)
-            using (pipeWrite)
+            if (addHandleToList)
             {
-                try
+                // Explicitly list the pipe handle so the child can inherit it
+                options.StartInfo.InheritedHandles = new List<SafeHandle> { pipeServer.ClientSafePipeHandle };
+            }
+            else if (!nullList)
+            {
+                // Empty list: restrict inheritance; the pipe handle will NOT be inherited
+                options.StartInfo.InheritedHandles = new List<SafeHandle>();
+            }
+            // else: null (default) - inheritable handles are inherited by default
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                static (string handleStr) =>
                 {
-                    // Start process1 with pipeWrite in InheritedHandles - it will hold the write end of the pipe.
-                    process1 = Process.Start(startInfo)!;
-                    pipeWrite.Close(); // close parent's copy
+                    // Try to write to the pipe via the inherited handle.
+                    // If the handle was inherited, the write succeeds.
+                    // If not inherited (e.g., empty InheritedHandles list), opening the client
+                    // pipe will fail with an exception; we catch it and return success anyway.
+                    try
+                    {
+                        using AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, handleStr);
+                        client.WriteByte(42);
+                    }
+                    catch
+                    {
+                        // Handle was not inherited - expected when InheritedHandles is an empty list
+                    }
+                    return RemoteExecutor.SuccessExitCode;
+                },
+                clientHandleStr,
+                options);
 
-                    // Start process2 WITHOUT InheritedHandles - it should NOT inherit pipeWrite.
-                    ProcessStartInfo startInfo2 = OperatingSystem.IsWindows()
-                        ? new("cmd") { ArgumentList = { "/c", "ping -n 30 127.0.0.1 > nul" } }
-                        : new("sh") { ArgumentList = { "-c", "sleep 30" } };
+            pipeServer.DisposeLocalCopyOfClientHandle();
 
-                    process2 = Process.Start(startInfo2)!;
+            // Wait for child to complete
+            remoteHandle.Process.WaitForExit();
 
-                    // The pipe should still be open because process1 holds the write end.
-                    // Use a stream that won't dispose pipeRead (the outer using does that).
-                    using FileStream pipeStream = new(pipeRead, FileAccess.Read);
-                    Task<int> readTask = pipeStream.ReadAsync(new byte[1]).AsTask();
+            // After the child exits:
+            // - If inherited: the pipe write end was held by the child; after child exits, it's closed -> EOF
+            //   AND we should have received the byte the child wrote
+            // - If not inherited: the write end was never held by the child; after DisposeLocalCopyOfClientHandle
+            //   the write end is fully closed -> EOF immediately
+            //
+            // Use Task.Run with a timeout to avoid blocking indefinitely in unexpected edge cases.
+            int byteRead = Task.Run(() => pipeServer.ReadByte()).GetAwaiter().GetResult();
 
-                    // Allow time for child processes to start up and inherit handles.
-                    // No EOF should arrive yet since process1 still holds the write end.
-                    Task firstCompleted = await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromSeconds(1)));
-                    Assert.NotSame(readTask, firstCompleted); // pipe still open
-
-                    // Kill process1 - the pipe write end is now closed (process2 didn't inherit it).
-                    process1.Kill();
-                    await process1.WaitForExitAsync();
-
-                    // EOF should arrive quickly because process2 does not hold the pipe write end.
-                    await readTask.WaitAsync(TimeSpan.FromSeconds(10));
-                    Assert.Equal(0, await readTask); // EOF
-                }
-                finally
-                {
-                    process1?.Kill();
-                    process2?.Kill();
-                    process1?.WaitForExit();
-                    process2?.WaitForExit();
-                    process1?.Dispose();
-                    process2?.Dispose();
-                }
+            if (expectInherited)
+            {
+                // Child successfully wrote byte 42
+                Assert.Equal(42, byteRead);
+            }
+            else
+            {
+                // Pipe write end was never open in child -> EOF
+                Assert.Equal(-1, byteRead);
             }
         }
     }

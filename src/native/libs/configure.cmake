@@ -201,10 +201,16 @@ check_symbol_exists(
     unistd.h
     HAVE_PIPE2)
 
+# close_range is available as a function on FreeBSD 12.2+ and Linux (glibc >= 2.34).
+# On Linux with older glibc it is still accessible via the __NR_close_range syscall number.
+check_function_exists(
+    close_range
+    HAVE_CLOSE_RANGE)
+
 check_symbol_exists(
     __NR_close_range
     "sys/syscall.h"
-    HAVE_CLOSE_RANGE)
+    HAVE_CLOSE_RANGE_SYSCALL)
 
 check_symbol_exists(
     getmntinfo
