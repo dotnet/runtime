@@ -2503,7 +2503,7 @@ namespace Reg
             return E_INVALIDARG;
         }
 
-        RegKeyHolder hTargetKey;
+        HKEYHolder hTargetKey;
         if (wszSubKeyName == NULL || *wszSubKeyName == W('\0'))
         {   // No subkey was requested, use hKey as the resolved key.
             hTargetKey = hKey;

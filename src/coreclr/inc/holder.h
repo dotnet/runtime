@@ -873,7 +873,7 @@ public:
 //  USE SafeComHolder
 //
 // ReleaseHolder : COM Interface holder for use outside the VM (or on well known instances
-//                  which do not need preemptive Relesae)
+//                  which do not need preemptive Release)
 //
 // Usage example:
 //
@@ -888,6 +888,7 @@ public:
 template <typename TYPE>
 FORCEINLINE void DoTheRelease(TYPE *value)
 {
+    STATIC_CONTRACT_WRAPPER;
     if (value)
     {
         value->Release();
@@ -895,16 +896,7 @@ FORCEINLINE void DoTheRelease(TYPE *value)
 }
 
 template<typename _TYPE>
-using DoNothingHolder = SpecializedWrapper<_TYPE, DoNothing<_TYPE*>>;
-
-#ifndef SOS_INCLUDE
-template<typename _TYPE>
 using ReleaseHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
-#endif // SOS_INCLUDE
-
-template<typename _TYPE>
-using NonVMComHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
-
 
 //-----------------------------------------------------------------------------
 // StubHolder : holder for stubs
@@ -1102,27 +1094,39 @@ namespace detail
 
 template<typename _TYPE>
 using ResetPointerHolder = SpecializedWrapper<_TYPE, detail::ZeroMem<_TYPE>::Invoke>;
-template<typename _TYPE>
-using FieldNuller = SpecializedWrapper<_TYPE, detail::ZeroMem<_TYPE>::Invoke>;
 
 //-----------------------------------------------------------------------------
 // Wrap win32 functions using HANDLE
 //-----------------------------------------------------------------------------
 
 FORCEINLINE void VoidCloseHandle(HANDLE h) { if (h != NULL) CloseHandle(h); }
-// (UINT_PTR) -1 is INVALID_HANDLE_VALUE
-FORCEINLINE void VoidCloseFileHandle(HANDLE h) { if (h != ((HANDLE)((LONG_PTR) -1))) CloseHandle(h); }
-FORCEINLINE void VoidUnmapViewOfFile(void *ptr) { UnmapViewOfFile(ptr); }
-
-template <typename TYPE>
-FORCEINLINE void TypeUnmapViewOfFile(TYPE *ptr) { UnmapViewOfFile(ptr); }
-
-// (UINT_PTR) -1 is INVALID_HANDLE_VALUE
-//@TODO: Dangerous default value. Some Win32 functions return INVALID_HANDLE_VALUE, some return NULL (such as CreatEvent).
 typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidCloseHandle, (UINT_PTR) -1> HandleHolder;
-typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidCloseFileHandle, (UINT_PTR) -1> FileHandleHolder;
 
-typedef Wrapper<void *, DoNothing, VoidUnmapViewOfFile> MapViewHolder;
+class MapViewHolder final
+{
+    void* m_ptr;
+    void Release()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (m_ptr != NULL)
+        {
+            ::UnmapViewOfFile(m_ptr);
+            m_ptr = NULL;
+        }
+    }
+public:
+    MapViewHolder() : m_ptr{ NULL } { STATIC_CONTRACT_LEAF; }
+    explicit MapViewHolder(void* ptr) : m_ptr{ ptr } { STATIC_CONTRACT_LEAF; }
+
+    MapViewHolder(const MapViewHolder&) = delete;
+    MapViewHolder& operator=(const MapViewHolder&) = delete;
+    MapViewHolder(MapViewHolder&&) = delete;
+    MapViewHolder& operator=(MapViewHolder&&) = delete;
+
+    ~MapViewHolder() noexcept { STATIC_CONTRACT_WRAPPER; Release(); }
+
+    operator void*() const { STATIC_CONTRACT_LEAF; return m_ptr; }
+};
 
 //-----------------------------------------------------------------------------
 // Misc holders
@@ -1133,23 +1137,37 @@ FORCEINLINE void HolderFreeLibrary(HMODULE h) { FreeLibrary(h); }
 
 typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, 0> HModuleHolder;
 
-template <typename T> FORCEINLINE
-void DoLocalFree(T* pMem)
+template<typename T>
+class LocalAllocHolder final
 {
+    T* m_value;
+
+    void Release()
+    {
 #ifdef HOST_WINDOWS
-    (LocalFree)((void*)pMem);
+        (LocalFree)((void*)m_value);
 #else
-    (free)((void*)pMem);
+        (free)((void*)m_value);
 #endif
-}
+        m_value = NULL;
+    }
+public:
+    LocalAllocHolder() : m_value{ NULL } { STATIC_CONTRACT_LEAF; }
 
-template<typename _TYPE>
-using LocalAllocHolder = SpecializedWrapper<_TYPE, DoLocalFree<_TYPE>>;
+    LocalAllocHolder(const LocalAllocHolder&) = delete;
+    LocalAllocHolder& operator=(const LocalAllocHolder&) = delete;
+    LocalAllocHolder(LocalAllocHolder&&) = delete;
+    LocalAllocHolder& operator=(LocalAllocHolder&&) = delete;
 
-inline void BoolSet( _Out_ bool * val ) { *val = true; }
-inline void BoolUnset( _Out_ bool * val ) { *val = false; }
+    ~LocalAllocHolder() noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+        Release();
+    }
 
-typedef Wrapper< bool *, BoolSet, BoolUnset > BoolFlagStateHolder;
+    operator T*() const { STATIC_CONTRACT_LEAF; return m_value; }
+    T** operator&() { STATIC_CONTRACT_LEAF; _ASSERTE(m_value == NULL); return &m_value; }
+};
 
 //
 // We need the following methods to have volatile arguments, so that they can accept
@@ -1160,12 +1178,6 @@ FORCEINLINE void CounterIncrease(RAW_KEYWORD(volatile) LONG* p) {InterlockedIncr
 FORCEINLINE void CounterDecrease(RAW_KEYWORD(volatile) LONG* p) {InterlockedDecrement(p);};
 
 typedef Wrapper<RAW_KEYWORD(volatile) LONG*, CounterIncrease, CounterDecrease, (UINT_PTR)0, CompareDefault<RAW_KEYWORD(volatile) LONG*>> CounterHolder;
-
-
-#ifdef HOST_WINDOWS
-FORCEINLINE void RegKeyRelease(HKEY k) {RegCloseKey(k);};
-typedef Wrapper<HKEY,DoNothing,RegKeyRelease> RegKeyHolder;
-#endif // HOST_WINDOWS
 
 class ErrorModeHolder final
 {
@@ -1192,7 +1204,7 @@ public:
 // HKEYHolder : HKEY holder, Calls RegCloseKey on scope exit.
 //
 //  {
-//      HKEYHolder hFoo = NULL;
+//      HKEYHolder hFoo;
 //      RegOpenKeyEx(HKEY_CLASSES_ROOT, L"Interface",0, KEY_READ, hFoo);
 //
 //  } // close key on out of scope via RegCloseKey.
@@ -1200,47 +1212,48 @@ public:
 
 class HKEYHolder
 {
-public:
-    HKEYHolder()
-    {
-        STATIC_CONTRACT_LEAF;
-        m_value = 0;
-    }
+    HKEY m_value;
+    bool m_release;
 
-    ~HKEYHolder()
+    void Release()
     {
         STATIC_CONTRACT_WRAPPER;
-        if (m_value != NULL)
+        if (m_value != NULL && m_release)
             ::RegCloseKey(m_value);
+        m_value = NULL;
     }
 
-    FORCEINLINE void operator=(HKEY p)
+public:
+    HKEYHolder()
+        : m_value{ NULL }, m_release{ true }
     {
         STATIC_CONTRACT_LEAF;
-        if (p != 0)
-            m_value = p;
     }
 
-    FORCEINLINE operator HKEY()
+    HKEYHolder(const HKEYHolder&) = delete;
+    HKEYHolder& operator=(const HKEYHolder&) = delete;
+    HKEYHolder(HKEYHolder&&) = delete;
+    HKEYHolder& operator=(HKEYHolder&&) = delete;
+
+    ~HKEYHolder() noexcept { STATIC_CONTRACT_WRAPPER; Release(); }
+
+    void SuppressRelease() { STATIC_CONTRACT_LEAF; m_release = false; }
+
+    void operator=(HKEY p)
     {
-        STATIC_CONTRACT_LEAF;
-        return m_value;
+        STATIC_CONTRACT_WRAPPER;
+        Release();
+        m_value = p;
     }
 
-    FORCEINLINE operator HKEY*()
+    operator HKEY() { STATIC_CONTRACT_LEAF; return m_value; }
+
+    HKEY* operator&()
     {
         STATIC_CONTRACT_LEAF;
+        _ASSERTE(m_value == NULL);
         return &m_value;
     }
-
-    FORCEINLINE HKEY* operator&()
-    {
-        STATIC_CONTRACT_LEAF;
-        return &m_value;
-    }
-
-private:
-    HKEY m_value;
 };
 #endif // HOST_WINDOWS
 

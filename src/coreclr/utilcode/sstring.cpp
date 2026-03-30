@@ -1866,10 +1866,12 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
         RETURN FALSE;
     else
     {
-        if (string[result-1] == W(' '))
-            string[result-1] = W('\0');
+        WCHAR* stringRaw = string;
+        _ASSERTE(stringRaw != NULL);
+        if (stringRaw[result-1] == W(' '))
+            stringRaw[result-1] = W('\0');
 
-        Set(string);
+        Set(stringRaw);
         RETURN TRUE;
     }
 }
