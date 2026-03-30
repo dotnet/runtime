@@ -726,6 +726,16 @@ namespace System
             return BitOperations.LeadingZeroCount(value._upper);
         }
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.Log10(TSelf)" />
+        public static Int128 Log10(Int128 value)
+        {
+            if (IsNegative(value))
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+            return (Int128)UInt128.Log10((UInt128)value);
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         public static Int128 PopCount(Int128 value)
             => ulong.PopCount(value._lower) + ulong.PopCount(value._upper);

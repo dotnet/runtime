@@ -352,6 +352,33 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(unchecked((nuint)0x0000000000000000), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x0000000000000000)));
+                Assert.Equal(unchecked((nuint)0x0000000000000000), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x0000000000000001)));
+                Assert.Equal(unchecked((nuint)0x0000000000000000), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x0000000000000009)));
+                Assert.Equal(unchecked((nuint)0x0000000000000001), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x000000000000000A)));
+                Assert.Equal(unchecked((nuint)0x0000000000000002), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x0000000000000064)));
+                Assert.Equal(unchecked((nuint)0x0000000000000012), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x7FFFFFFFFFFFFFFF)));
+                Assert.Equal(unchecked((nuint)0x0000000000000012), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0x8000000000000000)));
+                Assert.Equal(unchecked((nuint)0x0000000000000013), BinaryIntegerHelper<nuint>.Log10(unchecked((nuint)0xFFFFFFFFFFFFFFFF)));
+            }
+            else
+            {
+                Assert.Equal((nuint)0x00000000, BinaryIntegerHelper<nuint>.Log10((nuint)0x00000000));
+                Assert.Equal((nuint)0x00000000, BinaryIntegerHelper<nuint>.Log10((nuint)0x00000001));
+                Assert.Equal((nuint)0x00000000, BinaryIntegerHelper<nuint>.Log10((nuint)0x00000009));
+                Assert.Equal((nuint)0x00000001, BinaryIntegerHelper<nuint>.Log10((nuint)0x0000000A));
+                Assert.Equal((nuint)0x00000002, BinaryIntegerHelper<nuint>.Log10((nuint)0x00000064));
+                Assert.Equal((nuint)0x00000009, BinaryIntegerHelper<nuint>.Log10((nuint)0x7FFFFFFF));
+                Assert.Equal((nuint)0x00000009, BinaryIntegerHelper<nuint>.Log10((nuint)0x80000000));
+                Assert.Equal((nuint)0x00000009, BinaryIntegerHelper<nuint>.Log10((nuint)0xFFFFFFFF));
+            }
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             if (Environment.Is64BitProcess)

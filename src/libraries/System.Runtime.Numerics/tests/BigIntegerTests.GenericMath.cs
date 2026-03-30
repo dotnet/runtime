@@ -207,6 +207,39 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.Log10(Zero));
+            Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.Log10(One));
+            Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.Log10((BigInteger)9));
+            Assert.Equal((BigInteger)1, BinaryIntegerHelper<BigInteger>.Log10((BigInteger)10));
+            Assert.Equal((BigInteger)1, BinaryIntegerHelper<BigInteger>.Log10((BigInteger)99));
+            Assert.Equal((BigInteger)2, BinaryIntegerHelper<BigInteger>.Log10((BigInteger)100));
+            Assert.Equal((BigInteger)2, BinaryIntegerHelper<BigInteger>.Log10((BigInteger)999));
+            Assert.Equal((BigInteger)18, BinaryIntegerHelper<BigInteger>.Log10(Int64MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<BigInteger>.Log10(Int64MinValue));
+        }
+
+        [Fact]
+        public static void Log10Test_LargeValues()
+        {
+            // 2^681 is the smallest power of 2 where the Log2-based approximation
+            // (Log2 * 1233 >> 12) undershoots by 1, exercising the correction loop.
+            // approx = 204, true log10 = 205
+            Assert.Equal((BigInteger)205, BinaryIntegerHelper<BigInteger>.Log10(BigInteger.Pow(2, 681)));
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void Log10Test_VeryLargeValues()
+        {
+            // 2^217769 is the smallest power of 2 where the approximation undershoots
+            // by 2, which a simple ±1 correction could not handle.
+            // approx = 65553, true log10 = 65555
+            Assert.Equal((BigInteger)65555, BinaryIntegerHelper<BigInteger>.Log10(BigInteger.Pow(2, 217769)));
+        }
+
+        [Fact]
         public static void LeadingZeroCountTest()
         {
             Assert.Equal((BigInteger)(nint.Size * 8), BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Zero));
