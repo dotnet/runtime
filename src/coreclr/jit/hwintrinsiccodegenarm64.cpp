@@ -2165,6 +2165,52 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve2_CreateWhileGreaterThanMaskByte:
+            case NI_Sve2_CreateWhileGreaterThanMaskDouble:
+            case NI_Sve2_CreateWhileGreaterThanMaskInt16:
+            case NI_Sve2_CreateWhileGreaterThanMaskInt32:
+            case NI_Sve2_CreateWhileGreaterThanMaskInt64:
+            case NI_Sve2_CreateWhileGreaterThanMaskSByte:
+            case NI_Sve2_CreateWhileGreaterThanMaskSingle:
+            case NI_Sve2_CreateWhileGreaterThanMaskUInt16:
+            case NI_Sve2_CreateWhileGreaterThanMaskUInt32:
+            case NI_Sve2_CreateWhileGreaterThanMaskUInt64:
+            {
+                // Emit size and instruction is based on the scalar operands.
+                var_types auxType = node->GetAuxiliaryType();
+                emitSize          = emitActualTypeSize(auxType);
+                if (varTypeIsUnsigned(auxType))
+                {
+                    ins = INS_sve_whilehi;
+                }
+
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskByte:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskDouble:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt16:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt32:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt64:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskSByte:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskSingle:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt16:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt32:
+            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt64:
+            {
+                // Emit size and instruction is based on the scalar operands.
+                var_types auxType = node->GetAuxiliaryType();
+                emitSize          = emitActualTypeSize(auxType);
+                if (varTypeIsUnsigned(auxType))
+                {
+                    ins = INS_sve_whilehs;
+                }
+
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
             case NI_Sve_GatherPrefetch8Bit:
             case NI_Sve_GatherPrefetch16Bit:
             case NI_Sve_GatherPrefetch32Bit:
