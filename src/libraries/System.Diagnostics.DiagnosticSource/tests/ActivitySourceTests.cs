@@ -85,6 +85,47 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestUpdateActivityListenerUpdatesListenerState()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource source = new ActivitySource("ListenerUpdateSource");
+                Assert.False(source.HasListeners());
+
+                bool shouldListen = true;
+                int startedCount = 0;
+                int stoppedCount = 0;
+
+                using ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = activitySource => shouldListen && object.ReferenceEquals(source, activitySource),
+                    ActivityStarted = _ => startedCount++,
+                    ActivityStopped = _ => stoppedCount++,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                ActivitySource.AddActivityListener(listener);
+                Assert.True(source.HasListeners());
+                using (Activity? activity = source.StartActivity("enabled"))
+                {
+                    Assert.NotNull(activity);
+                    Assert.Equal(1, startedCount);
+                    Assert.Equal(0, stoppedCount);
+                }
+
+                Assert.Equal(1, startedCount);
+                Assert.Equal(1, stoppedCount);
+
+                shouldListen = false;
+                ActivitySource.UpdateActivityListener(listener);
+                Assert.False(source.HasListeners());
+                Assert.Null(source.StartActivity("disabled"));
+                Assert.Equal(1, startedCount);
+                Assert.Equal(1, stoppedCount);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestStartActivityWithNoListener()
         {
             RemoteExecutor.Invoke(() => {

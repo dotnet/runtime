@@ -9,7 +9,7 @@ using System.Threading;
 namespace System.Diagnostics
 {
     [DebuggerDisplay("Name = {Name}")]
-    public sealed class ActivitySource : IDisposable
+    public class ActivitySource : IDisposable
     {
         private static readonly SynchronizedList<ActivitySource> s_activeSources = new SynchronizedList<ActivitySource>();
         private static readonly SynchronizedList<ActivityListener> s_allListeners = new SynchronizedList<ActivityListener>();
@@ -19,7 +19,7 @@ namespace System.Diagnostics
         /// Construct an ActivitySource object with the input name
         /// </summary>
         /// <param name="name">The name of the ActivitySource object</param>
-        public ActivitySource(string name) : this(name, version: "", tags: null, telemetrySchemaUrl: null) {}
+        public ActivitySource(string name) : this(name, version: "", tags: null, scope: null, telemetrySchemaUrl: null) {}
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -27,7 +27,7 @@ namespace System.Diagnostics
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public ActivitySource(string name, string? version = "") : this(name, version, tags: null, telemetrySchemaUrl: null) {}
+        public ActivitySource(string name, string? version = "") : this(name, version, tags: null, scope: null, telemetrySchemaUrl: null) {}
 
         /// <summary>
         /// Construct an ActivitySource object with the input name
@@ -35,18 +35,19 @@ namespace System.Diagnostics
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
         /// <param name="tags">The optional ActivitySource tags.</param>
-        public ActivitySource(string name, string? version = "", IEnumerable<KeyValuePair<string, object?>>? tags = default) : this(name, version, tags, telemetrySchemaUrl: null) {}
+        public ActivitySource(string name, string? version = "", IEnumerable<KeyValuePair<string, object?>>? tags = default) : this(name, version, tags, scope: null, telemetrySchemaUrl: null) {}
 
         /// <summary>
         /// Initialize a new instance of the ActivitySource object using the <see cref="ActivitySourceOptions" />.
         /// </summary>
         /// <param name="options">The <see cref="ActivitySourceOptions" /> object to use for initializing the ActivitySource object.</param>
-        public ActivitySource(ActivitySourceOptions options) : this((options ?? throw new ArgumentNullException(nameof(options))).Name, options.Version, options.Tags, options.TelemetrySchemaUrl) {}
+        public ActivitySource(ActivitySourceOptions options) : this((options ?? throw new ArgumentNullException(nameof(options))).Name, options.Version, options.Tags, options.Scope, options.TelemetrySchemaUrl) {}
 
-        private ActivitySource(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, string? telemetrySchemaUrl)
+        private ActivitySource(string name, string? version, IEnumerable<KeyValuePair<string, object?>>? tags, object? scope, string? telemetrySchemaUrl)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Version = version;
+            Scope = scope;
             TelemetrySchemaUrl = telemetrySchemaUrl;
 
             // Sorting the tags to make sure the tags are always in the same order.
@@ -90,6 +91,11 @@ namespace System.Diagnostics
         /// Returns the tags associated with the ActivitySource.
         /// </summary>
         public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
+
+        /// <summary>
+        /// Returns the ActivitySource scope object.
+        /// </summary>
+        public object? Scope { get; }
 
         /// <summary>
         /// Returns the telemetry schema URL associated with the ActivitySource.
@@ -335,7 +341,9 @@ namespace System.Diagnostics
         /// <summary>
         /// Dispose the ActivitySource object and remove the current instance from the global list. empty the listeners list too.
         /// </summary>
-        public void Dispose()
+        public void Dispose() => Dispose(true);
+
+        protected virtual void Dispose(bool disposing)
         {
             _listeners = null;
             s_activeSources.Remove(this);
@@ -361,6 +369,36 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>
+        /// Update the <see cref="ActivityListener"/> object to start or stop listening to the <see cref="Activity"/> events based on the listener configuration.
+        /// </summary>
+        /// <param name="listener"></param>
+        public static void UpdateActivityListener(ActivityListener listener)
+        {
+            ArgumentNullException.ThrowIfNull(listener);
+
+            if (!s_allListeners.Any(x => x == listener))
+            {
+                AddActivityListener(listener);
+                return;
+            }
+
+            s_activeSources.EnumWithAction((source, obj) => {
+                var ls = (ActivityListener)obj;
+                var shouldListenTo = ((ActivityListener)obj).ShouldListenTo?.Invoke(source) ?? false;
+                var present = source._listeners != null && source._listeners.Any(x => x == ls);
+
+                if (shouldListenTo && !present)
+                {
+                    source.AddListener(ls);
+                }
+                else if (!shouldListenTo && present)
+                {
+                    source.RemoveListener(ls);
+                }
+            }, listener);
+        }
+
         internal delegate void Function<T, TParent>(T item, ref ActivityCreationOptions<TParent> data, ref ActivitySamplingResult samplingResult, ref ActivityCreationOptions<ActivityContext> dataWithContext);
 
         internal void AddListener(ActivityListener listener)
@@ -371,6 +409,11 @@ namespace System.Diagnostics
             }
 
             _listeners.AddIfNotExist(listener);
+        }
+
+        internal void RemoveListener(ActivityListener listener)
+        {
+            _listeners?.Remove(listener);
         }
 
         internal static void DetachListener(ActivityListener listener)
@@ -506,6 +549,19 @@ namespace System.Diagnostics
             {
                 action(item, arg);
             }
+        }
+
+        public bool Any(Func<T, bool> predicate)
+        {
+            foreach (T item in _volatileArray)
+            {
+                if (predicate(item))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public void EnumWithExceptionNotification(Activity activity, Exception exception, ref TagList tags)
