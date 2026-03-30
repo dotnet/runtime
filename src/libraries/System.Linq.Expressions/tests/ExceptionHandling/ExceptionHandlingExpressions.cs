@@ -224,6 +224,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory, ClassData(typeof(CompilationTypes))]
         [ActiveIssue("https://github.com/mono/mono/issues/14925", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/0000", TestPlatforms.Linux)] // TODO: file issue — DynamicMethod catch handler resolves wrong assembly for WrapNonExceptionThrows on Linux when test is self-hosted Exe (xunit v3)
         public void ExpressionsUnwrapeExternallyThrownRuntimeWrappedException(bool useInterpreter)
         {
             ParameterExpression exRWE = Expression.Variable(typeof(RuntimeWrappedException));
