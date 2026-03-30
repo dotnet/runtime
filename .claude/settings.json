@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|create|comment|update|edit|review|push|merge",
+        "hooks": [
+          {
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const i=JSON.parse(d);const a=i.toolArgs||'';const n=i.toolName||'';if(/gh\\s+(pr|issue)\\s+(create|comment|review|edit|merge|close)/.test(a)||/github/i.test(n))process.stderr.write('Include AI-generated content disclosure (> [!NOTE]) per copilot-instructions.md\\n')}catch{}})\""
+          }
+        ],
+        "description": "Remind about AI disclosure when posting to GitHub via gh CLI or MCP tools"
+      }
+    ]
+  }
+}
