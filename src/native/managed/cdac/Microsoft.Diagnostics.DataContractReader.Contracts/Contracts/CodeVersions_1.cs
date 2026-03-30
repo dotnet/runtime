@@ -413,4 +413,31 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
     {
         return iLCodeVersionHandle.IsExplicit ? AsNode(iLCodeVersionHandle).ILAddress == TargetPointer.Null : true;
     }
+
+    NativeCodeVersionOptimizationTier ICodeVersions.GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle)
+    {
+        if (!codeVersionHandle.Valid)
+        {
+            throw new ArgumentException("Invalid NativeCodeVersionHandle");
+        }
+
+        if (codeVersionHandle.IsExplicit)
+        {
+            NativeCodeVersionNode nativeCodeVersionNode = _target.ProcessedData.GetOrAdd<NativeCodeVersionNode>(codeVersionHandle.CodeVersionNodeAddress);
+            return nativeCodeVersionNode.OptimizationTier is null
+                ? NativeCodeVersionOptimizationTier.OptimizationTierUnknown
+                : (NativeCodeVersionOptimizationTier) nativeCodeVersionNode.OptimizationTier;
+        }
+        else
+        {
+            IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(codeVersionHandle.MethodDescAddress);
+            NativeCodeVersionOptimizationTier optimizationTier = rtsContract.GetMethodDescOptimizationTier(methodDescHandle);
+            if (optimizationTier == NativeCodeVersionOptimizationTier.OptimizationTierUnknown)
+            {
+                return rtsContract.GetInitialOptimizationTier(methodDescHandle);
+            }
+            return optimizationTier;
+        }
+    }
 }

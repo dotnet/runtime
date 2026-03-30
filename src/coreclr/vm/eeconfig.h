@@ -96,7 +96,7 @@ public:
     bool          TieredCompilation_UseCallCountingStubs() const { LIMITED_METHOD_CONTRACT; return fTieredCompilation_UseCallCountingStubs; }
     DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
 #endif // FEATURE_TIERED_COMPILATION
-    DWORD TieredCompilation_DefaultTier() const 
+    DWORD TieredCompilation_DefaultTier() const
     {
         LIMITED_METHOD_CONTRACT;
         return tieredCompilation_DefaultTier;
@@ -709,6 +709,16 @@ private:
 public:
     DWORD GetSleepOnExit()
     { return dwSleepOnExit; }
+
+    friend struct ::cdac_data<EEConfig>;
+};
+
+template<>
+struct cdac_data<EEConfig>
+{
+    static constexpr size_t JitMinOpts = offsetof(EEConfig, fJitMinOpts);
+    static constexpr size_t GenDebuggable = offsetof(EEConfig, fDebuggable);
+    static constexpr size_t TieredCompilation_DefaultTier = offsetof(EEConfig, tieredCompilation_DefaultTier);
 };
 
 

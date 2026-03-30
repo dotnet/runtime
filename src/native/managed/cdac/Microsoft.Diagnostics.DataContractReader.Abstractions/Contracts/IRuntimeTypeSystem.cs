@@ -78,6 +78,12 @@ public enum ArrayFunctionType
     Constructor = 3
 }
 
+[Flags]
+public enum DebuggerControlFlag
+{
+    DBCF_ALLOW_JIT_OPT = 0x0008,
+}
+
 public interface IRuntimeTypeSystem : IContract
 {
     static string IContract.Name => nameof(RuntimeTypeSystem);
@@ -207,6 +213,11 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    NativeCodeVersionOptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
+    NativeCodeVersionOptimizationTier GetInitialOptimizationTier(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
+    bool IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
+    bool IsJitOptimizationDisabled(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
     #region FieldDesc inspection APIs
     TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer) => throw new NotImplementedException();

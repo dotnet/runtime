@@ -521,6 +521,8 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 #endif // PROFILING_SUPPORTED
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%s\".\n", GetDebugName()));
+
+    UpdateAllMethodsJITOptimizationDisabledFlag();
 }
 
 #endif // DACCESS_COMPILE
@@ -548,6 +550,8 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
         }
     }
 #endif // DEBUGGING_SUPPORTED
+
+    UpdateAllMethodsJITOptimizationDisabledFlag();
 
 #if defined(DACCESS_COMPILE)
     // Now that we've changed m_dwTransientFlags, update that in the target too.

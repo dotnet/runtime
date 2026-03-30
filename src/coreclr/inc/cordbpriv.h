@@ -36,7 +36,7 @@ enum DebuggerControlFlag
 
     DBCF_USER_MASK                  = 0x00FF,
     DBCF_GENERATE_DEBUG_CODE        = 0x0001,
-    DBCF_ALLOW_JIT_OPT              = 0x0008,
+    DBCF_ALLOW_JIT_OPT              = 0x0008, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value.
     DBCF_PROFILER_ENABLED           = 0x0020,
 //    DBCF_ACTIVATE_REMOTE_DEBUGGING  = 0x0040,  Deprecated.  DO NOT USE
 
@@ -53,8 +53,8 @@ enum DebuggerControlFlag
 enum DebuggerAssemblyControlFlags
 {
     DACF_NONE                       = 0x00,
-    DACF_USER_OVERRIDE              = 0x01,
-    DACF_ALLOW_JIT_OPTS             = 0x02,
+    DACF_USER_OVERRIDE              = 0x01, // [cDAC] [Loader]: Contract depends on this value.
+    DACF_ALLOW_JIT_OPTS             = 0x02, // [cDAC] [Loader]: Contract depends on this value.
     DACF_OBSOLETE_TRACK_JIT_INFO    = 0x04, // obsolete in V2.0, we're always tracking.
     DACF_ENC_ENABLED                = 0x08,
     DACF_IGNORE_PDBS                = 0x20,

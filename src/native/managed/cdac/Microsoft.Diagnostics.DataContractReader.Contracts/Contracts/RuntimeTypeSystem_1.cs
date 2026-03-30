@@ -1645,6 +1645,75 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return TargetPointer.Null;
     }
 
+    NativeCodeVersionOptimizationTier IRuntimeTypeSystem.GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        TargetPointer codeDataAddress = methodDesc.CodeData;
+        if (codeDataAddress == TargetPointer.Null)
+            return NativeCodeVersionOptimizationTier.OptimizationTierUnknown;
+
+        Data.MethodDescCodeData codeData = _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(codeDataAddress);
+        return codeData.OptimizationTier is null
+            ? NativeCodeVersionOptimizationTier.OptimizationTierUnknown
+            : (NativeCodeVersionOptimizationTier)codeData.OptimizationTier;
+    }
+
+    bool IRuntimeTypeSystem.IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return methodDesc.IsEligibleForTieredCompilation;
+    }
+
+    private bool IsJitOptimizationDisabledForSpecificMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        MethodTable methodTable = GetOrCreateMethodTable(methodDesc);
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(methodTable.Module);
+        MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+
+        bool isNoMetadata = methodDesc.Classification == MethodClassification.Dynamic;
+        bool isMiNoOptimization = false;
+        if (mdReader is not null)
+        {
+            MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)methodDesc.Token);
+            MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+            MethodImplAttributes implAttrs = methodDef.ImplAttributes;
+            isMiNoOptimization = (implAttrs & MethodImplAttributes.NoOptimization) != 0;
+        }
+        else if (!isNoMetadata)
+        {
+            return false;
+        }
+
+        return !isNoMetadata && isMiNoOptimization;
+    }
+
+    private bool IsJitOptimizationDisabledForModule(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        MethodTable methodTable = GetOrCreateMethodTable(methodDesc);
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(methodTable.Module);
+        return _target.Contracts.Loader.GetFlags(moduleHandle).HasFlag(ModuleFlags.AllMethodsJitOptimizationDisabled);
+    }
+
+    bool IRuntimeTypeSystem.IsJitOptimizationDisabled(MethodDescHandle methodDescHandle)
+    {
+        return IsJitOptimizationDisabledForModule(methodDescHandle) || IsJitOptimizationDisabledForSpecificMethod(methodDescHandle);
+    }
+
+    NativeCodeVersionOptimizationTier IRuntimeTypeSystem.GetInitialOptimizationTier(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        if (!methodDesc.IsEligibleForTieredCompilation)
+        {
+            return NativeCodeVersionOptimizationTier.OptimizationTierOptimized;
+        }
+
+        TargetPointer eeConfigPtr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.EEConfig));
+        Data.EEConfig eeConfig = _target.ProcessedData.GetOrAdd<Data.EEConfig>(eeConfigPtr);
+        return (NativeCodeVersionOptimizationTier)eeConfig.TieredCompilation_DefaultTier;
+    }
+
     private sealed class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries
     {
         private readonly RuntimeTypeSystem_1 _rts;

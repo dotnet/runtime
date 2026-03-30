@@ -14,6 +14,8 @@ internal readonly struct Loader_1 : ILoader
 {
     private const string DefaultDomainFriendlyName = "DefaultDomain";
     private const uint ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED = 0x1; // Assembly Notify Flag for profiler notification
+    private const uint DEBUGGER_INFO_MASK_PRIV = 0x0000FC00;
+    private const int DEBUGGER_INFO_SHIFT_PRIV = 10;
     private const ushort MaxWebcilSections = 16; // Must stay in sync with native WEBCIL_MAX_SECTIONS.
 
     private enum ModuleFlags_1 : uint
@@ -21,6 +23,7 @@ internal readonly struct Loader_1 : ILoader
         Tenured = 0x1,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
         EditAndContinue = 0x8, // Edit and Continue is enabled for this module
         ReflectionEmit = 0x40,    // Reflection.Emit was used to create this module
+        ProfilerDisableOpt = 0x80, // Profiler disabled JIT optimizations when module was loaded
     }
 
     private enum PEImageFlags : uint
@@ -366,6 +369,8 @@ internal readonly struct Loader_1 : ILoader
             flags |= ModuleFlags.EditAndContinue;
         if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
             flags |= ModuleFlags.ReflectionEmit;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerDisableOpt))
+            flags |= ModuleFlags.ProfilerDisableOpt;
 
         return flags;
     }
@@ -374,6 +379,18 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         return GetFlags(module);
+    }
+
+    bool ILoader.IsReadyToRun(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.ReadyToRunInfo != TargetPointer.Null;
+    }
+
+    DebuggerAssemblyControlFlags ILoader.GetDebuggerInfoBits(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return (DebuggerAssemblyControlFlags)((module.Flags & DEBUGGER_INFO_MASK_PRIV) >> DEBUGGER_INFO_SHIFT_PRIV);
     }
 
     bool ILoader.TryGetSimpleName(ModuleHandle handle, out string simpleName)

@@ -600,6 +600,7 @@ CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
 CDAC_TYPE_FIELD(MethodDescCodeData, /*CodePointer*/, TemporaryEntryPoint, offsetof(MethodDescCodeData,TemporaryEntryPoint))
 #ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(MethodDescCodeData, /*pointer*/, VersioningState, offsetof(MethodDescCodeData,VersioningState))
+CDAC_TYPE_FIELD(MethodDescCodeData, /*uint32*/, OptimizationTier, offsetof(MethodDescCodeData,OptimizationTier))
 #endif // FEATURE_CODE_VERSIONING
 CDAC_TYPE_END(MethodDescCodeData)
 
@@ -845,6 +846,9 @@ CDAC_TYPE_FIELD(NativeCodeVersionNode, /*nuint*/, ILVersionId, cdac_data<NativeC
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, GCCoverageInfo, cdac_data<NativeCodeVersionNode>::GCCoverageInfo)
 #endif // HAVE_GCCOVER
+#ifdef FEATURE_TIERED_COMPILATION
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, OptimizationTier, cdac_data<NativeCodeVersionNode>::OptimizationTier)
+#endif // FEATURE_TIERED_COMPILATION
 CDAC_TYPE_END(NativeCodeVersionNode)
 
 CDAC_TYPE_BEGIN(ILCodeVersionNode)
@@ -1240,6 +1244,13 @@ CDAC_TYPE_FIELD(WebcilSectionHeader, /*uint32*/, PointerToRawData, offsetof(Webc
 CDAC_TYPE_END(WebcilSectionHeader)
 #endif
 
+CDAC_TYPE_BEGIN(EEConfig)
+CDAC_TYPE_INDETERMINATE(EEConfig)
+CDAC_TYPE_FIELD(EEConfig, /*uint8*/, JitMinOpts, cdac_data<EEConfig>::JitMinOpts)
+CDAC_TYPE_FIELD(EEConfig, /*uint8*/, GenDebuggable, cdac_data<EEConfig>::GenDebuggable)
+CDAC_TYPE_FIELD(EEConfig, /*uint32*/, TieredCompilation_DefaultTier, cdac_data<EEConfig>::TieredCompilation_DefaultTier)
+CDAC_TYPE_END(EEConfig)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -1285,6 +1296,7 @@ CDAC_GLOBAL_STRING(RID, RID_STRING)
 
 CDAC_GLOBAL(GCInfoVersion, uint32, GCINFO_VERSION)
 
+CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
 CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomainPtr)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
@@ -1299,6 +1311,7 @@ CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 #undef FRAME_TYPE_NAME
 
 CDAC_GLOBAL(MethodDescTokenRemainderBitCount, uint8, METHOD_TOKEN_REMAINDER_BIT_COUNT)
+CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &g_CORDebuggerControlFlags)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else

@@ -21,6 +21,10 @@ internal sealed class NativeCodeVersionNode : IData<NativeCodeVersionNode>
         {
             GCCoverageInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(GCCoverageInfo)].Offset);
         }
+        if (type.Fields.ContainsKey(nameof(OptimizationTier)))
+        {
+            OptimizationTier = target.Read<uint>(address + (ulong)type.Fields[nameof(OptimizationTier)].Offset);
+        }
     }
 
     public TargetPointer Next { get; init; }
@@ -31,4 +35,5 @@ internal sealed class NativeCodeVersionNode : IData<NativeCodeVersionNode>
     public TargetNUInt ILVersionId { get; init; }
 
     public TargetPointer? GCCoverageInfo { get; init; }
+    public uint? OptimizationTier { get; init; }
 }

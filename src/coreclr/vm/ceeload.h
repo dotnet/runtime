@@ -618,7 +618,7 @@ private:
 
     enum {
         // These are the values set in m_dwTransientFlags.
-        // [cDAC] [Loader]: Contract depends on the values of MODULE_IS_TENURED, IS_EDIT_AND_CONTINUE, and IS_REFLECTION_EMIT.
+        // [cDAC] [Loader]: Contract depends on the values of MODULE_IS_TENURED, IS_EDIT_AND_CONTINUE, IS_REFLECTION_EMIT, and PROF_DISABLE_OPTIMIZATIONS.
 
         MODULE_IS_TENURED           = 0x00000001,   // Set once we know for sure the Module will not be freed until the appdomain itself exits
         // unused                   = 0x00000002,
@@ -643,12 +643,17 @@ private:
         DEBUGGER_ENC_ENABLED_PRIV   = 0x00002000,   // this is what was attempted to be set.  IS_EDIT_AND_CONTINUE is actual result.
         DEBUGGER_PDBS_COPIED        = 0x00004000,
         DEBUGGER_IGNORE_PDBS        = 0x00008000,
-        DEBUGGER_INFO_MASK_PRIV     = 0x0000Fc00,
-        DEBUGGER_INFO_SHIFT_PRIV    = 10,
+        DEBUGGER_INFO_MASK_PRIV     = 0x0000Fc00, // [cDAC] [Loader]: Contract depends on this value.
+        DEBUGGER_INFO_SHIFT_PRIV    = 10, // [cDAC] [Loader]: Contract depends on this value.
 
         // Used to indicate that this module has had it's IJW fixups properly installed.
         IS_IJW_FIXED_UP             = 0x00080000,
         IS_BEING_UNLOADED           = 0x00100000,
+
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on this value.
+        // Precomputed flag combining debugger, profiler, and EEConfig checks.
+        // Set during module initialization; see UpdateAllMethodsJITOptimizationDisabledFlag().
+        ALL_METHODS_JIT_OPTIMIZATION_DISABLED = 0x00200000,
     };
 
     static_assert(DEBUGGER_USER_OVERRIDE_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_USER_OVERRIDE);
@@ -959,6 +964,22 @@ protected:
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
         return FALSE;
+    }
+
+    // Updates the ALL_METHODS_JIT_OPTIMIZATION_DISABLED precomputed flag.
+    // Must be called after debugger info bits, profiler flags, or EEConfig are finalized.
+    void UpdateAllMethodsJITOptimizationDisabledFlag()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        BOOL disabled = AreJITOptimizationsDisabled() ||
+                        g_pConfig->JitMinOpts() ||
+                        g_pConfig->GenDebuggableCode();
+
+        if (disabled)
+            SetTransientFlagInterlocked(ALL_METHODS_JIT_OPTIMIZATION_DISABLED);
+        else
+            SetTransientFlagInterlockedWithMask(0, ALL_METHODS_JIT_OPTIMIZATION_DISABLED);
     }
 
 #ifdef FEATURE_METADATA_UPDATER

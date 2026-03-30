@@ -18,6 +18,15 @@ enum ModuleFlags
     Tenured = 0x00000001, // Set once we know for sure the Module will not be freed until the appdomain itself exits
     EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
     ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+    ProfilerDisableOpt = 0x00000080, // Profiler disabled JIT optimizations when module was loaded
+    AllMethodsJitOptimizationDisabled = 0x00200000, // Precomputed: JIT optimization is disabled for all methods in this module
+}
+
+[Flags]
+enum DebuggerAssemblyControlFlags
+{
+    DACF_USER_OVERRIDE = 0x01,
+    DACF_ALLOW_JIT_OPTS = 0x02,
 }
 
 [Flags]
@@ -69,6 +78,8 @@ IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
+bool IsReadyToRun(ModuleHandle handle);
+DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle);
 bool TryGetSimpleName(ModuleHandle handle, out string simpleName);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
@@ -209,6 +220,7 @@ private enum ModuleFlags_1 : uint
     Tenured = 0x00000001,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
     EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
     ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+    AllMethodsJitOptimizationDisabled = 0x00200000, // Precomputed: JIT optimization is disabled for all methods in this module
 }
 
 private enum PEImageFlags : uint
@@ -569,6 +581,8 @@ private static ModuleFlags GetFlags(uint flags)
         flags |= ModuleFlags.EditAndContinue;
     if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
         flags |= ModuleFlags.ReflectionEmit;
+    if (runtimeFlags.HasFlag(ModuleFlags_1.AllMethodsJitOptimizationDisabled))
+        flags |= ModuleFlags.AllMethodsJitOptimizationDisabled;
     return flags;
 }
 
