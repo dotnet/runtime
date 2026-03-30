@@ -3181,7 +3181,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot_Locked(
     backpatchTracker->AddSlotAndPatch_Locked(this, slotLoaderAllocator, slot, slotType, currentEntryPoint);
 }
 
-FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
+bool MethodDesc::TryBackpatchEntryPointSlots(
     PCODE entryPoint,
     bool isPrestubEntryPoint,
     bool onlyFromPrestubEntryPoint)
@@ -3200,35 +3200,28 @@ FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
     PCODE previousEntryPoint = GetEntryPointToBackpatch_Locked();
     if (previousEntryPoint == entryPoint)
     {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+            "MethodDesc::TryBackpatchEntryPointSlots pMD=%p (%s::%s) entryPoint=" FMT_ADDR " - no change (same as previous)\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
         return true;
     }
 
     if (onlyFromPrestubEntryPoint && previousEntryPoint != GetPrestubEntryPointToBackpatch())
     {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+            "MethodDesc::TryBackpatchEntryPointSlots pMD=%p (%s::%s) entryPoint=" FMT_ADDR " - skipped (not from prestub)\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
         return false;
     }
 
-    if (IsVersionableWithVtableSlotBackpatch())
-    {
-        // Backpatch the func ptr stub if it was created
-        FuncPtrStubs *funcPtrStubs = mdLoaderAllocator->GetFuncPtrStubsNoCreate();
-        if (funcPtrStubs != nullptr)
-        {
-            Precode *funcPtrPrecode = funcPtrStubs->Lookup(this);
-            if (funcPtrPrecode != nullptr)
-            {
-                if (isPrestubEntryPoint)
-                {
-                    funcPtrPrecode->ResetTargetInterlocked();
-                }
-                else
-                {
-                    funcPtrPrecode->SetTargetInterlocked(entryPoint, FALSE /* fOnlyRedirectFromPrestub */);
-                }
-            }
-        }
-    }
+    LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+        "MethodDesc::TryBackpatchEntryPointSlots pMD=%p (%s::%s) entryPoint=" FMT_ADDR " previousEntryPoint=" FMT_ADDR " isVtableBackpatch=%d\n",
+        this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint), DBG_ADDR(previousEntryPoint),
+        IsVersionableWithVtableSlotBackpatch()));
 
+    // Backpatch all registered entry point slots. For methods versionable with vtable slot backpatch,
+    // this also handles funcptr precodes which are registered in the backpatch table at creation time
+    // (see FuncPtrStubs::GetFuncPtrStub).
     backpatchInfoTracker->Backpatch_Locked(this, entryPoint);
 
     // Set the entry point to backpatch inside the lock to synchronize with backpatching in MethodDesc::DoBackpatch(), and set
@@ -3266,11 +3259,15 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
     _ASSERTE(entryPoint != (PCODE)NULL);
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "MethodDesc::SetCodeEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR " path=StableEntryPoint(portable)\n",
+        this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
     SetStableEntryPointInterlocked(entryPoint);
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (MayHaveEntryPointSlotsToBackpatch())
     {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "MethodDesc::SetCodeEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR " path=BackpatchSlots\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
         BackpatchEntryPointSlots(entryPoint);
         return;
     }
@@ -3278,6 +3275,8 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
     if (IsVersionable())
     {
         _ASSERTE(IsVersionableWithPrecode());
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "MethodDesc::SetCodeEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR " path=Precode(versionable)\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint, FALSE /* fOnlyRedirectFromPrestub */);
 
         // SetTargetInterlocked() would return false if it lost the race with another thread. That is fine, this thread
@@ -3291,12 +3290,16 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
         // Use this path if there already exists a Precode, OR if RequiresStableEntryPoint is set.
         //
         // RequiresStableEntryPoint currently requires that the entrypoint must be a Precode
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "MethodDesc::SetCodeEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR " path=Precode(stable)\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint);
         return;
     }
 
     if (!HasStableEntryPoint())
     {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "MethodDesc::SetCodeEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR " path=StableEntryPoint\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(entryPoint)));
         SetStableEntryPointInterlocked(entryPoint);
         return;
     }
@@ -3327,6 +3330,52 @@ void MethodDesc::ResetCodeEntryPoint()
     if (HasPrecode())
     {
         GetPrecode()->ResetTargetInterlocked();
+    }
+}
+
+// Sets the entry point for a backpatchable method during tiered compilation.
+// For final tier: sets the owning vtable slot to codeEntryPoint, backpatches all registered entry point
+//   slots (e.g. funcptr precodes) to codeEntryPoint, and resets the method's precode to prestub to enable
+//   lazy vtable slot discovery via DoBackpatch().
+// For non-final tier: redirects the precode target to codeEntryPoint without modifying the vtable slot.
+//   The vtable slot stays at the temporary entry point (precode), preventing DoBackpatch() from
+//   recording vtable slots during non-final tiers.
+void MethodDesc::SetBackpatchableEntryPoint(PCODE codeEntryPoint, bool isFinalTier, BOOL fOnlyRedirectFromPrestub)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
+    _ASSERTE(codeEntryPoint != (PCODE)NULL);
+    _ASSERTE(!isFinalTier || !fOnlyRedirectFromPrestub);
+    _ASSERTE(!isFinalTier || MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
+
+    Precode *precode = Precode::GetPrecodeFromEntryPoint(GetTemporaryEntryPoint());
+    if (isFinalTier)
+    {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+            "MethodDesc::SetBackpatchableEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR
+            " isFinalTier=true - setting owning vtable slot to final code,"
+            " backpatching registered slots, resetting precode to prestub for lazy DoBackpatch\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(codeEntryPoint)));
+        SetMethodEntryPoint(codeEntryPoint);
+
+        // Backpatch all registered entry point slots (e.g. funcptr precodes) to the final code.
+        // Vtable slots are not yet registered at this point — they are lazily discovered and recorded
+        // by DoBackpatch() when the next call goes through the precode → prestub path.
+        LoaderAllocator *mdLoaderAllocator = GetLoaderAllocator();
+        MethodDescBackpatchInfoTracker *backpatchTracker = mdLoaderAllocator->GetMethodDescBackpatchInfoTracker();
+        backpatchTracker->Backpatch_Locked(this, codeEntryPoint);
+
+        precode->ResetTargetInterlocked();
+    }
+    else
+    {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO10000,
+            "MethodDesc::SetBackpatchableEntryPoint pMD=%p (%s::%s) entryPoint=" FMT_ADDR
+            " isFinalTier=false fOnlyRedirectFromPrestub=%d - precode target redirected,"
+            " vtable slot stays at temporary entry point\n",
+            this, m_pszDebugClassName, m_pszDebugMethodName, DBG_ADDR(codeEntryPoint),
+            fOnlyRedirectFromPrestub));
+        precode->SetTargetInterlocked(codeEntryPoint, fOnlyRedirectFromPrestub);
     }
 }
 #endif // FEATURE_TIERED_COMPILATION

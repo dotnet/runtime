@@ -101,15 +101,32 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, bo
         _ASSERTE(!(pMT->IsInterface() && !IsStatic()));
 
         // Backpatching the funcptr stub:
-        //     For methods versionable with vtable slot backpatch, a funcptr stub is guaranteed to point to the at-the-time
-        //     current entry point shortly after creation, and backpatching it further is taken care of by
-        //     MethodDesc::BackpatchEntryPointSlots()
+        //     For methods versionable with vtable slot backpatch, funcptr precodes are registered in the
+        //     backpatching table (see FuncPtrStubs::GetFuncPtrStub). During non-final tiers, the funcptr
+        //     precode target is set to the temporary entry point (the method's precode), so calls through
+        //     the funcptr stub flow through the method's precode to the current code. At final tier, the
+        //     funcptr precode target is updated to the final code by Backpatch_Locked in
+        //     SetBackpatchableEntryPoint(). Because the funcptr precode is in the backpatching table, it is
+        //     also updated during rejit scenarios via BackpatchToResetEntryPointSlots().
 
         // Backpatching the temporary entry point:
-        //     The temporary entry point is never backpatched for methods versionable with vtable slot backpatch. New vtable
-        //     slots inheriting the method will initially point to the temporary entry point and it must point to the prestub
-        //     and come here for backpatching such that the new vtable slot can be discovered and recorded for future
-        //     backpatching.
+        //     The temporary entry point is not directly backpatched for methods versionable with vtable slot backpatch.
+        //     New vtable slots inheriting the method will initially point to the temporary entry point. During non-final
+        //     tiers, GetMethodEntryPoint() is kept at the temporary entry point, causing the pExpected == pTarget check
+        //     above to short-circuit and return early. This prevents vtable slot recording and backpatching during
+        //     non-final tiers, avoiding oscillation between native code and precode on each tier transition.
+        //
+        //     During non-final tiers, the precode target may point to:
+        //       1. Non-final tier native code (set via SetTargetInterlocked)
+        //       2. A call counting stub (during active call counting)
+        //       3. The prestub (default, or after call counting stubs are deleted)
+        //     In all cases, vtable slots point to the precode and calls flow through:
+        //       vtable -> precode -> (native code / call counting stub / prestub)
+        //
+        //     When the final tier is activated, GetMethodEntryPoint() is set to the final tier code and the precode is
+        //     reset to prestub. The next call through the vtable goes through precode -> prestub -> DoBackpatch(), which
+        //     discovers, records, and patches the vtable slot to point directly to the final tier code. Subsequent calls
+        //     bypass the precode entirely: vtable -> final tier code.
 
         _ASSERTE(!HasNonVtableSlot());
     }

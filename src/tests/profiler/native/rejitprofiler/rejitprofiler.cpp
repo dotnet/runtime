@@ -39,7 +39,12 @@ ReJITProfiler::ReJITProfiler() : Profiler(),
     _triggerFuncId(0),
     _targetFuncId(0),
     _targetModuleId(0),
-    _targetMethodDef(mdTokenNil)
+    _targetMethodDef(mdTokenNil),
+    _tieredMode(false),
+    _virtualMode(false),
+    _virtualTargetFuncId(0),
+    _virtualTargetModuleId(0),
+    _virtualTargetMethodDef(mdTokenNil)
 {
 
 }
@@ -82,6 +87,25 @@ HRESULT ReJITProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
         return hr;
     }
 
+    WCHAR tieredModeBuf[16];
+    ULONG tieredModeLen;
+    hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("DOTNET_REJIT_TIERED_MODE"), 16, &tieredModeLen, tieredModeBuf);
+    if (SUCCEEDED(hr) && tieredModeLen > 0 && tieredModeBuf[0] == WCHAR('1'))
+    {
+        _tieredMode = true;
+        INFO(L"Running in tiered rejit test mode");
+    }
+
+    WCHAR virtualModeBuf[16];
+    ULONG virtualModeLen;
+    hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("DOTNET_REJIT_VIRTUAL_MODE"), 16, &virtualModeLen, virtualModeBuf);
+    if (SUCCEEDED(hr) && virtualModeLen > 0 && virtualModeBuf[0] == WCHAR('1'))
+    {
+        _virtualMode = true;
+        _tieredMode = true;
+        INFO(L"Running in virtual rejit test mode");
+    }
+
     return S_OK;
 }
 
@@ -95,30 +119,47 @@ HRESULT ReJITProfiler::Shutdown()
         _profInfo10 = nullptr;
     }
 
-    int expectedRejitCount;
-    auto it = _inlinings.find(_targetFuncId);
-    if (it != _inlinings.end())
+    if (_tieredMode)
     {
-        // The number of inliners are expected to ReJIT, plus the method itself
-        expectedRejitCount = (int)((*it).second->size() + 1);
+        INFO(L" tiered/virtual mode rejit count=" << _rejits << L" failures=" << _failures);
+
+        if (_failures == 0 && _rejits >= 1)
+        {
+            printf("PROFILER TEST PASSES\n");
+        }
+        else
+        {
+            FAIL(L"Tiered test failed number of failures=" << _failures << L" rejits=" << _rejits);
+        }
     }
     else
     {
-        // No inlinings happened, which can occur in composite R2R mode on some targets.
-        // This is fine as long as we rejitted the target method itself.
-        expectedRejitCount = 1;
+        int expectedRejitCount;
+        auto it = _inlinings.find(_targetFuncId);
+        if (it != _inlinings.end())
+        {
+            // The number of inliners are expected to ReJIT, plus the method itself
+            expectedRejitCount = (int)((*it).second->size() + 1);
+        }
+        else
+        {
+            // No inlinings happened, which can occur in composite R2R mode on some targets.
+            // This is fine as long as we rejitted the target method itself.
+            expectedRejitCount = 1;
+        }
+
+        INFO(L" rejit count=" << _rejits << L" expected rejit count=" << expectedRejitCount);
+
+        if(_failures == 0 && _rejits == expectedRejitCount)
+        {
+            printf("PROFILER TEST PASSES\n");
+        }
+        else
+        {
+            FAIL(L"Test failed number of failures=" << _failures);
+        }
     }
 
-    INFO(L" rejit count=" << _rejits << L" expected rejit count=" << expectedRejitCount);
-
-    if(_failures == 0 && _rejits == expectedRejitCount)
-    {
-        printf("PROFILER TEST PASSES\n");
-    }
-    else
-    {
-        FAIL(L"Test failed number of failures=" << _failures);
-    }
     fflush(stdout);
 
     return S_OK;
@@ -236,6 +277,51 @@ bool ReJITProfiler::FunctionSeen(FunctionID functionId)
         INFO(L"Requesting revert for method " << GetFunctionIDName(_targetFuncId));
         INFO(L"ModuleID=" << std::hex << _targetModuleId << L" and MethodDef=" << std::hex << _targetMethodDef);
         _profInfo10->RequestRevert(1, &_targetModuleId, &_targetMethodDef, nullptr);
+    }
+    else if (_tieredMode && functionName == ReJITFinalTierTriggerMethodName && EndsWith(moduleName, TargetModuleName))
+    {
+        INFO(L"ReJIT Final Tier trigger method jitting finished: " << functionName);
+
+        INFO(L"Requesting rejit with inliners for method " << GetFunctionIDName(_targetFuncId));
+        INFO(L"ModuleID=" << std::hex << _targetModuleId << L" and MethodDef=" << std::hex << _targetMethodDef);
+
+        _profInfo10->RequestReJITWithInliners(COR_PRF_REJIT_BLOCK_INLINING | COR_PRF_REJIT_INLINING_CALLBACKS, 1, &_targetModuleId, &_targetMethodDef);
+    }
+    else if (_tieredMode && functionName == RevertFinalTierTriggerMethodName && EndsWith(moduleName, TargetModuleName))
+    {
+        INFO(L"Revert Final Tier trigger method jitting finished: " << functionName);
+
+        INFO(L"Requesting revert for method " << GetFunctionIDName(_targetFuncId));
+        INFO(L"ModuleID=" << std::hex << _targetModuleId << L" and MethodDef=" << std::hex << _targetMethodDef);
+        _profInfo10->RequestRevert(1, &_targetModuleId, &_targetMethodDef, nullptr);
+    }
+    else if (_virtualMode && functionName == VirtualTargetMethodName && EndsWith(moduleName, TargetModuleName))
+    {
+        INFO(L"Found function id for virtual target method");
+        _virtualTargetFuncId = functionId;
+        _virtualTargetModuleId = GetModuleIDForFunction(functionId);
+        _virtualTargetMethodDef = GetMethodDefForFunction(functionId);
+
+        return true;
+    }
+    else if (_virtualMode && functionName == VirtualReJITTriggerMethodName && EndsWith(moduleName, TargetModuleName))
+    {
+        INFO(L"Virtual ReJIT trigger method jitting finished: " << functionName);
+
+        INFO(L"Requesting rejit for virtual method " << GetFunctionIDName(_virtualTargetFuncId));
+        INFO(L"ModuleID=" << std::hex << _virtualTargetModuleId << L" and MethodDef=" << std::hex << _virtualTargetMethodDef);
+
+        _profInfo10->RequestReJIT(1, &_virtualTargetModuleId, &_virtualTargetMethodDef);
+    }
+    else if (_virtualMode && functionName == VirtualRevertTriggerMethodName && EndsWith(moduleName, TargetModuleName))
+    {
+        INFO(L"Virtual Revert trigger method jitting finished: " << functionName);
+
+        INFO(L"Requesting revert for virtual method " << GetFunctionIDName(_virtualTargetFuncId));
+        INFO(L"ModuleID=" << std::hex << _virtualTargetModuleId << L" and MethodDef=" << std::hex << _virtualTargetMethodDef);
+
+        HRESULT hrRevert = _profInfo10->RequestRevert(1, &_virtualTargetModuleId, &_virtualTargetMethodDef, nullptr);
+        INFO(L"RequestRevert returned hr=" << std::hex << hrRevert);
     }
 
     return false;
