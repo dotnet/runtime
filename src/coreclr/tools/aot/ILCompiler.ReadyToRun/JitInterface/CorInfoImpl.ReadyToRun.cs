@@ -2010,6 +2010,18 @@ namespace Internal.JitInterface
                 if (isStaticVirtual)
                 {
                     directMethod = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(originalMethod);
+
+                    // If no implementation was found, try to resolve to a default interface method.
+                    if (directMethod == null && !constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    {
+                        DefaultInterfaceMethodResolution dimResolution =
+                            constrainedType.ResolveVariantInterfaceMethodToDefaultImplementationOnType(originalMethod, out MethodDesc dimImpl);
+                        if (dimResolution == DefaultInterfaceMethodResolution.DefaultImplementation)
+                        {
+                            directMethod = dimImpl;
+                        }
+                    }
+
                     if (directMethod != null && !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(directMethod))
                     {
                         directMethod = null;
@@ -2035,7 +2047,8 @@ namespace Internal.JitInterface
                     useInstantiatingStub = directMethod.OwningType.IsValueType;
 
                     methodAfterConstraintResolution = directMethod;
-                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
+                    // When resolved to a default interface method, the owning type is the interface
+                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface || (isStaticVirtual && methodAfterConstraintResolution.Signature.IsStatic));
                     resolvedConstraint = true;
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
 
