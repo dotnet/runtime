@@ -133,7 +133,7 @@ namespace ILCompiler
                         break;
                     return;
                 case State.TypeEqualityCheck_StlocLdloc:
-                    _state = opcode is ILOpcode.ldloc or ILOpcode.ldloc_s or >= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3 ? State.TypeEqualityCheck
+                    _state = opcode is ILOpcode.ldloc or ILOpcode.ldloc_s or (>= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3) ? State.TypeEqualityCheck
                         : throw new UnreachableException();
                     return;
                 default:
@@ -168,7 +168,7 @@ namespace ILCompiler
 
             static bool IsStlocLdlocSequence(ILOpcode opcode, in ILReader reader)
             {
-                if (opcode is ILOpcode.stloc or ILOpcode.stloc_s or >= ILOpcode.stloc_0 and <= ILOpcode.stloc_3)
+                if (opcode is ILOpcode.stloc or ILOpcode.stloc_s or (>= ILOpcode.stloc_0 and <= ILOpcode.stloc_3))
                 {
                     ILReader nestedReader = reader;
                     int locIndex = opcode switch
