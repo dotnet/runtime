@@ -11124,12 +11124,6 @@ public:
         unsigned         compMethodHash() const;
 #endif // defined(DEBUG)
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-        // things for pseudorandom nop insertion
-        unsigned  compChecksum;
-        CLRRandom compRNG;
-#endif
-
         // The following holds the FLG_xxxx flags for the method we're compiling.
         unsigned compFlags;
 
@@ -12301,9 +12295,6 @@ public:
             case GT_PHI_ARG:
             case GT_JMPTABLE:
             case GT_PHYSREG:
-            case GT_EMITNOP:
-            case GT_PINVOKE_PROLOG:
-            case GT_PINVOKE_EPILOG:
             case GT_IL_OFFSET:
             case GT_RECORD_ASYNC_RESUME:
             case GT_NOP:

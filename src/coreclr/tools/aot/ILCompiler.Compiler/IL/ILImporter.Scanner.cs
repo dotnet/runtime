@@ -460,7 +460,7 @@ namespace Internal.IL
 
                     const string asyncReason = "Async state machine";
 
-                    var resumptionStub = new AsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+                    AsyncResumptionStub resumptionStub = _compilation.TypeSystemContext.GetAsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
                     _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
 
                     _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);

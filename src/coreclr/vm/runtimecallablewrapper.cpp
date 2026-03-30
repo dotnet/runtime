@@ -99,7 +99,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     HRESULT hr = S_OK;
     SafeComHolder<IClassFactory2> pClassFact2 = NULL;
     SafeComHolder<IUnknown> pUnk = NULL;
-    BSTRHolder bstrKey = NULL;
+    BSTRHolder bstrKey;
 
     // If the class doesn't support licensing or if it is missing a managed
     // type to use for querying a license, just use IClassFactory.
@@ -121,40 +121,25 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
     }
     else
     {
-        _ASSERTE(m_pClassMT != NULL);
-
         // Get the type to query for licensing.
-        TypeHandle rth = TypeHandle(m_pClassMT);
+        _ASSERTE(m_pClassMT != NULL);
 
         struct
         {
             OBJECTREF pProxy;
-            OBJECTREF pType;
         } gc;
-        gc.pProxy = NULL; // LicenseInteropProxy
-        gc.pType = NULL;
-
+        gc.pProxy = NULL;
         GCPROTECT_BEGIN(gc);
 
-        // Create an instance of the object
-        MethodDescCallSite createObj(METHOD__LICENSE_INTEROP_PROXY__CREATE);
-        gc.pProxy = createObj.Call_RetOBJECTREF(NULL);
-        gc.pType = rth.GetManagedClassObject();
+        // Create instance and query the current licensing context
+        UnmanagedCallersOnlyCaller getCurrentContextInfoAndProxy(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO_AND_PROXY);
 
-        // Query the current licensing context
-        MethodDescCallSite getCurrentContextInfo(METHOD__LICENSE_INTEROP_PROXY__GETCURRENTCONTEXTINFO, &gc.pProxy);
         CLR_BOOL fDesignTime = FALSE;
-        ARG_SLOT args[4];
-        args[0] = ObjToArgSlot(gc.pProxy);
-        args[1] = ObjToArgSlot(gc.pType);
-        args[2] = (ARG_SLOT)&fDesignTime;
-        args[3] = (ARG_SLOT)(BSTR*)&bstrKey;
-
-        getCurrentContextInfo.Call(args);
+        getCurrentContextInfoAndProxy.InvokeThrowing(m_pClassMT, &fDesignTime, &bstrKey, &gc.pProxy);
 
         if (fDesignTime)
         {
-            // If designtime, we're supposed to obtain the runtime license key
+            // If design-time, we're supposed to obtain the runtime license key
             // from the component and save it away in the license context.
             // (the design tool can then grab it and embedded it into the
             //  app it is creating)
@@ -163,9 +148,7 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
                 // It's illegal for our helper to return a non-null bstrKey
                 // when the context is design-time. But we'll try to do the
                 // right thing anyway.
-                _ASSERTE(!"We're not supposed to get here, but we'll try to cope anyway.");
-                SysFreeString(bstrKey);
-                bstrKey = NULL;
+                bstrKey.Free();
             }
 
             {
@@ -181,11 +164,8 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
             // Store the requested license key
             if (SUCCEEDED(hr))
             {
-                MethodDescCallSite saveKeyInCurrentContext(METHOD__LICENSE_INTEROP_PROXY__SAVEKEYINCURRENTCONTEXT, &gc.pProxy);
-
-                args[0] = ObjToArgSlot(gc.pProxy);
-                args[1] = (ARG_SLOT)(BSTR)bstrKey;
-                saveKeyInCurrentContext.Call(args);
+                UnmanagedCallersOnlyCaller saveKeyInCurrentContext(METHOD__LICENSE_INTEROP_PROXY__SAVEKEYINCURRENTCONTEXT);
+                saveKeyInCurrentContext.InvokeThrowing(&gc.pProxy, (BSTR)bstrKey);
             }
         }
 
@@ -210,7 +190,6 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
                 else
                 {
                     // It is runtime and we have a license key.
-                    _ASSERTE(bstrKey != NULL);
                     hr = pClassFact2->CreateInstanceLic(punkOuter, NULL, IID_IUnknown, bstrKey, (void**)&pUnk);
                     if (FAILED(hr) && punkOuter)
                     {

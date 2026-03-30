@@ -2695,6 +2695,30 @@ DISPID ExtractStandardDispId(_In_z_ LPWSTR strStdDispIdMemberName)
     return _wtoi(strDispId);
 }
 
+// Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
+// in the native code.
+struct CallOutFilterParam { BOOL OneShot; };
+LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
+{
+    CallOutFilterParam *pParam = static_cast<CallOutFilterParam *>(pv);
+
+    _ASSERTE(pParam && (pParam->OneShot == TRUE || pParam->OneShot == FALSE));
+
+    if (pParam->OneShot == TRUE)
+    {
+        pParam->OneShot = FALSE;
+
+        // Replace whatever SEH exception is in flight, with an SEHException derived from
+        // CLRException.  But if the exception already looks like one of ours, let it
+        // go past since LastThrownObject should already represent it.
+        if ((!IsComPlusException(pExceptionInfo->ExceptionRecord)) &&
+            (pExceptionInfo->ExceptionRecord->ExceptionCode != EXCEPTION_MSVC))
+            PAL_CPP_THROW(SEHException *, new SEHException(pExceptionInfo->ExceptionRecord,
+                                                           pExceptionInfo->ContextRecord));
+    }
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
 static HRESULT InvokeExHelper(
     IDispatchEx *       pDispEx,
     DISPID              MemberID,
@@ -3299,7 +3323,7 @@ void IUInvokeDispMethod(
 
                         // We managed to retrieve an IDispatchEx IP so we will use it to
                         // retrieve the DISPID.
-                        BSTRHolder bstrTmpName = SysAllocString(aNamesToConvert[0]);
+                        BSTRHolder bstrTmpName{ SysAllocString(aNamesToConvert[0]) };
                         if (!bstrTmpName)
                             COMPlusThrowOM();
 
