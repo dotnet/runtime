@@ -376,7 +376,12 @@ The .NET Foundation licenses this file to you under the MIT license.
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Encoding="utf-8" Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' != 'Static'" />
     <Exec Command="&quot;$(CppLinker)&quot; @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;"
       Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' != 'Static'"
-      CustomWarningRegularExpression="$(IlcCppLinkerCustomWarningRegularExpression)" />
+      IgnoreExitCode="true"
+      CustomWarningRegularExpression="$(IlcCppLinkerCustomWarningRegularExpression)">
+      <Output TaskParameter="ExitCode" PropertyName="_WinLinkerExitCode" />
+    </Exec>
+    <Warning Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' != 'Static' and '$(_WinLinkerExitCode)' != '0' and '$(_WinLinkerExitCode)' != '' and $(_FindVCVarsallOutput.Contains('WINSDK_NOT_FOUND'))" Text="Windows SDK may not be installed. Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites, in particular the Desktop Development for C++ workload in Visual Studio." />
+    <Error Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' != 'Static' and '$(_WinLinkerExitCode)' != '0' and '$(_WinLinkerExitCode)' != ''" Text="Native linking failed with exit code $(_WinLinkerExitCode)." />
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Encoding="utf-8" Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Static'" />
     <Exec Command="&quot;$(CppLibCreator)&quot; @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(_targetOS)' == 'win' and '$(NativeLib)' == 'Static'" />
 
