@@ -20,7 +20,6 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
-        private int _processId = -1;
 
         /// <summary>
         /// Gets the process ID.
@@ -31,16 +30,15 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Validate();
 
-                if (_processId == -1)
+                if (field == -1)
                 {
-                    _processId = GetProcessIdCore();
+                    field = GetProcessIdCore();
                 }
 
-                return _processId;
-
+                return field;
             }
-            private set => _processId = value;
-        }
+            private set;
+        } = -1;
 
         /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeHandle" />.

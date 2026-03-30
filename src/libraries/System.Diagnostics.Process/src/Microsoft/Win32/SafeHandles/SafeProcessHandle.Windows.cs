@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using System.Threading;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -19,11 +20,11 @@ namespace Microsoft.Win32.SafeHandles
         internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
             return startInfo.UseShellExecute
-                ? StartWithShellExecuteEx(startInfo)
+                ? StartWithShellExecute(startInfo)
                 : StartWithCreateProcess(startInfo, stdinHandle, stdoutHandle, stderrHandle);
         }
 
-        private static unsafe SafeProcessHandle StartWithShellExecuteEx(ProcessStartInfo startInfo)
+        private static unsafe SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo)
         {
             if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
                 throw new InvalidOperationException(SR.CantStartAsUser);
@@ -63,13 +64,11 @@ namespace Microsoft.Win32.SafeHandles
                     shellExecuteInfo.fMask |= Interop.Shell32.SEE_MASK_FLAG_NO_UI;
 
                 shellExecuteInfo.nShow = ProcessUtils.GetShowWindowFromWindowStyle(startInfo.WindowStyle);
-                ShellExecuteHelper executeHelper = new ShellExecuteHelper(&shellExecuteInfo);
-                if (!executeHelper.ShellExecuteOnSTAThread())
+                if (!ShellExecuteOnSTAThread(shellExecuteInfo, out int errorCode, out IntPtr hProcess, out IntPtr hInstApp))
                 {
-                    int errorCode = executeHelper.ErrorCode;
                     if (errorCode == 0)
                     {
-                        errorCode = ShellExecuteHelper.GetShellError(shellExecuteInfo.hInstApp);
+                        errorCode = GetShellError(hInstApp);
                     }
 
                     switch (errorCode)
@@ -89,7 +88,7 @@ namespace Microsoft.Win32.SafeHandles
                 // From https://learn.microsoft.com/windows/win32/api/shellapi/ns-shellapi-shellexecuteinfow:
                 // "In some cases, such as when execution is satisfied through a DDE conversation, no handle will be returned."
                 // Process.Start will return false if the handle is invalid.
-                return new SafeProcessHandle(shellExecuteInfo.hProcess);
+                return new SafeProcessHandle(hProcess);
             }
         }
 
@@ -282,5 +281,65 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
+
+        private static unsafe bool ShellExecuteOnSTAThread(Interop.Shell32.SHELLEXECUTEINFO executeInfo, out int errorCode, out IntPtr hProcess, out IntPtr hInstApp)
+        {
+            bool succeeded = false;
+            int lastError = 0;
+            nuint executeInfoAddress = (nuint)(&executeInfo); // cast to nuint to allow delegate capture; safe because Join() keeps this stack frame alive for the thread's lifetime
+
+            void ShellExecuteFunction()
+            {
+                try
+                {
+                    if (!(succeeded = Interop.Shell32.ShellExecuteExW((Interop.Shell32.SHELLEXECUTEINFO*)executeInfoAddress)))
+                        lastError = Marshal.GetLastWin32Error();
+                }
+                catch (EntryPointNotFoundException)
+                {
+                    lastError = Interop.Errors.ERROR_CALL_NOT_IMPLEMENTED;
+                }
+            }
+
+            // ShellExecute() requires STA in order to work correctly.
+            if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
+            {
+                Thread executionThread = new Thread(ShellExecuteFunction)
+                {
+                    IsBackground = true,
+                    Name = ".NET Process STA"
+                };
+                executionThread.SetApartmentState(ApartmentState.STA);
+                executionThread.Start();
+                executionThread.Join();
+            }
+            else
+            {
+                ShellExecuteFunction();
+            }
+
+            hProcess = executeInfo.hProcess;
+            hInstApp = executeInfo.hInstApp;
+            errorCode = lastError;
+            return succeeded;
+        }
+
+        private static int GetShellError(IntPtr error)
+        {
+            return (long)error switch
+            {
+                Interop.Shell32.SE_ERR_FNF => Interop.Errors.ERROR_FILE_NOT_FOUND,
+                Interop.Shell32.SE_ERR_PNF => Interop.Errors.ERROR_PATH_NOT_FOUND,
+                Interop.Shell32.SE_ERR_ACCESSDENIED => Interop.Errors.ERROR_ACCESS_DENIED,
+                Interop.Shell32.SE_ERR_OOM => Interop.Errors.ERROR_NOT_ENOUGH_MEMORY,
+                Interop.Shell32.SE_ERR_DDEFAIL or
+                Interop.Shell32.SE_ERR_DDEBUSY or
+                Interop.Shell32.SE_ERR_DDETIMEOUT => Interop.Errors.ERROR_DDE_FAIL,
+                Interop.Shell32.SE_ERR_SHARE => Interop.Errors.ERROR_SHARING_VIOLATION,
+                Interop.Shell32.SE_ERR_NOASSOC => Interop.Errors.ERROR_NO_ASSOCIATION,
+                Interop.Shell32.SE_ERR_DLLNOTFOUND => Interop.Errors.ERROR_DLL_NOT_FOUND,
+                _ => (int)(long)error,
+            };
+        }
     }
 }
