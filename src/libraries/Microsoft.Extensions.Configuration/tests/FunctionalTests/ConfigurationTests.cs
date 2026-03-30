@@ -654,7 +654,6 @@ IniKey1=IniValue2");
             Assert.Null(failureException);
             Assert.Equal("JsonValue1", cfgRoot["JsonKey1"]);
 
-
             using (_fileSystem.LockFileReading(FileName))
             {
                 // we need NoWait because Wait reads file under the hood and that is restricted in LockFileReading context
