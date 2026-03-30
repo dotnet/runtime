@@ -171,5 +171,60 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 fieldInfo.SetValue(obj, value);
             };
+
+        public override Func<object, TProperty> CreateTupleElementGetter<TProperty>(MemberInfo[] memberChain)
+        {
+            return obj =>
+            {
+                object? current = obj;
+                foreach (MemberInfo member in memberChain)
+                {
+                    if (current is null)
+                    {
+                        return default!;
+                    }
+
+                    current = member switch
+                    {
+                        FieldInfo f => f.GetValue(current),
+                        PropertyInfo p => p.GetValue(current),
+                        _ => throw new InvalidOperationException(),
+                    };
+                }
+
+                return (TProperty)current!;
+            };
+        }
+
+        public override Action<object, TProperty> CreateTupleElementSetter<TProperty>(MemberInfo[] memberChain)
+        {
+            return (obj, value) =>
+            {
+                object? current = obj;
+                for (int i = 0; i < memberChain.Length - 1; i++)
+                {
+                    current = memberChain[i] switch
+                    {
+                        FieldInfo f => f.GetValue(current),
+                        PropertyInfo p => p.GetValue(current),
+                        _ => throw new InvalidOperationException(),
+                    };
+                }
+
+                if (current is not null)
+                {
+                    MemberInfo last = memberChain[memberChain.Length - 1];
+                    switch (last)
+                    {
+                        case FieldInfo f:
+                            f.SetValue(current, value);
+                            break;
+                        case PropertyInfo p:
+                            p.SetValue(current, value);
+                            break;
+                    }
+                }
+            };
+        }
     }
 }

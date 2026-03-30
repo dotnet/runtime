@@ -72,6 +72,16 @@ namespace System.Text.Json.Serialization.Metadata
             _cache.GetOrAdd(
                 key: (nameof(CreatePropertySetter), typeof(TProperty), propertyInfo),
                 valueFactory: key => _sourceAccessor.CreatePropertySetter<TProperty>((PropertyInfo)key.member!));
+
+        public override Func<object, TProperty> CreateTupleElementGetter<TProperty>(MemberInfo[] memberChain) =>
+            _cache.GetOrAdd(
+                key: (nameof(CreateTupleElementGetter), typeof(TProperty), memberChain[memberChain.Length - 1]),
+                valueFactory: key => _sourceAccessor.CreateTupleElementGetter<TProperty>(memberChain));
+
+        public override Action<object, TProperty> CreateTupleElementSetter<TProperty>(MemberInfo[] memberChain) =>
+            _cache.GetOrAdd(
+                key: (nameof(CreateTupleElementSetter), typeof(TProperty), memberChain[memberChain.Length - 1]),
+                valueFactory: key => _sourceAccessor.CreateTupleElementSetter<TProperty>(memberChain));
     }
 }
 #endif

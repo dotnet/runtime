@@ -444,10 +444,10 @@ namespace System.Text.Json.Serialization.Tests
                 }}
                 """;
             // Verify that below converters will be called -
-            // serializer doesn't support ValueTuple unless field support is active.
+            // serializer now supports ValueTuple fields automatically (IsTupleType).
             ClassWithValueTuple obj0 = JsonSerializer.Deserialize<ClassWithValueTuple>(json);
-            Assert.Equal(0, obj0.Property.Item1);
-            Assert.Equal(0, obj0.Property.Item2);
+            Assert.Equal(1, obj0.Property.Item1);
+            Assert.Equal(2, obj0.Property.Item2);
 
             obj0 = JsonSerializer.Deserialize<ClassWithValueTuple>(json, new JsonSerializerOptions { IncludeFields = true });
             Assert.Equal(1, obj0.Property.Item1);

@@ -155,7 +155,7 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
-                if (jsonPropertyInfo.MemberType == MemberTypes.Field && !jsonPropertyInfo.SrcGen_HasJsonInclude && !typeInfo.Options.IncludeFields)
+                if (jsonPropertyInfo.MemberType == MemberTypes.Field && !jsonPropertyInfo.SrcGen_HasJsonInclude && !typeInfo.Options.IncludeFields && !JsonHelpers.IsTupleType(typeInfo.Type))
                 {
                     continue;
                 }

@@ -545,5 +545,34 @@ namespace System.Text.Json
                 }
             }
         }
+
+        /// <summary>
+        /// Determines whether the specified type is a ValueTuple or System.Tuple generic type.
+        /// </summary>
+        public static bool IsTupleType(Type type)
+        {
+            if (!type.IsGenericType)
+            {
+                return false;
+            }
+
+            Type genericDef = type.GetGenericTypeDefinition();
+            return genericDef == typeof(ValueTuple<>) ||
+                   genericDef == typeof(ValueTuple<,>) ||
+                   genericDef == typeof(ValueTuple<,,>) ||
+                   genericDef == typeof(ValueTuple<,,,>) ||
+                   genericDef == typeof(ValueTuple<,,,,>) ||
+                   genericDef == typeof(ValueTuple<,,,,,>) ||
+                   genericDef == typeof(ValueTuple<,,,,,,>) ||
+                   genericDef == typeof(ValueTuple<,,,,,,,>) ||
+                   genericDef == typeof(Tuple<>) ||
+                   genericDef == typeof(Tuple<,>) ||
+                   genericDef == typeof(Tuple<,,>) ||
+                   genericDef == typeof(Tuple<,,,>) ||
+                   genericDef == typeof(Tuple<,,,,>) ||
+                   genericDef == typeof(Tuple<,,,,,>) ||
+                   genericDef == typeof(Tuple<,,,,,,>) ||
+                   genericDef == typeof(Tuple<,,,,,,,>);
+        }
     }
 }
