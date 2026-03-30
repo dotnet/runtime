@@ -310,8 +310,21 @@ public class Async2Reflection
         {
             // Note: we go through suspend/resume, that is why we see dispatcher as the caller.
             //       we do not see the resume stub though.
-            Assert.Equal("Void DispatchContinuations()", FromStackAsync(1).Result);
-            Assert.Equal("Void DispatchContinuations()", FromStackAwait(1).Result);
+            // The dispatch loop is now a generic method (DispatchContinuations<T>). In checked/debug builds,
+            // ResumeRuntimeAsyncMethod may not be inlined, appearing as the immediate caller instead.
+            string asyncFrame = FromStackAsync(1).Result;
+            string awaitFrame = FromStackAwait(1).Result;
+            Assert.True(asyncFrame.Contains("DispatchContinuations") || asyncFrame.Contains("ResumeRuntimeAsyncMethod"),
+                $"Expected dispatch infrastructure frame, got: {asyncFrame}");
+            Assert.True(awaitFrame.Contains("DispatchContinuations") || awaitFrame.Contains("ResumeRuntimeAsyncMethod"),
+                $"Expected dispatch infrastructure frame, got: {awaitFrame}");
+
+            // In release builds, ResumeRuntimeAsyncMethod must be inlined into DispatchContinuations.
+            if (TestLibrary.CoreClrConfigurationDetection.IsReleaseRuntime)
+            {
+                Assert.DoesNotContain("ResumeRuntimeAsyncMethod", asyncFrame);
+                Assert.DoesNotContain("ResumeRuntimeAsyncMethod", awaitFrame);
+            }
 
             Assert.Equal("Void FromStack(Int32)", FromStackTask(1).Result);
             // Note: we do not go through suspend/resume, that is why we see the actual caller.
@@ -370,8 +383,21 @@ public class Async2Reflection
         {
             // Note: we go through suspend/resume, that is why we see dispatcher as the caller.
             //       we do not see the resume stub though.
-            Assert.Equal("DispatchContinuations", FromStackDMIAsync(1).Result);
-            Assert.Equal("DispatchContinuations", FromStackDMIAwait(1).Result);
+            // The dispatch loop is now a generic method (DispatchContinuations<T>). In checked/debug builds,
+            // ResumeRuntimeAsyncMethod may not be inlined, appearing as the immediate caller instead.
+            string asyncName = FromStackDMIAsync(1).Result;
+            string awaitName = FromStackDMIAwait(1).Result;
+            Assert.True(asyncName == "DispatchContinuations" || asyncName == "ResumeRuntimeAsyncMethod",
+                $"Expected DispatchContinuations or ResumeRuntimeAsyncMethod, got: {asyncName}");
+            Assert.True(awaitName == "DispatchContinuations" || awaitName == "ResumeRuntimeAsyncMethod",
+                $"Expected DispatchContinuations or ResumeRuntimeAsyncMethod, got: {awaitName}");
+
+            // In release builds, ResumeRuntimeAsyncMethod must be inlined into DispatchContinuations.
+            if (TestLibrary.CoreClrConfigurationDetection.IsReleaseRuntime)
+            {
+                Assert.Equal("DispatchContinuations", asyncName);
+                Assert.Equal("DispatchContinuations", awaitName);
+            }
 
             Assert.Equal("FromStackDMI", FromStackDMITask(1).Result);
             // Note: we do not go through suspend/resume, that is why we see the actual caller.
