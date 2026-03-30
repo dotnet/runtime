@@ -412,7 +412,9 @@ namespace Microsoft.Win32.SafeHandles
             foreach (SafeHandle handle in inheritedHandles)
             {
                 if (handle is null || handle.IsInvalid || handle.IsClosed)
+                {
                     continue;
+                }
 
                 // Prevent handle from being disposed while we use the raw pointer.
                 // DangerousAddRef must be called before DangerousGetHandle to avoid a race
@@ -453,7 +455,9 @@ namespace Microsoft.Win32.SafeHandles
                 finally
                 {
                     if (refAdded)
+                    {
                         handle.DangerousRelease();
+                    }
                 }
             }
         }

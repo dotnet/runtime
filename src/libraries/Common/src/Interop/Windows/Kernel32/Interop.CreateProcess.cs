@@ -8,6 +8,21 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateProcessW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool CreateProcess(
+            string? lpApplicationName,
+            char* lpCommandLine,
+            ref SECURITY_ATTRIBUTES procSecAttrs,
+            ref SECURITY_ATTRIBUTES threadSecAttrs,
+            [MarshalAs(UnmanagedType.Bool)] bool bInheritHandles,
+            int dwCreationFlags,
+            char* lpEnvironment,
+            string? lpCurrentDirectory,
+            ref STARTUPINFOEX lpStartupInfo,
+            ref PROCESS_INFORMATION lpProcessInformation
+        );
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct PROCESS_INFORMATION
         {
@@ -54,21 +69,6 @@ internal static partial class Interop
         {
             internal IntPtr AttributeList;
         }
-
-        [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateProcessW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool CreateProcess(
-            string? lpApplicationName,
-            char* lpCommandLine,
-            ref SECURITY_ATTRIBUTES procSecAttrs,
-            ref SECURITY_ATTRIBUTES threadSecAttrs,
-            [MarshalAs(UnmanagedType.Bool)] bool bInheritHandles,
-            int dwCreationFlags,
-            char* lpEnvironment,
-            string? lpCurrentDirectory,
-            ref STARTUPINFOEX lpStartupInfo,
-            ref PROCESS_INFORMATION lpProcessInformation
-        );
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

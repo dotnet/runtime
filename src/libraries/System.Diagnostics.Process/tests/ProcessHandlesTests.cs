@@ -349,7 +349,7 @@ namespace System.Diagnostics.Tests
 
             // Create an inheritable pipe. The child process will try to open the write end
             // using the handle string passed as an argument.
-            using AnonymousPipeServerStream pipeServer = new AnonymousPipeServerStream(PipeDirection.In, HandleInheritability.Inheritable);
+            using AnonymousPipeServerStream pipeServer = new(PipeDirection.In, HandleInheritability.Inheritable);
             string clientHandleStr = pipeServer.GetClientHandleAsString();
 
             RemoteInvokeOptions options = new RemoteInvokeOptions { CheckExitCode = false };
