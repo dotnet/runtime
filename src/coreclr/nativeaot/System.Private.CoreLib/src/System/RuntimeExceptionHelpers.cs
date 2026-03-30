@@ -236,7 +236,18 @@ namespace System
             if (previousThreadId == 0)
             {
                 bool minimalFailFast = (exception == PreallocatedOutOfMemoryException.Instance);
-                if (!minimalFailFast)
+                if (minimalFailFast)
+                {
+                    // Minimal OOM fail-fast path: avoid heap allocations as much as possible, but still
+                    // report that OOM is the reason for the crash.
+                    try
+                    {
+                        Internal.Console.Error.Write("Process is terminating due to OutOfMemoryException.");
+                        Internal.Console.Error.WriteLine();
+                    }
+                    catch { }
+                }
+                else
                 {
                     Internal.Console.Error.Write(((exception == null) || (reason is RhFailFastReason.EnvironmentFailFast or RhFailFastReason.AssertionFailure)) ?
                         "Process terminated. " : "Unhandled exception. ");
