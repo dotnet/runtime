@@ -185,7 +185,7 @@ internal static partial class Interop
         internal static unsafe partial bool SslSetCiphers(SafeSslHandle ssl, byte* cipherList, byte* cipherSuites);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetVerifyPeer")]
-        internal static partial void SslSetVerifyPeer(SafeSslHandle ssl);
+        internal static partial void SslSetVerifyPeer(SafeSslHandle ssl, [MarshalAs(UnmanagedType.Bool)] bool failIfNoPeerCert);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
         internal static partial IntPtr SslGetData(IntPtr ssl);
@@ -234,6 +234,9 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetData")]
         internal static partial void SslSessionSetData(IntPtr session, IntPtr val);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetSslCtx")]
+        internal static partial IntPtr SslGetSslCtx(IntPtr ssl);
 
         internal static class Capabilities
         {
@@ -394,10 +397,14 @@ namespace Microsoft.Win32.SafeHandles
         private bool _isServer;
         private bool _handshakeCompleted;
 
-        public GCHandle AlpnHandle;
+        public GCHandle AuthOptionsHandle;
         // Reference to the parent SSL_CTX handle in the SSL_CTX is being cached. Only used for
         // refcount management.
         public SafeSslContextHandle? SslContextHandle;
+
+        // Storage for the exception that occurred during certificate validation callback so that
+        // we may rethrow it after returning to managed code.
+        public Exception? CertificateValidationException;
 
         public bool IsServer
         {
@@ -492,10 +499,10 @@ namespace Microsoft.Win32.SafeHandles
 
             SslContextHandle?.Dispose();
 
-            if (AlpnHandle.IsAllocated)
+            if (AuthOptionsHandle.IsAllocated)
             {
                 Interop.Ssl.SslSetData(handle, IntPtr.Zero);
-                AlpnHandle.Free();
+                AuthOptionsHandle.Free();
             }
 
             IntPtr h = handle;

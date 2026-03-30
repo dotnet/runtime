@@ -20,6 +20,7 @@ namespace System.Net.Security
         }
 
         internal const bool StartMutualAuthAsAnonymous = false;
+        internal const bool CertValidationInCallback = false;
         internal const bool CanEncryptEmptyMessage = false;
 
         // There is no API to generate custom alerts on Android, but the interop layer currently

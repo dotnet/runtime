@@ -427,14 +427,6 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
     return result;
 }
 
-static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
-{
-    (void)preverify_ok;
-    (void)store;
-    // We don't care. Real verification happens in managed code.
-    return 1;
-}
-
 int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
 {
     ERR_clear_error();
@@ -447,7 +439,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
     if (SSL_version(ssl) == TLS1_3_VERSION)
     {
         // Post-handshake auth reqires SSL_VERIFY_PEER to be set
-        CryptoNative_SslSetVerifyPeer(ssl);
+        CryptoNative_SslSetVerifyPeer(ssl, 0);
         return SSL_verify_client_post_handshake(ssl);
     }
 #endif
@@ -458,7 +450,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
     int pending = SSL_renegotiate_pending(ssl);
     if (!pending)
     {
-        SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+        CryptoNative_SslSetVerifyPeer(ssl, 0);
         int ret = SSL_renegotiate(ssl);
         if(ret != 1)
         {
@@ -598,10 +590,15 @@ X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
     return SSL_get_client_CA_list(ssl);
 }
 
-void CryptoNative_SslSetVerifyPeer(SSL* ssl)
+void CryptoNative_SslSetVerifyPeer(SSL* ssl, int32_t failIfNoPeerCert)
 {
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
-    SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+    int mode = SSL_VERIFY_PEER;
+    if (failIfNoPeerCert)
+    {
+        mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+    }
+    SSL_set_verify(ssl, mode, NULL);
 }
 
 int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
@@ -1045,6 +1042,14 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
     const SSL_CIPHER* cipher = SSL_get_current_cipher(ssl);
     if (!cipher)
     {
+        // During the handshake (e.g. inside the cert verify callback),
+        // the current cipher may not be set yet (TLS 1.2 sets it at
+        // ChangeCipherSpec). Fall back to the pending cipher which is
+        // available as soon as ServerHello is processed.
+        cipher = SSL_get_pending_cipher(ssl);
+    }
+    if (!cipher)
+    {
         *cipherId = -1;
         return 0;
     }
@@ -1324,4 +1329,33 @@ void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len)
     {
         OPENSSL_free(copy);
     }
+}
+
+static int CertVerifyCallback(X509_STORE_CTX* store, void* param)
+{
+    (void)param;
+    SslCtxCertValidationCallback callback = (SslCtxCertValidationCallback) param;
+    SSL* ssl = (SSL*) X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx());
+
+    int verifyResult = callback(ssl, store);
+
+    X509_STORE_CTX_set_error(store, verifyResult);
+    return verifyResult == X509_V_OK;
+}
+
+void CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxCertValidationCallback callback)
+{
+    if (ctx != NULL)
+    {
+        SSL_CTX_set_cert_verify_callback(ctx, CertVerifyCallback, (void*)callback);
+    }
+}
+
+/*
+Shims SSL_get_SSL_CTX to retrieve the SSL_CTX from the SSL.
+*/
+PALEXPORT SSL_CTX* CryptoNative_SslGetSslCtx(SSL* ssl)
+{
+    // No error queue impact.
+    return SSL_get_SSL_CTX(ssl);
 }

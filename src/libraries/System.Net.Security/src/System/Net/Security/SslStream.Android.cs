@@ -16,7 +16,6 @@ namespace System.Net.Security
         {
             ProtocolToken alertToken = default;
             var isValid = VerifyRemoteCertificate(
-                _sslAuthenticationOptions.CertValidationDelegate,
                 _sslAuthenticationOptions.CertificateContext?.Trust,
                 ref alertToken,
                 out SslPolicyErrors sslPolicyErrors,
