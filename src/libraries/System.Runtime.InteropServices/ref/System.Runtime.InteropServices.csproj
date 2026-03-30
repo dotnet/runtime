@@ -4,6 +4,8 @@
          to its own obsolete API. -->
     <!-- Nullability of parameter 'name' doesn't match overridden member -->
     <NoWarn>$(NoWarn);618;CS8765</NoWarn>
+    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
+    <NoWarn>$(NoWarn);CS9368</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
