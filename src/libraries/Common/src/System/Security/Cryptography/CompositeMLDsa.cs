@@ -673,6 +673,7 @@ namespace System.Security.Cryptography
             static void SubjectPublicKeyReader(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn identifier, out CompositeMLDsa dsa)
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
+                ThrowIfNotSupported(algorithm);
 
                 if (!algorithm.IsValidPublicKeySize(key.Length))
                 {
@@ -866,6 +867,7 @@ namespace System.Security.Cryptography
                 out CompositeMLDsa dsa)
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
+                ThrowIfNotSupported(algorithm);
 
                 if (!algorithm.IsValidPrivateKeySize(privateKeyContents.Length))
                 {
