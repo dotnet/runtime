@@ -1348,6 +1348,9 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Avx) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX))
     {
         CPUCompileFlags.Set(InstructionSet_AVX);
+#ifdef UNIX_AMD64_ABI
+        g_avxSupported = 1;
+#endif
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX2))
@@ -1360,6 +1363,9 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512))
     {
         CPUCompileFlags.Set(InstructionSet_AVX512);
+#ifdef UNIX_AMD64_ABI
+        g_avx512Supported = 1;
+#endif
     }
 
     // x86-64-vFuture
