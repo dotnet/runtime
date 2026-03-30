@@ -48,6 +48,13 @@ namespace Internal.Runtime.CompilerHelpers
 
         [DoesNotReturn]
         [DebuggerHidden]
+        internal static void ThrowBadImageFormatExceptionWithArgument(ExceptionStringID id, string fileName)
+        {
+            throw new BadImageFormatException(SR.Format(SR.BadImageFormat_FileName, fileName), fileName);
+        }
+
+        [DoesNotReturn]
+        [DebuggerHidden]
         internal static void ThrowTypeLoadException(ExceptionStringID id, string className, string typeName)
         {
             throw TypeLoaderExceptionHelper.CreateTypeLoadException(id, className, typeName);

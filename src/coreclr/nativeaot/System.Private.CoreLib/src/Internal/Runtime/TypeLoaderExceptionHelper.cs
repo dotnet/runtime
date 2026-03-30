@@ -24,11 +24,6 @@ namespace Internal.Runtime
             return new BadImageFormatException(GetFormatString(id));
         }
 
-        public static Exception CreateBadImageFormatException(ExceptionStringID id, string fileName)
-        {
-            return new BadImageFormatException(SR.Format(GetFormatString(id), fileName), fileName);
-        }
-
         public static Exception CreateTypeLoadException(ExceptionStringID id, string typeName, string moduleName)
         {
             return new TypeLoadException(SR.Format(GetFormatString(id), typeName, moduleName), typeName);
