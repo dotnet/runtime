@@ -66,13 +66,13 @@ namespace Microsoft.Win32.SafeHandles
                 throw new PlatformNotSupportedException();
             }
 
-            int signalNumber = Interop.Sys.GetPlatformSignalNumber(signal);
-            if (signalNumber == 0)
+            if (Interop.Sys.GetPlatformSignalNumber(signal) == 0)
             {
                 throw new PlatformNotSupportedException();
             }
 
-            int killResult = Interop.Sys.Kill(ProcessId, (Interop.Sys.Signals)signalNumber);
+            // Pass the managed PosixSignal value (negative) directly; SystemNative_Kill handles the conversion.
+            int killResult = Interop.Sys.Kill(ProcessId, (Interop.Sys.Signals)(int)signal);
             if (killResult != 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();

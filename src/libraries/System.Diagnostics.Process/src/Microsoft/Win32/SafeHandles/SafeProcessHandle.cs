@@ -127,7 +127,6 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         /// <remarks>
         /// This method does not throw if the process has already exited.
-        /// On Unix, this sends <c>SIGKILL</c> to the process.
         /// On Windows, the handle must have <c>PROCESS_TERMINATE</c> access.
         /// </remarks>
         /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
