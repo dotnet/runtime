@@ -7,13 +7,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LIBUNWIND_CET_UNWIND_H
-#define LIBUNWIND_CET_UNWIND_H
+#ifndef LIBUNWIND_SHADOW_STACK_UNWIND_H
+#define LIBUNWIND_SHADOW_STACK_UNWIND_H
 
 #include "libunwind.h"
 
-// Currently, CET is implemented on Linux x86 platforms.
-#if defined(_LIBUNWIND_TARGET_LINUX) && defined(__CET__) && defined(__SHSTK__)
+// Currently, CET is implemented on some ELF x86 platforms.
+#if defined(__CET__) && defined(__SHSTK__)
 #define _LIBUNWIND_USE_CET 1
 #endif
 
@@ -21,7 +21,7 @@
 #include <cet.h>
 #include <immintrin.h>
 
-#define _LIBUNWIND_POP_CET_SSP(x)                                              \
+#define _LIBUNWIND_POP_SHSTK_SSP(x)                                            \
   do {                                                                         \
     unsigned long ssp = _get_ssp();                                            \
     if (ssp != 0) {                                                            \
@@ -46,7 +46,7 @@
 #define _LIBUNWIND_USE_GCS 1
 #endif
 
-#define _LIBUNWIND_POP_CET_SSP(x)                                              \
+#define _LIBUNWIND_POP_SHSTK_SSP(x)                                            \
   do {                                                                         \
     if (__chkfeat(_CHKFEAT_GCS)) {                                             \
       unsigned tmp = (x);                                                      \
@@ -57,7 +57,7 @@
 
 #endif
 
-extern void *__libunwind_cet_get_registers(unw_cursor_t *);
-extern void *__libunwind_cet_get_jump_target(void);
+extern void *__libunwind_shstk_get_registers(unw_cursor_t *);
+extern void *__libunwind_shstk_get_jump_target(void);
 
 #endif
