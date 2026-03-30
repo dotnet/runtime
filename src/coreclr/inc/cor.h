@@ -1665,6 +1665,14 @@ FORCEINLINE int CorIsPrimitiveType(CorElementType elementtype)
     return (elementtype < ELEMENT_TYPE_PTR || elementtype == ELEMENT_TYPE_I || elementtype == ELEMENT_TYPE_U);
 }
 
+// Returns true if the element type is a real or integer type.
+FORCEINLINE bool CorIsNumericalType(CorElementType elementType)
+{
+    return ((elementType >= ELEMENT_TYPE_I1) && (elementType <= ELEMENT_TYPE_R8))
+        || (elementType == ELEMENT_TYPE_I)
+        || (elementType == ELEMENT_TYPE_U);
+}
+
 
 // Return true if element type is a modifier, i.e. ELEMENT_TYPE_MODIFIER bits are
 // turned on. For now, it is checking for ELEMENT_TYPE_PTR and ELEMENT_TYPE_BYREF
