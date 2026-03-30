@@ -105,6 +105,33 @@ See `MockDescriptors.GC.cs` for a complete example (`GCHeapBuilder` +
 
 ### Key patterns
 
+#### TypedViews for mock structures
+
+For tests that need to build up native-looking structures in mock memory, prefer
+using the `Layout` / `TypedView` helpers over manually slicing byte buffers.
+These helpers are useful when a mock structure has:
+
+- named fields with target-dependent pointer sizes
+- embedded inline arrays
+- a header followed by variable-sized trailing data
+
+The usual pattern is:
+
+1. Define a `Layout<TView>` for the structure.
+2. Allocate mock memory for that layout (plus any trailing data, if needed).
+3. Create a typed wrapper and populate fields through properties or indexed
+   accessors.
+
+Examples in `BuiltInCOMTests.cs` include:
+
+- `MockComCallWrapper.InterfacePointers[index]` for inline interface pointer slots
+- `MockRCW.InterfaceEntries[index]` for the inline RCW interface-entry cache
+- `MockComMethodTable` / `MockStdInterfaceDesc` for header + trailing vtable data
+
+Prefer adding typed accessors when multiple tests need to interpret the same
+memory shape. This keeps tests focused on the contract behavior being exercised
+instead of repeating offset arithmetic.
+
 #### Composite (embedded) fields
 
 When a type contains an embedded struct (not a pointer to it), you must specify
