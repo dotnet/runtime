@@ -205,7 +205,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 bool foundCertExt = false;
 
-                foreach (ValueAttributeAsn attr in requestInfo.GetAttributes(AsnEncodingRules.DER))
+                foreach (ValueAttributeAsn attr in requestInfo.GetAttributes())
                 {
                     if (attr.AttrType == Oids.Pkcs9ExtensionRequest)
                     {
@@ -220,7 +220,7 @@ namespace System.Security.Cryptography.X509Certificates
                         scoped ReadOnlySpan<byte> firstAttrValue = default;
                         bool foundAttrValue = false;
 
-                        foreach (ReadOnlySpan<byte> values in attr.GetAttrValues(AsnEncodingRules.DER))
+                        foreach (ReadOnlySpan<byte> values in attr.GetAttrValues())
                         {
                             if (foundAttrValue)
                             {
@@ -275,7 +275,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         bool anyAttrValues = false;
 
-                        foreach (ReadOnlySpan<byte> val in attr.GetAttrValues(AsnEncodingRules.DER))
+                        foreach (ReadOnlySpan<byte> val in attr.GetAttrValues())
                         {
                             req.OtherRequestAttributes.Add(new AsnEncodedData(attr.AttrType, val));
                             anyAttrValues = true;
