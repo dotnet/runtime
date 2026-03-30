@@ -300,3 +300,20 @@ Miscellaneous
 =============
 
 There are actually a lot of macros involved in EX_TRY. Most of them should never, ever, be used outside of the macro implementations.
+
+Key Source Files
+================
+
+All paths relative to repository root:
+
+| Component | Header | Implementation |
+|-----------|--------|----------------|
+| EX_TRY/EX_CATCH macros | `src/coreclr/inc/ex.h` | — |
+| Exception "kinds" | `src/coreclr/vm/rexcep.h` | — |
+| COMPlusThrow and helpers | `src/coreclr/vm/excep.h` | `src/coreclr/vm/excep.cpp` |
+| Managed exception handling | `src/coreclr/vm/exceptionhandling.h` | `src/coreclr/vm/exceptionhandling.cpp` |
+
+Key entry points:
+
+- `COMPlusThrow()` — throw a CLR internal exception by "kind" (`src/coreclr/vm/excep.h`)
+- `EX_TRY` / `EX_CATCH` / `EX_END_CATCH` — CLR internal exception handling macros (`src/coreclr/inc/ex.h`)

@@ -3,6 +3,16 @@ Type Loader Design
 
 Author: Ladi Prosek - 2007
 
+Key source files (all paths relative to repository root):
+
+| Component | Header | Implementation |
+|-----------|--------|----------------|
+| ClassLoader | `src/coreclr/vm/clsload.hpp` | `src/coreclr/vm/clsload.cpp` |
+| MethodTable builder | `src/coreclr/vm/methodtablebuilder.h` | `src/coreclr/vm/methodtablebuilder.cpp` |
+| Class loading levels | `src/coreclr/vm/classloadlevel.h` | — |
+
+Key entry point: `ClassLoader::LoadTypeHandleThrowing()` in `src/coreclr/vm/clsload.cpp`
+
 # Introduction
 
 In a class-based object oriented system, types are templates

@@ -27,7 +27,7 @@ Every managed thread has an associated Thread object, defined in [threads.h][thr
 
 All Thread objects are stored in the ThreadStore (also defined in [threads.h][threads.h]), which is a simple list of all known Thread objects. To enumerate all managed threads, one must first acquire the ThreadStoreLock, then use ThreadStore::GetAllThreadList to enumerate all Thread objects. This list may include managed threads which are not currently assigned to native threads (for example, they may not yet be started, or the native thread may already have exited).
 
-[threads.h]: ../../../../src/coreclr/vm/threads.h
+[threads.h]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/threads.h
 
 Each managed thread that is currently assigned to a native thread is reachable via a native thread-local storage (TLS) slot on that native thread. This allows code that is executing on that native thread to get the corresponding Thread object, via GetThread().
 
@@ -208,3 +208,21 @@ ThreadPool Threads
 ------------------
 
 The CLR's ThreadPool maintains a collection of managed threads for executing user "work items."  These managed threads are bound to native threads owned by the ThreadPool. The ThreadPool also maintains a small number of native threads to handle functions like "thread injection," timers, and "registered waits."
+
+Key Source Files
+================
+
+All paths relative to repository root:
+
+| Component | Header | Implementation |
+|-----------|--------|----------------|
+| Thread object | `src/coreclr/vm/threads.h` | `src/coreclr/vm/threads.cpp` |
+| ThreadStore (list of all threads) | `src/coreclr/vm/threads.h` | `src/coreclr/vm/threads.cpp` |
+| Thread suspension | `src/coreclr/vm/threadsuspend.h` | `src/coreclr/vm/threadsuspend.cpp` |
+| Thread statics | `src/coreclr/vm/threadstatics.h` | `src/coreclr/vm/threadstatics.cpp` |
+
+Key entry points:
+
+- `GetThread()` — retrieve the Thread object for the current native thread
+- `ThreadStore::GetAllThreadList()` — enumerate all managed threads (requires `ThreadStoreLock`)
+- `ThreadSuspend::SuspendRuntime()` — suspend all managed threads for GC
