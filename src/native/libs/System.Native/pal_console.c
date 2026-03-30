@@ -43,7 +43,7 @@ int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
 int32_t SystemNative_IsATty(intptr_t fd)
 {
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
-    // isatty is not supported on these platforms
+    // there is no terminal on these platforms
     (void)fd;
     return 0;
 #else
