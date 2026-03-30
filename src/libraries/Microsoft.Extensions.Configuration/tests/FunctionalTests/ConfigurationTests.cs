@@ -516,6 +516,64 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        public void BuildThrowsOnInvalidData()
+        {
+            const string FileName = $"{nameof(BuildThrowsOnInvalidData)}.json";
+
+            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
+
+            bool callbackCalled = false;
+            Exception failureException = null;
+
+            Assert.Throws<InvalidDataException>(() => CreateBuilder()
+                .AddJsonFile(s =>
+                {
+                    s.Path = FileName;
+                    s.OnLoadException = c =>
+                    {
+                        callbackCalled = true;
+                        failureException = c.Exception;
+                        // c.Ignore stays false. Exception propagates from Build()
+                    };
+                })
+                .Build());
+
+            Assert.True(callbackCalled);
+            Assert.IsType<InvalidDataException>(failureException);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void BuildThrowsOnIoError()
+        {
+            const string FileName = $"{nameof(BuildThrowsOnIoError)}.json";
+
+            _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ""JsonValue1"" }");
+
+            using (_fileSystem.LockFileReading(FileName))
+            {
+                bool callbackCalled = false;
+                Exception failureException = null;
+
+                Assert.Throws<IOException>(() => CreateBuilder()
+                    .AddJsonFile(s =>
+                    {
+                        s.Path = FileName;
+                        s.OnLoadException = c =>
+                        {
+                            callbackCalled = true;
+                            failureException = c.Exception;
+                            // c.Ignore stays false. Exception propagates from Build()
+                        };
+                    })
+                    .Build());
+
+                Assert.True(callbackCalled);
+                Assert.IsType<IOException>(failureException);
+            }
+        }
+
+        [Fact]
         public void LoadDataErrorRaisesOnLoadException()
         {
             const string FileName = $"{nameof(LoadDataErrorRaisesOnLoadException)}.json";
@@ -579,9 +637,11 @@ IniKey1=IniValue2");
             }
         }
 
-        [Fact]
+        [Theory]
         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
-        public async Task ReloadDataErrorRaisesOnLoadException()
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReloadDataErrorRaisesOnLoadException(bool ignoreException)
         {
             const string FileName = $"{nameof(ReloadDataErrorRaisesOnLoadException)}.json";
 
@@ -593,7 +653,7 @@ IniKey1=IniValue2");
             {
                 failureException = c.Exception;
                 failingProvider = c.Provider;
-                c.Ignore = true;
+                c.Ignore = ignoreException;
             };
 
             IConfigurationRoot cfgRoot = CreateBuilder()
@@ -605,11 +665,13 @@ IniKey1=IniValue2");
                 })
                 .Build();
             using IDisposable cfgRootDisposable = cfgRoot as IDisposable;
+            IChangeToken reloadToken = cfgRoot.GetReloadToken();
 
             // No error should be triggered so far.
             Assert.Null(failingProvider);
             Assert.Null(failureException);
             Assert.Equal("JsonValue1", cfgRoot["JsonKey1"]);
+            Assert.False(reloadToken.HasChanged);
 
             _fileSystem.WriteFile(FileName, @"{""JsonKey1"": ");
 
@@ -619,12 +681,24 @@ IniKey1=IniValue2");
 
             // Check that value was removed from config
             Assert.Null(cfgRoot["JsonKey1"]);
+
+            if (ignoreException)
+            {
+                Assert.True(reloadToken.HasChanged);
+            }
+            else
+            {
+                // If the exception was not ignored, it was rethrown which prevented calling OnReload()
+                Assert.False(reloadToken.HasChanged);
+            }
         }
 
-        [Fact]
+        [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
         [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
-        public async Task ReloadIoErrorRaisesOnLoadException()
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReloadIoErrorRaisesOnLoadException(bool ignoreException)
         {
             const string FileName = $"{nameof(ReloadIoErrorRaisesOnLoadException)}.json";
 
@@ -636,7 +710,7 @@ IniKey1=IniValue2");
             {
                 failureException = c.Exception;
                 failingProvider = c.Provider;
-                c.Ignore = true;
+                c.Ignore = ignoreException;
             };
 
             IConfigurationRoot cfgRoot = CreateBuilder()
@@ -648,11 +722,13 @@ IniKey1=IniValue2");
                 })
                 .Build();
             using IDisposable cfgRootDisposable = cfgRoot as IDisposable;
+            IChangeToken reloadToken = cfgRoot.GetReloadToken();
 
             // No error should be triggered so far.
             Assert.Null(failingProvider);
             Assert.Null(failureException);
             Assert.Equal("JsonValue1", cfgRoot["JsonKey1"]);
+            Assert.False(reloadToken.HasChanged);
 
             using (_fileSystem.LockFileReading(FileName))
             {
@@ -664,6 +740,7 @@ IniKey1=IniValue2");
 
                 // IO error on reload do not invalidate existing config, yet value is not updated
                 Assert.Equal("JsonValue1", cfgRoot["JsonKey1"]);
+                Assert.False(reloadToken.HasChanged);
             }
         }
 
