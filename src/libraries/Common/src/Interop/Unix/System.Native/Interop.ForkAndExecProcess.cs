@@ -16,12 +16,14 @@ internal static partial class Interop
         internal static unsafe int ForkAndExecProcess(
             string filename, string[] argv, IDictionary<string, string?> env, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
-            out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd, bool shouldThrow = true)
+            out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd,
+            IList<SafeHandle>? inheritedHandles = null, bool shouldThrow = true)
         {
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
 
             bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
+            bool[]? inheritedHandleRefsAdded = null;
             try
             {
                 int stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
@@ -44,14 +46,34 @@ internal static partial class Interop
                     stderrRawFd = stderrFd.DangerousGetHandle().ToInt32();
                 }
 
+                // inheritedFdCount == -1 means no restriction; >= 0 means restrict to stdio + list
+                int inheritedFdCount = -1;
+                int[]? inheritedFds = null;
+
+                if (inheritedHandles is not null)
+                {
+                    inheritedFdCount = inheritedHandles.Count;
+                    inheritedFds = new int[inheritedFdCount];
+                    inheritedHandleRefsAdded = new bool[inheritedFdCount];
+
+                    for (int i = 0; i < inheritedFdCount; i++)
+                    {
+                        SafeHandle handle = inheritedHandles[i];
+                        handle.DangerousAddRef(ref inheritedHandleRefsAdded[i]);
+                        inheritedFds[i] = handle.DangerousGetHandle().ToInt32();
+                    }
+                }
+
                 AllocArgvArray(argv, ref argvPtr);
                 AllocEnvpArray(env, ref envpPtr);
                 fixed (uint* pGroups = groups)
+                fixed (int* pInheritedFds = inheritedFds)
                 {
                     result = ForkAndExecProcess(
                         filename, argvPtr, envpPtr, cwd,
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
-                        out lpChildPid, stdinRawFd, stdoutRawFd, stderrRawFd);
+                        out lpChildPid, stdinRawFd, stdoutRawFd, stderrRawFd,
+                        pInheritedFds, inheritedFdCount);
                 }
                 return result == 0 ? 0 : Marshal.GetLastPInvokeError();
             }
@@ -66,6 +88,15 @@ internal static partial class Interop
                     stdoutFd!.DangerousRelease();
                 if (stderrRefAdded)
                     stderrFd!.DangerousRelease();
+
+                if (inheritedHandleRefsAdded is not null && inheritedHandles is not null)
+                {
+                    for (int i = 0; i < inheritedHandleRefsAdded.Length; i++)
+                    {
+                        if (inheritedHandleRefsAdded[i])
+                            inheritedHandles[i].DangerousRelease();
+                    }
+                }
             }
         }
 
@@ -73,7 +104,8 @@ internal static partial class Interop
         private static unsafe partial int ForkAndExecProcess(
             string filename, byte** argv, byte** envp, string? cwd,
             int setUser, uint userId, uint groupId, uint* groups, int groupsLength,
-            out int lpChildPid, int stdinFd, int stdoutFd, int stderrFd);
+            out int lpChildPid, int stdinFd, int stdoutFd, int stderrFd,
+            int* inheritedFds, int inheritedFdCount);
 
         /// <summary>
         /// Allocates a single native memory block containing both a null-terminated pointer array

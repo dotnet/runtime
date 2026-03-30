@@ -20,8 +20,9 @@
 #if HAVE_CRT_EXTERNS_H
 #include <crt_externs.h>
 #endif
-#if HAVE_PIPE2
 #include <fcntl.h>
+#if HAVE_CLOSE_RANGE
+#include <sys/syscall.h>
 #endif
 #include <pthread.h>
 
@@ -218,7 +219,9 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* childPid,
                                       int32_t stdinFd,
                                       int32_t stdoutFd,
-                                      int32_t stderrFd)
+                                      int32_t stderrFd,
+                                      int32_t* inheritedFds,
+                                      int32_t inheritedFdCount)
 {
 #if HAVE_FORK || defined(TARGET_OSX)
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
@@ -289,6 +292,13 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         // POSIX_SPAWN_SETSIGMASK to set the child's signal mask
         short flags = POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK;
 
+        // When inheritedFdCount >= 0, use POSIX_SPAWN_CLOEXEC_DEFAULT to close all FDs by default,
+        // then use posix_spawn_file_actions_addinherit_np to explicitly keep the specified FDs open.
+        if (inheritedFdCount >= 0)
+        {
+            flags |= POSIX_SPAWN_CLOEXEC_DEFAULT;
+        }
+
         if ((result = posix_spawnattr_setflags(&attr, flags)) != 0
             || (result = posix_spawnattr_setsigdefault(&attr, &sigdefault_set)) != 0
             || (result = posix_spawnattr_setsigmask(&attr, &current_mask)) != 0 // Set the child's signal mask to match the parent's current mask
@@ -311,6 +321,26 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             posix_spawnattr_destroy(&attr);
             errno = saved_errno;
             return -1;
+        }
+
+        // When handle count restriction is active, explicitly mark the user-provided FDs as inherited
+        if (inheritedFdCount > 0)
+        {
+            for (int i = 0; i < inheritedFdCount; i++)
+            {
+                int fd = inheritedFds[i];
+                if (fd != STDIN_FILENO && fd != STDOUT_FILENO && fd != STDERR_FILENO)
+                {
+                    if ((result = posix_spawn_file_actions_addinherit_np(&file_actions, fd)) != 0)
+                    {
+                        int saved_errno = result;
+                        posix_spawn_file_actions_destroy(&file_actions);
+                        posix_spawnattr_destroy(&attr);
+                        errno = saved_errno;
+                        return -1;
+                    }
+                }
+            }
         }
 
         // Spawn the process
@@ -482,6 +512,38 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             }
         }
 
+        // Restrict handle inheritance when inheritedFdCount >= 0
+        if (inheritedFdCount >= 0)
+        {
+#if HAVE_CLOSE_RANGE
+            // On systems with close_range, set CLOEXEC on all FDs >= 3 in one syscall.
+            // FDs 0-2 are stdin/stdout/stderr which are already handled via dup2 above.
+            // We use CLOSE_RANGE_CLOEXEC (flag value 1<<2 = 4) to set the flag without closing FDs.
+            // This must be called AFTER the dup2 calls above so that if stdinFd/stdoutFd/stderrFd
+            // are >= 3, they don't get CLOEXEC set before being duplicated to 0/1/2.
+#ifndef CLOSE_RANGE_CLOEXEC
+#define CLOSE_RANGE_CLOEXEC (1U << 2)
+#endif
+            syscall(__NR_close_range, 3, ~0U, CLOSE_RANGE_CLOEXEC);
+            // Ignore errors - if close_range is not supported at runtime, continue anyway
+#endif
+
+            // Remove CLOEXEC from user-provided inherited file descriptors so they survive execve.
+            for (int i = 0; i < inheritedFdCount; i++)
+            {
+                int fd = inheritedFds[i];
+                // Skip stdio fds as they're already handled and weren't affected by close_range
+                if (fd >= 3)
+                {
+                    int flags = fcntl(fd, F_GETFD);
+                    if (flags != -1)
+                    {
+                        fcntl(fd, F_SETFD, flags & ~FD_CLOEXEC);
+                    }
+                }
+            }
+        }
+
         // Finally, execute the new process.  execve will not return if it's successful.
         execve(filename, argv, envp);
         ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno); // execve failed
@@ -561,6 +623,8 @@ done:;
     (void)stdinFd;
     (void)stdoutFd;
     (void)stderrFd;
+    (void)inheritedFds;
+    (void)inheritedFdCount;
     return -1;
 #endif
 }

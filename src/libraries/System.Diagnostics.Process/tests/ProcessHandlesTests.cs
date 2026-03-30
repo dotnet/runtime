@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -303,6 +305,60 @@ namespace System.Diagnostics.Tests
             Assert.Same(handle, startInfo.StandardInputHandle);
             Assert.Same(handle, startInfo.StandardOutputHandle);
             Assert.Same(handle, startInfo.StandardErrorHandle);
+        }
+
+        [Fact]
+        public async Task InheritedHandles_LimitsHandleInheritanceToExplicitList()
+        {
+            // Create an anonymous pipe; the child process should inherit the write end only when it's in InheritedHandles.
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle pipeRead, out SafeFileHandle pipeWrite);
+
+            ProcessStartInfo startInfo = OperatingSystem.IsWindows()
+                ? new("cmd") { ArgumentList = { "/c", "ping -n 30 127.0.0.1 > nul" } }
+                : new("sh") { ArgumentList = { "-c", "sleep 30" } };
+
+            startInfo.InheritedHandles = new List<SafeHandle> { pipeWrite };
+
+            using (pipeRead)
+            using (pipeWrite)
+            {
+                // Start process1 with pipeWrite in InheritedHandles - it will hold the write end of the pipe.
+                using Process process1 = Process.Start(startInfo)!;
+                pipeWrite.Close(); // close parent's copy
+
+                // Start process2 WITHOUT InheritedHandles - it should NOT inherit pipeWrite.
+                ProcessStartInfo startInfo2 = OperatingSystem.IsWindows()
+                    ? new("cmd") { ArgumentList = { "/c", "ping -n 30 127.0.0.1 > nul" } }
+                    : new("sh") { ArgumentList = { "-c", "sleep 30" } };
+
+                using Process process2 = Process.Start(startInfo2)!;
+
+                try
+                {
+                    // The pipe should still be open because process1 holds the write end.
+                    using FileStream pipeStream = new(pipeRead, FileAccess.Read);
+                    Task<int> readTask = pipeStream.ReadAsync(new byte[1]).AsTask();
+
+                    // Allow some time - no EOF should arrive yet.
+                    Task firstCompleted = await Task.WhenAny(readTask, Task.Delay(200));
+                    Assert.NotSame(readTask, firstCompleted); // pipe still open
+
+                    // Kill process1 - the pipe write end is now closed (process2 didn't inherit it).
+                    process1.Kill();
+                    await process1.WaitForExitAsync();
+
+                    // EOF should arrive quickly because process2 does not hold the pipe write end.
+                    await readTask.WaitAsync(TimeSpan.FromSeconds(10));
+                    Assert.Equal(0, await readTask); // EOF
+                }
+                finally
+                {
+                    process1.Kill();
+                    process2.Kill();
+                    process1.WaitForExit();
+                    process2.WaitForExit();
+                }
+            }
         }
     }
 }

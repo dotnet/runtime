@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -113,12 +115,24 @@ namespace Microsoft.Win32.SafeHandles
             SafeFileHandle? inheritableStdoutHandle = null;
             SafeFileHandle? inheritableStderrHandle = null;
 
-            // Take a global lock to synchronize all redirect pipe handle creations and CreateProcess
-            // calls. We do not want one process to inherit the handles created concurrently for another
-            // process, as that will impact the ownership and lifetimes of those handles now inherited
-            // into multiple child processes.
+            System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle>? inheritedHandles = startInfo.InheritedHandles;
+            bool hasInheritedHandles = inheritedHandles is not null;
 
-            ProcessUtils.s_processStartLock.EnterWriteLock();
+            // When InheritedHandles is set, we use PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance.
+            // For that, we need a reader lock (concurrent starts with different explicit lists are safe).
+            // When InheritedHandles is not set, we use the existing approach with a writer lock.
+            if (hasInheritedHandles)
+            {
+                ProcessUtils.s_processStartLock.EnterReadLock();
+            }
+            else
+            {
+                // Take a global lock to synchronize all redirect pipe handle creations and CreateProcess
+                // calls. We do not want one process to inherit the handles created concurrently for another
+                // process, as that will impact the ownership and lifetimes of those handles now inherited
+                // into multiple child processes.
+                ProcessUtils.s_processStartLock.EnterWriteLock();
+            }
             try
             {
                 startupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
@@ -167,7 +181,16 @@ namespace Microsoft.Win32.SafeHandles
                 bool retVal;
                 int errorCode = 0;
 
-                if (startInfo.UserName.Length != 0)
+                if (hasInheritedHandles)
+                {
+                    // Use STARTUPINFOEX with PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance
+                    // to only the explicitly specified handles.
+                    retVal = StartWithCreateProcessEx(startInfo, ref startupInfo, ref processInfo,
+                        ref unused_SecAttrs, inheritedHandles!, inheritableStdinHandle, inheritableStdoutHandle,
+                        inheritableStderrHandle, stdinHandle, stdoutHandle, stderrHandle,
+                        commandLine, creationFlags, environmentBlock, workingDirectory, out errorCode);
+                }
+                else if (startInfo.UserName.Length != 0)
                 {
                     if (startInfo.Password != null && startInfo.PasswordInClearText != null)
                     {
@@ -271,7 +294,14 @@ namespace Microsoft.Win32.SafeHandles
                 inheritableStdoutHandle?.Dispose();
                 inheritableStderrHandle?.Dispose();
 
-                ProcessUtils.s_processStartLock.ExitWriteLock();
+                if (hasInheritedHandles)
+                {
+                    ProcessUtils.s_processStartLock.ExitReadLock();
+                }
+                else
+                {
+                    ProcessUtils.s_processStartLock.ExitWriteLock();
+                }
 
                 commandLine.Dispose();
             }
@@ -279,6 +309,225 @@ namespace Microsoft.Win32.SafeHandles
             Debug.Assert(!procSH.IsInvalid);
             procSH.ProcessId = (int)processInfo.dwProcessId;
             return procSH;
+        }
+
+        /// <summary>
+        /// Starts the process using STARTUPINFOEX and PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict
+        /// handle inheritance to only the explicitly specified handles.
+        /// </summary>
+        private static unsafe bool StartWithCreateProcessEx(
+            ProcessStartInfo startInfo,
+            ref Interop.Kernel32.STARTUPINFO startupInfo,
+            ref Interop.Kernel32.PROCESS_INFORMATION processInfo,
+            ref Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs,
+            System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle> inheritedHandles,
+            SafeFileHandle? inheritableStdinHandle,
+            SafeFileHandle? inheritableStdoutHandle,
+            SafeFileHandle? inheritableStderrHandle,
+            SafeFileHandle? stdinHandle,
+            SafeFileHandle? stdoutHandle,
+            SafeFileHandle? stderrHandle,
+            ValueStringBuilder commandLine,
+            int creationFlags,
+            string? environmentBlock,
+            string? workingDirectory,
+            out int errorCode)
+        {
+            errorCode = 0;
+            void* attributeListBuffer = null;
+            Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST attributeList = default;
+            System.Runtime.InteropServices.SafeHandle?[]? handlesToRelease = null;
+
+            // Determine the maximum number of handles: up to 3 stdio + all user-provided handles
+            int stdioCount = (stdinHandle is not null ? 1 : 0)
+                + (stdoutHandle is not null ? 1 : 0)
+                + (stderrHandle is not null ? 1 : 0);
+            int maxHandleCount = stdioCount + inheritedHandles.Count;
+            IntPtr* handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)Math.Max(1, maxHandleCount), (nuint)sizeof(IntPtr));
+
+            try
+            {
+                int handleCount = 0;
+
+                // Add the effective stdio handles (already made inheritable via DuplicateAsInheritableIfNeeded)
+                if (stdinHandle is not null)
+                {
+                    IntPtr h = (inheritableStdinHandle ?? stdinHandle).DangerousGetHandle();
+                    if (h != IntPtr.Zero && h != new IntPtr(-1))
+                        handlesToInherit[handleCount++] = h;
+                }
+                if (stdoutHandle is not null)
+                {
+                    IntPtr h = (inheritableStdoutHandle ?? stdoutHandle).DangerousGetHandle();
+                    if (h != IntPtr.Zero && h != new IntPtr(-1))
+                    {
+                        // Avoid duplicates
+                        bool isDuplicate = false;
+                        for (int i = 0; i < handleCount; i++)
+                        {
+                            if (handlesToInherit[i] == h) { isDuplicate = true; break; }
+                        }
+                        if (!isDuplicate)
+                            handlesToInherit[handleCount++] = h;
+                    }
+                }
+                if (stderrHandle is not null)
+                {
+                    IntPtr h = (inheritableStderrHandle ?? stderrHandle).DangerousGetHandle();
+                    if (h != IntPtr.Zero && h != new IntPtr(-1))
+                    {
+                        bool isDuplicate = false;
+                        for (int i = 0; i < handleCount; i++)
+                        {
+                            if (handlesToInherit[i] == h) { isDuplicate = true; break; }
+                        }
+                        if (!isDuplicate)
+                            handlesToInherit[handleCount++] = h;
+                    }
+                }
+
+                // Add and prepare the user-provided InheritedHandles
+                PrepareHandleAllowList(inheritedHandles, handlesToInherit, ref handleCount, ref handlesToRelease);
+
+                // Create the attribute list
+                nuint size = 0;
+                Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST emptyList = default;
+                Interop.Kernel32.InitializeProcThreadAttributeList(emptyList, 1, 0, ref size);
+
+                attributeListBuffer = NativeMemory.Alloc(size);
+                attributeList.AttributeList = (IntPtr)attributeListBuffer;
+
+                if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeList, 1, 0, ref size))
+                {
+                    errorCode = Marshal.GetLastWin32Error();
+                    return false;
+                }
+
+                if (!Interop.Kernel32.UpdateProcThreadAttribute(
+                    attributeList,
+                    0,
+                    (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+                    handlesToInherit,
+                    (nuint)(handleCount * sizeof(IntPtr)),
+                    null,
+                    0))
+                {
+                    errorCode = Marshal.GetLastWin32Error();
+                    return false;
+                }
+
+                Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
+                startupInfoEx.StartupInfo = startupInfo;
+                startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
+                startupInfoEx.lpAttributeList = attributeList;
+
+                creationFlags |= Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT;
+
+                commandLine.NullTerminate();
+                fixed (char* environmentBlockPtr = environmentBlock)
+                fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
+                {
+                    bool retVal = Interop.Kernel32.CreateProcess(
+                        null,
+                        commandLinePtr,
+                        ref secAttrs,
+                        ref secAttrs,
+                        true,
+                        creationFlags,
+                        environmentBlockPtr,
+                        workingDirectory,
+                        ref startupInfoEx,
+                        ref processInfo);
+                    if (!retVal)
+                        errorCode = Marshal.GetLastWin32Error();
+                    return retVal;
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(handlesToInherit);
+
+                if (attributeListBuffer != null)
+                {
+                    Interop.Kernel32.DeleteProcThreadAttributeList(attributeList);
+                    NativeMemory.Free(attributeListBuffer);
+                }
+
+                if (handlesToRelease is not null)
+                {
+                    CleanupHandles(handlesToRelease);
+                }
+            }
+        }
+
+        private static unsafe void PrepareHandleAllowList(
+            System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle> inheritedHandles,
+            IntPtr* handlesToInherit,
+            ref int handleCount,
+            ref System.Runtime.InteropServices.SafeHandle?[]? handlesToRelease)
+        {
+            handlesToRelease = new System.Runtime.InteropServices.SafeHandle[inheritedHandles.Count];
+            int handleIndex = 0;
+
+            foreach (System.Runtime.InteropServices.SafeHandle handle in inheritedHandles)
+            {
+                if (handle is null || handle.IsInvalid || handle.IsClosed)
+                    continue;
+
+                IntPtr handlePtr = handle.DangerousGetHandle();
+
+                // Check if this handle is already in the list (avoid duplicates)
+                bool isDuplicate = false;
+                for (int i = 0; i < handleCount; i++)
+                {
+                    if (handlesToInherit[i] == handlePtr)
+                    {
+                        isDuplicate = true;
+                        break;
+                    }
+                }
+
+                if (!isDuplicate)
+                {
+                    // Enable inheritance on this handle so the child process can use it
+                    if (!Interop.Kernel32.SetHandleInformation(
+                        handle,
+                        Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
+                        Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT))
+                    {
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                    }
+
+                    // Prevent handle from being disposed while we use the raw pointer
+                    bool ignore = false;
+                    handle.DangerousAddRef(ref ignore);
+                    handlesToRelease[handleIndex++] = handle;
+                    handlesToInherit[handleCount++] = handlePtr;
+                }
+            }
+        }
+
+        private static void CleanupHandles(System.Runtime.InteropServices.SafeHandle?[] handlesToRelease)
+        {
+            foreach (System.Runtime.InteropServices.SafeHandle? safeHandle in handlesToRelease)
+            {
+                if (safeHandle is null)
+                {
+                    break;
+                }
+
+                safeHandle.DangerousRelease();
+
+                // Remove the inheritance flag so they are not unintentionally inherited by
+                // other processes started after this point.
+                if (!Interop.Kernel32.SetHandleInformation(
+                    safeHandle,
+                    Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
+                    0))
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+            }
         }
 
         private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);

@@ -199,7 +199,8 @@ namespace Microsoft.Win32.SafeHandles
                 errno = Interop.Sys.ForkAndExecProcess(
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
-                    out childPid, stdinHandle, stdoutHandle, stderrHandle);
+                    out childPid, stdinHandle, stdoutHandle, stderrHandle,
+                    startInfo.InheritedHandles);
 
                 if (errno == 0)
                 {

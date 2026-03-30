@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -27,6 +28,7 @@ namespace System.Diagnostics
         private string? _verb;
         private Collection<string>? _argumentList;
         private ProcessWindowStyle _windowStyle;
+        private IList<SafeHandle>? _inheritedHandles;
 
         internal DictionaryWrapper? _environmentVariables;
 
@@ -195,6 +197,42 @@ namespace System.Diagnostics
         /// </remarks>
         /// <value>A <see cref="SafeFileHandle"/> to use as the standard error handle of the child process, or <see langword="null"/> to use the default behavior.</value>
         public SafeFileHandle? StandardErrorHandle { get; set; }
+
+        /// <summary>
+        /// Gets or sets a list of handles that will be inherited by the child process.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// When this property is not <see langword="null"/>, handle inheritance is restricted to the standard handles
+        /// and the handles from this list. If the list is empty, only the standard handles are inherited.
+        /// </para>
+        /// <para>
+        /// Handles in this list should not have inheritance enabled beforehand.
+        /// If they do, they could be unintentionally inherited by other processes started concurrently with different APIs,
+        /// which may lead to security or resource management issues.
+        /// </para>
+        /// <para>
+        /// On Windows, the implementation will temporarily enable inheritance on each handle in this list
+        /// by modifying the handle's flags using <see href="https://learn.microsoft.com/windows/win32/api/handleapi/nf-handleapi-sethandleinformation">SetHandleInformation</see>.
+        /// After the child process is created, inheritance will be disabled on these handles to prevent them
+        /// from being inherited by other processes started with different APIs.
+        /// The handles themselves are not duplicated; they are made inheritable and passed to the child process.
+        /// </para>
+        /// <para>
+        /// On Unix, the implementation will modify each file descriptor in the child process
+        /// by removing the FD_CLOEXEC flag. This modification occurs after the fork and before the exec,
+        /// so it does not affect the parent process.
+        /// </para>
+        /// </remarks>
+        /// <value>
+        /// A list of <see cref="SafeHandle"/> objects to be explicitly inherited by the child process,
+        /// or <see langword="null"/> to use the default handle inheritance behavior.
+        /// </value>
+        public IList<SafeHandle>? InheritedHandles
+        {
+            get => _inheritedHandles;
+            set => _inheritedHandles = value;
+        }
 
         public Encoding? StandardInputEncoding { get; set; }
 

@@ -202,6 +202,11 @@ check_symbol_exists(
     HAVE_PIPE2)
 
 check_symbol_exists(
+    __NR_close_range
+    "sys/syscall.h"
+    HAVE_CLOSE_RANGE)
+
+check_symbol_exists(
     getmntinfo
     "sys/types.h;sys/mount.h"
     HAVE_MNTINFO)

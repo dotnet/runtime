@@ -106,6 +106,12 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetThreadTimes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CreateProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ProcThreadAttributeList.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ProcThreadAttributeList.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetStdHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.TerminateProcess.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.TerminateProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess.cs"
