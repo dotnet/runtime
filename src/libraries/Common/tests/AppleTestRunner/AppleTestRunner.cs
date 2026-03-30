@@ -24,6 +24,7 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
     public extern static void mono_ios_set_summary (string value);
 
     private static List<string> s_testLibs = new List<string>();
+    private static List<Assembly>? s_testAssemblies;
     private static string? s_MainTestName;
 
     public static async Task<int> Main(string[] args)
@@ -45,13 +46,41 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 
         if (s_testLibs.Count < 1)
         {
-            // Look for *.Tests.dll files if target test suites are not set via "testlib:" arguments
-            s_testLibs = Directory.GetFiles(Environment.CurrentDirectory, "*.Tests.dll").ToList();
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                // NativeAOT: test assemblies are statically linked into the native binary,
+                // so there are no DLL files on disk. Discover them from loaded assemblies.
+                Console.WriteLine("NativeAOT mode: discovering test assemblies from loaded assemblies.");
+                Assembly[] allAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+                Console.WriteLine($"Loaded assemblies ({allAssemblies.Length}):");
+                foreach (Assembly a in allAssemblies)
+                {
+                    Console.WriteLine($"  {a.GetName().Name}");
+                }
+
+                s_testAssemblies = allAssemblies
+                    .Where(a => a.GetName().Name?.EndsWith(".Tests") == true)
+                    .ToList();
+                s_testLibs = s_testAssemblies.Select(a => a.GetName().Name!).ToList();
+            }
+            else
+            {
+                // Look for *.Tests.dll files if target test suites are not set via "testlib:" arguments
+                s_testLibs = Directory.GetFiles(Environment.CurrentDirectory, "*.Tests.dll").ToList();
+            }
         }
 
         if (s_testLibs.Count < 1)
         {
-            Console.WriteLine($"Test libs were not found (*.Tests.dll was not found in {Environment.CurrentDirectory})");
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                Console.WriteLine("No assemblies ending with '.Tests' were found among loaded assemblies.");
+            }
+            else
+            {
+                Console.WriteLine($"Test libs were not found (*.Tests.dll was not found in {Environment.CurrentDirectory})");
+            }
+
             return -1;
         }
 
@@ -110,9 +139,19 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 
     protected override IEnumerable<TestAssemblyInfo> GetTestAssemblies()
     {
-        foreach (string file in s_testLibs)
+        if (s_testAssemblies is not null)
         {
-            yield return new TestAssemblyInfo(Assembly.LoadFrom(file), file);
+            foreach (Assembly assembly in s_testAssemblies)
+            {
+                yield return new TestAssemblyInfo(assembly, assembly.GetName().Name! + ".dll");
+            }
+        }
+        else
+        {
+            foreach (string file in s_testLibs)
+            {
+                yield return new TestAssemblyInfo(Assembly.LoadFrom(file), file);
+            }
         }
     }
 
@@ -129,7 +168,16 @@ public class SimpleTestRunner : iOSApplicationEntryPoint, IDevice
 
     protected override string? IgnoreFilesDirectory => null;
 
-    protected override string IgnoredTraitsFilePath => "xunit-excludes.txt";
+    // NativeAOT excludes .txt files from the app bundle (Xcode.cs predefinedExcludes),
+    // so xunit-excludes.txt may not be present. Return empty string to skip trait filtering.
+    protected override string IgnoredTraitsFilePath
+    {
+        get
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "xunit-excludes.txt");
+            return File.Exists(path) ? path : string.Empty;
+        }
+    }
 
     public string BundleIdentifier => "net.dot." + s_MainTestName;
 
