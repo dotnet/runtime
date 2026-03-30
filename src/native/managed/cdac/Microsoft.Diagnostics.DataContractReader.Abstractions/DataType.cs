@@ -45,6 +45,8 @@ public enum DataType
     SystemDomain,
     Assembly,
     LoaderAllocator,
+    LoaderHeap,
+    LoaderHeapBlock,
     PEAssembly,
     AssemblyBinder,
     PEImage,

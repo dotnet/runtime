@@ -88,6 +88,15 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
+// Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
+// Throws NotImplementedException for unknown kind values.
+TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap);
+// Returns the size of the reserved virtual memory region for the given loader heap block
+TargetNUInt GetLoaderHeapBlockSize(TargetPointer block);
+// Returns the start address of the reserved virtual memory for the given loader heap block
+TargetPointer GetLoaderHeapBlockAddress(TargetPointer block);
+// Returns the next block in the loader heap linked list, or TargetPointer.Null if there are no more blocks
+TargetPointer GetNextLoaderHeapBlock(TargetPointer block);
 IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
 ```
 
@@ -172,6 +181,10 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
 | `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
 | `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
+| `LoaderHeap` | `FirstBlock` | Pointer to the first `LoaderHeapBlock` in the linked list |
+| `LoaderHeapBlock` | `Next` | Pointer to the next `LoaderHeapBlock` in the linked list |
+| `LoaderHeapBlock` | `VirtualAddress` | Pointer to the start of the reserved virtual memory |
+| `LoaderHeapBlock` | `VirtualSize` | Size in bytes of the reserved virtual memory region |
 | `WebcilHeader` | `CoffSections` | Number of COFF sections in the Webcil image |
 | `WebcilSectionHeader` | `VirtualSize` | Virtual size of the section |
 | `WebcilSectionHeader` | `VirtualAddress` | RVA of the section |
@@ -889,5 +902,29 @@ class InstMethodHashTable
         public TargetPointer MethodDesc { get; } = value & ~FLAG_MASK;
         public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
     }
+}
+```
+
+#### GetFirstLoaderHeapBlock, GetLoaderHeapBlockAddress, GetLoaderHeapBlockSize, GetNextLoaderHeapBlock
+
+```csharp
+TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
+{
+    return target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */);
+}
+
+TargetPointer ILoader.GetLoaderHeapBlockAddress(TargetPointer block)
+{
+    return target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */);
+}
+
+TargetNUInt ILoader.GetLoaderHeapBlockSize(TargetPointer block)
+{
+    return target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */);
+}
+
+TargetPointer ILoader.GetNextLoaderHeapBlock(TargetPointer block)
+{
+    return target.ReadPointer(block + /* LoaderHeapBlock::Next offset */);
 }
 ```

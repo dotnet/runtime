@@ -298,6 +298,16 @@ CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, VirtualCallStubManager, cdac_data<
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
 CDAC_TYPE_END(LoaderAllocator)
 
+CDAC_TYPE_BEGIN(LoaderHeap)
+CDAC_TYPE_INDETERMINATE(LoaderHeap)
+CDAC_TYPE_FIELD(LoaderHeap, /*pointer*/, FirstBlock, cdac_data<UnlockedLoaderHeapBaseTraversable>::FirstBlock)
+CDAC_TYPE_END(LoaderHeap)
+
+CDAC_TYPE_BEGIN(LoaderHeapBlock)
+CDAC_TYPE_FIELD(LoaderHeapBlock, /*pointer*/, Next, offsetof(LoaderHeapBlock, pNext))
+CDAC_TYPE_FIELD(LoaderHeapBlock, /*pointer*/, VirtualAddress, offsetof(LoaderHeapBlock, pVirtualAddress))
+CDAC_TYPE_FIELD(LoaderHeapBlock, /*nuint*/, VirtualSize, offsetof(LoaderHeapBlock, dwVirtualSize))
+CDAC_TYPE_END(LoaderHeapBlock)
 CDAC_TYPE_BEGIN(VirtualCallStubManager)
 CDAC_TYPE_INDETERMINATE(VirtualCallStubManager)
 CDAC_TYPE_FIELD(VirtualCallStubManager, /*pointer*/, IndcellHeap, cdac_data<VirtualCallStubManager>::IndcellHeap)

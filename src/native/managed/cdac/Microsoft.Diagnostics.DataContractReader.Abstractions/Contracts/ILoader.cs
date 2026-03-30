@@ -96,6 +96,13 @@ public interface ILoader : IContract
     TargetPointer GetILHeader(ModuleHandle handle, uint token) => throw new NotImplementedException();
     TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetDynamicIL(ModuleHandle handle, uint token) => throw new NotImplementedException();
+
+    // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
+    TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap) => throw new NotImplementedException();
+    TargetNUInt GetLoaderHeapBlockSize(TargetPointer block) => throw new NotImplementedException();
+    TargetPointer GetLoaderHeapBlockAddress(TargetPointer block) => throw new NotImplementedException();
+    // Returns the next block in the loader heap linked list, or TargetPointer.Null if there are no more blocks
+    TargetPointer GetNextLoaderHeapBlock(TargetPointer block) => throw new NotImplementedException();
     IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 }
 
