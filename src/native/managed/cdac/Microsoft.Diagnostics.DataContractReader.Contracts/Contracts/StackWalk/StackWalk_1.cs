@@ -267,7 +267,6 @@ internal partial class StackWalk_1 : IStackWalk
         // StackFrameIterator::Filter assuming GC_FUNCLET_REFERENCE_REPORTING is defined
 
         // global tracking variables
-        bool movedPastFirstExInfo = false;
         bool processNonFilterFunclet = false;
         bool processIntermediaryNonFilterFunclet = false;
         bool didFuncletReportGCReferences = true;
@@ -286,15 +285,6 @@ internal partial class StackWalk_1 : IStackWalk
             bool skipFuncletCallback = true;
 
             TargetPointer pExInfo = GetCurrentExceptionTracker(handle);
-
-            TargetPointer frameSp = handle.State == StackWalkState.SW_FRAME ? handle.FrameAddress : handle.Context.StackPointer;
-            if (pExInfo != TargetPointer.Null && frameSp > pExInfo)
-            {
-                if (!movedPastFirstExInfo)
-                {
-                    movedPastFirstExInfo = true;
-                }
-            }
 
             // by default, there is no funclet for the current frame
             // that reported GC references
