@@ -633,31 +633,38 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private void OnValidateStartFailed()
+        private void OnValidateStartFailed() => throw GetOnValidateStartFailedException();
+
+        private InvalidOperationException GetOnValidateStartFailedException()
         {
             // Make sure a new object or array is not attempted within an unfinalized string.
             if (IsWritingPartialString)
             {
-                ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString);
+                return ThrowHelper.GetInvalidOperationException(SR.CannotWriteWithinString);
             }
 
             Debug.Assert(!HasPartialStringData);
 
+            string message;
             if (_enclosingContainer == EnclosingContainerType.Object)
             {
                 Debug.Assert(_tokenType != JsonTokenType.PropertyName);
                 Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
-                ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayWithoutProperty);
+                message = SR.CannotStartObjectArrayWithoutProperty;
             }
             else
             {
                 Debug.Assert(_tokenType != JsonTokenType.PropertyName);
                 Debug.Assert(_tokenType != JsonTokenType.StartObject);
                 Debug.Assert(CurrentDepth == 0 && _tokenType != JsonTokenType.None);
-                ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayAfterPrimitiveOrClose);
+                message = SR.CannotStartObjectArrayAfterPrimitiveOrClose;
             }
+            return ThrowHelper.GetInvalidOperationException(SR.Format(message, _tokenType));
         }
+
+        [DoesNotReturn]
+        private static void ThrowInvalidOperationException_CannotWriteWithinString()
+            => throw ThrowHelper.GetInvalidOperationException(SR.CannotWriteWithinString);
 
         private void WriteStartIndented(byte token)
         {
@@ -1228,20 +1235,17 @@ namespace System.Text.Json
             _currentDepth |= 1 << 31;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        [DoesNotReturn]
-        private void ThrowInvalidOperationException(ExceptionResource resource)
-            => ThrowHelper.ThrowInvalidOperationException(resource, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         [DoesNotReturn]
         private void ThrowInvalidOperationException_MismatchedObjectArray(byte token)
-            => ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
+        {
+            Debug.Assert(token is JsonConstants.CloseBracket or JsonConstants.CloseBrace);
+            throw ThrowHelper.GetInvalidOperationException(
+                SR.Format(_tokenType == JsonTokenType.PropertyName ? SR.CannotWriteEndAfterProperty : SR.MismatchedObjectArray, (char)token));
+        }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         [DoesNotReturn]
         private void ThrowInvalidOperationException_DepthTooLarge()
-            => ThrowHelper.ThrowInvalidOperationException(ExceptionResource.DepthTooLarge, _currentDepth, _options.MaxDepth, token: default, tokenType: default);
+            => throw ThrowHelper.GetInvalidOperationException(SR.Format(SR.DepthTooLarge, CurrentDepth, _options.MaxDepth));
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"BytesCommitted = {BytesCommitted} BytesPending = {BytesPending} CurrentDepth = {CurrentDepth}";
