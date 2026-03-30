@@ -232,7 +232,7 @@ Based on the issue type classified in Step 1, follow the appropriate guide:
 |------|-------|---------------|
 | **Bug report** | [Bug triage](references/bug-triage.md) | Reproduction, regression validation, minimal repro derivation, root cause analysis |
 | **API proposal** | [API proposal triage](references/api-proposal-triage.md) | Merit evaluation, complexity estimation |
-| **Performance regression** | [Performance regression triage](references/perf-regression-triage.md) | Validate regression with BenchmarkDotNet, git bisect to culprit commit |
+| **Performance regression** | [Performance regression triage](references/perf-regression-triage.md) | Validate regression, assess severity and impact. For detailed investigation methodology (benchmarking, bisection), use the `performance-investigation` skill. |
 | **Question** | [Question triage](references/question-triage.md) | Research and answer the question, verify if low confidence |
 | **Enhancement** | [Enhancement triage](references/enhancement-triage.md) | Subcategory classification, feasibility analysis, trade-off assessment (includes performance improvement requests) |
 
@@ -521,5 +521,6 @@ depending on the outcome:
 |-----------|-------|-----------------|
 | API proposal recommended as KEEP | **api-proposal** | Offer to draft a formal API proposal with working prototype |
 | Bug report with root cause identified | **jit-regression-test** | If the bug is JIT-related, offer to create a regression test |
-| Performance regression confirmed | **performance-benchmark** | Offer to validate the regression with ad hoc benchmarks |
+| Performance regression confirmed | **performance-investigation** | Offer to investigate the regression locally (CoreRun builds, bisection) |
+| Performance regression confirmed | **performance-benchmark** | Offer to validate the regression with ad hoc benchmarks via @EgorBot |
 | Fix PR linked to the issue | **code-review** | Offer to review the fix PR for correctness and consistency |

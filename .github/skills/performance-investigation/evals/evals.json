@@ -1,0 +1,137 @@
+{
+  "skill_name": "performance-investigation",
+  "evals": [
+    {
+      "id": 1,
+      "name": "perf-regression-autobot",
+      "prompt": "Investigate this performance regression: https://github.com/dotnet/runtime/issues/114625",
+      "expected_output": "Should follow the regression investigation workflow. Should identify baseline/compare commits from the performanceautofiler report, assess severity from the Test/Base ratio, and plan validation or bisection using local builds.",
+      "assertions": [
+        {
+          "name": "identifies-regression",
+          "description": "Recognizes and follows the regression investigation workflow",
+          "type": "contains_any",
+          "check": ["regression", "investigate", "Regression"]
+        },
+        {
+          "name": "identifies-commits",
+          "description": "Identifies or references baseline/compare commits from the bot report",
+          "type": "contains_any",
+          "check": ["commit", "SHA", "baseline", "compare", "bisect"]
+        },
+        {
+          "name": "assesses-severity",
+          "description": "Assesses the regression severity using the ratio",
+          "type": "contains_any",
+          "check": ["ratio", "severity", "Test/Base", "slower", "regression"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "benchmark-with-corerun",
+      "prompt": "How do I benchmark my local runtime changes against the main branch?",
+      "expected_output": "Should explain how to build dotnet/runtime, obtain CoreRun from the testhost folder, and run BenchmarkDotNet with the --coreRun argument to compare private builds.",
+      "assertions": [
+        {
+          "name": "mentions-corerun",
+          "description": "Explains CoreRun as the mechanism for benchmarking private builds",
+          "type": "contains_any",
+          "check": ["CoreRun", "coreRun", "--coreRun", "testhost"]
+        },
+        {
+          "name": "mentions-build",
+          "description": "References building the runtime",
+          "type": "contains_any",
+          "check": ["clr+libs", "build.cmd", "build.sh"]
+        },
+        {
+          "name": "mentions-bdn",
+          "description": "References BenchmarkDotNet for running the benchmarks",
+          "type": "contains_any",
+          "check": ["BenchmarkDotNet", "BDN", "[Benchmark]"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "cross-release-regression",
+      "prompt": "A user reports that string.IndexOf is 2x slower in .NET 10 compared to .NET 9. How should we investigate?",
+      "expected_output": "Should explain how to identify the bisect range for cross-release regressions using git merge-base, create a standalone benchmark, and validate the regression locally using CoreRun builds.",
+      "assertions": [
+        {
+          "name": "mentions-merge-base",
+          "description": "Explains using git merge-base for cross-release bisection",
+          "type": "contains_any",
+          "check": ["merge-base", "release branch", "snap point"]
+        },
+        {
+          "name": "mentions-benchmark-creation",
+          "description": "Suggests creating a benchmark for the reported scenario",
+          "type": "contains_any",
+          "check": ["benchmark", "BenchmarkDotNet", "[Benchmark]", "standalone"]
+        },
+        {
+          "name": "mentions-bisect",
+          "description": "References git bisect as part of the investigation",
+          "type": "contains_any",
+          "check": ["bisect", "git bisect", "binary search"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "compare-commits-locally",
+      "prompt": "Compare the performance of two specific commits locally for System.Text.Json serialization",
+      "expected_output": "Should explain how to build dotnet/runtime at both commits, save testhost/CoreRun artifacts, and run BenchmarkDotNet with --coreRun pointing to both builds for a side-by-side comparison.",
+      "assertions": [
+        {
+          "name": "mentions-corerun",
+          "description": "References CoreRun or testhost for running against private builds",
+          "type": "contains_any",
+          "check": ["CoreRun", "coreRun", "--coreRun", "testhost"]
+        },
+        {
+          "name": "mentions-both-builds",
+          "description": "Explains building at both commits for comparison",
+          "type": "contains_any",
+          "check": ["both commits", "good", "bad", "baseline", "two builds", "each commit"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "not-applicable-bug-issue",
+      "prompt": "Can you check the performance impact of https://github.com/dotnet/runtime/issues/46088",
+      "expected_output": "Should recognize this is a functional bug (System.Text.Json does not support constructors with byref parameters), not a performance issue. Should indicate that performance benchmarking is not applicable here.",
+      "assertions": [
+        {
+          "name": "identifies-not-perf",
+          "description": "Recognizes this is not a performance issue",
+          "type": "contains_any",
+          "check": ["not a performance", "not performance-related", "no performance", "functional", "not applicable", "does not apply", "isn't a performance"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "not-applicable-doc-pr",
+      "prompt": "Benchmark the changes in PR https://github.com/dotnet/runtime/pull/124592 to validate performance",
+      "expected_output": "Should recognize this is a documentation-only PR (adding XML docs to DI extension methods) and that benchmarking is not applicable or meaningful for documentation changes.",
+      "assertions": [
+        {
+          "name": "identifies-doc-only",
+          "description": "Recognizes this is a documentation/non-functional change where benchmarking is not meaningful",
+          "type": "contains_any",
+          "check": ["documentation", "doc", "no functional", "no code change", "not applicable", "does not apply", "no performance impact", "not meaningful", "wouldn't affect", "won't affect", "no runtime"]
+        }
+      ],
+      "files": []
+    }
+  ]
+}
