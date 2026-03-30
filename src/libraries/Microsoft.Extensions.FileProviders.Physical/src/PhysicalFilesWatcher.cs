@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
@@ -18,7 +19,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 {
     /// <summary>
     /// Watches a physical file system for changes and triggers events on
-    /// <see cref="IChangeToken" /> when files are created, change, renamed, or deleted.
+    /// <see cref="IChangeToken" /> when files or directories are created, changed, renamed, or deleted.
     /// </summary>
     public class PhysicalFilesWatcher : IDisposable
     {
@@ -34,6 +35,12 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private readonly string _root;
         private readonly ExclusionFilters _filters;
 
+        // A single non-recursive watcher used when _root does not exist.
+        // Watches for _root to be created, then enables the main FileSystemWatcher.
+        private PendingCreationWatcher? _rootCreationWatcher;
+        private readonly object _rootCreationWatcherLock = new();
+        private bool _rootWasUnavailable;
+
         private Timer? _timer;
         private bool _timerInitialized;
         private object _timerLock = new();
@@ -42,7 +49,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PhysicalFilesWatcher"/> class that watches files in <paramref name="root"/>.
-        /// Wraps an instance of <see cref="System.IO.FileSystemWatcher"/>.
         /// </summary>
         /// <param name="root">The root directory for the watcher.</param>
         /// <param name="fileSystemWatcher">The wrapped watcher that's watching <paramref name="root"/>.</param>
@@ -60,7 +66,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PhysicalFilesWatcher"/> class that watches files in <paramref name="root"/>.
-        /// Wraps an instance of <see cref="System.IO.FileSystemWatcher"/>.
         /// </summary>
         /// <param name="root">The root directory for the watcher.</param>
         /// <param name="fileSystemWatcher">The wrapped watcher that is watching <paramref name="root"/>.</param>
@@ -80,7 +85,12 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 throw new ArgumentNullException(nameof(fileSystemWatcher), SR.Error_FileSystemWatcherRequiredWithoutPolling);
             }
 
-            _root = root;
+            if (root == null)
+            {
+                throw new ArgumentNullException(nameof(root));
+            }
+
+            _root = PathUtils.EnsureTrailingSlash(Path.GetFullPath(root));
 
             if (fileSystemWatcher != null)
             {
@@ -90,6 +100,18 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     throw new PlatformNotSupportedException(SR.Format(SR.FileSystemWatcher_PlatformNotSupported, typeof(FileSystemWatcher)));
                 }
 #endif
+
+                string fswPath = fileSystemWatcher.Path;
+                if (fswPath.Length > 0)
+                {
+                    string watcherFullPath = PathUtils.EnsureTrailingSlash(Path.GetFullPath(fswPath));
+
+                    if (!_root.StartsWith(watcherFullPath, StringComparison.OrdinalIgnoreCase) &&
+                        !watcherFullPath.StartsWith(_root, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new ArgumentException(SR.Format(SR.FileSystemWatcherPathError, fswPath, root), nameof(fileSystemWatcher));
+                    }
+                }
 
                 _fileWatcher = fileSystemWatcher;
                 _fileWatcher.IncludeSubdirectories = true;
@@ -118,7 +140,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <paramref name="filter" />.
         /// </summary>
         /// <param name="filter">A globbing pattern for files and directories to watch.</param>
-        /// <returns>A change token for all files that match the filter.</returns>
+        /// <returns>A change token for all files and directories that match the filter.</returns>
         /// <remarks>
         /// Globbing patterns are relative to the root directory given in the constructor
         /// <see cref="PhysicalFilesWatcher(string, FileSystemWatcher, bool)" />. Globbing patterns
@@ -137,13 +159,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 return NullChangeToken.Singleton;
             }
 
-            IChangeToken changeToken = GetOrAddChangeToken(filter);
-// We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
-#pragma warning disable CA1416 // Validate platform compatibility
-            TryEnableFileSystemWatcher();
-#pragma warning restore CA1416 // Validate platform compatibility
-
-            return changeToken;
+            return GetOrAddChangeToken(filter);
         }
 
         private IChangeToken GetOrAddChangeToken(string pattern)
@@ -155,7 +171,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             return pattern.Contains('*') || IsDirectoryPath(pattern)
                 ? GetOrAddWildcardChangeToken(pattern)
-                // get rid of \. in Windows and ./ in UNIX's at the start of path file
+                // get rid of \. in Windows and ./ in UNIX's at the start of the path
                 : GetOrAddFilePathChangeToken(RemoveRelativePathSegment(pattern));
         }
 
@@ -174,6 +190,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken = tokenInfo.ChangeToken;
+
             if (PollForChanges)
             {
                 // The expiry of CancellationChangeToken is controlled by this type and consequently we can cache it.
@@ -194,6 +211,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         pollingChangeToken,
                     });
             }
+
+            TryEnableFileSystemWatcher();
 
             return changeToken;
         }
@@ -232,6 +251,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     });
             }
 
+            TryEnableFileSystemWatcher();
+
             return changeToken;
         }
 
@@ -256,6 +277,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 {
                     _fileWatcher?.Dispose();
                     _timer?.Dispose();
+
+                    // We made sure that browser/iOS/tvOS never uses FileSystemWatcher so _rootCreationWatcher is always null on those platforms.
+#pragma warning disable CA1416
+                    lock (_rootCreationWatcherLock)
+                    {
+                        _rootCreationWatcher?.Dispose();
+                        _rootCreationWatcher = null;
+                    }
+#pragma warning restore CA1416
                 }
                 _disposed = true;
             }
@@ -287,11 +317,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         OnFileSystemEntryChange(newLocation);
                     }
                 }
-                catch (Exception ex) when (
-                    ex is IOException ||
-                    ex is SecurityException ||
-                    ex is DirectoryNotFoundException ||
-                    ex is UnauthorizedAccessException)
+                catch (Exception ex) when (ex is IOException or SecurityException or DirectoryNotFoundException or UnauthorizedAccessException)
                 {
                     // Swallow the exception.
                 }
@@ -316,9 +342,20 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private void OnError(object sender, ErrorEventArgs e)
         {
             // Notify all cache entries on error.
-            foreach (string path in _filePathTokenLookup.Keys)
+            CancelAll(_filePathTokenLookup);
+            CancelAll(_wildcardTokenLookup);
+
+            TryDisableFileSystemWatcher();
+
+            static void CancelAll(ConcurrentDictionary<string, ChangeTokenInfo> tokens)
             {
-                ReportChangeForMatchedEntries(path);
+                foreach (KeyValuePair<string, ChangeTokenInfo> entry in tokens)
+                {
+                    if (tokens.TryRemove(entry.Key, out ChangeTokenInfo matchInfo))
+                    {
+                        CancelToken(matchInfo);
+                    }
+                }
             }
         }
 
@@ -331,7 +368,16 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             try
             {
-                var fileSystemInfo = new FileInfo(fullPath);
+                // Ignore events outside _root (can happen when the FSW watches an ancestor directory).
+                if (!fullPath.StartsWith(_root, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                FileSystemInfo fileSystemInfo = new FileInfo(fullPath) is { Exists: true } fileInfo
+                    ? fileInfo
+                    : new DirectoryInfo(fullPath);
+
                 if (FileSystemInfoHelper.IsExcluded(fileSystemInfo, _filters))
                 {
                     return;
@@ -341,9 +387,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 ReportChangeForMatchedEntries(relativePath);
             }
             catch (Exception ex) when (
-                ex is IOException ||
-                ex is SecurityException ||
-                ex is UnauthorizedAccessException)
+                ex is IOException or SecurityException or UnauthorizedAccessException)
             {
                 // Swallow the exception.
             }
@@ -373,7 +417,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 matched = true;
             }
 
-            foreach (System.Collections.Generic.KeyValuePair<string, ChangeTokenInfo> wildCardEntry in _wildcardTokenLookup)
+            foreach (KeyValuePair<string, ChangeTokenInfo> wildCardEntry in _wildcardTokenLookup)
             {
                 PatternMatchingResult matchResult = wildCardEntry.Value.Matcher!.Match(path);
                 if (matchResult.HasMatches &&
@@ -387,6 +431,40 @@ namespace Microsoft.Extensions.FileProviders.Physical
             if (matched)
             {
                 TryDisableFileSystemWatcher();
+            }
+        }
+
+        // Fires tokens for any watched entries that already exist on disk. Called after enabling
+        // the FileSystemWatcher to catch entries created before the watcher was active (e.g.
+        // files created between _root appearing and the FSW being enabled).
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("wasi")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private void ReportExistingWatchedEntries()
+        {
+            if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) && Directory.Exists(_root))
+            {
+                try
+                {
+                    // This iterates through all file system entries under the root directory, which can be expensive if there are many of them.
+                    // However, this is only called if the root directory was missing and was just created, so it is expected that there won't be many entries at this point.
+                    foreach (string fullPath in
+                        Directory.EnumerateFileSystemEntries(_root, "*", SearchOption.AllDirectories))
+                    {
+                        OnFileSystemEntryChange(fullPath);
+
+                        if (_filePathTokenLookup.IsEmpty && _wildcardTokenLookup.IsEmpty)
+                        {
+                            break;
+                        }
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or SecurityException or DirectoryNotFoundException or UnauthorizedAccessException)
+                {
+                    // Swallow — the directory may have been deleted or become inaccessible.
+                }
             }
         }
 
@@ -405,11 +483,102 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         _wildcardTokenLookup.IsEmpty &&
                         _fileWatcher.EnableRaisingEvents)
                     {
-                        // Perf: Turn off the file monitoring if no files to monitor.
+                        // Perf: Turn off the file monitoring if no files or directories to monitor.
                         _fileWatcher.EnableRaisingEvents = false;
                     }
                 }
             }
+        }
+
+        private void TryEnableFileSystemWatcher()
+        {
+            if (_fileWatcher is null)
+            {
+                return;
+            }
+
+// We made sure that browser/iOS/tvOS never uses FileSystemWatcher.
+#pragma warning disable CA1416 // Validate platform compatibility
+            bool needsRootWatcher = false;
+            bool justEnabledAfterRootCreated = false;
+
+            lock (_fileWatcherLock)
+            {
+                if (!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty)
+                {
+                    // On some platforms (e.g., Linux/inotify), the FileSystemWatcher does not
+                    // auto-disable when the watched directory is deleted. Detect this and
+                    // disable manually so the FSW can be re-enabled when the root reappears.
+                    if (_fileWatcher.EnableRaisingEvents && !Directory.Exists(_root))
+                    {
+                        _fileWatcher.EnableRaisingEvents = false;
+                        _rootWasUnavailable = true;
+                    }
+
+                    if (!_fileWatcher.EnableRaisingEvents)
+                    {
+                        if (!Directory.Exists(_root))
+                        {
+                            needsRootWatcher = true;
+                            _rootWasUnavailable = true;
+                        }
+                        else
+                        {
+                            try
+                            {
+                                if (string.IsNullOrEmpty(_fileWatcher.Path))
+                                {
+                                    _fileWatcher.Path = _root;
+                                }
+
+                                _fileWatcher.EnableRaisingEvents = true;
+
+                                // Only scan for existing entries if the FSW was enabled after _root
+                                // was initially missing (i.e. we went through the PCW path). In the
+                                // normal case where _root always existed, there is no gap to cover.
+                                justEnabledAfterRootCreated = _rootWasUnavailable;
+                                _rootWasUnavailable = false;
+                            }
+                            catch (Exception ex) when (ex is ArgumentException or IOException)
+                            {
+                                // _root may have been deleted between the Directory.Exists check
+                                // and the property sets above. Fall back to watching for root creation.
+                                if (!Directory.Exists(_root))
+                                {
+                                    needsRootWatcher = true;
+                                    _rootWasUnavailable = true;
+                                }
+                                else
+                                {
+                                    throw;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (needsRootWatcher)
+            {
+                // Call outside the lock — EnsureRootCreationWatcher may invoke Token.Register,
+                // which can fire synchronously and re-enter TryEnableFileSystemWatcher.
+                EnsureRootCreationWatcher();
+            }
+            else if (justEnabledAfterRootCreated)
+            {
+                // After enabling the FSW following a root-missing period, check for entries that
+                // were created before the watcher was active. Without this, files created between
+                // _root appearing and the FSW being enabled would be missed.
+
+                ReportExistingWatchedEntries();
+
+                lock (_rootCreationWatcherLock)
+                {
+                    _rootCreationWatcher?.Dispose();
+                    _rootCreationWatcher = null;
+                }
+            }
+#pragma warning restore CA1416
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -417,19 +586,49 @@ namespace Microsoft.Extensions.FileProviders.Physical
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        private void TryEnableFileSystemWatcher()
+        private void EnsureRootCreationWatcher()
         {
-            if (_fileWatcher != null)
+            PendingCreationWatcher? newWatcher = null;
+
+            lock (_rootCreationWatcherLock)
             {
-                lock (_fileWatcherLock)
+                if (_rootCreationWatcher is { } existing && !existing.Token.IsCancellationRequested)
                 {
-                    if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) &&
-                        !_fileWatcher.EnableRaisingEvents)
-                    {
-                        // Perf: Turn off the file monitoring if no files to monitor.
-                        _fileWatcher.EnableRaisingEvents = true;
-                    }
+                    return; // already watching
                 }
+
+                _rootCreationWatcher?.Dispose();
+
+                newWatcher = new PendingCreationWatcher(_root);
+                _rootCreationWatcher = newWatcher;
+            }
+
+            // If the token is already cancelled (e.g. setup error),
+            // don't register a callback - it would fire synchronously and could cause a tight retry loop.
+            if (newWatcher.Token.IsCancellationRequested)
+            {
+                // If _root appeared during setup, enable the FSW now.
+                if (Directory.Exists(_root))
+                {
+                    TryEnableFileSystemWatcher();
+                }
+
+                return;
+            }
+
+            // Register outside the lock to avoid deadlocking with TryEnableFileSystemWatcher
+            // if the token gets cancelled (synchronous callback invocation).
+            try
+            {
+                newWatcher.Token.Register(_ => TryEnableFileSystemWatcher(), null);
+            }
+            catch (ObjectDisposedException)
+            {
+                // Catch ObjectDisposedException in case PhysicalFilesWatcher.Dispose() ran
+                // concurrently and disposed the PendingCreationWatcher between releasing the
+                // lock and this Register call.
+
+                // This should only happen on .NET Framework with the ThrowExceptionIfDisposedCancellationTokenSource compat switch on.
             }
         }
 
@@ -464,7 +663,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             // Iterating over a concurrent bag gives us a point in time snapshot making it safe
             // to remove items from it.
             var changeTokens = (ConcurrentDictionary<IPollingChangeToken, IPollingChangeToken>)state;
-            foreach (System.Collections.Generic.KeyValuePair<IPollingChangeToken, IPollingChangeToken> item in changeTokens)
+            foreach (KeyValuePair<IPollingChangeToken, IPollingChangeToken> item in changeTokens)
             {
                 IPollingChangeToken token = item.Key;
 
@@ -515,6 +714,229 @@ namespace Microsoft.Extensions.FileProviders.Physical
             public CancellationChangeToken ChangeToken { get; }
 
             public Matcher? Matcher { get; }
+        }
+
+        // Watches for a non-existent directory to be created. Walks up from the target
+        // directory to find the nearest existing ancestor, then uses a non-recursive
+        // FileSystemWatcher to detect each missing directory level being created.
+        // When the target directory itself appears, the token fires.
+        private sealed class PendingCreationWatcher : IDisposable
+        {
+            private readonly string _targetDirectory;
+            private FileSystemWatcher? _watcher; // protected by _lock
+            private string _expectedName;         // protected by _lock
+            private readonly object _lock = new();
+            private int _disposed;
+
+            private readonly CancellationTokenSource _cts = new();
+
+            public CancellationToken Token { get; }
+
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("wasi")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
+            public PendingCreationWatcher(string directory)
+            {
+                Token = _cts.Token;
+                _targetDirectory = directory;
+
+                // Walk up to find the nearest existing ancestor.
+                string current = _targetDirectory;
+                while (!Directory.Exists(current))
+                {
+                    // If no existing ancestor was found (e.g. unmounted drive on Windows), throw.
+                    current = Path.GetDirectoryName(current) ?? throw new DirectoryNotFoundException(SR.Format(SR.RootDirectoryMissing, current));
+                }
+
+                // current is the deepest existing ancestor; expected name is its immediate child.
+                _expectedName = GetChildName(current, _targetDirectory);
+
+                bool shouldCancel;
+                lock (_lock)
+                {
+                    shouldCancel = SetupWatcherNoLock(current);
+                }
+
+                if (shouldCancel)
+                {
+                    _cts.Cancel();
+                }
+            }
+
+            // Returns the name of the immediate child of existingAncestor on the path to target.
+            private static string GetChildName(string existingAncestor, string target)
+            {
+                Debug.Assert(target.StartsWith(existingAncestor, StringComparison.OrdinalIgnoreCase));
+
+                ReadOnlySpan<char> remaining = target.AsSpan(existingAncestor.Length).TrimStart(PathUtils.PathSeparators);
+                int separator = remaining.IndexOfAny(PathUtils.PathSeparators);
+                return (separator >= 0 ? remaining.Slice(0, separator) : remaining).ToString();
+            }
+
+            private bool IsTargetDirectory(string path)
+            {
+                // _targetDirectory may have a trailing separator; compare ignoring it.
+                ReadOnlySpan<char> target = _targetDirectory.AsSpan().TrimEnd(PathUtils.PathSeparators);
+                return target.Equals(path.AsSpan().TrimEnd(PathUtils.PathSeparators), StringComparison.OrdinalIgnoreCase);
+            }
+
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("wasi")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
+            // Returns true if _cts should be cancelled after releasing the lock.
+            private bool SetupWatcherNoLock(string watchDir)
+            {
+                while (true)
+                {
+                    // Fast-forward through directories that already exist.
+                    while (Path.Combine(watchDir, _expectedName) is var childPath && Directory.Exists(childPath))
+                    {
+                        watchDir = childPath;
+                        if (IsTargetDirectory(watchDir))
+                        {
+                            return true;
+                        }
+
+                        _expectedName = GetChildName(watchDir, _targetDirectory);
+                    }
+
+                    // Start watching for the next expected directory.
+                    FileSystemWatcher? newWatcher = null;
+                    try
+                    {
+                        newWatcher = new FileSystemWatcher(watchDir)
+                        {
+                            IncludeSubdirectories = false,
+                            NotifyFilter = NotifyFilters.DirectoryName,
+                        };
+                        newWatcher.Created += OnCreated;
+                        newWatcher.Renamed += OnCreated;
+                        newWatcher.Error += OnError;
+                        newWatcher.EnableRaisingEvents = true;
+                    }
+                    catch (Exception ex) when (ex is ArgumentException or IOException)
+                    {
+                        newWatcher?.Dispose();
+                        return true;
+                    }
+
+                    _watcher = newWatcher;
+
+                    // Post-start race check: the directory may have appeared during setup.
+                    string nextDir = Path.Combine(watchDir, _expectedName);
+                    if (!Directory.Exists(nextDir))
+                    {
+                        return false; // watcher is properly set up
+                    }
+
+                    // It appeared — dispose this watcher and advance.
+                    _watcher.Dispose();
+                    _watcher = null;
+                    watchDir = nextDir;
+
+                    if (IsTargetDirectory(watchDir))
+                    {
+                        return true;
+                    }
+
+                    // In every iteration, _expectedName gets shorter and watchDir gets longer, so the loop can't go on forever.
+                    _expectedName = GetChildName(watchDir, _targetDirectory);
+                }
+            }
+
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("wasi")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
+            private void OnCreated(object sender, FileSystemEventArgs e)
+            {
+                if (_cts.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                bool shouldCancel = false;
+                lock (_lock)
+                {
+                    if (sender != _watcher || _cts.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    if (!string.Equals(e.Name, _expectedName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return;
+                    }
+
+                    _watcher.Dispose();
+                    _watcher = null;
+
+                    string createdPath = e.FullPath;
+                    if (IsTargetDirectory(createdPath))
+                    {
+                        shouldCancel = true;
+                    }
+                    else
+                    {
+                        _expectedName = GetChildName(createdPath, _targetDirectory);
+                        shouldCancel = SetupWatcherNoLock(createdPath);
+                    }
+                }
+
+                if (shouldCancel)
+                {
+                    _cts.Cancel();
+                }
+            }
+
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("wasi")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
+            private void OnError(object sender, ErrorEventArgs e)
+            {
+                lock (_lock)
+                {
+                    if (sender != _watcher || _cts.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    _watcher?.Dispose();
+                    _watcher = null;
+                }
+
+                _cts.Cancel();
+            }
+
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("wasi")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
+            public void Dispose()
+            {
+                if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                {
+                    return;
+                }
+
+                FileSystemWatcher? w;
+                lock (_lock)
+                {
+                    w = _watcher;
+                    _watcher = null;
+                }
+
+                w?.Dispose();
+                _cts.Dispose();
+            }
         }
     }
 }
