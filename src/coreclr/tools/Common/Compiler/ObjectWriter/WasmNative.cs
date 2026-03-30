@@ -201,9 +201,8 @@ namespace ILCompiler.ObjectWriter
 #if READYTORUN
     public enum WasmNativeRelocKind : byte
     {
-        ADD_TABLE_BASE_OFFSET_SLEB = 1,
-        ADD_TABLE_BASE_OFFSET_U32 = 2,
-        ADD_TABLE_BASE_OFFSET_U64 = 3,
+        ADD_TABLE_BASE_I32 = 0,
+        ADD_TABLE_BASE_I64 = 1,
     }
     public class WasmNativeReloc
     {
@@ -216,8 +215,9 @@ namespace ILCompiler.ObjectWriter
             Offset = offset;
         }
 
-        // These relocs are encoded as [kind, reloc offset]. For R2R, these should only be used
-        // for adding an offset to a function pointer in the function table, so the target of the relocation is implicitly the function table base.
+        // These relocs are encoded as (kind:byte, reloc_offset:(u32|u64)). For R2R, these runtime relocs should only be used
+        // for adding an offset to a function pointer in the function table, so the target fixup for
+        // the relocation is implicitly to add the function table base.
         public int Encode(Span<byte> buffer, int targetPointerSize = 4)
         {
             buffer[0] = (byte)Kind;
@@ -233,6 +233,19 @@ namespace ILCompiler.ObjectWriter
                     throw new NotSupportedException();
             }
             return 0;
+        }
+
+        public int EncodeSize()
+        {
+            switch (Kind)
+            {
+                case WasmNativeRelocKind.ADD_TABLE_BASE_I32:
+                    return 1 + 4;
+                case WasmNativeRelocKind.ADD_TABLE_BASE_I64:
+                    return 1 + 8;
+                default:
+                    throw new NotSupportedException();
+            }
         }
     }
 #endif

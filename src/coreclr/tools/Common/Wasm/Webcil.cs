@@ -42,6 +42,12 @@ public struct WebcilHeader
     // 28 bytes
 }
 
+public enum WebcilSectionType : uint
+{
+    Data = 0x1,
+    Reloc = 0x2
+}
+
 /// <summary>
 /// Represents a section header in a Webcil file.
 /// </summary>
@@ -51,13 +57,15 @@ public struct WebcilHeader
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly struct WebcilSectionHeader
 {
+    public readonly WebcilSectionType SectionType;
     public readonly uint VirtualSize;
     public readonly uint VirtualAddress;
     public readonly uint SizeOfRawData;
     public readonly uint PointerToRawData;
 
-    public WebcilSectionHeader(uint virtualSize, uint virtualAddress, uint sizeOfRawData, uint pointerToRawData)
+    public WebcilSectionHeader(WebcilSectionType sectionType, uint virtualSize, uint virtualAddress, uint sizeOfRawData, uint pointerToRawData)
     {
+        SectionType = sectionType;
         VirtualSize = virtualSize;
         VirtualAddress = virtualAddress;
         SizeOfRawData = sizeOfRawData;

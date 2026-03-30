@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
@@ -370,13 +371,17 @@ namespace ILCompiler.ObjectWriter
         public const int WebcilSectionAlignment = 16;
         private WebcilSegment BuildWebcilDataSegment()
         {
-            WebcilSection[] webcilSections = _sections.OfType<WebcilSection>().ToArray();
+            List<WebcilSection> webcilSections = _sections.OfType<WebcilSection>().ToList();
 
-            uint sizeOfHeaders = (uint)WebcilEncoder.HeaderEncodeSize() + (uint)(webcilSections.Length * WebcilEncoder.SectionHeaderEncodeSize());
+            // The reloc section is not materialized as a section in parent object writer, so we add it here.
+            WebcilSection relocSection = new WebcilSection(WebcilSectionType.Reloc, new Utf8String("reloc"), default(WebcilSectionHeader), new MemoryStream(), _sections.Count + 1);
+            webcilSections.Add(relocSection);
+
+            uint sizeOfHeaders = (uint)WebcilEncoder.HeaderEncodeSize() + (uint)(webcilSections.Count * WebcilEncoder.SectionHeaderEncodeSize());
             uint pointerToRawData = (uint)AlignmentHelper.AlignUp((int)sizeOfHeaders, (int)WebcilSectionAlignment);
             uint virtualAddress = pointerToRawData;
 
-            for (int i = 0; i < webcilSections.Length; i++)
+            for (int i = 0; i < webcilSections.Count(); i++)
             {
                 WebcilSection webcilSection = webcilSections[i];
                 Debug.Assert(BitOperations.IsPow2(webcilSection.MinAlignment) && BitOperations.IsPow2(WebcilSectionAlignment) &&
@@ -390,6 +395,7 @@ namespace ILCompiler.ObjectWriter
                 // the pointer to raw data for each section is also the same as the virtual address.
                 uint virtualSize = alignedSectionSize;
                 WebcilSectionHeader sectionHeader = new WebcilSectionHeader(
+                    sectionType: webcilSection.Kind,
                     virtualSize: virtualSize,
                     virtualAddress: virtualAddress,
                     sizeOfRawData: alignedSectionSize,
@@ -406,13 +412,12 @@ namespace ILCompiler.ObjectWriter
                 Id = WebcilConstants.WEBCIL_MAGIC,
                 VersionMajor = WebcilConstants.WC_VERSION_MAJOR,
                 VersionMinor = WebcilConstants.WC_VERSION_MINOR,
-                CoffSections = (ushort)webcilSections.Length,
+                CoffSections = (ushort)webcilSections.Count,
                 PeCliHeaderRva = 0, // This RVA will be resolved later
                 PeCliHeaderSize = 0, // Resolved along with RVA
                 PeDebugRva = 0, // This RVA will be resolved later
                 PeDebugSize = 0 // Resolved along with RVA
             };
-
 
             return new WebcilSegment(header, webcilSections.ToArray());
         }
@@ -452,7 +457,7 @@ namespace ILCompiler.ObjectWriter
             {
 #if READYTORUN
                 // This is a section which is internally wrapping a Webcil section
-                wasmSection = new WebcilSection(new Utf8String(section.Name), default(WebcilSectionHeader), sectionStream, sectionIndex);
+                wasmSection = new WebcilSection(WebcilSectionType.Data, new Utf8String(section.Name), default(WebcilSectionHeader), sectionStream, sectionIndex);
 #else
                 wasmSection = new WasmSection(WasmSectionType.Data, sectionStream, new Utf8String(section.Name));
 #endif
@@ -581,6 +586,41 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private WasmNativeReloc ToNativeReloc(SymbolicRelocation reloc, ulong runtimeOffset)
+        {
+            switch (reloc.Type)
+            {
+                case RelocType.WASM_TABLE_INDEX_U32:
+                    return new WasmNativeReloc(WasmNativeRelocKind.ADD_TABLE_BASE_I32, runtimeOffset);
+                case RelocType.WASM_TABLE_INDEX_U64:
+                    return new WasmNativeReloc(WasmNativeRelocKind.ADD_TABLE_BASE_I64, runtimeOffset);
+                default:
+                    throw new NotImplementedException();
+            }
+
+        }
+
+        private static ObjectNodeSection WebcilRelocSection = new ObjectNodeSection("reloc", SectionType.ReadOnly);
+        private void EmitRelocSectionData()
+        {
+            var relocSectionWriter = GetOrCreateSection(WebcilRelocSection);
+            for (int i = 0; i < _webcilSegment.Sections.Count(); i++)
+            {
+                WebcilSection webcilSection = _webcilSegment.Sections[i];
+                if (_runtimeRelocations.TryGetValue(webcilSection.Index, out List<SymbolicRelocation> runtimeRelocations))
+                {
+                    foreach (var reloc in runtimeRelocations)
+                    {
+                        ulong resolvedOffset = (ulong)webcilSection.Header.PointerToRawData + (ulong)reloc.Offset;
+                        WasmNativeReloc wasmReloc = ToNativeReloc(reloc, resolvedOffset);
+                        Span<byte> buffer = relocSectionWriter.Buffer.GetSpan(wasmReloc.EncodeSize());
+                        wasmReloc.Encode(buffer);
+                    }
+                }
+            }
+        }
+
         private PaddingHelper _paddingHelper = new PaddingHelper(WebcilSectionAlignment);
 
         private protected override void EmitObjectFile(Stream outputFileStream)
@@ -686,7 +726,13 @@ namespace ILCompiler.ObjectWriter
 #endif
         }
 
+        private bool NeedsRuntimeReloc(RelocType reloc)
+        {
+            return reloc is RelocType.WASM_TABLE_INDEX_U32 or RelocType.WASM_TABLE_INDEX_U64;
+        }
+
         Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
+        Dictionary<int, List<SymbolicRelocation>> _runtimeRelocations = new();
 
         private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
@@ -696,9 +742,19 @@ namespace ILCompiler.ObjectWriter
                 {
                     _resolvableRelocations[sectionIndex] = resolvable = new List<SymbolicRelocation>();
                 }
-                // Unconditionally add the reloc to our resolvable list; all relocs must be resolvable for Wasm
-                // since we do not emit any relocations in the output object file.
+                // Unconditionally add the reloc to our resolvable list; we do some amount of relocation resolution
+                // for all relocation types
                 resolvable.Add(reloc);
+
+                // A few relocation types (table indices are the only case) need
+                // an additional runtime reloc as well.
+                if (NeedsRuntimeReloc(reloc.Type))
+                {
+                    if (!_runtimeRelocations.TryGetValue(sectionIndex, out List<SymbolicRelocation> runtimeRelocs))
+                    {
+                        _runtimeRelocations[sectionIndex] = runtimeRelocs = new List<SymbolicRelocation>();
+                    }
+                }
             }
         }
 
@@ -1276,12 +1332,14 @@ namespace ILCompiler.ObjectWriter
         public readonly Stream _stream;
         private PaddingHelper _paddingHelper;
         public int MinAlignment = 1;
+        public WebcilSectionType Kind;
 
         public uint Padding => Header.SizeOfRawData - (uint)_stream.Length;
 
-        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int index)
+        public WebcilSection(WebcilSectionType webcilSectionType, Utf8String name, WebcilSectionHeader header, Stream stream, int index)
             : base(WasmSectionType.Data, stream, name)
         {
+            Kind = webcilSectionType;
             Header = header;
             _stream = stream;
             Index = index;
