@@ -30,8 +30,11 @@ public static class SingleFileTestRunner
         Environment.SetEnvironmentVariable("TEST_READY_TO_RUN_MODE", "1");
 #endif
 
-        // Use Assembly.Location which now returns Environment.ProcessPath in NativeAOT
+        // In NativeAOT, Assembly.Location returns empty string. Fall back
+        // to the native executable path so xunit can resolve the assembly.
         var processPath = testAssembly.Location;
+        if (string.IsNullOrEmpty(processPath))
+            processPath = Environment.ProcessPath ?? "unknown";
 
         string? xmlResultFileName = null;
         var excludedTraits = new Dictionary<string, HashSet<string>>();
