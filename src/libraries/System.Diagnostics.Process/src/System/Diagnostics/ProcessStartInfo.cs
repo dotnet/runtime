@@ -209,7 +209,7 @@ namespace System.Diagnostics
         /// The handles specified in this list are always inherited by the child process on all supported platforms.
         /// However, the restriction that prevents other handles from being inherited is only enforced on platforms
         /// that have the necessary OS support. On platforms without such support (for example, Linux kernels older
-        /// than 5.9 without the <c>close_range</c> syscall), other inheritable file descriptors may still be
+        /// than 5.9), other inheritable file descriptors may still be
         /// inherited by the child process even when this property is set.
         /// </para>
         /// <para>
@@ -375,7 +375,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.CantRedirectStreams);
             }
 
-            if (UseShellExecute && InheritedHandles is not null && InheritedHandles.Count > 0)
+            if (UseShellExecute && InheritedHandles is not null)
             {
                 throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
             }

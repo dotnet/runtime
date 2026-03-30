@@ -19,8 +19,8 @@ internal static partial class Interop
             int dwCreationFlags,
             char* lpEnvironment,
             string? lpCurrentDirectory,
-            ref STARTUPINFOEX lpStartupInfo,
-            ref PROCESS_INFORMATION lpProcessInformation
+            STARTUPINFOEX* lpStartupInfo,
+            PROCESS_INFORMATION* lpProcessInformation
         );
 
         [StructLayout(LayoutKind.Sequential)]
@@ -62,18 +62,13 @@ internal static partial class Interop
         internal struct STARTUPINFOEX
         {
             internal STARTUPINFO StartupInfo;
-            internal LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList;
-        }
-
-        internal struct LPPROC_THREAD_ATTRIBUTE_LIST
-        {
-            internal IntPtr AttributeList;
+            internal void* lpAttributeList;
         }
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool InitializeProcThreadAttributeList(
-            LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList,
+            void* lpAttributeList,
             int dwAttributeCount,
             int dwFlags,
             ref nuint lpSize);
@@ -81,7 +76,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool UpdateProcThreadAttribute(
-            LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList,
+            void* lpAttributeList,
             int dwFlags,
             IntPtr attribute,
             void* lpValue,
@@ -90,6 +85,6 @@ internal static partial class Interop
             nuint lpReturnSize);
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        internal static unsafe partial void DeleteProcThreadAttributeList(LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList);
+        internal static unsafe partial void DeleteProcThreadAttributeList(void* lpAttributeList);
     }
 }

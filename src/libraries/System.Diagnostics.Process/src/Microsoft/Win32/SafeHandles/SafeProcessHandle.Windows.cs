@@ -135,7 +135,6 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             void* attributeListBuffer = null;
-            Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST attributeList = default;
             SafeHandle?[]? handlesToRelease = null;
             IntPtr* handlesToInherit = null;
 
@@ -203,10 +202,10 @@ namespace Microsoft.Win32.SafeHandles
 
                     PrepareHandleAllowList(inheritedHandles, handlesToInherit, ref handleCount, ref handlesToRelease);
 
-                    BuildProcThreadAttributeList(handlesToInherit, handleCount, ref attributeListBuffer, ref attributeList);
+                    BuildProcThreadAttributeList(handlesToInherit, handleCount, ref attributeListBuffer);
                 }
 
-                startupInfoEx.lpAttributeList = attributeList;
+                startupInfoEx.lpAttributeList = attributeListBuffer;
 
                 bool retVal;
                 int errorCode = 0;
@@ -252,8 +251,8 @@ namespace Microsoft.Win32.SafeHandles
                                 creationFlags,
                                 (IntPtr)environmentBlockPtr,
                                 workingDirectory,
-                                ref startupInfoEx,      // pointer to STARTUPINFOEX
-                                ref processInfo         // pointer to PROCESS_INFORMATION
+                                &startupInfoEx,
+                                &processInfo
                             );
                             if (!retVal)
                                 errorCode = Marshal.GetLastWin32Error();
@@ -280,8 +279,8 @@ namespace Microsoft.Win32.SafeHandles
                             creationFlags,       // creation flags
                             environmentBlockPtr, // pointer to new environment block
                             workingDirectory,    // pointer to current directory name
-                            ref startupInfoEx,   // pointer to STARTUPINFOEX
-                            ref processInfo      // pointer to PROCESS_INFORMATION
+                            &startupInfoEx,      // pointer to STARTUPINFOEX
+                            &processInfo         // pointer to PROCESS_INFORMATION
                         );
                         if (!retVal)
                             errorCode = Marshal.GetLastWin32Error();
@@ -319,7 +318,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (attributeListBuffer != null)
                 {
-                    Interop.Kernel32.DeleteProcThreadAttributeList(attributeList);
+                    Interop.Kernel32.DeleteProcThreadAttributeList(attributeListBuffer);
                     NativeMemory.Free(attributeListBuffer);
                 }
 
@@ -372,23 +371,20 @@ namespace Microsoft.Win32.SafeHandles
         private static unsafe void BuildProcThreadAttributeList(
             IntPtr* handlesToInherit,
             int handleCount,
-            ref void* attributeListBuffer,
-            ref Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST attributeList)
+            ref void* attributeListBuffer)
         {
             nuint size = 0;
-            Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST emptyList = default;
-            Interop.Kernel32.InitializeProcThreadAttributeList(emptyList, 1, 0, ref size);
+            Interop.Kernel32.InitializeProcThreadAttributeList(null, 1, 0, ref size);
 
             attributeListBuffer = NativeMemory.Alloc(size);
-            attributeList.AttributeList = (IntPtr)attributeListBuffer;
 
-            if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeList, 1, 0, ref size))
+            if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeListBuffer, 1, 0, ref size))
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
 
             if (!Interop.Kernel32.UpdateProcThreadAttribute(
-                attributeList,
+                attributeListBuffer,
                 0,
                 (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
                 handlesToInherit,
