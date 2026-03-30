@@ -369,6 +369,7 @@ private:
     // should be updated as well.
     // See the TAGGED_MEMORY_SIZE_IN_POINTERS constant in
     // ObjectiveCMarshal.NativeAot.cs
+    // [cDAC] [ObjectiveCMarshal] : Contract depends on this size.
     BYTE m_taggedAlloc[2 * sizeof(void*)];
 #endif // FEATURE_OBJCMARSHAL
 
@@ -383,6 +384,9 @@ struct cdac_data<InteropSyncBlockInfo>
     static constexpr size_t RCW = offsetof(InteropSyncBlockInfo, m_pRCW);
     static constexpr size_t CCF = offsetof(InteropSyncBlockInfo, m_pCCF);
 #endif // FEATURE_COMINTEROP
+#ifdef FEATURE_OBJCMARSHAL
+    static constexpr size_t TaggedMemory = offsetof(InteropSyncBlockInfo, m_taggedMemory);
+#endif // FEATURE_OBJCMARSHAL
 };
 
 typedef DPTR(InteropSyncBlockInfo) PTR_InteropSyncBlockInfo;

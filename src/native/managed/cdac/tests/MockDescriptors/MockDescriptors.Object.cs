@@ -127,7 +127,9 @@ internal partial class MockDescriptors
             return fragment.Address + prefixSize; // return pointer to the object, not the prefix;
         }
 
-        internal TargetPointer AddObjectWithSyncBlock(TargetPointer methodTable, uint syncBlockIndex, TargetPointer rcw, TargetPointer ccw, TargetPointer ccf)
+        internal TargetPointer AddObjectWithSyncBlock(TargetPointer methodTable, uint syncBlockIndex,
+            TargetPointer rcw, TargetPointer ccw, TargetPointer ccf,
+            TargetPointer taggedMemory = default)
         {
             MockMemorySpace.Builder builder = Builder;
             TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
@@ -136,7 +138,8 @@ internal partial class MockDescriptors
             if ((syncBlockIndex & SyncBlockIndexMask) != syncBlockIndex)
                 throw new ArgumentOutOfRangeException(nameof(syncBlockIndex), "Invalid sync block index");
 
-            TargetPointer address = AddObject(methodTable, prefixSize: (uint)TestSyncBlockValueToObjectOffset);
+            uint objectHeaderSize = Types[DataType.ObjectHeader].Size!.Value;
+            TargetPointer address = AddObject(methodTable, prefixSize: objectHeaderSize);
 
             // Add the sync table value before the object
             uint syncTableValue = IsSyncBlockIndexBits | syncBlockIndex;
@@ -145,11 +148,12 @@ internal partial class MockDescriptors
             targetTestHelpers.Write(syncTableValueDest, syncTableValue);
 
             // Add the actual sync block and associated data
-            AddSyncBlock(syncBlockIndex, rcw, ccw, ccf);
+            AddSyncBlock(syncBlockIndex, rcw, ccw, ccf, taggedMemory);
             return address;
         }
 
-        private void AddSyncBlock(uint index, TargetPointer rcw, TargetPointer ccw, TargetPointer ccf)
+        private void AddSyncBlock(uint index, TargetPointer rcw, TargetPointer ccw, TargetPointer ccf,
+            TargetPointer taggedMemory = default)
         {
             Dictionary<DataType, Target.TypeInfo> types = Types;
             MockMemorySpace.Builder builder = Builder;
@@ -182,6 +186,7 @@ internal partial class MockDescriptors
             targetTestHelpers.WritePointer(interopInfoData.Slice(interopSyncBlockTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.RCW)].Offset), rcw);
             targetTestHelpers.WritePointer(interopInfoData.Slice(interopSyncBlockTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.CCW)].Offset), ccw);
             targetTestHelpers.WritePointer(interopInfoData.Slice(interopSyncBlockTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.CCF)].Offset), ccf);
+            targetTestHelpers.WritePointer(interopInfoData.Slice(interopSyncBlockTypeInfo.Fields[nameof(Data.InteropSyncBlockInfo.TaggedMemory)].Offset), taggedMemory);
             builder.AddHeapFragments([syncTableEntry, syncBlock]);
         }
 
