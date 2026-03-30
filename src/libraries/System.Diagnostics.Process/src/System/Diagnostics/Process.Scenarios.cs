@@ -56,7 +56,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.StartAndForget_RedirectNotSupported);
             }
 
-            using SafeFileHandle? nullFile = startInfo.StandardInputHandle is null || startInfo.StandardOutputHandle is null || startInfo.RedirectStandardError
+            using SafeFileHandle? nullFile = startInfo.StandardInputHandle is null || startInfo.StandardOutputHandle is null || startInfo.StandardErrorHandle is null
                 ? File.OpenNullHandle()
                 : null;
 
