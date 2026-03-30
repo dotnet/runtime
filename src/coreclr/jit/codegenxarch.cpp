@@ -752,7 +752,6 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
         // Move the result to the desired register, if necessary
         if (treeNode->OperIs(GT_MULHI))
         {
-            assert(targetReg == REG_RDX);
             inst_Mov(targetType, targetReg, REG_RDX, /* canSkip */ true);
         }
     }
@@ -2109,14 +2108,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CATCH_ARG:
-
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
-
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
-
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
+            genCodeForCatchArg(treeNode);
             break;
 
         case GT_ASYNC_CONTINUATION:
@@ -4389,9 +4381,6 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
             // When value is used (it's the original value of the memory location)
             // we fallback to cmpxchg-loop idiom.
 
-            // for cmpxchg we need to keep the original value in RAX
-            assert(node->GetRegNum() == REG_RAX);
-
             //    mov     RAX, dword ptr [addrReg]
             //.LOOP:
             //    mov     tmp, RAX
@@ -4415,6 +4404,8 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
             inst_JMP(EJ_jne, loop);
 
             gcInfo.gcMarkRegSetNpt(genRegMask(addr->GetRegNum()));
+            inst_Mov(node->TypeGet(), node->GetRegNum(), REG_RAX, /* canSkip */ true);
+
             genProduceReg(node);
         }
         return;
