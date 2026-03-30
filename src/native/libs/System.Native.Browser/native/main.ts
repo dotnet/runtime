@@ -3,7 +3,18 @@
 
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
+export function SystemJS_MarkAsyncMain(): void {
+    _ems_.DOTNET.isAsyncMain = true;
+}
+
 export function SystemJS_ResolveMainPromise(exitCode: number): void {
+    if (_ems_.DOTNET.isAsyncMain) {
+        // ignore first synchronous call and keep running the event loop
+        // until AsyncHelpers.HandleAsyncEntryPoint calls it again with the real exit code
+        _ems_.DOTNET.isAsyncMain = false;
+        return;
+    }
+
     if (_ems_.dotnetLoaderExports.resolveRunMainPromise) {
         _ems_.dotnetLoaderExports.resolveRunMainPromise(exitCode);
     } else {

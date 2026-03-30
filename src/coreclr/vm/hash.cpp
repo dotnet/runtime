@@ -16,7 +16,7 @@ Module Name:
 
 #include "excep.h"
 
-#include "syncclean.hpp"
+#include "ebr.h"
 
 #include "threadsuspend.h"
 #include "minipal/time.h"
@@ -77,13 +77,10 @@ BOOL Bucket::InsertValue(const UPTR key, const UPTR value)
         {
             SetValue (value, i);
 
-            // On multiprocessors we should make sure that
-            // the value is propagated before we proceed.
-            // inline memory barrier call, refer to
-            // function description at the beginning of this
-            MemoryBarrier();
-
-            m_rgKeys[i] = key;
+            // Release store: ensures the value is visible before the
+            // key that publishes it. Pairs with the acquire load in
+            // LookupValue/ReplaceValue/DeleteValue.
+            VolatileStore(&m_rgKeys[i], key);
             return true;
         }
     }       // for i= 0; i < SLOTS_PER_BUCKET; loop
@@ -91,8 +88,58 @@ BOOL Bucket::InsertValue(const UPTR key, const UPTR value)
     SetCollision(); // otherwise set the collision bit
     return false;
 }
-
 #endif // !DACCESS_COMPILE
+
+static DWORD GetSize(PTR_Bucket rgBuckets)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    PTR_size_t pSize = dac_cast<PTR_size_t>(rgBuckets - 1);
+    _ASSERTE(FitsIn<DWORD>(pSize[0]));
+    return static_cast<DWORD>(pSize[0]);
+}
+
+static void SetSize(Bucket* rgBuckets, size_t size)
+{
+    LIMITED_METHOD_CONTRACT;
+    ((size_t*)rgBuckets)[0] = size;
+}
+
+// Allocate a zero-initialized bucket array with space for 'size' buckets
+// plus a leading size_t header.
+static Bucket* AllocateBuckets(DWORD size)
+{
+    STATIC_CONTRACT_THROWS;
+    S_SIZE_T cbAlloc = (S_SIZE_T(size) + S_SIZE_T(1)) * S_SIZE_T(sizeof(Bucket));
+    if (cbAlloc.IsOverflow())
+        ThrowHR(COR_E_OVERFLOW);
+    Bucket* rgBuckets = (Bucket*) new BYTE[cbAlloc.Value()];
+    memset(rgBuckets, 0, cbAlloc.Value());
+    SetSize(rgBuckets, size);
+    return rgBuckets;
+}
+
+// Free a bucket array allocated by AllocateBuckets.
+static void FreeBuckets(Bucket* rgBuckets)
+{
+    LIMITED_METHOD_CONTRACT;
+    delete [] (BYTE*)rgBuckets;
+}
+
+// Static helper for EBR deferred deletion of obsolete bucket arrays.
+static void DeleteObsoleteBuckets(void* p)
+{
+    LIMITED_METHOD_CONTRACT;
+    FreeBuckets((Bucket*)p);
+}
+
+// The +1 is because entries are 1 based since the first entry is a size field, not a bucket.
+// See Buckets() method that works with the member variable m_rgBuckets.
+// See GetSize() and SetSize() for how the size field is stored.
+static PTR_Bucket GetBucketPointer(PTR_Bucket rgBuckets)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return rgBuckets + 1;
+}
 
 //---------------------------------------------------------------------
 //  inline Bucket* HashMap::Buckets()
@@ -103,23 +150,10 @@ PTR_Bucket HashMap::Buckets()
     LIMITED_METHOD_DAC_CONTRACT;
 
 #if !defined(DACCESS_COMPILE)
-    _ASSERTE (!g_fEEStarted || !m_fAsyncMode || GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled() || IsGCThread());
+    _ASSERTE (!m_fAsyncMode || g_EbrCollector.InCriticalRegion());
 #endif
-    return m_rgBuckets + 1;
+    return GetBucketPointer(m_rgBuckets);
 }
-
-//---------------------------------------------------------------------
-//  inline size_t HashMap::GetSize(PTR_Bucket rgBuckets)
-//  get the number of buckets
-inline
-DWORD HashMap::GetSize(PTR_Bucket rgBuckets)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    PTR_size_t pSize = dac_cast<PTR_size_t>(rgBuckets - 1);
-    _ASSERTE(FitsIn<DWORD>(pSize[0]));
-    return static_cast<DWORD>(pSize[0]);
-}
-
 
 //---------------------------------------------------------------------
 //  inline size_t HashMap::HashFunction(UPTR key, UINT numBuckets, UINT &seed, UINT &incr)
@@ -143,16 +177,6 @@ void HashMap::HashFunction(const UPTR key, const UINT numBuckets, UINT &seed, UI
 }
 
 #ifndef DACCESS_COMPILE
-
-//---------------------------------------------------------------------
-//  inline void HashMap::SetSize(Bucket *rgBuckets, size_t size)
-//  set the number of buckets
-inline
-void HashMap::SetSize(Bucket *rgBuckets, size_t size)
-{
-    LIMITED_METHOD_CONTRACT;
-    ((size_t*)rgBuckets)[0] = size;
-}
 
 //---------------------------------------------------------------------
 //  HashMap::HashMap()
@@ -268,10 +292,7 @@ void HashMap::Init(DWORD cbInitialSize, Compare* pCompare, BOOL fAsyncMode, Lock
     DWORD size = g_rgPrimes[m_iPrimeIndex];
     _ASSERTE(size < 0x7fffffff);
 
-    m_rgBuckets = new Bucket[size+1];
-
-    memset (m_rgBuckets, 0, (size+1)*sizeof(Bucket));
-    SetSize(m_rgBuckets, size);
+    m_rgBuckets = AllocateBuckets(size);
 
     m_pCompare = pCompare;
 
@@ -354,7 +375,7 @@ void HashMap::Clear()
     STATIC_CONTRACT_FORBID_FAULT;
 
     // free the current table
-    delete [] m_rgBuckets;
+    FreeBuckets(m_rgBuckets);
 
     m_rgBuckets = NULL;
 }
@@ -477,8 +498,9 @@ void HashMap::InsertValue (UPTR key, UPTR value)
 
     _ASSERTE (OwnLock());
 
-    // BROKEN: This is called for the RCWCache on the GC thread
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
+    // Enter EBR critical region to protect against concurrent bucket array
+    // deletion during async mode.
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
 
@@ -542,14 +564,7 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
 #ifndef DACCESS_COMPILE
     _ASSERTE (m_fAsyncMode || OwnLock());
 
-    // BROKEN: This is called for the RCWCache on the GC thread
-    // Also called by AppDomain::FindCachedAssembly to resolve AssemblyRef -- this is used by stack walking on the GC thread.
-    // See comments in GCHeapUtilities::RestartEE (above the call to SyncClean::CleanUp) for reason to enter COOP mode.
-    // However, if the current thread is the GC thread, we know we're not going to call GCHeapUtilities::RestartEE
-    // while accessing the HashMap, so it's safe to proceed.
-    // (m_fAsyncMode && !IsGCThread() is the condition for entering COOP mode.  I.e., enable COOP GC only if
-    // the HashMap is in async mode and this is not a GC thread.)
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode && !IsGCThread());
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
     // This is necessary in case some other thread
@@ -572,13 +587,11 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
         PTR_Bucket pBucket = rgBuckets+(seed % cbSize);
         for (unsigned int i = 0; i < SLOTS_PER_BUCKET; i++)
         {
-            if (pBucket->m_rgKeys[i] == key) // keys match
+            // Acquire load: ensures the value load below is ordered
+            // after the key load. Pairs with the release store in
+            // Bucket::InsertValue.
+            if (VolatileLoad(&pBucket->m_rgKeys[i]) == key) // keys match
             {
-
-                // inline memory barrier call, refer to
-                // function description at the beginning of this
-                MemoryBarrier();
-
                 UPTR storedVal = pBucket->GetValue(i);
                 // if compare function is provided
                 // dupe keys are possible, check if the value matches,
@@ -621,8 +634,7 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
 
     _ASSERTE(OwnLock());
 
-    // BROKEN: This is called for the RCWCache on the GC thread
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
     // This is necessary in case some other thread
@@ -644,13 +656,11 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
         Bucket* pBucket = &rgBuckets[seed % cbSize];
         for (unsigned int i = 0; i < SLOTS_PER_BUCKET; i++)
         {
-            if (pBucket->m_rgKeys[i] == key) // keys match
+            // Acquire load: ensures the value load below observes the
+            // value that was stored when this key was first published
+            // via Bucket::InsertValue.
+            if (VolatileLoad(&pBucket->m_rgKeys[i]) == key) // keys match
             {
-
-                // inline memory barrier call, refer to
-                // function description at the beginning of this
-                MemoryBarrier();
-
                 UPTR storedVal = pBucket->GetValue(i);
                 // if compare function is provided
                 // dupe keys are possible, check if the value matches,
@@ -658,13 +668,14 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
                 {
                     ProfileLookup(ntry,storedVal); //no-op in non HASHTABLE_PROFILE code
 
+                    // Plain store the new value, then release-store the
+                    // key to re-publish it. Readers acquire-load the key
+                    // via VolatileLoad(&m_rgKeys[i]), forming a proper
+                    // release-acquire pair on the same address and
+                    // ensuring they observe either the old or fully-
+                    // updated new value.
                     pBucket->SetValue(value, i);
-
-                    // On multiprocessors we should make sure that
-                    // the value is propagated before we proceed.
-                    // inline memory barrier call, refer to
-                    // function description at the beginning of this
-                    MemoryBarrier();
+                    VolatileStore(&pBucket->m_rgKeys[i], key);
 
                     // return the previous stored value
                     return storedVal;
@@ -695,8 +706,7 @@ UPTR HashMap::DeleteValue (UPTR key, UPTR value)
 
     _ASSERTE (OwnLock());
 
-    // BROKEN: This is called for the RCWCache on the GC thread
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     // check proper use in synchronous mode
     SyncAccessHolder holoder(this);  //no-op in non DEBUG code
@@ -721,12 +731,11 @@ UPTR HashMap::DeleteValue (UPTR key, UPTR value)
         Bucket* pBucket = &rgBuckets[seed % cbSize];
         for (unsigned int i = 0; i < SLOTS_PER_BUCKET; i++)
         {
-            if (pBucket->m_rgKeys[i] == key) // keys match
+            // Acquire load: ensures the value load below is ordered
+            // after the key load. Pairs with the release store in
+            // Bucket::InsertValue.
+            if (VolatileLoad(&pBucket->m_rgKeys[i]) == key) // keys match
             {
-                // inline memory barrier call, refer to
-                // function description at the beginning of this
-                MemoryBarrier();
-
                 UPTR storedVal = pBucket->GetValue(i);
                 // if compare function is provided
                 // dupe keys are possible, check if the value matches,
@@ -825,7 +834,7 @@ UPTR HashMap::PutEntry (Bucket* rgBuckets, UPTR key, UPTR value)
 //  compute the new size based on the number of free slots
 //
 inline
-UPTR HashMap::NewSize()
+UPTR HashMap::NewSize() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -867,10 +876,9 @@ void HashMap::Rehash()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
 
-    // BROKEN: This is called for the RCWCache on the GC thread
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
-    _ASSERTE (!g_fEEStarted || !m_fAsyncMode || GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled());
+    _ASSERTE (!m_fAsyncMode || g_EbrCollector.InCriticalRegion());
     _ASSERTE (OwnLock());
 
     UPTR newPrimeIndex = NewSize();
@@ -882,46 +890,31 @@ void HashMap::Rehash()
         return;
     }
 
-    m_iPrimeIndex = newPrimeIndex;
+    // Collect the current bucket state.
+    Bucket* rgCurrentBuckets = Buckets();
+    DWORD currentBucketsSize = GetSize(rgCurrentBuckets);
 
-    DWORD cbNewSize = g_rgPrimes[m_iPrimeIndex];
+    // Allocate a new array of buckets.
+    const DWORD cbNewSize = g_rgPrimes[newPrimeIndex];
+    Bucket* rgNewBuckets = AllocateBuckets(cbNewSize);
 
-    Bucket* rgBuckets = Buckets();
-    UPTR cbCurrSize =   GetSize(rgBuckets);
-
-    S_SIZE_T cbNewBuckets = (S_SIZE_T(cbNewSize) + S_SIZE_T(1)) * S_SIZE_T(sizeof(Bucket));
-
-    if (cbNewBuckets.IsOverflow())
-        ThrowHR(COR_E_OVERFLOW);
-
-    Bucket* rgNewBuckets = (Bucket *) new BYTE[cbNewBuckets.Value()];
-    memset (rgNewBuckets, 0, cbNewBuckets.Value());
-    SetSize(rgNewBuckets, cbNewSize);
-
-    // current valid slots
-    UPTR cbValidSlots = m_cbInserts-m_cbDeletes;
-    m_cbInserts = cbValidSlots; // reset insert count to the new valid count
-    m_cbPrevSlotsInUse = cbValidSlots; // track the previous delete count
-    m_cbDeletes = 0;            // reset delete count
-    // rehash table into it
-
+    // Rehash table into new buckets.
+    UPTR cbValidSlots = m_cbInserts - m_cbDeletes;
+    const UPTR cbValidSlotsInit = cbValidSlots;
     if (cbValidSlots) // if there are valid slots to be rehashed
     {
-        for (unsigned int nb = 0; nb < cbCurrSize; nb++)
+        for (DWORD nb = 0; nb < currentBucketsSize; nb++)
         {
-            for (unsigned int i = 0; i < SLOTS_PER_BUCKET; i++)
+            for (DWORD i = 0; i < SLOTS_PER_BUCKET; i++)
             {
-                UPTR key =rgBuckets[nb].m_rgKeys[i];
+                UPTR key = rgCurrentBuckets[nb].m_rgKeys[i];
                 if (key > DELETED)
                 {
+                    UPTR ntry = PutEntry(GetBucketPointer(rgNewBuckets), key, rgCurrentBuckets[nb].GetValue (i));
 #ifdef HASHTABLE_PROFILE
-                    UPTR ntry =
-#endif
-                    PutEntry (rgNewBuckets+1, key, rgBuckets[nb].GetValue (i));
-                    #ifdef HASHTABLE_PROFILE
-                        if(ntry >=8)
-                            m_cbInsertProbesGt8++;
-                    #endif // HASHTABLE_PROFILE
+                    if(ntry >=8)
+                        m_cbInsertProbesGt8++;
+#endif // HASHTABLE_PROFILE
 
                         // check if we can bail out
                     if (--cbValidSlots == 0)
@@ -931,41 +924,68 @@ void HashMap::Rehash()
         } //for all buckets
     }
 
-
 LDone:
 
-    Bucket* pObsoleteTables = m_rgBuckets;
+    // Capture the current buckets pointer for later deletion if needed.
+    // See the Buckets() APIs for why the field is used directly.
+    void* pObsoleteBucketsAlloc = m_rgBuckets;
+    if (m_fAsyncMode)
+    {
+        // In async mode, readers may still be traversing the old bucket array.
+        // Queue for deferred deletion via EBR. The buckets will be freed once
+        // all threads have exited their critical regions or later.
+        // If we fail to queue for deletion, throw an OOM.
+        size_t obsoleteSize = currentBucketsSize;
+        if (!g_EbrCollector.QueueForDeletion(
+            pObsoleteBucketsAlloc,
+            DeleteObsoleteBuckets,
+            (obsoleteSize + 1) * sizeof(Bucket))) // See AllocateBuckets for +1
+        {
+            // If we fail to queue for deletion, free the new allocation before throwing OOM.
+            FreeBuckets(rgNewBuckets);
+            ThrowOutOfMemory();
+        }
+    }
 
-    // memory barrier, to replace the pointer to array of bucket
-    MemoryBarrier();
+    // Rename the variable names so it is clear their state.
+    Bucket* obsoleteBuckets = rgCurrentBuckets;
+    DWORD obsoleteBucketsSize = currentBucketsSize;
+    rgCurrentBuckets = NULL;
+    currentBucketsSize = 0;
 
-    // replace the old array with the new one.
-    m_rgBuckets = rgNewBuckets;
+    // Release store: ensures all writes to the new bucket array are
+    // visible before the pointer is published. Readers observe these
+    // writes because they enter an EBR critical region (see
+    // EbrCriticalRegionHolder::EnterCriticalRegion and Buckets()), which
+    // executes a full MemoryBarrier() before reading m_rgBuckets.
+    VolatileStore(&m_rgBuckets, rgNewBuckets);
+    m_iPrimeIndex = newPrimeIndex;
+    m_cbInserts = cbValidSlotsInit; // reset insert count to the new valid count
+    m_cbPrevSlotsInUse = cbValidSlotsInit; // track the previous delete count
+    m_cbDeletes = 0; // reset delete count
 
-    #ifdef HASHTABLE_PROFILE
-        m_cbRehash++;
-        m_cbRehashSlots+=m_cbInserts;
-        m_cbObsoleteTables++; // track statistics
-        m_cbTotalBuckets += (cbNewSize+1);
-    #endif // HASHTABLE_PROFILE
+#ifdef HASHTABLE_PROFILE
+    m_cbRehash++;
+    m_cbRehashSlots += m_cbInserts;
+    m_cbObsoleteTables++; // track statistics
+    m_cbTotalBuckets += (cbNewSize + 1); // +1 for the size field. See AllocateBuckets for details.
+#endif // HASHTABLE_PROFILE
 
 #ifdef _DEBUG
-
-    unsigned nb;
+    DWORD nb;
     if (m_fAsyncMode)
     {
         // for all non deleted keys in the old table, make sure the corresponding values
         // are in the new lookup table
-
-        for (nb = 1; nb <= ((size_t*)pObsoleteTables)[0]; nb++)
+        for (nb = 0; nb < obsoleteBucketsSize; nb++)
         {
-            for (unsigned int i =0; i < SLOTS_PER_BUCKET; i++)
+            for (DWORD i = 0; i < SLOTS_PER_BUCKET; i++)
             {
-                if (pObsoleteTables[nb].m_rgKeys[i] > DELETED)
+                if (obsoleteBuckets[nb].m_rgKeys[i] > DELETED)
                 {
-                    UPTR value = pObsoleteTables[nb].GetValue (i);
+                    UPTR value = obsoleteBuckets[nb].GetValue (i);
                     // make sure the value is present in the new table
-                    ASSERT (m_pCompare != NULL || value == LookupValue (pObsoleteTables[nb].m_rgKeys[i], value));
+                    ASSERT (m_pCompare != NULL || value == LookupValue (obsoleteBuckets[nb].m_rgKeys[i], value));
                 }
             }
         }
@@ -975,7 +995,7 @@ LDone:
     // if the compare function provided is null, then keys must be unique
     for (nb = 0; nb < cbNewSize; nb++)
     {
-        for (unsigned int i = 0; i < SLOTS_PER_BUCKET; i++)
+        for (DWORD i = 0; i < SLOTS_PER_BUCKET; i++)
         {
             UPTR keyv = Buckets()[nb].m_rgKeys[i];
             ASSERT (keyv != DELETED);
@@ -987,21 +1007,11 @@ LDone:
     }
 #endif // _DEBUG
 
-    if (m_fAsyncMode)
+    // If non async mode, we can delete the old buckets immediately since no readers can be traversing it.
+    if (!m_fAsyncMode)
     {
-        // If we are allowing asynchronous reads, we must delay bucket cleanup until GC time.
-        SyncClean::AddHashMap (pObsoleteTables);
+        DeleteObsoleteBuckets(pObsoleteBucketsAlloc);
     }
-    else
-    {
-        Bucket* pBucket = pObsoleteTables;
-        while (pBucket) {
-            Bucket* pNextBucket = NextObsolete(pBucket);
-            delete [] pBucket;
-            pBucket = pNextBucket;
-        }
-    }
-
 }
 
 //---------------------------------------------------------------------
@@ -1020,7 +1030,7 @@ void HashMap::Compact()
     _ASSERTE (OwnLock());
 
     //
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
     ASSERT(m_rgBuckets != NULL);
 
     // Try to resize if that makes sense (reduce the size of the table), but
@@ -1228,10 +1238,10 @@ void HashMap::LookupPerfTest(HashMap * table, const unsigned int MinThreshold)
         table->LookupValue(i, i);
     //cout << "Lookup perf test (1000 * " << MinThreshold << ": " << (t1-t0) << " ms." << endl;
 #ifdef HASHTABLE_PROFILE
-    minipal_log_print_info("Lookup perf test time: %d ms  table size: %d  max failure probe: %d  longest collision chain: %d\n", (int) (t1-t0), (int) table->GetSize(table->Buckets()), (int) table->maxFailureProbe, (int) table->m_cbMaxCollisionLength);
+    minipal_log_print_info("Lookup perf test time: %d ms  table size: %d  max failure probe: %d  longest collision chain: %d\n", (int) (t1-t0), (int) GetSize(table->Buckets()), (int) table->maxFailureProbe, (int) table->m_cbMaxCollisionLength);
     table->DumpStatistics();
 #else // !HASHTABLE_PROFILE
-    minipal_log_print_info("Lookup perf test time: %d ms   table size: %d\n", (int) (t1-t0), table->GetSize(table->Buckets()));
+    minipal_log_print_info("Lookup perf test time: %d ms   table size: %d\n", (int) (t1-t0), GetSize(table->Buckets()));
 #endif // !HASHTABLE_PROFILE
 }
 #endif // !DACCESS_COMPILE

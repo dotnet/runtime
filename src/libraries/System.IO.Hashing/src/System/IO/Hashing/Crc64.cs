@@ -26,7 +26,7 @@ namespace System.IO.Hashing
     ///     compatible with the cyclic redundancy check described in ISO 3309.
     ///   </para>
     /// </remarks>
-    public sealed partial class Crc64 : NonCryptographicHashAlgorithm
+    public sealed class Crc64 : NonCryptographicHashAlgorithm
     {
         private const int Size = sizeof(ulong);
 
@@ -301,7 +301,8 @@ namespace System.IO.Hashing
             // Rather than go through Crc64ParameterSet.Crc64 to end up in the optimized Update method here,
             // just call the Update method directly.
             // ECMA-182 uses a final XOR of zero, so directly return the result.
-            return Update(Crc64ParameterSet.Crc64.InitialValue, source);
+            Crc64ParameterSet parameterSet = Crc64ParameterSet.Crc64;
+            return parameterSet.Update(parameterSet.InitialValue, source);
         }
 
         /// <summary>Computes the CRC-64 hash of the provided data, using the specified parameters.</summary>
@@ -318,31 +319,6 @@ namespace System.IO.Hashing
 
             ulong crc = parameterSet.Update(parameterSet.InitialValue, source);
             return parameterSet.Finalize(crc);
-        }
-
-        internal static ulong Update(ulong crc, ReadOnlySpan<byte> source)
-        {
-#if NET
-            if (CanBeVectorized(source))
-            {
-                return UpdateVectorized(crc, source);
-            }
-#endif
-
-            return UpdateScalar(crc, source);
-        }
-
-        private static ulong UpdateScalar(ulong crc, ReadOnlySpan<byte> source)
-        {
-            ReadOnlySpan<ulong> crcLookup = CrcLookup;
-            for (int i = 0; i < source.Length; i++)
-            {
-                ulong idx = (crc >> 56);
-                idx ^= source[i];
-                crc = crcLookup[(int)idx] ^ (crc << 8);
-            }
-
-            return crc;
         }
     }
 }

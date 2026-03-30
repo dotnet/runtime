@@ -58,6 +58,7 @@ namespace ILLink.Shared
         UnexpectedAttributeArgumentType = 1045,
         InvalidMetadataOption = 1046,
         InvalidDependenciesFileFormat = 1047,
+        MultipleEntryPointRoots = 1048,
 
         // Trimming diagnostic ids.
         TypeHasNoFieldsToPreserve = 2001,
@@ -225,6 +226,7 @@ namespace ILLink.Shared
         RequiresUnsafeAttributeMismatch = 5001,
         RequiresUnsafeOnStaticConstructor = 5002,
         RequiresUnsafeOnEntryPoint = 5003,
+        UnsafeMethodMissingRequiresUnsafe = 5004,
         _EndRequiresUnsafeWarningsSentinel,
 #endif
     }

@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using ILCompiler;
+using ILCompiler.DependencyAnalysis.Wasm;
+
 using Internal.TypeSystem;
-using ILCompiler.ObjectWriter;
 
 namespace Internal.JitInterface
 {
@@ -74,6 +77,11 @@ namespace Internal.JitInterface
 
             TypeDesc abiType = LowerToAbiType(type);
 
+            if (abiType == null)
+            {
+                return pointerType;
+            }
+
             switch (abiType.UnderlyingType.Category)
             {
                 case TypeFlags.Int32:
@@ -113,6 +121,30 @@ namespace Internal.JitInterface
             }
         }
 
+        private static TypeDesc RaiseType(WasmValueType valueType, TypeSystemContext context)
+        {
+            return valueType switch
+            {
+                WasmValueType.I32 => context.GetWellKnownType(WellKnownType.Int32),
+                WasmValueType.I64 => context.GetWellKnownType(WellKnownType.Int64),
+                WasmValueType.F32 => context.GetWellKnownType(WellKnownType.Single),
+                WasmValueType.F64 => context.GetWellKnownType(WellKnownType.Double),
+                WasmValueType.V128 => throw new NotSupportedException("SIMD types are not supported in this version of the compiler"),
+                _ => throw new InvalidOperationException("Unknown WasmValueType: " + valueType),
+            };
+        }
+
+        public static MethodSignature RaiseSignature(WasmFuncType funcType, TypeSystemContext context)
+        {
+            List<TypeDesc> parameters = new List<TypeDesc>();
+            for (int i = 1; i < funcType.Params.Types.Length - 1; i++)
+            {
+                parameters.Add(RaiseType(funcType.Params.Types[i], context));
+            }
+            TypeDesc returnType = funcType.Returns.Types.Length > 0 ? RaiseType(funcType.Returns.Types[0], context) : context.GetWellKnownType(WellKnownType.Void);
+            return new MethodSignature(MethodSignatureFlags.Static, 0, returnType, parameters.ToArray());
+        }
+
         /// <summary>
         /// Gets the Wasm-level signature for a given MethodDesc.
         ///
@@ -126,9 +158,40 @@ namespace Internal.JitInterface
         /// <returns></returns>
         public static WasmFuncType GetSignature(MethodDesc method)
         {
-            MethodSignature signature = method.Signature;
+            return GetSignature(method.Signature, GetLoweringFlags(method));
+        }
+
+        public static LoweringFlags GetLoweringFlags(MethodDesc method)
+        {
+            LoweringFlags flags = 0;
+            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg())
+            {
+                flags |= LoweringFlags.HasGenericContextArg;
+            }
+            if (method.IsAsyncCall())
+            {
+                flags |= LoweringFlags.IsAsyncCall;
+            }
+            if (method.IsUnmanagedCallersOnly)
+            {
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
+            }
+            return flags;
+        }
+
+        [Flags]
+        public enum LoweringFlags
+        {
+            None = 0x0,
+            HasGenericContextArg = 0x1,
+            IsAsyncCall = 0x2,
+            IsUnmanagedCallersOnly = 0x4
+        }
+
+        public static WasmFuncType GetSignature(MethodSignature signature, LoweringFlags flags)
+        {
             TypeDesc returnType = signature.ReturnType;
-            WasmValueType pointerType = (method.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
+            WasmValueType pointerType = (signature.ReturnType.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
 
             // Determine if the return value is via a return buffer
             //
@@ -148,17 +211,9 @@ namespace Internal.JitInterface
                 returnIsVoid = true;
             }
 
-            int parameterCount = signature.Length;
-
-            if (hasReturnBuffer)
-            {
-                parameterCount++; // return buffer
-            }
-
-            if (!method.IsUnmanagedCallersOnly)
-            {
-                parameterCount += 2; // sp and pe
-            }
+            // Reserve space for potential implicit this, stack pointer parameter, portable entrypoint parameter,
+            // generic context, async continuation, and return buffer
+            ArrayBuilder<WasmValueType> result = new(signature.Length + 6);
 
             if (!signature.IsStatic)
             {
@@ -168,48 +223,51 @@ namespace Internal.JitInterface
                 {
                     explicitThis = true;
                 }
-                else
-                {
-                    parameterCount += 1; // implicit this
-                }
             }
 
-            Span<WasmValueType> wasmParameters = new WasmValueType[parameterCount];
-
-            int index = 0;
-
-            if (method.IsUnmanagedCallersOnly) // reverse P/Invoke
+            if (flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly)) // reverse P/Invoke
             {
                 if (hasReturnBuffer)
                 {
-                    wasmParameters[index++] = pointerType;
+                    result.Add(pointerType);
                 }
             }
             else // managed call
             {
-                wasmParameters[0] = pointerType; // Stack pointer parameter
-
-                // Return buffer is first after this.
+                result.Add(pointerType); // Stack pointer parameter
 
                 if (hasThis)
                 {
-                    wasmParameters[index++] = pointerType;
+                    result.Add(pointerType);
                 }
 
                 if (hasReturnBuffer)
                 {
-                    wasmParameters[index++] = pointerType;
+                    result.Add(pointerType);
                 }
+            }
 
-                wasmParameters[wasmParameters.Length - 1] = pointerType; // PE entrypoint parameter
+            if (flags.HasFlag(LoweringFlags.HasGenericContextArg))
+            {
+                result.Add(pointerType); // generic context
+            }
+
+            if (flags.HasFlag(LoweringFlags.IsAsyncCall))
+            {
+                result.Add(pointerType); // async continuation
             }
 
             for (int i = explicitThis ? 1 : 0; i < signature.Length; i++)
             {
-                wasmParameters[index++] = LowerType(signature[i]);
+                result.Add(LowerType(signature[i]));
             }
 
-            WasmResultType ps = new(wasmParameters.ToArray());
+            if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly))
+            {
+                result.Add(pointerType); // PE entrypoint parameter
+            }
+
+            WasmResultType ps = new(result.ToArray());
             WasmResultType ret = returnIsVoid ? new(Array.Empty<WasmValueType>())
                 : new([LowerType(loweredReturnType)]);
 

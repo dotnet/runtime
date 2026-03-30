@@ -5,8 +5,10 @@ namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// Prevents a property or field from being serialized or deserialized.
+    /// When placed on a type, specifies the default <see cref="JsonIgnoreCondition"/>
+    /// for all properties and fields of the type.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface | AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public sealed class JsonIgnoreAttribute : JsonAttribute
     {
         /// <summary>

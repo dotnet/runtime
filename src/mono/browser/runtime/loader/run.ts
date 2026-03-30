@@ -59,15 +59,12 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withConfigSrc (configSrc: string): DotnetHostBuilder {
-        try {
-            mono_assert(configSrc && typeof configSrc === "string", "must be file path or URL");
-            deep_merge_module(emscriptenModule, { configSrc });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
+    /**
+     * @deprecated This method is no longer supported and will be removed in a future version.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    withConfigSrc (_configSrc: string): DotnetHostBuilder {
+        return this;
     }
 
     withVirtualWorkingDirectory (vfsPath: string): DotnetHostBuilder {
@@ -395,7 +392,7 @@ async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, Nat
     });
     result.catch((error) => {
         if (error.message && error.message.toLowerCase().includes("out of memory")) {
-            throw new Error(".NET runtime has failed to start, because too much memory was requested. Please decrease the memory by adjusting EmccMaximumHeapSize. See also https://aka.ms/dotnet-wasm-features");
+            throw new Error(".NET runtime has failed to start, because too much memory was requested. Please decrease the memory by adjusting EmccMaximumHeapSize.");
         }
         throw error;
     });

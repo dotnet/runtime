@@ -3313,7 +3313,24 @@ namespace System.Xml
             {
                 Debug.Assert(_ps.encoding != null);
                 Debug.Assert(_ps.chars != null);
-                _ps.bytePos += _ps.encoding.GetByteCount(_ps.chars, 0, _ps.charPos);
+                if (_ps.decoder is SafeAsciiDecoder)
+                {
+                    // SafeAsciiDecoder maps 1 byte to 1 char regardless of encoding.
+                    // If any decoded char requires more bytes in the target encoding than
+                    // SafeAsciiDecoder consumed (1 byte), the input contains bytes that are
+                    // invalid in the target encoding (e.g., 0x80-0xFF treated as single chars
+                    // but requiring multi-byte sequences in UTF-8).
+                    _ps.bytePos += _ps.charPos;
+                    int encodingByteCount = _ps.encoding.GetByteCount(_ps.chars, 0, _ps.charPos);
+                    if (encodingByteCount != _ps.charPos)
+                    {
+                        Throw(SR.Xml_InvalidCharInThisEncoding);
+                    }
+                }
+                else
+                {
+                    _ps.bytePos += _ps.encoding.GetByteCount(_ps.chars, 0, _ps.charPos);
+                }
             }
 
             _ps.charsUsed = _ps.charPos;

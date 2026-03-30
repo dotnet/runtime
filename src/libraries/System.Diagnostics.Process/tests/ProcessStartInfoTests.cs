@@ -448,6 +448,17 @@ namespace System.Diagnostics.Tests
             Assert.Equal("-arg3 -arg4", psi.Arguments);
         }
 
+        [Fact]
+        public void TestArgumentsNullProperty()
+        {
+            string? args = null;
+            ProcessStartInfo psi = new ProcessStartInfo("filename", args);
+            Assert.Equal(string.Empty, psi.Arguments);
+
+            psi.Arguments = null;
+            Assert.Equal(string.Empty, psi.Arguments);
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)), InlineData(true), InlineData(false)]
         public void TestCreateNoWindowProperty(bool value)
         {
@@ -489,7 +500,7 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
+        [ConditionalFact(typeof(ProcessStartInfoTests), nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("Requires admin privileges")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80019", TestRuntimes.Mono)]

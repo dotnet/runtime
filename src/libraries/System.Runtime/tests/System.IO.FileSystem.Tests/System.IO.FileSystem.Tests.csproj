@@ -85,6 +85,8 @@
     <Compile Include="RandomAccess\Base.cs" />
     <Compile Include="RandomAccess\FlushToDisk.cs" />
     <Compile Include="RandomAccess\GetLength.cs" />
+    <Compile Include="RandomAccess\NonSeekable.cs" />
+    <Compile Include="RandomAccess\NonSeekable_AsyncHandles.cs" />
     <Compile Include="RandomAccess\Read.cs" />
     <Compile Include="RandomAccess\ReadAsync.cs" />
     <Compile Include="RandomAccess\ReadScatter.cs" />
@@ -93,12 +95,20 @@
     <Compile Include="RandomAccess\WriteAsync.cs" />
     <Compile Include="RandomAccess\WriteGather.cs" />
     <Compile Include="RandomAccess\WriteGatherAsync.cs" />
+    <Compile Include="SafeFileHandle\GetFileType.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="FileSystemTest.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="FileStream\ctor_options.Unix.cs" />
     <Compile Include="Directory\CreateDirectory_UnixFileMode.Unix.cs" />
+    <Compile Include="SafeFileHandle\GetFileType.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs"
+             Link="Common\Interop\Unix\Interop.Open.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs"
+             Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkFifo.cs"
+             Link="Common\Interop\Unix\Interop.MkFifo.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="Directory\Delete.Windows.cs" />
@@ -112,6 +122,7 @@
     <Compile Include="RandomAccess\NoBuffering.Windows.cs" />
     <Compile Include="RandomAccess\SectorAlignedMemory.Windows.cs" />
     <Compile Include="VirtualDriveSymbolicLinks.Windows.cs" />
+    <Compile Include="SafeFileHandle\GetFileType.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Interop.CreateFile.cs" />
@@ -240,7 +251,9 @@
     <Compile Include="FileInfo\ToString.cs" />
     <Compile Include="FileInfo\AppendText.cs" />
     <Compile Include="FileInfo\CopyTo.cs" />
+    <Compile Include="FileInfo\InvalidateOnStateChange.cs" />
     <!-- Helpers -->
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs" Link="Interop\Windows\Interop.FileOperations.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Interop\Windows\Interop.GenericOperations.cs" />
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />

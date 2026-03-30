@@ -118,7 +118,6 @@ function initRunArgs(runArgs) {
     runArgs.enableGC = runArgs.enableGC === undefined ? true : runArgs.enableGC;
     runArgs.diagnosticTracing = runArgs.diagnosticTracing === undefined ? false : runArgs.diagnosticTracing;
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
-    runArgs.configSrc = runArgs.configSrc === undefined ? './_framework/dotnet.boot.js' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? (isFirefox && !runArgs.debugging) : runArgs.forwardConsole;
     runArgs.interpreterPgo = runArgs.interpreterPgo === undefined ? false : runArgs.interpreterPgo;
@@ -172,9 +171,6 @@ function processArguments(incomingArguments, runArgs) {
             } else {
                 console.warn("--fetch-random-delay only works on browser")
             }
-        } else if (currentArg.startsWith("--config-src=")) {
-            const arg = currentArg.substring("--config-src=".length);
-            runArgs.configSrc = arg;
         } else {
             break;
         }

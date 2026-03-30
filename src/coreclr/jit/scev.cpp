@@ -889,9 +889,8 @@ Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev*
     assert(addOperands.Height() >= 2);
 
     int numAppearances = 0;
-    for (int i = 0; i < addOperands.Height(); i++)
+    for (Scev* const addOperand : addOperands.BottomUpOrder())
     {
-        Scev* addOperand = addOperands.Bottom(i);
         if (addOperand == recursiveScev)
         {
             numAppearances++;
@@ -943,9 +942,8 @@ Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev*
     }
 
     Scev* step = nullptr;
-    for (int i = 0; i < addOperands.Height(); i++)
+    for (Scev* const addOperand : addOperands.BottomUpOrder())
     {
-        Scev* addOperand = addOperands.Bottom(i);
         if (addOperand == recursiveScev)
         {
             continue;

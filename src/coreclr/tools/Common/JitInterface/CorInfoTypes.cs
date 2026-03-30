@@ -208,11 +208,6 @@ namespace Internal.JitInterface
         private byte _needsRuntimeLookup;
         public bool needsRuntimeLookup { get { return _needsRuntimeLookup != 0; } set { _needsRuntimeLookup = value ? (byte)1 : (byte)0; } }
         public CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
-
-        // The 'runtimeLookupFlags' and 'runtimeLookupArgs' fields
-        // are just for internal VM / ZAP communication, not to be used by the JIT.
-        public ushort runtimeLookupFlags;
-        public void* runtimeLookupArgs;
     }
 
     // CORINFO_RUNTIME_LOOKUP indicates the details of the runtime lookup
@@ -250,6 +245,7 @@ namespace Internal.JitInterface
         public byte _indirectSecondOffset;
         public bool indirectSecondOffset { get { return _indirectSecondOffset != 0; } set { _indirectSecondOffset = value ? (byte)1 : (byte)0; } }
 
+        public CORINFO_CONST_LOOKUP helperEntryPoint;
     }
 
     // Result of calling embedGenericHandle
@@ -1480,7 +1476,6 @@ namespace Internal.JitInterface
 
         // token comes from runtime async awaiting pattern
         CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
-        CORINFO_TOKENKIND_AwaitVirtual = 0x4000 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod
@@ -1518,11 +1513,11 @@ namespace Internal.JitInterface
         CORJIT_FLAG_OSR                     = 7, // Generate alternate version for On Stack Replacement
         CORJIT_FLAG_ALT_JIT                 = 8, // JIT should consider itself an ALT_JIT
         CORJIT_FLAG_FROZEN_ALLOC_ALLOWED    = 9, // JIT is allowed to use *_MAYBEFROZEN allocators
-        // CORJIT_FLAG_UNUSED               = 10,
+        CORJIT_FLAG_PORTABLE_ENTRY_POINTS   = 10, // Use portable entrypoints for managed calling convention (see clr-abi.md for details)
         CORJIT_FLAG_AOT                     = 11, // Do ahead-of-time code generation (ReadyToRun or NativeAOT)
         CORJIT_FLAG_PROF_ENTERLEAVE         = 12, // Instrument prologues/epilogues
         CORJIT_FLAG_PROF_NO_PINVOKE_INLINE  = 13, // Disables PInvoke inlining
-        // CORJIT_FLAG_UNUSED               = 14,
+        CORJIT_FLAG_ASYNC                   = 14,  // Generate code for use as an async function
         CORJIT_FLAG_RELOC                   = 15, // Generate relocatable code
         CORJIT_FLAG_IL_STUB                 = 16, // method is an IL stub
         CORJIT_FLAG_PROCSPLIT               = 17, // JIT should separate code into hot and cold sections
@@ -1541,7 +1536,6 @@ namespace Internal.JitInterface
         // ARM only
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
-        CORJIT_FLAG_ASYNC                   = 31,  // Generate code for use as an async function
     }
 
     public struct CORJIT_FLAGS
