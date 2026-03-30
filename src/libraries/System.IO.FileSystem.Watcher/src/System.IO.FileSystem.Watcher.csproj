@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
@@ -81,6 +81,22 @@
     <Compile Include="System\IO\FileSystemWatcher.Linux.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\System.Native\Interop.INotify.cs"
              Link="Common\Interop\Linux\Interop.inotify.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
+             Link="Common\Interop\Unix\Interop.Poll.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
+             Link="Common\Interop\Unix\Interop.Stat.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'solaris'">
+    <Compile Include="System\IO\FileSystemWatcher.SunOS.cs" />
+    <Compile Include="$(CommonPath)Interop\SunOS\portfs\Interop.portfs.cs"
+             Link="Common\Interop\SunOS\portfs\Interop.portfs.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RealPath.cs"
+             Link="Common\Interop\Unix\Interop.RealPath.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UTimensat.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.UTimensat.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
              Link="Common\Interop\Unix\Interop.Poll.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
