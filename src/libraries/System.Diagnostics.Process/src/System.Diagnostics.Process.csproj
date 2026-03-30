@@ -226,6 +226,7 @@
     <Compile Include="System\Diagnostics\ProcessThread.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThreadTimes.cs" />
     <Compile Include="System\Diagnostics\ProcessUtils.Windows.cs" />
+    <Compile Include="System\Diagnostics\ShellExecuteHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
@@ -298,11 +299,11 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsiOSLike)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ConfigureTerminalForChildProcess.cs"
              Link="Common\Interop\Unix\Interop.ConfigureTerminalForChildProcess.cs" />
-    <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.Unix.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.ConfigureTerminalForChildProcesses.Unix.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsiOSLike)' == 'true'">
-    <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.iOS.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.ConfigureTerminalForChildProcesses.iOS.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux'">
