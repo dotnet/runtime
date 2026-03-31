@@ -185,15 +185,11 @@ namespace Microsoft.Win32.SafeHandles
 
                 // When InheritedHandles is set, build a PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict
                 // inheritance to only the explicitly specified handles.
+                int handleCount = 0;
                 if (hasInheritedHandles)
                 {
-                    int maxHandleCount = (stdinHandle is not null ? 1 : 0)
-                        + (stdoutHandle is not null ? 1 : 0)
-                        + (stderrHandle is not null ? 1 : 0)
-                        + inheritedHandles!.Count;
-                    handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)Math.Max(1, maxHandleCount), (nuint)sizeof(IntPtr));
-
-                    int handleCount = 0;
+                    int maxHandleCount = 3 + inheritedHandles!.Count;
+                    handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)maxHandleCount, (nuint)sizeof(IntPtr));
 
                     // Add the effective stdio handles (already made inheritable via DuplicateAsInheritableIfNeeded)
                     AddHandleToInheritList(inheritableStdinHandle ?? stdinHandle, handlesToInherit, ref handleCount);
@@ -201,10 +197,9 @@ namespace Microsoft.Win32.SafeHandles
                     AddHandleToInheritList(inheritableStderrHandle ?? stderrHandle, handlesToInherit, ref handleCount);
 
                     PrepareHandleAllowList(inheritedHandles, handlesToInherit, ref handleCount, ref handlesToRelease);
-
-                    BuildProcThreadAttributeList(handlesToInherit, handleCount, ref attributeListBuffer);
                 }
 
+                BuildProcThreadAttributeList(handlesToInherit, handleCount, ref attributeListBuffer);
                 startupInfoEx.lpAttributeList = attributeListBuffer;
 
                 bool retVal;
@@ -374,16 +369,17 @@ namespace Microsoft.Win32.SafeHandles
             ref void* attributeListBuffer)
         {
             nuint size = 0;
-            Interop.Kernel32.InitializeProcThreadAttributeList(null, 1, 0, ref size);
+            int attributeCount = handleCount > 0 ? 1 : 0;
+            Interop.Kernel32.InitializeProcThreadAttributeList(null, attributeCount, 0, ref size);
 
             attributeListBuffer = NativeMemory.Alloc(size);
 
-            if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeListBuffer, 1, 0, ref size))
+            if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeListBuffer, attributeCount, 0, ref size))
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
 
-            if (!Interop.Kernel32.UpdateProcThreadAttribute(
+            if (handleCount > 0 && !Interop.Kernel32.UpdateProcThreadAttribute(
                 attributeListBuffer,
                 0,
                 (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
@@ -467,16 +463,21 @@ namespace Microsoft.Win32.SafeHandles
                     break;
                 }
 
-                safeHandle.DangerousRelease();
-
-                // Remove the inheritance flag so they are not unintentionally inherited by
-                // other processes started after this point.
-                if (!Interop.Kernel32.SetHandleInformation(
-                    safeHandle,
-                    Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
-                    0))
+                try
                 {
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                    // Remove the inheritance flag so they are not unintentionally inherited by
+                    // other processes started after this point.
+                    if (!Interop.Kernel32.SetHandleInformation(
+                        safeHandle,
+                        Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
+                        0))
+                    {
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                    }
+                }
+                finally
+                {
+                    safeHandle.DangerousRelease();
                 }
             }
         }

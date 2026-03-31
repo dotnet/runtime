@@ -59,7 +59,7 @@ internal static partial class Interop
         internal const int EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct STARTUPINFOEX
+        internal unsafe struct STARTUPINFOEX
         {
             internal STARTUPINFO StartupInfo;
             internal void* lpAttributeList;
