@@ -2505,19 +2505,20 @@ namespace Reg
             return REGDB_E_CLASSNOTREG;
 
         DWORD type;
-        DWORD size;
+        DWORD sizeInBytes;
         LPCWSTR targetValueName = NULL; // Default value is represented as NULL.
-        if ((RegQueryValueEx(hTargetSubKey, targetValueName, 0, &type, 0, &size) == ERROR_SUCCESS) &&
-            type == REG_SZ && size > 0)
+        if ((RegQueryValueEx(hTargetSubKey, targetValueName, 0, &type, 0, &sizeInBytes) == ERROR_SUCCESS) &&
+            type == REG_SZ && sizeInBytes > 0)
         {
-            LPWSTR wszValueBuf = ssValue.OpenUnicodeBuffer(static_cast<COUNT_T>((size / sizeof(WCHAR)) - 1));
+            COUNT_T valueStrLength = static_cast<COUNT_T>((sizeInBytes / sizeof(WCHAR)) - 1);
+            LPWSTR wszValueBuf = ssValue.OpenUnicodeBuffer(valueStrLength);
             LONG lResult = RegQueryValueEx(
                 hTargetSubKey,
                 targetValueName,
                 0,
                 0,
                 reinterpret_cast<LPBYTE>(wszValueBuf),
-                &size);
+                &sizeInBytes);
 
             _ASSERTE(lResult == ERROR_SUCCESS);
             if (lResult == ERROR_SUCCESS)
@@ -2528,8 +2529,8 @@ namespace Reg
                 // terminating NULL is not a legitimate scenario for REG_SZ - this must
                 // be done using REG_MULTI_SZ - however this was tolerated in the
                 // past and so it would be a breaking change to stop doing so.
-                _ASSERTE(u16_strlen(wszValueBuf) <= (size / sizeof(WCHAR)) - 1);
-                ssValue.CloseBuffer((COUNT_T)wcsnlen(wszValueBuf, (size_t)size));
+                _ASSERTE(u16_strlen(wszValueBuf) <= valueStrLength);
+                ssValue.CloseBuffer((COUNT_T)wcsnlen(wszValueBuf, valueStrLength));
             }
             else
             {
