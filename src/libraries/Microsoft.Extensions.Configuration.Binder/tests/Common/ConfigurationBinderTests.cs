@@ -200,6 +200,22 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void CanIgnoreConfigurationAttributes()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"IgnoredProperty", "Ignored"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>();
+
+            Assert.Equal("Default", options.IgnoredProperty);
+        }
+
+        [Fact]
         public void EmptyStringIsNullable()
         {
             var dic = new Dictionary<string, string>
@@ -495,6 +511,26 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true);
 
             Assert.Equal("Yo", instance.NamedProperty);
+        }
+
+        [Fact]
+        public void DoesNotThrowWhenConfigKeyMatchesConfigurationIgnoreAttribute()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"IgnoredProperty", "Ignored"},
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+            config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true);
+
+            Assert.Equal("Default", instance.IgnoredProperty);
         }
 
         [Fact]
