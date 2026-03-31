@@ -506,1055 +506,6 @@ bool ContinuationLayoutBuilder::ContainsLocal(unsigned lclNum) const
 }
 
 //------------------------------------------------------------------------
-// DefaultValueAnalysis:
-//   Computes which tracked locals have their default (zero) value at each
-//   basic block entry. A tracked local that still has its default value at a
-//   suspension point does not need to be hoisted into the continuation.
-//
-//   The analysis has two phases:
-//     1. Per-block: compute which tracked locals are mutated (assigned a
-//        non-default value or have their address taken) in each block.
-//     2. Inter-block: forward dataflow to propagate default value information
-//        across blocks. At merge points the sets are unioned (a local is mutated
-//        if it is mutated on any incoming path).
-//
-class DefaultValueAnalysis
-{
-    Compiler*  m_compiler;
-    VARSET_TP* m_mutatedVars;   // Per-block set of locals mutated to non-default.
-    VARSET_TP* m_mutatedVarsIn; // Per-block set of locals mutated to non-default on entry.
-
-    // DataFlow::ForwardAnalysis callback used in Phase 2.
-    class DataFlowCallback
-    {
-        DefaultValueAnalysis& m_analysis;
-        Compiler*             m_compiler;
-        VARSET_TP             m_preMergeIn;
-
-    public:
-        DataFlowCallback(DefaultValueAnalysis& analysis, Compiler* compiler)
-            : m_analysis(analysis)
-            , m_compiler(compiler)
-            , m_preMergeIn(VarSetOps::UninitVal())
-        {
-        }
-
-        void StartMerge(BasicBlock* block)
-        {
-            // Save the current in set for change detection later.
-            VarSetOps::Assign(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
-        }
-
-        void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
-        {
-            // The out set of a predecessor is its in set plus the locals
-            // mutated in that block: mutatedOut = mutatedIn | mutated.
-            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                              m_analysis.m_mutatedVarsIn[predBlock->bbNum]);
-            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                              m_analysis.m_mutatedVars[predBlock->bbNum]);
-        }
-
-        void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
-        {
-            // A handler can be reached from any point in the try region.
-            // A local is mutated at handler entry if it was mutated at try
-            // entry or mutated anywhere within the try region.
-            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
-            {
-                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                                  m_analysis.m_mutatedVarsIn[tryBlock->bbNum]);
-                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                                  m_analysis.m_mutatedVars[tryBlock->bbNum]);
-            }
-        }
-
-        bool EndMerge(BasicBlock* block)
-        {
-            return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
-        }
-    };
-
-public:
-    DefaultValueAnalysis(Compiler* compiler)
-        : m_compiler(compiler)
-        , m_mutatedVars(nullptr)
-        , m_mutatedVarsIn(nullptr)
-    {
-    }
-
-    void             Run();
-    const VARSET_TP& GetMutatedVarsIn(BasicBlock* block) const;
-
-private:
-    void ComputePerBlockMutatedVars();
-    void ComputeInterBlockDefaultValues();
-
-#ifdef DEBUG
-    void DumpMutatedVars();
-    void DumpMutatedVarsIn();
-#endif
-};
-
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::Run:
-//   Run the default value analysis: compute per-block mutation sets, then
-//   propagate default value information forward through the flow graph.
-//
-void DefaultValueAnalysis::Run()
-{
-#ifdef DEBUG
-    static ConfigMethodRange s_range;
-    s_range.EnsureInit(JitConfig.JitAsyncDefaultValueAnalysisRange());
-
-    if (!s_range.Contains(m_compiler->info.compMethodHash()))
-    {
-        JITDUMP("Default value analysis disabled because of method range\n");
-        m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
-        for (BasicBlock* block : m_compiler->Blocks())
-        {
-            VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[block->bbNum], VarSetOps::MakeFull(m_compiler));
-        }
-
-        return;
-    }
-#endif
-
-    ComputePerBlockMutatedVars();
-    ComputeInterBlockDefaultValues();
-}
-
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::GetMutatedVarsIn:
-//   Get the set of tracked locals that have been mutated to a non-default
-//   value on entry to the specified block.
-//
-// Parameters:
-//   block - The basic block.
-//
-// Returns:
-//   The VARSET_TP of tracked locals mutated on entry. A local NOT in this
-//   set is guaranteed to have its default value.
-//
-const VARSET_TP& DefaultValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
-{
-    assert(m_mutatedVarsIn != nullptr);
-    return m_mutatedVarsIn[block->bbNum];
-}
-
-//------------------------------------------------------------------------
-// IsDefaultValue:
-//   Check if a node represents a default (zero) value.
-//
-// Parameters:
-//   node - The node to check.
-//
-// Returns:
-//   True if the node is a constant zero value (integral, floating-point, or
-//   vector).
-//
-static bool IsDefaultValue(GenTree* node)
-{
-    return node->IsIntegralConst(0) || node->IsFloatPositiveZero() || node->IsVectorZero();
-}
-
-//------------------------------------------------------------------------
-// MarkMutatedVarDsc:
-//   Mark a VarDsc (or its promoted fields) in the specified varset.
-//
-// Parameters:
-//   compiler - The compiler instance.
-//   varDsc   - The var.
-//   mutated  - [in/out] The set to update.
-//
-static void MarkMutatedVarDsc(Compiler* compiler, LclVarDsc* varDsc, VARSET_TP& mutated)
-{
-    if (varDsc->lvTracked)
-    {
-        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
-        return;
-    }
-
-    if (varDsc->lvPromoted)
-    {
-        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-            if (fieldDsc->lvTracked)
-            {
-                VarSetOps::AddElemD(compiler, mutated, fieldDsc->lvVarIndex);
-            }
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// UpdateMutatedLocal:
-//   If the given node is a local store or LCL_ADDR, and the local is tracked,
-//   mark it as mutated in the provided set. Stores of a default (zero) value
-//   are not considered mutations.
-//
-// Parameters:
-//   compiler - The compiler instance.
-//   node     - The IR node to check.
-//   mutated  - [in/out] The set to update.
-//
-static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
-{
-    if (node->OperIsLocalStore())
-    {
-        // If this is a zero initialization then we do not need to consider it
-        // mutated if we know the prolog will zero it anyway (otherwise we
-        // could be skipping this explicit zero init on resumption).
-        // We could improve this a bit by still skipping it but inserting
-        // explicit zero init on resumption, but these cases seem to be rare
-        // and that would require tracking additional information.
-        if (IsDefaultValue(node->AsLclVarCommon()->Data()) &&
-            !compiler->fgVarNeedsExplicitZeroInit(node->AsLclVarCommon()->GetLclNum(), /* bbInALoop */ false,
-                                                  /* bbIsReturn */ false))
-        {
-            return;
-        }
-    }
-    else if (node->OperIs(GT_LCL_ADDR))
-    {
-        // Fall through
-    }
-    else
-    {
-        return;
-    }
-
-    LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVarCommon());
-    MarkMutatedVarDsc(compiler, varDsc, mutated);
-}
-
-#ifdef DEBUG
-//------------------------------------------------------------------------
-// PrintVarSet:
-//   Print a varset as a space-separated list of locals.
-//
-// Parameters:
-//   comp - Compiler instance
-//   set  - The varset to print.
-//
-static void PrintVarSet(Compiler* comp, VARSET_VALARG_TP set)
-{
-    VarSetOps::Iter iter(comp, set);
-    unsigned        varIndex = 0;
-    const char*     sep      = "";
-    while (iter.NextElem(&varIndex))
-    {
-        unsigned lclNum = comp->lvaTrackedToVarNum[varIndex];
-        printf("%sV%02u", sep, lclNum);
-        sep = " ";
-    }
-    printf("\n");
-}
-#endif
-
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::ComputePerBlockMutatedVars:
-//   Phase 1: For each reachable basic block compute the set of tracked locals
-//   that are mutated to a non-default value.
-//
-//   A tracked local is considered mutated if:
-//     - It has a store (STORE_LCL_VAR / STORE_LCL_FLD) whose data operand is
-//       not a zero constant.
-//     - It has a LCL_ADDR use (address taken that we cannot reason about).
-//
-void DefaultValueAnalysis::ComputePerBlockMutatedVars()
-{
-    m_mutatedVars = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
-
-    for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
-    {
-        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVars[i], VarSetOps::MakeEmpty(m_compiler));
-    }
-
-    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
-    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
-    {
-        BasicBlock* block   = dfsTree->GetPostOrder(i);
-        VARSET_TP&  mutated = m_mutatedVars[block->bbNum];
-
-        for (GenTree* node : LIR::AsRange(block))
-        {
-            UpdateMutatedLocal(m_compiler, node, mutated);
-        }
-    }
-
-    JITDUMP("Default value analysis: per-block mutated vars\n");
-    JITDUMPEXEC(DumpMutatedVars());
-}
-
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::ComputeInterBlockDefaultValues:
-//   Phase 2: Forward dataflow to compute for each block the set of tracked
-//   locals that have been mutated to a non-default value on entry.
-//
-//   Transfer function: mutatedOut[B] = mutatedIn[B] | mutated[B]
-//   Merge: mutatedIn[B] = union of mutatedOut[pred] for all preds
-//
-//   At entry, only parameters and OSR locals are considered mutated.
-//
-void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
-{
-    m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
-
-    for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
-    {
-        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[i], VarSetOps::MakeEmpty(m_compiler));
-    }
-
-    // Parameters and OSR locals are considered mutated at method entry.
-    for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
-    {
-        unsigned   lclNum = m_compiler->lvaTrackedToVarNum[i];
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-
-        if (varDsc->lvIsParam || varDsc->lvIsOSRLocal)
-        {
-            VarSetOps::AddElemD(m_compiler, m_mutatedVarsIn[m_compiler->fgFirstBB->bbNum], varDsc->lvVarIndex);
-        }
-    }
-
-    DataFlowCallback callback(*this, m_compiler);
-    DataFlow         flow(m_compiler);
-    flow.ForwardAnalysis(callback);
-
-    JITDUMP("Default value analysis: per-block mutated vars on entry\n");
-    JITDUMPEXEC(DumpMutatedVarsIn());
-}
-
-#ifdef DEBUG
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::DumpMutatedVars:
-//   Debug helper to print the per-block mutated variable sets.
-//
-void DefaultValueAnalysis::DumpMutatedVars()
-{
-    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
-    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
-    {
-        BasicBlock* block = dfsTree->GetPostOrder(i);
-        if (!VarSetOps::IsEmpty(m_compiler, m_mutatedVars[block->bbNum]))
-        {
-            printf("  " FMT_BB " mutated: ", block->bbNum);
-            PrintVarSet(m_compiler, m_mutatedVars[block->bbNum]);
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::DumpMutatedVarsIn:
-//   Debug helper to print the per-block mutated-on-entry variable sets.
-//
-void DefaultValueAnalysis::DumpMutatedVarsIn()
-{
-    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
-    for (unsigned i = dfsTree->GetPostOrderCount(); i > 0; i--)
-    {
-        BasicBlock* block = dfsTree->GetPostOrder(i - 1);
-        printf("  " FMT_BB " mutated on entry: ", block->bbNum);
-
-        if (VarSetOps::IsEmpty(m_compiler, m_mutatedVarsIn[block->bbNum]))
-        {
-            printf("<none>\n");
-        }
-        else
-        {
-            PrintVarSet(m_compiler, m_mutatedVarsIn[block->bbNum]);
-        }
-    }
-}
-#endif
-
-//------------------------------------------------------------------------
-// MarkMutatedLocal:
-//   If the given node is a local store or LCL_ADDR, and the local is tracked,
-//   mark it as mutated in the provided set. Unlike UpdateMutatedLocal, all
-//   stores count as mutations (including stores of default values).
-//
-// Parameters:
-//   compiler - The compiler instance.
-//   node     - The IR node to check.
-//   mutated  - [in/out] The set to update.
-//
-static void MarkMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
-{
-    if (node->IsCall())
-    {
-        auto visitDef = [&](GenTreeLclVarCommon* lcl) {
-            MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(lcl), mutated);
-            return GenTree::VisitResult::Continue;
-        };
-        node->VisitLocalDefNodes(compiler, visitDef);
-    }
-    else if (node->OperIsLocalStore() || node->OperIs(GT_LCL_ADDR))
-    {
-        MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(node->AsLclVarCommon()), mutated);
-    }
-    else if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
-             compiler->lvaIsImplicitByRefLocal(node->AsLclVarCommon()->GetLclNum()))
-    {
-        MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(node->AsLclVarCommon()), mutated);
-    }
-    else
-    {
-        return;
-    }
-}
-
-//------------------------------------------------------------------------
-// PreservedValueAnalysis:
-//   Computes which tracked locals may have been mutated since the previous
-//   resumption point. A local that has not been mutated since the last
-//   resumption does not need to be stored into a reused continuation, because
-//   the continuation already holds the correct value.
-//
-//   The analysis proceeds in several steps:
-//
-//   0. Identify blocks that contain awaits and compute which blocks are
-//      reachable after resumption.
-//
-//   1. Per-block: compute which tracked locals are mutated (assigned any
-//      value or have their address taken) in each block. Only mutations
-//      reachable after resumption need to be taken into account.
-//
-//   2. Inter-block: forward dataflow to compute for each block the set of
-//      tracked locals that have been mutated since the previous resumption.
-//      At merge points the sets are unioned (a local is mutated if it is
-//      mutated on any incoming path).
-//
-class PreservedValueAnalysis
-{
-    Compiler* m_compiler;
-
-    BitVecTraits m_blockTraits;
-
-    // Blocks that have awaits in them.
-    BitVec m_awaitBlocks;
-
-    // Blocks that may be entered after we resumed.
-    BitVec m_resumeReachableBlocks;
-
-    // Per-block set of locals that may be mutated by each block after a resumption.
-    VARSET_TP* m_mutatedVars;
-
-    // Per-block incoming set of locals possibly mutated since previous resumption.
-    VARSET_TP* m_mutatedVarsIn;
-
-    // DataFlow::ForwardAnalysis callback used in Phase 2.
-    class DataFlowCallback
-    {
-        PreservedValueAnalysis& m_analysis;
-        Compiler*               m_compiler;
-        VARSET_TP               m_preMergeIn;
-
-    public:
-        DataFlowCallback(PreservedValueAnalysis& analysis, Compiler* compiler)
-            : m_analysis(analysis)
-            , m_compiler(compiler)
-            , m_preMergeIn(VarSetOps::UninitVal())
-        {
-        }
-
-        void StartMerge(BasicBlock* block)
-        {
-            VarSetOps::Assign(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
-        }
-
-        void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
-        {
-            // Normal predecessor: mutatedOut = mutatedIn | mutated.
-            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                              m_analysis.m_mutatedVarsIn[predBlock->bbNum]);
-            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                              m_analysis.m_mutatedVars[predBlock->bbNum]);
-        }
-
-        void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
-        {
-            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
-            {
-                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                                  m_analysis.m_mutatedVarsIn[tryBlock->bbNum]);
-                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                                  m_analysis.m_mutatedVars[tryBlock->bbNum]);
-            }
-        }
-
-        bool EndMerge(BasicBlock* block)
-        {
-            return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
-        }
-    };
-
-public:
-    PreservedValueAnalysis(Compiler* compiler)
-        : m_compiler(compiler)
-        , m_blockTraits(compiler->fgBBNumMax + 1, compiler)
-        , m_awaitBlocks(BitVecOps::UninitVal())
-        , m_resumeReachableBlocks(BitVecOps::UninitVal())
-        , m_mutatedVars(nullptr)
-        , m_mutatedVarsIn(nullptr)
-    {
-    }
-
-    void             Run(ArrayStack<BasicBlock*>& awaitBlocks);
-    const VARSET_TP& GetMutatedVarsIn(BasicBlock* block) const;
-    bool             IsResumeReachable(BasicBlock* block);
-
-private:
-    void ComputeResumeReachableBlocks(ArrayStack<BasicBlock*>& awaitBlocks);
-    void ComputePerBlockMutatedVars();
-    void ComputeInterBlockMutatedVars();
-
-#ifdef DEBUG
-    void DumpAwaitBlocks();
-    void DumpResumeReachableBlocks();
-    void DumpMutatedVars();
-    void DumpMutatedVarsIn();
-#endif
-};
-
-//------------------------------------------------------------------------
-// PreservedValueAnalysis::Run:
-//   Run the preserved value analysis: identify await blocks, compute
-//   resume-reachable blocks, then compute per-block and inter-block
-//   mutation sets relative to resumption points.
-//
-// Parameters:
-//   awaitblocks - Blocks containing async calls
-//
-void PreservedValueAnalysis::Run(ArrayStack<BasicBlock*>& awaitBlocks)
-{
-#ifdef DEBUG
-    static ConfigMethodRange s_range;
-    s_range.EnsureInit(JitConfig.JitAsyncPreservedValueAnalysisRange());
-
-    if (!s_range.Contains(m_compiler->info.compMethodHash()))
-    {
-        JITDUMP("Preserved value analysis disabled because of method range\n");
-        m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
-        m_mutatedVars   = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
-        for (BasicBlock* block : m_compiler->Blocks())
-        {
-            VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[block->bbNum], VarSetOps::MakeFull(m_compiler));
-            VarSetOps::AssignNoCopy(m_compiler, m_mutatedVars[block->bbNum], VarSetOps::MakeFull(m_compiler));
-        }
-
-        m_resumeReachableBlocks = BitVecOps::MakeFull(&m_blockTraits);
-        m_awaitBlocks           = BitVecOps::MakeFull(&m_blockTraits);
-
-        return;
-    }
-#endif
-
-    ComputeResumeReachableBlocks(awaitBlocks);
-    ComputePerBlockMutatedVars();
-    ComputeInterBlockMutatedVars();
-}
-
-//------------------------------------------------------------------------
-// PreservedValueAnalysis::GetMutatedVarsIn:
-//   Get the set of tracked locals that may have been mutated since the
-//   previous resumption on entry to the specified block.
-//
-// Parameters:
-//   block - The basic block.
-//
-// Returns:
-//   The VARSET_TP of tracked locals that may have been mutated since last
-//   resumption. A tracked local NOT in this set has a preserved value in the
-//   continuation and does not need to be re-stored when reusing it.
-//
-const VARSET_TP& PreservedValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
-{
-    assert(m_mutatedVarsIn != nullptr);
-    return m_mutatedVarsIn[block->bbNum];
-}
-
-//------------------------------------------------------------------------
-// PreservedValueAnalysis::IsResumeReachable:
-//   Check if the specified basic block is reachable after a previous resumption.
-//
-// Parameters:
-//   block - The basic block.
-//
-// Returns:
-//   True if so. Blocks that are not resume-reachable will never be able to
-//   reuse a continuation. Also, mutations of locals that are not
-//   resume-reachable do not need to be considered for preserved value
-//   analysis.
-//
-bool PreservedValueAnalysis::IsResumeReachable(BasicBlock* block)
-{
-    return BitVecOps::IsMember(&m_blockTraits, m_resumeReachableBlocks, block->bbNum);
-}
-
-//------------------------------------------------------------------------
-// PreservedValueAnalysis::ComputeResumeReachableBlocks:
-//   Phase 0: Identify blocks containing awaits, then compute the set of
-//   blocks reachable after any resumption via a DFS starting from await blocks.
-//
-void PreservedValueAnalysis::ComputeResumeReachableBlocks(ArrayStack<BasicBlock*>& awaitBlocks)
-{
-    m_awaitBlocks           = BitVecOps::MakeEmpty(&m_blockTraits);
-    m_resumeReachableBlocks = BitVecOps::MakeEmpty(&m_blockTraits);
-
-    ArrayStack<BasicBlock*> worklist(m_compiler->getAllocator(CMK_Async));
-    // Find all blocks that contain awaits.
-    for (BasicBlock* awaitBlock : awaitBlocks.BottomUpOrder())
-    {
-        BitVecOps::AddElemD(&m_blockTraits, m_awaitBlocks, awaitBlock->bbNum);
-        worklist.Push(awaitBlock);
-    }
-
-    JITDUMP("Preserved value analysis: blocks containing awaits\n");
-    JITDUMPEXEC(DumpAwaitBlocks());
-
-    // DFS from those blocks.
-    while (!worklist.Empty())
-    {
-        BasicBlock* block = worklist.Pop();
-
-        block->VisitAllSuccs(m_compiler, [&](BasicBlock* succ) {
-            if (BitVecOps::TryAddElemD(&m_blockTraits, m_resumeReachableBlocks, succ->bbNum))
-            {
-                worklist.Push(succ);
-            }
-            return BasicBlockVisit::Continue;
-        });
-    }
-
-    JITDUMP("Preserved value analysis: blocks reachable after resuming\n");
-    JITDUMPEXEC(DumpResumeReachableBlocks());
-}
-
-//------------------------------------------------------------------------
-// PreservedValueAnalysis::ComputePerBlockMutatedVars:
-//   Phase 1: For each reachable basic block compute the set of tracked locals
-//   that are mutated.
-//
-//   For blocks that are reachable after resumption the full set of mutations
-//   in the block is recorded.
-//
-//   For blocks that are NOT reachable after resumption but contain an await,
-//   only mutations that occur after the first suspension point are recorded,
-//   because mutations before the first suspension are not relevant to
-//   preserved values (the continuation did not exist yet or was not being
-//   reused at that point).
-//
-void PreservedValueAnalysis::ComputePerBlockMutatedVars()
-{
-    m_mutatedVars = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
-
-    for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
-    {
-        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVars[i], VarSetOps::MakeEmpty(m_compiler));
-    }
-
-    for (BasicBlock* block : m_compiler->Blocks())
-    {
-        VARSET_TP& mutated = m_mutatedVars[block->bbNum];
-
-        bool isAwaitBlock      = BitVecOps::IsMember(&m_blockTraits, m_awaitBlocks, block->bbNum);
-        bool isResumeReachable = BitVecOps::IsMember(&m_blockTraits, m_resumeReachableBlocks, block->bbNum);
-
-        if (!isResumeReachable && !isAwaitBlock)
-        {
-            continue;
-        }
-
-        GenTree* node = block->GetFirstLIRNode();
-
-        if (!isResumeReachable)
-        {
-            while (!node->IsCall() || !node->AsCall()->IsAsync())
-            {
-                node = node->gtNext;
-                assert(node != nullptr);
-            }
-        }
-
-        while (node != nullptr)
-        {
-            MarkMutatedLocal(m_compiler, node, mutated);
-            node = node->gtNext;
-        }
-    }
-
-    JITDUMP("Preserved value analysis: per-block mutated vars after resumption\n");
-    JITDUMPEXEC(DumpMutatedVars());
-}
-
-//------------------------------------------------------------------------
-// PreservedValueAnalysis::ComputeInterBlockMutatedVars:
-//   Phase 2: Forward dataflow to compute for each block the set of tracked
-//   locals that have been mutated since the previous resumption on entry.
-//
-//   Transfer function: mutatedOut[B] = mutatedIn[B] | mutated[B]
-//   Merge: mutatedIn[B] = union of mutatedOut[pred] for all preds
-//
-//   At method entry no locals are considered mutated (not reachable from a resumption).
-//
-void PreservedValueAnalysis::ComputeInterBlockMutatedVars()
-{
-    m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
-
-    for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
-    {
-        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[i], VarSetOps::MakeEmpty(m_compiler));
-    }
-
-    DataFlowCallback callback(*this, m_compiler);
-    DataFlow         flow(m_compiler);
-    flow.ForwardAnalysis(callback);
-
-    JITDUMP("Preserved value analysis: per-block mutated vars on entry\n");
-    JITDUMPEXEC(DumpMutatedVarsIn());
-}
-
-#ifdef DEBUG
-//------------------------------------------------------------------------
-// PreservedValueAnalysis::DumpAwaitBlocks:
-//   Debug helper to print the set of blocks containing awaits.
-//
-void PreservedValueAnalysis::DumpAwaitBlocks()
-{
-    printf("  Await blocks:");
-    const char* sep = " ";
-    for (BasicBlock* block : m_compiler->Blocks())
-    {
-        if (BitVecOps::IsMember(&m_blockTraits, m_awaitBlocks, block->bbNum))
-        {
-            printf("%s" FMT_BB, sep, block->bbNum);
-            sep = ", ";
-        }
-    }
-    printf("\n");
-}
-
-//------------------------------------------------------------------------
-// PreservedValueAnalysis::DumpResumeReachableBlocks:
-//   Debug helper to print the set of resume-reachable blocks.
-//
-void PreservedValueAnalysis::DumpResumeReachableBlocks()
-{
-    printf("  Resume-reachable blocks:");
-    const char* sep = " ";
-    for (BasicBlock* block : m_compiler->Blocks())
-    {
-        if (BitVecOps::IsMember(&m_blockTraits, m_resumeReachableBlocks, block->bbNum))
-        {
-            printf("%s" FMT_BB, sep, block->bbNum);
-            sep = ", ";
-        }
-    }
-    printf("\n");
-}
-
-//------------------------------------------------------------------------
-// PreservedValueAnalysis::DumpMutatedVars:
-//   Debug helper to print the per-block mutated variable sets.
-//
-void PreservedValueAnalysis::DumpMutatedVars()
-{
-    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
-    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
-    {
-        BasicBlock* block = dfsTree->GetPostOrder(i);
-        if (!VarSetOps::IsEmpty(m_compiler, m_mutatedVars[block->bbNum]))
-        {
-            printf("  " FMT_BB " mutated: ", block->bbNum);
-            PrintVarSet(m_compiler, m_mutatedVars[block->bbNum]);
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// PreservedValueAnalysis::DumpMutatedVarsIn:
-//   Debug helper to print the per-block mutated-on-entry variable sets.
-//
-void PreservedValueAnalysis::DumpMutatedVarsIn()
-{
-    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
-    for (unsigned i = dfsTree->GetPostOrderCount(); i > 0; i--)
-    {
-        BasicBlock* block = dfsTree->GetPostOrder(i - 1);
-        printf("  " FMT_BB " mutated since resumption on entry: ", block->bbNum);
-
-        if (VarSetOps::IsEmpty(m_compiler, m_mutatedVarsIn[block->bbNum]))
-        {
-            printf("<none>\n");
-        }
-        else if (VarSetOps::Equal(m_compiler, m_mutatedVarsIn[block->bbNum], VarSetOps::MakeFull(m_compiler)))
-        {
-            printf("<all>\n");
-        }
-        else
-        {
-            PrintVarSet(m_compiler, m_mutatedVarsIn[block->bbNum]);
-        }
-    }
-}
-#endif
-
-class AsyncLiveness
-{
-    Compiler*               m_compiler;
-    TreeLifeUpdater<false>  m_updater;
-    unsigned                m_numVars;
-    DefaultValueAnalysis&   m_defaultValueAnalysis;
-    PreservedValueAnalysis& m_preservedValueAnalysis;
-    VARSET_TP               m_mutatedValues;
-    bool                    m_resumeReachable = false;
-    VARSET_TP               m_mutatedSinceResumption;
-
-public:
-    AsyncLiveness(Compiler*               comp,
-                  DefaultValueAnalysis&   defaultValueAnalysis,
-                  PreservedValueAnalysis& preservedValueAnalysis)
-        : m_compiler(comp)
-        , m_updater(comp)
-        , m_numVars(comp->lvaCount)
-        , m_defaultValueAnalysis(defaultValueAnalysis)
-        , m_preservedValueAnalysis(preservedValueAnalysis)
-        , m_mutatedValues(VarSetOps::MakeEmpty(comp))
-        , m_mutatedSinceResumption(VarSetOps::MakeEmpty(comp))
-    {
-    }
-
-    void StartBlock(BasicBlock* block);
-    void Update(GenTree* node);
-    bool IsLive(unsigned lclNum);
-    template <typename Functor>
-    void GetLiveLocals(ContinuationLayoutBuilder* layoutBuilder, Functor includeLocal);
-
-    bool IsResumeReachable() const
-    {
-        return m_resumeReachable;
-    }
-
-    VARSET_TP GetMutatedSinceResumption() const
-    {
-        return m_mutatedSinceResumption;
-    }
-private:
-    bool IsLocalCaptureUnnecessary(unsigned lclNum);
-};
-
-//------------------------------------------------------------------------
-// AsyncLiveness::StartBlock:
-//   Indicate that we are now starting a new block, and do relevant liveness
-//   and other analysis updates for it.
-//
-// Parameters:
-//   block - The block that we are starting.
-//
-void AsyncLiveness::StartBlock(BasicBlock* block)
-{
-    VarSetOps::Assign(m_compiler, m_compiler->compCurLife, block->bbLiveIn);
-    VarSetOps::Assign(m_compiler, m_mutatedValues, m_defaultValueAnalysis.GetMutatedVarsIn(block));
-    VarSetOps::Assign(m_compiler, m_mutatedSinceResumption, m_preservedValueAnalysis.GetMutatedVarsIn(block));
-    m_resumeReachable = m_preservedValueAnalysis.IsResumeReachable(block);
-}
-
-//------------------------------------------------------------------------
-// AsyncLiveness::Update:
-//   Update liveness to be consistent with the specified node having been
-//   executed.
-//
-// Parameters:
-//   node - The node.
-//
-void AsyncLiveness::Update(GenTree* node)
-{
-    m_updater.UpdateLife<true>(node);
-    UpdateMutatedLocal(m_compiler, node, m_mutatedValues);
-
-    // If this is an async call then we can reach defs after resumption now.
-    // Make sure defs happening as part of the call are included as mutated since resumption.
-    m_resumeReachable |= node->IsCall() && node->AsCall()->IsAsync();
-    if (m_resumeReachable)
-    {
-        MarkMutatedLocal(m_compiler, node, m_mutatedSinceResumption);
-    }
-}
-
-//------------------------------------------------------------------------
-// AsyncLiveness::IsLocalCaptureUnnecessary:
-//   Check if capturing a specified local can be skipped.
-//
-// Parameters:
-//   lclNum - The local
-//
-// Returns:
-//   True if the local should not be captured. Even without liveness
-//
-bool AsyncLiveness::IsLocalCaptureUnnecessary(unsigned lclNum)
-{
-#if FEATURE_FIXED_OUT_ARGS
-    if (lclNum == m_compiler->lvaOutgoingArgSpaceVar)
-    {
-        return true;
-    }
-#endif
-
-    if (lclNum == m_compiler->info.compRetBuffArg)
-    {
-        return true;
-    }
-
-    if (lclNum == m_compiler->lvaGSSecurityCookie)
-    {
-        // Initialized in prolog
-        return true;
-    }
-
-    if (lclNum == m_compiler->info.compLvFrameListRoot)
-    {
-        return true;
-    }
-
-    if (lclNum == m_compiler->lvaInlinedPInvokeFrameVar)
-    {
-        return true;
-    }
-
-    if (lclNum == m_compiler->lvaRetAddrVar)
-    {
-        return true;
-    }
-
-    if (lclNum == m_compiler->lvaAsyncContinuationArg)
-    {
-        return true;
-    }
-
-    return false;
-}
-
-//------------------------------------------------------------------------
-// AsyncLiveness::IsLive:
-//   Check if the specified local is live at this point and should be captured.
-//
-// Parameters:
-//   lclNum - The local
-//
-// Returns:
-//   True if the local is live and capturing it is necessary.
-//
-bool AsyncLiveness::IsLive(unsigned lclNum)
-{
-    if (IsLocalCaptureUnnecessary(lclNum))
-    {
-        return false;
-    }
-
-    LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
-
-    if (dsc->TypeIs(TYP_BYREF) && !dsc->IsImplicitByRef())
-    {
-        // Even if these are address exposed we expect them to be dead at
-        // suspension points. TODO: It would be good to somehow verify these
-        // aren't obviously live, if the JIT creates live ranges that span a
-        // suspension point then this makes it quite hard to diagnose that.
-        return false;
-    }
-
-    if ((dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef()) && dsc->GetLayout()->HasGCByRef())
-    {
-        // Same as above
-        return false;
-    }
-
-    if (m_compiler->opts.compDbgCode && (lclNum < m_compiler->info.compLocalsCount))
-    {
-        // Keep all IL locals in debug codegen
-        return true;
-    }
-
-    if (dsc->lvRefCnt(RCS_NORMAL) == 0)
-    {
-        return false;
-    }
-
-    Compiler::lvaPromotionType promoType = m_compiler->lvaGetPromotionType(dsc);
-    if (promoType == Compiler::PROMOTION_TYPE_INDEPENDENT)
-    {
-        // Independently promoted structs are handled only through their
-        // fields.
-        return false;
-    }
-
-    if (promoType == Compiler::PROMOTION_TYPE_DEPENDENT)
-    {
-        // Dependently promoted structs are handled only through the base
-        // struct local.
-        //
-        // A dependently promoted struct is live if any of its fields are live.
-
-        bool anyLive    = false;
-        bool anyMutated = false;
-        for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
-            anyLive |=
-                !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, fieldDsc->lvVarIndex);
-            anyMutated |=
-                !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_mutatedValues, fieldDsc->lvVarIndex);
-        }
-
-        return anyLive && anyMutated;
-    }
-
-    if (dsc->lvIsStructField && (m_compiler->lvaGetParentPromotionType(dsc) == Compiler::PROMOTION_TYPE_DEPENDENT))
-    {
-        return false;
-    }
-
-    if (!dsc->lvTracked)
-    {
-        return true;
-    }
-
-    if (!VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, dsc->lvVarIndex))
-    {
-        return false;
-    }
-
-    if (!VarSetOps::IsMember(m_compiler, m_mutatedValues, dsc->lvVarIndex))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------
-// AsyncLiveness::GetLiveLocals:
-//   Get live locals that should be captured at this point.
-//
-// Parameters:
-//   builder      - Layout builder to add local into
-//   includeLocal - Functor to check if a local should be included
-//
-template <typename Functor>
-void AsyncLiveness::GetLiveLocals(ContinuationLayoutBuilder* builder, Functor includeLocal)
-{
-    for (unsigned lclNum = 0; lclNum < m_numVars; lclNum++)
-    {
-        if (includeLocal(lclNum) && IsLive(lclNum))
-        {
-            builder->AddLocal(lclNum);
-        }
-    }
-}
-
-//------------------------------------------------------------------------
 // TransformAsync: Run async transformation.
 //
 // Returns:
@@ -1593,9 +544,9 @@ PhaseStatus AsyncTransformation::Run()
     PhaseStatus             result = PhaseStatus::MODIFIED_NOTHING;
     ArrayStack<BasicBlock*> worklist(m_compiler->getAllocator(CMK_Async));
 
-    // First find all basic blocks with awaits in them. We'll have to track
-    // liveness in these basic blocks, so it does not help to record the calls
-    // ahead of time.
+    // First find all basic blocks with awaits in them. We have to walk all IR
+    // in these basic blocks for our analyses so it does not help to record the
+    // calls ahead of time.
     BasicBlock* nextBlock;
     for (BasicBlock* block = m_compiler->fgFirstBB; block != nullptr; block = nextBlock)
     {
@@ -1654,15 +605,20 @@ PhaseStatus AsyncTransformation::Run()
     INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
     VarSetOps::AssignNoCopy(m_compiler, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_compiler));
 
+    // Compute locals unchanged from their default values
     DefaultValueAnalysis defaultValues(m_compiler);
     defaultValues.Run();
+
+    // Compute locals unchanged if we reuse a continuation
     PreservedValueAnalysis preservedValues(m_compiler);
     preservedValues.Run(worklist);
-    AsyncLiveness liveness(m_compiler, defaultValues, preservedValues);
+
+    AsyncAnalysis analyses(m_compiler, defaultValues, preservedValues);
 
     // Now walk the IR for all the blocks that contain async calls. Keep track
-    // of liveness and outstanding LIR edges as we go; the LIR edges that cross
-    // async calls are additional live variables that must be spilled.
+    // the state of the analyses and outstanding LIR edges as we go; the LIR
+    // edges that cross async calls are additional live variables that must be
+    // spilled.
     jitstd::vector<GenTree*> defs(m_compiler->getAllocator(CMK_Async));
 
     for (int i = 0; i < worklist.Height(); i++)
@@ -1670,7 +626,7 @@ PhaseStatus AsyncTransformation::Run()
         assert(defs.size() == 0);
 
         BasicBlock* block = worklist.Bottom(i);
-        liveness.StartBlock(block);
+        analyses.StartBlock(block);
 
         bool any;
         do
@@ -1700,15 +656,15 @@ PhaseStatus AsyncTransformation::Run()
                 if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall())
                 {
                     // Transform call; continue with the remainder block.
-                    // Transform takes care to update liveness.
-                    Transform(block, tree->AsCall(), defs, liveness, &block);
+                    // Transform takes care to update the analyses.
+                    Transform(block, tree->AsCall(), defs, analyses, &block);
                     defs.clear();
                     any = true;
                     break;
                 }
 
-                // Update liveness to reflect state after this node.
-                liveness.Update(tree);
+                // Update analyses to reflect state after this node.
+                analyses.Update(tree);
 
                 // Push a new definition if necessary; this defined value is
                 // now a live LIR edge.
@@ -1848,11 +804,14 @@ BasicBlock* AsyncTransformation::CreateTailAwaitSuspension(BasicBlock* block, Ge
 //   block     - The block containing the async call
 //   call      - The async call
 //   defs      - Current live LIR edges
-//   life      - Liveness information about live locals
+//   analyses  - Analysis information about the async method
 //   remainder - [out] Remainder block after the transformation
 //
-void AsyncTransformation::Transform(
-    BasicBlock* block, GenTreeCall* call, jitstd::vector<GenTree*>& defs, AsyncLiveness& life, BasicBlock** remainder)
+void AsyncTransformation::Transform(BasicBlock*               block,
+                                    GenTreeCall*              call,
+                                    jitstd::vector<GenTree*>& defs,
+                                    AsyncAnalysis&            analyses,
+                                    BasicBlock**              remainder)
 {
 #ifdef DEBUG
     if (m_compiler->verbose)
@@ -1874,23 +833,23 @@ void AsyncTransformation::Transform(
     }
 #endif
 
-    bool      resumeReachable = life.IsResumeReachable();
-    VARSET_TP mutatedSinceResumption(VarSetOps::MakeCopy(m_compiler, life.GetMutatedSinceResumption()));
+    bool      resumeReachable = analyses.IsResumeReachable();
+    VARSET_TP mutatedSinceResumption(VarSetOps::MakeCopy(m_compiler, analyses.GetMutatedSinceResumption()));
 
     JITDUMP("  This suspension point is%s resume-reachable\n", resumeReachable ? "" : " NOT");
     if (resumeReachable)
     {
         JITDUMP("  Locals mutated since previous resumption: ");
-        JITDUMPEXEC(PrintVarSet(m_compiler, mutatedSinceResumption));
+        JITDUMPEXEC(AsyncAnalysis::PrintVarSet(m_compiler, mutatedSinceResumption));
     }
 
     ContinuationLayoutBuilder* layoutBuilder = new (m_compiler, CMK_Async) ContinuationLayoutBuilder(m_compiler);
 
-    CreateLiveSetForSuspension(block, call, defs, life, layoutBuilder);
+    CreateLiveSetForSuspension(block, call, defs, analyses, layoutBuilder);
 
-    BuildContinuation(block, call, ContinuationNeedsKeepAlive(life), layoutBuilder);
+    BuildContinuation(block, call, ContinuationNeedsKeepAlive(analyses), layoutBuilder);
 
-    CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, &life);
+    CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, &analyses);
 
     unsigned stateNum = (unsigned)m_states.size();
     JITDUMP("  Assigned state %u\n", stateNum);
@@ -1916,13 +875,13 @@ void AsyncTransformation::Transform(
 //   block         - The block containing the async call
 //   call          - The async call
 //   defs          - Current live LIR edges
-//   life          - Liveness information about live locals
+//   analyses      - Async analyses state, including liveness and default-value info for locals
 //   layoutBuilder - Layout being built
 //
 void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                     block,
                                                      GenTreeCall*                    call,
                                                      const jitstd::vector<GenTree*>& defs,
-                                                     AsyncLiveness&                  life,
+                                                     AsyncAnalysis&                  analyses,
                                                      ContinuationLayoutBuilder*      layoutBuilder)
 {
     SmallHashTable<unsigned, bool> excludedLocals(m_compiler->getAllocator(CMK_Async));
@@ -1958,7 +917,7 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
         excludedLocals.AddOrUpdate(m_compiler->lvaAsyncExecutionContextVar, true);
     }
 
-    life.GetLiveLocals(layoutBuilder, [&](unsigned lclNum) {
+    analyses.GetLiveLocals(layoutBuilder, [&](unsigned lclNum) {
         return !excludedLocals.Contains(lclNum);
     });
     LiftLIREdges(block, defs, layoutBuilder);
@@ -2058,13 +1017,13 @@ void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
 //   Check whether we need to allocate a "KeepAlive" field in the continuation.
 //
 // Parameters:
-//   life - Live locals
+//   analyses - Information about analyses, used for liveness
 //
 // Returns:
 //   True if we need to keep a LoaderAllocator for generic context or
 //   collectible method alive.
 //
-bool AsyncTransformation::ContinuationNeedsKeepAlive(AsyncLiveness& life)
+bool AsyncTransformation::ContinuationNeedsKeepAlive(AsyncAnalysis& analyses)
 {
     if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
@@ -2074,7 +1033,7 @@ bool AsyncTransformation::ContinuationNeedsKeepAlive(AsyncLiveness& life)
 
     const unsigned GENERICS_CTXT_FROM = CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
     if (((m_compiler->info.compMethodInfo->options & GENERICS_CTXT_FROM) != 0) &&
-        life.IsLive(m_compiler->info.compTypeCtxtArg))
+        analyses.IsLive(m_compiler->info.compTypeCtxtArg))
     {
         return true;
     }
@@ -2492,21 +1451,21 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
 
 //------------------------------------------------------------------------
 // AsyncTransformation::CanonicalizeCallDefinition:
-//   Put the call definition in a canonical form and update liveness for it.
+//   Put the call definition in a canonical form and update analyses for it.
 //   This ensures that either the value is defined by a LCL_ADDR retbuffer or
 //   by a STORE_LCL_VAR/STORE_LCL_FLD that follows the call node.
 //
 // Parameters:
-//   block - The block containing the async call
-//   call  - The async call
-//   life  - Liveness information about live locals
+//   block    - The block containing the async call
+//   call     - The async call
+//   analyses - Analysis information that is updated from the async call/a potential new store
 //
 // Returns:
 //   Information about the definition after canonicalization.
 //
 CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*    block,
                                                                    GenTreeCall*   call,
-                                                                   AsyncLiveness* life)
+                                                                   AsyncAnalysis* analyses)
 {
     CallDefinitionInfo callDefInfo;
 
@@ -2514,9 +1473,9 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
 
     CallArg* retbufArg = call->gtArgs.GetRetBufferArg();
 
-    if (life != nullptr)
+    if (analyses != nullptr)
     {
-        life->Update(call);
+        analyses->Update(call);
     }
 
     if (!call->TypeIs(TYP_VOID) && !call->IsUnusedValue())
@@ -2566,10 +1525,10 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
         }
         else
         {
-            if (life != nullptr)
+            if (analyses != nullptr)
             {
-                // We will split after the store, but we still have to update liveness for it.
-                life->Update(call->gtNext);
+                // We will split after the store, but we still have to update analyses for it.
+                analyses->Update(call->gtNext);
             }
         }
 

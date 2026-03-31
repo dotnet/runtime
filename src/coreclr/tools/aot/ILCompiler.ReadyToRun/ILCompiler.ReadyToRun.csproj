@@ -184,6 +184,8 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmNative.cs" Link="Compiler\ObjectWriter\WasmNative.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmInstructions.cs" Link="Compiler\ObjectWriter\WasmInstructions.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeDataLayoutMode.cs" Link="Compiler\ObjectWriter\CodeDataLayoutMode.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WebcilEncoder.cs" Link="Compiler\ObjectWriter\WebcilEncoder.cs" />
+    <Compile Include="..\..\Common\Wasm\Webcil.cs" Link="Internal\Webcil\Webcil.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" Link="ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" />
@@ -297,6 +299,8 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\VirtualResolutionFixupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunkPortableEntrypoint.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Win32ResourcesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />

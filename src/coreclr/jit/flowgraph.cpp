@@ -859,6 +859,11 @@ void Compiler::fgSetPreferredInitCctor()
 //
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
+#if defined(TARGET_WASM)
+    // Wasm does not support dynamically created helpers
+    return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+#endif
+
 #ifdef FEATURE_READYTORUN
     if (IsAot())
     {
@@ -1104,10 +1109,6 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
         targetMethodHnd = ldftnToken->m_token.hMethod;
     }
-    else
-    {
-        assert(targetMethodHnd == nullptr);
-    }
 
 #ifdef FEATURE_READYTORUN
     if (IsAot())
@@ -1158,7 +1159,10 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             }
         }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
-        else if (oper == GT_FTN_ADDR)
+#ifndef TARGET_WASM // TODO-WASM: Wasm doesn't use the dynamically composed helpers yet. When we do, we probably will
+                    // need to use a different set of arguments to construct the right helper call to avoid dynamically
+                    // composing a helper
+        else if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
         {
             JITDUMP("optimized\n");
 
@@ -1176,6 +1180,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         {
             JITDUMP("not optimized, R2R virtual case\n");
         }
+#endif
     }
     else
 #endif

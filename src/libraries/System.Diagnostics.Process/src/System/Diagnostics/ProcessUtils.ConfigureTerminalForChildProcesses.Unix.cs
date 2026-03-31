@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace System.Diagnostics
 {
-    public partial class Process
+    internal static partial class ProcessUtils
     {
         private static int s_childrenUsingTerminalCount;
 
