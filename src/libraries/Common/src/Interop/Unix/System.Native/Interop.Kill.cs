@@ -9,9 +9,5 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Kill", SetLastError = true)]
         internal static partial int Kill(int pid, int signal);
-
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPlatformSIGSTOP")]
-        [SuppressGCTransition]
-        internal static partial int GetPlatformSIGSTOP();
     }
 }

@@ -63,3 +63,8 @@ int32_t SystemNative_EnablePosixSignalHandling(int signalCode)
 void SystemNative_DisablePosixSignalHandling(int signalCode)
 {
 }
+
+int32_t SystemNative_GetPlatformSIGSTOP(void)
+{
+    return 0;
+}

@@ -149,11 +149,6 @@ PALEXPORT int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLi
 PALEXPORT int32_t SystemNative_Kill(int32_t pid, int32_t signal);
 
 /**
- * Returns the platform-native signal number for SIGSTOP.
- */
-PALEXPORT int32_t SystemNative_GetPlatformSIGSTOP(void);
-
-/**
  * Returns the Process ID of the current executing process.
  * This call should never fail
  */

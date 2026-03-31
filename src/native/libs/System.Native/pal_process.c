@@ -701,11 +701,6 @@ int32_t SystemNative_Kill(int32_t pid, int32_t signal)
     return kill(pid, signal);
 }
 
-int32_t SystemNative_GetPlatformSIGSTOP(void)
-{
-    return SIGSTOP;
-}
-
 int32_t SystemNative_GetPid(void)
 {
     return getpid();
