@@ -49,7 +49,6 @@ namespace System.Diagnostics
             startInfo.UserName = userName;
             startInfo.Password = password;
             startInfo.Domain = domain;
-            startInfo.UseShellExecute = false;
             return Start(startInfo);
         }
 
@@ -61,7 +60,6 @@ namespace System.Diagnostics
             startInfo.UserName = userName;
             startInfo.Password = password;
             startInfo.Domain = domain;
-            startInfo.UseShellExecute = false;
             return Start(startInfo);
         }
 

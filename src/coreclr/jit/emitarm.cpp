@@ -5334,7 +5334,14 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     else
     {
         assert(ins == INS_movw || ins == INS_movt);
-        distVal = (ssize_t)emitOffsetToPtr(dstOffs) + 1; // Or in thumb bit
+        distVal = (ssize_t)emitOffsetToPtr(dstOffs);
+
+        // ILC defines method symbols with the thumb bit already set, so don't add it here.
+        // For ReadyToRun and non-relocatable code (runtime JIT), we set it ourselves.
+        if (!m_compiler->IsNativeAot())
+        {
+            distVal += 1;
+        }
     }
 
     if (dstOffs <= srcOffs)

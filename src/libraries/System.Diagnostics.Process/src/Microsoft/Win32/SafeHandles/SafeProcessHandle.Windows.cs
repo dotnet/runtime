@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using System.Threading;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -16,86 +17,13 @@ namespace Microsoft.Win32.SafeHandles
             return Interop.Kernel32.CloseHandle(handle);
         }
 
-        internal static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        private static Func<ProcessStartInfo, SafeProcessHandle>? s_startWithShellExecute;
+
+        internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
-            return startInfo.UseShellExecute
-                ? StartWithShellExecuteEx(startInfo)
-                : StartWithCreateProcess(startInfo, stdinHandle, stdoutHandle, stderrHandle);
-        }
+            if (startInfo.UseShellExecute)
+                return s_startWithShellExecute!(startInfo);
 
-        private static unsafe SafeProcessHandle StartWithShellExecuteEx(ProcessStartInfo startInfo)
-        {
-            if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
-                throw new InvalidOperationException(SR.CantStartAsUser);
-
-            if (startInfo.StandardInputEncoding != null)
-                throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
-
-            if (startInfo.StandardErrorEncoding != null)
-                throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
-
-            if (startInfo.StandardOutputEncoding != null)
-                throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
-
-            if (startInfo._environmentVariables != null)
-                throw new InvalidOperationException(SR.CantUseEnvVars);
-
-            string arguments = startInfo.BuildArguments();
-
-            fixed (char* fileName = startInfo.FileName.Length > 0 ? startInfo.FileName : null)
-            fixed (char* verb = startInfo.Verb.Length > 0 ? startInfo.Verb : null)
-            fixed (char* parameters = arguments.Length > 0 ? arguments : null)
-            fixed (char* directory = startInfo.WorkingDirectory.Length > 0 ? startInfo.WorkingDirectory : null)
-            {
-                Interop.Shell32.SHELLEXECUTEINFO shellExecuteInfo = new Interop.Shell32.SHELLEXECUTEINFO()
-                {
-                    cbSize = (uint)sizeof(Interop.Shell32.SHELLEXECUTEINFO),
-                    lpFile = fileName,
-                    lpVerb = verb,
-                    lpParameters = parameters,
-                    lpDirectory = directory,
-                    fMask = Interop.Shell32.SEE_MASK_NOCLOSEPROCESS | Interop.Shell32.SEE_MASK_FLAG_DDEWAIT
-                };
-
-                if (startInfo.ErrorDialog)
-                    shellExecuteInfo.hwnd = startInfo.ErrorDialogParentHandle;
-                else
-                    shellExecuteInfo.fMask |= Interop.Shell32.SEE_MASK_FLAG_NO_UI;
-
-                shellExecuteInfo.nShow = ProcessUtils.GetShowWindowFromWindowStyle(startInfo.WindowStyle);
-                ShellExecuteHelper executeHelper = new ShellExecuteHelper(&shellExecuteInfo);
-                if (!executeHelper.ShellExecuteOnSTAThread())
-                {
-                    int errorCode = executeHelper.ErrorCode;
-                    if (errorCode == 0)
-                    {
-                        errorCode = ShellExecuteHelper.GetShellError(shellExecuteInfo.hInstApp);
-                    }
-
-                    switch (errorCode)
-                    {
-                        case Interop.Errors.ERROR_CALL_NOT_IMPLEMENTED:
-                            // This happens on Windows Nano
-                            throw new PlatformNotSupportedException(SR.UseShellExecuteNotSupported);
-                        default:
-                            string nativeErrorMessage = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
-                                ? SR.InvalidApplication
-                                : Interop.Kernel32.GetMessage(errorCode);
-
-                            throw ProcessUtils.CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, startInfo.WorkingDirectory);
-                    }
-                }
-
-                // From https://learn.microsoft.com/windows/win32/api/shellapi/ns-shellapi-shellexecuteinfow:
-                // "In some cases, such as when execution is satisfied through a DDE conversation, no handle will be returned."
-                // Process.Start will return false if the handle is invalid.
-                return new SafeProcessHandle(shellExecuteInfo.hProcess);
-            }
-        }
-
-        /// <summary>Starts the process using the supplied start info.</summary>
-        private static unsafe SafeProcessHandle StartWithCreateProcess(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
-        {
             // See knowledge base article Q190351 for an explanation of the following code.  Noteworthy tricky points:
             //    * The handles are duplicated as inheritable before they are passed to CreateProcess so
             //      that the child process can use them
@@ -279,6 +207,126 @@ namespace Microsoft.Win32.SafeHandles
             Debug.Assert(!procSH.IsInvalid);
             procSH.ProcessId = (int)processInfo.dwProcessId;
             return procSH;
+        }
+
+        private static unsafe SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo)
+        {
+            if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
+                throw new InvalidOperationException(SR.CantStartAsUser);
+
+            if (startInfo.StandardInputEncoding != null)
+                throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
+
+            if (startInfo.StandardErrorEncoding != null)
+                throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
+
+            if (startInfo.StandardOutputEncoding != null)
+                throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
+
+            if (startInfo._environmentVariables != null)
+                throw new InvalidOperationException(SR.CantUseEnvVars);
+
+            string arguments = startInfo.BuildArguments();
+
+            fixed (char* fileName = startInfo.FileName.Length > 0 ? startInfo.FileName : null)
+            fixed (char* verb = startInfo.Verb.Length > 0 ? startInfo.Verb : null)
+            fixed (char* parameters = arguments.Length > 0 ? arguments : null)
+            fixed (char* directory = startInfo.WorkingDirectory.Length > 0 ? startInfo.WorkingDirectory : null)
+            {
+                Interop.Shell32.SHELLEXECUTEINFO shellExecuteInfo = new Interop.Shell32.SHELLEXECUTEINFO()
+                {
+                    cbSize = (uint)sizeof(Interop.Shell32.SHELLEXECUTEINFO),
+                    lpFile = fileName,
+                    lpVerb = verb,
+                    lpParameters = parameters,
+                    lpDirectory = directory,
+                    fMask = Interop.Shell32.SEE_MASK_NOCLOSEPROCESS | Interop.Shell32.SEE_MASK_FLAG_DDEWAIT
+                };
+
+                if (startInfo.ErrorDialog)
+                    shellExecuteInfo.hwnd = startInfo.ErrorDialogParentHandle;
+                else
+                    shellExecuteInfo.fMask |= Interop.Shell32.SEE_MASK_FLAG_NO_UI;
+
+                shellExecuteInfo.nShow = ProcessUtils.GetShowWindowFromWindowStyle(startInfo.WindowStyle);
+
+                bool succeeded = false;
+                int lastError = 0;
+                nuint executeInfoAddress = (nuint)(&shellExecuteInfo); // cast to nuint to allow delegate capture; safe because Join() keeps this stack frame alive for the thread's lifetime
+
+                void ShellExecuteFunction()
+                {
+                    try
+                    {
+                        if (!(succeeded = Interop.Shell32.ShellExecuteExW((Interop.Shell32.SHELLEXECUTEINFO*)executeInfoAddress)))
+                            lastError = Marshal.GetLastWin32Error();
+                    }
+                    catch (EntryPointNotFoundException)
+                    {
+                        lastError = Interop.Errors.ERROR_CALL_NOT_IMPLEMENTED;
+                    }
+                }
+
+                // ShellExecute() requires STA in order to work correctly.
+                if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
+                {
+                    Thread executionThread = new Thread(ShellExecuteFunction)
+                    {
+                        IsBackground = true,
+                        Name = ".NET Process STA"
+                    };
+                    executionThread.SetApartmentState(ApartmentState.STA);
+                    executionThread.Start();
+                    executionThread.Join();
+                }
+                else
+                {
+                    ShellExecuteFunction();
+                }
+
+                if (!succeeded)
+                {
+                    int errorCode = lastError;
+                    if (errorCode == 0)
+                    {
+                        errorCode = GetShellError(shellExecuteInfo.hInstApp);
+                    }
+
+                    switch (errorCode)
+                    {
+                        case Interop.Errors.ERROR_CALL_NOT_IMPLEMENTED:
+                            // This happens on Windows Nano
+                            throw new PlatformNotSupportedException(SR.UseShellExecuteNotSupported);
+                        default:
+                            string nativeErrorMessage = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
+                                ? SR.InvalidApplication
+                                : Interop.Kernel32.GetMessage(errorCode);
+
+                            throw ProcessUtils.CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, startInfo.WorkingDirectory);
+                    }
+                }
+
+                // From https://learn.microsoft.com/windows/win32/api/shellapi/ns-shellapi-shellexecuteinfow:
+                // "In some cases, such as when execution is satisfied through a DDE conversation, no handle will be returned."
+                // Process.Start will return false if the handle is invalid.
+                return new SafeProcessHandle(shellExecuteInfo.hProcess);
+
+                static int GetShellError(IntPtr error) =>
+                    (long)error switch
+                    {
+                        Interop.Shell32.SE_ERR_FNF => Interop.Errors.ERROR_FILE_NOT_FOUND,
+                        Interop.Shell32.SE_ERR_PNF => Interop.Errors.ERROR_PATH_NOT_FOUND,
+                        Interop.Shell32.SE_ERR_ACCESSDENIED => Interop.Errors.ERROR_ACCESS_DENIED,
+                        Interop.Shell32.SE_ERR_OOM => Interop.Errors.ERROR_NOT_ENOUGH_MEMORY,
+                        Interop.Shell32.SE_ERR_DDEFAIL or
+                        Interop.Shell32.SE_ERR_DDEBUSY or
+                        Interop.Shell32.SE_ERR_DDETIMEOUT => Interop.Errors.ERROR_DDE_FAIL,
+                        Interop.Shell32.SE_ERR_SHARE => Interop.Errors.ERROR_SHARING_VIOLATION,
+                        Interop.Shell32.SE_ERR_NOASSOC => Interop.Errors.ERROR_NO_ASSOCIATION,
+                        Interop.Shell32.SE_ERR_DLLNOTFOUND => Interop.Errors.ERROR_DLL_NOT_FOUND,
+                        _ => (int)(long)error,
+                    };
+            }
         }
 
         private int GetProcessIdCore() => Interop.Kernel32.GetProcessId(this);
