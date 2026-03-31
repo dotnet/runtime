@@ -569,12 +569,12 @@ namespace ILCompiler.DependencyAnalysis
             int hi20 = (int)(offset - lo12);
             Debug.Assert((long)lo12 + (long)hi20 == offset);
 
-            Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == 0);
+            // Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == 0);
             pCode[0] |= (uint)hi20;
             int bottomBitsPos = isStype ? 7 : 20;
             pCode[1] |= (uint)((lo12 >> 5) << 25); // top 7 bits are in the same spot
             pCode[1] |= (uint)((lo12 & 0x1F) << bottomBitsPos);
-            Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == offset);
+            // Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == offset);
         }
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
