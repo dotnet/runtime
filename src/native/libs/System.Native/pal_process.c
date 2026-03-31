@@ -30,7 +30,7 @@
 #endif // !defined(__NR_close_range)
 #endif // !defined(HAVE_CLOSE_RANGE)
 #endif // defined(__linux__)
-#if (HAVE_CLOSE_RANGE || defined(__linux__)) && !defined(CLOSE_RANGE_CLOEXEC)
+#if (HAVE_CLOSE_RANGE || defined(__NR_close_range)) && !defined(CLOSE_RANGE_CLOEXEC)
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
 #endif
 #include <pthread.h>
@@ -232,6 +232,30 @@ static int SetCloexecForFd(void* context, int fd)
     return 0;
 }
 #endif
+
+// Fallback: iterate over all file descriptors and set FD_CLOEXEC on each open one >= 3.
+// Used when OS-specific bulk methods (close_range, fdwalk) are unavailable or fail.
+static void SetCloexecForAllFds(void)
+{
+    struct rlimit rl;
+    int maxFd;
+    if (getrlimit(RLIMIT_NOFILE, &rl) == 0 && rl.rlim_cur != RLIM_INFINITY)
+    {
+        maxFd = (int)rl.rlim_cur;
+    }
+    else
+    {
+        maxFd = 65536; // reasonable upper bound
+    }
+    for (int fd = 3; fd < maxFd; fd++)
+    {
+        int flags = fcntl(fd, F_GETFD);
+        if (flags != -1)
+        {
+            fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
+        }
+    }
+}
 
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
@@ -546,16 +570,25 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             // set CLOEXEC on all FDs >= 3 in one call. FDs 0-2 are stdin/stdout/stderr.
             // This must be called AFTER the dup2 calls above so that if stdinFd/stdoutFd/stderrFd
             // are >= 3, they don't get CLOEXEC set before being duplicated to 0/1/2.
-            close_range(3, ~0U, CLOSE_RANGE_CLOEXEC);
-            // Ignore errors - if close_range returns error at runtime, continue anyway
-#elif defined(__linux__)
+            if (close_range(3, ~0U, CLOSE_RANGE_CLOEXEC) != 0)
+            {
+                SetCloexecForAllFds();
+            }
+#elif defined(__NR_close_range)
             // On Linux with older glibc that doesn't expose close_range() as a function,
             // use the raw syscall number if the kernel supports it (kernel >= 5.9).
-            syscall(__NR_close_range, 3, ~0U, CLOSE_RANGE_CLOEXEC);
-            // Ignore errors - if the kernel doesn't support it, continue anyway
+            if (syscall(__NR_close_range, 3, ~0U, CLOSE_RANGE_CLOEXEC) != 0)
+            {
+                SetCloexecForAllFds();
+            }
 #elif HAVE_FDWALK
             // On Illumos/Solaris, use fdwalk() to set FD_CLOEXEC on all open fds >= 3.
-            fdwalk(SetCloexecForFd, NULL);
+            if (fdwalk(SetCloexecForFd, NULL) != 0)
+            {
+                SetCloexecForAllFds();
+            }
+#else
+            SetCloexecForAllFds();
 #endif
 
             // Remove CLOEXEC from user-provided inherited file descriptors so they survive execve.
