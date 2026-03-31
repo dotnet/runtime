@@ -48,7 +48,7 @@ namespace DotnetFuzzing.Fuzzers
                     throw new MyCustomException();
                 }, null).GetAwaiter().GetResult();
             }
-            catch (Exception ex) when (ex is AuthenticationException or IOException or NotSupportedException or MyCustomException)
+            catch (Exception ex) when (ex is AuthenticationException or IOException or MyCustomException)
             {
             }
             finally
