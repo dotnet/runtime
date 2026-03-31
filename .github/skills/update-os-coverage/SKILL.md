@@ -17,7 +17,7 @@ Update OS version references in Helix queue definition files. These files contro
 
 - A new OS version is released and should be added to Helix testing
 - An OS version is approaching or has reached EOL and should be replaced
-- Periodic audit to ensure Helix coverage matches the [supported-os matrix](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.json)
+- Periodic audit to ensure Helix coverage matches the supported-os matrix (e.g. [`release-notes/11.0/supported-os.json`](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.json) — adjust the version to match your target)
 - Upgrading "oldest" or "latest" version slots for a distro
 
 ## When NOT to use
@@ -29,7 +29,7 @@ Update OS version references in Helix queue definition files. These files contro
 
 ## Key files
 
-The [OS onboarding guide](docs/project/os-onboarding.md) is the authoritative reference for how OS versions are managed in this repo. Read it first for context on policies and processes.
+The [OS onboarding guide](/docs/project/os-onboarding.md) is the authoritative reference for how OS versions are managed in this repo. Read it first for context on policies and processes.
 
 OS version references appear in these pipeline files:
 
@@ -133,7 +133,8 @@ grep -rn -i "<distro>" \
   eng/pipelines/libraries/helix-queues-setup.yml \
   eng/pipelines/coreclr/templates/helix-queues-setup.yml \
   eng/pipelines/installer/helix-queues-setup.yml \
-  eng/pipelines/common/templates/pipeline-with-resources.yml
+  eng/pipelines/common/templates/pipeline-with-resources.yml \
+  docs/workflow/using-docker.md
 ```
 
 Note every occurrence — the same distro may appear in multiple sections (x64, arm32, arm64) and in multiple files.
@@ -144,7 +145,7 @@ For each reference found in step 3:
 
 1. **Update `helix-platforms.yml`** — this is the primary file
    - Update the version comment (e.g. `# Latest: 43` → `# Latest: 44`)
-   - Update the variable value — all three parts: queue name, and image tag
+   - Update the variable value — adjust the queue name and image tag to use the new version
    - Preserve the existing host queue (e.g. `AzureLinux.3.Amd64.Open`) — this does not change with distro version updates
 
 2. **Update `helix-queues-setup.yml` files** — libraries, coreclr, and installer templates
@@ -178,7 +179,8 @@ After editing, verify:
      eng/pipelines/libraries/helix-queues-setup.yml \
      eng/pipelines/coreclr/templates/helix-queues-setup.yml \
      eng/pipelines/installer/helix-queues-setup.yml \
-     eng/pipelines/common/templates/pipeline-with-resources.yml
+     eng/pipelines/common/templates/pipeline-with-resources.yml \
+     docs/workflow/using-docker.md
    ```
    Stale references to the old version are acceptable only if intentionally kept (e.g. the version is still used for `oldest`).
 
