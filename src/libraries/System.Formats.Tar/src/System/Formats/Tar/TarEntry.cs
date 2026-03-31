@@ -350,7 +350,7 @@ namespace System.Formats.Tar
             string name = ArchivingUtils.SanitizeEntryFilePath(Name, preserveDriveRoot: true);
             string? fileDestinationPath = GetFullDestinationPath(
                                                 destinationDirectoryPath,
-                                                Path.IsPathFullyQualified(name) ? name : Path.Join(destinationDirectoryPath, name));
+                                                Path.IsPathRooted(name) ? Path.GetFullPath(name) : Path.Join(destinationDirectoryPath, name));
             if (fileDestinationPath == null)
             {
                 throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, name, destinationDirectoryPath));
@@ -364,7 +364,7 @@ namespace System.Formats.Tar
                 string linkName = ArchivingUtils.SanitizeEntryFilePath(LinkName, preserveDriveRoot: true);
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
-                                            Path.IsPathFullyQualified(linkName) ? linkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
+                                            Path.IsPathRooted(linkName) ? Path.GetFullPath(linkName) : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
                 if (linkDestination is null)
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
