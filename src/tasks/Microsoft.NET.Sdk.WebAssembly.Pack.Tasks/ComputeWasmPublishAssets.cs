@@ -458,7 +458,21 @@ public class ComputeWasmPublishAssets : Task
                 filesToRemove.Add(existing);
                 if (!string.Equals(asset.ItemSpec, existing.GetMetadata("FullPath"), StringComparison.Ordinal))
                 {
-                    linkedAssets.Add(asset.ItemSpec, existing);
+                    // Don't replace Framework-materialized assets. These have unique per-project
+                    // paths (from UpdatePackageStaticWebAssets) that must be preserved in multi-client
+                    // hosted scenarios. Replacing them with the ResolvedFileToPublish item (which
+                    // points to the shared SDK/NuGet path) would cause duplicate Identity crashes.
+                    var assetSourceType = asset.GetMetadata("SourceType");
+                    if (!string.Equals(assetSourceType, "Discovered", StringComparison.OrdinalIgnoreCase) ||
+                        asset.ItemSpec.IndexOf(Path.DirectorySeparatorChar + "fx" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        linkedAssets.Add(asset.ItemSpec, existing);
+                    }
+                    else
+                    {
+                        Log.LogMessage(MessageImportance.Low, "Skipping replacement of Framework-materialized asset '{0}' with '{1}'",
+                            asset.ItemSpec, existing.GetMetadata("FullPath"));
+                    }
                 }
             }
             else
@@ -719,6 +733,16 @@ public class ComputeWasmPublishAssets : Task
                 {
                     Log.LogMessage(MessageImportance.Low, "Duplicate candidate '{0}' found in ResolvedFilesToPublish", candidate.ItemSpec);
                 }
+                continue;
+            }
+
+            // Skip items explicitly marked as not for publish. These should not be used
+            // to replace build-time assets (e.g., Framework-materialized assets that have
+            // unique per-project paths would otherwise be replaced by the raw SDK-path
+            // original, causing duplicate Identity crashes in multi-client hosted scenarios).
+            if (string.Equals(candidate.GetMetadata("CopyToPublishDirectory"), "Never", StringComparison.OrdinalIgnoreCase))
+            {
+                Log.LogMessage(MessageImportance.Low, "Skipping asset '{0}' because CopyToPublishDirectory is 'Never'", candidate.ItemSpec);
                 continue;
             }
 
