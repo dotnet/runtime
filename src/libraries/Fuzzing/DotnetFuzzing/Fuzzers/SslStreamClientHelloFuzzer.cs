@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Text;
 using System.Net.Security;
 using System.Security.Authentication;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 
 namespace DotnetFuzzing.Fuzzers
 {
@@ -15,23 +12,6 @@ namespace DotnetFuzzing.Fuzzers
         public string[] TargetAssemblies => ["System.Net.Security"];
 
         public string[] TargetCoreLibPrefixes => [];
-
-        public static SslStreamCertificateContext s_certCtx = GenerateSelfSignedCertificate();
-
-        public static SslStreamCertificateContext GenerateSelfSignedCertificate()
-        {
-            using var rsa = RSA.Create(2048);
-            var request = new CertificateRequest("CN=localhost", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-            X509Certificate2 cert = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(365));
-            if (OperatingSystem.IsWindows())
-            {
-                // On Windows, the returned certificate doesn't have the private key marked as exportable, which causes issues when used in SslStream.
-                // Re-importing it as exportable resolves the issue.
-                cert = X509CertificateLoader.LoadPkcs12(cert.Export(X509ContentType.Pfx), (string?)null, X509KeyStorageFlags.Exportable);
-            }
-
-            return SslStreamCertificateContext.Create(cert, new X509Certificate2Collection());
-        }
 
         public void FuzzTarget(ReadOnlySpan<byte> bytes)
         {
@@ -43,8 +23,12 @@ namespace DotnetFuzzing.Fuzzers
                 using SslStream sslStream = new SslStream(ms);
                 sslStream.AuthenticateAsServerAsync((stream, clientHelloInfo, b, token) =>
                 {
-                    // after this point, the comms are encrypted anyway, so
-                    // there is no point fuzzing it
+                    // This callback should be called when ClientHello is
+                    // received, Since we don't parse any other TLS messages,
+                    // we can terminate the handshake here. Fuzzing the rest of
+                    // the handshake would fuzz the platform TLS implementation
+                    // which is not instrumented and is out of scope for this
+                    // fuzzer.
                     throw new MyCustomException();
                 }, null).GetAwaiter().GetResult();
             }
