@@ -22,8 +22,12 @@ namespace Microsoft.Interop.Analyzers
 
         protected override string BaseEquivalenceKey => nameof(AddGeneratedComClassFixer);
 
-        private static async Task AddGeneratedComClassAsync(DocumentEditor editor, SyntaxNode node, CancellationToken ct)
+        private static async Task AddGeneratedComClassAsync(SolutionEditor solutionEditor, DocumentId documentId, SyntaxNode node, CancellationToken ct)
         {
+            var editor = await solutionEditor.GetDocumentEditorAsync(documentId, ct).ConfigureAwait(false);
+
+            var declaringType = editor.SemanticModel.GetDeclaredSymbol(node, ct) as INamedTypeSymbol;
+
             editor.ReplaceNode(node, (node, gen) =>
             {
                 var attribute = gen.Attribute(gen.TypeExpression(editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.GeneratedComClassAttribute)).WithAdditionalAnnotations(Simplifier.AddImportsAnnotation));
@@ -38,29 +42,36 @@ namespace Microsoft.Interop.Analyzers
 
             MakeNodeParentsPartial(editor, node);
 
-            var declaringType = editor.SemanticModel.GetDeclaredSymbol(node, ct) as INamedTypeSymbol;
             if (declaringType is not null)
             {
                 var comVisibleAttributeType = editor.SemanticModel.Compilation.GetBestTypeByMetadataName(TypeNames.System_Runtime_InteropServices_ComVisibleAttribute);
                 if (comVisibleAttributeType is not null)
                 {
-                    var comVisibleAttr = declaringType.GetAttributes().FirstOrDefault(attr =>
+                    var comVisibleAttributes = declaringType.GetAttributes().Where(attr =>
                         SymbolEqualityComparer.Default.Equals(attr.AttributeClass, comVisibleAttributeType)
                         && attr.ConstructorArguments.Length == 1
-                        && attr.ConstructorArguments[0].Value is true);
+                        && attr.ConstructorArguments[0].Value is true).ToArray();
 
-                    if (comVisibleAttr?.ApplicationSyntaxReference is { } syntaxRef)
+                    foreach (var comVisibleAttr in comVisibleAttributes)
                     {
-                        var comVisibleAttrSyntax = await syntaxRef.GetSyntaxAsync(ct).ConfigureAwait(false);
-                        editor.RemoveNode(comVisibleAttrSyntax);
+                        if (comVisibleAttr.ApplicationSyntaxReference is { } syntaxRef)
+                        {
+                            var comVisibleAttrSyntax = await syntaxRef.GetSyntaxAsync(ct).ConfigureAwait(false);
+                            var attrDocumentId = solutionEditor.OriginalSolution.GetDocumentId(syntaxRef.SyntaxTree);
+                            if (attrDocumentId is not null)
+                            {
+                                var attrEditor = await solutionEditor.GetDocumentEditorAsync(attrDocumentId, ct).ConfigureAwait(false);
+                                attrEditor.RemoveNode(comVisibleAttrSyntax);
+                            }
+                        }
                     }
                 }
             }
         }
 
-        protected override Func<DocumentEditor, CancellationToken, Task> CreateFixForSelectedOptions(SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
+        protected override Func<SolutionEditor, DocumentId, CancellationToken, Task> CreateFixForSelectedOptions(SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
         {
-            return (editor, ct) => AddGeneratedComClassAsync(editor, node, ct);
+            return (solutionEditor, documentId, ct) => AddGeneratedComClassAsync(solutionEditor, documentId, node, ct);
         }
 
         protected override string GetDiagnosticTitle(ImmutableDictionary<string, Option> selectedOptions)
