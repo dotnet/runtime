@@ -3,7 +3,7 @@
     <!-- Intentionally use DllImport (not LibraryImport) so the runtime generates an
          ILStub at execution time. SYSLIB1054 warns about preferring LibraryImport. -->
     <NoWarn>$(NoWarn);SYSLIB1054</NoWarn>
-    <DumpTypes>Full</DumpTypes>
+    <DumpTypes>Heap</DumpTypes>
     <WindowsOnly>true</WindowsOnly>
   </PropertyGroup>
 </Project>

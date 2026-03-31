@@ -17,7 +17,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class RCWCleanupListDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "RCWCleanupList";
-    protected override string DumpType => "full";
+
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

@@ -20,7 +20,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class VarargPInvokeDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "VarargPInvoke";
-    protected override string DumpType => "full";
+
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

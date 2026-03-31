@@ -10,13 +10,14 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Dump-based integration tests for the StackWalk contract.
-/// Uses the StackWalk debuggee dump, which has a deterministic call stack:
+/// Uses the StackWalk debuggee heap dump, which has a deterministic call stack:
 /// Main → MethodA → MethodB → MethodC → FailFast.
+/// Metadata resolution uses the host-provided metadata locator callback
+/// since heap dumps do not contain PE read-only sections.
 /// </summary>
 public class StackWalkDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "StackWalk";
-    protected override string DumpType => "full";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
