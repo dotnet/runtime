@@ -1923,8 +1923,8 @@ SaveSet AsyncTransformation::GetLocalSaveSet(const LclVarDsc* dsc, VARSET_VALARG
 //------------------------------------------------------------------------
 // AsyncTransformation::FinishContextHandlingOnSuspension:
 //   Generate code to finish handling of contexts on suspension:
-//   - Capture SynchronizationContext or ThreadScheduler into the continuation
-//     if needed to figured out how to resume
+//   - Capture SynchronizationContext or TaskScheduler into the continuation
+//     if needed when later resuming
 //   - Capture ExecutionContext into the continuation
 //   - Restore current Thread._synchronizationContext and
 //     Thread._executionContext from the state before the async call
