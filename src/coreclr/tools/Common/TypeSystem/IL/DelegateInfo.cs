@@ -122,7 +122,6 @@ namespace Internal.IL
 
         private MethodDesc _openStaticThunk;
         private MethodDesc _multicastThunk;
-        private MethodDesc _closedStaticThunk;
         private MethodDesc _closedInstanceOverGeneric;
         private MethodDesc _invokeObjectArrayThunk;
         private MethodDesc _openInstanceThunk;
@@ -131,7 +130,6 @@ namespace Internal.IL
         {
             _openStaticThunk = new DelegateInvokeOpenStaticThunk(owningDelegate);
             _multicastThunk = new DelegateInvokeMulticastThunk(owningDelegate);
-            _closedStaticThunk = new DelegateInvokeClosedStaticThunk(owningDelegate);
             _closedInstanceOverGeneric = new DelegateInvokeInstanceClosedOverGenericMethodThunk(owningDelegate);
 
             MethodSignature delegateSignature = owningDelegate.Signature;
@@ -217,8 +215,6 @@ namespace Internal.IL
                         return _openStaticThunk;
                     case DelegateThunkKind.MulticastThunk:
                         return _multicastThunk;
-                    case DelegateThunkKind.ClosedStaticThunk:
-                        return _closedStaticThunk;
                     case DelegateThunkKind.ClosedInstanceThunkOverGenericMethod:
                         return _closedInstanceOverGeneric;
                     case DelegateThunkKind.ObjectArrayThunk:
@@ -236,7 +232,7 @@ namespace Internal.IL
     public enum DelegateThunkKind
     {
         MulticastThunk = 0,
-        ClosedStaticThunk = 1,
+        // Index 1 is reserved (was ClosedStaticThunk, now unused)
         OpenStaticThunk = 2,
         ClosedInstanceThunkOverGenericMethod = 3, // This may not exist
         OpenInstanceThunk = 4,        // This may not exist

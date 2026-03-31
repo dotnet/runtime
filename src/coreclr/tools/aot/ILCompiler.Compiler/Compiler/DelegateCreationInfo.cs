@@ -216,32 +216,33 @@ namespace ILCompiler
 
             if (targetMethod.Signature.IsStatic)
             {
-                MethodDesc invokeThunk;
-                MethodDesc initMethod;
-
                 if (!closed)
                 {
-                    initMethod = systemDelegate.GetKnownMethod("InitializeOpenStaticThunk"u8, null);
-                    invokeThunk = delegateInfo.Thunks[DelegateThunkKind.OpenStaticThunk];
+                    MethodDesc invokeThunk = delegateInfo.Thunks[DelegateThunkKind.OpenStaticThunk];
+
+                    var instantiatedDelegateType = delegateType as InstantiatedType;
+                    if (instantiatedDelegateType != null)
+                        invokeThunk = context.GetMethodForInstantiatedType(invokeThunk, instantiatedDelegateType);
+
+                    return new DelegateCreationInfo(
+                        delegateType,
+                        factory.MethodEntrypoint(systemDelegate.GetKnownMethod("InitializeOpenStaticThunk"u8, null)),
+                        targetMethod,
+                        constrainedType,
+                        constrainedType == null ? TargetKind.ExactCallableAddress : TargetKind.ConstrainedMethod,
+                        factory.MethodEntrypoint(invokeThunk));
                 }
                 else
                 {
-                    // Closed delegate to a static method (i.e. delegate to an extension method that locks the first parameter)
-                    invokeThunk = delegateInfo.Thunks[DelegateThunkKind.ClosedStaticThunk];
-                    initMethod = systemDelegate.GetKnownMethod("InitializeClosedStaticThunk"u8, null);
+                    // Closed delegate to a static method (i.e. delegate to an extension method that locks the first parameter).
+                    // At the ABI level this is identical to a closed instance delegate - no thunk needed.
+                    return new DelegateCreationInfo(
+                        delegateType,
+                        factory.MethodEntrypoint(systemDelegate.GetKnownMethod("InitializeClosedInstance"u8, null)),
+                        targetMethod,
+                        constrainedType,
+                        constrainedType == null ? TargetKind.ExactCallableAddress : TargetKind.ConstrainedMethod);
                 }
-
-                var instantiatedDelegateType = delegateType as InstantiatedType;
-                if (instantiatedDelegateType != null)
-                    invokeThunk = context.GetMethodForInstantiatedType(invokeThunk, instantiatedDelegateType);
-
-                return new DelegateCreationInfo(
-                    delegateType,
-                    factory.MethodEntrypoint(initMethod),
-                    targetMethod,
-                    constrainedType,
-                    constrainedType == null ? TargetKind.ExactCallableAddress : TargetKind.ConstrainedMethod,
-                    factory.MethodEntrypoint(invokeThunk));
             }
             else
             {

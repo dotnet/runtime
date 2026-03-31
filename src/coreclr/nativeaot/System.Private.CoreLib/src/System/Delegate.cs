@@ -60,7 +60,7 @@ namespace System
         // WARNING: These constants are also declared in System.Private.TypeLoader\Internal\Runtime\TypeLoader\CallConverterThunk.cs
         // Do not change their values without updating the values in the calling convention converter component
         private protected const int MulticastThunk = 0;
-        private protected const int ClosedStaticThunk = 1;
+        // Index 1 is reserved (was ClosedStaticThunk, now unused)
         private protected const int OpenStaticThunk = 2;
         private protected const int ClosedInstanceThunkOverGenericMethod = 3; // This may not exist
         private protected const int OpenInstanceThunk = 4;        // This may not exist
@@ -198,15 +198,6 @@ namespace System
         }
 
         // This function is known to the compiler.
-        private void InitializeClosedStaticThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
-        {
-            _extraFunctionPointerOrData = functionPointer;
-            _helperObject = firstParameter;
-            _functionPointer = functionPointerThunk;
-            _firstParameter = this;
-        }
-
-        // This function is known to the compiler.
         private void InitializeOpenStaticThunk(object _ /*firstParameter*/, IntPtr functionPointer, IntPtr functionPointerThunk)
         {
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
@@ -336,8 +327,7 @@ namespace System
                 }
 
                 // Closed static delegates place a value in _helperObject that they pass to the target method.
-                if (_functionPointer == GetThunk(ClosedStaticThunk) ||
-                    _functionPointer == GetThunk(ClosedInstanceThunkOverGenericMethod) ||
+                if (_functionPointer == GetThunk(ClosedInstanceThunkOverGenericMethod) ||
                     _functionPointer == GetThunk(ObjectArrayThunk))
                     return _helperObject;
 
@@ -430,8 +420,7 @@ namespace System
                 }
                 else
                 {
-                    IntPtr thunk = del.GetThunk(Delegate.ClosedStaticThunk);
-                    del.InitializeClosedStaticThunk(thisObject, ldftnResult, thunk);
+                    del.InitializeClosedInstanceWithoutNullCheck(thisObject, ldftnResult);
                 }
             }
             else

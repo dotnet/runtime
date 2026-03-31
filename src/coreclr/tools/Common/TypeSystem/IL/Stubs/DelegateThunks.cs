@@ -231,66 +231,6 @@ namespace Internal.IL.Stubs
     }
 
     /// <summary>
-    /// Invoke thunk for closed delegates to static methods. The target
-    /// is a static method, but the first argument is captured by the delegate.
-    /// The signature of the target has an extra object-typed argument, followed
-    /// by the arguments that are delegate-compatible with the thunk signature.
-    /// This method is injected into delegate types.
-    /// </summary>
-    public sealed partial class DelegateInvokeClosedStaticThunk : DelegateThunk
-    {
-        internal DelegateInvokeClosedStaticThunk(DelegateInfo delegateInfo)
-            : base(delegateInfo)
-        {
-        }
-
-        public override MethodIL EmitIL()
-        {
-            TypeDesc[] targetMethodParameters = new TypeDesc[Signature.Length + 1];
-            targetMethodParameters[0] = Context.GetWellKnownType(WellKnownType.Object);
-
-            for (int i = 0; i < Signature.Length; i++)
-            {
-                targetMethodParameters[i + 1] = Signature[i];
-            }
-
-            var targetMethodSignature = new MethodSignature(
-                Signature.Flags | MethodSignatureFlags.Static, 0, Signature.ReturnType, targetMethodParameters);
-
-            var emitter = new ILEmitter();
-            ILCodeStream codeStream = emitter.NewCodeStream();
-
-            // Load the stored 'this'
-            codeStream.EmitLdArg(0);
-            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(HelperObjectField));
-
-            // Load all arguments except 'this'
-            for (int i = 0; i < Signature.Length; i++)
-            {
-                codeStream.EmitLdArg(i + 1);
-            }
-
-            // Indirectly call the delegate target static method.
-            codeStream.EmitLdArg(0);
-            codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(ExtraFunctionPointerOrDataField));
-
-            codeStream.Emit(ILOpcode.calli, emitter.NewToken(targetMethodSignature));
-
-            codeStream.Emit(ILOpcode.ret);
-
-            return emitter.Link(this);
-        }
-
-        public override ReadOnlySpan<byte> Name
-        {
-            get
-            {
-                return "InvokeClosedStaticThunk"u8;
-            }
-        }
-    }
-
-    /// <summary>
     /// Multicast invoke thunk for delegates that are a result of Delegate.Combine.
     /// Passes it's arguments to each of the delegates that got combined and calls them
     /// one by one. Returns the value of the last delegate executed.

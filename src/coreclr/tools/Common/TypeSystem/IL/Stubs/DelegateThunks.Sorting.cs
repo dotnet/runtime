@@ -25,11 +25,6 @@ namespace Internal.IL.Stubs
         protected override int ClassCode => -1787190244;
     }
 
-    public partial class DelegateInvokeClosedStaticThunk
-    {
-        protected override int ClassCode => 28195375;
-    }
-
     public partial class DelegateInvokeMulticastThunk
     {
         protected override int ClassCode => 639863471;
