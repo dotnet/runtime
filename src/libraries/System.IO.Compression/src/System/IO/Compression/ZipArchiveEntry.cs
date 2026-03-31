@@ -1006,6 +1006,20 @@ namespace System.IO.Compression
 
         private bool AreSizesTooLarge => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
 
+        /// <summary>
+        /// Returns the number of bytes occupied by the data descriptor following the compressed data,
+        /// or 0 if the entry does not use a data descriptor (bit 3 of the general purpose bit flag is not set).
+        /// </summary>
+        internal int GetDataDescriptorSize()
+        {
+            if ((_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
+                return 0;
+
+            return AreSizesTooLarge
+                ? ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.UncompressedSize + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.UncompressedSize
+                : ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.UncompressedSize + ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.UncompressedSize;
+        }
+
         private static CompressionLevel MapCompressionLevel(BitFlagValues generalPurposeBitFlag, ZipCompressionMethod compressionMethod)
         {
             // Information about the Deflate compression option is stored in bits 1 and 2 of the general purpose bit flags.
@@ -1244,13 +1258,15 @@ namespace System.IO.Compression
                 if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
                 {
                     _everOpenedForWrite = true;
+                    // Capture the data descriptor size before WriteLocalFileHeader clears the DataDescriptor bit flag.
+                    int dataDescriptorSize = GetDataDescriptorSize();
                     WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite);
 
                     // If we know that we need to update the file header (but don't need to load and update the data itself)
-                    // then advance the position past it.
+                    // then advance the position past the compressed data and any trailing data descriptor.
                     if (_compressedSize != 0)
                     {
-                        _archive.ArchiveStream.Seek(_compressedSize, SeekOrigin.Current);
+                        _archive.ArchiveStream.Seek(_compressedSize + dataDescriptorSize, SeekOrigin.Current);
                     }
                 }
             }

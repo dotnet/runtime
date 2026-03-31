@@ -771,7 +771,8 @@ namespace System.IO.Compression
             {
                 // Keep track of the expected position of the file entry after the final untouched file entry so that when the loop completes,
                 // we'll know which position to start writing new entries from.
-                nextFileOffset = Math.Max(nextFileOffset, entry.GetOffsetOfCompressedData() + entry.CompressedLength);
+                // Include the data descriptor size if the entry has one (bit 3 set in general purpose bit flag).
+                nextFileOffset = Math.Max(nextFileOffset, entry.GetOffsetOfCompressedData() + entry.CompressedLength + entry.GetDataDescriptorSize());
             }
             // When calculating the starting offset to load the files from, only look at changed entries which are already in the archive.
             else

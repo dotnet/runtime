@@ -1343,5 +1343,117 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_AddEntry_ToArchiveWithDataDescriptors_PreservesExistingEntries(bool async)
+        {
+            string originalContent = "Hello world";
+            string addedContent = "New content";
+
+            // Step 1: Create a zip on a non-seekable stream so that the data descriptor flag (bit 3) is set.
+            var ms = new MemoryStream();
+            using (var wrappedStream = new WrappedStream(ms, canRead: false, canWrite: true, canSeek: false))
+            {
+                ZipArchive create = await CreateZipArchive(async, wrappedStream, ZipArchiveMode.Create, leaveOpen: true);
+                ZipArchiveEntry e = create.CreateEntry("original.txt");
+                Stream s = await OpenEntryStream(async, e);
+                byte[] originalBytes = Encoding.UTF8.GetBytes(originalContent);
+                s.Write(originalBytes, 0, originalBytes.Length);
+                await DisposeStream(async, s);
+                await DisposeZipArchive(async, create);
+            }
+
+            // Step 2: Open in Update mode and add a new entry without modifying existing ones.
+            ms.Seek(0, SeekOrigin.Begin);
+            using (ZipArchive update = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true))
+            {
+                Assert.Single(update.Entries);
+                ZipArchiveEntry added = update.CreateEntry("added.txt");
+                Stream addedStream = await OpenEntryStream(async, added);
+                byte[] addedBytes = Encoding.UTF8.GetBytes(addedContent);
+                addedStream.Write(addedBytes, 0, addedBytes.Length);
+                await DisposeStream(async, addedStream);
+            }
+
+            // Step 3: Re-open in Read mode and verify all entries are readable and intact.
+            ms.Seek(0, SeekOrigin.Begin);
+            using (ZipArchive verify = await CreateZipArchive(async, ms, ZipArchiveMode.Read))
+            {
+                Assert.Equal(2, verify.Entries.Count);
+
+                ZipArchiveEntry origEntry = verify.GetEntry("original.txt");
+                Assert.NotNull(origEntry);
+                using (StreamReader reader = new StreamReader(await OpenEntryStream(async, origEntry)))
+                {
+                    Assert.Equal(originalContent, reader.ReadToEnd());
+                }
+
+                ZipArchiveEntry addEntry = verify.GetEntry("added.txt");
+                Assert.NotNull(addEntry);
+                using (StreamReader reader = new StreamReader(await OpenEntryStream(async, addEntry)))
+                {
+                    Assert.Equal(addedContent, reader.ReadToEnd());
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_AddEntry_ToArchiveWithMultipleDataDescriptorEntries_PreservesAll(bool async)
+        {
+            string[] originalContents = ["First entry content", "Second entry content", "Third entry content"];
+            string addedContent = "Added entry content";
+
+            // Step 1: Create a zip with multiple entries on a non-seekable stream (data descriptors).
+            var ms = new MemoryStream();
+            using (var wrappedStream = new WrappedStream(ms, canRead: false, canWrite: true, canSeek: false))
+            {
+                ZipArchive create = await CreateZipArchive(async, wrappedStream, ZipArchiveMode.Create, leaveOpen: true);
+                for (int i = 0; i < originalContents.Length; i++)
+                {
+                    ZipArchiveEntry e = create.CreateEntry($"file{i}.txt");
+                    Stream s = await OpenEntryStream(async, e);
+                    byte[] bytes = Encoding.UTF8.GetBytes(originalContents[i]);
+                    s.Write(bytes, 0, bytes.Length);
+                    await DisposeStream(async, s);
+                }
+                await DisposeZipArchive(async, create);
+            }
+
+            // Step 2: Open in Update mode and add a new entry.
+            ms.Seek(0, SeekOrigin.Begin);
+            using (ZipArchive update = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true))
+            {
+                Assert.Equal(3, update.Entries.Count);
+                ZipArchiveEntry added = update.CreateEntry("added.txt");
+                Stream addedStream = await OpenEntryStream(async, added);
+                byte[] addedBytes = Encoding.UTF8.GetBytes(addedContent);
+                addedStream.Write(addedBytes, 0, addedBytes.Length);
+                await DisposeStream(async, addedStream);
+            }
+
+            // Step 3: Verify all entries.
+            ms.Seek(0, SeekOrigin.Begin);
+            using (ZipArchive verify = await CreateZipArchive(async, ms, ZipArchiveMode.Read))
+            {
+                Assert.Equal(4, verify.Entries.Count);
+
+                for (int i = 0; i < originalContents.Length; i++)
+                {
+                    ZipArchiveEntry entry = verify.GetEntry($"file{i}.txt");
+                    Assert.NotNull(entry);
+                    using StreamReader reader = new StreamReader(await OpenEntryStream(async, entry));
+                    Assert.Equal(originalContents[i], reader.ReadToEnd());
+                }
+
+                ZipArchiveEntry addEntry = verify.GetEntry("added.txt");
+                Assert.NotNull(addEntry);
+                using (StreamReader reader = new StreamReader(await OpenEntryStream(async, addEntry)))
+                {
+                    Assert.Equal(addedContent, reader.ReadToEnd());
+                }
+            }
+        }
+
     }
 }
