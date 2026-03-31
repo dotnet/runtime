@@ -74,6 +74,8 @@ namespace ILCompiler.ReadyToRun
                 yield break;
             }
 
+            yield return new DependencyListEntry(importProvider.GetImportToType(TypeMapGroup), $"Type map '{TypeMapGroup}' key type");
+
             foreach (var entry in map.TypeMap)
             {
                 yield return new DependencyListEntry(importProvider.GetImportToType(entry.Key), $"Key type of Proxy type map entry");

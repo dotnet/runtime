@@ -74,6 +74,8 @@ namespace ILCompiler.ReadyToRun
                 yield break;
             }
 
+            yield return new DependencyListEntry(importProvider.GetImportToType(TypeMapGroup), $"Type map '{TypeMapGroup}' key type");
+
             foreach (var entry in map.TypeMap)
             {
                 yield return new DependencyListEntry(importProvider.GetImportToType(entry.Value.type), $"External type map entry target for key '{entry.Key}'");
