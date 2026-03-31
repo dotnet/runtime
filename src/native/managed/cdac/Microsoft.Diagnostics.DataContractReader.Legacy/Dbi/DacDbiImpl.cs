@@ -86,7 +86,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            if (appdomainId != 1)
+            if (appdomainId != _target.ReadGlobal<uint>(Constants.Globals.DefaultADID))
                 throw new ArgumentException(null, nameof(appdomainId));
             TargetPointer appDomainPtr = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
             *pRetVal = _target.ReadPointer(appDomainPtr);
@@ -114,7 +114,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            *pRetVal = vmAppDomain == 0 ? 0u : 1u;
+            *pRetVal = vmAppDomain == 0 ? 0u : _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
         }
         catch (System.Exception ex)
         {
