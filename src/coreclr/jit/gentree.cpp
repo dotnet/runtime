@@ -21692,8 +21692,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 GenTree* evenMasked =
                     gtNewSimdBinOpNode(GT_AND_NOT, type, evenProduct, gtCloneExpr(hiByteMask), TYP_SHORT, simdSize);
 
-                // return (oddProduct | evenMasked).AsByte()
-                return gtNewSimdBinOpNode(GT_OR, type, oddProduct, evenMasked, simdBaseType, simdSize);
+                // return (evenMasked | oddProduct).AsByte()
+                return gtNewSimdBinOpNode(GT_OR, type, evenMasked, oddProduct, simdBaseType, simdSize);
             }
             else if (varTypeIsLong(simdBaseType))
             {
