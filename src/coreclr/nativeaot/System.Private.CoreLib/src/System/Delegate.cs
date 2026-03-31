@@ -60,7 +60,6 @@ namespace System
         // WARNING: These constants are also declared in System.Private.TypeLoader\Internal\Runtime\TypeLoader\CallConverterThunk.cs
         // Do not change their values without updating the values in the calling convention converter component
         private protected const int MulticastThunk = 0;
-        // Index 1 is reserved (was ClosedStaticThunk, now unused)
         private protected const int OpenStaticThunk = 2;
         private protected const int ClosedInstanceThunkOverGenericMethod = 3; // This may not exist
         private protected const int OpenInstanceThunk = 4;        // This may not exist

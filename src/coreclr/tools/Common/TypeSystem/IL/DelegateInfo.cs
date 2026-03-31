@@ -232,7 +232,6 @@ namespace Internal.IL
     public enum DelegateThunkKind
     {
         MulticastThunk = 0,
-        // Index 1 is reserved (was ClosedStaticThunk, now unused)
         OpenStaticThunk = 2,
         ClosedInstanceThunkOverGenericMethod = 3, // This may not exist
         OpenInstanceThunk = 4,        // This may not exist

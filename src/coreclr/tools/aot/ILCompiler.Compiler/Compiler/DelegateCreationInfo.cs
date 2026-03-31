@@ -236,9 +236,24 @@ namespace ILCompiler
                 {
                     // Closed delegate to a static method (i.e. delegate to an extension method that locks the first parameter).
                     // At the ABI level this is identical to a closed instance delegate - no thunk needed.
+                    ReadOnlySpan<byte> initializeMethodName = "InitializeClosedInstance"u8;
+
+                    if (targetMethod.HasInstantiation)
+                    {
+                        MethodDesc targetCanonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                        if (targetMethod != targetCanonMethod)
+                        {
+                            // Closed delegates to generic static methods need to be constructed through a slow helper that
+                            // checks for the fat function pointer case (function pointer + instantiation argument in a single
+                            // pointer) and injects an invocation thunk to unwrap the fat function pointer as part of
+                            // the invocation if necessary.
+                            initializeMethodName = "InitializeClosedInstanceSlow"u8;
+                        }
+                    }
+
                     return new DelegateCreationInfo(
                         delegateType,
-                        factory.MethodEntrypoint(systemDelegate.GetKnownMethod("InitializeClosedInstance"u8, null)),
+                        factory.MethodEntrypoint(systemDelegate.GetKnownMethod(initializeMethodName, null)),
                         targetMethod,
                         constrainedType,
                         constrainedType == null ? TargetKind.ExactCallableAddress : TargetKind.ConstrainedMethod);
