@@ -738,7 +738,7 @@ IniKey1=IniValue2");
                 await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
                 Assert.IsType<IOException>(failureException);
 
-                // IO error on reload do not invalidate existing config, yet value is not updated
+                // IO error on reload does not invalidate existing config, yet value is not updated
                 Assert.Equal("JsonValue1", cfgRoot["JsonKey1"]);
                 Assert.False(reloadToken.HasChanged);
             }
