@@ -204,12 +204,14 @@ namespace System.IO.Compression
         public override void Flush()
         {
             ThrowIfDisposed();
+            ThrowIfCantWrite();
             _baseStream.Flush();
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
+            ThrowIfCantWrite();
             return _baseStream.FlushAsync(cancellationToken);
         }
 
@@ -442,6 +444,12 @@ namespace System.IO.Compression
             throw new NotSupportedException(SR.WritingNotSupported);
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.WritingNotSupported);
+        }
+
         // Close the stream for reading.  Note that this does NOT close the superStream (since
         // the substream is just 'a chunk' of the super-stream
         protected override void Dispose(bool disposing)
@@ -477,7 +485,7 @@ namespace System.IO.Compression
         // parameters are initialPosition, currentPosition, checkSum, baseBaseStream, zipArchiveEntry and onClose handler
         private readonly Action<long, long, uint, Stream, ZipArchiveEntry, EventHandler?> _saveCrcAndSizes;
 
-        // parameters to saveCrcAndSizes are
+        // parameters to saveCrcAndSize are
         // initialPosition (initialPosition in baseBaseStream),
         // currentPosition (in this CheckSumAndSizeWriteStream),
         // checkSum (of data passed into this CheckSumAndSizeWriteStream),
@@ -989,12 +997,13 @@ namespace System.IO.Compression
         public override void Flush()
         {
             ThrowIfDisposed();
+            throw new NotSupportedException(SR.WritingNotSupported);
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            return Task.CompletedTask;
+            throw new NotSupportedException(SR.WritingNotSupported);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
