@@ -301,7 +301,7 @@ DacDbiInterfaceInstance(
                 _ASSERTE(SUCCEEDED(qiRes));
 
                 CDAC& cdac = pDac->m_cdac;
-                cdac = CDAC::Create(contractDescriptorAddr, pDac->m_pMutableTarget, legacyImpl);
+                cdac = CDAC::Create(contractDescriptorAddr, pDac->m_pTarget, legacyImpl);
                 if (cdac.IsValid())
                 {
                     NonVMComHolder<IUnknown> cdacInterface = nullptr;
