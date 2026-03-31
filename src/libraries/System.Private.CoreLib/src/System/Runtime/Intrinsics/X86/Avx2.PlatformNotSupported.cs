@@ -425,6 +425,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTB xmm1 {k1}{z}, m8</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<byte> BroadcastScalarToVector128(byte* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_broadcastb_epi8 (__m128i a)</para>
@@ -432,6 +433,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTB xmm1 {k1}{z}, m8</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<sbyte> BroadcastScalarToVector128(sbyte* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_broadcastw_epi16 (__m128i a)</para>
@@ -439,6 +441,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTW xmm1 {k1}{z}, m16</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<short> BroadcastScalarToVector128(short* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_broadcastw_epi16 (__m128i a)</para>
@@ -446,6 +449,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTW xmm1 {k1}{z}, m16</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ushort> BroadcastScalarToVector128(ushort* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_broadcastd_epi32 (__m128i a)</para>
@@ -453,6 +457,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTD xmm1 {k1}{z}, m32</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> BroadcastScalarToVector128(int* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_broadcastd_epi32 (__m128i a)</para>
@@ -460,6 +465,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTD xmm1 {k1}{z}, m32</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> BroadcastScalarToVector128(uint* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_broadcastq_epi64 (__m128i a)</para>
@@ -467,6 +473,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTQ xmm1 {k1}{z}, m64</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> BroadcastScalarToVector128(long* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_broadcastq_epi64 (__m128i a)</para>
@@ -474,6 +481,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTQ xmm1 {k1}{z}, m64</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> BroadcastScalarToVector128(ulong* source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -543,6 +551,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTB ymm1 {k1}{z}, m8</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<byte> BroadcastScalarToVector256(byte* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastb_epi8 (__m128i a)</para>
@@ -550,6 +559,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTB ymm1 {k1}{z}, m8</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<sbyte> BroadcastScalarToVector256(sbyte* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastw_epi16 (__m128i a)</para>
@@ -557,6 +567,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTW ymm1 {k1}{z}, m16</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<short> BroadcastScalarToVector256(short* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastw_epi16 (__m128i a)</para>
@@ -564,6 +575,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTW ymm1 {k1}{z}, m16</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ushort> BroadcastScalarToVector256(ushort* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastd_epi32 (__m128i a)</para>
@@ -571,6 +583,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTD ymm1 {k1}{z}, m32</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> BroadcastScalarToVector256(int* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastd_epi32 (__m128i a)</para>
@@ -578,6 +591,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTD ymm1 {k1}{z}, m32</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<uint> BroadcastScalarToVector256(uint* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastq_epi64 (__m128i a)</para>
@@ -585,6 +599,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTQ ymm1 {k1}{z}, m64</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> BroadcastScalarToVector256(long* source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastq_epi64 (__m128i a)</para>
@@ -592,6 +607,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPBROADCASTQ ymm1 {k1}{z}, m64</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ulong> BroadcastScalarToVector256(ulong* source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -600,6 +616,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x4 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<sbyte> BroadcastVector128ToVector256(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastsi128_si256 (__m128i a)</para>
@@ -607,6 +624,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x4 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<byte> BroadcastVector128ToVector256(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastsi128_si256 (__m128i a)</para>
@@ -614,6 +632,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x4 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<short> BroadcastVector128ToVector256(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastsi128_si256 (__m128i a)</para>
@@ -621,6 +640,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x4 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ushort> BroadcastVector128ToVector256(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastsi128_si256 (__m128i a)</para>
@@ -628,6 +648,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x4 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> BroadcastVector128ToVector256(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastsi128_si256 (__m128i a)</para>
@@ -635,6 +656,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x4 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<uint> BroadcastVector128ToVector256(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastsi128_si256 (__m128i a)</para>
@@ -642,6 +664,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI64x2 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> BroadcastVector128ToVector256(long* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_broadcastsi128_si256 (__m128i a)</para>
@@ -649,6 +672,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI64x2 ymm1 {k1}{z}, m128</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ulong> BroadcastVector128ToVector256(ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -802,72 +826,84 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPMOVSXBW ymm1 {k1}{z}, m128</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<short> ConvertToVector256Int16(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>  VPMOVZXBW ymm1,         m128</para>
         ///   <para>  VPMOVZXBW ymm1 {k1}{z}, m128</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<short> ConvertToVector256Int16(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>  VPMOVSXBD ymm1,         m64</para>
         ///   <para>  VPMOVSXBD ymm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> ConvertToVector256Int32(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>  VPMOVZXBD ymm1,         m64</para>
         ///   <para>  VPMOVZXBD ymm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> ConvertToVector256Int32(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>  VPMOVSXWD ymm1,         m128</para>
         ///   <para>  VPMOVSXWD ymm1 {k1}{z}, m128</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> ConvertToVector256Int32(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>  VPMOVZXWD ymm1,         m128</para>
         ///   <para>  VPMOVZXWD ymm1 {k1}{z}, m128</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> ConvertToVector256Int32(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>  VPMOVSXBQ ymm1,         m32</para>
         ///   <para>  VPMOVSXBQ ymm1 {k1}{z}, m32</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> ConvertToVector256Int64(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>  VPMOVZXBQ ymm1,         m32</para>
         ///   <para>  VPMOVZXBQ ymm1 {k1}{z}, m32</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> ConvertToVector256Int64(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>  VPMOVSXWQ ymm1,         m64</para>
         ///   <para>  VPMOVSXWQ ymm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> ConvertToVector256Int64(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>  VPMOVZXWQ ymm1,         m64</para>
         ///   <para>  VPMOVZXWQ ymm1 {k1}{z}, m64</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> ConvertToVector256Int64(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>  VPMOVSXDQ ymm1,         m128</para>
         ///   <para>  VPMOVSXDQ ymm1 {k1}{z}, m128</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> ConvertToVector256Int64(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>  VPMOVZXDQ ymm1,         m128</para>
         ///   <para>  VPMOVZXDQ ymm1 {k1}{z}, m128</para>
         ///   <para>The native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> ConvertToVector256Int64(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -924,144 +960,168 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDD xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VPGATHERDD xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VPGATHERDQ xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> GatherVector128(long* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VPGATHERDQ xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> GatherVector128(ulong* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128 _mm_i32gather_ps (float const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VGATHERDPS xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128d _mm_i32gather_pd (double const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VGATHERDPD xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> GatherVector128(double* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_i64gather_epi32 (int const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VPGATHERQD xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_i64gather_epi32 (int const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VPGATHERQD xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_i64gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VPGATHERQQ xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> GatherVector128(long* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_i64gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VPGATHERQQ xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> GatherVector128(ulong* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128 _mm_i64gather_ps (float const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VGATHERQPS xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128d _mm_i64gather_pd (double const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VGATHERQPD xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> GatherVector128(double* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_i32gather_epi32 (int const* base_addr, __m256i vindex, const int scale)</para>
         ///   <para>  VPGATHERDD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> GatherVector256(int* baseAddress, Vector256<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_i32gather_epi32 (int const* base_addr, __m256i vindex, const int scale)</para>
         ///   <para>  VPGATHERDD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<uint> GatherVector256(uint* baseAddress, Vector256<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VPGATHERDQ ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> GatherVector256(long* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VPGATHERDQ ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ulong> GatherVector256(ulong* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256 _mm256_i32gather_ps (float const* base_addr, __m256i vindex, const int scale)</para>
         ///   <para>  VGATHERDPS ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<float> GatherVector256(float* baseAddress, Vector256<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256d _mm256_i32gather_pd (double const* base_addr, __m128i vindex, const int scale)</para>
         ///   <para>  VGATHERDPD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<double> GatherVector256(double* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm256_i64gather_epi32 (int const* base_addr, __m256i vindex, const int scale)</para>
         ///   <para>  VPGATHERQD xmm1, vm64y, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm256_i64gather_epi32 (int const* base_addr, __m256i vindex, const int scale)</para>
         ///   <para>  VPGATHERQD xmm1, vm64y, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_i64gather_epi64 (__int64 const* base_addr, __m256i vindex, const int scale)</para>
         ///   <para>  VPGATHERQQ ymm1, vm64y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> GatherVector256(long* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_i64gather_epi64 (__int64 const* base_addr, __m256i vindex, const int scale)</para>
         ///   <para>  VPGATHERQQ ymm1, vm64y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ulong> GatherVector256(ulong* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128 _mm256_i64gather_ps (float const* base_addr, __m256i vindex, const int scale)</para>
         ///   <para>  VGATHERQPS xmm1, vm64y, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)</para>
         ///   <para>  VGATHERQPD ymm1, vm64y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<double> GatherVector256(double* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -1069,144 +1129,168 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPGATHERDD xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector128<int> index, Vector128<int> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_mask_i32gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)</para>
         ///   <para>  VPGATHERDD xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector128<int> index, Vector128<uint> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_mask_i32gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)</para>
         ///   <para>  VPGATHERDQ xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> GatherMaskVector128(Vector128<long> source, long* baseAddress, Vector128<int> index, Vector128<long> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_mask_i32gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)</para>
         ///   <para>  VPGATHERDQ xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> GatherMaskVector128(Vector128<ulong> source, ulong* baseAddress, Vector128<int> index, Vector128<ulong> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128 _mm_mask_i32gather_ps (__m128 src, float const* base_addr, __m128i vindex, __m128 mask, const int scale)</para>
         ///   <para>  VGATHERDPS xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector128<int> index, Vector128<float> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128d _mm_mask_i32gather_pd (__m128d src, double const* base_addr, __m128i vindex, __m128d mask, const int scale)</para>
         ///   <para>  VGATHERDPD xmm1, vm32x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> GatherMaskVector128(Vector128<double> source, double* baseAddress, Vector128<int> index, Vector128<double> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_mask_i64gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)</para>
         ///   <para>  VPGATHERQD xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector128<long> index, Vector128<int> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_mask_i64gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)</para>
         ///   <para>  VPGATHERQD xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector128<long> index, Vector128<uint> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_mask_i64gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)</para>
         ///   <para>  VPGATHERQQ xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> GatherMaskVector128(Vector128<long> source, long* baseAddress, Vector128<long> index, Vector128<long> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_mask_i64gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)</para>
         ///   <para>  VPGATHERQQ xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> GatherMaskVector128(Vector128<ulong> source, ulong* baseAddress, Vector128<long> index, Vector128<ulong> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128 _mm_mask_i64gather_ps (__m128 src, float const* base_addr, __m128i vindex, __m128 mask, const int scale)</para>
         ///   <para>  VGATHERQPS xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector128<long> index, Vector128<float> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128d _mm_mask_i64gather_pd (__m128d src, double const* base_addr, __m128i vindex, __m128d mask, const int scale)</para>
         ///   <para>  VGATHERQPD xmm1, vm64x, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<double> GatherMaskVector128(Vector128<double> source, double* baseAddress, Vector128<long> index, Vector128<double> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_mask_i32gather_epi32 (__m256i src, int const* base_addr, __m256i vindex, __m256i mask, const int scale)</para>
         ///   <para>  VPGATHERDD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> GatherMaskVector256(Vector256<int> source, int* baseAddress, Vector256<int> index, Vector256<int> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_mask_i32gather_epi32 (__m256i src, int const* base_addr, __m256i vindex, __m256i mask, const int scale)</para>
         ///   <para>  VPGATHERDD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<uint> GatherMaskVector256(Vector256<uint> source, uint* baseAddress, Vector256<int> index, Vector256<uint> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_mask_i32gather_epi64 (__m256i src, __int64 const* base_addr, __m128i vindex, __m256i mask, const int scale)</para>
         ///   <para>  VPGATHERDQ ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> GatherMaskVector256(Vector256<long> source, long* baseAddress, Vector128<int> index, Vector256<long> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_mask_i32gather_epi64 (__m256i src, __int64 const* base_addr, __m128i vindex, __m256i mask, const int scale)</para>
         ///   <para>  VPGATHERDQ ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ulong> GatherMaskVector256(Vector256<ulong> source, ulong* baseAddress, Vector128<int> index, Vector256<ulong> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256 _mm256_mask_i32gather_ps (__m256 src, float const* base_addr, __m256i vindex, __m256 mask, const int scale)</para>
         ///   <para>  VPGATHERDPS ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<float> GatherMaskVector256(Vector256<float> source, float* baseAddress, Vector256<int> index, Vector256<float> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256d _mm256_mask_i32gather_pd (__m256d src, double const* base_addr, __m128i vindex, __m256d mask, const int scale)</para>
         ///   <para>  VPGATHERDPD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<double> GatherMaskVector256(Vector256<double> source, double* baseAddress, Vector128<int> index, Vector256<double> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm256_mask_i64gather_epi32 (__m128i src, int const* base_addr, __m256i vindex, __m128i mask, const int scale)</para>
         ///   <para>  VPGATHERQD xmm1, vm32y, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector256<long> index, Vector128<int> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm256_mask_i64gather_epi32 (__m128i src, int const* base_addr, __m256i vindex, __m128i mask, const int scale)</para>
         ///   <para>  VPGATHERQD xmm1, vm32y, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector256<long> index, Vector128<uint> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_mask_i64gather_epi64 (__m256i src, __int64 const* base_addr, __m256i vindex, __m256i mask, const int scale)</para>
         ///   <para>  VPGATHERQQ ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> GatherMaskVector256(Vector256<long> source, long* baseAddress, Vector256<long> index, Vector256<long> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_mask_i64gather_epi64 (__m256i src, __int64 const* base_addr, __m256i vindex, __m256i mask, const int scale)</para>
         ///   <para>  VPGATHERQQ ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ulong> GatherMaskVector256(Vector256<ulong> source, ulong* baseAddress, Vector256<long> index, Vector256<ulong> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128 _mm256_mask_i64gather_ps (__m128 src, float const* base_addr, __m256i vindex, __m128 mask, const int scale)</para>
         ///   <para>  VGATHERQPS xmm1, vm32y, xmm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector256<long> index, Vector128<float> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256d _mm256_mask_i64gather_pd (__m256d src, double const* base_addr, __m256i vindex, __m256d mask, const int scale)</para>
         ///   <para>  VGATHERQPD ymm1, vm32y, ymm2</para>
         ///   <para>The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<double> GatherMaskVector256(Vector256<double> source, double* baseAddress, Vector256<long> index, Vector256<double> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -1296,123 +1380,147 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<sbyte> LoadAlignedVector256NonTemporal(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<byte> LoadAlignedVector256NonTemporal(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<short> LoadAlignedVector256NonTemporal(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ushort> LoadAlignedVector256NonTemporal(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> LoadAlignedVector256NonTemporal(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<uint> LoadAlignedVector256NonTemporal(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> LoadAlignedVector256NonTemporal(long* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_stream_load_si256 (__m256i const* mem_addr)</para>
         ///   <para>  VMOVNTDQA ymm1, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ulong> LoadAlignedVector256NonTemporal(ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>__m128i _mm_maskload_epi32 (int const* mem_addr, __m128i mask)</para>
         ///   <para>  VPMASKMOVD xmm1, xmm2, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<int> MaskLoad(int* address, Vector128<int> mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_maskload_epi32 (int const* mem_addr, __m128i mask)</para>
         ///   <para>  VPMASKMOVD xmm1, xmm2, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<uint> MaskLoad(uint* address, Vector128<uint> mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_maskload_epi64 (__int64 const* mem_addr, __m128i mask)</para>
         ///   <para>  VPMASKMOVQ xmm1, xmm2, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<long> MaskLoad(long* address, Vector128<long> mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m128i _mm_maskload_epi64 (__int64 const* mem_addr, __m128i mask)</para>
         ///   <para>  VPMASKMOVQ xmm1, xmm2, m128</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector128<ulong> MaskLoad(ulong* address, Vector128<ulong> mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_maskload_epi32 (int const* mem_addr, __m256i mask)</para>
         ///   <para>  VPMASKMOVD ymm1, ymm2, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<int> MaskLoad(int* address, Vector256<int> mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_maskload_epi32 (int const* mem_addr, __m256i mask)</para>
         ///   <para>  VPMASKMOVD ymm1, ymm2, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<uint> MaskLoad(uint* address, Vector256<uint> mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_maskload_epi64 (__int64 const* mem_addr, __m256i mask)</para>
         ///   <para>  VPMASKMOVQ ymm1, ymm2, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<long> MaskLoad(long* address, Vector256<long> mask) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>__m256i _mm256_maskload_epi64 (__int64 const* mem_addr, __m256i mask)</para>
         ///   <para>  VPMASKMOVQ ymm1, ymm2, m256</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe Vector256<ulong> MaskLoad(ulong* address, Vector256<ulong> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>void _mm_maskstore_epi32 (int* mem_addr, __m128i mask, __m128i a)</para>
         ///   <para>  VPMASKMOVD m128, xmm1, xmm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(int* address, Vector128<int> mask, Vector128<int> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_maskstore_epi32 (int* mem_addr, __m128i mask, __m128i a)</para>
         ///   <para>  VPMASKMOVD m128, xmm1, xmm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(uint* address, Vector128<uint> mask, Vector128<uint> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_maskstore_epi64 (__int64* mem_addr, __m128i mask, __m128i a)</para>
         ///   <para>  VPMASKMOVQ m128, xmm1, xmm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(long* address, Vector128<long> mask, Vector128<long> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm_maskstore_epi64 (__int64* mem_addr, __m128i mask, __m128i a)</para>
         ///   <para>  VPMASKMOVQ m128, xmm1, xmm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(ulong* address, Vector128<ulong> mask, Vector128<ulong> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_maskstore_epi32 (int* mem_addr, __m256i mask, __m256i a)</para>
         ///   <para>  VPMASKMOVD m256, ymm1, ymm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(int* address, Vector256<int> mask, Vector256<int> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_maskstore_epi32 (int* mem_addr, __m256i mask, __m256i a)</para>
         ///   <para>  VPMASKMOVD m256, ymm1, ymm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(uint* address, Vector256<uint> mask, Vector256<uint> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_maskstore_epi64 (__int64* mem_addr, __m256i mask, __m256i a)</para>
         ///   <para>  VPMASKMOVQ m256, ymm1, ymm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(long* address, Vector256<long> mask, Vector256<long> source) { throw new PlatformNotSupportedException(); }
         /// <summary>
         ///   <para>void _mm256_maskstore_epi64 (__int64* mem_addr, __m256i mask, __m256i a)</para>
         ///   <para>  VPMASKMOVQ m256, ymm1, ymm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void MaskStore(ulong* address, Vector256<ulong> mask, Vector256<ulong> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>

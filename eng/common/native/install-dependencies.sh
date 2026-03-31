@@ -47,13 +47,6 @@ case "$os" in
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         # Skip brew update for now, see https://github.com/actions/setup-python/issues/577
         # brew update --preinstall
-
-        # Remove Homebrew LLVM if present. The CI runner image may ship with a
-        # Homebrew LLVM whose libraries (e.g., libunwind.dylib) are the wrong
-        # architecture or conflict with the Apple SDK, breaking native linking.
-        # The build uses Apple clang from /usr/bin/clang exclusively.
-        brew uninstall --ignore-dependencies llvm@18 2>/dev/null || true
-
         brew bundle --no-upgrade --file=- <<EOF
 brew "cmake"
 brew "icu4c"
