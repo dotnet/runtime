@@ -166,7 +166,7 @@ namespace System.Numerics
                         for (int j = 0; j < i; j++)
                         {
                             UInt128 digit1 = (UInt128)(ulong)bits[i + j] + carry;
-                            UInt128 digit2 = (UInt128)(ulong)value[j] * (ulong)v;
+                            UInt128 digit2 = Math.BigMul(value[j], v);
                             bits[i + j] = (nuint)(ulong)(digit1 + (digit2 << 1));
                             // We need digit1 + 2*digit2, but that could overflow UInt128.
                             // Instead, compute (digit2 + digit1/2) >> 63 which gives the
@@ -174,7 +174,7 @@ namespace System.Numerics
                             carry = (digit2 + (digit1 >> 1)) >> 63;
                         }
 
-                        UInt128 digits = (UInt128)(ulong)v * (ulong)v + carry;
+                        UInt128 digits = Math.BigMul(v, v) + carry;
                         bits[i + i] = (nuint)(ulong)digits;
                         bits[i + i + 1] = (nuint)(ulong)(digits >> 64);
                     }

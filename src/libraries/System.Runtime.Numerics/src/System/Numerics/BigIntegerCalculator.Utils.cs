@@ -211,6 +211,29 @@ namespace System.Numerics
         }
 
         /// <summary>
+        /// Widening add: left + right + addend -> (return:low).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static nuint MulAdd(nuint left, nuint right, nuint addend, out nuint low)
+        {
+            if (nint.Size == 8)
+            {
+                ulong high = Math.BigMul(left, right, out ulong lowUL);
+                low = (nuint)lowUL + addend;
+                if (low < addend)
+                {
+                    high++;
+                }
+                return (nuint)high;
+            }
+            else
+            {
+                ulong p = (ulong)left * right + addend;
+                low = (uint)p;
+                return (uint)(p >> 32);
+            }
+        }
+        /// <summary>
         /// Multiply by scalar: result[0..left.Length] = left * multiplier.
         /// Returns the carry out. Unrolled by 4 on 64-bit.
         /// Unlike MulAdd1, this writes to result rather than accumulating.
