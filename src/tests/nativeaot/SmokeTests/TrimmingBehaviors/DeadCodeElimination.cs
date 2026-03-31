@@ -10,8 +10,10 @@ using System.Runtime.InteropServices;
 
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapTrimming.Universe>("Foo", typeof(DeadCodeElimination.TestInteropMapTrimming.ConditionalTypeMapEntry), typeof(DeadCodeElimination.TestInteropMapTrimming.TypeMapTrimTarget))]
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapTrimming.Universe>("Bar", typeof(DeadCodeElimination.TestInteropMapTrimming.UnconditionalTypeMapEntry))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapTrimming.Universe>("GenUsedForExternal", typeof(DeadCodeElimination.TestInteropMapTrimming.GenUsedForExternal<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ExternalEntryFromGenUsed))]
+[assembly: TypeMap<DeadCodeElimination.TestInteropMapTrimming.Universe>("GenUnused", typeof(DeadCodeElimination.TestInteropMapTrimming.GenUnused<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ExternalEntryFromGenUnused))]
 [assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.SourceType), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyType))]
-[assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.GenUsed<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyFromGenUsed))]
+[assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.GenUsedForProxy<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyFromGenUsedForProxy))]
 [assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.GenUnused<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyFromGenUnused))]
 
 class DeadCodeElimination
@@ -1282,20 +1284,26 @@ class DeadCodeElimination
         internal class ConditionalTypeMapEntry;
         internal class UnconditionalTypeMapEntry;
         internal class TypeMapTrimTarget;
+        internal class GenUsedForExternal<T> where T : class;
+        internal class ExternalEntryFromGenUsed;
 
         internal class SourceType;
         internal class ProxyType;
 
-        internal class GenUsed<T> where T : class;
-        internal class ProxyFromGenUsed;
+        internal class GenUsedForProxy<T> where T : class;
+        internal class ExternalEntryFromGenUsedForProxy;
         internal class GenUnused<T> where T : class;
         internal class ProxyFromGenUnused;
+        internal class ExternalEntryFromGenUnused;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static object GetUnknown() => null;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void Consume(object o) { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool TypeCheckUnknown<T>() => GetUnknown() is GenUsedForExternal<T>;
 
         public static void Run()
         {
@@ -1310,6 +1318,16 @@ class DeadCodeElimination
                 var mappedType = map["Foo"];
                 ThrowIfUsableMethodTable(mappedType);
                 if (mappedType.Name != nameof(ConditionalTypeMapEntry))
+                    throw new Exception();
+                
+                if ((bool)typeof(TestInteropMapTrimming).GetMethod(nameof(TypeCheckUnknown)).MakeGenericMethod(GetObjectType()).Invoke(null, null))
+                {
+                    Console.WriteLine("Unexpected!");
+                }
+
+                var mappedTypeConstructed = map["GenUsedForExternal"];
+                ThrowIfUsableMethodTable(mappedTypeConstructed);
+                if (mappedTypeConstructed.Name != nameof(ExternalEntryFromGenUsed))
                     throw new Exception();
             }
 
@@ -1334,10 +1352,10 @@ class DeadCodeElimination
             {
                 var mappedType = (Type)typeof(TestInteropMapTrimming).GetMethod(nameof(GetProxyGeneric)).MakeGenericMethod(GetObjectType()).Invoke(null, [ proxyMap ]);
                 ThrowIfUsableMethodTable(mappedType);
-                if (mappedType.Name != nameof(ProxyFromGenUsed))
+                if (mappedType.Name != nameof(ProxyFromGenUsedForProxy))
                     throw new Exception();
 
-                ThrowIfNotPresent(typeof(TestInteropMapTrimming), nameof(ProxyFromGenUsed));
+                ThrowIfNotPresent(typeof(TestInteropMapTrimming), nameof(ProxyFromGenUsedForProxy));
                 ThrowIfPresent(typeof(TestInteropMapTrimming), nameof(ProxyFromGenUnused));
 
                 [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1347,7 +1365,7 @@ class DeadCodeElimination
 
         public static Type GetProxyGeneric<T>(IReadOnlyDictionary<Type, Type> map) where T : class
         {
-            return map.GetValueOrDefault(new GenUsed<T>().GetType());
+            return map.GetValueOrDefault(new GenUsedForProxy<T>().GetType());
         }
     }
 
