@@ -210,7 +210,7 @@ namespace ILCompiler
                     {
                         if (!throwOnFailureToLoad)
                             return null;
-                        ThrowHelper.ThrowBadImageFormatException(ExceptionStringID.BadImageFormatFileName, filePath);
+                        ThrowHelper.ThrowBadImageFormatException(ExceptionStringID.BadImageFormatFileName, Path.GetFileName(filePath));
                     }
                 }
                 else
