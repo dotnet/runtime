@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Diagnostics.Runtime;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -32,9 +34,24 @@ internal sealed class ClrMdDumpHost : IDisposable
     /// <summary>
     /// Open a crash dump and prepare it for cDAC analysis.
     /// </summary>
-    public static ClrMdDumpHost Open(string dumpPath)
+    /// <param name="dumpPath">Path to the crash dump file.</param>
+    /// <param name="additionalSymbolPaths">
+    /// Optional local directories to search for symbol files (e.g., System.Private.CoreLib,
+    /// debuggee DLLs).
+    /// </param>
+    public static ClrMdDumpHost Open(string dumpPath, IEnumerable<string>? additionalSymbolPaths = null)
     {
-        DataTarget dataTarget = DataTarget.LoadDump(dumpPath);
+        // Local paths first so they resolve before the network fallback.
+        string localPaths = additionalSymbolPaths is not null
+            ? string.Join(";", additionalSymbolPaths.Where(p => !string.IsNullOrEmpty(p)))
+            : string.Empty;
+
+        string symbolPaths = localPaths.Length > 0
+            ? localPaths + ";" + SymbolPath.MicrosoftSymbolServerPath
+            : SymbolPath.MicrosoftSymbolServerPath;
+
+        DataTarget dataTarget = DataTarget.LoadDump(dumpPath, new DataTargetOptions(SymbolPaths = symbolPaths));
+
         return new ClrMdDumpHost(dumpPath, dataTarget);
     }
 

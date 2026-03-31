@@ -16,7 +16,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class StackWalkDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "StackWalk";
-    protected override string DumpType => "full";
+
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

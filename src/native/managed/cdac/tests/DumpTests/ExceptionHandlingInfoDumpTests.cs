@@ -20,7 +20,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class ExceptionHandlingInfoDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "ExceptionHandlingInfo";
-    protected override string DumpType => "full";
+
 
     /// <summary>
     /// Finds the CodeBlockHandle for the CrashInExceptionHandler method by walking

@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class ISOSDacInterface13Tests : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
-    protected override string DumpType => "full";
+
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

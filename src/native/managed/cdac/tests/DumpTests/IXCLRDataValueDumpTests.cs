@@ -19,7 +19,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public unsafe class IXCLRDataValueDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "LocalVariables";
-    protected override string DumpType => "full";
+
 
     // ========== GetSize ==========
 
