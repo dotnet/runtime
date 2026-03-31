@@ -426,13 +426,6 @@ class ConditionalStateHolder
     HIDE_GENERATED_METHODS(ConditionalStateHolder)
 };  // class ConditionalStateHolder<>
 
-
-// Making the copy constructor private produces a warning about "can't generate copy
-// constructor" on all holders (duh, that's the point.)
-#ifdef _MSC_VER
-#pragma warning(disable:4511)
-#endif  // _MSC_VER
-
 //-----------------------------------------------------------------------------
 // BaseWrapper is just Base like a Holder, but it "transparently" proxies the type it contains,
 // using operator overloads.  Use this when you want a holder to expose the functionality of
