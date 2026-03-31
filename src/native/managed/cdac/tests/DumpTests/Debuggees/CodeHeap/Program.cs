@@ -19,6 +19,9 @@ using System.Runtime.CompilerServices;
 /// </summary>
 internal static class Program
 {
+    // Keep the delegate rooted so the HostCodeHeap survives GC until the crash.
+    private static Delegate s_dynamicDelegate;
+
     private static void Main()
     {
         // Invoke a DynamicMethod so the JIT allocates a HostCodeHeap.
@@ -48,6 +51,7 @@ internal static class Program
         il.Emit(OpCodes.Ret);
 
         var fn = (Func<int, int>)method.CreateDelegate(typeof(Func<int, int>));
+        s_dynamicDelegate = fn;
         int result = fn(41);
         GC.KeepAlive(result);
     }

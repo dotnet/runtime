@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 using Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 

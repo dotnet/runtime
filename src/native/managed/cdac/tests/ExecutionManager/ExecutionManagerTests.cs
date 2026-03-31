@@ -24,6 +24,21 @@ public class ExecutionManagerTests
         return target;
     }
 
+    private static void LinkHeapIntoAllCodeHeaps(MockDescriptors.ExecutionManager emBuilder, TargetPointer heapAddr)
+    {
+        TargetPointer codeRangeStart = new(0x1000_0000);
+        uint codeRangeSize = 0x1000;
+        var nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart.Value, codeRangeSize);
+        TargetPointer nodeAddr = emBuilder.AddCodeHeapListNode(
+            next: TargetPointer.Null,
+            startAddress: codeRangeStart,
+            endAddress: codeRangeStart + codeRangeSize,
+            mapBase: codeRangeStart,
+            headerMap: nibBuilder.NibbleMapFragment.Address,
+            heap: heapAddr);
+        emBuilder.SetAllCodeHeaps(nodeAddr);
+    }
+
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeBlockHandle_Null(int version, MockTarget.Architecture arch)
@@ -483,6 +498,7 @@ public class ExecutionManagerTests
     {
         MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         TargetPointer heapAddr = emBuilder.AddLoaderCodeHeap();
+        LinkHeapIntoAllCodeHeaps(emBuilder, heapAddr);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -498,6 +514,7 @@ public class ExecutionManagerTests
         TargetPointer baseAddr    = new(0x0001_0000);
         TargetPointer currentAddr = new(0x0001_8000);
         TargetPointer heapAddr = emBuilder.AddHostCodeHeap(baseAddr, currentAddr);
+        LinkHeapIntoAllCodeHeaps(emBuilder, heapAddr);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -511,6 +528,7 @@ public class ExecutionManagerTests
     {
         MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         TargetPointer heapAddr = emBuilder.AddLoaderCodeHeap();
+        LinkHeapIntoAllCodeHeaps(emBuilder, heapAddr);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -527,6 +545,7 @@ public class ExecutionManagerTests
         TargetPointer expectedBase    = new(0x0002_0000);
         TargetPointer expectedCurrent = new(0x0002_4000);
         TargetPointer heapAddr = emBuilder.AddHostCodeHeap(expectedBase, expectedCurrent);
+        LinkHeapIntoAllCodeHeaps(emBuilder, heapAddr);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;

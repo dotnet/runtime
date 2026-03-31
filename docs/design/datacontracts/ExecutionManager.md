@@ -45,8 +45,6 @@ struct CodeBlockHandle
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
     // Gets information about the EEJitManager: its address, code type, and head of the code heap list.
     JitManagerInfo GetEEJitManagerInfo();
-    // Returns information about the code heap at the given address.
-    ICodeHeapInfo GetCodeHeapInfo(TargetPointer codeHeapAddress);
     // Walks the linked list of CodeHeapListNodes starting from the EEJitManager's AllCodeHeaps head
     // and returns information about each code heap.
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos();
