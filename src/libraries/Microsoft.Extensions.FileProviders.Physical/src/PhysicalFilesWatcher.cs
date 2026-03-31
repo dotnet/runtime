@@ -171,7 +171,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             return pattern.Contains('*') || IsDirectoryPath(pattern)
                 ? GetOrAddWildcardChangeToken(pattern)
-                // get rid of \. in Windows and ./ in UNIX's at the start of the path
+                // get rid of \. on Windows and ./ on UNIX at the start of the path
                 : GetOrAddFilePathChangeToken(RemoveRelativePathSegment(pattern));
         }
 
@@ -890,7 +890,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
                 if (shouldCancel)
                 {
-                    _cts.Cancel();
+                    TryCancelCts();
                 }
             }
 
@@ -912,7 +912,19 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     _watcher = null;
                 }
 
-                _cts.Cancel();
+                TryCancelCts();
+            }
+
+            private void TryCancelCts()
+            {
+                try
+                {
+                    _cts.Cancel();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Dispose() ran concurrently and disposed _cts.
+                }
             }
 
             [UnsupportedOSPlatform("browser")]
