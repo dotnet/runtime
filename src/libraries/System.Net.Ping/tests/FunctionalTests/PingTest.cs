@@ -822,7 +822,10 @@ namespace System.Net.NetworkInformation.Tests
 
             // RTT can legitimately be 0ms on very fast networks, so retry a few times
             // and assert that at least one reply reports a non-zero RTT.
-            options.Ttl = 1;
+            // Use TTL=5 instead of 1 to increase the chance of a measurable (>0ms) round-trip
+            // time. On macOS, the raw socket implementation truncates sub-millisecond RTT to 0,
+            // and the first-hop router often responds in <1ms.
+            options.Ttl = 5;
             bool gotNonZeroRtt = false;
             for (int attempt = 0; attempt < 3; attempt++)
             {
