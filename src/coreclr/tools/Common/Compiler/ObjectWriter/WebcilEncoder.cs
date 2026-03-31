@@ -49,8 +49,7 @@ namespace ILCompiler.ObjectWriter
 
         public static int SectionHeaderEncodeSize()
         {
-            return sizeof(WebcilSectionType) +    // SectionType (uint): 4
-                    sizeof(uint) +                // VirtualSize: 8
+            return sizeof(uint) +                // VirtualSize: 8
                     sizeof(uint) +                // VirtualAddress: 12
                     sizeof(uint) +                // SizeOfRawData: 16
                     sizeof(uint);                 // PointerToRawData: 20
@@ -62,11 +61,10 @@ namespace ILCompiler.ObjectWriter
             Span<byte> header = stackalloc byte[encodeSize];
 
             // The Webcil spec requires little-endian encoding
-            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(0, 4), (uint)sectionHeader.SectionType);
-            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(4, 4), sectionHeader.VirtualSize);
-            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(8, 4), sectionHeader.VirtualAddress);
-            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(12, 4), sectionHeader.SizeOfRawData);
-            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(16, 4), sectionHeader.PointerToRawData);
+            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(0, 4), sectionHeader.VirtualSize);
+            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(4, 4), sectionHeader.VirtualAddress);
+            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(8, 4), sectionHeader.SizeOfRawData);
+            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(12, 4), sectionHeader.PointerToRawData);
 
             outputStream.Write(header);
 

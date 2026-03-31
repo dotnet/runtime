@@ -245,11 +245,6 @@ namespace ILCompiler.ObjectWriter
             return _sectionToType[section];
         }
 
-        private WebcilSectionType GetWebcilSectionType(ObjectNodeSection section)
-        {
-            return section == WebcilRelocSection ? WebcilSectionType.Reloc : WebcilSectionType.Data;
-        }
-
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
             WebcilSection section = _sections[sectionIndex] as WebcilSection;
@@ -397,7 +392,6 @@ namespace ILCompiler.ObjectWriter
                 // the pointer to raw data for each section is also the same as the virtual address.
                 uint virtualSize = alignedSectionSize;
                 WebcilSectionHeader sectionHeader = new WebcilSectionHeader(
-                    sectionType: webcilSection.Kind,
                     virtualSize: virtualSize,
                     virtualAddress: virtualAddress,
                     sizeOfRawData: alignedSectionSize,
@@ -423,13 +417,22 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(_webcilSegment.Header.PeDebugRva != 0);
             uint peDebugSize = (uint)debugDirectoryDef.Size;
 
+            // The index of the reloc section is either: 0 (if no reloc section) OR
+            // the 1-based index of the section, which in our case is assumed to be the last section
+            if (webcilSections.Length > 0)
+            {
+                Debug.Assert(webcilSections[webcilSections.Length - 1].Name.ToString() == "reloc");
+            }
+            ushort relocSectionIdx = _baseRelocMap.Count > 0 ? checked((ushort)webcilSections.Length) : (ushort)0;
+
             WebcilHeader header = new WebcilHeader
             {
                 Id = WebcilConstants.WEBCIL_MAGIC,
                 VersionMajor = WebcilConstants.WC_VERSION_MAJOR,
                 VersionMinor = WebcilConstants.WC_VERSION_MINOR,
                 CoffSections = (ushort)webcilSections.Length,
-                Reserved0 = 0,
+                // In Webcil v1.0, Reserved0 is used for the index of the image base reloc section
+                Reserved0 = relocSectionIdx,
                 PeCliHeaderRva = peCliHeaderRva,
                 PeCliHeaderSize = peCliHeaderSize,
                 PeDebugRva = peDebugRva,
@@ -475,8 +478,7 @@ namespace ILCompiler.ObjectWriter
             {
 #if READYTORUN
                 // This is a section which is internally wrapping a Webcil section
-                WebcilSectionType webcilSectionType = GetWebcilSectionType(section);
-                wasmSection = new WebcilSection(webcilSectionType, new Utf8String(section.Name), default(WebcilSectionHeader), sectionStream, sectionIndex);
+                wasmSection = new WebcilSection(new Utf8String(section.Name), default(WebcilSectionHeader), sectionStream, sectionIndex);
 #else
                 wasmSection = new WasmSection(WasmSectionType.Data, sectionStream, new Utf8String(section.Name));
 #endif
@@ -1358,14 +1360,12 @@ namespace ILCompiler.ObjectWriter
         public readonly Stream _stream;
         private PaddingHelper _paddingHelper;
         public int MinAlignment = 1;
-        public WebcilSectionType Kind;
 
         public uint Padding => Header.SizeOfRawData - (uint)_stream.Length;
 
-        public WebcilSection(WebcilSectionType webcilSectionType, Utf8String name, WebcilSectionHeader header, Stream stream, int index)
+        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int index)
             : base(WasmSectionType.Data, stream, name)
         {
-            Kind = webcilSectionType;
             Header = header;
             _stream = stream;
             Index = index;
