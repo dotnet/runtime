@@ -733,6 +733,10 @@ namespace ILCompiler.ObjectWriter
 
         Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
         Dictionary<int, List<SymbolicRelocation>> _runtimeRelocations = new();
+        Dictionary<uint, List<ushort>> _baseRelocsMap = new();
+
+        // We group webcil relocs into 4kb blocks, similar to PE
+        const uint WebcilRelocPageSize = 0x1000;
 
         private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
@@ -746,14 +750,28 @@ namespace ILCompiler.ObjectWriter
                 // for all relocation types
                 resolvable.Add(reloc);
 
-                // A few relocation types (table indices are the only case) need
-                // an additional runtime reloc as well.
-                if (NeedsRuntimeReloc(reloc.Type))
+                // A few relocation types (table indices and IMAGE_REL type relocs in Webcil) need
+                // an additional runtime reloc as well to add a base address.
+                if (Relocation.GetFileRelocationType(reloc.Type) is RelocType fileRelocType &&
+                    fileRelocType is not RelocType.IMAGE_REL_BASED_ABSOLUTE)
                 {
-                    if (!_runtimeRelocations.TryGetValue(sectionIndex, out List<SymbolicRelocation> runtimeRelocs))
+                    WebcilSection webcilSection = _sections[sectionIndex] as WebcilSection;
+                    Debug.Assert(webcilSection is not null);
+                    // Gather file-level relocations that need to go into the webcil .reloc
+                    // section. We collect entries grouped by 4KB page into a map of
+                    // (page RVA -> list of (type<<12 | offsetInPage) WORD entries).
+                    // Note that this handling is logically the same as the implementation in the PE Object Writer.
+                    uint targetRva = webcilSection.Header.VirtualAddress + (uint)reloc.Offset;
+                    uint pageRva = targetRva & ~(WebcilRelocPageSize - 1);
+                    ushort offsetInPage = (ushort)(targetRva & (WebcilRelocPageSize - 1));
+                    ushort entry = (ushort)(((ushort)fileRelocType << 12) | offsetInPage);
+
+                    if (!_baseRelocsMap.TryGetValue(pageRva, out List<ushort> list))
                     {
-                        _runtimeRelocations[sectionIndex] = runtimeRelocs = new List<SymbolicRelocation>();
+                        list = new List<ushort>();
+                        _baseRelocsMap.Add(pageRva, list);
                     }
+                    list.Add(entry);
                 }
             }
         }
