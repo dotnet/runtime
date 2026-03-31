@@ -104,17 +104,17 @@ namespace Microsoft.Win32.SafeHandles
 
             if (!startInfo.UseShellExecute)
             {
-                if (childInputHandle is null && !OperatingSystem.IsAndroid())
+                if (childInputHandle is null && ProcessUtils.IsConsoleSupported())
                 {
                     childInputHandle = Console.OpenStandardInputHandle();
                 }
 
-                if (childOutputHandle is null && !OperatingSystem.IsAndroid())
+                if (childOutputHandle is null && ProcessUtils.IsConsoleSupported())
                 {
                     childOutputHandle = Console.OpenStandardOutputHandle();
                 }
 
-                if (childErrorHandle is null && !OperatingSystem.IsAndroid())
+                if (childErrorHandle is null && ProcessUtils.IsConsoleSupported())
                 {
                     childErrorHandle = Console.OpenStandardErrorHandle();
                 }

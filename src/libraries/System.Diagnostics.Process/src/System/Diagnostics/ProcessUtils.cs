@@ -40,5 +40,8 @@ namespace System.Diagnostics
             string msg = SR.Format(SR.ErrorStartingProcess, fileName, directoryForException, errorMessage);
             return new Win32Exception(errorCode, msg);
         }
+
+        internal static bool IsConsoleSupported()
+            => !(OperatingSystem.IsAndroid() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst());
     }
 }
