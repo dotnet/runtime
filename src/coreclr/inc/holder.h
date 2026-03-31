@@ -1099,6 +1099,9 @@ using ResetPointerHolder = SpecializedWrapper<_TYPE, detail::ZeroMem<_TYPE>::Inv
 //-----------------------------------------------------------------------------
 
 FORCEINLINE void VoidCloseHandle(HANDLE h) { if (h != NULL) CloseHandle(h); }
+
+// (UINT_PTR) -1 is INVALID_HANDLE_VALUE
+//@TODO: Dangerous default value. Some Win32 functions return INVALID_HANDLE_VALUE, some return NULL (such as CreatEvent).
 typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidCloseHandle, (UINT_PTR) -1> HandleHolder;
 
 
