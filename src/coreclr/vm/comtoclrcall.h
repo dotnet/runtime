@@ -327,7 +327,7 @@ public:
     {
     }
 
-    PCODE GetHResultReturnStub(HRESULT hr);
+    PCODE GetReturnStubForHResult(HRESULT hr);
 
     virtual PCODE RunTimeInit(bool* pCanSkipPreStub) override;
 

@@ -232,10 +232,6 @@ UMEntryPrestubUnwindFrameChainHandler proto c
 .safeseh UMEntryPrestubUnwindFrameChainHandler
 CallDescrWorkerUnwindFrameChainHandler proto c
 .safeseh CallDescrWorkerUnwindFrameChainHandler
-ifdef FEATURE_COMINTEROP
-ReverseComUnwindFrameChainHandler proto c
-.safeseh ReverseComUnwindFrameChainHandler
-endif ; FEATURE_COMINTEROP
 
 ifdef HAS_ADDRESS_SANITIZER
 EXTERN ___asan_handle_no_return:PROC

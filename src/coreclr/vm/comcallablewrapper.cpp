@@ -309,7 +309,7 @@ extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
     Thread* pThread = SetupThreadNoThrow();
     if (pThread == NULL)
     {
-        return pMarshalInfo->GetHResultReturnStub(E_OUTOFMEMORY);
+        return pMarshalInfo->GetReturnStubForHResult(E_OUTOFMEMORY);
     }
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;

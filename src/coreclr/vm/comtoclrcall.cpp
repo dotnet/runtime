@@ -558,15 +558,45 @@ namespace
         LIMITED_METHOD_CONTRACT;
         return;
     }
+
+    PCODE GetReturnStubForComCallMethodDesc(ComCallMethodDesc *pCMD, HRESULT hr)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+#ifdef TARGET_X86
+            t_ComPreStubLastStackBytes = pCMD->GetNumStackBytes();
+#endif
+
+        if (pCMD->IsNativeHResultRetVal())
+        {
+            t_ComPreStubLastHResult = hr;
+            return (PCODE)&ComStubReturnHResult;
+        }
+        else if (pCMD->IsNativeBoolRetVal())
+        {
+            return (PCODE)&ComStubReturnBool;
+        }
+        else if (pCMD->IsNativeR4RetVal())
+        {
+            return (PCODE)&ComStubReturnR4NaN;
+        }
+        else if (pCMD->IsNativeR8RetVal())
+        {
+            return (PCODE)&ComStubReturnR8NaN;
+        }
+        else
+        {
+            return (PCODE)&ComStubReturnVoid;
+        }
+    }
 }
 #endif
 
-PCODE ComCallUMThunkMarshInfo::GetHResultReturnStub(HRESULT hr)
+PCODE ComCallUMThunkMarshInfo::GetReturnStubForHResult(HRESULT hr)
 {
     LIMITED_METHOD_CONTRACT;
 
-    t_ComPreStubLastHResult = hr;
-    return (PCODE)&ComStubReturnHResult;
+    return GetReturnStubForComCallMethodDesc(m_pCMD, hr);
 }
 
 PCODE ComCallUMThunkMarshInfo::RunTimeInit(bool* pCanSkipPreStub)
@@ -619,38 +649,10 @@ PCODE ComCallUMThunkMarshInfo::RunTimeInit(bool* pCanSkipPreStub)
         {
             // Transform the exception into an HRESULT. This also sets up
             // an IErrorInfo on the current thread for the exception.
-            t_ComPreStubLastHResult = SetupErrorInfo(pThrowable);
+            HRESULT hr = SetupErrorInfo(pThrowable);
             pThrowable = NULL;
 
-            // We failed to set up the stub so we need to report an error to the caller.
-            //
-            // IMPORTANT: No floating point operations can occur after this point!
-            //
-        #ifdef TARGET_X86
-            // Number of bytes to pop is upper half of the return value on x86
-            t_ComPreStubLastStackBytes = m_pCMD->GetNumStackBytes();
-        #endif
-
-            if (m_pCMD->IsNativeHResultRetVal())
-            {
-                return (PCODE)&ComStubReturnHResult;
-            }
-            else if (m_pCMD->IsNativeBoolRetVal())
-            {
-                return (PCODE)&ComStubReturnBool;
-            }
-            else if (m_pCMD->IsNativeR4RetVal())
-            {
-                return (PCODE)&ComStubReturnR4NaN;
-            }
-            else if (m_pCMD->IsNativeR8RetVal())
-            {
-                return (PCODE)&ComStubReturnR8NaN;
-            }
-            else
-            {
-                return (PCODE)&ComStubReturnVoid;
-            }
+            return GetReturnStubForComCallMethodDesc(m_pCMD, hr);
         }
     }
     GCPROTECT_END();
