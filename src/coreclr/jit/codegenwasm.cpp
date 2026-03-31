@@ -3122,15 +3122,10 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         assert(regIndex == regCount);
         assert(regIndex == 1);
 
-        // The field list's individual fields should have preceded us in LIR and code to push them onto the stack
-        // should already have been generated. We should also only have one field (see MAX_RET_REG_COUNT assert,
-        // above.) As a result, all we need to do is generate a return opcode.
-        GetEmitter()->emitIns(INS_return);
-
         return;
     }
 
-    NYI_WASM("genStructReturn");
+    NYI_WASM("genStructReturn non-fieldlist cases");
 }
 
 void CodeGen::genEmitGSCookieCheck(bool tailCall)
