@@ -138,11 +138,13 @@ namespace System
         [UnmanagedCallersOnly]
         [StackTraceHidden]
         [RequiresUnsafe]
-        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue, bool propagateExceptions)
+        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, int* pReturnValue, bool propagateExceptions)
         {
             try
             {
                 string[]? argument = pArgument is not null ? *pArgument : null;
+                bool hasArgument = pArgument is not null;
+                bool hasReturnValue = pReturnValue is not null;
 
                 if (hasArgument)
                 {

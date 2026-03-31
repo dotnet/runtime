@@ -1163,6 +1163,7 @@ struct Param
     CorEntryPointType EntryType;
     DWORD cCommandArgs;
     LPWSTR *wzArgs;
+    BOOL propagateExceptions;
 } param;
 
 #if defined(TARGET_BROWSER)
@@ -1179,8 +1180,9 @@ static void RunMainInternal(Param* pParam)
     pParam->pFD->EnsureActive();
     PCODE entryPoint = pParam->pFD->GetSingleCallableAddrOfCode();
 
-    BOOL hasArgument = (pParam->EntryType == EntryManagedMain);
     BOOL hasReturnValue = !pParam->pFD->IsVoid();
+    PTRARRAYREF* pArgument = (pParam->EntryType == EntryManagedMain) ? &StrArgArray : NULL;
+    INT32* pReturnValue = hasReturnValue ? pParam->piRetVal : NULL;
 
     if (!hasReturnValue)
     {
@@ -1188,16 +1190,12 @@ static void RunMainInternal(Param* pParam)
         *pParam->piRetVal = 0;
     }
 
-    BOOL propagateExceptions = !CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions);
-
     UnmanagedCallersOnlyCaller callEntryPoint(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
     callEntryPoint.InvokeUnhandled(
         static_cast<INT_PTR>(entryPoint),
-        &StrArgArray,
-        CLR_BOOL_ARG(hasArgument),
-        CLR_BOOL_ARG(hasReturnValue),
-        pParam->piRetVal,
-        CLR_BOOL_ARG(propagateExceptions));
+        pArgument,
+        pReturnValue,
+        CLR_BOOL_ARG(pParam->propagateExceptions));
 
     if (hasReturnValue)
     {
@@ -1260,6 +1258,7 @@ HRESULT RunMain(MethodDesc *pFD ,
     ETWFireEvent(Main_V1);
 
     Param param;
+    BOOL propagateExceptions = !CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions);
 
     param.pFD = pFD;
     param.numSkipArgs = numSkipArgs;
@@ -1268,6 +1267,7 @@ HRESULT RunMain(MethodDesc *pFD ,
     param.EntryType = EntryType;
     param.cCommandArgs = cCommandArgs;
     param.wzArgs = wzArgs;
+    param.propagateExceptions = propagateExceptions;
 
     EX_TRY_NOCATCH(Param *, pParam, &param)
     {
