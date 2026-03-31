@@ -92,6 +92,8 @@ DEFINE_DACVAR(PTR_InterpreterCodeManager, ExecutionManager__m_pInterpreterCodeMa
 
 DEFINE_DACVAR_NO_DUMP(VMHELPDEF *, dac__hlpFuncTable, ::hlpFuncTable)
 DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
+DEFINE_DACVAR(VMAUXILIARYSYMBOLDEF *, dac__hlpAuxiliarySymbolTable, ::hlpAuxiliarySymbolTable)
+DEFINE_DACVAR(DWORD, dac__g_auxiliarySymbolCount, ::g_auxiliarySymbolCount)
 
 DEFINE_DACVAR(PTR_StubManager, StubManager__g_pFirstManager, StubManager::g_pFirstManager)
 DEFINE_DACVAR(PTR_PrecodeStubManager, PrecodeStubManager__g_pManager, PrecodeStubManager::g_pManager)
