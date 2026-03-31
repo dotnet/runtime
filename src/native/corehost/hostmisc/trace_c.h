@@ -7,13 +7,9 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-#if defined(_WIN32)
-typedef wchar_t pal_char_t;
-#define _TRACE_X(s) L ## s
-#else
-typedef char pal_char_t;
-#define _TRACE_X(s) s
-#endif
+#include "pal_c.h" // for pal_char_t, _X
+
+#define _TRACE_X(s) _X(s)
 
 #ifdef __cplusplus
 extern "C" {

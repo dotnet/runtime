@@ -13,11 +13,36 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "configure.h"
-
+// pal_char_t: wchar_t on Windows, char on non-Windows
 #if defined(_WIN32)
-#error "This C PAL is only for non-Windows (Linux) platforms"
+#ifndef PAL_CHAR_T_DEFINED
+#define PAL_CHAR_T_DEFINED
+typedef wchar_t pal_char_t;
 #endif
+#ifndef _X
+#define _X(s) L ## s
+#endif
+#else
+#ifndef PAL_CHAR_T_DEFINED
+#define PAL_CHAR_T_DEFINED
+typedef char pal_char_t;
+#endif
+#ifndef _X
+#define _X(s) s
+#endif
+#endif
+
+#ifndef _STRINGIFY
+#define _STRINGIFY(s) _X(s)
+#endif
+
+// Max path buffer size for apphost string operations
+#define APPHOST_PATH_MAX 4096
+
+// Non-Windows C PAL implementation
+#if !defined(_WIN32)
+
+#include "configure.h"
 
 #include <unistd.h>
 #include <libgen.h>
@@ -31,7 +56,6 @@ extern "C" {
 #define DIR_SEPARATOR '/'
 #define DIR_SEPARATOR_STR "/"
 #define PATH_SEPARATOR ':'
-#define _X(s) s
 
 #define S_OK        0x00000000
 #define E_NOTIMPL   0x80004001
@@ -46,8 +70,6 @@ extern "C" {
 #undef LIB_FILE_EXT
 #define LIB_FILE_EXT ".dylib"
 #endif
-
-#define _STRINGIFY(s) _X(s)
 
 #define LIB_NAME(NAME) LIB_PREFIX NAME
 #define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
@@ -69,33 +91,32 @@ extern "C" {
     #define HOST_RID_PLATFORM FALLBACK_HOST_OS
 #endif
 
-// Max path buffer size for apphost string operations
-#define APPHOST_PATH_MAX 4096
-
 // pal function declarations (C equivalents of the C++ pal:: namespace)
-bool pal_get_own_executable_path(char* recv, size_t recv_len);
-bool pal_fullpath(char* path, size_t path_len);
-bool pal_file_exists(const char* path);
-bool pal_directory_exists(const char* path);
-bool pal_is_path_fully_qualified(const char* path);
-bool pal_getenv(const char* name, char* recv, size_t recv_len);
-int pal_xtoi(const char* input);
-bool pal_load_library(const char* path, void** dll);
+bool pal_get_own_executable_path(pal_char_t* recv, size_t recv_len);
+bool pal_fullpath(pal_char_t* path, size_t path_len);
+bool pal_file_exists(const pal_char_t* path);
+bool pal_directory_exists(const pal_char_t* path);
+bool pal_is_path_fully_qualified(const pal_char_t* path);
+bool pal_getenv(const pal_char_t* name, pal_char_t* recv, size_t recv_len);
+int pal_xtoi(const pal_char_t* input);
+bool pal_load_library(const pal_char_t* path, void** dll);
 void pal_unload_library(void* library);
-void* pal_get_symbol(void* library, const char* name);
-void pal_err_print_line(const char* message);
+void* pal_get_symbol(void* library, const pal_char_t* name);
+void pal_err_print_line(const pal_char_t* message);
 
 // Directory listing callback: called with each entry name, return true to continue
-typedef bool (*pal_readdir_callback_fn)(const char* entry_name, void* context);
-void pal_readdir_onlydirectories(const char* path, pal_readdir_callback_fn callback, void* context);
+typedef bool (*pal_readdir_callback_fn)(const pal_char_t* entry_name, void* context);
+void pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_fn callback, void* context);
 
 // Self-registered install location
-bool pal_get_dotnet_self_registered_dir(char* recv, size_t recv_len);
-bool pal_get_default_installation_dir(char* recv, size_t recv_len);
-const char* pal_get_dotnet_self_registered_config_location(char* buf, size_t buf_len);
+bool pal_get_dotnet_self_registered_dir(pal_char_t* recv, size_t recv_len);
+bool pal_get_default_installation_dir(pal_char_t* recv, size_t recv_len);
+const pal_char_t* pal_get_dotnet_self_registered_config_location(pal_char_t* buf, size_t buf_len);
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif // !defined(_WIN32)
 
 #endif // PAL_C_H

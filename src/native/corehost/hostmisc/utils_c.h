@@ -9,15 +9,10 @@
 #include <runtime_version.h>
 #include <minipal/utils.h>
 
+#include "pal_c.h" // for pal_char_t, _X, _STRINGIFY
+
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#ifndef _X
-#define _X(s) s
-#endif
-#ifndef _STRINGIFY
-#define _STRINGIFY(s) _X(s)
 #endif
 
 #ifndef DOTNET_CORE_DOWNLOAD_URL
@@ -81,51 +76,48 @@ extern "C" {
 #define HOST_VERSION _QUOTE(RuntimeProductVersion)
 #endif
 
-// Path buffer size
-#define APPHOST_PATH_MAX 4096
-
 // Get the directory portion of a path. Result written to out_dir (must be at least APPHOST_PATH_MAX).
-void utils_get_directory(const char* path, char* out_dir, size_t out_dir_len);
+void utils_get_directory(const pal_char_t* path, pal_char_t* out_dir, size_t out_dir_len);
 
 // Get the filename portion of a path.
-void utils_get_filename(const char* path, char* out_name, size_t out_name_len);
+void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
 
 // Append a path component with directory separator.
-void utils_append_path(char* path, size_t path_len, const char* component);
+void utils_append_path(pal_char_t* path, size_t path_len, const pal_char_t* component);
 
 // Replace all occurrences of match with repl in path (in-place).
-void utils_replace_char(char* path, char match, char repl);
+void utils_replace_char(pal_char_t* path, pal_char_t match, pal_char_t repl);
 
 // Check if a file exists in a directory. If found, writes full path to out_file_path.
-bool utils_file_exists_in_dir(const char* dir, const char* file_name, char* out_file_path, size_t out_path_len);
+bool utils_file_exists_in_dir(const pal_char_t* dir, const pal_char_t* file_name, pal_char_t* out_file_path, size_t out_path_len);
 
 // Get architecture name string.
-const char* utils_get_current_arch_name(void);
+const pal_char_t* utils_get_current_arch_name(void);
 
 // Get a download URL for the runtime.
-void utils_get_download_url(char* out_url, size_t out_url_len);
+void utils_get_download_url(pal_char_t* out_url, size_t out_url_len);
 
 // Get host version description.
-void utils_get_host_version_description(char* out_desc, size_t out_desc_len);
+void utils_get_host_version_description(pal_char_t* out_desc, size_t out_desc_len);
 
 // Check if value starts with prefix.
-bool utils_starts_with(const char* value, const char* prefix);
+bool utils_starts_with(const pal_char_t* value, const pal_char_t* prefix);
 
 // Check if value ends with suffix.
-bool utils_ends_with(const char* value, const char* suffix);
+bool utils_ends_with(const pal_char_t* value, const pal_char_t* suffix);
 
 // Get dotnet root from environment variables (DOTNET_ROOT_<ARCH> or DOTNET_ROOT).
 // Returns true if found. out_env_var_name gets the name of the env var used.
-bool utils_get_dotnet_root_from_env(char* out_env_var_name, size_t env_var_name_len, char* recv, size_t recv_len);
+bool utils_get_dotnet_root_from_env(pal_char_t* out_env_var_name, size_t env_var_name_len, pal_char_t* recv, size_t recv_len);
 
 // Convert string to uppercase in-place.
-void utils_to_upper(char* str);
+void utils_to_upper(pal_char_t* str);
 
 // Get runtime ID string.
-void utils_get_runtime_id(char* out_rid, size_t out_rid_len);
+void utils_get_runtime_id(pal_char_t* out_rid, size_t out_rid_len);
 
 // Get the dotnet root env var name for the current architecture.
-void utils_get_dotnet_root_env_var_for_arch(char* out_name, size_t out_name_len);
+void utils_get_dotnet_root_env_var_for_arch(pal_char_t* out_name, size_t out_name_len);
 
 #ifdef __cplusplus
 }
