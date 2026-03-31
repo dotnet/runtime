@@ -967,7 +967,15 @@ BYTE* ILStubLinker::GenerateCodeWorker(BYTE* pbBuffer, ILInstruction* pInstrBuff
 #ifndef TARGET_64BIT  // We don't have room on 32-bit platforms to store the 64-bit NaN value, so
                 // we use a special value to represent NaN and then recreate it here.
                         if ((instr == ILCodeStream::CEE_LDC_R8) && (((UINT32)uVal) == ILCodeStream::SPECIAL_VALUE_NAN_64_ON_32))
-                            uVal = -std::numeric_limits<double>::quiet_NaN();
+                        {
+                            union
+                            {
+                                UINT64 u;
+                                double d;
+                            } value;
+                            value.d = -std::numeric_limits<double>::quiet_NaN();
+                            uVal = value.u;
+                        }
 #endif // TARGET_64BIT
                         SET_UNALIGNED_VAL64(pbBuffer, uVal);
                     }
