@@ -7,7 +7,7 @@ description: Automatically trigger HTTP and/or SSL stress test pipelines when a 
 
 Automatically detect which stress test pipelines need to run based on the files changed in a pull request, and post `/azp run` comments to trigger them.
 
-> 📝 **AI-generated content disclosure:** When posting any content to GitHub under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
+> 📝 **AI-generated content disclosure:** In general, when posting any AI-generated content to GitHub under a user's own credentials — i.e., when the account is **not** a dedicated "copilot" or "bot" account/app — you **MUST** include a concise, visible note (for example, a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated, unless the user explicitly asks you to omit it. This particular skill runs as a bot/app identity and posts PR comments whose body **must contain only** the `/azp run ...` command, so **do not** add any disclosure text to the `/azp run` comments produced by this workflow.
 
 ## When to Use This Skill
 
@@ -51,7 +51,7 @@ Trigger **both** pipelines when shared infrastructure files are modified:
    - If only HTTP stress files changed → post `/azp run runtime-libraries stress-http`
    - If only SSL stress files changed → post `/azp run runtime-libraries stress-ssl`
    - If shared files changed, or both HTTP and SSL files changed → post both commands
-4. **Do not post duplicate commands.** Before posting, check the PR comments to see if a `/azp run` command for the same pipeline was already posted on the current head commit. If so, skip it.
+4. **Do not post duplicate commands.** Before posting, check the existing PR comments to see if an identical `/azp run` command for the same pipeline has already been posted. If so, skip posting it again.
 
 ## Output Format
 

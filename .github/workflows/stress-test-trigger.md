@@ -100,7 +100,7 @@ Get the list of files changed in PR #${{ github.event.pull_request.number }} usi
 
 ## Step 3: Check for Existing Commands
 
-Before posting, check the existing PR comments to see if a `/azp run` command for the same pipeline has already been posted for the current head SHA (${{ github.event.pull_request.head.sha }}). If so, do not post a duplicate.
+Before posting, check the existing PR comments to see if a `/azp run` command with the same pipeline name has already been posted. If such a comment already exists, do not post another duplicate comment.
 
 ## Step 4: Post `/azp run` Comments
 
