@@ -20,7 +20,11 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
-        private int _processId = -1;
+
+        // Allows for StartWithShellExecute (and its dependencies) to be trimmed when UseShellExecute is not being used.
+        // s_startWithShellExecute is defined in platform-specific partial files with OS-appropriate delegate signatures.
+        internal static void EnsureShellExecuteFunc() =>
+            s_startWithShellExecute ??= StartWithShellExecute;
 
         /// <summary>
         /// Gets the process ID.
@@ -31,16 +35,15 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Validate();
 
-                if (_processId == -1)
+                if (field == -1)
                 {
-                    _processId = GetProcessIdCore();
+                    field = GetProcessIdCore();
                 }
 
-                return _processId;
-
+                return field;
             }
-            private set => _processId = value;
-        }
+            private set;
+        } = -1;
 
         /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeHandle" />.
