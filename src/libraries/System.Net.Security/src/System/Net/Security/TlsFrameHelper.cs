@@ -389,7 +389,7 @@ namespace System.Net.Security
             int helloLength = ReadUInt24BigEndian(sslHandshake.Slice(HelloLengthOffset));
             ReadOnlySpan<byte> helloData = sslHandshake.Slice(HelloOffset);
 
-            if (helloData.Length < helloLength)
+            if (helloLength < ProtocolVersionSize || helloData.Length < helloLength)
             {
                 return false;
             }
