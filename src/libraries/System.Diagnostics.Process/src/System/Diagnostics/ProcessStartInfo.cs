@@ -293,5 +293,80 @@ namespace System.Diagnostics
                 stringBuilder.Append(Arguments);
             }
         }
+
+        internal void ThrowIfInvalid(out bool anyRedirection)
+        {
+            if (FileName.Length == 0)
+            {
+                throw new InvalidOperationException(SR.FileNameMissing);
+            }
+            if (StandardInputEncoding != null && !RedirectStandardInput)
+            {
+                throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
+            }
+            if (StandardOutputEncoding != null && !RedirectStandardOutput)
+            {
+                throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
+            }
+            if (StandardErrorEncoding != null && !RedirectStandardError)
+            {
+                throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
+            }
+            if (!string.IsNullOrEmpty(Arguments) && HasArgumentList)
+            {
+                throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
+            }
+            if (HasArgumentList)
+            {
+                int argumentCount = ArgumentList.Count;
+                for (int i = 0; i < argumentCount; i++)
+                {
+                    if (ArgumentList[i] is null)
+                    {
+                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
+                    }
+                }
+            }
+
+            anyRedirection = RedirectStandardInput || RedirectStandardOutput || RedirectStandardError;
+            bool anyHandle = StandardInputHandle is not null || StandardOutputHandle is not null || StandardErrorHandle is not null;
+            if (UseShellExecute && (anyRedirection || anyHandle))
+            {
+                throw new InvalidOperationException(SR.CantRedirectStreams);
+            }
+
+            if (anyHandle)
+            {
+                if (StandardInputHandle is not null && RedirectStandardInput)
+                {
+                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
+                }
+                if (StandardOutputHandle is not null && RedirectStandardOutput)
+                {
+                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
+                }
+                if (StandardErrorHandle is not null && RedirectStandardError)
+                {
+                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
+                }
+
+                ValidateHandle(StandardInputHandle, nameof(StandardInputHandle));
+                ValidateHandle(StandardOutputHandle, nameof(StandardOutputHandle));
+                ValidateHandle(StandardErrorHandle, nameof(StandardErrorHandle));
+            }
+
+            static void ValidateHandle(SafeFileHandle? handle, string paramName)
+            {
+                if (handle is not null)
+                {
+                    if (handle.IsInvalid)
+                    {
+                        throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
+                    }
+
+                    ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
+                }
+            }
+        }
     }
 }
