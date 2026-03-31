@@ -586,40 +586,8 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private WasmNativeReloc ToNativeReloc(SymbolicRelocation reloc, ulong runtimeOffset)
-        {
-            switch (reloc.Type)
-            {
-                case RelocType.WASM_TABLE_INDEX_U32:
-                    return new WasmNativeReloc(WasmNativeRelocKind.ADD_TABLE_BASE_I32, runtimeOffset);
-                case RelocType.WASM_TABLE_INDEX_U64:
-                    return new WasmNativeReloc(WasmNativeRelocKind.ADD_TABLE_BASE_I64, runtimeOffset);
-                default:
-                    throw new NotImplementedException();
-            }
-
-        }
-
+       
         private static ObjectNodeSection WebcilRelocSection = new ObjectNodeSection("reloc", SectionType.ReadOnly);
-        private void EmitRelocSectionData()
-        {
-            var relocSectionWriter = GetOrCreateSection(WebcilRelocSection);
-            for (int i = 0; i < _webcilSegment.Sections.Count(); i++)
-            {
-                WebcilSection webcilSection = _webcilSegment.Sections[i];
-                if (_runtimeRelocations.TryGetValue(webcilSection.Index, out List<SymbolicRelocation> runtimeRelocations))
-                {
-                    foreach (var reloc in runtimeRelocations)
-                    {
-                        ulong resolvedOffset = (ulong)webcilSection.Header.PointerToRawData + (ulong)reloc.Offset;
-                        WasmNativeReloc wasmReloc = ToNativeReloc(reloc, resolvedOffset);
-                        Span<byte> buffer = relocSectionWriter.Buffer.GetSpan(wasmReloc.EncodeSize());
-                        wasmReloc.Encode(buffer);
-                    }
-                }
-            }
-        }
 
         private PaddingHelper _paddingHelper = new PaddingHelper(WebcilSectionAlignment);
 
@@ -724,11 +692,6 @@ namespace ILCompiler.ObjectWriter
             WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"), contentAlign: 4);
             dataSection.Emit(outputFileStream);
 #endif
-        }
-
-        private bool NeedsRuntimeReloc(RelocType reloc)
-        {
-            return reloc is RelocType.WASM_TABLE_INDEX_U32 or RelocType.WASM_TABLE_INDEX_U64;
         }
 
         Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
@@ -884,44 +847,44 @@ namespace ILCompiler.ObjectWriter
                             long fileOffset = symbolWebcilSection.Header.PointerToRawData + definedSymbol.Value;
                             Relocation.WriteValue(reloc.Type, pData, fileOffset + addend);
                             break;
-                        case RelocType.WASM_MEMORY_ADDR_SLEB:
+                        case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                         {
                             // These relocs should be for cases of the form:
                             //  global.get __image_base
                             //  i32.const <reloc>
                             //  i32.add
-                            // so reloc represents an offset relative to image base. 
-                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset);
+                            //  i32.load 0
+                            // So, the relocated address value should always represent an offset relative to image base. 
+                            // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
+                            // flag mapping
+                            if (symbolWebcilSection is null)
+                            {
+                                throw new InvalidDataException();
+                            }
+
+                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
                             break;
                         }
-                        case RelocType.WASM_TABLE_INDEX_U32:
-                        case RelocType.WASM_TABLE_INDEX_U64:
+                        case RelocType.WASM_TABLE_INDEX_I32:
+                        case RelocType.WASM_TABLE_INDEX_I64:
                         case RelocType.WASM_TABLE_INDEX_SLEB:
                         {
-                            if (_uniqueSymbols.TryGetValue(reloc.SymbolName.ToString(), out int index))
-                            {
-                                // Here, we are effectively writing a table offset relative to the table_base.
-                                // These will need to be fixed up by the runtime after load by adding __image_function_pointer_base
-                                Relocation.WriteValue(reloc.Type, pData, index);
-                            }
-                            else
-                            {
-                                throw new InvalidDataException($"Table index for signature symbol definition '{reloc.SymbolName}' not found");
-                            }
+                            string symbolName = reloc.SymbolName.ToString();
+                            int index = _uniqueSymbols[symbolName];
+                            // Here, we are effectively writing a table offset relative to the table_base.
+                            // These will need to be fixed up by the runtime after load by adding __image_function_pointer_base
+                            // TODO-WASM: We need to emit these for fixup with an addend at runtime
+                            Relocation.WriteValue(reloc.Type, pData, index);
                             break;
                         }
                         case RelocType.WASM_FUNCTION_INDEX_LEB:
                         {
-                            if (_uniqueSymbols.TryGetValue(reloc.SymbolName.ToString(), out int index))
-                            {
-                                // These are module-local function pointer indices, so we can simply write out the assigned function index
-                                // for this particular symbol
-                                Relocation.WriteValue(reloc.Type, pData, index);
-                            }
-                            else
-                            {
-                                throw new InvalidDataException($"Table index for signature symbol definition '{reloc.SymbolName}' not found");
-                            }
+                            string symbolName = reloc.SymbolName.ToString();
+                            int index = _uniqueSymbols[symbolName];
+
+                            // These are module-local function pointer indices, so we can simply write out the assigned function index
+                            // for this particular symbol
+                            Relocation.WriteValue(reloc.Type, pData, index);
                             break;
                         }
                         default:

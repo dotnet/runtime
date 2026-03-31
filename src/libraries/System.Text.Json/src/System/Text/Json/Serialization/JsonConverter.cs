@@ -85,6 +85,12 @@ namespace System.Text.Json.Serialization
         internal bool CanBePolymorphic { get; init; }
 
         /// <summary>
+        /// The converter can read/write multiple JSON token types (e.g. both strings and objects).
+        /// Relaxes debug validation that non-value converters must always read StartObject/StartArray tokens.
+        /// </summary>
+        internal bool SupportsMultipleTokenTypes { get; init; }
+
+        /// <summary>
         /// The serializer must read ahead all contents of the next JSON value
         /// before calling into the converter for deserialization.
         /// </summary>
