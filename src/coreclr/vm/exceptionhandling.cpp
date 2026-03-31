@@ -11,6 +11,7 @@
 #include "eventtrace.h"
 #include "virtualcallstub.h"
 #include "utilcode.h"
+#include "excep.h"
 #include "interoplibinterface.h"
 #include "corinfo.h"
 #include "exceptionhandlingqcalls.h"
@@ -4033,8 +4034,21 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 EH_LOG((LL_INFO100, "SfiNext (pass %d): no more managed frames on the stack, the exception is not handled by the runtime\n", pTopExInfo->m_passNumber));
                 if (pTopExInfo->m_passNumber == 1)
                 {
-                    LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs);
-                    GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+#ifdef HOST_WINDOWS
+                    if (isPropagatingToExternalNativeCode)
+                    {
+                        // Notify AppDomain.UnhandledException before control returns to
+                        // external native code, but avoid default catch handler output
+                        // since native code may catch this exception.
+                        NotifyAppDomainsOfUnhandledException((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs, NULL, FALSE);
+                        GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+                    }
+                    else
+#endif
+                    {
+                        LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs);
+                        GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
+                    }
                 }
                 else
                 {
