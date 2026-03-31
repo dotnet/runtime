@@ -1217,7 +1217,8 @@ static void RunMainInternal(Param* pParam)
 HRESULT RunMain(MethodDesc *pFD ,
                 short numSkipArgs,
                 INT32 *piRetVal,
-                PTRARRAYREF *stringArgs /*=NULL*/)
+                PTRARRAYREF *stringArgs /*=NULL*/,
+                BOOL propagateExceptions)
 {
     STATIC_CONTRACT_THROWS;
     _ASSERTE(piRetVal);
@@ -1258,7 +1259,6 @@ HRESULT RunMain(MethodDesc *pFD ,
     ETWFireEvent(Main_V1);
 
     Param param;
-    BOOL propagateExceptions = !CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions);
 
     param.pFD = pFD;
     param.numSkipArgs = numSkipArgs;
@@ -1331,7 +1331,7 @@ void RunManagedStartup()
     managedStartup.InvokeThrowing(s_wszDiagnosticStartupHookPaths);
 }
 
-INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads)
+INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads, BOOL propagateExceptions)
 {
     CONTRACTL
     {
@@ -1395,7 +1395,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
             RunManagedStartup();
 
-            hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
+            hr = RunMain(pMeth, 1, &iRetVal, stringArgs, propagateExceptions);
 
             Thread::CleanUpForManagedThreadInNative(pThread);
         }
