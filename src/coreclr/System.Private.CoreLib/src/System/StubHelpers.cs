@@ -1513,7 +1513,7 @@ namespace System.StubHelpers
             }
             catch (TypeInitializationException ex)
             {
-                throw ex.InnerException!;
+                ExceptionDispatchInfo.Capture(ex.InnerException ?? ex).Throw();
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1547,7 +1547,7 @@ namespace System.StubHelpers
             }
             catch (TypeInitializationException ex)
             {
-                throw ex.InnerException!;
+                ExceptionDispatchInfo.Capture(ex.InnerException ?? ex).Throw();
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1565,7 +1565,7 @@ namespace System.StubHelpers
             }
             catch (TypeInitializationException ex)
             {
-                throw ex.InnerException!;
+                ExceptionDispatchInfo.Capture(ex.InnerException ?? ex).Throw();
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
