@@ -4,7 +4,7 @@
 // No include guards. This file is included multiple times.
 // Validates that every TYPE(name) and T_ARRAY(TYPE(name)) reference in CDAC_TYPE_FIELD
 // matches a cDAC type declared with CDAC_TYPE_BEGIN(name) within the same descriptor.
-// EXTERN_TYPE references are not validated (cross-descriptor types).
+// EXTERN_TYPE references are not validated (cross-descriptor or well-known types).
 //
 // Included from datadescriptor.cpp under #ifdef _DEBUG before the blob construction.
 // This file must be included BEFORE any wrappeddatadescriptor.inc inclusion so that

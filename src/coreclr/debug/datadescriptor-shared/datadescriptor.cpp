@@ -407,8 +407,3 @@ struct MagicAndBlob BlobDataDescriptor = {
 // end blob definition
 
 } // extern "C"
-
-
-
-
-

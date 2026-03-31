@@ -139,8 +139,9 @@ descriptor. It uses two passes:
 2. **Pass 2**: Each `TYPE(name)` in `CDAC_TYPE_FIELD` expands to `struct cdac_type_tag_<name>`,
    and `static_assert(sizeof(...))` fails if the tag struct was not declared.
 
-Primitive types (`T_UINT32`, etc.) and `EXTERN_TYPE` references expand to `char` during
-validation, so they always pass. `T_ARRAY` passes through to its inner type for validation.
+Primitive types (`T_UINT32`, etc.) and `EXTERN_TYPE` references (cross-descriptor or
+well-known types) expand to `char` during validation, so they always pass. `T_ARRAY`
+passes through to its inner type for validation.
 
 This validation is included from `datadescriptor.cpp` under `#ifdef _DEBUG` and runs before
 the blob construction passes. A type mismatch produces a clear compiler error, for example:

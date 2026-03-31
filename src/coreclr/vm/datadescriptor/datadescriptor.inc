@@ -930,7 +930,7 @@ CDAC_TYPE_END(InlinedCallFrame)
 
 CDAC_TYPE_BEGIN(SoftwareExceptionFrame)
 CDAC_TYPE_SIZE(sizeof(SoftwareExceptionFrame))
-CDAC_TYPE_FIELD(SoftwareExceptionFrame, T_POINTER, TargetContext, cdac_data<SoftwareExceptionFrame>::TargetContext)
+CDAC_TYPE_FIELD(SoftwareExceptionFrame, EXTERN_TYPE(Context), TargetContext, cdac_data<SoftwareExceptionFrame>::TargetContext)
 CDAC_TYPE_FIELD(SoftwareExceptionFrame, T_POINTER, ReturnAddress, cdac_data<SoftwareExceptionFrame>::ReturnAddress)
 CDAC_TYPE_END(SoftwareExceptionFrame)
 
@@ -957,7 +957,7 @@ CDAC_TYPE_END(FuncEvalFrame)
 
 CDAC_TYPE_BEGIN(DebuggerEval)
 CDAC_TYPE_SIZE(sizeof(DebuggerEval))
-CDAC_TYPE_FIELD(DebuggerEval, T_POINTER, TargetContext, offsetof(DebuggerEval, m_context))
+CDAC_TYPE_FIELD(DebuggerEval, EXTERN_TYPE(Context), TargetContext, offsetof(DebuggerEval, m_context))
 CDAC_TYPE_FIELD(DebuggerEval, T_BOOL, EvalDuringException, offsetof(DebuggerEval, m_evalDuringException))
 CDAC_TYPE_END(DebuggerEval)
 #endif // DEBUGGING_SUPPORTED
@@ -1074,7 +1074,7 @@ CDAC_TYPE_END(HijackArgs)
 
 CDAC_TYPE_BEGIN(FaultingExceptionFrame)
 CDAC_TYPE_SIZE(sizeof(FaultingExceptionFrame))
-CDAC_TYPE_FIELD(FaultingExceptionFrame, T_POINTER, TargetContext, cdac_data<FaultingExceptionFrame>::TargetContext)
+CDAC_TYPE_FIELD(FaultingExceptionFrame, EXTERN_TYPE(Context), TargetContext, cdac_data<FaultingExceptionFrame>::TargetContext)
 CDAC_TYPE_END(FaultingExceptionFrame)
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
