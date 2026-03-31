@@ -117,8 +117,8 @@ namespace Microsoft.Extensions.Configuration
                 catch (Exception ex)
                 {
                     // We do not reset Data here. We reset Data only for exceptions from Load (inner try
-                    // block) such as parse errors. For (possibly transient) IO Exceptions from OpenRead
-                    // we preserve the original configuration.
+                    // block above) such as parse errors. For (possibly transient) IO Exceptions mainly
+                    // from OpenRead, we preserve the original configuration.
                     HandleException(ExceptionDispatchInfo.Capture(ex));
                 }
             }
