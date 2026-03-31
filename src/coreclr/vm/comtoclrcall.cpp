@@ -561,7 +561,11 @@ namespace
         LIMITED_METHOD_CONTRACT;
         return;
     }
+}
+#endif
 
+namespace
+{
     PCODE GetReturnStubForComCallMethodDesc(ComCallMethodDesc *pCMD, HRESULT hr)
     {
         LIMITED_METHOD_CONTRACT;
@@ -593,7 +597,6 @@ namespace
         }
     }
 }
-#endif
 
 PCODE ComCallUMThunkMarshInfo::GetReturnStubForHResult(HRESULT hr)
 {
