@@ -1745,6 +1745,14 @@ static PCODE GetLateBoundCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCal
 
     LPVOID *lpVtbl = *(LPVOID **)(IUnknown *)pUnk;
 
+#ifdef _DEBUG
+    // Make sure that our underlying RCW really has some IDispatch support.
+    // We don't use this pointer as we don't want the "default" IDispatch interface.
+    // We want the IDispatch pointer that corresponds to the actual interface we're calling on, which may not be the default IDispatch.
+    IDispatch* pDisp = NULL;
+    _ASSERTE(SUCCEEDED(((IUnknown *)pUnk)->QueryInterface(IID_IDispatch, (void**)&pDisp)));
+    pDisp->Release();
+#endif
 
     PCODE target = (PCODE)lpVtbl[6]; // IDispatch::Invoke's slot
     return target;

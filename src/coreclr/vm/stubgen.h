@@ -421,7 +421,7 @@ public:
         return SigPointer(pSig, cbSig);
     }
 
-    SString& LookupUserString(mdToken token)
+    LPCWSTR LookupUserString(mdToken token)
     {
         CONTRACTL
         {
@@ -434,7 +434,8 @@ public:
         }
         CONTRACTL_END;
 
-        return m_userStrings[static_cast<COUNT_T>(RidFromToken(token) - 1)];
+        SString& userString = m_userStrings[static_cast<COUNT_T>(RidFromToken(token) - 1)];
+        return userString.GetUnicode();
     }
 
     mdToken GetToken(TypeHandle th)

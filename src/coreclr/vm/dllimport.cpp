@@ -1604,10 +1604,9 @@ protected:
     FieldDesc *m_pFD;
 };
 
-class LateBoundCLRToCOM_ILStubState : public ILStubState
+class LateBoundCLRToCOM_ILStubState final : public ILStubState
 {
 public:
-
     LateBoundCLRToCOM_ILStubState(Module* pStubModule, const Signature &signature, SigTypeContext *pTypeContext, DWORD dwStubFlags, MethodDesc* pTargetMD)
         : ILStubState(
                 pStubModule,

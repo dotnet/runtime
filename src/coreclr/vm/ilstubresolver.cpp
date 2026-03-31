@@ -141,17 +141,29 @@ BOOL ILStubResolver::IsValidStringRef(mdToken metaTok)
 {
     STANDARD_VM_CONTRACT;
 
-    return TypeFromToken(metaTok) == mdtString && metaTok <= m_pCompileTimeState->m_tokenLookupMap.GetMaxUserStringToken();
+    if (TypeFromToken(metaTok) != mdtString)
+        return FALSE;
+
+    if (RidFromToken(metaTok) == 0)
+        return FALSE;
+
+    mdToken maxUserStringToken = m_pCompileTimeState->m_tokenLookupMap.GetMaxUserStringToken();
+
+    return metaTok >= TokenFromRid(1, mdtString) && metaTok <= maxUserStringToken;
 }
 
 STRINGREF ILStubResolver::GetStringLiteral(mdToken metaTok)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_COOPERATIVE;
+        PRECONDITION(IsValidStringRef(metaTok));
+    }
+    CONTRACTL_END;
 #ifndef DACCESS_COMPILE
-    SString& str = m_pCompileTimeState->m_tokenLookupMap.LookupUserString(metaTok);
-
-    LPCWSTR unicodeStr = str.GetUnicode();
-    return StringObject::NewString(unicodeStr, str.GetCount());
+    return StringObject::NewString(m_pCompileTimeState->m_tokenLookupMap.LookupUserString(metaTok));
 #else
     DacNotImpl();
     return NULL;
