@@ -13,7 +13,6 @@
     IMPORT VSD_ResolveWorkerForInterfaceLookupSlot
 #endif
     IMPORT ComPreStubWorker
-    IMPORT COMToCLRWorker
     IMPORT CallDescrWorkerUnwindFrameChainHandler
     IMPORT UMEntryPrestubUnwindFrameChainHandler
     IMPORT TheUMEntryPrestubWorker

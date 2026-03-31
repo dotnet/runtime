@@ -33,9 +33,6 @@ endif ;FEATURE_HIJACK
 EXTERN _ProcessCLRException:PROC
 EXTERN _UMEntryPrestubUnwindFrameChainHandler:PROC
 EXTERN _CallDescrWorkerUnwindFrameChainHandler:PROC
-ifdef FEATURE_COMINTEROP
-EXTERN _ReverseComUnwindFrameChainHandler:PROC
-endif ; FEATURE_COMINTEROP
 EXTERN _ProcessCLRException:PROC
 EXTERN __alloca_probe:PROC
 EXTERN _PInvokeImportWorker@4:PROC

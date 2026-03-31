@@ -237,7 +237,7 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunkData* pUMEntryThunkData)
     if (pUMEntryThunkData->IsCollectedDelegate())
         CallbackOnCollectedDelegate(pUMEntryThunkData);
 
-    PCODE entryPoint = NULL;
+    PCODE entryPoint = (PCODE)NULL;
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this method is called by stubs which are called by managed code,
