@@ -98,7 +98,7 @@ namespace System
             if (!string.IsNullOrEmpty(_fileName))
                 s += Environment.NewLineConst + SR.Format(SR.IO_FileName_Name, _fileName);
 
-            if (_requestingAssemblyChain is not null)
+            if (!string.IsNullOrEmpty(_requestingAssemblyChain)
                 s += Environment.NewLineConst + SR.Format(SR.IO_FileLoad_RequestedBy, _requestingAssemblyChain.ReplaceLineEndings());
 
             if (InnerException != null)
