@@ -189,18 +189,13 @@ namespace ILCompiler.ObjectWriter
                 // Resolve the relocation to already defined symbol and write it into data
                 fixed (byte* pData = data)
                 {
-#if !READYTORUN
-                    // ILC defines method symbols with the thumb bit (+1) set per the AAELF ABI
+                    // Method symbols should be defined with the thumb bit (+1) set per the AAELF ABI
                     // convention. For BRANCH24, the encoding cannot represent the thumb bit
                     // (per AAELF formula ((S + A) | T) – P), so strip it from the symbol value.
-                    // For MOV32, the thumb bit can be encoded, so use the symbol value as-is.
-                    // R2R doesn't add the thumb bit to the symbol value.
+                    // NOTE: R2R doesn't currently add the thumb bit to the symbol value, so this is a NOP.
                     long symbolValue = relocType is IMAGE_REL_BASED_THUMB_BRANCH24
                         ? definedSymbol.Value & ~1L
                         : definedSymbol.Value;
-#else
-                    long symbolValue = definedSymbol.Value;
-#endif
                     long adjustedAddend = addend;
 
                     adjustedAddend -= relocType switch
