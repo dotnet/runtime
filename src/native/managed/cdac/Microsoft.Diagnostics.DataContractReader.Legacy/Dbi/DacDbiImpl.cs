@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -179,29 +181,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetModuleSimpleName(ulong vmModule, nint pStrFilename)
-    {
-        int hr = HResults.S_OK;
-        try
-        {
-            Contracts.ILoader loader = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
-            if (!loader.TryGetSimpleName(handle, out string simpleName))
-                throw new InvalidOperationException("Failed to get module simple name");
-            hr = StringHolderAssignCopy(pStrFilename, simpleName);
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int hrLocal = _legacy.GetModuleSimpleName(vmModule, pStrFilename);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
-        return hr;
-    }
+        => _legacy is not null ? _legacy.GetModuleSimpleName(vmModule, pStrFilename) : HResults.E_NOTIMPL;
 
     public int GetAssemblyPath(ulong vmAssembly, nint pStrFilename, Interop.BOOL* pResult)
     {
@@ -346,6 +326,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int EnumerateThreads(nint fpCallback, nint pUserData)
     {
         int hr = HResults.S_OK;
+#if DEBUG
+        List<ulong>? cdacThreads = _legacy is not null ? new() : null;
+#endif
         try
         {
             Contracts.IThread threadContract = _target.Contracts.Thread;
@@ -359,6 +342,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 if ((threadData.State & (Contracts.ThreadState.Dead | Contracts.ThreadState.Unstarted)) == 0)
                 {
                     callback(currentThread.Value, pUserData);
+#if DEBUG
+                    cdacThreads?.Add(currentThread.Value);
+#endif
                 }
                 currentThread = threadData.NextThread;
             }
@@ -367,8 +353,35 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            List<ulong> dacThreads = new();
+            GCHandle dacHandle = GCHandle.Alloc(dacThreads);
+            int hrLocal = _legacy.EnumerateThreads(
+                (nint)(delegate* unmanaged<ulong, nint, void>)&CollectThreadCallback,
+                GCHandle.ToIntPtr(dacHandle));
+            dacHandle.Free();
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(
+                    cdacThreads!.SequenceEqual(dacThreads),
+                    $"Thread enumeration mismatch - cDAC: [{string.Join(",", cdacThreads!.Select(t => $"0x{t:x}"))}], DAC: [{string.Join(",", dacThreads.Select(t => $"0x{t:x}"))}]");
+            }
+        }
+#endif
         return hr;
     }
+
+#if DEBUG
+    [UnmanagedCallersOnly]
+    private static void CollectThreadCallback(ulong value, nint pUserData)
+    {
+        GCHandle handle = GCHandle.FromIntPtr(pUserData);
+        ((List<ulong>)handle.Target!).Add(value);
+    }
+#endif
 
     public int IsThreadMarkedDead(ulong vmThread, Interop.BOOL* pResult)
     {
