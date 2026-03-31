@@ -17,8 +17,6 @@ namespace Microsoft.Win32.SafeHandles
             return Interop.Kernel32.CloseHandle(handle);
         }
 
-        // Allows for StartWithShellExecute (and its dependencies) to be trimmed when UseShellExecute is not being used.
-        // On Windows, StartWithShellExecute does not use standard I/O handles.
         private static Func<ProcessStartInfo, SafeProcessHandle>? s_startWithShellExecute;
 
         internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
