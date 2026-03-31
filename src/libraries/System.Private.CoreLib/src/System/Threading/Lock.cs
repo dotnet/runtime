@@ -19,15 +19,18 @@ namespace System.Threading
     /// </remarks>
     public sealed class Lock
     {
+#if FEATURE_MULTITHREADING
         private const short DefaultMaxSpinCount = 22;
         private const short DefaultAdaptiveSpinPeriod = 100;
         private const short SpinSleep0Threshold = 10;
         private const ushort MaxDurationMsForPreemptingWaiters = 100;
 
         private const short SpinCountNotInitialized = short.MinValue;
+#endif
 
         internal const int UninitializedThreadId = 0;
 
+#if FEATURE_MULTITHREADING
         // NOTE: Lock must not have a static (class) constructor, as Lock itself is used to synchronize
         // class construction.  If Lock has its own class constructor, this can lead to infinite recursion.
         // All static data in Lock must be lazy-initialized.
@@ -37,12 +40,16 @@ namespace System.Threading
         private static short s_minSpinCountForAdaptiveSpin;
 
         private static long s_contentionCount;
+#endif
 
         private int _owningThreadId; // cDAC depends on exact name of this field
 
+#pragma warning disable CA1823 // Unused on ST but required by CoreCLR VM via corelib.h
         private uint _state; // see State for layout. cDAC depends on exact name of this field
+#pragma warning restore CA1823
         private uint _recursionCount; // cDAC depends on exact name of this field
 
+#if FEATURE_MULTITHREADING
         // This field serves a few purposes currently:
         // - When positive, it indicates the number of spin-wait iterations that most threads would do upon contention
         // - When zero, it indicates that spin-waiting is to be attempted by a thread to test if it is successful
@@ -53,13 +60,19 @@ namespace System.Threading
 
         private ushort _waiterStartTimeMs;
         private AutoResetEvent? _waitEvent;
+#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Lock"/> class.
         /// </summary>
+#if !FEATURE_MULTITHREADING
+        public Lock() { }
+#else
         public Lock() => _spinCount = SpinCountNotInitialized;
+#endif
 
 
+#if FEATURE_MULTITHREADING
 #if NATIVEAOT // The method needs to be public in NativeAOT so that other private libraries can access it
         public Lock(bool useTrivialWaits)
 #else
@@ -69,6 +82,7 @@ namespace System.Threading
         {
             State.InitializeUseTrivialWaits(this, useTrivialWaits);
         }
+#endif
 
         internal int OwningManagedThreadId => (int)_owningThreadId;
 
@@ -242,6 +256,22 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private bool TryEnter_Outlined(int timeoutMs) => TryEnter_Inlined(timeoutMs) != UninitializedThreadId;
 
+#if !FEATURE_MULTITHREADING
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int TryEnter_Inlined(int timeoutMs)
+        {
+            Debug.Assert(timeoutMs >= -1);
+
+            int currentThreadId = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            if (currentThreadId != UninitializedThreadId && _owningThreadId == UninitializedThreadId)
+            {
+                _owningThreadId = currentThreadId;
+                return currentThreadId;
+            }
+
+            return TryEnterSlow(timeoutMs, currentThreadId);
+        }
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int TryEnter_Inlined(int timeoutMs)
         {
@@ -258,6 +288,7 @@ namespace System.Threading
 
             return TryEnterSlow(timeoutMs, currentThreadId);
         }
+#endif
 
         /// <summary>
         /// Exits the lock.
@@ -295,6 +326,42 @@ namespace System.Threading
             ExitImpl();
         }
 
+#if !FEATURE_MULTITHREADING
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ExitImpl()
+        {
+            Debug.Assert(_owningThreadId != UninitializedThreadId);
+            Debug.Assert(_owningThreadId == ManagedThreadId.CurrentManagedThreadIdUnchecked);
+
+            if (_recursionCount == 0)
+            {
+                _owningThreadId = 0;
+            }
+            else
+            {
+                _recursionCount--;
+            }
+        }
+
+        internal uint ExitAll()
+        {
+            Debug.Assert(IsHeldByCurrentThread);
+
+            uint recursionCount = _recursionCount;
+            _owningThreadId = 0;
+            _recursionCount = 0;
+
+            return recursionCount;
+        }
+
+        internal void Reenter(uint previousRecursionCount)
+        {
+            Debug.Assert(!IsHeldByCurrentThread);
+
+            Enter();
+            _recursionCount = previousRecursionCount;
+        }
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ExitImpl()
         {
@@ -342,7 +409,46 @@ namespace System.Threading
             Enter();
             _recursionCount = previousRecursionCount;
         }
+#endif
 
+#if !FEATURE_MULTITHREADING
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal int TryEnterSlow(int timeoutMs, int currentThreadId)
+        {
+            Debug.Assert(timeoutMs >= -1);
+
+            if (currentThreadId == UninitializedThreadId)
+            {
+                currentThreadId = ManagedThreadId.Current;
+                Debug.Assert(_owningThreadId != currentThreadId);
+                if (_owningThreadId == UninitializedThreadId)
+                {
+                    _owningThreadId = currentThreadId;
+                    return currentThreadId;
+                }
+            }
+            else if (_owningThreadId == currentThreadId)
+            {
+                uint newRecursionCount = _recursionCount + 1;
+                if (newRecursionCount != 0)
+                {
+                    _recursionCount = newRecursionCount;
+                    return currentThreadId;
+                }
+
+                throw new LockRecursionException(SR.Lock_Enter_LockRecursionException);
+            }
+
+            if (timeoutMs == 0)
+            {
+                return UninitializedThreadId;
+            }
+
+            // On single-threaded targets, if the lock is held and we cannot acquire it,
+            // this is a deadlock since no other thread can release it.
+            throw new PlatformNotSupportedException();
+        }
+#else
         private static bool IsAdaptiveSpinEnabled(short minSpinCountForAdaptiveSpin) => minSpinCountForAdaptiveSpin <= 0;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -621,6 +727,9 @@ namespace System.Threading
             return UninitializedThreadId;
         }
 
+#endif // FEATURE_MULTITHREADING (TryEnterSlow)
+
+#if FEATURE_MULTITHREADING
         private void ResetWaiterStartTime() => _waiterStartTimeMs = 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -679,6 +788,7 @@ namespace System.Threading
                 Debug.Assert(signaled);
             }
         }
+#endif // FEATURE_MULTITHREADING (ResetWaiterStartTime through SignalWaiterIfNecessary)
 
         /// <summary>
         /// <code>true</code> if the lock is held by the calling thread, <code>false</code> otherwise.
@@ -689,14 +799,24 @@ namespace System.Threading
             {
                 var owningThreadId = _owningThreadId;
                 bool isHeld = owningThreadId != UninitializedThreadId && owningThreadId == ManagedThreadId.CurrentManagedThreadIdUnchecked;
+#if FEATURE_MULTITHREADING
                 Debug.Assert(!isHeld || new State(this).IsLocked);
+#endif
                 return isHeld;
             }
         }
 
+#if !FEATURE_MULTITHREADING
+        internal static long ContentionCount => 0;
+#pragma warning disable CA1822 // Instance method required for API compatibility
+        internal void Dispose() { }
+#pragma warning restore CA1822
+#else
         internal static long ContentionCount => s_contentionCount;
         internal void Dispose() => _waitEvent?.Dispose();
+#endif
 
+#if FEATURE_MULTITHREADING
         internal nint LockIdForEvents
         {
             get
@@ -705,9 +825,25 @@ namespace System.Threading
                 return _waitEvent.SafeWaitHandle.DangerousGetHandle();
             }
         }
+#endif
 
         internal int OwningThreadId => _owningThreadId;
 
+#if !FEATURE_MULTITHREADING
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool TryEnterOneShot(int currentManagedThreadId)
+        {
+            Debug.Assert(currentManagedThreadId != UninitializedThreadId);
+
+            if (_owningThreadId == UninitializedThreadId)
+            {
+                _owningThreadId = currentManagedThreadId;
+                return true;
+            }
+
+            return false;
+        }
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryEnterOneShot(int currentManagedThreadId)
         {
@@ -723,6 +859,7 @@ namespace System.Threading
 
             return false;
         }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool GetIsHeldByCurrentThread(int currentManagedThreadId)
@@ -730,10 +867,13 @@ namespace System.Threading
             Debug.Assert(currentManagedThreadId != UninitializedThreadId);
 
             bool isHeld = _owningThreadId == currentManagedThreadId;
+#if FEATURE_MULTITHREADING
             Debug.Assert(!isHeld || new State(this).IsLocked);
+#endif
             return isHeld;
         }
 
+#if FEATURE_MULTITHREADING
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private TryLockResult LazyInitializeOrEnter()
         {
@@ -862,19 +1002,27 @@ namespace System.Threading
 
         // Returns false until the static variable is lazy-initialized
         internal static bool IsSingleProcessor => s_isSingleProcessor;
+#else
+        // On single-threaded targets, always report single processor
+        internal static bool IsSingleProcessor => true;
+#endif // FEATURE_MULTITHREADING (LazyInitializeOrEnter through IsSingleProcessor)
 
         // Used to transfer the state when inflating thin locks. The lock is considered unlocked if managedThreadId is zero, and
         // locked otherwise.
         internal void InitializeForMonitor(int managedThreadId, uint recursionCount)
         {
             Debug.Assert(recursionCount == 0 || managedThreadId != UninitializedThreadId);
-            Debug.Assert(!new State(this).UseTrivialWaits);
 
+#if FEATURE_MULTITHREADING
+            Debug.Assert(!new State(this).UseTrivialWaits);
             _state = managedThreadId == 0 ? State.InitialStateValue : State.LockedStateValue;
+#endif
             _owningThreadId = managedThreadId;
             _recursionCount = recursionCount;
 
+#if FEATURE_MULTITHREADING
             Debug.Assert(!new State(this).UseTrivialWaits);
+#endif
         }
 
 #if CORECLR
@@ -893,6 +1041,7 @@ namespace System.Threading
         }
 #endif
 
+#if FEATURE_MULTITHREADING
         private static short DetermineMaxSpinCount()
         {
             if (IsSingleProcessor)
@@ -927,7 +1076,9 @@ namespace System.Threading
 
             return (short)-adaptiveSpinPeriod;
         }
+#endif // FEATURE_MULTITHREADING (DetermineMaxSpinCount through DetermineMinSpinCountForAdaptiveSpin)
 
+#if FEATURE_MULTITHREADING
         private struct State : IEquatable<State>
         {
             // Layout constants for Lock._state
@@ -1491,6 +1642,9 @@ namespace System.Threading
             }
         }
 
+#endif // FEATURE_MULTITHREADING (State struct)
+
+#if FEATURE_MULTITHREADING
         private enum TryLockResult
         {
             Locked,
@@ -1505,5 +1659,6 @@ namespace System.Threading
             PartiallyComplete,
             Complete
         }
+#endif // FEATURE_MULTITHREADING (TryLockResult, StaticsInitializationStage)
     }
 }

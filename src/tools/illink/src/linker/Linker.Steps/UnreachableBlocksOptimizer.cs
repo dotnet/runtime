@@ -731,7 +731,7 @@ namespace Mono.Linker.Steps
 
                 if (stackDepth != 0)
                 {
-                    Debug.Fail("Invalid IL?");
+                    // throw new InvalidOperationException($"Cannot rewrite instruction at index {index} to nop because of unknown stack behaviour of instruction at index {start_index}");
                     return;
                 }
 

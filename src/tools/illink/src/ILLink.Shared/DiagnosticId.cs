@@ -71,7 +71,7 @@ namespace ILLink.Shared
         XmlCouldNotResolveType = 2008,
         XmlCouldNotFindMethodOnType = 2009,
         XmlInvalidValueForStub = 2010,
-        XmlUnkownBodyModification = 2011,
+        XmlUnknownBodyModification = 2011,
         XmlCouldNotFindFieldOnType = 2012,
         XmlSubstitutedFieldNeedsToBeStatic = 2013,
         XmlMissingSubstitutionValueForField = 2014,

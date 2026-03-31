@@ -84,7 +84,7 @@ namespace Mono.Linker.Steps
                     _substitutionInfo.SetMethodAction(method, MethodAction.ConvertToStub);
                     return;
                 default:
-                    LogWarning(methodNav, DiagnosticId.XmlUnkownBodyModification, action, method.GetDisplayName());
+                    LogWarning(methodNav, DiagnosticId.XmlUnknownBodyModification, action, method.GetDisplayName());
                     return;
             }
         }

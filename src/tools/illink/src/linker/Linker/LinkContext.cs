@@ -1031,7 +1031,14 @@ namespace Mono.Linker
         {
             if (_processed_bodies_for_method.Add(method))
             {
-                _unreachableBlocksOptimizer.ProcessMethod(method);
+                try
+                {
+                    _unreachableBlocksOptimizer.ProcessMethod(method);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    FatalError($"Unexpected error while processing method body for '{method.GetDisplayName()}': {ex.Message}", (int)DiagnosticId.XmlUnknownBodyModification, MessageSubCategory.None, new MessageOrigin(method));
+                }
             }
 
             return MethodIL.Create(method.Body);

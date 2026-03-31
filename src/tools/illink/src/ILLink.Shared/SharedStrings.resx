@@ -459,10 +459,10 @@
   <data name="XmlInvalidValueForStubMessage" xml:space="preserve">
     <value>Invalid value for '{0}' stub.</value>
   </data>
-  <data name="XmlUnkownBodyModificationTitle" xml:space="preserve">
+  <data name="XmlUnknownBodyModificationTitle" xml:space="preserve">
     <value>The value of the body attribute used in the substitution XML is invalid (the only supported options are remove and stub).</value>
   </data>
-  <data name="XmlUnkownBodyModificationMessage" xml:space="preserve">
+  <data name="XmlUnknownBodyModificationMessage" xml:space="preserve">
     <value>Unknown body modification '{0}' for '{1}'.</value>
   </data>
   <data name="XmlCouldNotFindFieldOnTypeTitle" xml:space="preserve">

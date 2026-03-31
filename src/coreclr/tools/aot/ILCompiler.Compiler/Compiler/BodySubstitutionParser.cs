@@ -96,7 +96,7 @@ namespace ILCompiler
                     break;
                 default:
 #if !READYTORUN
-                    LogWarning(methodNav, DiagnosticId.XmlUnkownBodyModification, action, method.GetDisplayName());
+                    LogWarning(methodNav, DiagnosticId.XmlUnknownBodyModification, action, method.GetDisplayName());
 #endif
                     break;
             }
