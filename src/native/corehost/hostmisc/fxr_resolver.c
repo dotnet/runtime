@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "apphost_fxr_resolver.h"
-#include "apphost_pal.h"
-#include "apphost_trace.h"
-#include "apphost_utils.h"
-#include "apphost_fx_ver.h"
+#include "fxr_resolver_c.h"
+#include "pal_c.h"
+#include "trace_c.h"
+#include "utils_c.h"
+#include "fx_ver_c.h"
 
 #include <dn-vector.h>
 

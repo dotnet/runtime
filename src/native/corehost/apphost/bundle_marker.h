@@ -4,10 +4,10 @@
 #ifndef __BUNDLE_MARKER_H__
 #define __BUNDLE_MARKER_H__
 
-#include "apphost_bundle_marker.h"
+#include "bundle_marker_c.h"
 
 // C++ wrapper for backward compatibility with existing C++ code (e.g., corehost.cpp).
-// The actual implementation is in apphost_bundle_marker.c.
+// The actual implementation is in bundle_marker.c.
 struct bundle_marker_t
 {
     static int64_t header_offset()

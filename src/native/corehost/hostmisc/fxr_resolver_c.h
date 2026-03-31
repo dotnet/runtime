@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef APPHOST_FXR_RESOLVER_H
-#define APPHOST_FXR_RESOLVER_H
+#ifndef FXR_RESOLVER_C_H
+#define FXR_RESOLVER_C_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -35,4 +35,4 @@ bool fxr_resolver_try_get_path(
     char* out_fxr_path,
     size_t out_fxr_path_len);
 
-#endif // APPHOST_FXR_RESOLVER_H
+#endif // FXR_RESOLVER_C_H

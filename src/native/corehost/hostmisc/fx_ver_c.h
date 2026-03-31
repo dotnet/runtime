@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef APPHOST_FX_VER_H
-#define APPHOST_FX_VER_H
+#ifndef FX_VER_C_H
+#define FX_VER_C_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -43,4 +43,4 @@ char* c_fx_ver_as_str(const c_fx_ver_t* ver, char* out_str, size_t out_str_len);
 }
 #endif
 
-#endif // APPHOST_FX_VER_H
+#endif // FX_VER_C_H

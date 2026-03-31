@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "apphost_utils.h"
-#include "apphost_pal.h"
-#include "apphost_trace.h"
+#include "utils_c.h"
+#include "pal_c.h"
+#include "trace_c.h"
 
 #include <string.h>
 #include <stdio.h>

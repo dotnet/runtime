@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef APPHOST_TRACE_H
-#define APPHOST_TRACE_H
+#ifndef TRACE_C_H
+#define TRACE_C_H
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -46,4 +46,4 @@ trace_error_writer_fn trace_get_error_writer(void);
 }
 #endif
 
-#endif // APPHOST_TRACE_H
+#endif // TRACE_C_H

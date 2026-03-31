@@ -8,7 +8,7 @@
 #include <_version.h>
 #else
 #include <_version.c>
-#include "apphost_utils.h"
+#include "utils_c.h"
 #endif
 
 bool file_exists_in_dir(const pal::string_t& dir, const pal::char_t* file_name, pal::string_t* out_file_path)

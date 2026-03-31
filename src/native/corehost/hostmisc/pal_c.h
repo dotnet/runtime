@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef APPHOST_PAL_H
-#define APPHOST_PAL_H
+#ifndef PAL_C_H
+#define PAL_C_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -98,4 +98,4 @@ const char* pal_get_dotnet_self_registered_config_location(char* buf, size_t buf
 }
 #endif
 
-#endif // APPHOST_PAL_H
+#endif // PAL_C_H

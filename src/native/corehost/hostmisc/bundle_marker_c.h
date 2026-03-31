@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef APPHOST_BUNDLE_MARKER_H
-#define APPHOST_BUNDLE_MARKER_H
+#ifndef BUNDLE_MARKER_C_H
+#define BUNDLE_MARKER_C_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -24,4 +24,4 @@ static inline bool bundle_marker_is_bundle(void)
 }
 #endif
 
-#endif // APPHOST_BUNDLE_MARKER_H
+#endif // BUNDLE_MARKER_C_H

@@ -5,9 +5,9 @@
 #define TRACE_H
 
 #include "pal.h"
-#include "apphost_trace.h"
+#include "trace_c.h"
 
-// The trace namespace provides C++ wrappers around the C implementation in apphost_trace.{h,c}.
+// The trace namespace provides C++ wrappers around the C implementation in trace_c.h / trace.c.
 // On all platforms, pal::char_t == pal_char_t (char on Unix, wchar_t on Windows),
 // so the C functions can be called directly. The va_list versions (trace_*_v) are used
 // to forward variadic arguments from these C++ wrappers.

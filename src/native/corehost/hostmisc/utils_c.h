@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef APPHOST_UTILS_H
-#define APPHOST_UTILS_H
+#ifndef UTILS_C_H
+#define UTILS_C_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -131,4 +131,4 @@ void utils_get_dotnet_root_env_var_for_arch(char* out_name, size_t out_name_len)
 }
 #endif
 
-#endif // APPHOST_UTILS_H
+#endif // UTILS_C_H

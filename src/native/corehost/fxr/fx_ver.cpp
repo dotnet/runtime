@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// C++ wrapper around the C implementation in apphost_fx_ver.{h,c}.
+// C++ wrapper around the C implementation in fx_ver_c.h / fx_ver.c.
 // On Unix, pal::char_t == char so strings are passed directly.
 // On Windows, pal::char_t == wchar_t so ASCII version strings are
 // converted between narrow and wide representations.
@@ -9,7 +9,7 @@
 #include <cassert>
 #include "pal.h"
 #include "fx_ver.h"
-#include "apphost_fx_ver.h"
+#include "fx_ver_c.h"
 
 // Helper to convert a narrow C string to pal::string_t
 static inline pal::string_t narrow_to_palstr(const char* s)

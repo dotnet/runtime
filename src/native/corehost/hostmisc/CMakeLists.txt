@@ -5,15 +5,15 @@ include(configure.cmake)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
-    ${CMAKE_CURRENT_LIST_DIR}/apphost_trace.c
-    ${CMAKE_CURRENT_LIST_DIR}/apphost_fx_ver.c
+    ${CMAKE_CURRENT_LIST_DIR}/trace.c
+    ${CMAKE_CURRENT_LIST_DIR}/fx_ver.c
     ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.cpp
     ${CLR_SRC_NATIVE_DIR}/minipal/mutex.c
 )
 
 set(HEADERS
-    ${CMAKE_CURRENT_LIST_DIR}/apphost_trace.h
+    ${CMAKE_CURRENT_LIST_DIR}/trace_c.h
     ${CMAKE_CURRENT_LIST_DIR}/trace.h
     ${CMAKE_CURRENT_LIST_DIR}/utils.h
     ${CMAKE_CURRENT_LIST_DIR}/pal.h
@@ -29,8 +29,8 @@ if(CLR_CMAKE_TARGET_WIN32)
         ${CMAKE_CURRENT_LIST_DIR}/longfile.h)
 else()
     list(APPEND SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/apphost_pal.c
-        ${CMAKE_CURRENT_LIST_DIR}/apphost_utils.c
+        ${CMAKE_CURRENT_LIST_DIR}/pal.c
+        ${CMAKE_CURRENT_LIST_DIR}/utils.c
         ${CMAKE_CURRENT_LIST_DIR}/pal.unix.cpp)
 endif()
 
@@ -72,12 +72,12 @@ add_library(hostmisc::public ALIAS hostmisc_public)
 # On non-Windows, this provides a pure C implementation that avoids C++ runtime dependencies.
 if(NOT CLR_CMAKE_TARGET_WIN32)
     set(HOSTMISC_C_SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/apphost_trace.c
-        ${CMAKE_CURRENT_LIST_DIR}/apphost_pal.c
-        ${CMAKE_CURRENT_LIST_DIR}/apphost_utils.c
-        ${CMAKE_CURRENT_LIST_DIR}/apphost_fx_ver.c
-        ${CMAKE_CURRENT_LIST_DIR}/apphost_fxr_resolver.c
-        ${CMAKE_CURRENT_LIST_DIR}/apphost_bundle_marker.c
+        ${CMAKE_CURRENT_LIST_DIR}/trace.c
+        ${CMAKE_CURRENT_LIST_DIR}/pal.c
+        ${CMAKE_CURRENT_LIST_DIR}/utils.c
+        ${CMAKE_CURRENT_LIST_DIR}/fx_ver.c
+        ${CMAKE_CURRENT_LIST_DIR}/fxr_resolver.c
+        ${CMAKE_CURRENT_LIST_DIR}/bundle_marker.c
         ${CLR_SRC_NATIVE_DIR}/minipal/mutex.c
     )
 
