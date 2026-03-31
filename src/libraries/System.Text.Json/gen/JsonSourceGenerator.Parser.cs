@@ -738,7 +738,8 @@ namespace System.Text.Json.SourceGeneration
                     ConstructorIsInaccessible = constructorIsInaccessible,
                     CanUseUnsafeAccessorForConstructor = constructorIsInaccessible
                         && _knownSymbols.UnsafeAccessorAttributeType is not null
-                        && type is not INamedTypeSymbol { IsGenericType: true },
+                        && (type is not INamedTypeSymbol { IsGenericType: true }
+                            || _knownSymbols.SupportsGenericUnsafeAccessors),
                     NullableUnderlyingType = nullableUnderlyingType,
                     RuntimeTypeRef = runtimeTypeRef,
                     IsValueTuple = type.IsTupleType,
@@ -1383,7 +1384,14 @@ namespace System.Text.Json.SourceGeneration
                     Order = order,
                     HasJsonInclude = hasJsonInclude && !hasJsonIncludeButIsInaccessible, // TODO: remove inaccessibility check once https://github.com/dotnet/runtime/issues/124889 is complete (tracking: https://github.com/dotnet/runtime/issues/88519)
                     CanUseUnsafeAccessors = _knownSymbols.UnsafeAccessorAttributeType is not null
-                        && memberInfo.ContainingType is not INamedTypeSymbol { IsGenericType: true },
+                        && (memberInfo.ContainingType is not INamedTypeSymbol { IsGenericType: true }
+                            || _knownSymbols.SupportsGenericUnsafeAccessors),
+                    OpenDeclaringTypeFQN = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? memberInfo.ContainingType.OriginalDefinition.GetFullyQualifiedName() : null,
+                    OpenPropertyTypeFQN = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? memberInfo.OriginalDefinition.GetMemberType().GetFullyQualifiedName() : null,
+                    DeclaringTypeParameterNames = memberInfo.ContainingType is INamedTypeSymbol { IsGenericType: true } namedType && _knownSymbols.SupportsGenericUnsafeAccessors
+                        ? namedType.OriginalDefinition.TypeParameters.Select(tp => tp.Name).ToImmutableEquatableArray() : null,
                     IsExtensionData = isExtensionData,
                     PropertyType = propertyTypeRef,
                     DeclaringType = declaringType,
