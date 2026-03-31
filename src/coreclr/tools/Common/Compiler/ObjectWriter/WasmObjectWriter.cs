@@ -300,20 +300,7 @@ namespace ILCompiler.ObjectWriter
                 return size;
             }
 
-            public long ResolveSymbolRVA(SymbolDefinition definition)
-            {
-                for (int i = 0; i < Sections.Length; i++)
-                {
-                    WebcilSection section = Sections[i];
-                    if (definition.SectionIndex == section.Index)
-                    {
-                        return section.Header.VirtualAddress + definition.Value;
-                    }
-                }
-
-                return 0;
-            }
-        }
+           }
 
         static WasmFunctionBody GetWebcilSize = new WasmFunctionBody(
             new WasmFuncType(new([WasmValueType.I32]), new([])), // (func (destPtr i32) (result))
@@ -371,7 +358,21 @@ namespace ILCompiler.ObjectWriter
             _methodCount++;
 
             RegisterStubIndexAndSignature(body);
+
         }
+         private long ResolveSymbolRVA(WebcilSection[] sections, SymbolDefinition definition)
+         {
+            for (int i = 0; i < sections.Length; i++)
+            {
+                WebcilSection section = sections[i];
+                if (definition.SectionIndex == section.Index)
+                {
+                    return section.Header.VirtualAddress + definition.Value;
+                }
+            }
+
+            return 0;
+         }
 
         public const int WebcilSectionAlignment = 16;
         private WebcilSegment BuildWebcilDataSegment()
@@ -408,16 +409,31 @@ namespace ILCompiler.ObjectWriter
                 virtualAddress += virtualSize;
             }
 
+            // Populate the RVAs for the Cor header/size and debug directory/size, which are required for the runtime
+            // to be able to load this segment.
+            Utf8String corHeaderDefName = _wellKnownSymbols[SortableDependencyNode.ObjectNodeOrder.CorHeaderNode];
+            SymbolDefinition corHeaderNode = _definedSymbols[corHeaderDefName];
+            uint peCliHeaderRva = (uint)ResolveSymbolRVA(webcilSections, corHeaderNode);
+            Debug.Assert(peCliHeaderRva != 0);
+            uint peCliHeaderSize = (uint)corHeaderNode.Size;
+
+            Utf8String debugDirectoryDefName = _wellKnownSymbols[SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode];
+            SymbolDefinition debugDirectoryDef = _definedSymbols[debugDirectoryDefName];
+            uint peDebugRva = (uint)ResolveSymbolRVA(webcilSections, debugDirectoryDef);
+            Debug.Assert(_webcilSegment.Header.PeDebugRva != 0);
+            uint peDebugSize = (uint)debugDirectoryDef.Size;
+
             WebcilHeader header = new WebcilHeader
             {
                 Id = WebcilConstants.WEBCIL_MAGIC,
                 VersionMajor = WebcilConstants.WC_VERSION_MAJOR,
                 VersionMinor = WebcilConstants.WC_VERSION_MINOR,
                 CoffSections = (ushort)webcilSections.Length,
-                PeCliHeaderRva = 0, // This RVA will be resolved later
-                PeCliHeaderSize = 0, // Resolved along with RVA
-                PeDebugRva = 0, // This RVA will be resolved later
-                PeDebugSize = 0 // Resolved along with RVA
+                Reserved0 = 0,
+                PeCliHeaderRva = peCliHeaderRva,
+                PeCliHeaderSize = peCliHeaderSize,
+                PeDebugRva = peDebugRva,
+                PeDebugSize = peDebugSize
             };
 
             return new WebcilSegment(header, webcilSections.ToArray());
@@ -664,23 +680,6 @@ namespace ILCompiler.ObjectWriter
              * Emit Webcil segment at end of file to support ReadyToRun
              ****************************************************************/
 
-            // Populate the RVAs for the Cor header/size and debug directory/size, which are required for the runtime
-            // to be able to load this segment.
-            bool exists = _wellKnownSymbols.TryGetValue(SortableDependencyNode.ObjectNodeOrder.CorHeaderNode, out Utf8String corHeaderDefName);
-            Debug.Assert(exists, $"Cor header symbol definition {SortableDependencyNode.ObjectNodeOrder.CorHeaderNode} not found");
-
-            SymbolDefinition corHeaderNode = _definedSymbols[corHeaderDefName];
-            _webcilSegment.Header.PeCliHeaderRva = (uint)_webcilSegment.ResolveSymbolRVA(corHeaderNode);
-            Debug.Assert(_webcilSegment.Header.PeCliHeaderRva != 0);
-            _webcilSegment.Header.PeCliHeaderSize = (uint)corHeaderNode.Size;
-
-            exists = _wellKnownSymbols.TryGetValue(SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode, out Utf8String debugDirectoryDefName);
-            Debug.Assert(exists, $"Debug directory symbol definition {SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode} not found");
-
-            SymbolDefinition debugDirectoryDef = _definedSymbols[debugDirectoryDefName];
-            _webcilSegment.Header.PeDebugRva = (uint)_webcilSegment.ResolveSymbolRVA(debugDirectoryDef);
-            Debug.Assert(_webcilSegment.Header.PeDebugRva != 0);
-            _webcilSegment.Header.PeDebugSize = (uint)debugDirectoryDef.Size;
 
             MemoryStream webcilStream = new(_webcilSegment.GetFlatMappedSize());
             WebcilEncoder.EmitHeader(_webcilSegment.Header, webcilStream);
