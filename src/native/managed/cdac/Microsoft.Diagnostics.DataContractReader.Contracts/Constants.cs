@@ -73,7 +73,6 @@ public static class Constants
         public const string SizeOfGenericModeBlock = nameof(SizeOfGenericModeBlock);
 
         public const string MethodDescTokenRemainderBitCount = nameof(MethodDescTokenRemainderBitCount);
-        public const string CORDebuggerControlFlags = nameof(CORDebuggerControlFlags);
         public const string DirectorySeparator = nameof(DirectorySeparator);
 
         public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
@@ -155,7 +154,6 @@ public static class Constants
         public const string HandlesPerBlock = nameof(HandlesPerBlock);
         public const string BlockInvalid = nameof(BlockInvalid);
         public const string TotalCpuCount = nameof(TotalCpuCount);
-        public const string EEConfig = nameof(EEConfig);
     }
     public static class FieldNames
     {

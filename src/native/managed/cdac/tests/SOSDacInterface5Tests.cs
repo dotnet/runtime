@@ -27,7 +27,6 @@ public unsafe class SOSDacInterface5Tests
         MockTarget.Architecture arch,
         VersionInfo[]? versions = null,
         bool isEligibleForTieredCompilation = false,
-        bool isJitOptimizationDisabled = false,
         bool isReadyToRun = false,
         TargetPointer r2rBase = default,
         uint r2rSize = 0,
@@ -66,9 +65,6 @@ public unsafe class SOSDacInterface5Tests
         mockRts
             .Setup(r => r.IsEligibleForTieredCompilation(methodDescHandle))
             .Returns(isEligibleForTieredCompilation);
-        mockRts
-            .Setup(r => r.IsJitOptimizationDisabled(methodDescHandle))
-            .Returns(isJitOptimizationDisabled);
 
         mockLoader
             .Setup(l => l.GetModuleHandleFromModulePtr(s_moduleAddr))
@@ -121,6 +117,14 @@ public unsafe class SOSDacInterface5Tests
         return new SOSDacImpl(target, legacyObj: null);
     }
 
+    private static int CallGetTieredVersions(ISOSDacInterface5 dac5, DacpTieredVersionData[] buffer, out int count, int rejitId = 0)
+    {
+        int localCount;
+        int hr = dac5.GetTieredVersions((ClrDataAddress)s_methodDescAddr.Value, rejitId, buffer, buffer.Length, &localCount);
+        count = localCount;
+        return hr;
+    }
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetTieredVersions_ZeroMethodDesc(MockTarget.Architecture arch)
@@ -157,9 +161,7 @@ public unsafe class SOSDacInterface5Tests
     public void GetTieredVersions_InvalidRejitId(MockTarget.Architecture arch)
     {
         ISOSDacInterface5 dac5 = CreateDac5(arch, rejitId: 0);
-        var buffer = new DacpTieredVersionData[1];
-        int count;
-        int hr = dac5.GetTieredVersions((ClrDataAddress)s_methodDescAddr.Value, 999, buffer, 1, &count);
+        int hr = CallGetTieredVersions(dac5, new DacpTieredVersionData[1], out _, rejitId: 999);
         Assert.NotEqual(S_OK, hr);
     }
 
@@ -176,8 +178,7 @@ public unsafe class SOSDacInterface5Tests
 
         ISOSDacInterface5 dac5 = CreateDac5(arch, versions, isReadyToRun: true, r2rBase: r2rBase, r2rSize: r2rSize);
         var buffer = new DacpTieredVersionData[2];
-        int count;
-        int hr = dac5.GetTieredVersions((ClrDataAddress)s_methodDescAddr.Value, 0, buffer, 2, &count);
+        int hr = CallGetTieredVersions(dac5, buffer, out int count);
 
         Assert.Equal(S_OK, hr);
         Assert.Equal(1, count);
@@ -223,8 +224,7 @@ public unsafe class SOSDacInterface5Tests
 
         ISOSDacInterface5 dac5 = CreateDac5(arch, versions, isEligibleForTieredCompilation: true);
         var buffer = new DacpTieredVersionData[2];
-        int count;
-        int hr = dac5.GetTieredVersions((ClrDataAddress)s_methodDescAddr.Value, 0, buffer, 2, &count);
+        int hr = CallGetTieredVersions(dac5, buffer, out int count);
 
         Assert.Equal(S_OK, hr);
         Assert.Equal(1, count);
@@ -233,26 +233,7 @@ public unsafe class SOSDacInterface5Tests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetTieredVersions_JitOptimizationDisabled(MockTarget.Architecture arch)
-    {
-        var versions = new[]
-        {
-            new VersionInfo(new TargetCodePointer(0x6000_0100), new TargetPointer(0x7000_0001), NativeCodeVersionOptimizationTier.OptimizationTierOptimized),
-        };
-
-        ISOSDacInterface5 dac5 = CreateDac5(arch, versions, isJitOptimizationDisabled: true);
-        var buffer = new DacpTieredVersionData[2];
-        int count;
-        int hr = dac5.GetTieredVersions((ClrDataAddress)s_methodDescAddr.Value, 0, buffer, 2, &count);
-
-        Assert.Equal(S_OK, hr);
-        Assert.Equal(1, count);
-        Assert.Equal(DacpTieredVersionData.OptimizationTier.MinOptJitted, buffer[0].optimizationTier);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetTieredVersions_DefaultFallthrough(MockTarget.Architecture arch)
+    public void GetTieredVersions_NotEligibleForTieredCompilation(MockTarget.Architecture arch)
     {
         var versions = new[]
         {
@@ -261,12 +242,11 @@ public unsafe class SOSDacInterface5Tests
 
         ISOSDacInterface5 dac5 = CreateDac5(arch, versions);
         var buffer = new DacpTieredVersionData[2];
-        int count;
-        int hr = dac5.GetTieredVersions((ClrDataAddress)s_methodDescAddr.Value, 0, buffer, 2, &count);
+        int hr = CallGetTieredVersions(dac5, buffer, out int count);
 
         Assert.Equal(S_OK, hr);
         Assert.Equal(1, count);
-        Assert.Equal(DacpTieredVersionData.OptimizationTier.Optimized, buffer[0].optimizationTier);
+        Assert.Equal(DacpTieredVersionData.OptimizationTier.Unknown, buffer[0].optimizationTier);
     }
 
     [Theory]
@@ -282,8 +262,7 @@ public unsafe class SOSDacInterface5Tests
 
         ISOSDacInterface5 dac5 = CreateDac5(arch, versions, isEligibleForTieredCompilation: true);
         var buffer = new DacpTieredVersionData[2];
-        int count;
-        int hr = dac5.GetTieredVersions((ClrDataAddress)s_methodDescAddr.Value, 0, buffer, 2, &count);
+        int hr = CallGetTieredVersions(dac5, buffer, out int count);
 
         Assert.Equal(S_FALSE, hr);
         Assert.Equal(2, count);
@@ -302,8 +281,7 @@ public unsafe class SOSDacInterface5Tests
 
         ISOSDacInterface5 dac5 = CreateDac5(arch, versions);
         var buffer = new DacpTieredVersionData[2];
-        int count;
-        int hr = dac5.GetTieredVersions((ClrDataAddress)s_methodDescAddr.Value, 0, buffer, 2, &count);
+        int hr = CallGetTieredVersions(dac5, buffer, out int count);
 
         Assert.Equal(S_OK, hr);
         Assert.Equal(1, count);
@@ -316,9 +294,7 @@ public unsafe class SOSDacInterface5Tests
     public void GetTieredVersions_NoVersions(MockTarget.Architecture arch)
     {
         ISOSDacInterface5 dac5 = CreateDac5(arch, versions: []);
-        var buffer = new DacpTieredVersionData[1];
-        int count;
-        int hr = dac5.GetTieredVersions((ClrDataAddress)s_methodDescAddr.Value, 0, buffer, 1, &count);
+        int hr = CallGetTieredVersions(dac5, new DacpTieredVersionData[1], out int count);
 
         Assert.Equal(S_OK, hr);
         Assert.Equal(0, count);

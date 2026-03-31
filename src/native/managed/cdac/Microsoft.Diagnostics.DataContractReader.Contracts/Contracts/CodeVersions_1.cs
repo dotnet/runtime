@@ -433,10 +433,6 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(codeVersionHandle.MethodDescAddress);
             NativeCodeVersionOptimizationTier optimizationTier = rtsContract.GetMethodDescOptimizationTier(methodDescHandle);
-            if (optimizationTier == NativeCodeVersionOptimizationTier.OptimizationTierUnknown)
-            {
-                return rtsContract.GetInitialOptimizationTier(methodDescHandle);
-            }
             return optimizationTier;
         }
     }

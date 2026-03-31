@@ -199,14 +199,8 @@ partial interface IRuntimeTypeSystem : IContract
     // Gets the optimization tier stored on the MethodDesc's code data
     public virtual NativeCodeVersionOptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDesc);
 
-    // Gets the initial optimization tier for a method
-    public virtual NativeCodeVersionOptimizationTier GetInitialOptimizationTier(MethodDescHandle methodDesc);
-
     // Returns true if the method is eligible for tiered compilation
     public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
-
-    // Returns true if JIT optimization is disabled for the method (module-level + per-method checks)
-    public virtual bool IsJitOptimizationDisabled(MethodDescHandle methodDesc);
 
 }
 ```

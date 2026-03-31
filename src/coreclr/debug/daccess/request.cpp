@@ -1279,13 +1279,9 @@ HRESULT ClrDataAccess::GetTieredVersions(
                     break;
                 }
             }
-            else if (pMD->IsJitOptimizationDisabled())
-            {
-                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_MinOptJitted;
-            }
             else
             {
-                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
+                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Unknown;
             }
 
             ++count;

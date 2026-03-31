@@ -821,7 +821,7 @@ public class CodeVersionsTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetOptimizationTier_Synthetic_FallsBackToInitialTier(MockTarget.Architecture arch)
+    public void GetOptimizationTier_Synthetic_NoCodeData(MockTarget.Architecture arch)
     {
         MockCodeVersions builder = new(arch);
         TargetPointer methodDescAddress = new(0x1a0a_0000);
@@ -830,13 +830,12 @@ public class CodeVersionsTests
         MethodDescHandle mdHandle = new(methodDescAddress);
         mockRTS.Setup(r => r.GetMethodDescHandle(methodDescAddress)).Returns(mdHandle);
         mockRTS.Setup(r => r.GetMethodDescOptimizationTier(mdHandle)).Returns(NativeCodeVersionOptimizationTier.OptimizationTierUnknown);
-        mockRTS.Setup(r => r.GetInitialOptimizationTier(mdHandle)).Returns(NativeCodeVersionOptimizationTier.OptimizationTier0);
 
         var target = CreateTarget(arch, builder, mockRuntimeTypeSystem: mockRTS);
         var codeVersions = target.Contracts.CodeVersions;
 
         NativeCodeVersionHandle handle = NativeCodeVersionHandle.CreateSynthetic(methodDescAddress);
         NativeCodeVersionOptimizationTier tier = codeVersions.GetOptimizationTier(handle);
-        Assert.Equal(NativeCodeVersionOptimizationTier.OptimizationTier0, tier);
+        Assert.Equal(NativeCodeVersionOptimizationTier.OptimizationTierUnknown, tier);
     }
 }

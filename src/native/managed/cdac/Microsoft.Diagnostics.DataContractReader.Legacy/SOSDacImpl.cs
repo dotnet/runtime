@@ -4886,13 +4886,9 @@ public sealed unsafe partial class SOSDacImpl
                             break;
                     }
                 }
-                else if (runtimeTypeSystemContract.IsJitOptimizationDisabled(methodDescHandle))
-                {
-                    nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.MinOptJitted;
-                }
                 else
                 {
-                    nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.Optimized;
+                    nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.Unknown;
                 }
 
                 count++;

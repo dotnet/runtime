@@ -713,16 +713,6 @@ private:
 public:
     DWORD GetSleepOnExit()
     { return dwSleepOnExit; }
-
-    friend struct ::cdac_data<EEConfig>;
-};
-
-template<>
-struct cdac_data<EEConfig>
-{
-    static constexpr size_t JitMinOpts = offsetof(EEConfig, fJitMinOpts);
-    static constexpr size_t GenDebuggable = offsetof(EEConfig, fDebuggable);
-    static constexpr size_t TieredCompilation_DefaultTier = offsetof(EEConfig, tieredCompilation_DefaultTier);
 };
 
 
