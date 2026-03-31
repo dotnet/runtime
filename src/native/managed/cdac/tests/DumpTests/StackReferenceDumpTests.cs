@@ -55,6 +55,7 @@ public class StackReferenceDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    [SkipOnArch("x86", "GCInfo decoder does not support x86")]
     public void GCRoots_WalkStackReferences_FindsRefs(TestConfiguration config)
     {
         InitializeDumpTest(config, "GCRoots", "full");
@@ -71,6 +72,7 @@ public class StackReferenceDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    [SkipOnArch("x86", "GCInfo decoder does not support x86")]
     public void GCRoots_RefsPointToValidObjects(TestConfiguration config)
     {
         InitializeDumpTest(config, "GCRoots", "full");
