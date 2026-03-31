@@ -21,10 +21,16 @@
 #include <crt_externs.h>
 #endif
 #include <fcntl.h>
-#if HAVE_CLOSE_RANGE_SYSCALL && !HAVE_CLOSE_RANGE
+
+#if defined(__linux__)
+#if !defined(HAVE_CLOSE_RANGE)
 #include <sys/syscall.h>
-#endif
-#if (HAVE_CLOSE_RANGE || HAVE_CLOSE_RANGE_SYSCALL) && !defined(CLOSE_RANGE_CLOEXEC)
+#if !defined(__NR_close_range)
+#define __NR_close_range 436
+#endif // !defined(__NR_close_range)
+#endif // !defined(HAVE_CLOSE_RANGE)
+#endif // defined(__linux__)
+#if (HAVE_CLOSE_RANGE || defined(__linux__)) && !defined(CLOSE_RANGE_CLOEXEC)
 #define CLOSE_RANGE_CLOEXEC (1U << 2)
 #endif
 #include <pthread.h>
@@ -542,7 +548,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             // are >= 3, they don't get CLOEXEC set before being duplicated to 0/1/2.
             close_range(3, ~0U, CLOSE_RANGE_CLOEXEC);
             // Ignore errors - if close_range returns error at runtime, continue anyway
-#elif HAVE_CLOSE_RANGE_SYSCALL
+#elif defined(__linux__)
             // On Linux with older glibc that doesn't expose close_range() as a function,
             // use the raw syscall number if the kernel supports it (kernel >= 5.9).
             syscall(__NR_close_range, 3, ~0U, CLOSE_RANGE_CLOEXEC);

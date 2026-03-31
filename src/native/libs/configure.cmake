@@ -207,11 +207,6 @@ check_function_exists(
     close_range
     HAVE_CLOSE_RANGE)
 
-check_symbol_exists(
-    __NR_close_range
-    "sys/syscall.h"
-    HAVE_CLOSE_RANGE_SYSCALL)
-
 # fdwalk is available on Illumos/Solaris and is used as a fallback when close_range is not available.
 check_function_exists(
     fdwalk
