@@ -174,7 +174,8 @@ static int exe_start(const int argc, const char* argv[])
 
     size_t dir_len = strlen(app_dir);
     size_t name_len = strlen(embedded_app_name);
-    size_t app_path_len = dir_len + name_len + 1;
+    size_t app_path_init = dir_len + name_len + 2; // dir + sep + name + NUL
+    size_t app_path_len = app_path_init > APPHOST_PATH_MAX ? app_path_init : APPHOST_PATH_MAX;
     char* app_path = (char*)malloc(app_path_len);
     if (app_path == NULL)
     {
