@@ -245,6 +245,11 @@ namespace ILCompiler.ObjectWriter
             return _sectionToType[section];
         }
 
+        private WebcilSectionType GetWebcilSectionType(ObjectNodeSection section)
+        {
+            return section == WebcilRelocSection ? WebcilSectionType.Reloc : WebcilSectionType.Data;
+        }
+
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
             WebcilSection section = _sections[sectionIndex] as WebcilSection;
@@ -371,9 +376,9 @@ namespace ILCompiler.ObjectWriter
         public const int WebcilSectionAlignment = 16;
         private WebcilSegment BuildWebcilDataSegment()
         {
-            List<WebcilSection> webcilSections = _sections.OfType<WebcilSection>().ToList();
+            WebcilSection[] webcilSections = _sections.OfType<WebcilSection>().ToArray();
 
-            uint sizeOfHeaders = (uint)WebcilEncoder.HeaderEncodeSize() + (uint)(webcilSections.Count * WebcilEncoder.SectionHeaderEncodeSize());
+            uint sizeOfHeaders = (uint)WebcilEncoder.HeaderEncodeSize() + (uint)(webcilSections.Length * WebcilEncoder.SectionHeaderEncodeSize());
             uint pointerToRawData = (uint)AlignmentHelper.AlignUp((int)sizeOfHeaders, (int)WebcilSectionAlignment);
             uint virtualAddress = pointerToRawData;
 
@@ -408,7 +413,7 @@ namespace ILCompiler.ObjectWriter
                 Id = WebcilConstants.WEBCIL_MAGIC,
                 VersionMajor = WebcilConstants.WC_VERSION_MAJOR,
                 VersionMinor = WebcilConstants.WC_VERSION_MINOR,
-                CoffSections = (ushort)webcilSections.Count,
+                CoffSections = (ushort)webcilSections.Length,
                 PeCliHeaderRva = 0, // This RVA will be resolved later
                 PeCliHeaderSize = 0, // Resolved along with RVA
                 PeDebugRva = 0, // This RVA will be resolved later
@@ -445,6 +450,7 @@ namespace ILCompiler.ObjectWriter
             };
         }
 
+
         private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
             WasmSectionType sectionType = GetWasmSectionType(section);
@@ -453,7 +459,8 @@ namespace ILCompiler.ObjectWriter
             {
 #if READYTORUN
                 // This is a section which is internally wrapping a Webcil section
-                wasmSection = new WebcilSection(WebcilSectionType.Data, new Utf8String(section.Name), default(WebcilSectionHeader), sectionStream, sectionIndex);
+                WebcilSectionType webcilSectionType = GetWebcilSectionType(section);
+                wasmSection = new WebcilSection(webcilSectionType, new Utf8String(section.Name), default(WebcilSectionHeader), sectionStream, sectionIndex);
 #else
                 wasmSection = new WasmSection(WasmSectionType.Data, sectionStream, new Utf8String(section.Name));
 #endif
@@ -478,9 +485,6 @@ namespace ILCompiler.ObjectWriter
         private WebcilSegment _webcilSegment = null;
         private protected override void EmitSectionsAndLayout()
         {
-
-            _webcilSegment = BuildWebcilDataSegment();
-
             InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
             InsertWasmStub(new Utf8String("getWebcilPayload"), GetWebcilPayload);
 
@@ -582,7 +586,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private static ObjectNodeSection WebcilRelocSection = new ObjectNodeSection("reloc", SectionType.ReadOnly);
+        private static readonly ObjectNodeSection WebcilRelocSection = new ObjectNodeSection("reloc", SectionType.ReadOnly);
         private void EmitRelocSectionData()
         {
             var writer = GetOrCreateSection(WebcilRelocSection);
@@ -618,6 +622,22 @@ namespace ILCompiler.ObjectWriter
         {
             Debug.Assert(outputFileStream.CanSeek, $"EmitObjectFile requires seekable output stream");
 
+            if (_baseRelocMap.Count > 0)
+            {
+                EmitRelocSectionData();
+            }
+
+            // Creating the webcil segment <- emitting relocs (we need to know the size of the relocs section)
+            _webcilSegment =  BuildWebcilDataSegment();
+            // Writing our memory import <- size of the webcil segment (for an accurate minimum size)
+            WriteMemoryImport((ulong)_webcilSegment.GetFlatMappedSize());
+            // Writing element counts <- imports being finalized.
+            EmitSectionElementCounts();
+
+           /*********************************************************************
+           * Write Wasm Sections, Excluding Data
+           *********************************************************************/
+
             EmitWasmHeader(outputFileStream);
             foreach (int index in SectionEmitOrder)
             {
@@ -640,12 +660,9 @@ namespace ILCompiler.ObjectWriter
             }
 
 #if READYTORUN
-
             /*****************************************************************
-            Emit Webcil segment at end of file to support ReadyToRun
-            *****************************************************************/
-
-            Debug.Assert(_webcilSegment != null); // This should have been built in EmitSectionsAndLayout()
+             * Emit Webcil segment at end of file to support ReadyToRun
+             ****************************************************************/
 
             // Populate the RVAs for the Cor header/size and debug directory/size, which are required for the runtime
             // to be able to load this segment.
@@ -940,9 +957,8 @@ namespace ILCompiler.ObjectWriter
         const int ImageBaseGlobalIndex = 1;
         const int ImageFunctionPointerBaseGlobalIndex = 2;
 
-        private WasmImport[] _defaultImports = new[]
+        private WasmImport[] _defaultGlobalImports = new[]
         {
-            null, // placeholder for memory, which is set up dynamically in WriteImports()
             new WasmImport("env", "__stack_pointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
             new WasmImport("env", "__image_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
             new WasmImport("env", "__image_function_pointer_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageFunctionPointerBaseGlobalIndex),
@@ -950,16 +966,9 @@ namespace ILCompiler.ObjectWriter
 
         private void WriteImports()
         {
-            // Calculate the minimum required memory size based on the Webcil Segment size
-            ulong contentSize = (ulong)_webcilSegment.GetFlatMappedSize();
-            uint dataPages = checked((uint)((contentSize + (1 << 16) - 1) >> 16));
-            uint numPages = Math.Max(dataPages, 1); // Ensure at least one page is allocated for the minimum
-
-            // TODO-Wasm: decide on convention here; webcil spec states this should be "webcil"
-            _defaultImports[0] = new WasmImport("env", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
 
             int[] assignedImportIndices = new int[(int)WasmExternalKind.Count];
-            foreach (WasmImport import in _defaultImports)
+            foreach (WasmImport import in _defaultGlobalImports)
             {
                 if (import.Index.HasValue)
                 {
@@ -971,6 +980,16 @@ namespace ILCompiler.ObjectWriter
             }
 
             _numImportedGlobals = assignedImportIndices[(int)WasmExternalKind.Global];
+        }
+
+        private void WriteMemoryImport(ulong contentSize)
+        {
+            uint dataPages = checked((uint)((contentSize + (1 << 16) - 1) >> 16));
+            uint numPages = Math.Max(dataPages, 1); // Ensure at least one page is allocated for the minimum
+
+            // TODO-Wasm: decide on convention here; webcil spec states this should be "webcil"
+            WasmImport memoryImport = new WasmImport("env", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
+            WriteImport(memoryImport);
         }
 
         private void WriteExports()
@@ -1014,6 +1033,12 @@ namespace ILCompiler.ObjectWriter
             WriteExports();
             WriteElements();
 
+            // Register defined symbols for future use during relocation resolution
+            _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
+        }
+
+        private void EmitSectionElementCounts()
+        {
             int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
             PrependCount(_sections[funcIdx], _methodCount);
 
@@ -1031,11 +1056,9 @@ namespace ILCompiler.ObjectWriter
             PrependCount(SectionByName(WasmObjectNodeSection.ImportSection.Name), _numImports);
 
             PrependCount(SectionByName(WasmObjectNodeSection.GlobalSection.Name), _numDefinedGlobals);
-
-            // Register defined symbols for future use during relocation resolution
-            _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
         }
     }
+
 
     internal class WasmSection
     {
