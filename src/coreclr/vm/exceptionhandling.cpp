@@ -11,7 +11,7 @@
 #include "eventtrace.h"
 #include "virtualcallstub.h"
 #include "utilcode.h"
-#include "excep.h"
+#include "corelib.h"
 #include "interoplibinterface.h"
 #include "corinfo.h"
 #include "exceptionhandlingqcalls.h"
@@ -3619,6 +3619,13 @@ static bool IsTopmostDebuggerU2MCatchHandlerFrame(Frame *pFrame)
     return (pFrame->GetFrameIdentifier() == FrameIdentifier::DebuggerU2MCatchHandlerFrame) && (pFrame->PtrNextFrame() == FRAME_TOP);
 }
 
+static bool IsRuntimeUcoEntryPointMethod(MethodDesc* pMethodDesc)
+{
+    return (pMethodDesc == CoreLibBinder::GetMethod(METHOD__ENVIRONMENT__CALL_ENTRY_POINT)) ||
+           (pMethodDesc == CoreLibBinder::GetMethod(METHOD__ENVIRONMENT__CALL_ENTRY_POINT_WITH_CATCH)) ||
+           (pMethodDesc == CoreLibBinder::GetMethod(METHOD__ENVIRONMENT__CALL_ENTRY_POINT_UTF16_STRING_RET_INT));
+}
+
 static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)
 {
     if (pExInfo->m_passNumber == 1)
@@ -3996,6 +4003,16 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
 #endif // HOST_UNIX
             {
                 isPropagatingToExternalNativeCode = true;
+
+#ifdef HOST_WINDOWS
+                MethodDesc* pMethodDesc = codeInfo.GetMethodDesc();
+                if ((pMethodDesc != NULL) && IsRuntimeUcoEntryPointMethod(pMethodDesc))
+                {
+                    // Runtime-invoked UCO entrypoint calls should behave like the
+                    // internal call path and not as external-native propagation.
+                    isPropagatingToExternalNativeCode = false;
+                }
+#endif // HOST_WINDOWS
             }
         }
         else
@@ -4035,15 +4052,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 if (pTopExInfo->m_passNumber == 1)
                 {
 #ifdef HOST_WINDOWS
-                    if (isPropagatingToExternalNativeCode)
-                    {
-                        // Notify AppDomain.UnhandledException before control returns to
-                        // external native code, but avoid default catch handler output
-                        // since native code may catch this exception.
-                        NotifyAppDomainsOfUnhandledException((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs, NULL, FALSE);
-                        GetThread()->SetThreadStateNC(Thread::TSNC_ProcessedUnhandledException);
-                    }
-                    else
+                    if (!isPropagatingToExternalNativeCode)
 #endif
                     {
                         LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs);
