@@ -73,9 +73,8 @@ HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName 
             {
                 // Make sure the managed default ALC is initialized.
                 GCX_COOP();
-                PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__INITIALIZE_DEFAULT_CONTEXT);
-                DECLARE_ARGHOLDER_ARRAY(args, 0);
-                CALL_MANAGED_METHOD_NORET(args)
+                UnmanagedCallersOnlyCaller initializeDefaultContext(METHOD__ASSEMBLYLOADCONTEXT__INITIALIZE_DEFAULT_CONTEXT);
+                initializeDefaultContext.InvokeThrowing();
 
                 pAssemblyLoadContext = GetAssemblyLoadContext();
                 _ASSERTE(pAssemblyLoadContext != (INT_PTR)NULL);

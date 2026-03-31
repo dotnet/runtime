@@ -89,6 +89,7 @@ public enum DataType
     Array,
     SyncBlock,
     SyncTableEntry,
+    ObjectHeader,
     InteropSyncBlockInfo,
     SyncBlockCache,
     InstantiatedMethodDesc,
@@ -158,7 +159,9 @@ public enum DataType
     RCW,
     CtxEntry,
     InterfaceEntry,
-
+    ComInterfaceEntry,
+    InternalComInterfaceDispatch,
+    AuxiliarySymbolInfo,
 
     /* GC Data Types */
 
@@ -171,4 +174,6 @@ public enum DataType
     HandleTableBucket,
     HandleTable,
     TableSegment,
+    CardTableInfo,
+    RegionFreeList,
 }

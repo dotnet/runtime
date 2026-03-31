@@ -17,15 +17,12 @@ namespace System.Threading
     /// </summary>
     public sealed partial class ThreadPoolBoundHandle : IDisposable
     {
-        [RequiresUnsafe]
         private unsafe NativeOverlapped* AllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData) =>
             AllocateNativeOverlappedPortableCore(callback, state, pinData, flowExecutionContext: true);
 
-        [RequiresUnsafe]
         private unsafe NativeOverlapped* UnsafeAllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData) =>
             AllocateNativeOverlappedPortableCore(callback, state, pinData, flowExecutionContext: false);
 
-        [RequiresUnsafe]
         private unsafe NativeOverlapped* AllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
             ArgumentNullException.ThrowIfNull(callback);
@@ -36,7 +33,6 @@ namespace System.Threading
             return overlapped._nativeOverlapped;
         }
 
-        [RequiresUnsafe]
         private unsafe NativeOverlapped* AllocateNativeOverlappedPortableCore(PreAllocatedOverlapped preAllocated)
         {
             ArgumentNullException.ThrowIfNull(preAllocated);

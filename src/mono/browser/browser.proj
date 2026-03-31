@@ -81,6 +81,12 @@
 
     <!-- Generate wasm-props.json -->
 
+    <!-- Clear stale _VersionLines items that may have been added by _AcquireLocalEmscriptenSdk
+         (which reads emscripten-version.txt into the same item group during SDK provisioning) -->
+    <ItemGroup>
+      <_VersionLines Remove="@(_VersionLines)" />
+    </ItemGroup>
+
     <RunWithEmSdkEnv Command="$(EmccCmd) --version"
           ConsoleToMsBuild="true"
           EmSdkPath="$(EMSDK_PATH)"
