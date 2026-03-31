@@ -14,9 +14,10 @@
 #endif
 
     // Macro that generates code to check a single cache entry.
-    .macro CHECK_CACHE_ENTRY entry
+    // \adj is the base adjustment already applied to x9.
+    .macro CHECK_CACHE_ENTRY entry, adj=0
         // Check a single entry in the cache.
-        //  x9   : Cache data structure
+        //  x9   : Cache data structure (possibly adjusted for far entries)
         //  x10  : Instance MethodTable*
         //  x11  : Indirection cell address, preserved
         //  x12, x13  : Trashed
@@ -28,14 +29,7 @@
         // hardware (ARMv8.4+). The cbz guard ensures correctness on pre-LSE2 hardware too:
         // a torn read can only produce a zero target (entries go from 0,0 to type,target),
         // so we treat it as a cache miss.
-    .if (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16)) > 504
-        // ldp's signed immediate offset must be in [-512,504] for 64-bit registers.
-        // Use add to reach far entries in the 32/64 slot stubs.
-        add     x12, x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16))
-        ldp     x12, x13, [x12]
-    .else
-        ldp     x12, x13, [x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16))]
-    .endif
+        ldp     x12, x13, [x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16) - \adj)]
         cmp     x10, x12
         bne     0f
         cbz     x13, 0f
@@ -67,9 +61,16 @@
 
     .global CurrentEntry
     .set CurrentEntry, 0
+    .set BaseAdj, 0
 
     .rept \entries
-        CHECK_CACHE_ENTRY CurrentEntry
+        // ldp's signed offset must be in [-512,504] for 64-bit register pairs.
+        // When the offset would exceed that, re-base x9 once so subsequent entries stay in range.
+    .if (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (CurrentEntry * 16) - BaseAdj) > 504
+        add     x9, x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + (CurrentEntry * 16) - BaseAdj)
+        .set BaseAdj, (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (CurrentEntry * 16))
+    .endif
+        CHECK_CACHE_ENTRY CurrentEntry, BaseAdj
         .set CurrentEntry, CurrentEntry + 1
     .endr
 
