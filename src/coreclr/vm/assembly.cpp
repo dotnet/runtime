@@ -1174,12 +1174,7 @@ static void RunMainInternal(Param* pParam)
     PTRARRAYREF StrArgArray = NULL;
     GCPROTECT_BEGIN(StrArgArray);
 
-    // If managed args were supplied by host, pass them through directly.
-    // Otherwise, managed side will materialize string[] from raw argv.
-    if (pParam->EntryType == EntryManagedMain && pParam->stringArgs != NULL)
-    {
-        StrArgArray = *pParam->stringArgs;
-    }
+    StrArgArray = *pParam->stringArgs;
 
     pParam->pFD->EnsureActive();
     PCODE entryPoint = pParam->pFD->GetSingleCallableAddrOfCode();
