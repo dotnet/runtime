@@ -882,14 +882,14 @@ public sealed unsafe partial class SOSDacImpl
             Debug.Assert(jitManager.ToTargetPointer(_target) == jitManagerInfo.ManagerAddress);
 #endif
 
-            List<TargetPointer> heaps = em.GetCodeHeapList();
+            List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
             int i = 0;
             if (codeHeaps is not null)
             {
-                for (; i < heaps.Count && i < count; i++)
+                for (; i < heapInfos.Count && i < count; i++)
                 {
                     codeHeaps[i] = default;
-                    switch (em.GetCodeHeapInfo(heaps[i]))
+                    switch (heapInfos[i])
                     {
                         case Contracts.LoaderCodeHeapInfo loader:
                             codeHeaps[i].codeHeapType = DacpJitCodeHeapInfo.CodeHeapType.CODEHEAP_LOADER;
@@ -908,7 +908,7 @@ public sealed unsafe partial class SOSDacImpl
             }
 
             if (pNeeded is not null)
-                *pNeeded = codeHeaps is not null ? (uint)i : (uint)heaps.Count;
+                *pNeeded = codeHeaps is not null ? (uint)i : (uint)heapInfos.Count;
         }
         catch (System.Exception ex)
         {

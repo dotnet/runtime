@@ -10,8 +10,8 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Dump-based integration tests for the ExecutionManager code heap enumeration APIs.
-/// Uses the CodeHeap debuggee (heap dump) to exercise GetCodeHeapList and
-/// GetCodeHeapInfo against a real runtime memory image that contains both
+/// Uses the CodeHeap debuggee (heap dump) to exercise GetCodeHeapInfos
+/// against a real runtime memory image that contains both
 /// a LoaderCodeHeap (regular JIT-compiled methods) and a HostCodeHeap
 /// (DynamicMethod instances).
 /// </summary>
@@ -27,9 +27,9 @@ public class CodeHeapListDumpTests : DumpTestBase
         InitializeDumpTest(config);
 
         IExecutionManager em = Target.Contracts.ExecutionManager;
-        List<TargetPointer> heaps = em.GetCodeHeapList();
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
 
-        Assert.True(heaps.Count > 0, "Expected at least one code heap in the runtime");
+        Assert.True(heapInfos.Count > 0, "Expected at least one code heap in the runtime");
     }
 
     [ConditionalTheory]
@@ -40,9 +40,9 @@ public class CodeHeapListDumpTests : DumpTestBase
         InitializeDumpTest(config);
 
         IExecutionManager em = Target.Contracts.ExecutionManager;
-        List<TargetPointer> heaps = em.GetCodeHeapList();
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
 
-        Assert.Contains(heaps, h => em.GetCodeHeapInfo(h) is LoaderCodeHeapInfo);
+        Assert.Contains(heapInfos, h => h is LoaderCodeHeapInfo);
     }
 
     [ConditionalTheory]
@@ -53,9 +53,9 @@ public class CodeHeapListDumpTests : DumpTestBase
         InitializeDumpTest(config);
 
         IExecutionManager em = Target.Contracts.ExecutionManager;
-        List<TargetPointer> heaps = em.GetCodeHeapList();
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
 
-        Assert.Contains(heaps, h => em.GetCodeHeapInfo(h) is HostCodeHeapInfo);
+        Assert.Contains(heapInfos, h => h is HostCodeHeapInfo);
     }
 
     [ConditionalTheory]
@@ -66,10 +66,9 @@ public class CodeHeapListDumpTests : DumpTestBase
         InitializeDumpTest(config);
 
         IExecutionManager em = Target.Contracts.ExecutionManager;
-        List<TargetPointer> heaps = em.GetCodeHeapList();
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
 
-        TargetPointer loaderHeapPtr = heaps.First(h => em.GetCodeHeapInfo(h) is LoaderCodeHeapInfo);
-        LoaderCodeHeapInfo loader = (LoaderCodeHeapInfo)em.GetCodeHeapInfo(loaderHeapPtr);
+        LoaderCodeHeapInfo loader = Assert.IsType<LoaderCodeHeapInfo>(heapInfos.First(h => h is LoaderCodeHeapInfo));
 
         Assert.NotEqual(TargetPointer.Null, loader.LoaderHeapAddress);
     }
@@ -82,10 +81,9 @@ public class CodeHeapListDumpTests : DumpTestBase
         InitializeDumpTest(config);
 
         IExecutionManager em = Target.Contracts.ExecutionManager;
-        List<TargetPointer> heaps = em.GetCodeHeapList();
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
 
-        TargetPointer hostHeapPtr = heaps.First(h => em.GetCodeHeapInfo(h) is HostCodeHeapInfo);
-        HostCodeHeapInfo host = (HostCodeHeapInfo)em.GetCodeHeapInfo(hostHeapPtr);
+        HostCodeHeapInfo host = Assert.IsType<HostCodeHeapInfo>(heapInfos.First(h => h is HostCodeHeapInfo));
 
         Assert.NotEqual(TargetPointer.Null, host.BaseAddress);
         Assert.NotEqual(TargetPointer.Null, host.CurrentAddress);

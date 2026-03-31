@@ -486,7 +486,7 @@ public class ExecutionManagerTests
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
-        ICodeHeapInfo info = em.GetCodeHeapInfo(heapAddr);
+        ICodeHeapInfo info = em.GetCodeHeapInfos().Single();
         Assert.IsType<LoaderCodeHeapInfo>(info);
     }
 
@@ -501,7 +501,7 @@ public class ExecutionManagerTests
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
-        ICodeHeapInfo info = em.GetCodeHeapInfo(heapAddr);
+        ICodeHeapInfo info = em.GetCodeHeapInfos().Single();
         Assert.IsType<HostCodeHeapInfo>(info);
     }
 
@@ -514,7 +514,7 @@ public class ExecutionManagerTests
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
-        LoaderCodeHeapInfo loader = Assert.IsType<LoaderCodeHeapInfo>(em.GetCodeHeapInfo(heapAddr));
+        LoaderCodeHeapInfo loader = Assert.IsType<LoaderCodeHeapInfo>(em.GetCodeHeapInfos().Single());
         ulong loaderHeapFieldOffset = (ulong)emBuilder.Types[DataType.LoaderCodeHeap].Fields[nameof(Data.LoaderCodeHeap.LoaderHeap)].Offset;
         Assert.Equal(new TargetPointer(heapAddr.Value + loaderHeapFieldOffset), loader.LoaderHeapAddress);
     }
@@ -530,7 +530,7 @@ public class ExecutionManagerTests
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
-        HostCodeHeapInfo host = Assert.IsType<HostCodeHeapInfo>(em.GetCodeHeapInfo(heapAddr));
+        HostCodeHeapInfo host = Assert.IsType<HostCodeHeapInfo>(em.GetCodeHeapInfos().Single());
         Assert.Equal(expectedBase, host.BaseAddress);
         Assert.Equal(expectedCurrent, host.CurrentAddress);
     }
@@ -560,9 +560,9 @@ public class ExecutionManagerTests
         var target = CreateTarget(emBuilder);
         var em = target.Contracts.ExecutionManager;
 
-        List<TargetPointer> heaps = em.GetCodeHeapList();
-        Assert.Single(heaps);
-        Assert.Equal(heapAddr, heaps[0]);
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+        Assert.Single(heapInfos);
+        Assert.IsType<LoaderCodeHeapInfo>(heapInfos[0]);
     }
 
     [Theory]
@@ -606,18 +606,18 @@ public class ExecutionManagerTests
         var target = CreateTarget(emBuilder);
         var em = target.Contracts.ExecutionManager;
 
-        List<TargetPointer> heaps = em.GetCodeHeapList();
-        Assert.Equal(2, heaps.Count);
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+        Assert.Equal(2, heapInfos.Count);
 
         // First heap (from node1) is a LoaderCodeHeap
-        Assert.Equal(loaderHeap, heaps[0]);
-        LoaderCodeHeapInfo loaderInfo = Assert.IsType<LoaderCodeHeapInfo>(em.GetCodeHeapInfo(heaps[0]));
+        LoaderCodeHeapInfo loaderInfo = Assert.IsType<LoaderCodeHeapInfo>(heapInfos[0]);
+        Assert.Equal(loaderHeap, loaderInfo.HeapAddress);
         ulong loaderHeapFieldOffset = (ulong)emBuilder.Types[DataType.LoaderCodeHeap].Fields[nameof(Data.LoaderCodeHeap.LoaderHeap)].Offset;
         Assert.Equal(new TargetPointer(loaderHeap.Value + loaderHeapFieldOffset), loaderInfo.LoaderHeapAddress);
 
         // Second heap (from node2) is a HostCodeHeap
-        Assert.Equal(hostHeap, heaps[1]);
-        HostCodeHeapInfo hostInfo = Assert.IsType<HostCodeHeapInfo>(em.GetCodeHeapInfo(heaps[1]));
+        HostCodeHeapInfo hostInfo = Assert.IsType<HostCodeHeapInfo>(heapInfos[1]);
+        Assert.Equal(hostHeap, hostInfo.HeapAddress);
         Assert.Equal(baseAddr, hostInfo.BaseAddress);
         Assert.Equal(currentAddr, hostInfo.CurrentAddress);
     }

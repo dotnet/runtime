@@ -375,32 +375,30 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         };
     }
 
-    ICodeHeapInfo IExecutionManager.GetCodeHeapInfo(TargetPointer codeHeapAddress)
+    private ICodeHeapInfo GetCodeHeapInfo(TargetPointer codeHeapAddress)
     {
         Data.CodeHeap codeHeap = _target.ProcessedData.GetOrAdd<Data.CodeHeap>(codeHeapAddress);
         return (CodeHeapType)codeHeap.HeapType switch
         {
-            CodeHeapType.LoaderCodeHeap => new Contracts.LoaderCodeHeapInfo(
+            CodeHeapType.LoaderCodeHeap => new Contracts.LoaderCodeHeapInfo(codeHeapAddress,
                 _target.ProcessedData.GetOrAdd<Data.LoaderCodeHeap>(codeHeapAddress).LoaderHeap),
-            CodeHeapType.HostCodeHeap => new Contracts.HostCodeHeapInfo(
+            CodeHeapType.HostCodeHeap => new Contracts.HostCodeHeapInfo(codeHeapAddress,
                 _target.ProcessedData.GetOrAdd<Data.HostCodeHeap>(codeHeapAddress).BaseAddress,
                 _target.ProcessedData.GetOrAdd<Data.HostCodeHeap>(codeHeapAddress).CurrentAddress),
             _ => new Contracts.UnknownCodeHeapInfo(),
         };
     }
 
-    List<TargetPointer> IExecutionManager.GetCodeHeapList()
+    IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos()
     {
         TargetPointer heapListAddress = ((IExecutionManager)this).GetEEJitManagerInfo().HeapListAddress;
-        List<TargetPointer> result = [];
         TargetPointer nodeAddr = heapListAddress;
         while (nodeAddr != TargetPointer.Null)
         {
             Data.CodeHeapListNode node = _target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(nodeAddr);
-            result.Add(node.Heap);
+            yield return GetCodeHeapInfo(node.Heap);
             nodeAddr = node.Next;
         }
-        return result;
     }
 
     private RangeSection RangeSectionFromCodeBlockHandle(CodeBlockHandle codeInfoHandle)
