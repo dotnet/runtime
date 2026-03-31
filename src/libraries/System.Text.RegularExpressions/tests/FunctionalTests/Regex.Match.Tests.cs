@@ -46,6 +46,12 @@ namespace System.Text.RegularExpressions.Tests
             // Testing control character escapes???: "2", "(\u0032)"
             yield return ("(\u0034)", "4", RegexOptions.None, 0, 1, true, "4");
 
+            // Patterns with literal U+2028, U+2029, and U+FFFE to validate source generator XML doc comment escaping
+            yield return ("ab\u2028", "ab\u2028", RegexOptions.None, 0, 3, true, "ab\u2028");
+            yield return ("ab\u2029", "ab\u2029", RegexOptions.None, 0, 3, true, "ab\u2029");
+            yield return ("ab\uFFFE", "ab\uFFFE", RegexOptions.None, 0, 3, true, "ab\uFFFE");
+            yield return ("[\u2028\u2029\uFFFE]", "x\u2029y", RegexOptions.None, 0, 3, true, "\u2029");
+
             // Using long loop prefix
             yield return (@"a{10}", new string('a', 10), RegexOptions.None, 0, 10, true, new string('a', 10));
             yield return (@"a{100}", new string('a', 100), RegexOptions.None, 0, 100, true, new string('a', 100));
@@ -267,6 +273,20 @@ namespace System.Text.RegularExpressions.Tests
                     // Alternations
                     yield return (Case("(?>hi|hello|hey)hi"), "hellohi", options, 0, 0, false, string.Empty);
                     yield return (Case("(?>hi|hello|hey)hi"), "hihi", options, 0, 4, true, "hihi");
+
+                    // Atomic wrapping non-backtrackable nodes (reduction removes the Atomic wrapper but preserves match behavior)
+                    yield return (Case("(?>a)b"), "ab", options, 0, 2, true, "ab");
+                    yield return (Case("(?>a)b"), "cb", options, 0, 2, false, "");
+                    yield return (Case("(?>[abc])x"), "bx", options, 0, 2, true, "bx");
+                    yield return (Case("(?>abc)d"), "abcd", options, 0, 4, true, "abcd");
+
+                    // Shared-prefix extraction past non-text branches
+                    yield return (Case("[^x]|ab|ac"), "a", options, 0, 1, true, "a");
+                    yield return (Case("[^x]|ab|ac"), "ab", options, 0, 2, true, "a");
+                    yield return (Case("[^x]|ab|ac"), "ac", options, 0, 2, true, "a");
+                    yield return (Case("[^x]|ab|ac"), "x", options, 0, 1, false, "");
+                    yield return (Case("[x]|ab|ac"), "ab", options, 0, 2, true, "ab");
+                    yield return (Case("[x]|ab|ac"), "ac", options, 0, 2, true, "ac");
                 }
             }
 
@@ -1332,6 +1352,17 @@ namespace System.Text.RegularExpressions.Tests
             // Test with something after the \z trailing anchor
             yield return (@"^1234\zx", "1234", RegexOptions.None, 0, 4, false, "");
             yield return (@"^1234\zx", "1234x", RegexOptions.None, 0, 5, false, "");
+
+            // Greedy loop with a subsumed literal followed by a nullable subsequent.
+            // The loop's character class includes the literal that follows it, and the
+            // subsequent element is nullable (min=0) and disjoint from the loop. The
+            // backtracking optimization must not reduce to a single position check because
+            // multiple backtrack positions can succeed when the post-literal part is nullable.
+            yield return (@"([0-9\w\+]+\.)|([0-9\w\+]+\+)([\(\)]*)", "2+_", RegexOptions.None, 0, 3, true, "2+");
+            yield return (@"([0-9\w\+]+\.)|([0-9\w\+]+\+)([\(\)]*)", "2+", RegexOptions.None, 0, 2, true, "2+");
+            yield return (@"([0-9\w\+]+\.)|([0-9\w\+]+\+)([\(\)]*)", "abc+xyz+()", RegexOptions.None, 0, 10, true, "abc+xyz+()");
+            yield return (@"[\w+]+\+\s*", "a+b+ ", RegexOptions.None, 0, 5, true, "a+b+ ");
+            yield return (@"\w+a\s*", "ba", RegexOptions.None, 0, 2, true, "ba");
         }
 
         [OuterLoop("Takes several seconds to run")]
@@ -2713,7 +2744,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // deep nesting exhausts address space on 32-bit
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix is not available on .NET Framework")]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task CharClassSubtraction_DeepNesting_DoesNotStackOverflow(RegexEngine engine)

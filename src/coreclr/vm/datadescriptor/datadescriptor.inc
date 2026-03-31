@@ -1240,6 +1240,12 @@ CDAC_TYPE_FIELD(WebcilSectionHeader, /*uint32*/, PointerToRawData, offsetof(Webc
 CDAC_TYPE_END(WebcilSectionHeader)
 #endif
 
+CDAC_TYPE_BEGIN(AuxiliarySymbolInfo)
+CDAC_TYPE_SIZE(sizeof(VMAUXILIARYSYMBOLDEF))
+CDAC_TYPE_FIELD(AuxiliarySymbolInfo, /*pointer*/, Address, offsetof(VMAUXILIARYSYMBOLDEF, pfnAuxiliarySymbol))
+CDAC_TYPE_FIELD(AuxiliarySymbolInfo, /*pointer*/, Name, offsetof(VMAUXILIARYSYMBOLDEF, name))
+CDAC_TYPE_END(AuxiliarySymbolInfo)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -1409,6 +1415,8 @@ CDAC_GLOBAL(SyncBlockHashCodeMask, uint32, MASK_HASHCODE)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
+CDAC_GLOBAL_POINTER(AuxiliarySymbols, &::hlpAuxiliarySymbolTable)
+CDAC_GLOBAL_POINTER(AuxiliarySymbolCount, &::g_auxiliarySymbolCount)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(CCWNumInterfaces, uint32, cdac_data<ComCallWrapper>::NumInterfaces)
 CDAC_GLOBAL(CCWThisMask, nuint, cdac_data<ComCallWrapper>::ThisMask)
@@ -1426,6 +1434,7 @@ CDAC_GLOBAL(RCWInterfaceCacheSize, uint32, INTERFACE_ENTRY_CACHE_SIZE)
 // When adding a new subdescriptor, EnumMemDescriptors must be updated appropriately.
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
+CDAC_GLOBAL_CONTRACT(AuxiliarySymbols, 1)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL_CONTRACT(BuiltInCOM, 1)
 #endif // FEATURE_COMINTEROP
@@ -1433,6 +1442,7 @@ CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
 #ifdef FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(ComWrappers, 1)
 #endif // FEATURE_COMWRAPPERS
+CDAC_GLOBAL_CONTRACT(ConditionalWeakTable, 1)
 CDAC_GLOBAL_CONTRACT(DacStreams, 1)
 CDAC_GLOBAL_CONTRACT(DebugInfo, 2)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
@@ -1449,10 +1459,9 @@ CDAC_GLOBAL_CONTRACT(RuntimeInfo, 1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1)
 CDAC_GLOBAL_CONTRACT(SHash, 1)
 CDAC_GLOBAL_CONTRACT(SignatureDecoder, 1)
-CDAC_GLOBAL_CONTRACT(ConditionalWeakTable, 1)
-CDAC_GLOBAL_CONTRACT(SyncBlock, 1)
 CDAC_GLOBAL_CONTRACT(StackWalk, 1)
 CDAC_GLOBAL_CONTRACT(StressLog, 2)
+CDAC_GLOBAL_CONTRACT(SyncBlock, 1)
 CDAC_GLOBAL_CONTRACT(Thread, 1)
 
 CDAC_GLOBALS_END()

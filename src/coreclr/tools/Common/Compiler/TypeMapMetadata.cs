@@ -107,6 +107,14 @@ namespace ILCompiler
 
             public TypeDesc TypeMapGroup { get; }
 
+            /// <summary>
+            /// Indicates whether any TypeMapAssemblyTarget attributes were processed for this group,
+            /// regardless of whether the target assembly was successfully resolved. When true and
+            /// <see cref="TargetModules"/> is empty, it means all target attributes failed to resolve
+            /// and the runtime should fall back to attribute processing.
+            /// </summary>
+            public bool HasAssemblyTargetAttributes { get; set; }
+
             public void AddAssociatedTypeMapEntry(TypeDesc type, TypeDesc associatedType)
             {
                 if (!_associatedTypeMap.TryAdd(type, associatedType))
@@ -205,6 +213,7 @@ namespace ILCompiler
                 }
 
                 _targetModules.AddRange(pendingMap._targetModules);
+                HasAssemblyTargetAttributes |= pendingMap.HasAssemblyTargetAttributes;
             }
 
             public void AddTargetModule(ModuleDesc targetModule)
@@ -383,6 +392,11 @@ namespace ILCompiler
                             typeMapStates[typeMapGroup] = value;
                         }
 
+                        if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget)
+                        {
+                            value.HasAssemblyTargetAttributes = true;
+                        }
+
                         if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMap)
                         {
                             value.SetExternalTypeMapException(throwHelperEmitModule, ex);
@@ -404,6 +418,8 @@ namespace ILCompiler
 
                 void ProcessTypeMapAssemblyTargetAttribute(CustomAttributeValue<TypeDesc> attrValue, Map typeMapState)
                 {
+                    typeMapState.HasAssemblyTargetAttributes = true;
+
                     if (attrValue.FixedArguments is not [{ Value: string assemblyName }])
                     {
                         ThrowHelper.ThrowBadImageFormatException();

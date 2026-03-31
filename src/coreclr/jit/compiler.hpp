@@ -4427,9 +4427,6 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
-        case GT_EMITNOP:
-        case GT_PINVOKE_PROLOG:
-        case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
         case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
@@ -5399,9 +5396,10 @@ void Compiler::fgVisitBlocksInTryAwareLoopAwareRPO(FlowGraphDfsTree*      dfsTre
 template <typename TFunc>
 BasicBlockVisit FlowGraphTryRegion::VisitTryRegionBlocksReversePostOrder(TFunc func)
 {
-    BitVecTraits            traits  = m_regions->GetBlockBitVecTraits();
+    assert(CanEnumerateInReversePostOrder());
     FlowGraphDfsTree* const dfsTree = m_regions->GetDfsTree();
-    bool                    result  = BitVecOps::VisitBitsReverse(&traits, m_blocks, [=](unsigned index) {
+    BitVecTraits*           traits  = m_regions->GetBlockBitVecTraits();
+    bool                    result  = BitVecOps::VisitBitsReverse(traits, m_blocks, [=](unsigned index) {
         assert(index < dfsTree->GetPostOrderCount());
         return func(dfsTree->GetPostOrder(index)) == BasicBlockVisit::Continue;
     });
