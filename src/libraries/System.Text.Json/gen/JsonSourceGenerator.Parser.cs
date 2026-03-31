@@ -1126,9 +1126,9 @@ namespace System.Text.Json.SourceGeneration
                     AddPropertyWithConflictResolution(propertySpec, memberInfo, propertyIndex: properties.Count, ref state);
                     properties.Add(propertySpec);
 
-                    // Inaccessible [JsonInclude] properties are now supported via
-                    // UnsafeAccessor (when available) or reflection fallback.
-                    // No longer mark the type as invalid for fast-path.
+                    // Inaccessible [JsonInclude] properties are temporarily unsupported
+                    // (see https://github.com/dotnet/runtime/issues/124889). These properties are
+                    // silently omitted rather than flagging fast-path as invalid.
                 }
 
                 bool PropertyIsOverriddenAndIgnored(IPropertySymbol property, Dictionary<string, ISymbol>? ignoredMembers)

@@ -53,7 +53,6 @@ namespace System.Text.Json.SourceGeneration
             private const string KeyValuePairTypeRef = "global::System.Collections.Generic.KeyValuePair";
             private const string UnsafeAccessorAttributeTypeRef = "global::System.Runtime.CompilerServices.UnsafeAccessorAttribute";
             private const string UnsafeAccessorKindTypeRef = "global::System.Runtime.CompilerServices.UnsafeAccessorKind";
-            private const string BindingFlagsTypeRef = "global::System.Reflection.BindingFlags";
             private const string JsonEncodedTextTypeRef = "global::System.Text.Json.JsonEncodedText";
             private const string JsonNamingPolicyTypeRef = "global::System.Text.Json.JsonNamingPolicy";
             private const string JsonSerializerTypeRef = "global::System.Text.Json.JsonSerializer";
@@ -934,7 +933,7 @@ namespace System.Text.Json.SourceGeneration
                     {
                         // Reflection fallback for properties: use Delegate.CreateDelegate on the MethodInfo for efficient invocation.
                         // Wrapper methods are strongly typed to match UnsafeAccessor signatures.
-                        string propertyExpr = $"typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!";
+                        string propertyExpr = $"typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName}, null, typeof({propertyTypeFQN}), {EmptyTypeArray}, null)!";
 
                         if (needsGetterAccessor)
                         {
@@ -983,7 +982,7 @@ namespace System.Text.Json.SourceGeneration
                     {
                         // Reflection fallback for fields: cache the FieldInfo and use GetValue/SetValue.
                         // Fields don't have MethodInfo, so Delegate.CreateDelegate can't be used.
-                        string fieldExpr = $"typeof({declaringTypeFQN}).GetField({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!";
+                        string fieldExpr = $"typeof({declaringTypeFQN}).GetField({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName})!";
                         string fieldCacheName = GetReflectionCacheName(typeFriendlyName, "field", property.MemberName, i, disambiguate);
                         writer.WriteLine($"private static global::System.Reflection.FieldInfo? {fieldCacheName};");
 
