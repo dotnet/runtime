@@ -39,7 +39,7 @@
 
 .PARAMETER Debuggee
     Which debuggee(s) to run. Default: All.
-    Available: BasicAlloc, DeepStack, Generics, MultiThread, ExceptionHandling, PInvoke, Comprehensive
+    Auto-discovered from the Debuggees directory.
 
 .PARAMETER SkipBuild
     Skip the CoreCLR/cDAC build step (use existing artifacts).
@@ -93,7 +93,7 @@ $arch = switch ($arch) {
     "arm64" { "arm64" }
     "arm"   { "arm" }
     "x86"   { "x86" }
-    default { "x64" }
+    default { throw "Unsupported architecture: $arch" }
 }
 
 $platformId = "$osName.$arch"
