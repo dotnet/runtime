@@ -5338,7 +5338,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
         // ILC defines method symbols with the thumb bit already set, so don't add it here.
         // For ReadyToRun and non-relocatable code (runtime JIT), we set it ourselves.
-        if (!m_compiler->opts.compReloc || m_compiler->IsReadyToRun())
+        if (!m_compiler->IsNativeAot())
         {
             distVal += 1;
         }
