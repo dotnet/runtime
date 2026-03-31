@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -503,6 +504,14 @@ namespace System.IO.Tests
 
             public override string ToString() => $"{EventType} {Dir1} {Dir2}";
 
+        }
+
+        // Returns a predicate that returns true for duplicate FiredEvents (same EventType and path(s)).
+        // Used on platforms like macOS where FSEvents may deliver the same event more than once.
+        internal static Func<FiredEvent, bool> CreateDeduplicatingFilter()
+        {
+            var seenEvents = new ConcurrentDictionary<FiredEvent, bool>();
+            return firedEvent => !seenEvents.TryAdd(firedEvent, true);
         }
 
         // Observe until an expected count of events is triggered, otherwise fail. Return all filtered events.

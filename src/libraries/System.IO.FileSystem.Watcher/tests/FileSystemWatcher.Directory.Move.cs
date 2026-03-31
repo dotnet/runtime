@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.XUnitExtensions;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -178,8 +177,8 @@ namespace System.IO.Tests
             Func<FiredEvent, bool>? isFilteredOut = null;
             if (skipOldEvents)
             {
-                var seenEvents = new ConcurrentDictionary<FiredEvent, bool>();
-                isFilteredOut = x => x.EventType == WatcherChangeTypes.Created || !seenEvents.TryAdd(x, true);
+                var deduplicateFilter = CreateDeduplicatingFilter();
+                isFilteredOut = x => x.EventType == WatcherChangeTypes.Created || deduplicateFilter(x);
             }
 
             IEnumerable<FiredEvent> events = ExpectEvents(watcher, filesCount, action, isFilteredOut);
