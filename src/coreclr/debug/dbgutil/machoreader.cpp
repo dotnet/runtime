@@ -7,6 +7,7 @@
 #include <cordebug.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#include <holder.h>
 #include "machoreader.h"
 
 #if TARGET_64BIT
