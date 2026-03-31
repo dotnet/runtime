@@ -21644,7 +21644,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                         GenTreeVecCon* loByteMask = gtNewVconNode(widenedType);
                         loByteMask->EvaluateBroadcastInPlace<int16_t>(UINT8_MAX);
 
-                        // Vector256<short> maskedProduct = Avx2.And(widenedProduct, vecCon1)
+                        // Vector256<short> maskedProduct = Avx2.And(widenedProduct, loByteMask)
                         GenTree* maskedProduct    = gtNewSimdBinOpNode(GT_AND, widenedType, widenedProduct, loByteMask,
                                                                        TYP_SHORT, widenedSimdSize);
                         GenTree* maskedProductDup = fgMakeMultiUse(&maskedProduct);
@@ -21676,7 +21676,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 GenTreeVecCon* hiByteMask = gtNewVconNode(type);
                 hiByteMask->EvaluateBroadcastInPlace<int16_t>(static_cast<int16_t>(0xFF00));
 
-                // Vector128<short> evenProduct = op1.AsInt16() * op1.AsInt16()
+                // Vector128<short> evenProduct = op1.AsInt16() * op2.AsInt16()
                 GenTree* evenProduct = gtNewSimdBinOpNode(GT_MUL, type, op1, op2, TYP_SHORT, simdSize);
 
                 // Vector128<short> oddOp1 = op1.AsInt16() >>> 8
