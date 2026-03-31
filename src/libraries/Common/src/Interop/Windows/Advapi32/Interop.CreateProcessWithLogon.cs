@@ -31,9 +31,13 @@ internal static partial class Interop
             string userName,
             string domain,
             IntPtr password,
-            LogonFlags logonType,
+            int logonType,
             int logonProvider,
             out SafeTokenHandle token);
+
+        // Logon types for LogonUser (dwLogonType parameter)
+        internal const int LOGON32_LOGON_INTERACTIVE = 2;
+        internal const int LOGON32_LOGON_NEW_CREDENTIALS = 9;
 
         [Flags]
         internal enum LogonFlags

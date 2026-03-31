@@ -393,6 +393,22 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
             }
 
+            if (InheritedHandles is not null)
+            {
+                for (int i = 0; i < InheritedHandles.Count; i++)
+                {
+                    SafeHandle? handle = InheritedHandles[i];
+                    if (handle is null)
+                    {
+                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
+                    }
+                    if (handle.IsInvalid)
+                    {
+                        throw new ArgumentException(SR.Arg_InvalidHandle, nameof(InheritedHandles));
+                    }
+                    ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
+                }
+            }
             if (anyHandle)
             {
                 if (StandardInputHandle is not null && RedirectStandardInput)

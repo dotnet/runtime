@@ -173,8 +173,15 @@ namespace Microsoft.Win32.SafeHandles
                             // That is why we use it only for the new, optional features.
                             if ((creationFlags & Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT) != 0)
                             {
-                                if (!Interop.Advapi32.LogonUser(startInfo.UserName, startInfo.Domain, passwordPtr, logonFlags, 0, out tokenHandle))
+                                // Map LogonFlags (used by CreateProcessWithLogonW) to LOGON32_LOGON_* constants
+                                // required by LogonUser's dwLogonType parameter.
+                                int logonType = logonFlags == Interop.Advapi32.LogonFlags.LOGON_NETCREDENTIALS_ONLY
+                                    ? Interop.Advapi32.LOGON32_LOGON_NEW_CREDENTIALS
+                                    : Interop.Advapi32.LOGON32_LOGON_INTERACTIVE;
+
+                                if (!Interop.Advapi32.LogonUser(startInfo.UserName, startInfo.Domain, passwordPtr, logonType, 0, out tokenHandle))
                                 {
+                                    errorCode = Marshal.GetLastWin32Error();
                                     retVal = false;
                                 }
                                 else
@@ -192,8 +199,9 @@ namespace Microsoft.Win32.SafeHandles
                                         &startupInfoEx,      // pointer to STARTUPINFOEX
                                         &processInfo         // pointer to PROCESS_INFORMATION
                                     );
+                                    if (!retVal)
+                                        errorCode = Marshal.GetLastWin32Error();
                                 }
-
                             }
                             else
                             {
@@ -525,15 +533,17 @@ namespace Microsoft.Win32.SafeHandles
                             throw new Win32Exception(Marshal.GetLastWin32Error());
                         }
 
+                        // Transfer ref ownership to handlesToRelease; CleanupHandles will release it.
                         handlesToRelease[handleIndex++] = handle;
                         handlesToInherit[handleCount++] = handlePtr;
-                        refAdded = false; // transferred ownership to handlesToRelease
+                        refAdded = false; // ownership transferred — don't release in finally
                     }
                 }
                 finally
                 {
                     if (refAdded)
                     {
+                        // AddRef succeeded but ownership was not transferred (duplicate or not added).
                         handle.DangerousRelease();
                     }
                 }
@@ -553,13 +563,11 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     // Remove the inheritance flag so they are not unintentionally inherited by
                     // other processes started after this point.
-                    if (!Interop.Kernel32.SetHandleInformation(
+                    // Ignore failures — the handle may have been closed by the time we get here.
+                    Interop.Kernel32.SetHandleInformation(
                         safeHandle,
                         Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
-                        0))
-                    {
-                        throw new Win32Exception(Marshal.GetLastWin32Error());
-                    }
+                        0);
                 }
                 finally
                 {
