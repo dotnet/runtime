@@ -178,7 +178,7 @@ namespace System.Diagnostics
                                         string majorVersion = majorVersions[i];
 
                                         // If this looks like a key of the form v{something}.{something}, we should see if it's a usable build.
-                                        if (majorVersion.Length > 1 && majorVersion[0] == 'v' && majorVersion.Contains(".")) // string.Contains(char) is .NetCore2.1+ specific
+                                        if (majorVersion.Length > 1 && majorVersion[0] == 'v' && majorVersion.Contains('.'))
                                         {
                                             int[] currentVersion = new int[] { -1, -1, -1 };
 

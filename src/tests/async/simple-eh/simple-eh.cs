@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using TestLibrary;
 using Xunit;
 
 public class Async2SimpleEH

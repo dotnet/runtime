@@ -56,7 +56,6 @@ namespace Microsoft.Interop
                         {
                             return
                             (
-                                Diagnostics: ImmutableArray<DiagnosticInfo>.Empty.ToSequenceEqual(),
                                 InterfaceContexts: ImmutableArray<ComInterfaceContext>.Empty.ToSequenceEqual(),
                                 MethodContexts: ImmutableArray<ComMethodContext>.Empty.ToSequenceEqual()
                             );
@@ -64,15 +63,9 @@ namespace Microsoft.Interop
                         StubEnvironment stubEnvironment = input.Right;
                         List<(ComInterfaceInfo, INamedTypeSymbol)> interfaceInfos = new();
                         HashSet<(ComInterfaceInfo, INamedTypeSymbol)> externalIfaces = new(ComInterfaceInfo.EqualityComparerForExternalIfaces.Instance);
-                        List<DiagnosticInfo> diags = new();
                         foreach (var (syntax, symbol) in input.Left)
                         {
                             var cii = ComInterfaceInfo.From(symbol, syntax, stubEnvironment, CancellationToken.None);
-                            if (cii.HasDiagnostic)
-                            {
-                                foreach (var diag in cii.Diagnostics)
-                                    diags.Add(diag);
-                            }
                             if (cii.HasValue)
                                 interfaceInfos.Add(cii.Value);
                             var externalBase = ComInterfaceInfo.CreateInterfaceInfoForBaseInterfacesInOtherCompilations(symbol);
@@ -98,13 +91,6 @@ namespace Microsoft.Interop
                             var inner = new List<ComMethodInfo>();
                             foreach (var m in cmi)
                             {
-                                if (m.HasDiagnostic)
-                                {
-                                    foreach (var diag in m.Diagnostics)
-                                    {
-                                        diags.Add(diag);
-                                    }
-                                }
                                 if (m.HasValue)
                                 {
                                     inner.Add(m.Value.ComMethod);
@@ -118,14 +104,6 @@ namespace Microsoft.Interop
                         for (int i = 0; i < interfaceInfos.Count; i++)
                         {
                             var cic = comInterfaceContexts[i];
-                            var cii = interfaceInfos[i];
-                            if (cic.HasDiagnostic)
-                            {
-                                foreach (var diag in cic.Diagnostics)
-                                {
-                                    diags.Add(diag);
-                                }
-                            }
                             if (cic.HasValue)
                             {
                                 ifaceCtxs.Add((cic.Value, methods[i].ToSequenceEqualImmutableArray()));
@@ -151,13 +129,10 @@ namespace Microsoft.Interop
 
                         return
                         (
-                            Diagnostics: diags.ToSequenceEqualImmutableArray(),
                             InterfaceContexts: ifaceCtxs.Select(x => x.Item1).Where(x => !x.IsExternallyDefined).ToSequenceEqualImmutableArray(),
                             MethodContexts: methodContexts.ToSequenceEqualImmutableArray()
                         );
                     });
-
-            context.RegisterDiagnostics(attributedInterfaces.SelectMany(static (data, ct) => data.Diagnostics));
 
             // Create list of methods (inherited and declared) and their owning interface
             var interfaceContextsToGenerate = attributedInterfaces.SelectMany(static (a, ct) => a.InterfaceContexts);
@@ -184,11 +159,6 @@ namespace Microsoft.Interop
                     GenerateInterfaceInformation(x.Interface.Info, ct).NormalizeWhitespace(),
                     GenerateIUnknownDerivedAttributeApplication(x.Interface.Info, ct).NormalizeWhitespace()
                 ]));
-
-            // Report diagnostics for managed-to-unmanaged and unmanaged-to-managed stubs, deduplicating diagnostics that are reported for both.
-            context.RegisterDiagnostics(
-                interfaceAndMethodsContexts
-                    .SelectMany(static (data, ct) => data.DeclaredMethods.SelectMany(m => m.ManagedToUnmanagedStub.Diagnostics).Union(data.DeclaredMethods.SelectMany(m => m.UnmanagedToManagedStub.Diagnostics))));
 
             var filesToGenerate = syntaxes
                 .Select(static (methodSyntaxes, ct) =>
@@ -443,7 +413,7 @@ namespace Microsoft.Interop
                 ComInterfaceDispatchMarshallingInfo.Instance);
         }
 
-        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ComInterfaceInfo owningInterface, CancellationToken ct)
+        internal static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ComInterfaceInfo owningInterface, CancellationToken ct)
         {
             ISignatureDiagnosticLocations locations = syntax is null
                 ? NoneSignatureDiagnosticLocations.Instance

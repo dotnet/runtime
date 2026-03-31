@@ -19,6 +19,7 @@
   <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishSingleFile>false</PublishSingleFile>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)tests.readytorun.targets</AfterMicrosoftNETSdkTargets>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
@@ -92,7 +93,13 @@
 
     <ItemGroup>
       <_BundleAssembliesToCopy Include="$(ArtifactsNetCoreAppBundlePath)*.dll" />
-      <ResolvedFileToPublish Remove="@(_BundleAssembliesToCopy)" MatchOnMetadata="Filename" />
+      <!-- Only remove files from the shared framework that match existing R2R binaries. Otherwise we can remove an OOB that goes forward of the framework's assembly. -->
+      <ResolvedFileToPublish Remove="@(_BundleAssembliesToCopy->'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)%(Filename)%(Extension)')" />
+      <!--
+        If there's any OOB assemblies that we're still referencing, make sure that we don't overwrite them with the assemblies from the bundle.
+        Filter for CopyLocal=true assets to ensure we're not grabbing "Content" or "None" items here.
+      -->
+      <_BundleAssembliesToCopy Remove="@(ResolvedFileToPublish->WithMetadataValue('CopyLocal','true'))" MatchOnMetadata="Filename;Extension" />
     </ItemGroup>
   </Target>
 
@@ -152,28 +159,6 @@
 
     <Copy SourceFiles="@(_BundleAssembliesToCopy)"
           DestinationFolder="$(PublishDir)"
-          OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
-          Retries="$(CopyRetryCount)"
-          RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-          UseHardlinksIfPossible="$(CreateHardLinksForPublishFilesIfPossible)"
-          UseSymboliclinksIfPossible="$(CreateSymbolicLinksForPublishFilesIfPossible)" />
-
-  </Target>
-
-  <!--
-      There are a few tests that need a 'live-ref-pack', which is missing from the
-      publish directory in TestReadyToRun builds. This target copies it there.
-  -->
-  <Target Name="CopyLiveRefPackIfPresent"
-          Condition="'$(TestReadyToRun)' == 'true'"
-          AfterTargets="CopyExistingR2RBinaries">
-
-    <ItemGroup>
-      <OutDirLiveRefPackFiles Include="$(OutDir)live-ref-pack/*" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(OutDirLiveRefPackFiles)"
-          DestinationFolder="$(PublishDir)live-ref-pack"
           OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
           Retries="$(CopyRetryCount)"
           RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"

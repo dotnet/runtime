@@ -127,6 +127,7 @@ LWM(GetStringConfigValue, DWORD, DWORD)
 LWM(GetSystemVAmd64PassStructInRegisterDescriptor, DWORDLONG, Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor)
 LWM(GetSwiftLowering, DWORDLONG, Agnostic_GetSwiftLowering)
 LWM(GetFpStructLowering, DWORDLONG, Agnostic_GetFpStructLowering)
+LWM(GetWasmLowering, DWORDLONG, DWORD)
 LWM(GetTailCallHelpers, Agnostic_GetTailCallHelpers, Agnostic_CORINFO_TAILCALL_HELPERS)
 LWM(GetAsyncResumptionStub, DWORD, DLDL)
 LWM(GetContinuationType, Agnostic_GetContinuationTypeIn, DWORDLONG)
@@ -139,6 +140,7 @@ LWM(GetTypeForPrimitiveValueClass, DWORDLONG, DWORD)
 LWM(GetTypeForPrimitiveNumericClass, DWORDLONG, DWORD)
 LWM(GetUnboxedEntry, DWORDLONG, DLD);
 LWM(GetInstantiatedEntry, DWORDLONG, Agnostic_GetInstantiatedEntryResult);
+LWM(GetAsyncOtherVariant, DWORDLONG, DLD);
 LWM(GetUnBoxHelper, DWORDLONG, DWORD)
 LWM(GetRuntimeTypePointer, DWORDLONG, DWORDLONG)
 LWM(IsObjectImmutable, DWORDLONG, DWORD)
@@ -171,6 +173,7 @@ LWM(SatisfiesMethodConstraints, DLDL, DWORD)
 LWM(GetUnmanagedCallConv, MethodOrSigInfoValue, DD)
 LWM(DoesFieldBelongToClass, DLDL, DWORD)
 DENSELWM(SigInstHandleMap, DWORDLONG)
+LWM(GetWasmTypeSymbol, Agnostic_GetWasmTypeSymbol, DWORDLONG)
 
 #undef LWM
 #undef DENSELWM

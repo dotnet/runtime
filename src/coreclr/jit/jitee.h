@@ -19,11 +19,11 @@ public:
         JIT_FLAG_OSR                     = 7, // Generate alternate version for On Stack Replacement
         JIT_FLAG_ALT_JIT                 = 8, // JIT should consider itself an ALT_JIT
         JIT_FLAG_FROZEN_ALLOC_ALLOWED    = 9, // JIT is allowed to use *_MAYBEFROZEN allocators
-        // JIT_FLAG_UNUSED               = 10,
+        JIT_FLAG_PORTABLE_ENTRY_POINTS   = 10, // Use portable entrypoints for managed calling convention (see clr-abi.md for details)
         JIT_FLAG_AOT                     = 11, // Do ahead-of-time code generation (ReadyToRun or NativeAOT)
         JIT_FLAG_PROF_ENTERLEAVE         = 12, // Instrument prologues/epilogues
         JIT_FLAG_PROF_NO_PINVOKE_INLINE  = 13, // Disables PInvoke inlining
-        // JIT_FLAG_UNUSED               = 14,
+        JIT_FLAG_ASYNC                   = 14, // Generate code for use as an async function
         JIT_FLAG_RELOC                   = 15, // Generate relocatable code
         JIT_FLAG_IL_STUB                 = 16, // method is an IL stub
         JIT_FLAG_PROCSPLIT               = 17, // JIT should separate code into hot and cold sections
@@ -44,7 +44,6 @@ public:
         JIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 #endif
 
-        JIT_FLAG_ASYNC                   = 31, // Generate code for use as an async function
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,
         // something needs to change.
@@ -120,6 +119,7 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_OSR, JIT_FLAG_OSR);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT, JIT_FLAG_ALT_JIT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED, JIT_FLAG_FROZEN_ALLOC_ALLOWED);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PORTABLE_ENTRY_POINTS, JIT_FLAG_PORTABLE_ENTRY_POINTS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_AOT, JIT_FLAG_AOT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE, JIT_FLAG_PROF_ENTERLEAVE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE, JIT_FLAG_PROF_NO_PINVOKE_INLINE);

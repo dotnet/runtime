@@ -1618,9 +1618,17 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                 Instantiation genericLoadInst(thisinst, ntypars);
 
-                if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner->GetSpecialInstantiationType()))
+                if (ClassLoader::EligibleForSpecialMarkerTypeUsage(genericLoadInst, pMTInterfaceMapOwner))
                 {
                     thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
+                    if (thRet.AsMethodTable()->GetInstantiation()[0] == pMTInterfaceMapOwner->GetSpecialInstantiationType())
+                    {
+                        // We loaded the special marker type, but it is ALSO the exact expected type which isn't a valid combination
+                        // In this case return something else (object) to indicate that
+                        // we found an invalid situation and this function should be retried without the special marker type logic enabled.
+                        thRet = TypeHandle(g_pObjectClass);
+                        break;
+                    }
                 }
                 else
                 {
@@ -1645,7 +1653,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                         // the loaded type is not the expected type we should be looking for to return a special marker type, but the normal load has
                         // found a type which claims to be a special marker type. In this case return something else (object) to indicate that
                         // we found an invalid situation and this function should be retried without the special marker type logic enabled.
-                        thRet = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_OBJECT));
+                        thRet = TypeHandle(g_pObjectClass);
                         break;
                     }
                     else if (!handlingRecursiveGenericFieldScenario)

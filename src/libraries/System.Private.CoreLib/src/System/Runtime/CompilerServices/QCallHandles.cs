@@ -3,6 +3,7 @@
 
 // Wrappers used to pass objects to and from QCalls.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Runtime.CompilerServices
@@ -21,16 +22,17 @@ namespace System.Runtime.CompilerServices
     // Wrapper for address of a object variable on stack
     internal unsafe ref struct ObjectHandleOnStack
     {
-        private void* _ptr;
+        private object* _ptr;
 
-        private ObjectHandleOnStack(void* pObject)
+        [RequiresUnsafe]
+        private ObjectHandleOnStack(object* pObject)
         {
             _ptr = pObject;
         }
 
         internal static ObjectHandleOnStack Create<T>(ref T o) where T : class?
         {
-            return new ObjectHandleOnStack(Unsafe.AsPointer(ref o));
+            return new ObjectHandleOnStack((object*)Unsafe.AsPointer(ref o));
         }
     }
 
@@ -43,16 +45,14 @@ namespace System.Runtime.CompilerServices
             _ref = ref byteReference;
         }
 
-        internal ref byte Get()
-        {
-            return ref _ref;
-        }
+        internal ref byte Value => ref _ref;
     }
 
     // Wrapper for address of a byref to byte variable on stack
     internal unsafe ref struct ByteRefOnStack
     {
         private readonly void* _pByteRef;
+
         private ByteRefOnStack(void* pByteRef)
         {
             _pByteRef = pByteRef;

@@ -19,12 +19,7 @@
 //-------------------------------------------------------------------------------------------------
 AllocHeap::AllocHeap()
     : m_blockList(),
-      m_pNextFree(NULL),
-      m_pFreeCommitEnd(NULL),
-      m_pFreeReserveEnd(NULL),
-      m_pbInitialMem(NULL),
-      m_fShouldFreeInitialMem(false),
-      m_lock(CrstAllocHeap)
+      m_cbCurBlockUsed(0)
       COMMA_INDEBUG(m_fIsInit(false))
 {
 }
@@ -33,62 +28,37 @@ AllocHeap::AllocHeap()
 bool AllocHeap::Init()
 {
     ASSERT(!m_fIsInit);
+    m_lock.Init(CrstAllocHeap);
     INDEBUG(m_fIsInit = true;)
 
     return true;
 }
 
 //-------------------------------------------------------------------------------------------------
-// This is for using pre-allocated memory on heap construction.
-// Should never use this more than once, and should always follow construction of heap.
-
-bool AllocHeap::Init(
-    uint8_t *    pbInitialMem,
-    uintptr_t cbInitialMemCommit,
-    uintptr_t cbInitialMemReserve,
-    bool       fShouldFreeInitialMem)
-{
-    ASSERT(!m_fIsInit);
-
-    BlockListElem *pBlock = new (nothrow) BlockListElem(pbInitialMem, cbInitialMemReserve);
-    if (pBlock == NULL)
-        return false;
-    m_blockList.PushHead(pBlock);
-
-    if (!_UpdateMemPtrs(pbInitialMem,
-                        pbInitialMem + cbInitialMemCommit,
-                        pbInitialMem + cbInitialMemReserve))
-    {
-        return false;
-    }
-
-    m_pbInitialMem = pbInitialMem;
-    m_fShouldFreeInitialMem = fShouldFreeInitialMem;
-
-    INDEBUG(m_fIsInit = true;)
-    return true;
-}
-
-//-------------------------------------------------------------------------------------------------
-AllocHeap::~AllocHeap()
+void AllocHeap::Destroy()
 {
     while (!m_blockList.IsEmpty())
     {
         BlockListElem *pCur = m_blockList.PopHead();
-        if (pCur->GetStart() != m_pbInitialMem || m_fShouldFreeInitialMem)
-            PalVirtualFree(pCur->GetStart(), pCur->GetLength());
-        delete pCur;
+        delete[] (uint8_t*)pCur;
     }
+    m_lock.Destroy();
 }
 
 //-------------------------------------------------------------------------------------------------
-uint8_t * AllocHeap::_Alloc(
+uint8_t * AllocHeap::Alloc(
+    uintptr_t cbMem)
+{
+    return AllocAligned(cbMem, 1);
+}
+
+//-------------------------------------------------------------------------------------------------
+uint8_t * AllocHeap::AllocAligned(
     uintptr_t cbMem,
-    uintptr_t alignment
-    )
+    uintptr_t alignment)
 {
     ASSERT((alignment & (alignment - 1)) == 0); // Power of 2 only.
-    ASSERT(alignment <= OS_PAGE_SIZE);          // Can't handle this right now.
+    ASSERT(alignment <= BLOCK_SIZE);            // Can't handle this right now.
 
     CrstHolder lock(&m_lock);
 
@@ -97,7 +67,7 @@ uint8_t * AllocHeap::_Alloc(
         return pbMem;
 
     // Must allocate new block
-    if (!_AllocNewBlock(cbMem))
+    if (!_AllocNewBlock(cbMem, alignment))
         return NULL;
 
     pbMem = _AllocFromCurBlock(cbMem, alignment);
@@ -107,68 +77,21 @@ uint8_t * AllocHeap::_Alloc(
 }
 
 //-------------------------------------------------------------------------------------------------
-uint8_t * AllocHeap::Alloc(
-    uintptr_t cbMem)
+bool AllocHeap::_AllocNewBlock(uintptr_t cbMem, uintptr_t alignment)
 {
-    return _Alloc(cbMem, 1);
-}
+    uintptr_t cbBlockSize = ALIGN_UP(cbMem + sizeof(BlockListElem) + alignment, BLOCK_SIZE);
 
-//-------------------------------------------------------------------------------------------------
-uint8_t * AllocHeap::AllocAligned(
-    uintptr_t cbMem,
-    uintptr_t alignment)
-{
-    return _Alloc(cbMem, alignment);
-}
-
-//-------------------------------------------------------------------------------------------------
-bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd, uint8_t* pFreeReserveEnd)
-{
-    ASSERT(ALIGN_DOWN(pFreeCommitEnd, OS_PAGE_SIZE) == pFreeCommitEnd);
-    ASSERT(ALIGN_DOWN(pFreeReserveEnd, OS_PAGE_SIZE) == pFreeReserveEnd);
-
-    m_pNextFree = pNextFree;
-    m_pFreeCommitEnd = pFreeCommitEnd;
-    m_pFreeReserveEnd = pFreeReserveEnd;
-    return true;
-}
-
-//-------------------------------------------------------------------------------------------------
-bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd)
-{
-    return _UpdateMemPtrs(pNextFree, pFreeCommitEnd, m_pFreeReserveEnd);
-}
-
-//-------------------------------------------------------------------------------------------------
-bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree)
-{
-    return _UpdateMemPtrs(pNextFree, m_pFreeCommitEnd);
-}
-
-//-------------------------------------------------------------------------------------------------
-bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
-{
-    cbMem = ALIGN_UP(cbMem, OS_PAGE_SIZE);
-
-    uint8_t * pbMem = reinterpret_cast<uint8_t*>
-        (PalVirtualAlloc(cbMem, PAGE_READWRITE));
-
+    uint8_t * pbMem = new (nothrow) uint8_t[cbBlockSize];
     if (pbMem == NULL)
         return false;
 
-    BlockListElem *pBlockListElem = new (nothrow) BlockListElem(pbMem, cbMem);
-    if (pBlockListElem == NULL)
-    {
-        PalVirtualFree(pbMem, cbMem);
-        return false;
-    }
+    BlockListElem *pBlockListElem = reinterpret_cast<BlockListElem*>(pbMem);
+    pBlockListElem->m_cbMem = cbBlockSize;
 
-    // Add to the list. While there is no race for writers (we hold the lock) we have the
-    // possibility of simultaneous readers, and using the interlocked version creates a
-    // memory barrier to make sure any reader sees a consistent list.
-    m_blockList.PushHeadInterlocked(pBlockListElem);
+    m_blockList.PushHead(pBlockListElem);
+    m_cbCurBlockUsed = sizeof(BlockListElem);
 
-    return _UpdateMemPtrs(pbMem, pbMem + cbMem, pbMem + cbMem);
+    return true;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -176,36 +99,19 @@ uint8_t * AllocHeap::_AllocFromCurBlock(
     uintptr_t cbMem,
     uintptr_t alignment)
 {
-    uint8_t * pbMem = NULL;
+    BlockListElem *pCurBlock = m_blockList.GetHead();
+    if (pCurBlock == NULL)
+        return NULL;
 
-    cbMem += (uint8_t *)ALIGN_UP(m_pNextFree, alignment) - m_pNextFree;
+    uint8_t* pBlockStart = (uint8_t*)pCurBlock;
+    uint8_t* pAlloc = (uint8_t*)ALIGN_UP(pBlockStart + m_cbCurBlockUsed, alignment);
+    uintptr_t cbAllocEnd = pAlloc + cbMem - pBlockStart;
 
-    if (m_pNextFree + cbMem <= m_pFreeCommitEnd ||
-        _CommitFromCurBlock(cbMem))
-    {
-        ASSERT(cbMem + m_pNextFree <= m_pFreeCommitEnd);
+    if (cbAllocEnd > pCurBlock->m_cbMem)
+        return NULL;
 
-        pbMem = ALIGN_UP(m_pNextFree, alignment);
-
-        if (!_UpdateMemPtrs(m_pNextFree + cbMem))
-            return NULL;
-    }
-
-    return pbMem;
-}
-
-//-------------------------------------------------------------------------------------------------
-bool AllocHeap::_CommitFromCurBlock(uintptr_t cbMem)
-{
-    ASSERT(m_pFreeCommitEnd < m_pNextFree + cbMem);
-
-    if (m_pNextFree + cbMem <= m_pFreeReserveEnd)
-    {
-        uintptr_t cbMemToCommit = ALIGN_UP(cbMem, OS_PAGE_SIZE);
-        return _UpdateMemPtrs(m_pNextFree, m_pFreeCommitEnd + cbMemToCommit);
-    }
-
-    return false;
+    m_cbCurBlockUsed = cbAllocEnd;
+    return pAlloc;
 }
 
 //-------------------------------------------------------------------------------------------------

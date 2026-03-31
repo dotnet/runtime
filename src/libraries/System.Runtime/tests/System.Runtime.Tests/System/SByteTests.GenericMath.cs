@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -51,11 +52,134 @@ namespace System.Tests
         [Fact]
         public static void DivRemTest()
         {
-            Assert.Equal(((sbyte)0x00, (sbyte)0x00), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x00, (sbyte)2));
-            Assert.Equal(((sbyte)0x00, (sbyte)0x01), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x01, (sbyte)2));
-            Assert.Equal(((sbyte)0x3F, (sbyte)0x01), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x7F, (sbyte)2));
-            Assert.Equal((unchecked((sbyte)0xC0), (sbyte)0x00), BinaryIntegerHelper<sbyte>.DivRem(unchecked((sbyte)0x80), (sbyte)2));
-            Assert.Equal(((sbyte)0x00, unchecked((sbyte)0xFF)), BinaryIntegerHelper<sbyte>.DivRem(unchecked((sbyte)0xFF), (sbyte)2));
+            unchecked
+            {
+                Assert.Equal(((sbyte)0x00, (sbyte)0x00), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x00, (sbyte)0x02));
+                Assert.Equal(((sbyte)0x00, (sbyte)0x01), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x01, (sbyte)0x02));
+                Assert.Equal(((sbyte)0x01, (sbyte)0x00), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x02, (sbyte)0x02));
+                Assert.Equal(((sbyte)0x3F, (sbyte)0x00), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x7E, (sbyte)0x02));
+                Assert.Equal(((sbyte)0x3F, (sbyte)0x01), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x7F, (sbyte)0x02));
+                Assert.Equal(((sbyte)0xC0, (sbyte)0x00), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x80, (sbyte)0x02));
+                Assert.Equal(((sbyte)0xC1, (sbyte)0xFF), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x81, (sbyte)0x02));
+                Assert.Equal(((sbyte)0xFF, (sbyte)0x00), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0xFE, (sbyte)0x02));
+                Assert.Equal(((sbyte)0x00, (sbyte)0xFF), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0xFF, (sbyte)0x02));
+
+                Assert.Equal(((sbyte)0x00, (sbyte)0x00), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x00, (sbyte)0xFE));
+                Assert.Equal(((sbyte)0x00, (sbyte)0x01), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x01, (sbyte)0xFE));
+                Assert.Equal(((sbyte)0xFF, (sbyte)0x00), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x02, (sbyte)0xFE));
+                Assert.Equal(((sbyte)0xC1, (sbyte)0x00), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x7E, (sbyte)0xFE));
+                Assert.Equal(((sbyte)0xC1, (sbyte)0x01), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x7F, (sbyte)0xFE));
+                Assert.Equal(((sbyte)0x40, (sbyte)0x00), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x80, (sbyte)0xFE));
+                Assert.Equal(((sbyte)0x3F, (sbyte)0xFF), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x81, (sbyte)0xFE));
+                Assert.Equal(((sbyte)0x01, (sbyte)0x00), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0xFE, (sbyte)0xFE));
+                Assert.Equal(((sbyte)0x00, (sbyte)0xFF), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0xFF, (sbyte)0xFE));
+
+                Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x00, 0));
+                Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x01, 0));
+                Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<sbyte>.DivRem((sbyte)0xFF, 0));
+            }
+        }
+
+        [Fact]
+        public static void DivRemModeTest()
+        {
+            unchecked
+            {
+                foreach (var mode in (DivisionRounding[])Enum.GetValues(typeof(DivisionRounding)))
+                {
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x00, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x00, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x01, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x01, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x02, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x02, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x7E, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x7E, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x7F, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x7F, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x80, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x80, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x81, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x81, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0xFE, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0xFE, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0xFF, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0xFF, (sbyte)0x02, mode));
+
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x00, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x00, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x01, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x01, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x02, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x02, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x7E, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x7E, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x7F, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x7F, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x80, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x80, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0x81, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x81, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0xFE, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0xFE, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivRemExpected((sbyte)0xFF, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.DivRem((sbyte)0xFF, (sbyte)0xFE, mode));
+
+                    Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x00, 0, mode));
+                    Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<sbyte>.DivRem((sbyte)0x01, 0, mode));
+                    Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<sbyte>.DivRem((sbyte)0xFF, 0, mode));
+                }
+            }
+        }
+
+        [Fact]
+        public static void DivideModeTest()
+        {
+            unchecked
+            {
+                foreach (var mode in (DivisionRounding[])Enum.GetValues(typeof(DivisionRounding)))
+                {
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x00, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x00, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x01, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x01, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x02, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x02, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x7E, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x7E, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x7F, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x7F, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x80, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x80, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x81, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x81, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0xFE, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0xFE, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0xFF, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0xFF, (sbyte)0x02, mode));
+
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x00, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x00, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x01, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x01, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x02, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x02, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x7E, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x7E, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x7F, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x7F, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x80, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x80, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0x81, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0x81, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0xFE, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0xFE, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.DivideExpected((sbyte)0xFF, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Divide((sbyte)0xFF, (sbyte)0xFE, mode));
+
+                    Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<sbyte>.Divide((sbyte)0x00, 0, mode));
+                    Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<sbyte>.Divide((sbyte)0x01, 0, mode));
+                    Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<sbyte>.Divide((sbyte)0xFF, 0, mode));
+                }
+            }
+        }
+
+        [Fact]
+        public static void RemainderModeTest()
+        {
+            unchecked
+            {
+                foreach (var mode in (DivisionRounding[])Enum.GetValues(typeof(DivisionRounding)))
+                {
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x00, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x00, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x01, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x01, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x02, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x02, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x7E, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x7E, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x7F, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x7F, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x80, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x80, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x81, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x81, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0xFE, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0xFE, (sbyte)0x02, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0xFF, (sbyte)0x02, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0xFF, (sbyte)0x02, mode));
+
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x00, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x00, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x01, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x01, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x02, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x02, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x7E, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x7E, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x7F, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x7F, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x80, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x80, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0x81, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x81, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0xFE, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0xFE, (sbyte)0xFE, mode));
+                    Assert.Equal(BinaryIntegerHelper<sbyte>.RemainderExpected((sbyte)0xFF, (sbyte)0xFE, mode), BinaryIntegerHelper<sbyte>.Remainder((sbyte)0xFF, (sbyte)0xFE, mode));
+
+                    Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x00, 0, mode));
+                    Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<sbyte>.Remainder((sbyte)0x01, 0, mode));
+                    Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<sbyte>.Remainder((sbyte)0xFF, 0, mode));
+                }
+            }
         }
 
         [Fact]

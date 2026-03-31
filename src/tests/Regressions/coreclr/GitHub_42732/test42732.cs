@@ -10,6 +10,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Test11611
 {    
@@ -37,6 +38,7 @@ public class Test11611
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

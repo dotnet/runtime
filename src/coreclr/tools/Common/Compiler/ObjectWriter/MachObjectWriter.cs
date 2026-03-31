@@ -112,7 +112,7 @@ namespace ILCompiler.ObjectWriter
             // Layout sections. At this point we don't really care if the file offsets are correct
             // but we need to compute the virtual addresses to populate the symbol table.
             uint fileOffset = 0;
-            LayoutSections(recordFinalLayout: false, ref fileOffset, out _, out _);
+            LayoutSections(recordFinalLayout: false, ref fileOffset, out _, out _, out _);
 
             // Generate section base symbols. The section symbols are used for PC relative relocations
             // to subtract the base of the section, and in DWARF to emit section relative relocations.
@@ -133,11 +133,12 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void LayoutSections(bool recordFinalLayout, ref uint fileOffset, out uint segmentFileSize, out ulong segmentSize)
+        private void LayoutSections(bool recordFinalLayout, ref uint fileOffset, out uint segmentFileOffset, out uint segmentFileSize, out ulong segmentSize)
         {
             ulong virtualAddress = 0;
             byte sectionIndex = 1;
 
+            segmentFileOffset = 0;
             segmentFileSize = 0;
             segmentSize = 0;
             foreach (MachSection section in _sections)
@@ -149,9 +150,11 @@ namespace ILCompiler.ObjectWriter
 
                 if (section.IsInFile)
                 {
+                    // Initialize the segment file offset to the first aligned section offset in the file.
+                    segmentFileOffset = segmentFileSize == 0 ? fileOffset : segmentFileOffset;
                     section.FileOffset = fileOffset;
                     fileOffset += (uint)section.Size;
-                    segmentFileSize = Math.Max(segmentFileSize, fileOffset);
+                    segmentFileSize = Math.Max(segmentFileSize, fileOffset - segmentFileOffset);
                 }
                 else
                 {
@@ -200,8 +203,12 @@ namespace ILCompiler.ObjectWriter
             // We added the compact unwinding section, debug sections, and relocations,
             // so re-run the layout and this time calculate with the correct file offsets.
             uint fileOffset = (uint)MachHeader64.HeaderSize + loadCommandsSize;
-            uint segmentFileOffset = fileOffset;
-            LayoutSections(recordFinalLayout: true, ref fileOffset, out uint segmentFileSize, out ulong segmentSize);
+            LayoutSections(
+                recordFinalLayout: true,
+                ref fileOffset,
+                out uint segmentFileOffset,
+                out uint segmentFileSize,
+                out ulong segmentSize);
 
             MachHeader64 machHeader = new MachHeader64
             {
@@ -456,10 +463,16 @@ namespace ILCompiler.ObjectWriter
 
             switch (relocType)
             {
+                case IMAGE_REL_BASED_ARM64_BRANCH26:
                 case IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                 case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                 case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
                     // Addend is handled through ARM64_RELOC_ADDEND
+                    fixed (byte* pData = data)
+                    {
+                        addend += Relocation.ReadValue(relocType, pData);
+                        Relocation.WriteValue(relocType, pData, 0);
+                    }
                     break;
 
                 case IMAGE_REL_BASED_RELPTR32:
@@ -756,20 +769,7 @@ namespace ILCompiler.ObjectWriter
 
                 uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
 
-                if (symbolicRelocation.Type == IMAGE_REL_BASED_ARM64_BRANCH26)
-                {
-                    sectionRelocations.Add(
-                        new MachRelocation
-                        {
-                            Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = symbolIndex,
-                            Length = 4,
-                            RelocationType = ARM64_RELOC_BRANCH26,
-                            IsExternal = true,
-                            IsPCRelative = true,
-                        });
-                }
-                else if (symbolicRelocation.Type is IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L)
+                if (symbolicRelocation.Type is IMAGE_REL_BASED_ARM64_BRANCH26 or IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L)
                 {
                     if (symbolicRelocation.Addend != 0)
                     {
@@ -787,6 +787,7 @@ namespace ILCompiler.ObjectWriter
 
                     byte type = symbolicRelocation.Type switch
                     {
+                        IMAGE_REL_BASED_ARM64_BRANCH26 => ARM64_RELOC_BRANCH26,
                         IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => ARM64_RELOC_PAGE21,
                         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => ARM64_RELOC_PAGEOFF12,
                         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L => ARM64_RELOC_PAGEOFF12,
@@ -801,7 +802,7 @@ namespace ILCompiler.ObjectWriter
                             Length = 4,
                             RelocationType = type,
                             IsExternal = true,
-                            IsPCRelative = symbolicRelocation.Type == IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
+                            IsPCRelative = symbolicRelocation.Type is IMAGE_REL_BASED_ARM64_BRANCH26 or IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
                         });
                 }
                 else if (symbolicRelocation.Type == IMAGE_REL_BASED_DIR64)

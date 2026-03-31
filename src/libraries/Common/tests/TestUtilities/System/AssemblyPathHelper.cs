@@ -13,9 +13,11 @@ namespace System
             // Note, in Browser, assemblies are loaded from memory and in that case, Assembly.Location will return an empty
             // string.  For these tests, the assemblies will also be available in the VFS, so just specify the assembly name
             // plus extension.
+            const string browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
+
             return (PlatformDetection.IsNotBrowser) ?
                 a.Location
-                : "/" + a.GetName().Name + ".dll";
+                : browserVirtualAppBase + a.GetName().Name + ".dll";
         }
     }
 }

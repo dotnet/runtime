@@ -23,12 +23,12 @@ class OptIfConversionDsc
 public:
     OptIfConversionDsc(Compiler* comp, BasicBlock* startBlock)
     {
-        m_comp       = comp;
+        m_compiler   = comp;
         m_startBlock = startBlock;
     }
 
 private:
-    Compiler* m_comp; // The Compiler instance.
+    Compiler* m_compiler; // The Compiler instance.
 
     BasicBlock* m_startBlock;           // First block in the If Conversion.
     BasicBlock* m_finalBlock = nullptr; // Block where the flows merge. In a return case, this can be nullptr.
@@ -55,7 +55,6 @@ private:
     bool IfConvertCheckThenFlow();
     void IfConvertFindFlow();
     bool IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOperation* foundOperation);
-    void IfConvertJoinStmts(BasicBlock* fromBlock);
 
     GenTree* TryTransformSelectOperOrLocal(GenTree* oper, GenTree* lcl);
     GenTree* TryTransformSelectOperOrZero(GenTree* oper, GenTree* lcl);
@@ -93,7 +92,7 @@ bool OptIfConversionDsc::IfConvertCheckInnerBlockFlow(BasicBlock* block)
 
     // Check that we have linear flow and are still in the same EH region
 
-    if (block->GetUniquePred(m_comp) == nullptr)
+    if (block->GetUniquePred(m_compiler) == nullptr)
     {
         return false;
     }
@@ -357,26 +356,6 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
 }
 
 //-----------------------------------------------------------------------------
-// IfConvertJoinStmts
-//
-// Move all the statements from a block onto the end of the start block.
-//
-// Arguments:
-//   fromBlock  -- Source block
-//
-void OptIfConversionDsc::IfConvertJoinStmts(BasicBlock* fromBlock)
-{
-    Statement* stmtList1 = m_startBlock->firstStmt();
-    Statement* stmtList2 = fromBlock->firstStmt();
-    Statement* stmtLast1 = m_startBlock->lastStmt();
-    Statement* stmtLast2 = fromBlock->lastStmt();
-    stmtLast1->SetNextStmt(stmtList2);
-    stmtList2->SetPrevStmt(stmtLast1);
-    stmtList1->SetPrevStmt(stmtLast2);
-    fromBlock->bbStmtList = nullptr;
-}
-
-//-----------------------------------------------------------------------------
 // IfConvertDump
 //
 // Dump all the blocks in the If Conversion.
@@ -384,19 +363,24 @@ void OptIfConversionDsc::IfConvertJoinStmts(BasicBlock* fromBlock)
 #ifdef DEBUG
 void OptIfConversionDsc::IfConvertDump()
 {
-    assert(m_startBlock != nullptr);
-    m_comp->fgDumpBlock(m_startBlock);
-    BasicBlock* dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetFalseTarget() : m_startBlock->GetTarget();
-    for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
+    m_compiler->fgDumpBlock(m_startBlock);
+
+    bool beforeTransformation = m_startBlock->KindIs(BBJ_COND);
+    if (beforeTransformation)
     {
-        m_comp->fgDumpBlock(dumpBlock);
-    }
-    if (m_doElseConversion)
-    {
-        dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetTrueTarget() : m_startBlock->GetTarget();
-        for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
+        // Dump all Then blocks
+        for (BasicBlock* bb = m_startBlock->GetFalseTarget(); bb != m_finalBlock; bb = bb->GetUniqueSucc())
         {
-            m_comp->fgDumpBlock(dumpBlock);
+            m_compiler->fgDumpBlock(bb);
+        }
+
+        if (m_doElseConversion)
+        {
+            // Dump all Else blocks
+            for (BasicBlock* bb = m_startBlock->GetTrueTarget(); bb != m_finalBlock; bb = bb->GetUniqueSucc())
+            {
+                m_compiler->fgDumpBlock(bb);
+            }
         }
     }
 }
@@ -615,7 +599,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     }
 
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
         JITDUMP("\nConditionally executing " FMT_BB, m_thenOperation.block->bbNum);
         if (m_doElseConversion)
@@ -629,7 +613,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 
     // Using SELECT nodes means that both Then and Else operations are fully evaluated.
     // Put a limit on the original source and destinations.
-    if (!m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_COST, 25))
+    if (!m_compiler->compStressCompile(Compiler::STRESS_IF_CONVERSION_COST, 25))
     {
         int thenCost = 0;
         int elseCost = 0;
@@ -637,11 +621,11 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         if (m_mainOper == GT_STORE_LCL_VAR)
         {
             thenCost = m_thenOperation.node->AsLclVar()->Data()->GetCostEx() +
-                       (m_comp->gtIsLikelyRegVar(m_thenOperation.node) ? 0 : 2);
+                       (m_compiler->gtIsLikelyRegVar(m_thenOperation.node) ? 0 : 2);
             if (m_doElseConversion)
             {
                 elseCost = m_elseOperation.node->AsLclVar()->Data()->GetCostEx() +
-                           (m_comp->gtIsLikelyRegVar(m_elseOperation.node) ? 0 : 2);
+                           (m_compiler->gtIsLikelyRegVar(m_elseOperation.node) ? 0 : 2);
             }
         }
         else
@@ -663,13 +647,13 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
     }
 
-    if (!m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
+    if (!m_compiler->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
     {
         // Don't optimise the block if it is inside a loop. Loop-carried
         // dependencies can cause significant stalls if if-converted.
         // Detect via the block weight as that will be high when inside a loop.
 
-        if (m_startBlock->getBBWeight(m_comp) > BB_UNITY_WEIGHT * 1.05)
+        if (m_startBlock->getBBWeight(m_compiler) > BB_UNITY_WEIGHT * 1.05)
         {
             JITDUMP("Skipping if-conversion inside loop (via weight)\n");
             return false;
@@ -677,7 +661,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
 
         // We may be inside an unnatural loop, so do the expensive check.
         Compiler::ReachabilityResult reachability =
-            m_comp->optReachableWithBudget(m_finalBlock, m_startBlock, nullptr, pReachabilityBudget);
+            m_compiler->optReachableWithBudget(m_finalBlock, m_startBlock, nullptr, pReachabilityBudget);
         if (reachability == Compiler::ReachabilityResult::Reachable)
         {
             JITDUMP("Skipping if-conversion inside loop (via reachability)\n");
@@ -725,15 +709,14 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
             // Duplicate the destination of the Then store.
             assert(m_mainOper == GT_STORE_LCL_VAR && !m_doElseConversion);
             GenTreeLclVar* store = m_thenOperation.node->AsLclVar();
-            selectTrueInput      = m_comp->gtNewLclVarNode(store->GetLclNum(), store->TypeGet());
+            selectTrueInput      = m_compiler->gtNewLclVarNode(store->GetLclNum(), store->TypeGet());
         }
         // Create a select node
-        select = m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
+        select = m_compiler->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
     }
 
+    // Use the SELECT as the source of the Then STORE/RETURN.
     m_thenOperation.node->AddAllEffectsFlags(select);
-
-    // Use the select as the source of the Then operation.
     if (m_mainOper == GT_STORE_LCL_VAR)
     {
         m_thenOperation.node->AsLclVar()->Data() = select;
@@ -742,35 +725,52 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     {
         m_thenOperation.node->AsOp()->SetReturnValue(select);
     }
-    m_comp->gtSetEvalOrder(m_thenOperation.node);
-    m_comp->fgSetStmtSeq(m_thenOperation.stmt);
+    m_compiler->gtSetEvalOrder(m_thenOperation.node);
+    m_compiler->fgSetStmtSeq(m_thenOperation.stmt);
 
-    // Remove statements.
-    last->gtBashToNOP();
-    m_comp->gtSetEvalOrder(last);
-    m_comp->fgSetStmtSeq(m_startBlock->lastStmt());
+    // Replace JTRUE with STORE(SELECT)/RETURN(SELECT) statement
+    m_compiler->fgInsertStmtBefore(m_startBlock, m_startBlock->lastStmt(), m_thenOperation.stmt);
+    m_compiler->fgRemoveStmt(m_startBlock, m_startBlock->lastStmt());
+    m_thenOperation.block->SetFirstStmt(nullptr);
+
+    BasicBlock* falseBb = m_startBlock->GetFalseTarget();
+    BasicBlock* trueBb  = m_startBlock->GetTrueTarget();
+
+    // JTRUE block now contains SELECT. Change it's kind and make it flow
+    // directly into block where flows merge, which is null in case of GT_RETURN.
+    if (m_mainOper == GT_RETURN)
+    {
+        m_startBlock->SetKindAndTargetEdge(BBJ_RETURN);
+    }
+    else
+    {
+        FlowEdge* newEdge =
+            m_doElseConversion ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
+        m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+    }
+    assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
+
+    // Remove all Then/Else blocks
+    auto removeBlocks = [&](BasicBlock* start) {
+        m_compiler->fgRemoveAllRefPreds(start, m_startBlock);
+        start->bbWeight = BB_ZERO_WEIGHT;
+        assert(start->bbPreds == nullptr);
+
+        for (BasicBlock* bb = start; bb != m_finalBlock;)
+        {
+            BasicBlock* next = bb->GetUniqueSucc();
+            m_compiler->fgRemoveBlock(bb, true);
+            bb = next;
+        }
+    };
+    removeBlocks(falseBb);
     if (m_doElseConversion)
     {
-        m_elseOperation.node->gtBashToNOP();
-        m_comp->gtSetEvalOrder(m_elseOperation.node);
-        m_comp->fgSetStmtSeq(m_elseOperation.stmt);
+        removeBlocks(trueBb);
     }
-
-    // Merge all the blocks.
-    IfConvertJoinStmts(m_thenOperation.block);
-    if (m_doElseConversion)
-    {
-        IfConvertJoinStmts(m_elseOperation.block);
-    }
-
-    // Update the flow from the original block.
-    FlowEdge* const removedEdge  = m_comp->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
-    FlowEdge* const retainedEdge = m_startBlock->GetTrueEdge();
-    m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
-    m_comp->fgRepairProfileCondToUncond(m_startBlock, retainedEdge, removedEdge);
 
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
         JITDUMP("\nAfter if conversion\n");
         IfConvertDump();
@@ -877,7 +877,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectOperOrLocal(GenTree* trueInput, G
             if (lcl2->OperIs(GT_LCL_VAR) && (lcl2->AsLclVar()->GetLclNum() == lclNum))
             {
                 oper->AsOp()->gtOp1 = lcl2;
-                oper->AsOp()->gtOp2 = isCondReversed ? m_comp->gtReverseCond(m_cond) : m_cond;
+                oper->AsOp()->gtOp2 = isCondReversed ? m_compiler->gtReverseCond(m_cond) : m_cond;
                 if (isDecrement)
                     oper->ChangeOper(GT_SUB);
 
@@ -917,7 +917,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectOperOrZero(GenTree* trueInput, Ge
 
         if (one->IsIntegralConst(1))
         {
-            oper->AsOp()->gtOp1 = isCondReversed ? m_comp->gtReverseCond(m_cond) : m_cond;
+            oper->AsOp()->gtOp1 = isCondReversed ? m_compiler->gtReverseCond(m_cond) : m_cond;
             oper->AsOp()->gtOp2 = expr;
 
             oper->gtFlags |= m_cond->gtFlags & GTF_ALL_EFFECT;
@@ -962,7 +962,7 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
             else if (trueVal == 0 && falseVal == 1)
             {
                 // compare ? false : true  -->  reversed_compare
-                return m_comp->gtReverseCond(m_cond);
+                return m_compiler->gtReverseCond(m_cond);
             }
         }
 #ifdef TARGET_RISCV64
@@ -978,14 +978,14 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
             if (selectOper.isMatched())
             {
                 GenTree* left  = isCondReversed ? trueInput : falseInput;
-                GenTree* right = isCondReversed ? m_comp->gtReverseCond(m_cond) : m_cond;
+                GenTree* right = isCondReversed ? m_compiler->gtReverseCond(m_cond) : m_cond;
                 if (selectOper.bitIndex > 0)
                 {
                     assert(selectOper.oper == GT_LSH);
                     left->AsIntConCommon()->SetIntegralValue(selectOper.bitIndex);
                     std::swap(left, right);
                 }
-                return m_comp->gtNewOperNode(selectOper.oper, selectOper.type, left, right);
+                return m_compiler->gtNewOperNode(selectOper.oper, selectOper.type, left, right);
             }
         }
 #endif // TARGET_RISCV64

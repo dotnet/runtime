@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(32, sizeof(JSMarshalerArgument));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))] // not V8 shell
         public unsafe void PrototypeNotEqual()
         {
             using var temp1 = JSHost.GlobalThis.GetPropertyAsJSObject("EventTarget");
@@ -107,6 +107,42 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public async Task RejectString()
+        {
+            var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.Reject("noodles"));
+            Assert.Contains("noodles", ex.Message);
+        }
+
+        [Fact]
+        public async Task RejectException()
+        {
+            var expected = new Exception("noodles");
+            var actual = await Assert.ThrowsAsync<Exception>(() => JavaScriptTestHelper.Reject(expected));
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public async Task RejectNull()
+        {
+            var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.Reject(null));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public unsafe void OptimizedPaths()
+        {
+            JavaScriptTestHelper.optimizedReached = 0;
+            JavaScriptTestHelper.invoke0V();
+            Assert.Equal(1, JavaScriptTestHelper.optimizedReached);
+            JavaScriptTestHelper.invoke1V(42);
+            Assert.Equal(43, JavaScriptTestHelper.optimizedReached);
+            Assert.Equal(124, JavaScriptTestHelper.invoke1R(123));
+            Assert.Equal(43 + 123, JavaScriptTestHelper.optimizedReached);
+            Assert.Equal(32, JavaScriptTestHelper.invoke2R(15, 16));
+            Assert.Equal(43 + 123 + 31, JavaScriptTestHelper.optimizedReached);
+        }
+
+        #region Assertion Errors
+        [Fact]
         public unsafe void BadCast()
         {
             JSException ex;
@@ -136,40 +172,62 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public async Task RejectString()
+        public async Task TaskOfShortOutOfRange_ThrowsAssertionInTaskContinuation()
         {
-            var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.Reject("noodles"));
-            Assert.Contains("noodles", ex.Message);
+            Task<short> res = JavaScriptTestHelper.ReturnResolvedPromiseWithIntMaxValue_AsShortToBeOutOfRange();
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
+            Assert.Equal("Error: Assert failed: Overflow: value 2147483647 is out of -32768 32767 range", ex.Message);
         }
 
         [Fact]
-        public async Task RejectException()
+        public async Task TaskOfByteOutOfRange_ThrowsAssertionInTaskContinuation()
         {
-            var expected = new Exception("noodles");
-            var actual = await Assert.ThrowsAsync<Exception>(() => JavaScriptTestHelper.Reject(expected));
-            Assert.Equal(expected, actual);
+            Task<byte> res = JavaScriptTestHelper.ReturnResolvedPromiseWithIntMaxValue_AsByteToBeOutOfRange();
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
+            Assert.Equal("Error: Assert failed: Overflow: value 2147483647 is out of 0 255 range", ex.Message);
         }
 
         [Fact]
-        public async Task RejectNull()
+        public async Task TaskOfDateTimeOutOfRange_ThrowsAssertionInTaskContinuation()
         {
-            var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.Reject(null));
+            Task<DateTime> res = JavaScriptTestHelper.ReturnResolvedPromiseWithDateMaxValue();
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
+            Assert.Equal("Error: Assert failed: Overflow: value +275760-09-13T00:00:00.000Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
-        public unsafe void OptimizedPaths()
+        [Fact]
+        public async Task DateTimeMaxValueBoundaryCondition()
         {
-            JavaScriptTestHelper.optimizedReached = 0;
-            JavaScriptTestHelper.invoke0V();
-            Assert.Equal(1, JavaScriptTestHelper.optimizedReached);
-            JavaScriptTestHelper.invoke1V(42);
-            Assert.Equal(43, JavaScriptTestHelper.optimizedReached);
-            Assert.Equal(124, JavaScriptTestHelper.invoke1R(123));
-            Assert.Equal(43 + 123, JavaScriptTestHelper.optimizedReached);
-            Assert.Equal(32, JavaScriptTestHelper.invoke2R(15, 16));
-            Assert.Equal(43 + 123 + 31, JavaScriptTestHelper.optimizedReached);
+            DateTime t = JavaScriptTestHelper.ReturnDateTimeWithOffset(DateTime.MaxValue, 0);
+            Assert.Equal(DateTime.MaxValue.AddTicks(-9_999), t); // Microseconds are lost during marshalling
+            JSException ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.ReturnDateTimeWithOffset(DateTime.MaxValue, 1));
+            Assert.Equal("Error: Assert failed: Overflow: value +010000-01-01T00:00:00.000Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
         }
 
+        [Fact]
+        public async Task DateTimeMinValueBoundaryCondition()
+        {
+            DateTime t = JavaScriptTestHelper.ReturnDateTimeWithOffset(DateTime.MinValue, 0);
+            Assert.Equal(DateTime.MinValue, t);
+            JSException ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.ReturnDateTimeWithOffset(DateTime.MinValue, -1));
+            Assert.Equal("Error: Assert failed: Overflow: value 0000-12-31T23:59:59.999Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
+        }
+
+        [Fact]
+        public async Task Int32ArrayWithOutOfRangeValues()
+        {
+            int[] arr = JavaScriptTestHelper.getInt32ArrayWithOutOfRangeValues();
+            Assert.Equal(0, arr[0]);
+            Assert.Equal(1, arr[1]);
+            Assert.Equal(-2147483648, arr[2]);
+            Assert.Equal(-1147483648, arr[3]);
+            Assert.Equal(-1, arr[4]);
+            Assert.Equal(0, arr[5]);
+            // Currently, values > int32.MaxValue are wrapped around when marshaled from JS to C#.
+            // TODO: Instead throw OverflowException when out of range value is encountered.
+        }
+
+        #endregion
 
         #region Get/Set Property
 
@@ -289,6 +347,45 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             if (expected != null) for (int i = 0; i < expected.Length; i++)
                 {
                     var actualI = JavaScriptTestHelper.store_DoubleArray(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalDoubleArrayCases))]
+        public unsafe void JsImportDoubleArray_NoAttributes(double[]? expected)
+        {
+            var actual = JavaScriptTestHelper.echo1_DoubleArray_NoAttributes(expected);
+            Assert.Equal(expected, actual);
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_DoubleArray_NoAttributes(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalSingleArrayCases))]
+        public unsafe void JsImportSingleArray(float[]? expected)
+        {
+            var actual = JavaScriptTestHelper.echo1_SingleArray(expected);
+            Assert.Equal(expected, actual);
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_SingleArray(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalSingleArrayCases))]
+        public unsafe void JsImportSingleArray_NoAttributes(float[]? expected)
+        {
+            var actual = JavaScriptTestHelper.echo1_SingleArray_NoAttributes(expected);
+            Assert.Equal(expected, actual);
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_SingleArray_NoAttributes(expected, i);
                     Assert.Equal(expected[i], actualI);
                 }
         }
@@ -452,6 +549,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public unsafe void JsImportSpanOfSingle()
+        {
+            var expectedFloats = stackalloc float[] { 0, 1, -1, float.Pi, 42, float.MaxValue, float.MinValue, float.NaN, float.PositiveInfinity, float.NegativeInfinity };
+            Span<float> expected = new Span<float>(expectedFloats, 10);
+            Assert.True(Unsafe.AsPointer(ref expected.GetPinnableReference()) == expectedFloats);
+            Span<float> actual = JavaScriptTestHelper.echo1_SpanOfSingle(expected, false);
+            Assert.Equal(expected.Length, actual.Length);
+            Assert.NotEqual(expected[0], expected[1]);
+            Assert.Equal(expected.GetPinnableReference(), actual.GetPinnableReference());
+            Assert.True(actual.SequenceCompareTo(expected) == 0);
+            Assert.Equal(expected.ToArray(), actual.ToArray());
+            actual = JavaScriptTestHelper.echo1_SpanOfSingle(expected, true);
+            Assert.Equal(expected[0], expected[1]);
+            Assert.Equal(actual[0], actual[1]);
+        }
+
+        [Fact]
         public unsafe void JsImportArraySegmentOfByte()
         {
             var expectedBytes = new byte[] { 88, 1, 2, 42, 0, 127, 255 };
@@ -468,8 +582,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void JsImportArraySegmentOfInt32()
         {
-            var expectedBytes = new int[] { 88, 0, 1, -2, 42, int.MaxValue, int.MinValue };
-            ArraySegment<int> expected = new ArraySegment<int>(expectedBytes, 1, 6);
+            var expectedInts = new int[] { 88, 0, 1, -2, 42, int.MaxValue, int.MinValue };
+            ArraySegment<int> expected = new ArraySegment<int>(expectedInts, 1, 6);
             ArraySegment<int> actual = JavaScriptTestHelper.echo1_ArraySegmentOfInt32(expected, false);
             Assert.Equal(expected.Count, actual.Count);
             Assert.NotEqual(expected[0], expected[1]);
@@ -482,13 +596,27 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void JsImportArraySegmentOfDouble()
         {
-            var expectedBytes = new double[] { 88.88, 0, 1, -1, double.Pi, 42, double.MaxValue, double.MinValue, double.NaN, double.PositiveInfinity, double.NegativeInfinity };
-            ArraySegment<double> expected = new ArraySegment<double>(expectedBytes, 1, 10);
+            var expectedDoubles = new double[] { 88.88, 0, 1, -1, double.Pi, 42, double.MaxValue, double.MinValue, double.NaN, double.PositiveInfinity, double.NegativeInfinity };
+            ArraySegment<double> expected = new ArraySegment<double>(expectedDoubles, 1, 10);
             ArraySegment<double> actual = JavaScriptTestHelper.echo1_ArraySegmentOfDouble(expected, false);
             Assert.Equal(expected.Count, actual.Count);
             Assert.NotEqual(expected[0], expected[1]);
             Assert.Equal(expected.Array, actual.Array);
             actual = JavaScriptTestHelper.echo1_ArraySegmentOfDouble(expected, true);
+            Assert.Equal(expected[0], expected[1]);
+            Assert.Equal(actual[0], actual[1]);
+        }
+
+        [Fact]
+        public unsafe void JsImportArraySegmentOfSingle()
+        {
+            var expectedFloats = new float[] { 88.88F, 0, 1, -1, float.Pi, 42, float.MaxValue, float.MinValue, float.NaN, float.PositiveInfinity, float.NegativeInfinity };
+            ArraySegment<float> expected = new ArraySegment<float>(expectedFloats, 1, 10);
+            ArraySegment<float> actual = JavaScriptTestHelper.echo1_ArraySegmentOfSingle(expected, false);
+            Assert.Equal(expected.Count, actual.Count);
+            Assert.NotEqual(expected[0], expected[1]);
+            Assert.Equal(expected.Array, actual.Array);
+            actual = JavaScriptTestHelper.echo1_ArraySegmentOfSingle(expected, true);
             Assert.Equal(expected[0], expected[1]);
             Assert.Equal(actual[0], actual[1]);
         }
@@ -718,6 +846,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "object", "Date");
         }
 
+        [Fact] // JavaScript Date has millisecond precision, the microseconds are lost during marshalling
+        public async Task DateTimeMarshallingLosesMicrosecondComponentPrecisionLoss()
+        {
+            DateTime now = new DateTime(1995, 4, 1, 10, 43, 6, 94, microsecond: 20);
+            DateTime t = JavaScriptTestHelper.ReturnDateTimeWithOffset(now, 0);
+            Assert.NotEqual(now, t);
+            DateTime nowWithJSPrecision = now.AddMicroseconds(-now.Microsecond);
+            Assert.Equal(nowWithJSPrecision, t);
+        }
         #endregion Datetime
 
         #region DateTimeOffset
@@ -965,7 +1102,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await JavaScriptTestHelper.sleep(100);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // slow
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))] // slow
         public async Task JsImportTaskTypes()
         {
             for (int i = 0; i < 100; i++)
@@ -1171,7 +1308,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #region Action
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_EchoAction()
         {
             bool called = false;
@@ -1186,7 +1323,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void JsImportCallback_EchoActionThrows_MT()
         {
             bool called = false;
@@ -1239,7 +1376,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_Action()
         {
             bool called = false;
@@ -1250,7 +1387,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportEcho_ActionAction()
         {
             bool called = false;
@@ -1263,7 +1400,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportEcho_ActionIntActionInt()
         {
             int calledA = -1;
@@ -1276,7 +1413,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, calledA);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_ActionInt()
         {
             int called = -1;
@@ -1287,7 +1424,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_FunctionIntInt()
         {
             int called = -1;
@@ -1300,7 +1437,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, res);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportBackCallback_FunctionIntInt()
         {
             int called = -1;
@@ -1315,7 +1452,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(84, called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportBackCallback_FunctionIntIntIntInt()
         {
             int calledA = -1;
@@ -1334,7 +1471,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(84, calledB);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_ActionIntInt()
         {
             int calledA = -1;
@@ -1348,7 +1485,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_ActionLongLong()
         {
             long calledA = -1;
@@ -1362,7 +1499,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_ActionIntLong()
         {
             int calledA = -1;
@@ -1376,7 +1513,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_ActionIntLongDouble()
         {
             int calledA = -1;
@@ -1393,7 +1530,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(44.5, calledC);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void JsImportCallback_ActionIntThrow()
         {
             int called = -1;

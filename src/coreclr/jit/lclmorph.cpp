@@ -417,7 +417,7 @@ typedef JitHashTable<LocalEqualsLocalAddrAssertion, AssertionKeyFuncs, unsigned>
 
 class LocalEqualsLocalAddrAssertions
 {
-    Compiler*                                 m_comp;
+    Compiler*                                 m_compiler;
     LoopDefinitions*                          m_loopDefs;
     ArrayStack<LocalEqualsLocalAddrAssertion> m_assertions;
     AssertionToIndexMap                       m_map;
@@ -433,7 +433,7 @@ public:
     uint64_t AlwaysAssertions  = 0;
 
     LocalEqualsLocalAddrAssertions(Compiler* comp, LoopDefinitions* loopDefs)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_loopDefs(loopDefs)
         , m_assertions(comp->getAllocator(CMK_LocalAddressVisitor))
         , m_map(comp->getAllocator(CMK_LocalAddressVisitor))
@@ -464,13 +464,13 @@ public:
     //
     bool IsMarkedForExposure(unsigned lclNum)
     {
-        BitVecTraits traits(m_comp->lvaCount, m_comp);
+        BitVecTraits traits(m_compiler->lvaCount, m_compiler);
         if (BitVecOps::IsMember(&traits, m_localsToExpose, lclNum))
         {
             return true;
         }
 
-        LclVarDsc* dsc = m_comp->lvaGetDesc(lclNum);
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
         if (dsc->lvIsStructField && BitVecOps::IsMember(&traits, m_localsToExpose, dsc->lvParentLcl))
         {
             return true;
@@ -495,16 +495,16 @@ public:
             return;
         }
 
-        FlowEdge*             preds = m_comp->BlockPredsWithEH(block);
+        FlowEdge*             preds = m_compiler->BlockPredsWithEH(block);
         bool                  first = true;
         FlowGraphNaturalLoop* loop  = nullptr;
 
-        uint64_t* assertionMap = m_comp->bbIsHandlerBeg(block) ? m_alwaysTrueAssertions : m_outgoingAssertions;
+        uint64_t* assertionMap = m_compiler->bbIsHandlerBeg(block) ? m_alwaysTrueAssertions : m_outgoingAssertions;
 
         for (FlowEdge* predEdge = preds; predEdge != nullptr; predEdge = predEdge->getNextPredEdge())
         {
             BasicBlock* pred = predEdge->getSourceBlock();
-            if (!m_comp->m_dfsTree->Contains(pred))
+            if (!m_compiler->m_dfsTree->Contains(pred))
             {
                 // Edges induced due to implicit EH flow can come from
                 // unreachable blocks; skip those.
@@ -513,7 +513,7 @@ public:
 
             if (pred->bbPostorderNum <= block->bbPostorderNum)
             {
-                loop = m_comp->m_loops->GetLoopByHeader(block);
+                loop = m_compiler->m_loops->GetLoopByHeader(block);
                 if ((loop != nullptr) && loop->ContainsBlock(pred))
                 {
                     JITDUMP("Ignoring loop backedge " FMT_BB "->" FMT_BB "\n", pred->bbNum, block->bbNum);
@@ -590,7 +590,7 @@ public:
     void OnExposed(unsigned lclNum)
     {
         JITDUMP("On exposed: V%02u\n", lclNum);
-        BitVecTraits localsTraits(m_comp->lvaCount, m_comp);
+        BitVecTraits localsTraits(m_compiler->lvaCount, m_compiler);
         BitVecOps::AddElemD(&localsTraits, m_localsToExpose, lclNum);
     }
 
@@ -686,12 +686,12 @@ public:
     //
     BitVec_ValRet_T GetLocalsWithAssertions()
     {
-        BitVecTraits localsTraits(m_comp->lvaCount, m_comp);
+        BitVecTraits localsTraits(m_compiler->lvaCount, m_compiler);
         BitVec       result(BitVecOps::MakeEmpty(&localsTraits));
 
-        for (int i = 0; i < m_assertions.Height(); i++)
+        for (const LocalEqualsLocalAddrAssertion& assertion : m_assertions.BottomUpOrder())
         {
-            BitVecOps::AddElemD(&localsTraits, result, m_assertions.BottomRef(i).DestLclNum);
+            BitVecOps::AddElemD(&localsTraits, result, assertion.DestLclNum);
         }
 
         return result;
@@ -1010,7 +1010,7 @@ public:
                 break;
 
             case GT_FIELD_ADDR:
-                if (MorphStructFieldAddress(node, 0) != BAD_VAR_NUM)
+                if (MorphStructFieldAddress(node, ValueSize(0)) != BAD_VAR_NUM)
                 {
                     goto LOCAL_NODE;
                 }
@@ -1595,32 +1595,10 @@ private:
         unsigned   lclNum    = val.LclNum();
         unsigned   offset    = val.Offset();
         LclVarDsc* varDsc    = m_compiler->lvaGetDesc(lclNum);
-        unsigned   indirSize = node->AsIndir()->Size();
-        bool       isWide;
+        ValueSize  lclSize   = m_compiler->lvaLclValueSize(lclNum);
+        ValueSize  indirSize = node->AsIndir()->ValueSize();
 
-        // TODO-Cleanup: delete "indirSize == 0", use "Compiler::IsValidLclAddr".
-        if ((indirSize == 0) || ((offset + indirSize) > UINT16_MAX))
-        {
-            // If we can't figure out the indirection size then treat it as a wide indirection.
-            // Additionally, treat indirections with large offsets as wide: local field nodes
-            // and the emitter do not support them.
-            isWide = true;
-        }
-        else
-        {
-            ClrSafeInt<unsigned> endOffset = ClrSafeInt<unsigned>(offset) + ClrSafeInt<unsigned>(indirSize);
-
-            if (endOffset.IsOverflow())
-            {
-                isWide = true;
-            }
-            else
-            {
-                isWide = endOffset.Value() > m_compiler->lvaLclExactSize(lclNum);
-            }
-        }
-
-        if (isWide)
+        if (indirSize.IsNull() || m_compiler->IsWideAccess(lclNum, offset, indirSize))
         {
             unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
             if (m_lclAddrAssertions != nullptr)
@@ -1919,6 +1897,15 @@ private:
             if (indir->IsPartialLclFld(m_compiler))
             {
                 lclNodeFlags |= GTF_VAR_USEASG;
+
+                // A partial def of a small-typed local can leave upper bits in an
+                // incorrect state. Address-expose such locals to make them
+                // normalize-on-load, ensuring correct upper bits on every read.
+                LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+                if (varTypeIsSmall(varDsc->TypeGet()) && !varDsc->lvIsStructField)
+                {
+                    m_compiler->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::SMALL_TYPE_PARTIAL_DEF));
+                }
             }
         }
 
@@ -2065,7 +2052,7 @@ private:
             return false;
         }
 
-        unsigned fieldLclNum = MorphStructFieldAddress(addr, node->Size());
+        unsigned fieldLclNum = MorphStructFieldAddress(addr, node->ValueSize());
         if (fieldLclNum == BAD_VAR_NUM)
         {
             return false;
@@ -2104,13 +2091,13 @@ private:
     //
     // Arguments:
     //    node       - the address node
-    //    accessSize - load/store size if known, zero otherwise
+    //    accessSize - load/store value size
     //
     // Return Value:
     //    Local number for the promoted field if the replacement was successful,
     //    BAD_VAR_NUM otherwise.
     //
-    unsigned MorphStructFieldAddress(GenTree* node, unsigned accessSize)
+    unsigned MorphStructFieldAddress(GenTree* node, ValueSize accessSize)
     {
         unsigned offset       = 0;
         bool     isSpanLength = false;
@@ -2122,8 +2109,9 @@ private:
             addr         = addr->AsFieldAddr()->GetFldObj();
         }
 
-        if (addr->IsLclVarAddr())
+        if (addr->OperIs(GT_LCL_ADDR))
         {
+            offset += addr->AsLclFld()->GetLclOffs();
             const LclVarDsc* varDsc = m_compiler->lvaGetDesc(addr->AsLclVarCommon());
 
             if (varDsc->lvPromoted)
@@ -2137,16 +2125,16 @@ private:
                 }
 
                 LclVarDsc* fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
+                ValueSize  fieldSize   = fieldVarDsc->lvValueSize();
 
                 // Span's Length is never negative unconditionally
-                if (isSpanLength && (accessSize == genTypeSize(TYP_INT)))
+                if (isSpanLength && (accessSize.GetExact() == genTypeSize(TYP_INT)))
                 {
-                    fieldVarDsc->SetIsNeverNegative(true);
+                    unsigned exactSize      = accessSize.GetExact();
+                    unsigned exactFieldSize = fieldSize.GetExact();
                 }
 
-                // Retargeting the indirection to reference the promoted field would make it "wide", exposing
-                // the whole parent struct (with all of its fields).
-                if (accessSize > genTypeSize(fieldVarDsc))
+                if (!accessSize.IsNull() && m_compiler->IsWideAccess(fieldLclNum, 0, accessSize))
                 {
                     return BAD_VAR_NUM;
                 }
@@ -2597,9 +2585,8 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
     }
 
     bool changed = false;
-    for (int i = 0; i < stores.Height(); i++)
+    for (const Store& store : stores.BottomUpOrder())
     {
-        const Store& store = stores.BottomRef(i);
         assert(store.Tree->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
         if (BitVecOps::IsMember(&localsTraits, unreadLocals, store.Tree->GetLclNum()))

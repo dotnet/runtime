@@ -81,7 +81,7 @@ namespace BasicEventSourceTests
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ActivityIdIsZeroedOnThreadSwitchOut()
         {
             using ActivityEventListener l = new ActivityEventListener();

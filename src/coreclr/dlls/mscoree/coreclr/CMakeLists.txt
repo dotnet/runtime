@@ -33,15 +33,6 @@ else(CLR_CMAKE_HOST_WIN32)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
         add_linker_flag("-Wl,-Bsymbolic")
-
-        # The following linked options can be inserted into the linker libraries list to
-        # ensure proper resolving of circular references between a subset of the libraries.
-        set(START_LIBRARY_GROUP -Wl,--start-group)
-        set(END_LIBRARY_GROUP -Wl,--end-group)
-
-        # These options are used to force every object to be included even if it's unused.
-        set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
     endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     set_exports_linker_option(${EXPORTS_FILE})
@@ -78,12 +69,10 @@ endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 set(CORECLR_LIBRARIES
     mscorrc
     utilcode
-    ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     ${LIB_CORDBEE}
     debug-pal
     ${LIB_UNWINDER}
     v3binder
-    ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
@@ -125,17 +114,11 @@ if(CLR_CMAKE_TARGET_WIN32)
         shlwapi.lib
         bcrypt.lib
     )
-else()
-    list(APPEND CORECLR_LIBRARIES
-        coreclrpal
-    )
 endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_TARGET_LINUX)
     list(APPEND CORECLR_LIBRARIES
-        ${START_WHOLE_ARCHIVE}
         tracepointprovider
-        ${END_WHOLE_ARCHIVE}
     )
 elseif(CLR_CMAKE_TARGET_SUNOS)
     list(APPEND CORECLR_LIBRARIES
@@ -162,17 +145,19 @@ if(FEATURE_EVENT_TRACE)
 endif(FEATURE_EVENT_TRACE)
 
 if (FEATURE_STATICALLY_LINKED)
-    if (FEATURE_JIT)
+    if (FEATURE_DYNAMIC_CODE_COMPILED)
         set(CLRJIT_STATIC clrjit_static gcinfo)
-    endif(FEATURE_JIT)
+    endif(FEATURE_DYNAMIC_CODE_COMPILED)
     if (FEATURE_INTERPRETER)
         set(CLRINTERPRETER_STATIC clrinterpreter_objects dn-containers gcinfo)
     endif(FEATURE_INTERPRETER)
 endif(FEATURE_STATICALLY_LINKED)
 
-if(FEATURE_JIT)
+if(FEATURE_DYNAMIC_CODE_COMPILED)
     set(CORECLR_STATIC_CLRJIT_STATIC clrjit_static)
-endif(FEATURE_JIT)
+elseif(FEATURE_INTERPRETER)
+    set(CORECLR_STATIC_CLRINTERPRETER_STATIC clrinterpreter_objects dn-containers gcinfo)
+endif()
 
 if(CLR_CMAKE_HOST_ARCH_WASM)
     set(CEE_WKS_STATIC cee_wks)
@@ -184,11 +169,18 @@ if (CLR_CMAKE_TARGET_OSX)
     find_library(FOUNDATION Foundation REQUIRED)
 endif()
 
-if(NOT CLR_CMAKE_HOST_ARCH_WASM)
-    target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core cee_wks ${FOUNDATION})
-endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
+if(TARGET coreclr)
+    target_link_libraries(coreclr PUBLIC
+        ${CORECLR_LIBRARIES}
+        $<TARGET_NAME_IF_EXISTS:coreclrpal>
+        ${CLRJIT_STATIC}
+        ${CLRINTERPRETER_STATIC}
+        cee_wks_core
+        cee_wks
+        ${FOUNDATION})
+endif()
 
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CORECLR_STATIC_CLRINTERPRETER_STATIC} cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if (CLR_CMAKE_HOST_ANDROID)
@@ -197,7 +189,7 @@ endif()
 
 if (CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST)
     target_link_libraries(coreclr_static
-        PUBLIC
+        PRIVATE
         coreclrminipal_objects
         coreclrpal_objects
         eventprovider_objects
@@ -206,6 +198,13 @@ if (CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_C
         log
         minipal_objects
         nativeresourcestring_objects
+    )
+elseif (TARGET coreclrpal)
+    # If we aren't linking in the PAL directly into coreclr_static, we need to propagate it up to targets
+    # that link to coreclr_static
+    target_link_libraries(coreclr_static
+        PUBLIC
+        coreclrpal
     )
 endif()
 

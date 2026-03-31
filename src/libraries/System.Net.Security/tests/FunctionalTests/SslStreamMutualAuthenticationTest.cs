@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
@@ -389,6 +389,54 @@ namespace System.Net.Security.Tests
                     }
                 }
                 ;
+            }
+        }
+
+        [Theory]
+        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        public async Task SslStream_Tls13ResumptionWithClientCert_IsMutuallyAuthenticatedTrue(
+            SslProtocols protocol)
+        {
+            string targetHost = Guid.NewGuid().ToString("N");
+
+            var clientOptions = new SslClientAuthenticationOptions
+            {
+                TargetHost = targetHost,
+                ClientCertificates = new X509CertificateCollection { _clientCertificate },
+                EnabledSslProtocols = protocol,
+                RemoteCertificateValidationCallback = AllowAnyCertificate,
+            };
+
+            var serverOptions = new SslServerAuthenticationOptions
+            {
+                ServerCertificate = _serverCertificate,
+                ClientCertificateRequired = true,
+                EnabledSslProtocols = protocol,
+                RemoteCertificateValidationCallback = AllowAnyCertificate,
+            };
+
+            for (int i = 0; i < 3; i++)
+            {
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                using (client)
+                using (server)
+                {
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    // PingPong triggers new session ticket delivery (TLS 1.3)
+                    await TestHelper.PingPong(client, server);
+
+                    // Regression test: all connections (including resumed ones) must report mutual auth
+                    Assert.True(client.IsMutuallyAuthenticated, $"Client connection {i}: IsMutuallyAuthenticated should be true");
+                    Assert.True(server.IsMutuallyAuthenticated, $"Server connection {i}: IsMutuallyAuthenticated should be true");
+                    Assert.NotNull(client.LocalCertificate);
+                    Assert.NotNull(server.RemoteCertificate);
+
+                    await client.ShutdownAsync();
+                    await server.ShutdownAsync();
+                }
             }
         }
 

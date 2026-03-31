@@ -39,7 +39,7 @@ namespace System
             // This is only used for delegate created from native host
 
             // Consider to use /proc/self/cmdline to get command line
-            return Array.Empty<string>();
+            return [];
         }
     }
 }

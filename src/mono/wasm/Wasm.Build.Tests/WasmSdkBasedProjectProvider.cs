@@ -32,7 +32,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             { "dotnet.js", true },
             { "dotnet.js.map", false },
             { "dotnet.native.js", true },
-            { "dotnet.native.js.symbols", false },
+            { "dotnet.native.js.symbols", true },
             { "dotnet.native.wasm", true },
             { "dotnet.native.worker.mjs", true },
             { "dotnet.runtime.js", true },
@@ -40,9 +40,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             { "dotnet.diagnostics.js", true },
             { "dotnet.diagnostics.js.map", false },
         };
-
-        if ((assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js")) ?? false)
-            result[assertOptions.BuildOptions.BootConfigFileName] = true;
 
         if (assertOptions.ExpectDotnetJsFingerprinting == false)
             result["dotnet.js"] = false;
@@ -73,15 +70,12 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (assertOptions.AssertSymbolsFile && assertOptions.ExpectSymbolsFile)
             res.Add("dotnet.native.js.symbols");
 
-        if (assertOptions.BuildOptions.EnableDiagnostics)
+        if (assertOptions.BuildOptions.EnableDiagnostics || EnvironmentVariables.RuntimeFlavor == "CoreCLR")
         {
             res.Add("dotnet.diagnostics.js");
             if (!assertOptions.BuildOptions.IsPublish)
                 res.Add("dotnet.diagnostics.js.map");
         }
-
-        if (assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js") ?? false)
-            res.Add(assertOptions.BuildOptions.BootConfigFileName);
 
         return res;
     }

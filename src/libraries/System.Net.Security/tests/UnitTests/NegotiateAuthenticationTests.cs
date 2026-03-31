@@ -15,10 +15,11 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123472", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsLinux))]
     public class NegotiateAuthenticationTests
     {
         // Ubuntu 24 and 26 ship with broekn gss-ntlmssp 1.2
-        private static bool UseManagedNtlm => PlatformDetection.IsUbuntu24 || PlatformDetection.IsUbuntu26;
+        private static bool UseManagedNtlm => PlatformDetection.IsUbuntu24 || PlatformDetection.IsUbuntu26 || PlatformDetection.IsOpenSUSE16;
         private static bool IsNtlmAvailable => UseManagedNtlm || Capability.IsNtlmInstalled() || OperatingSystem.IsAndroid() || OperatingSystem.IsTvOS();
         private static bool IsNtlmUnavailable => !IsNtlmAvailable;
 
@@ -49,7 +50,7 @@ namespace System.Net.Security.Tests
             Assert.Throws<InvalidOperationException>(() => negotiateAuthentication.RemoteIdentity);
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void RemoteIdentity_ThrowsOnDisposed()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
@@ -84,7 +85,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(NegotiateAuthenticationStatusCode.Unsupported, statusCode);
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void Package_Supported_NTLM()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
@@ -94,7 +95,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
         }
 
-        [ConditionalFact(nameof(IsNtlmUnavailable))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmUnavailable))]
         public void Package_Unsupported_NTLM()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
@@ -178,7 +179,7 @@ namespace System.Net.Security.Tests
             yield return new object[] { new NetworkCredential("rightusername@rightdomain.com", "rightpassword") };
         }
 
-        [ConditionalTheory(nameof(IsNtlmAvailable))]
+        [ConditionalTheory(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         [MemberData(nameof(TestCredentials))]
         public void NtlmCorrectExchangeTest(NetworkCredential credential)
         {
@@ -203,7 +204,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void NtlmIncorrectExchangeTest()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
@@ -221,7 +222,7 @@ namespace System.Net.Security.Tests
             Assert.False(fakeNtlmServer.IsAuthenticated);
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void NtlmEncryptionTest()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
@@ -257,7 +258,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(FakeNtlmServer.Flags.NegotiateSeal, (fakeNtlmServer.NegotiatedFlags & FakeNtlmServer.Flags.NegotiateSeal));
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void NtlmSignatureTest()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
@@ -294,7 +295,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(s_Hello, output.WrittenSpan.ToArray());
         }
 
-        [ConditionalFact(nameof(IsNtlmAvailable))]
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         public void NtlmIntegrityCheckTest()
         {
             using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
@@ -346,7 +347,32 @@ namespace System.Net.Security.Tests
             Assert.Null(empty);
         }
 
-        [ConditionalTheory(nameof(IsNtlmAvailable))]
+        [ConditionalTheory(typeof(NegotiateAuthenticationTests), nameof(UseManagedNtlm))]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public void NtlmWithPreExistingTargetInfoEntriesTest(bool sendPreExistingTargetName, bool sendPreExistingChannelBindings)
+        {
+            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight)
+            {
+                SendPreExistingTargetName = sendPreExistingTargetName,
+                SendPreExistingChannelBindings = sendPreExistingChannelBindings,
+            };
+            NegotiateAuthentication ntAuth = new NegotiateAuthentication(
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = s_testCredentialRight,
+                    TargetName = "HTTP/foo",
+                    RequiredProtectionLevel = ProtectionLevel.Sign
+                });
+
+            DoNtlmExchange(fakeNtlmServer, ntAuth);
+
+            Assert.True(fakeNtlmServer.IsAuthenticated);
+        }
+
+        [ConditionalTheory(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, false)]

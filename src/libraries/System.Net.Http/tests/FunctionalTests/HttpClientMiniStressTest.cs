@@ -79,7 +79,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(numBytes, await connection.ReadBlockAsync(postData, 0, numBytes));
 
                     await connection.WriteStringAsync(responseText).ConfigureAwait(false);
-                    connection.Socket.Shutdown(SocketShutdown.Send);
+                    await connection.Socket.ShutdownAsync(SocketShutdown.Send);
                 });
 
                 (await postAsync.ConfigureAwait(false)).Dispose();

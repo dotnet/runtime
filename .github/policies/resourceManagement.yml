@@ -147,6 +147,8 @@ configuration:
         - labelAdded:
             label: area-DependencyModel
         - labelAdded:
+            label: area-Diagnostics-cdac
+        - labelAdded:
             label: area-Diagnostics-coreclr
         - labelAdded:
             label: area-Extensions-Caching
@@ -366,7 +368,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - JulieLeeMSFT
-            - dotnet/jit-contrib
+            - jakobbotsch
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -484,6 +486,20 @@ configuration:
         - mentionUsers:
             mentionees:
             - dotnet/area-dependencymodel
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-Diagnostics-cdac
+        then:
+        - mentionUsers:
+            mentionees:
+            - steveisok
+            - tommcdon
+            - dotnet/dotnet-diag
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1642,7 +1658,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - mangod9
+            - agocke
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1750,7 +1766,6 @@ configuration:
           - LakshanF
           - sbomer
           - joperezr
-          - marek-safar
           replyTemplate: >-
             Tagging subscribers to 'linkable-framework': ${mentionees}
 
@@ -1768,7 +1783,6 @@ configuration:
             mentionees:
             - eerhardt
             - SamMonoRT
-            - marek-safar
             replyTemplate: >-
               Tagging subscribers to 'size-reduction': ${mentionees}
 

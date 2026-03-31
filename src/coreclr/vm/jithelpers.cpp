@@ -55,6 +55,7 @@
 #include "patchpointinfo.h"
 
 #include "exinfo.h"
+#include "exkind.h"
 #include "arraynative.inl"
 
 using std::isfinite;
@@ -368,6 +369,19 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
     FCALL_CONTRACT;
 
     return ((BYTE*)&t_ThreadStatics) + staticBlockIndex;
+}
+HCIMPLEND
+
+// *** This helper corresponds CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE.
+// Returns the address of the pThread field within thread-local storage, which serves as the storage
+// location for the DirectOnThreadLocalData.pNativeThread thread static field. Adjust the value by
+// OFFSETOF__CORINFO_Array__data, since all thread static bases are returned as relative to the start of an
+// array object.
+HCIMPL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase)
+{
+    FCALL_CONTRACT;
+
+    return (void*)((uint8_t*)&(((ThreadLocalData*)&t_ThreadStatics)->pThread) - OFFSETOF__CORINFO_Array__data);
 }
 HCIMPLEND
 
@@ -822,7 +836,6 @@ EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transi
     ResetCurrentContext();
 
     OBJECTREF oref = ObjectToOBJECTREF(obj);
-    GetThread()->GetExceptionState()->SetRaisingForeignException();
 
     Thread *pThread = GetThread();
 
@@ -832,7 +845,7 @@ EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transi
 
     FC_CAN_TRIGGER_GC();
 
-    DispatchManagedException(oref, exceptionFrame.GetContext());
+    DispatchManagedException(oref, exceptionFrame.GetContext(), NULL, ExKind::RethrowFlag);
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
@@ -2491,6 +2504,24 @@ void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
         ftnNum, hlpDynamicFuncTable[ftnNum].name, pFunc));
 
     hlpDynamicFuncTable[ftnNum].pfnHelper = (PCODE)pFunc;
+}
+
+VMAUXILIARYSYMBOLDEF hlpAuxiliarySymbolTable[MAX_AUXILIARY_SYMBOLS];
+DWORD g_auxiliarySymbolCount = 0;
+
+void SetAuxiliarySymbol(void* pFunc, const char* name)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(g_auxiliarySymbolCount < MAX_AUXILIARY_SYMBOLS);
+    hlpAuxiliarySymbolTable[g_auxiliarySymbolCount].pfnAuxiliarySymbol = (PCODE)pFunc;
+    hlpAuxiliarySymbolTable[g_auxiliarySymbolCount].name = name;
+    g_auxiliarySymbolCount++;
 }
 
 PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)

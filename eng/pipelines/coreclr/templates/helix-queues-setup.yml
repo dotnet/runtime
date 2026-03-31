@@ -34,31 +34,52 @@ jobs:
 
     # iOS Simulator/Mac Catalyst arm64
     - ${{ if in(parameters.platform, 'iossimulator_arm64', 'tvossimulator_arm64', 'maccatalyst_arm64') }}:
-      - OSX.15.Arm64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - OSX.15.Arm64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - OSX.15.Arm64
 
     # iOS/tvOS Simulator x64 & MacCatalyst x64
     - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64', 'maccatalyst_x64') }}:
-      - OSX.15.Amd64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - OSX.15.Amd64.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - OSX.15.Amd64
 
     # Android arm64
     - ${{ if in(parameters.platform, 'android_arm64') }}:
-      - Windows.11.Amd64.Android.Open
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - Windows.11.Amd64.Android.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Windows.11.Amd64.Android
 
     # Android x64
     - ${{ if in(parameters.platform, 'android_x64') }}:
-      - Ubuntu.2204.Amd64.Android.29.Open
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - Ubuntu.2204.Amd64.Android.29.Open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - Ubuntu.2204.Amd64.Android.29
 
     # Browser wasm
     - ${{ if eq(parameters.platform, 'browser_wasm') }}:
-      - (Ubuntu.2404.Amd64)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-webassembly-amd64
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - (Ubuntu.2404.Amd64)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-webassembly-amd64
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - (Ubuntu.2404.Amd64)AzureLinux.3.Amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-webassembly-amd64
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
-      - osx.15.amd64.iphone.open
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - osx.15.amd64.iphone.open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - osx.15.amd64.iphone
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
-      - osx.15.amd64.appletv.open
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - osx.15.amd64.appletv.open
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - osx.15.amd64.appletv
 
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
@@ -107,7 +128,7 @@ jobs:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
         - $(helix_macos_arm64)
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
-        - OSX.14.Arm64.Open
+        - OSX.15.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.14.Arm64
 

@@ -1025,6 +1025,13 @@ public:
         STATIC_CONTRACT_WRAPPER;
     }
 
+    NewInterfaceArrayHolder(INTERFACE ** value, ULONG32 cElements) :
+        NewArrayHolder<INTERFACE *>(value),
+        m_cElements(cElements)
+    {
+        STATIC_CONTRACT_WRAPPER;
+    }
+
     NewInterfaceArrayHolder& operator=(INTERFACE ** value)
     {
         STATIC_CONTRACT_WRAPPER;
@@ -1041,10 +1048,13 @@ public:
     ~NewInterfaceArrayHolder()
     {
         STATIC_CONTRACT_LEAF;
-        for (ULONG32 i=0; i < m_cElements; i++)
+        if (this->m_acquired)
         {
-            if (this->m_value[i] != NULL)
-                this->m_value[i]->Release();
+            for (ULONG32 i=0; i < m_cElements; i++)
+            {
+                if (this->m_value[i] != NULL)
+                    this->m_value[i]->Release();
+            }
         }
     }
 
@@ -1233,6 +1243,58 @@ private:
     HKEY m_value;
 };
 #endif // HOST_WINDOWS
+
+#ifdef FEATURE_COMINTEROP
+class BSTRHolder final
+{
+    BSTR m_str;
+public:
+    BSTRHolder()
+        : m_str{}
+    {
+        STATIC_CONTRACT_LEAF;
+    }
+    explicit BSTRHolder(BSTR str)
+        : m_str{ str }
+    {
+        STATIC_CONTRACT_LEAF;
+    }
+    ~BSTRHolder() noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+        Free();
+    }
+
+    BSTRHolder(const BSTRHolder&) = delete;
+    BSTRHolder& operator=(const BSTRHolder&) = delete;
+    BSTRHolder(BSTRHolder&&) = delete;
+    BSTRHolder& operator=(BSTRHolder&&) = delete;
+
+    void Free()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        ::SysFreeString(m_str);
+        m_str = NULL;
+    }
+
+    void Attach(BSTR str)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        Free();
+        _ASSERTE(m_str == NULL);
+        m_str = str;
+    }
+
+    BSTR* operator&()
+    {
+        STATIC_CONTRACT_LEAF;
+        _ASSERTE(m_str == NULL);
+        return &m_str;
+    }
+
+    operator BSTR() const { STATIC_CONTRACT_LEAF; return m_str; }
+};
+#endif // FEATURE_COMINTEROP
 
 //----------------------------------------------------------------------------
 //

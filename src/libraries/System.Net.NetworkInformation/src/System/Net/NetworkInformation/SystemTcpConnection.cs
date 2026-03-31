@@ -12,29 +12,17 @@ namespace System.Net.NetworkInformation
 
         internal SystemTcpConnectionInformation(in Interop.IpHlpApi.MibTcpRow row)
         {
-            _state = row.state;
-
-            // Port is returned in Big-Endian - most significant bit on left.
-            // Unfortunately, its done at the word level and not the DWORD level.
-            int localPort = row.localPort1 << 8 | row.localPort2;
-            int remotePort = ((_state == TcpState.Listen) ? 0 : row.remotePort1 << 8 | row.remotePort2);
-
-            _localEndPoint = new IPEndPoint(row.localAddr, (int)localPort);
-            _remoteEndPoint = new IPEndPoint(row.remoteAddr, (int)remotePort);
+            _state = row.State;
+            _localEndPoint = row.LocalEndPoint;
+            _remoteEndPoint = row.RemoteEndPoint;
         }
 
         // IPV6 version of the Tcp row.
         internal SystemTcpConnectionInformation(in Interop.IpHlpApi.MibTcp6RowOwnerPid row)
         {
-            _state = row.state;
-
-            // Port is returned in Big-Endian - most significant bit on left.
-            // Unfortunately, its done at the word level and not the DWORD level.
-            int localPort = row.localPort1 << 8 | row.localPort2;
-            int remotePort = ((_state == TcpState.Listen) ? 0 : row.remotePort1 << 8 | row.remotePort2);
-
-            _localEndPoint = new IPEndPoint(new IPAddress(row.localAddrAsSpan, row.localScopeId), (int)localPort);
-            _remoteEndPoint = new IPEndPoint(new IPAddress(row.remoteAddrAsSpan, row.remoteScopeId), (int)remotePort);
+            _state = row.State;
+            _localEndPoint = row.LocalEndPoint;
+            _remoteEndPoint = row.RemoteEndPoint;
         }
 
         public override TcpState State { get { return _state; } }

@@ -522,7 +522,10 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_ALIGN, "has-align"},
         {BBF_HAS_MDARRAYREF, "mdarr"},
         {BBF_NEEDS_GCPOLL, "gcpoll"},
+        {BBF_HAS_VALUE_PROFILE, "val-prof"},
+        {BBF_MAY_HAVE_BOUNDS_CHECKS, "bnds-chk"},
         {BBF_ASYNC_RESUMPTION, "resume"},
+        {BBF_THROW_HELPER, "throw-hlpr"},
     };
 
     bool first = true;
@@ -793,10 +796,9 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
     to->CopyFlags(from);
     to->bbWeight = from->bbWeight;
     to->copyEHRegion(from);
-    to->bbCatchTyp    = from->bbCatchTyp;
+    to->bbCatchType   = from->bbCatchType;
     to->bbStkTempsIn  = from->bbStkTempsIn;
     to->bbStkTempsOut = from->bbStkTempsOut;
-    to->bbStkDepth    = from->bbStkDepth;
     to->bbCodeOffs    = from->bbCodeOffs;
     to->bbCodeOffsEnd = from->bbCodeOffsEnd;
 #ifdef DEBUG
@@ -1525,7 +1527,7 @@ bool BasicBlock::isBBCallFinallyPairTail() const
 //
 bool BasicBlock::hasEHBoundaryIn() const
 {
-    return (bbCatchTyp != BBCT_NONE);
+    return (bbCatchType != BBCT_NONE);
 }
 
 //------------------------------------------------------------------------
