@@ -4491,6 +4491,11 @@ struct AsyncCallInfo
     // Tail awaits do not generate suspension points and the JIT instead
     // directly returns the callee's continuation to the caller.
     bool IsTailAwait = false;
+
+    bool NeedsToSaveAndRestoreExecutionContext() const
+    {
+        return true;
+    }
 };
 
 // Return type descriptor of a GT_CALL node.
