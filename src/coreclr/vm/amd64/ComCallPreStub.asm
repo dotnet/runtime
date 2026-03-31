@@ -6,7 +6,7 @@ ifdef FEATURE_COMINTEROP
 include AsmMacros.inc
 include asmconstants.inc
 
-; extern "C" const BYTE* ComPreStubWorker(UMEntryThunkInfo* pEntryThunkInfo);
+; extern "C" const BYTE* ComPreStubWorker(UMEntryThunkData* pEntryThunkInfo);
 extern ComPreStubWorker:proc
 extern UMEntryPrestubUnwindFrameChainHandler:proc
 

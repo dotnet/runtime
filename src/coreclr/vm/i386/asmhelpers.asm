@@ -909,6 +909,8 @@ _GenericCLRToCOMCallStub@0 proc public
 _GenericCLRToCOMCallStub@0 endp
 
 _ComCallPreStub@0 proc public
+
+    push    eax     ; UMEntryThunkData* ; Push the secret arg for after the worker call.
     PUSH_CLR_EXCEPTION_HANDLER _UMEntryPrestubUnwindFrameChainHandler
 
     push    eax     ; UMEntryThunkData*
