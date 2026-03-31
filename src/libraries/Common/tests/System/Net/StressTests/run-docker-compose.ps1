@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Runs the stress test using docker-compose
+# Runs the stress test using docker compose
 
 [CmdletBinding(PositionalBinding = $false)]
 Param(
@@ -50,7 +50,7 @@ if ($useWindowsContainers) {
 }
 
 if (!$noBuild) {
-    # Dockerize the stress app using docker-compose
+    # Dockerize the stress app using docker compose
     $BuildArgs = @(
         "--build-arg", "VERSION=$Version",
         "--build-arg", "CONFIGURATION=$configuration"

@@ -2537,15 +2537,15 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     }
     CONTRACT_END;
 
-    Assembly *pAssembly = pLock->GetAssembly();
-
     // Make sure we release the lock on exit
     FileLoadLockRefHolder lockRef(pLock);
 
     // Do a quick out check for the already loaded case.
     if (pLock->GetLoadLevel() >= targetLevel)
     {
+        Assembly* pAssembly = pLock->GetAssembly();
         _ASSERTE(pAssembly != nullptr);
+
         pAssembly->ThrowIfError(targetLevel);
 
         RETURN pAssembly;
@@ -2616,7 +2616,7 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
              fileLoadLevelName[pLock->GetLoadLevel()]));
     }
 
-    pAssembly = pLock->GetAssembly();
+    Assembly* pAssembly = pLock->GetAssembly();
     _ASSERTE(pAssembly != nullptr); // We should always be loading to at least FILE_LOAD_ALLOCATE, so the assembly should be created
 
     // There may have been an error stored on the domain file by another thread, or from a previous load
@@ -3606,23 +3606,6 @@ void AppDomain::DetachRCWs()
 
 #endif // FEATURE_COMINTEROP
 
-void AppDomain::ExceptionUnwind(Frame *pFrame)
-{
-    CONTRACTL
-    {
-        DISABLED(GC_TRIGGERS);  // EEResourceException
-        DISABLED(THROWS);   // EEResourceException
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind for %8.8x\n", pFrame));
-    Thread *pThread = GetThread();
-
-    LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind: not first transition or abort\n"));
-}
-
-
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
@@ -4092,9 +4075,6 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToBindWith
 
     bool fResolvedAssembly = false;
     BinderTracing::ResolutionAttemptedOperation tracer{pAssemblyName, 0 /*binderID*/, pAssemblyLoadContextToBindWithin, hr};
-
-    // Allocate an AssemblyName managed object
-    _gcRefs.oRefAssemblyName = (ASSEMBLYNAMEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__ASSEMBLY_NAME));
 
     // Initialize the AssemblyName object
     AssemblySpec::InitializeAssemblyNameRef(pAssemblyName, &_gcRefs.oRefAssemblyName);

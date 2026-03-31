@@ -5,6 +5,7 @@ parameters:
     windows_x86: false
     windows_arm64: false
     android_arm64: false
+    coreclr_r2r_interpreter: false
 
 jobs:
   - ${{ if or(eq(parameters.linux_x64, true), eq(parameters.windows_x64, true), eq(parameters.windows_x86, true), eq(parameters.linux_arm64, true), eq(parameters.windows_arm64, true)) }}:
@@ -56,3 +57,26 @@ jobs:
             - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml
               parameters:
                 runtimeType: coreclr
+
+  - ${{ if eq(parameters.coreclr_r2r_interpreter, true) }}:
+    # build coreclr with interpreter fallback for R2R composite benchmarks
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/common/global-build-job.yml
+        buildConfig: release
+        platforms:
+        - linux_x64
+        jobParameters:
+          nameSuffix: coreclr_r2r_interpreter
+          buildArgs: -s clr+libs+packs -c $(_BuildConfig) -dynamiccodecompiled false
+          isOfficialBuild: false
+          postBuildSteps:
+          - template: /eng/pipelines/common/upload-artifact-step.yml
+            parameters:
+              rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+              includeRootFolder: false
+              archiveType: $(archiveType)
+              archiveExtension: $(archiveExtension)
+              tarCompression: $(tarCompression)
+              artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr_r2r_interpreter
+              displayName: Build Assets (R2R Interpreter)

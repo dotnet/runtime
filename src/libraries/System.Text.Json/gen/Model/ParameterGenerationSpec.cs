@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.CodeAnalysis;
 using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
@@ -31,7 +32,23 @@ namespace System.Text.Json.SourceGeneration
         // The default value of a constructor parameter can only be a constant
         // so it always satisfies the structural equality requirement for the record.
         public required object? DefaultValue { get; init; }
+
+        /// <summary>
+        /// The zero-based position of the parameter in the constructor's formal parameter list.
+        /// </summary>
         public required int ParameterIndex { get; init; }
+
+        /// <summary>
+        /// The zero-based index into the args array for this parameter.
+        /// For out parameters, this is -1 since they don't receive values from the args array.
+        /// </summary>
+        public required int ArgsIndex { get; init; }
+
         public required bool IsNullable { get; init; }
+
+        /// <summary>
+        /// The ref kind of the parameter (None, Ref, Out, In, or RefReadOnlyParameter).
+        /// </summary>
+        public required RefKind RefKind { get; init; }
     }
 }

@@ -2952,7 +2952,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 
         // If try regions are no longer contiguous we lose this invariant.
 
-        if (m_compiler->fgTrysNotContiguous())
+        if (!m_compiler->fgTrysContiguous())
         {
             JITDUMP("Tolerating, since try regions are not contiguous\n");
             return true;

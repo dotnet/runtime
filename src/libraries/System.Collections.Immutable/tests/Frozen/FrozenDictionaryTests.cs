@@ -516,7 +516,7 @@ namespace System.Collections.Frozen.Tests
 
     public class FrozenDictionary_Generic_Tests_int_int : FrozenDictionary_Generic_Tests_base_for_numbers<int>
     {
-        protected override int Next(Random random) => random.Next(); 
+        protected override int Next(Random random) => random.Next();
     }
 
     public class FrozenDictionary_Generic_Tests_uint_uint : FrozenDictionary_Generic_Tests_base_for_numbers<uint>
