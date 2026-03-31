@@ -13,6 +13,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+// === Cross-platform types and macros ===
+
 // pal_char_t: wchar_t on Windows, char on non-Windows
 #if defined(_WIN32)
 #ifndef PAL_CHAR_T_DEFINED
@@ -39,10 +41,95 @@ typedef char pal_char_t;
 // Max path buffer size for apphost string operations
 #define APPHOST_PATH_MAX 4096
 
-// Non-Windows C PAL implementation
-#if !defined(_WIN32)
-
 #include "configure.h"
+
+// Library naming
+#if defined(TARGET_WINDOWS)
+#ifndef LIB_PREFIX
+#define LIB_PREFIX ""
+#define LIB_FILE_EXT ".dll"
+#endif
+#elif defined(TARGET_OSX)
+#ifndef LIB_PREFIX
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".dylib"
+#endif
+#else
+#ifndef LIB_PREFIX
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".so"
+#endif
+#endif
+
+#ifndef LIB_NAME
+#define LIB_NAME(NAME) LIB_PREFIX NAME
+#define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
+#define LIB_FILE_NAME_X(NAME) _STRINGIFY(LIB_FILE_NAME(NAME))
+#endif
+
+#ifndef LIBFXR_NAME
+#define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
+#endif
+
+// RID platform
+#ifndef HOST_RID_PLATFORM
+#if defined(TARGET_WINDOWS)
+    #define HOST_RID_PLATFORM "win"
+#elif defined(TARGET_OSX)
+    #define HOST_RID_PLATFORM "osx"
+#elif defined(TARGET_ANDROID)
+    #define HOST_RID_PLATFORM "linux-bionic"
+#else
+    #define HOST_RID_PLATFORM FALLBACK_HOST_OS
+#endif
+#endif
+
+// Thread-local storage
+#if defined(_WIN32)
+#define PAL_THREAD_LOCAL __declspec(thread)
+#else
+#define PAL_THREAD_LOCAL _Thread_local
+#endif
+
+// === Platform-specific ===
+
+#if defined(_WIN32)
+
+#define NOMINMAX
+#include <windows.h>
+
+#ifndef DIR_SEPARATOR
+#define DIR_SEPARATOR L'\\'
+#define DIR_SEPARATOR_STR L"\\"
+#define PATH_SEPARATOR L';'
+#endif
+
+#ifndef PATH_MAX
+#define PATH_MAX MAX_PATH
+#endif
+
+// String operations
+#define pal_strlen(s) wcslen(s)
+#define pal_str_vprintf(buf, count, fmt, args) _vsnwprintf_s(buf, count, _TRUNCATE, fmt, args)
+#define pal_strlen_vprintf(fmt, args) _vscwprintf(fmt, args)
+#define pal_str_printf(buf, count, fmt, ...) _snwprintf_s(buf, count, _TRUNCATE, fmt, __VA_ARGS__)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+static inline bool pal_getenv(const pal_char_t* name, pal_char_t* recv, size_t recv_len)
+{
+    return GetEnvironmentVariableW(name, recv, (DWORD)recv_len) > 0;
+}
+
+static inline int pal_xtoi(const pal_char_t* s) { return _wtoi(s); }
+
+#ifdef __cplusplus
+}
+#endif
+
+#else // !_WIN32
 
 #include <unistd.h>
 #include <libgen.h>
@@ -53,43 +140,31 @@ typedef char pal_char_t;
 extern "C" {
 #endif
 
+#ifndef DIR_SEPARATOR
 #define DIR_SEPARATOR '/'
 #define DIR_SEPARATOR_STR "/"
 #define PATH_SEPARATOR ':'
+#endif
 
+#ifndef S_OK
 #define S_OK        0x00000000
 #define E_NOTIMPL   0x80004001
 #define E_FAIL      0x80004005
-
-#define SUCCEEDED(Status) ((Status) >= 0)
-
-#define LIB_PREFIX "lib"
-#define LIB_FILE_EXT ".so"
-
-#if defined(TARGET_OSX)
-#undef LIB_FILE_EXT
-#define LIB_FILE_EXT ".dylib"
 #endif
 
-#define LIB_NAME(NAME) LIB_PREFIX NAME
-#define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
-#define LIB_FILE_NAME_X(NAME) _STRINGIFY(LIB_FILE_NAME(NAME))
-
-#define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
+#ifndef SUCCEEDED
+#define SUCCEEDED(Status) ((Status) >= 0)
+#endif
 
 #if !defined(PATH_MAX)
 #define PATH_MAX 4096
 #endif
 
-#if defined(TARGET_WINDOWS)
-    #define HOST_RID_PLATFORM "win"
-#elif defined(TARGET_OSX)
-    #define HOST_RID_PLATFORM "osx"
-#elif defined(TARGET_ANDROID)
-    #define HOST_RID_PLATFORM "linux-bionic"
-#else
-    #define HOST_RID_PLATFORM FALLBACK_HOST_OS
-#endif
+// String operations
+#define pal_strlen(s) strlen(s)
+#define pal_str_vprintf(buf, count, fmt, args) vsnprintf(buf, (size_t)(count), fmt, args)
+#define pal_strlen_vprintf(fmt, args) vsnprintf(NULL, 0, fmt, args)
+#define pal_str_printf(buf, count, fmt, ...) snprintf(buf, (size_t)(count), fmt, __VA_ARGS__)
 
 // pal function declarations (C equivalents of the C++ pal:: namespace)
 bool pal_get_own_executable_path(pal_char_t* recv, size_t recv_len);
@@ -117,6 +192,6 @@ const pal_char_t* pal_get_dotnet_self_registered_config_location(pal_char_t* buf
 }
 #endif
 
-#endif // !defined(_WIN32)
+#endif // !_WIN32
 
 #endif // PAL_C_H

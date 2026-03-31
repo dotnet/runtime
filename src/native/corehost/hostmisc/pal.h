@@ -19,46 +19,23 @@
 #include <cassert>
 #include <functional>
 
-#if defined(_WIN32)
+#include "pal_c.h"
 
-#define NOMINMAX
-#include <windows.h>
+#if defined(_WIN32)
 
 #define xerr std::wcerr
 #define xout std::wcout
-#define DIR_SEPARATOR L'\\'
-#define DIR_SEPARATOR_STR L"\\"
-#define PATH_SEPARATOR L';'
-#define PATH_MAX MAX_PATH
-#define _X(s) L ## s
 
 #else
 
 #include <cstdlib>
-#include <unistd.h>
-#include <libgen.h>
 #include <mutex>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/mman.h>
 
 #define xerr std::cerr
 #define xout std::cout
-#define DIR_SEPARATOR '/'
-#define DIR_SEPARATOR_STR "/"
-#define PATH_SEPARATOR ':'
-#undef _X
-#define _X(s) s
-
-#define S_OK        0x00000000
-#define E_NOTIMPL   0x80004001
-#define E_FAIL      0x80004005
-
-#define SUCCEEDED(Status) ((Status) >= 0)
 
 #endif
-
-#include "configure.h"
 
 // When running on a platform that is not supported in RID fallback graph (because it was unknown
 // at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
@@ -68,41 +45,10 @@
 // degree of compat across their respective releases is usually high.
 //
 // We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Platform.
-#if defined(TARGET_WINDOWS)
-#define LIB_PREFIX ""
-#define LIB_FILE_EXT ".dll"
-#elif defined(TARGET_OSX)
-#define LIB_PREFIX "lib"
-#define LIB_FILE_EXT ".dylib"
-#else
-#define LIB_PREFIX "lib"
-#define LIB_FILE_EXT ".so"
-#endif
-
-#define _STRINGIFY(s) _X(s)
-
-#define LIB_NAME(NAME) LIB_PREFIX NAME
-#define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
-#define LIB_FILE_NAME_X(NAME) _STRINGIFY(LIB_FILE_NAME(NAME))
 
 #define CORELIB_NAME _X("System.Private.CoreLib.dll")
 #define LIBCORECLR_NAME LIB_FILE_NAME_X("coreclr")
-#define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
 #define LIBHOSTPOLICY_NAME LIB_FILE_NAME_X("hostpolicy")
-
-#if !defined(PATH_MAX) && !defined(_WIN32)
-#define PATH_MAX    4096
-#endif
-
-#if defined(TARGET_WINDOWS)
-    #define HOST_RID_PLATFORM "win"
-#elif defined(TARGET_OSX)
-    #define HOST_RID_PLATFORM "osx"
-#elif defined(TARGET_ANDROID)
-    #define HOST_RID_PLATFORM "linux-bionic"
-#else
-    #define HOST_RID_PLATFORM FALLBACK_HOST_OS
-#endif
 
 namespace pal
 {

@@ -8,41 +8,6 @@
 #include <minipal/utils.h>
 #include <minipal/mutex.h>
 
-#if defined(_WIN32)
-#include <windows.h>
-#define trace_getenv(name, buf, buf_len) (GetEnvironmentVariableW(name, buf, (DWORD)(buf_len)) > 0)
-#define trace_xtoi(s) _wtoi(s)
-#define trace_vsnprintf_len(fmt, args) _vscwprintf(fmt, args)
-#define trace_vsnprintf(buf, count, fmt, args) _vsnwprintf_s(buf, count, _TRUNCATE, fmt, args)
-#define trace_snprintf(buf, count, fmt, ...) _snwprintf_s(buf, count, _TRUNCATE, fmt, __VA_ARGS__)
-#define trace_strlen wcslen
-#else
-#define trace_xtoi(s) atoi(s)
-#define trace_vsnprintf_len(fmt, args) vsnprintf(NULL, 0, fmt, args)
-#define trace_vsnprintf(buf, count, fmt, args) vsnprintf(buf, (size_t)(count), fmt, args)
-#define trace_snprintf(buf, count, fmt, ...) snprintf(buf, (size_t)(count), fmt, __VA_ARGS__)
-#define trace_strlen strlen
-
-static bool trace_getenv(const char* name, char* recv, size_t recv_len)
-{
-    if (recv_len > 0)
-        recv[0] = '\0';
-
-    const char* result = getenv(name);
-    if (result != NULL && result[0] != '\0')
-    {
-        size_t len = strlen(result);
-        if (len >= recv_len)
-            return false;
-
-        memcpy(recv, result, len + 1);
-        return true;
-    }
-
-    return false;
-}
-#endif
-
 #define TRACE_VERBOSITY_WARN 2
 #define TRACE_VERBOSITY_INFO 3
 #define TRACE_VERBOSITY_VERBOSE 4
@@ -50,11 +15,7 @@ static bool trace_getenv(const char* name, char* recv, size_t recv_len)
 static int g_trace_verbosity = 0;
 static FILE* g_trace_file = NULL;
 
-#if defined(_WIN32)
-static __declspec(thread) trace_error_writer_fn g_error_writer = NULL;
-#else
-static _Thread_local trace_error_writer_fn g_error_writer = NULL;
-#endif
+static PAL_THREAD_LOCAL trace_error_writer_fn g_error_writer = NULL;
 
 static minipal_mutex g_trace_lock;
 static bool g_trace_lock_initialized = false;
@@ -82,13 +43,13 @@ static void trace_lock_release(void)
 static bool get_host_env_var(const pal_char_t* name, pal_char_t* value, size_t value_len)
 {
     pal_char_t dotnet_host_name[256];
-    trace_snprintf(dotnet_host_name, ARRAY_SIZE(dotnet_host_name), _TRACE_X("DOTNET_HOST_%s"), name);
-    if (trace_getenv(dotnet_host_name, value, value_len))
+    pal_str_printf(dotnet_host_name, ARRAY_SIZE(dotnet_host_name), _TRACE_X("DOTNET_HOST_%s"), name);
+    if (pal_getenv(dotnet_host_name, value, value_len))
         return true;
 
     pal_char_t corehost_name[256];
-    trace_snprintf(corehost_name, ARRAY_SIZE(corehost_name), _TRACE_X("COREHOST_%s"), name);
-    return trace_getenv(corehost_name, value, value_len);
+    pal_str_printf(corehost_name, ARRAY_SIZE(corehost_name), _TRACE_X("COREHOST_%s"), name);
+    return pal_getenv(corehost_name, value, value_len);
 }
 
 static void trace_err_print_line(const pal_char_t* message)
@@ -99,7 +60,7 @@ static void trace_err_print_line(const pal_char_t* message)
     DWORD mode;
     if (GetConsoleMode(hStdErr, &mode))
     {
-        WriteConsoleW(hStdErr, message, (DWORD)trace_strlen(message), NULL, NULL);
+        WriteConsoleW(hStdErr, message, (DWORD)pal_strlen(message), NULL, NULL);
         WriteConsoleW(hStdErr, L"\n", 1, NULL, NULL);
     }
     else
@@ -169,7 +130,7 @@ void trace_setup(void)
     if (!get_host_env_var(_TRACE_X("TRACE"), trace_str, ARRAY_SIZE(trace_str)))
         return;
 
-    int trace_val = trace_xtoi(trace_str);
+    int trace_val = pal_xtoi(trace_str);
     if (trace_val > 0)
     {
         if (trace_enable())
@@ -218,7 +179,7 @@ bool trace_enable(void)
     }
     else
     {
-        g_trace_verbosity = trace_xtoi(trace_verbosity_str);
+        g_trace_verbosity = pal_xtoi(trace_verbosity_str);
     }
 
     trace_lock_release();
@@ -279,11 +240,11 @@ void trace_error_v(const pal_char_t* format, va_list args)
     va_list trace_args;
     va_copy(trace_args, args);
 
-    int count = trace_vsnprintf_len(format, args) + 1;
+    int count = pal_strlen_vprintf(format, args) + 1;
     pal_char_t* buffer = (pal_char_t*)malloc((size_t)count * sizeof(pal_char_t));
     if (buffer)
     {
-        trace_vsnprintf(buffer, (size_t)count, format, dup_args);
+        pal_str_vprintf(buffer, (size_t)count, format, dup_args);
 
 #if defined(_WIN32)
         OutputDebugStringW(buffer);
