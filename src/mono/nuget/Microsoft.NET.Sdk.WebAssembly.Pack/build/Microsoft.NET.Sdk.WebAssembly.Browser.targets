@@ -787,58 +787,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
-      <Output TaskParameter="PassThroughCandidates" ItemName="_WasmPublishFrameworkCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebcil>
-
-    <!-- Remove pass-throughs from webcil candidates (mirrors build path) so each file is
-         classified exactly once. Pass-throughs go through Framework materialization below. -->
-    <ItemGroup>
-      <_NewWebcilPublishStaticWebAssetsCandidates Remove="@(_WasmPublishFrameworkCandidates)" />
-      <_WasmPublishFrameworkCandidates Update="@(_WasmPublishFrameworkCandidates)" ContentRoot="%(RootDir)%(Directory)" />
-    </ItemGroup>
-
-    <!-- Publish-time Framework materialization: mirrors the build-time path (lines 400-437)
-         to give each client project a unique Identity for shared runtime pack files.
-         Without this, multi-client hosted publish scenarios crash in ApplyCompressionNegotiation
-         with duplicate Identity keys for pass-through assets like HotReload dlls. -->
-    <DefineStaticWebAssets
-      CandidateAssets="@(_WasmPublishFrameworkCandidates)"
-      SourceId="$(PackageId)"
-      SourceType="Framework"
-      AssetKind="Publish"
-      AssetRole="Primary"
-      CopyToOutputDirectory="Never"
-      CopyToPublishDirectory="PreserveNewest"
-      FingerprintCandidates="$(_WasmFingerprintAssets)"
-      FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
-      BasePath="$(StaticWebAssetBasePath)"
-    >
-      <Output TaskParameter="Assets" ItemName="_WasmPublishFrameworkAssets" />
-    </DefineStaticWebAssets>
-
-    <UpdatePackageStaticWebAssets
-      Assets="@(_WasmPublishFrameworkAssets)"
-      IntermediateOutputPath="$(IntermediateOutputPath)"
-      ProjectPackageId="$(PackageId)"
-      ProjectBasePath="$(StaticWebAssetBasePath)"
-    >
-      <Output TaskParameter="UpdatedAssets" ItemName="_WasmMaterializedPublishFrameworkAssets" />
-    </UpdatePackageStaticWebAssets>
-
-    <ItemGroup>
-      <_WasmMaterializedPublishFrameworkAssets Update="@(_WasmMaterializedPublishFrameworkAssets)"
-        AssetMode="All" CopyToPublishDirectory="PreserveNewest" />
-      <StaticWebAsset Include="@(_WasmMaterializedPublishFrameworkAssets)" />
-    </ItemGroup>
-
-    <DefineStaticWebAssetEndpoints
-      CandidateAssets="@(_WasmMaterializedPublishFrameworkAssets)"
-      ExistingEndpoints="@(StaticWebAssetEndpoint)"
-      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
-    >
-      <Output TaskParameter="Endpoints" ItemName="StaticWebAssetEndpoint" />
-    </DefineStaticWebAssetEndpoints>
 
     <!-- _NewWebcilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
          Remove them and call DefineStaticWebAssets so that they can get re-computed appropriately.
