@@ -7772,7 +7772,7 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 }
 
 //------------------------------------------------------------------------
-// FlowGraphTryRegion::AddMultipleEntryRegionEdges: Add temporary
+// FlowGraphTryRegions::AddMultipleEntryRegionEdges: Add temporary
 //    edges for multiple entry try regions.
 //
 // Arguments:
@@ -7782,19 +7782,27 @@ void FlowGraphTryRegions::AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edg
 {
     for (FlowGraphTryRegion* region : m_tryRegions)
     {
-        if (region != nullptr && region->HasSideEntry())
+        if (region != nullptr && region->HasCatchHandler() && region->HasSideEntry())
         {
             BasicBlock* const headerBlock = region->GetHeaderBlock();
 
             for (FlowEdge* edge : region->EntryEdges())
             {
+                BasicBlock* const destBlock = edge->getDestinationBlock();
+
+                // Skip the normal entry edges.
+                //
+                if (destBlock == headerBlock)
+                {
+                    continue;
+                }
+
                 // We need an edge from dest to try header.
-                FlowEdge* const destheaderEdge = m_compiler->fgAddRefPred(headerBlock, edge->getDestinationBlock());
+                FlowEdge* const destheaderEdge = m_compiler->fgAddRefPred(headerBlock, destBlock);
                 edges.Push(destheaderEdge);
 
                 // And an edge from method entry to dest.
-                FlowEdge* const entryDestEdge =
-                    m_compiler->fgAddRefPred(edge->getDestinationBlock(), m_compiler->fgFirstBB);
+                FlowEdge* const entryDestEdge = m_compiler->fgAddRefPred(destBlock, m_compiler->fgFirstBB);
                 edges.Push(entryDestEdge);
             }
         }
@@ -7802,7 +7810,7 @@ void FlowGraphTryRegions::AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edg
 }
 
 //------------------------------------------------------------------------
-// FlowGraphTryRegion::RemoveMultipleEntryRegionEdges: Remove temporary
+// FlowGraphTryRegions::RemoveMultipleEntryRegionEdges: Remove temporary
 //    edges added for multiple entry try regions.
 //
 // Arguments:

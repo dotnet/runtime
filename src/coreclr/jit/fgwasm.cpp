@@ -324,7 +324,7 @@ public:
                     {
                         GenTree* const lastNode = block->GetLastLIRNode();
 
-                        if (lastNode->OperIs(GT_WASM_JEXCEPT))
+                        if ((lastNode != nullptr) && lastNode->OperIs(GT_WASM_JEXCEPT))
                         {
                             JITDUMP(FMT_BB " is also a Wasm try entry\n", block->bbNum);
 
@@ -1063,6 +1063,7 @@ PhaseStatus Compiler::fgWasmTransformSccs()
     if (loops->ImproperLoopHeaders() > 0)
     {
         JITDUMP("\nThere are irreducible loops.\n");
+
         ArrayStack<Scc*> sccs(getAllocator(CMK_WasmSccTransform));
         fgWasm.WasmFindSccs(sccs);
         assert(!sccs.Empty());
@@ -1088,6 +1089,7 @@ PhaseStatus Compiler::fgWasmTransformSccs()
     else
     {
         assert(!tryRegions->HasMultipleEntryTryRegions());
+        assert(temporaryEdges.Empty());
     }
 
     return transformed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
