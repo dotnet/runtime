@@ -156,6 +156,10 @@ namespace Mono.Linker
         {
             if (attr.Attribute.ConstructorArguments is [_, _, { Value: TypeReference trimTarget }])
             {
+                // Strip parameterized types (array, pointer, etc.) to use the element type as the trim target,
+                // since those types cannot be tracked at the definition level by the trimmer.
+                while (trimTarget is TypeSpecification and not GenericInstanceType)
+                    trimTarget = ((TypeSpecification)trimTarget).ElementType;
                 RecordTypeMapEntry(attr, group, trimTarget, _unmarkedExternalTypeMapEntries, _referencedExternalTypeMaps, _pendingExternalTypeMapEntries);
             }
             else if (attr.Attribute.ConstructorArguments is [_, { Value: TypeReference }])
@@ -172,6 +176,10 @@ namespace Mono.Linker
             if (attr.Attribute.ConstructorArguments is [{ Value: TypeReference sourceType }, _])
             {
                 // This is a TypeMapAssociationAttribute, which has a single type argument.
+                // Strip parameterized types (array, pointer, etc.) to use the element type as the source type,
+                // since those types cannot be tracked at the definition level by the trimmer.
+                while (sourceType is TypeSpecification and not GenericInstanceType)
+                    sourceType = ((TypeSpecification)sourceType).ElementType;
                 RecordTypeMapEntry(attr, group, sourceType, _unmarkedProxyTypeMapEntries, _referencedProxyTypeMaps, _pendingProxyTypeMapEntries);
                 return;
             }
