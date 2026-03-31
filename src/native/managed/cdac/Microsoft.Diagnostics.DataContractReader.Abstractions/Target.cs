@@ -292,6 +292,21 @@ public abstract class Target
     public abstract ContractRegistry Contracts { get; }
 
     /// <summary>
+    /// Attempts to locate module metadata from an external source (e.g., PE file on disk)
+    /// when it cannot be read from target memory. Hosts override this method to provide
+    /// metadata resolution for scenarios such as heap dumps where PE read-only sections
+    /// may not be present in the dump.
+    /// </summary>
+    /// <param name="modulePath">Full path of the module in the target process.</param>
+    /// <param name="metadata">The raw ECMA-335 metadata bytes if located.</param>
+    /// <returns><c>true</c> if metadata was located; <c>false</c> otherwise.</returns>
+    public virtual bool TryLocateReadOnlyMetadata(string? modulePath, out byte[] metadata)
+    {
+        metadata = [];
+        return false;
+    }
+
+    /// <summary>
     /// Clear all cached data held by this target, including processed data and contract caches.
     /// Called when the target process state may have changed (e.g. on resume).
     /// </summary>

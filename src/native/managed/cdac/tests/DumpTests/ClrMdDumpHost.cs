@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
+using System.Reflection.PortableExecutable;
 using Microsoft.Diagnostics.Runtime;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -58,6 +60,78 @@ internal sealed class ClrMdDumpHost : IDisposable
     }
 
     /// <summary>
+    /// Locate module metadata from the PE file on disk when it cannot be read from dump memory.
+    /// Uses ClrMD's <see cref="IFileLocator"/> to find the PE file by matching the module name,
+    /// timestamp, and image size recorded in the dump, then extracts the raw ECMA-335 metadata.
+    /// </summary>
+    public bool TryGetReadOnlyMetadata(string? modulePath, out byte[] metadata)
+    {
+        metadata = [];
+        if (modulePath is null)
+            return false;
+
+        // First, try reading directly from the module path on disk.
+        // For local dumps, the module path recorded in the target process
+        // typically points to a valid file on the same machine.
+        if (TryReadMetadataFromPE(modulePath, out metadata))
+            return true;
+
+        // Fall back to ClrMD's FileLocator, which can use symbol servers
+        // and local caches to find PE files by timestamp and image size.
+        string targetFileName = GetPortableFileName(modulePath);
+
+        foreach (ModuleInfo module in _dataTarget.DataReader.EnumerateModules())
+        {
+            if (module.FileName is null)
+                continue;
+
+            string moduleFileName = GetPortableFileName(module.FileName);
+            if (!moduleFileName.Equals(targetFileName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            // Try the module's dump-recorded file path directly
+            if (TryReadMetadataFromPE(module.FileName, out metadata))
+                return true;
+
+            // Try FileLocator (symbol server / local cache)
+            string? localPath = _dataTarget.FileLocator?.FindPEImage(
+                module.FileName,
+                module.IndexTimeStamp,
+                module.IndexFileSize,
+                checkProperties: false);
+
+            if (localPath is not null && TryReadMetadataFromPE(localPath, out metadata))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryReadMetadataFromPE(string path, out byte[] metadata)
+    {
+        metadata = [];
+        if (!File.Exists(path))
+            return false;
+
+        try
+        {
+            using FileStream fs = File.OpenRead(path);
+            using PEReader peReader = new(fs, PEStreamOptions.PrefetchEntireImage);
+            if (!peReader.HasMetadata)
+                return false;
+
+            var metadataBlock = peReader.GetMetadata();
+            metadata = new byte[metadataBlock.Length];
+            metadataBlock.GetContent().CopyTo(metadata);
+            return metadata.Length > 0;
+        }
+        catch (System.Exception ex) when (ex is BadImageFormatException or IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Locate the DotNetRuntimeContractDescriptor symbol address in the dump.
     /// Uses ClrMD's built-in export resolution which handles PE, ELF, and Mach-O formats.
     /// </summary>
@@ -69,11 +143,7 @@ internal sealed class ClrMdDumpHost : IDisposable
             if (fileName is null)
                 continue;
 
-            // Path.GetFileName doesn't handle Windows paths on a Linux/macOS host,
-            // so split on both separators to extract the file name correctly when
-            // analyzing cross-platform dumps.
-            int lastSep = Math.Max(fileName.LastIndexOf('/'), fileName.LastIndexOf('\\'));
-            string name = lastSep >= 0 ? fileName[(lastSep + 1)..] : fileName;
+            string name = GetPortableFileName(fileName);
             if (!IsRuntimeModule(name))
                 continue;
 
@@ -91,6 +161,16 @@ internal sealed class ClrMdDumpHost : IDisposable
         }
 
         throw new InvalidOperationException("Could not find DotNetRuntimeContractDescriptor export in any runtime module in the dump.");
+    }
+
+    /// <summary>
+    /// Extracts the file name from a path, handling both Windows and Unix separators
+    /// for cross-platform dump analysis.
+    /// </summary>
+    private static string GetPortableFileName(string path)
+    {
+        int lastSep = Math.Max(path.LastIndexOf('/'), path.LastIndexOf('\\'));
+        return lastSep >= 0 ? path[(lastSep + 1)..] : path;
     }
 
     private static bool IsRuntimeModule(string fileName)

@@ -64,10 +64,24 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
                 return null;
             case AvailableMetadataType.ReadOnly:
             {
-                TargetSpan address = GetReadOnlyMetadataAddress(handle);
-                byte[] data = new byte[address.Size];
-                target.ReadBuffer(address.Address, data);
-                return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
+                try
+                {
+                    TargetSpan address = GetReadOnlyMetadataAddress(handle);
+                    byte[] data = new byte[address.Size];
+                    target.ReadBuffer(address.Address, data);
+                    return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
+                }
+                catch (VirtualReadException)
+                {
+                    // PE image not readable from target memory (e.g., heap dump).
+                    // Fall back to host-provided metadata locator.
+                    string? modulePath = GetModulePath(handle);
+                    if (target.TryLocateReadOnlyMetadata(modulePath, out byte[] metadata) && metadata.Length > 0)
+                    {
+                        return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(metadata));
+                    }
+                    return null;
+                }
             }
             case AvailableMetadataType.ReadWriteSavedCopy:
             {
@@ -325,6 +339,20 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     private TargetEcmaMetadata GetReadWriteMetadata(ModuleHandle handle)
     {
         throw new NotImplementedException();
+    }
+
+    private string? GetModulePath(ModuleHandle handle)
+    {
+        try
+        {
+            ILoader loader = target.Contracts.Loader;
+            string path = loader.GetPath(handle);
+            return string.IsNullOrEmpty(path) ? null : path;
+        }
+        catch (VirtualReadException)
+        {
+            return null;
+        }
     }
 
     private static T AlignUp<T>(T input, T alignment)

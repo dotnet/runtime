@@ -106,6 +106,7 @@ public abstract class DumpTestBase : IDisposable
             _host.ReadFromTarget,
             writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
+            _host.TryGetReadOnlyMetadata,
             additionalFactories: [],
             out _target);
 

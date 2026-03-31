@@ -46,7 +46,18 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
     public delegate int WriteToTargetDelegate(ulong address, Span<byte> bufferToWrite);
     public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
-    private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>
+    /// Callback to locate module metadata when it cannot be read from target memory.
+    /// The host locates the PE file (e.g., on disk or via a symbol server) and returns
+    /// the raw ECMA-335 metadata bytes.
+    /// </summary>
+    /// <param name="modulePath">Full path of the module in the target process.</param>
+    /// <param name="metadata">The raw metadata bytes if found.</param>
+    /// <returns><c>true</c> if metadata was located; <c>false</c> otherwise.</returns>
+    public delegate bool GetReadOnlyMetadataDelegate(string? modulePath, out byte[] metadata);
+
+    private static readonly UTF8Encoding strictUTF8Encoding= new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
     /// <summary>
@@ -54,7 +65,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// </summary>
     /// <param name="contractDescriptor">The offset of the contract descriptor in the target memory</param>
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
+    /// <param name="writeToTarget">A callback to write memory blocks at a given address to the target</param>
     /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="additionalFactories">Additional contract factories</param>
     /// <param name="target">The target object.</param>
     /// <returns>If a target instance could be created, <c>true</c>; otherwise, <c>false</c>.</returns>
     public static bool TryCreate(
@@ -65,7 +78,30 @@ public sealed unsafe class ContractDescriptorTarget : Target
         IEnumerable<IContractFactory<IContract>> additionalFactories,
         [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
-        DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext);
+        return TryCreate(contractDescriptor, readFromTarget, writeToTarget, getThreadContext, getReadOnlyMetadata: null, additionalFactories, out target);
+    }
+
+    /// <summary>
+    /// Create a new target instance from a contract descriptor embedded in the target memory.
+    /// </summary>
+    /// <param name="contractDescriptor">The offset of the contract descriptor in the target memory</param>
+    /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
+    /// <param name="writeToTarget">A callback to write memory blocks at a given address to the target</param>
+    /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="getReadOnlyMetadata">An optional callback to locate module metadata from an external source when it cannot be read from target memory.</param>
+    /// <param name="additionalFactories">Additional contract factories</param>
+    /// <param name="target">The target object.</param>
+    /// <returns>If a target instance could be created, <c>true</c>; otherwise, <c>false</c>.</returns>
+    public static bool TryCreate(
+        ulong contractDescriptor,
+        ReadFromTargetDelegate readFromTarget,
+        WriteToTargetDelegate writeToTarget,
+        GetTargetThreadContextDelegate getThreadContext,
+        GetReadOnlyMetadataDelegate? getReadOnlyMetadata,
+        IEnumerable<IContractFactory<IContract>> additionalFactories,
+        [NotNullWhen(true)] out ContractDescriptorTarget? target)
+    {
+        DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, getReadOnlyMetadata);
         if (TryReadAllContractDescriptors(
             contractDescriptor,
             dataTargetDelegates,
@@ -387,6 +423,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
         // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
         int hr = _dataTargetDelegates.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, buffer);
         return hr == 0;
+    }
+
+    /// <inheritdoc/>
+    public override bool TryLocateReadOnlyMetadata(string? modulePath, out byte[] metadata)
+    {
+        return _dataTargetDelegates.TryGetReadOnlyMetadata(modulePath, out metadata);
     }
 
     /// <summary>
@@ -860,7 +902,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
     private readonly struct DataTargetDelegates(
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
-        GetTargetThreadContextDelegate getThreadContext)
+        GetTargetThreadContextDelegate getThreadContext,
+        GetReadOnlyMetadataDelegate? getReadOnlyMetadata = null)
     {
         public int ReadFromTarget(ulong address, Span<byte> buffer)
         {
@@ -877,6 +920,16 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public int WriteToTarget(ulong address, Span<byte> buffer)
         {
             return writeToTarget(address, buffer);
+        }
+
+        public bool TryGetReadOnlyMetadata(string? modulePath, out byte[] metadata)
+        {
+            if (getReadOnlyMetadata is not null)
+            {
+                return getReadOnlyMetadata(modulePath, out metadata);
+            }
+            metadata = [];
+            return false;
         }
     }
 }
