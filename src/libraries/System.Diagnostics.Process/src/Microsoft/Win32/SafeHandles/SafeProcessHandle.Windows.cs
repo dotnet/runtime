@@ -165,7 +165,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
 
                 // set up the creation flags parameter
-                int creationFlags = Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT;
+                int creationFlags = hasInheritedHandles ? Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT : 0;
                 if (startInfo.CreateNoWindow) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NO_WINDOW;
                 if (startInfo.CreateNewProcessGroup) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NEW_PROCESS_GROUP;
 
@@ -231,31 +231,69 @@ namespace Microsoft.Win32.SafeHandles
                     fixed (char* environmentBlockPtr = environmentBlock)
                     fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
                     {
-                        IntPtr passwordPtr = (startInfo.Password != null) ?
-                            Marshal.SecureStringToGlobalAllocUnicode(startInfo.Password) : IntPtr.Zero;
+                        IntPtr secureStringPtr = (startInfo.Password != null) ? Marshal.SecureStringToGlobalAllocUnicode(startInfo.Password) : IntPtr.Zero;
+                        IntPtr passwordPtr = (startInfo.Password != null) ? secureStringPtr : (IntPtr)passwordInClearTextPtr;
 
+                        SafeTokenHandle? tokenHandle = null;
                         try
                         {
-                            retVal = Interop.Advapi32.CreateProcessWithLogonW(
-                                startInfo.UserName,
-                                startInfo.Domain,
-                                (passwordPtr != IntPtr.Zero) ? passwordPtr : (IntPtr)passwordInClearTextPtr,
-                                logonFlags,
-                                null,            // we don't need this since all the info is in commandLine
-                                commandLinePtr,
-                                creationFlags,
-                                (IntPtr)environmentBlockPtr,
-                                workingDirectory,
-                                &startupInfoEx,
-                                &processInfo
-                            );
+                            // CreateProcessWithLogonW does not support STARTUPINFOEX.
+                            // CreateProcessWithTokenW docs mention STARTUPINFOEX, but they don't mention
+                            // that EXTENDED_STARTUPINFO_PRESENT is not supported anyway.
+                            // So when we have to use EXTENDED_STARTUPINFO_PRESENT, we use CreateProcessAsUserW.
+                            // In contrary to CreateProcessWithLogonW, CreateProcessAsUserW requires privilege (SE_INCREASE_QUOTA_NAME).
+                            // That is why we use it only for the new, optional features.
+                            if ((creationFlags & Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT) != 0)
+                            {
+                                if (!Interop.Advapi32.LogonUser(startInfo.UserName, startInfo.Domain, passwordPtr, logonFlags, 0, out tokenHandle))
+                                {
+                                    retVal = false;
+                                }
+                                else
+                                {
+                                    retVal = Interop.Kernel32.CreateProcessAsUser(
+                                        tokenHandle,         // token representing the user
+                                        null,                // we don't need this since all the info is in commandLine
+                                        commandLinePtr,      // pointer to the command line string
+                                        ref unused_SecAttrs, // address to process security attributes, we don't need to inherit the handle
+                                        ref unused_SecAttrs, // address to thread security attributes.
+                                        true,                // handle inheritance flag
+                                        creationFlags,       // creation flags
+                                        environmentBlockPtr, // pointer to new environment block
+                                        workingDirectory,    // pointer to current directory name
+                                        &startupInfoEx,      // pointer to STARTUPINFOEX
+                                        &processInfo         // pointer to PROCESS_INFORMATION
+                                    );
+                                }
+
+                            }
+                            else
+                            {
+                                Interop.Kernel32.STARTUPINFO startupInfo = startupInfoEx.StartupInfo;
+
+                                retVal = Interop.Advapi32.CreateProcessWithLogonW(
+                                    startInfo.UserName,
+                                    startInfo.Domain,
+                                    passwordPtr,
+                                    logonFlags,
+                                    null,            // we don't need this since all the info is in commandLine
+                                    commandLinePtr,
+                                    creationFlags,
+                                    (IntPtr)environmentBlockPtr,
+                                    workingDirectory,
+                                    &startupInfo,
+                                    &processInfo
+                                );
+                            }
                             if (!retVal)
                                 errorCode = Marshal.GetLastWin32Error();
                         }
                         finally
                         {
-                            if (passwordPtr != IntPtr.Zero)
-                                Marshal.ZeroFreeGlobalAllocUnicode(passwordPtr);
+                            if (secureStringPtr != IntPtr.Zero)
+                                Marshal.ZeroFreeGlobalAllocUnicode(secureStringPtr);
+
+                            tokenHandle?.Dispose();
                         }
                     }
                 }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -11,6 +12,22 @@ internal static partial class Interop
         [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateProcessW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CreateProcess(
+            string? lpApplicationName,
+            char* lpCommandLine,
+            ref SECURITY_ATTRIBUTES procSecAttrs,
+            ref SECURITY_ATTRIBUTES threadSecAttrs,
+            [MarshalAs(UnmanagedType.Bool)] bool bInheritHandles,
+            int dwCreationFlags,
+            char* lpEnvironment,
+            string? lpCurrentDirectory,
+            STARTUPINFOEX* lpStartupInfo,
+            PROCESS_INFORMATION* lpProcessInformation
+        );
+
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateProcessAsUserW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool CreateProcessAsUser(
+            SafeTokenHandle hToken,
             string? lpApplicationName,
             char* lpCommandLine,
             ref SECURITY_ATTRIBUTES procSecAttrs,
