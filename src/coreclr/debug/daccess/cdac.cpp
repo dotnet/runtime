@@ -15,8 +15,19 @@ namespace
     {
         // Load cdac from next to current module (DAC binary)
         PathString path;
+
+        // On Unix, GetCurrentModuleBase() returns a raw dladdr base address, not a PAL HMODULE.
+        // The DAC is typically loaded externally (e.g. by CLRMD via dlopen) and is not registered
+        // in the PAL module list. Use PAL_GetPalHostModule() which properly registers the module.
+#ifdef HOST_UNIX
+        HMODULE hMod = PAL_GetPalHostModule();
+        if (hMod == NULL || WszGetModuleFileName(hMod, path) == 0)
+#else
         if (WszGetModuleFileName((HMODULE)GetCurrentModuleBase(), path) == 0)
+#endif
+        {
             return false;
+        }
 
         SString::Iterator iter = path.End();
         if (!path.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W))

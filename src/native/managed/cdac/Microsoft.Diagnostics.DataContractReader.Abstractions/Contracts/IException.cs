@@ -19,7 +19,7 @@ public interface IException : IContract
 {
     static string IContract.Name { get; } = nameof(Exception);
 
-    TargetPointer GetNestedExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException) => throw new NotImplementedException();
+    TargetPointer GetNestedExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException, out TargetPointer thrownObjectHandle) => throw new NotImplementedException();
     ExceptionData GetExceptionData(TargetPointer managedException) => throw new NotImplementedException();
 }
 

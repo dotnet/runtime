@@ -20,6 +20,7 @@ internal sealed class Module : IData<Module>
         Base = target.ReadPointer(address + (ulong)type.Fields[nameof(Base)].Offset);
         LoaderAllocator = target.ReadPointer(address + (ulong)type.Fields[nameof(LoaderAllocator)].Offset);
         DynamicMetadata = target.ReadPointer(address + (ulong)type.Fields[nameof(DynamicMetadata)].Offset);
+        SimpleName = target.ReadPointer(address + (ulong)type.Fields[nameof(SimpleName)].Offset);
         Path = target.ReadPointer(address + (ulong)type.Fields[nameof(Path)].Offset);
         FileName = target.ReadPointer(address + (ulong)type.Fields[nameof(FileName)].Offset);
         ReadyToRunInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(ReadyToRunInfo)].Offset);
@@ -43,6 +44,7 @@ internal sealed class Module : IData<Module>
     public TargetPointer Base { get; init; }
     public TargetPointer LoaderAllocator { get; init; }
     public TargetPointer DynamicMetadata { get; init; }
+    public TargetPointer SimpleName { get; init; }
     public TargetPointer Path { get; init; }
     public TargetPointer FileName { get; init; }
     public TargetPointer ReadyToRunInfo { get; init; }

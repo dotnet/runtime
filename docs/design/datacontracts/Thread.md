@@ -103,7 +103,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
 | `Thread` | `RuntimeThreadLocals` | Pointer to some thread-local storage |
 | `Thread` | `ThreadLocalDataPtr` | Pointer to thread local data structure |
-| `Thread` | `UEWatsonBucketTrackerBuckets` | Pointer to thread Watson buckets data |
+| `Thread` | `UEWatsonBucketTrackerBuckets` | Pointer to thread Watson buckets data (optional, Windows only) |
 | `ThreadLocalData` | `NonCollectibleTlsData` | Count of non-collectible TLS data entries |
 | `ThreadLocalData` | `NonCollectibleTlsArrayData` | Pointer to non-collectible TLS array data |
 | `ThreadLocalData` | `CollectibleTlsData` | Count of collectible TLS data entries |
@@ -266,6 +266,19 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
     return threadLocalStaticBase;
 }
 
+TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
+{
+    TargetPointer exceptionTrackerPtr = target.ReadPointer(threadPointer + /*Thread::ExceptionTracker offset */);
+    if (exceptionTrackerPtr == TargetPointer.Null)
+        return TargetPointer.Null;
+    TargetPointer thrownObjectHandle = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ThrownObjectHandle offset */);
+
+    if (thrownObjectHandle == TargetPointer.Null || target.ReadPointer(thrownObjectHandle) == TargetPointer.Null)
+        return TargetPointer.Null;
+
+    return thrownObjectHandle;
+}
+
 byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
 {
     TargetPointer readFrom;
@@ -283,7 +296,9 @@ byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
         }
         else
         {
-            readFrom = target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */);
+            readFrom = /* Has Thread::UEWatsonBucketTrackerBuckets offset */
+                ? target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */)
+                : TargetPointer.Null;
             if (readFrom == TargetPointer.Null)
             {
                 readFrom = target.ReadPointer(exceptionTrackerPtr + /* ExceptionInfo::ExceptionWatsonBucketTrackerBuckets offset */);
@@ -296,7 +311,9 @@ byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
     }
     else
     {
-        readFrom = target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */);
+        readFrom = /* Has Thread::UEWatsonBucketTrackerBuckets offset */
+            ? target.ReadPointer(threadPointer + /* Thread::UEWatsonBucketTrackerBuckets offset */)
+            : TargetPointer.Null;
     }
 
     Span<byte> span = new byte[_target.ReadGlobal<uint>("SizeOfGenericModeBlock")];

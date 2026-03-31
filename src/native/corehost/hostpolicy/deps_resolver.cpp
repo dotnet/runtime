@@ -71,23 +71,6 @@ namespace
         existing->insert(path);
     }
 
-    // Return the filename from deps path; a deps path always uses a '/' for the separator.
-    pal::string_t get_deps_filename(const pal::string_t& path)
-    {
-        if (path.empty())
-        {
-            return path;
-        }
-
-        auto name_pos = path.find_last_of('/');
-        if (name_pos == pal::string_t::npos)
-        {
-            return path;
-        }
-
-        return path.substr(name_pos + 1);
-    }
-
     // A uniqifying append helper that doesn't let two entries with the same
     // "asset_name" be part of the "items" paths.
     void add_tpa_asset(
@@ -434,7 +417,7 @@ bool deps_resolver_t::resolve_tpa_list(
         }
 
         // Ignore placeholders
-        if (utils::ends_with(entry.asset.relative_path, _X("/_._"), false))
+        if (utils::ends_with(entry.asset.relative_path, DIR_SEPARATOR_STR _X("_._"), false))
         {
             return true;
         }
@@ -465,7 +448,7 @@ bool deps_resolver_t::resolve_tpa_list(
         else
         {
             // Verify the extension is the same as the previous verified entry
-            if (get_deps_filename(entry.asset.relative_path) != get_filename(existing->second.resolved_path))
+            if (get_filename(entry.asset.relative_path) != get_filename(existing->second.resolved_path))
             {
                 trace::error(
                     DuplicateAssemblyWithDifferentExtensionMessage,
@@ -780,7 +763,7 @@ bool deps_resolver_t::resolve_probe_dirs(
         }
 
         // Ignore placeholders
-        if (utils::ends_with(entry.asset.relative_path, _X("/_._"), false))
+        if (utils::ends_with(entry.asset.relative_path, DIR_SEPARATOR_STR _X("_._"), false))
         {
             return true;
         }

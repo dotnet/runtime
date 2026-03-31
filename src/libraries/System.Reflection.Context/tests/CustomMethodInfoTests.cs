@@ -81,7 +81,7 @@ namespace System.Reflection.Context.Tests
             Assert.False(value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void MetadataToken_ReturnsValue()
         {
             Assert.True(_customMethod.MetadataToken > 0);
@@ -179,7 +179,7 @@ namespace System.Reflection.Context.Tests
             Assert.Empty(args);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
         public void GetMethodBody_ReturnsBodyWithLocals()
         {
             MethodBody body = _customMethod.GetMethodBody();

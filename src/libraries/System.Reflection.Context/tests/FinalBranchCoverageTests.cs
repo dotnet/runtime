@@ -147,6 +147,7 @@ namespace System.Reflection.Context.Tests
 
         // Test GetInterfaceMap
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89157", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetInterfaceMap_ReturnsMapping()
         {
             TypeInfo listType = _customReflectionContext.MapType(typeof(List<int>).GetTypeInfo());

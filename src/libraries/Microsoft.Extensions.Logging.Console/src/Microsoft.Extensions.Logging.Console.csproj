@@ -26,6 +26,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleMode.cs" Link="Common\Interop\Windows\Interop.GetConsoleMode.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs" Link="Common\Interop\Windows\Interop.GetStdHandle.cs" />
     <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs" Link="Common\System\Console\ConsoleUtils.cs" />
+    <Compile Include="$(CommonPath)System\NullableBool.cs" Link="Common\System\NullableBool.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

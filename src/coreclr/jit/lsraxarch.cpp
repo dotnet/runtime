@@ -2473,7 +2473,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(numArgs == 2 || numArgs == 3);
                 srcCount += BuildOperandUses(op1, SRBM_EDX);
                 SingleTypeRegSet apxAwareRegCandidates =
-                    ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    ForceLowGprForApxIfNeeded(op2, availableIntRegs & ~SRBM_EDX, canHWIntrinsicUseApxRegs);
                 srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
                 if (numArgs == 3)
                 {

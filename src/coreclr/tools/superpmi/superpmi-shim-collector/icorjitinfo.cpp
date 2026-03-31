@@ -266,13 +266,8 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(CORINFO_METHOD_HAND
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk)
 {
     mc->cr->AddCall("getAsyncOtherVariant");
-    bool                  localVariantIsThunk = false;
-    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAsyncOtherVariant(ftn, &localVariantIsThunk);
-    mc->recGetAsyncOtherVariant(ftn, &localVariantIsThunk, result);
-    if (variantIsThunk != nullptr)
-    {
-        *variantIsThunk = localVariantIsThunk;
-    }
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAsyncOtherVariant(ftn, variantIsThunk);
+    mc->recGetAsyncOtherVariant(ftn, *variantIsThunk, result);
     return result;
 }
 
