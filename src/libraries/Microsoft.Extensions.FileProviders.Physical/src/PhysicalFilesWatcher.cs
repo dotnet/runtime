@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private bool _timerInitialized;
         private object _timerLock = new();
         private readonly Func<Timer> _timerFactory;
-        private bool _disposed;
+        private volatile bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PhysicalFilesWatcher"/> class that watches files in <paramref name="root"/>.
@@ -273,9 +273,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             if (!_disposed)
             {
+                _disposed = true;
+
                 if (disposing)
                 {
-                    _fileWatcher?.Dispose();
+                    lock (_fileWatcherLock)
+                    {
+                        _fileWatcher?.Dispose();
+                    }
+
                     _timer?.Dispose();
 
                     // We made sure that browser/iOS/tvOS never uses FileSystemWatcher so _rootCreationWatcher is always null on those platforms.
@@ -287,7 +293,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     }
 #pragma warning restore CA1416
                 }
-                _disposed = true;
             }
         }
 
@@ -504,6 +509,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             lock (_fileWatcherLock)
             {
+                if (_disposed)
+                {
+                    return;
+                }
+
                 if (!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty)
                 {
                     // On some platforms (e.g., Linux/inotify), the FileSystemWatcher does not
