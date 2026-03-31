@@ -22,6 +22,7 @@ namespace System.Linq
 
             return source switch
             {
+                IAsyncEnumerable<TSource> asyncEnumerable => asyncEnumerable,
                 TSource[] array => array.Length == 0 ? Empty<TSource>() : FromArray(array),
                 List<TSource> list => FromList(list),
                 IList<TSource> list => FromIList(list),
