@@ -1638,8 +1638,6 @@ public:
 
         ILCodeStream *pcsSetup = m_slIL.GetSetupCodeStream();
 
-        LocalDesc argumentArray(ELEMENT_TYPE_OBJECT);
-        argumentArray.MakeArray();
         m_argumentArrayLocalNum = MakeArrayLocalOfElementType(pcsSetup, CLASS__OBJECT);
         m_argumentTypeLocalNum = MakeArrayLocalOfElementType(pcsSetup, CLASS__TYPE);
         m_argumentIsByRefArrayLocalNum = MakeArrayLocalOfElementType(pcsSetup, CLASS__BOOLEAN);
