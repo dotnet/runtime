@@ -32,9 +32,9 @@ namespace System.Diagnostics
         /// run independently.
         /// </para>
         /// <para>
-        /// When none of the standard handles (<see cref="ProcessStartInfo.StandardInputHandle"/>,
+        /// When a standard handle (<see cref="ProcessStartInfo.StandardInputHandle"/>,
         /// <see cref="ProcessStartInfo.StandardOutputHandle"/>, or <see cref="ProcessStartInfo.StandardErrorHandle"/>)
-        /// are provided, the handles are redirected to the null file by default.
+        /// is not provided, it is redirected to the null file by default.
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("ios")]
