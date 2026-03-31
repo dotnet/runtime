@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -282,11 +283,75 @@ namespace System.Numerics
             return carry;
         }
 
-        private static nuint SubtractDivisor(Span<nuint> left, ReadOnlySpan<nuint> right, nuint q)
+        /// <summary>
+        /// Fused subtract-multiply by scalar: left[0..right.Length] -= right * multiplier.
+        /// Returns the borrow out. Unrolled by 4 on 64-bit.
+        /// </summary>
+        private static nuint SubtractDivisor(Span<nuint> left, ReadOnlySpan<nuint> right, nuint multiplier)
         {
             Debug.Assert(left.Length >= right.Length);
 
-            return SubMul1(left, right, q);
+            int i = 0;
+            nuint carry = 0;
+
+            if (nint.Size == 8)
+            {
+                for (; i + 3 < right.Length; i += 4)
+                {
+                    carry = SubtractMul(ref left[i], right[i], multiplier, carry);
+                    carry = SubtractMul(ref left[i + 1], right[i + 1], multiplier, carry);
+                    carry = SubtractMul(ref left[i + 2], right[i + 2], multiplier, carry);
+                    carry = SubtractMul(ref left[i + 3], right[i + 3], multiplier, carry);
+                }
+
+                for (; i < right.Length; i++)
+                {
+                    carry = SubtractMul(ref left[i], right[i], multiplier, carry);
+                }
+            }
+            else
+            {
+                for (; i < right.Length; i++)
+                {
+                    ulong product = (ulong)right[i] * multiplier + carry;
+                    uint lo = (uint)product;
+                    uint hi = (uint)(product >> 32);
+
+                    uint orig = (uint)left[i];
+                    left[i] = orig - lo;
+                    hi += (orig < lo) ? 1u : 0;
+
+                    carry = hi;
+                }
+            }
+
+            return carry;
+
+            static nuint SubtractMul(ref nuint left, nuint right, nuint multiplier, nuint addend)
+            {
+                if (nint.Size == 8)
+                {
+                    UInt128 prod = Math.BigMul(right, multiplier) + (ulong)addend;
+                    nuint lo = (nuint)(ulong)prod;
+                    nuint hi = (nuint)(ulong)(prod >> 64);
+                    hi += (left < lo) ? (nuint)1 : 0;
+                    left -= lo;
+                    return hi;
+                }
+                else
+                {
+                    ulong product = (ulong)right * multiplier + addend;
+                    uint lo = (uint)product;
+                    uint hi = (uint)(product >> 32);
+
+                    if (left < lo)
+                    {
+                        ++hi;
+                    }
+                    left -= lo;
+                    return hi;
+                }
+            }
         }
 
         private static bool DivideGuessTooBig(nuint q, nuint valHi1, nuint valHi0,
