@@ -16,4 +16,4 @@ internal static class DictionaryPolyfills
 
         return false;
     }
-}
+}

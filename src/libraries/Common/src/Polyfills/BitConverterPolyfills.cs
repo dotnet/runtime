@@ -24,4 +24,4 @@ internal static class BitConverterPolyfills
             }
         }
     }
-}
+}

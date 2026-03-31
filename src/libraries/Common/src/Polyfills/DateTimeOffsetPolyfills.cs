@@ -11,4 +11,4 @@ internal static class DateTimeOffsetPolyfills
         public int TotalOffsetMinutes =>
             (int)(value.Offset.Ticks / TimeSpan.TicksPerMinute);
     }
-}
+}

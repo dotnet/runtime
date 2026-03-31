@@ -11,4 +11,4 @@ internal static class KeyValuePairPolyfills
         key = source.Key;
         value = source.Value;
     }
-}
+}

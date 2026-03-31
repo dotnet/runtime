@@ -19,4 +19,4 @@ internal static class StopwatchPolyfills
         public static TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp) =>
             new((long)((endingTimestamp - startingTimestamp) * s_tickFrequency));
     }
-}
+}

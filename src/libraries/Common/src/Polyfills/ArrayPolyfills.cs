@@ -10,4 +10,4 @@ internal static class ArrayPolyfills
     {
         public static int MaxLength => 0x7FFFFFC7;
     }
-}
+}

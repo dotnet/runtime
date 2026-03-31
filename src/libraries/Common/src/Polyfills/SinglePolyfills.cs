@@ -17,4 +17,4 @@ internal static class SinglePolyfills
             return (~bits & 0x7F80_0000U) != 0;
         }
     }
-}
+}

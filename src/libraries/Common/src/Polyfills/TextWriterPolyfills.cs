@@ -11,4 +11,4 @@ internal static class TextWriterPolyfills
         public void Write(ReadOnlySpan<char> value) =>
             writer.Write(value.ToString());
     }
-}
+}

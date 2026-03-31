@@ -30,4 +30,4 @@ internal static class GuidPolyfills
             return true;
         }
     }
-}
+}

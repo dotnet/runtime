@@ -23,4 +23,4 @@ internal static class BitArrayPolyfills
             return true;
         }
     }
-}
+}

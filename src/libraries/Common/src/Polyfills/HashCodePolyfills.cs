@@ -21,4 +21,4 @@ internal static class HashCodePolyfills
             hashCode.Add(b);
         }
     }
-}
+}

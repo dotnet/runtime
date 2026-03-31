@@ -19,4 +19,4 @@ internal static class EnvironmentPolyfills
             }
         }
     }
-}
+}

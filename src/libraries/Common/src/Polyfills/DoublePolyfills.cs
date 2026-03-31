@@ -17,4 +17,4 @@ internal static class DoublePolyfills
             return ((ulong)~bits & 0x7FF0_0000_0000_0000UL) != 0;
         }
     }
-}
+}

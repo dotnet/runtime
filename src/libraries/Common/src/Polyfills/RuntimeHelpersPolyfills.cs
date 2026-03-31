@@ -31,4 +31,4 @@ internal static class RuntimeHelpersPolyfills
 #pragma warning restore SYSLIB0050
         }
     }
-}
+}

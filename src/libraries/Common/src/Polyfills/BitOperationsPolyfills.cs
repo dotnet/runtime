@@ -9,4 +9,4 @@ internal static class BitOperations
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint RotateLeft(uint value, int offset) => (value << offset) | (value >> (32 - offset));
-}
+}
