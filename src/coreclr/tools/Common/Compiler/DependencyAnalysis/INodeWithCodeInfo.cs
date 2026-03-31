@@ -8,12 +8,12 @@ namespace ILCompiler.DependencyAnalysis
     [Flags]
     public enum FrameInfoFlags
     {
-        Handler             = 0x01,
-        Filter              = 0x02,
+        Handler = 0x01,
+        Filter = 0x02,
 
-        HasEHInfo           = 0x04,
-        ReversePInvoke      = 0x08,
-        HasAssociatedData   = 0x10,
+        HasEHInfo = 0x04,
+        ReversePInvoke = 0x08,
+        HasAssociatedData = 0x10,
     }
 
     public struct FrameInfo : IEquatable<FrameInfo>
@@ -64,5 +64,11 @@ namespace ILCompiler.DependencyAnalysis
             HandlerOffset = handlerOffset;
             HandlerLength = handlerLength;
         }
+    }
+
+    public interface IArm64PacHijackInfoNode
+    {
+        bool HasPacHijackInfo { get; }
+        uint PacRetAddrLocationToEntrySpDelta { get; }
     }
 }

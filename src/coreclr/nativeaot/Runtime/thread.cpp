@@ -800,11 +800,14 @@ void Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHij
 void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction)
 {
     void** ppvRetAddrLocation;
+    uintptr_t spForPacSign = 0;
 
     frameIterator->CalculateCurrentMethodState();
+
     if (frameIterator->GetCodeManager()->GetReturnAddressHijackInfo(frameIterator->GetMethodInfo(),
         frameIterator->GetRegisterSet(),
-        &ppvRetAddrLocation))
+        &ppvRetAddrLocation,
+        &spForPacSign))
     {
         ASSERT(ppvRetAddrLocation != NULL);
 
@@ -838,7 +841,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
 #if defined(TARGET_ARM64)
         if (frameIterator->GetCodeManager()->IsPacPresent(frameIterator->GetMethodInfo(), frameIterator->GetRegisterSet()))
         {
-            pvHijackedAddr = PacSignPtr(pvHijackedAddr,  (void*)frameIterator->GetRegisterSet()->GetSP());
+            pvHijackedAddr = PacSignPtr(pvHijackedAddr, (void*)spForPacSign);
         }
 #endif // TARGET_ARM64
         *ppvRetAddrLocation = pvHijackedAddr;
