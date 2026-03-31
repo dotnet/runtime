@@ -637,7 +637,7 @@ DEFINE_FIELD(LOCK,                  RECURSION_COUNT,        _recursionCount)
 DEFINE_METHOD(LOCK,                 CTOR,                   .ctor,                IM_RetVoid)
 DEFINE_METHOD(LOCK,                 INITIALIZE_FOR_MONITOR, InitializeForMonitor, SM_PtrLock_Int_UInt_PtrException_RetVoid)
 
-#ifndef !FEATURE_MULTITHREADING
+#ifdef FEATURE_MULTITHREADING
 DEFINE_CLASS(CONDITION,             Threading,              Condition)
 DEFINE_FIELD(CONDITION,             WAITERS_HEAD,           _waitersHead)
 DEFINE_FIELD(CONDITION,             CURRENT_THREAD_WAITER,  t_waiterForCurrentThread)
