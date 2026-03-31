@@ -77,11 +77,6 @@ namespace Microsoft.Win32.SafeHandles
         {
             waitStateHolder = null;
 
-            if (ProcessUtils.PlatformDoesNotSupportProcessStartAndKill)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
             ProcessUtils.EnsureInitialized();
 
             if (startInfo.UseShellExecute)
