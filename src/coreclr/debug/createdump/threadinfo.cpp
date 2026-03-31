@@ -186,10 +186,10 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess, ISOSDacInterface* pS
                     ReleaseHolder<IXCLRDataTypeInstance> pExceptionType;
                     if (SUCCEEDED(pExceptionValue->GetType(&pExceptionType)))
                     {
-                        ArrayHolder<WCHAR> typeName = new WCHAR[MAX_LONGPATH + 1];
-                        if (SUCCEEDED(pExceptionType->GetName(0, MAX_LONGPATH, nullptr, typeName.GetPtr())))
+                        WStringHolder typeName = new WCHAR[MAX_LONGPATH + 1];
+                        if (SUCCEEDED(pExceptionType->GetName(0, MAX_LONGPATH, nullptr, typeName)))
                         {
-                            m_exceptionType = ConvertString(typeName.GetPtr());
+                            m_exceptionType = ConvertString(typeName);
                             TRACE("Unwind: exception type %s\n", m_exceptionType.c_str());
                         }
                     }
