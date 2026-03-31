@@ -201,11 +201,42 @@ namespace System.Numerics
             }
         }
 
+        /// <summary>
+        /// Multiply by scalar: bits[0..left.Length] = left * right.
+        /// Returns the carry out. Unrolled by 4 on 64-bit.
+        /// </summary>
         public static void Multiply(ReadOnlySpan<nuint> left, nuint right, Span<nuint> bits)
         {
             Debug.Assert(bits.Length == left.Length + 1);
 
-            nuint carry = Mul1(bits, left, right);
+            int i = 0;
+            nuint carry = 0;
+
+            if (nint.Size == 8)
+            {
+                for (; i + 3 < left.Length; i += 4)
+                {
+                    carry = MulAdd(left[i ], right, carry, out bits[i ]);
+                    carry = MulAdd(left[i + 1], right, carry, out bits[i + 1]);
+                    carry = MulAdd(left[i + 2], right, carry, out bits[i + 2]);
+                    carry = MulAdd(left[i + 3], right, carry, out bits[i + 3]);
+                }
+
+                for (; i < left.Length; i++)
+                {
+                    carry = MulAdd(left[i], right, carry, out bits[i]);
+                }
+            }
+            else
+            {
+                for (; i < left.Length; i++)
+                {
+                    ulong product = (ulong)left[i] * right + carry;
+                    bits[i] = (uint)product;
+                    carry = (uint)(product >> 32);
+                }
+            }
+
             bits[left.Length] = carry;
         }
 

@@ -233,57 +233,6 @@ namespace System.Numerics
                 return (uint)(p >> 32);
             }
         }
-        /// <summary>
-        /// Multiply by scalar: result[0..left.Length] = left * multiplier.
-        /// Returns the carry out. Unrolled by 4 on 64-bit.
-        /// Unlike MulAdd1, this writes to result rather than accumulating.
-        /// </summary>
-        internal static nuint Mul1(Span<nuint> result, ReadOnlySpan<nuint> left, nuint multiplier)
-        {
-            Debug.Assert(result.Length >= left.Length);
-
-            int length = left.Length;
-            int i = 0;
-            nuint carry = 0;
-
-            if (nint.Size == 8)
-            {
-                for (; i + 3 < length; i += 4)
-                {
-                    UInt128 p0 = (UInt128)(ulong)left[i] * (ulong)multiplier + (ulong)carry;
-                    result[i] = (nuint)(ulong)p0;
-
-                    UInt128 p1 = (UInt128)(ulong)left[i + 1] * (ulong)multiplier + (ulong)(p0 >> 64);
-                    result[i + 1] = (nuint)(ulong)p1;
-
-                    UInt128 p2 = (UInt128)(ulong)left[i + 2] * (ulong)multiplier + (ulong)(p1 >> 64);
-                    result[i + 2] = (nuint)(ulong)p2;
-
-                    UInt128 p3 = (UInt128)(ulong)left[i + 3] * (ulong)multiplier + (ulong)(p2 >> 64);
-                    result[i + 3] = (nuint)(ulong)p3;
-
-                    carry = (nuint)(ulong)(p3 >> 64);
-                }
-
-                for (; i < length; i++)
-                {
-                    UInt128 product = (UInt128)(ulong)left[i] * (ulong)multiplier + (ulong)carry;
-                    result[i] = (nuint)(ulong)product;
-                    carry = (nuint)(ulong)(product >> 64);
-                }
-            }
-            else
-            {
-                for (; i < length; i++)
-                {
-                    ulong product = (ulong)left[i] * multiplier + carry;
-                    result[i] = (uint)product;
-                    carry = (uint)(product >> 32);
-                }
-            }
-
-            return carry;
-        }
 
         /// <summary>
         /// Fused multiply-accumulate by scalar: result[0..left.Length] += left * multiplier.
