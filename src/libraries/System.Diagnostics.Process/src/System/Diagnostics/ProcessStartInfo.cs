@@ -237,7 +237,10 @@ namespace System.Diagnostics
             get;
             set
             {
-                SafeProcessHandle.EnsureShellExecuteFunc();
+                if (value)
+                {
+                    SafeProcessHandle.EnsureShellExecuteFunc();
+                }
                 field = value;
             }
         }
