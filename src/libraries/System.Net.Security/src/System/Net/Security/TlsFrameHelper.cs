@@ -435,6 +435,11 @@ namespace System.Net.Security
                 return true;
             }
 
+            if (p.Length < sizeof(ushort))
+            {
+                return false;
+            }
+
             // client_hello_extension_list (max size 2^16-1 => size fits in 2 bytes)
             int extensionListLength = BinaryPrimitives.ReadUInt16BigEndian(p);
             p = SkipBytes(p, sizeof(ushort));
@@ -469,6 +474,11 @@ namespace System.Net.Security
 
             // is invalid structure or no extensions?
             if (p.IsEmpty)
+            {
+                return false;
+            }
+
+            if (p.Length < sizeof(ushort))
             {
                 return false;
             }
@@ -616,6 +626,12 @@ namespace System.Net.Security
             const int HostNameLengthOffset = 0;
             const int HostNameOffset = HostNameLengthOffset + sizeof(ushort);
 
+            if (hostNameStruct.Length < HostNameOffset)
+            {
+                invalid = true;
+                return null;
+            }
+
             int hostNameLength = BinaryPrimitives.ReadUInt16BigEndian(hostNameStruct);
             ReadOnlySpan<byte> hostName = hostNameStruct.Slice(HostNameOffset);
             if (hostNameLength != hostName.Length)
@@ -644,6 +660,11 @@ namespace System.Net.Security
             const int VersionLength = 2;
 
             protocols = SslProtocols.None;
+
+            if (extensionData.IsEmpty)
+            {
+                return false;
+            }
 
             byte supportedVersionLength = extensionData[VersionListLengthOffset];
             extensionData = extensionData.Slice(VersionListNameOffset);
