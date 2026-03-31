@@ -102,7 +102,7 @@ namespace System.Diagnostics
             }
 
             EnsureRemoteMachineFuncs();
-            ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName, true);
+            ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
             if (string.IsNullOrEmpty(processNameFilter))
             {
                 return processInfos;
@@ -201,7 +201,7 @@ namespace System.Diagnostics
             }
 
             EnsureRemoteMachineFuncs();
-            ProcessInfo[] infos = s_getRemoteProcessInfos!(machineName, true);
+            ProcessInfo[] infos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
             int[] ids = new int[infos.Length];
             for (int i = 0; i < infos.Length; i++) ids[i] = infos[i].ProcessId;
             return ids;
