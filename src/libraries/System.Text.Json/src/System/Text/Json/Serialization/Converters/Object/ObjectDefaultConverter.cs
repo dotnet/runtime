@@ -12,6 +12,12 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Default base class implementation of <cref>JsonObjectConverter{T}</cref>.
     /// </summary>
+    /// <remarks>
+    /// Aspects of the property reading and deserialization logic in this converter are
+    /// duplicated in <see cref="FSharpUnionConverter{T}"/>. If any behavior is changed here
+    /// (e.g. unmapped member handling, required properties, metadata processing),
+    /// the union converter should also be updated for parity.
+    /// </remarks>
     internal class ObjectDefaultConverter<T> : JsonObjectConverter<T> where T : notnull
     {
         internal override bool CanHaveMetadata => true;
