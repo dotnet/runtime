@@ -17,6 +17,13 @@ Types from other contracts:
 
 ## Version 1
 
+When the PE image is not readable from target memory (e.g., heap dumps where PE
+read-only sections are absent), `GetMetadata` falls back to
+`Target.TryLocateReadOnlyMetadata`. This virtual method allows hosts to provide
+metadata from an external source such as the PE file on disk, mirroring the legacy
+DAC's `ICLRMetadataLocator` pattern. `GetReadOnlyMetadataAddress` does not use this
+fallback — it always reads from target memory.
+
 
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
@@ -61,10 +68,24 @@ MetadataReader? GetMetadata(ModuleHandle handle)
             return null;
         case AvailableMetadataType.ReadOnly:
         {
-            TargetSpan address = GetReadOnlyMetadataAddress(handle);
-            byte[] data = new byte[address.Size];
-            _target.ReadBuffer(address.Address, data);
-            return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data)).GetMetadataReader();
+            try
+            {
+                TargetSpan address = GetReadOnlyMetadataAddress(handle);
+                byte[] data = new byte[address.Size];
+                _target.ReadBuffer(address.Address, data);
+                return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data)).GetMetadataReader();
+            }
+            catch (VirtualReadException)
+            {
+                // PE image not readable from target memory (e.g., heap dump).
+                // Fall back to host-provided metadata locator.
+                string? modulePath = GetModulePath(handle);
+                if (_target.TryLocateReadOnlyMetadata(modulePath, out byte[] metadata) && metadata.Length > 0)
+                {
+                    return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(metadata)).GetMetadataReader();
+                }
+                return null;
+            }
         }
         case AvailableMetadataType.ReadWriteSavedCopy:
         {

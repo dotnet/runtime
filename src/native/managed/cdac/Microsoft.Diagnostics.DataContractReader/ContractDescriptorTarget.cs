@@ -57,7 +57,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <returns><c>true</c> if metadata was located; <c>false</c> otherwise.</returns>
     public delegate bool GetReadOnlyMetadataDelegate(string? modulePath, out byte[] metadata);
 
-    private static readonly UTF8Encoding strictUTF8Encoding= new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+    private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
     private static readonly UTF8Encoding looseUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
 
     /// <summary>

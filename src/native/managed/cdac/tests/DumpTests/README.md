@@ -29,20 +29,36 @@ features and then calls `Environment.FailFast()` to produce a crash dump.
 | BasicThreads | Thread management, thread store | Heap |
 | GCRoots | GC object graphs, pinned handles | Heap |
 | ServerGC | Server GC mode heap structures | Heap |
-| StackWalk | Deterministic call stack (Main→A→B→C→FailFast) | Full |
+| StackWalk | Deterministic call stack (Main→A→B→C→FailFast) | Heap |
 | MultiModule | Multi-assembly metadata resolution | Full |
 | TypeHierarchy | Type inheritance, method tables | Heap |
-| PInvokeStub | P/Invoke with SetLastError ILStub | Full |
-| VarargPInvoke | Vararg P/Invoke via __arglist (sprintf) | Full |
-| SyncBlock | Sync block locks | Full |
-| CCW | COM callable wrappers (CCW) on Windows | Full |
-| RCWCleanupList | STA-context RCW entries in g_pRCWCleanupList on Windows | Full |
-| RCW | COM RCW with populated interface entry cache on Windows | Full |
-| ComWrappers | ComWrappers-based MOW and RCW | Full |
+| PInvokeStub | P/Invoke with SetLastError ILStub | Heap |
+| VarargPInvoke | Vararg P/Invoke via __arglist (sprintf) | Heap |
+| SyncBlock | Sync block locks | Heap |
+| CCW | COM callable wrappers (CCW) on Windows | Heap |
+| RCWCleanupList | STA-context RCW entries in g_pRCWCleanupList on Windows | Heap |
+| RCW | COM RCW with populated interface entry cache on Windows | Heap |
+| ComWrappers | ComWrappers-based MOW and RCW | Heap |
 
 The dump type is configured per-debuggee via the `DumpTypes` property in each debuggee's
-`.csproj` (default: `Heap`, set in `Debuggees/Directory.Build.props`). Debuggees that
-need full memory content (e.g., metadata-heavy scenarios) override this to `Full`.
+`.csproj` (default: `Heap`, set in `Debuggees/Directory.Build.props`). Most tests use
+heap dumps, which are 4-6x smaller than full dumps. A few debuggees use full dumps
+because their tests read R2R PE section data that is inherently absent from heap dumps.
+
+### Metadata Locator Callback
+
+Heap dumps (`MiniDumpWithPrivateReadWriteMemory`) do not include PE read-only sections,
+so the cDAC cannot read ECMA-335 metadata directly from target memory. To support
+metadata resolution on heap dumps, the `Target` class exposes a
+`TryLocateReadOnlyMetadata` virtual method that hosts can override to provide metadata
+from an external source (e.g., the PE file on disk).
+
+`ClrMdDumpHost` implements this callback by:
+1. Trying the module's on-disk path directly (works for local dumps)
+2. Falling back to ClrMD's `IFileLocator.FindPEImage` for symbol server resolution
+
+This mirrors the legacy DAC's `ICLRMetadataLocator` pattern, where the debugger host
+(SOS, Visual Studio) locates PE files via symbol servers when metadata is not in the dump.
 
 ### Test Classes
 
