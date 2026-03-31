@@ -1304,6 +1304,11 @@ namespace System.Text.Json.SourceGeneration
                     out bool isGetterNonNullable,
                     out bool isSetterNonNullable);
 
+                if (hasJsonIncludeButIsInaccessible)
+                {
+                    ReportDiagnostic(DiagnosticDescriptors.InaccessibleJsonIncludePropertiesNotSupported, memberInfo.GetLocation(), declaringType.Name, memberInfo.Name);
+                }
+
                 if (isExtensionData)
                 {
                     if (typeHasExtensionDataProperty)

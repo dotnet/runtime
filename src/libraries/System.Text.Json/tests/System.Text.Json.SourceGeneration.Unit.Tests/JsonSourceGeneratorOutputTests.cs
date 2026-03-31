@@ -272,7 +272,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         private int Age { get; set; }
                     }
                 }
-                """, nameof(UnsafeAccessors_PrivateProperties));
+                """, nameof(UnsafeAccessors_PrivateProperties), disableDiagnosticValidation: true);
         }
 
         [Fact]
@@ -335,10 +335,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         /// generated file matches the corresponding baseline in
         /// <c>Baselines/{testId}/{tfm}/{hintName}.cs.txt</c>.
         /// </summary>
-        private void VerifyAgainstBaseline(string source, string testId)
+        private void VerifyAgainstBaseline(string source, string testId, bool disableDiagnosticValidation = false)
         {
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: disableDiagnosticValidation, logger: logger);
 
             var inputPaths = new HashSet<string>(compilation.SyntaxTrees.Select(t => t.FilePath));
             List<SyntaxTree> generatedTrees = result.NewCompilation.SyntaxTrees
