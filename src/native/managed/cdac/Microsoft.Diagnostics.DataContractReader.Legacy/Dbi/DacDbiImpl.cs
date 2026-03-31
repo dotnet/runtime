@@ -1081,9 +1081,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             pHeapInfo->pointerSize = (uint)_target.PointerSize;
 
             string[] identifiers = gc.GetGCIdentifiers();
-            bool isServer = System.Array.Exists(identifiers, static id => id == "server");
+            bool isServer = identifiers.Contains(GCIdentifiers.Server);
             pHeapInfo->gcType = isServer ? 1 : 0; // CorDebugServerGC = 1, CorDebugWorkstationGC = 0
-            pHeapInfo->concurrent = System.Array.Exists(identifiers, static id => id == "background") ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            pHeapInfo->concurrent = identifiers.Contains(GCIdentifiers.Background) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
