@@ -373,10 +373,6 @@ namespace ILCompiler.ObjectWriter
         {
             List<WebcilSection> webcilSections = _sections.OfType<WebcilSection>().ToList();
 
-            // The reloc section is not materialized as a section in parent object writer, so we add it here.
-            WebcilSection relocSection = new WebcilSection(WebcilSectionType.Reloc, new Utf8String("reloc"), default(WebcilSectionHeader), new MemoryStream(), _sections.Count + 1);
-            webcilSections.Add(relocSection);
-
             uint sizeOfHeaders = (uint)WebcilEncoder.HeaderEncodeSize() + (uint)(webcilSections.Count * WebcilEncoder.SectionHeaderEncodeSize());
             uint pointerToRawData = (uint)AlignmentHelper.AlignUp((int)sizeOfHeaders, (int)WebcilSectionAlignment);
             uint virtualAddress = pointerToRawData;
@@ -586,8 +582,35 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-       
         private static ObjectNodeSection WebcilRelocSection = new ObjectNodeSection("reloc", SectionType.ReadOnly);
+        private void EmitRelocSectionData()
+        {
+            var writer = GetOrCreateSection(WebcilRelocSection);
+            Debug.Assert(writer.SectionIndex == _sections.Count - 1, "The .reloc section must be the last section we emit.");
+
+            foreach (var kv in _baseRelocMap)
+            {
+                uint pageRva = kv.Key;
+                List<ushort> entries = kv.Value;
+                entries.Sort();
+
+                int entriesSize = entries.Count * 2;
+                int sizeOfBlock = 8 + entriesSize;
+                sizeOfBlock = AlignmentHelper.AlignUp(sizeOfBlock, 4);
+
+                writer.WriteLittleEndian(pageRva);
+                writer.WriteLittleEndian((uint)sizeOfBlock);
+
+                // Emit entries
+                foreach (ushort e in entries)
+                {
+                    writer.WriteLittleEndian(e);
+                }
+
+                // Ensure block is 4-byte aligned
+                writer.EmitAlignment(4);
+            }
+        }
 
         private PaddingHelper _paddingHelper = new PaddingHelper(WebcilSectionAlignment);
 
@@ -696,7 +719,7 @@ namespace ILCompiler.ObjectWriter
 
         Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
         Dictionary<int, List<SymbolicRelocation>> _runtimeRelocations = new();
-        Dictionary<uint, List<ushort>> _baseRelocsMap = new();
+        Dictionary<uint, List<ushort>> _baseRelocMap = new();
 
         // We group webcil relocs into 4kb blocks, similar to PE
         const uint WebcilRelocPageSize = 0x1000;
@@ -729,10 +752,10 @@ namespace ILCompiler.ObjectWriter
                     ushort offsetInPage = (ushort)(targetRva & (WebcilRelocPageSize - 1));
                     ushort entry = (ushort)(((ushort)fileRelocType << 12) | offsetInPage);
 
-                    if (!_baseRelocsMap.TryGetValue(pageRva, out List<ushort> list))
+                    if (!_baseRelocMap.TryGetValue(pageRva, out List<ushort> list))
                     {
                         list = new List<ushort>();
-                        _baseRelocsMap.Add(pageRva, list);
+                        _baseRelocMap.Add(pageRva, list);
                     }
                     list.Add(entry);
                 }

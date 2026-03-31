@@ -63,10 +63,10 @@ namespace ILCompiler.ObjectWriter
 
             // The Webcil spec requires little-endian encoding
             BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(0, 4), (uint)sectionHeader.SectionType);
-            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(4, 8), sectionHeader.VirtualSize);
-            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(8, 12), sectionHeader.VirtualAddress);
-            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(12, 16), sectionHeader.SizeOfRawData);
-            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(16, 20), sectionHeader.PointerToRawData);
+            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(4, 4), sectionHeader.VirtualSize);
+            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(8, 4), sectionHeader.VirtualAddress);
+            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(12, 4), sectionHeader.SizeOfRawData);
+            BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(16, 4), sectionHeader.PointerToRawData);
 
             outputStream.Write(header);
 
