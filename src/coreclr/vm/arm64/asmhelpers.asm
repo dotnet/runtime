@@ -63,10 +63,6 @@
     IMPORT $g_GCShadowEnd
 #endif // WRITE_BARRIER_CHECK
 
-#ifdef FEATURE_COMINTEROP
-    IMPORT CLRToCOMWorker
-#endif // FEATURE_COMINTEROP
-
     IMPORT JIT_WriteBarrier_Table_Loc
     IMPORT JIT_WriteBarrier_Loc
 

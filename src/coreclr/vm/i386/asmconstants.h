@@ -179,12 +179,6 @@ ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD));
 
 #endif
 
-#define CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo DBG_FRE(0x20, 0xC)
-ASMCONSTANTS_C_ASSERT(CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo == offsetof(CLRToCOMCallMethodDesc, m_pCLRToCOMCallInfo))
-
-#define CLRToCOMCallInfo__m_cbStackPop 0x0e
-ASMCONSTANTS_C_ASSERT(CLRToCOMCallInfo__m_cbStackPop == offsetof(CLRToCOMCallInfo, m_cbStackPop))
-
 #define COMMETHOD_PREPAD_ASM  8
 ASMCONSTANTS_C_ASSERT(COMMETHOD_PREPAD_ASM == COMMETHOD_PREPAD)
 
