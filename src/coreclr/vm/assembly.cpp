@@ -1188,26 +1188,16 @@ static void RunMainInternal(Param* pParam)
         *pParam->piRetVal = 0;
     }
 
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions))
-    {
-        UnmanagedCallersOnlyCaller callEntryPointWithCatch(METHOD__ENVIRONMENT__CALL_ENTRY_POINT_WITH_CATCH);
-        callEntryPointWithCatch.InvokeThrowing(
-            static_cast<INT_PTR>(entryPoint),
-            &StrArgArray,
-            CLR_BOOL_ARG(hasArgument),
-            CLR_BOOL_ARG(hasReturnValue),
-            pParam->piRetVal);
-    }
-    else
-    {
-        UnmanagedCallersOnlyCaller callEntryPoint(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
-        callEntryPoint.InvokeUnhandled(
-            static_cast<INT_PTR>(entryPoint),
-            &StrArgArray,
-            CLR_BOOL_ARG(hasArgument),
-            CLR_BOOL_ARG(hasReturnValue),
-            pParam->piRetVal);
-    }
+    BOOL propagateExceptions = !CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions);
+
+    UnmanagedCallersOnlyCaller callEntryPoint(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
+    callEntryPoint.InvokeUnhandled(
+        static_cast<INT_PTR>(entryPoint),
+        &StrArgArray,
+        CLR_BOOL_ARG(hasArgument),
+        CLR_BOOL_ARG(hasReturnValue),
+        pParam->piRetVal,
+        CLR_BOOL_ARG(propagateExceptions));
 
     if (hasReturnValue)
     {

@@ -138,53 +138,37 @@ namespace System
         [UnmanagedCallersOnly]
         [StackTraceHidden]
         [RequiresUnsafe]
-        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue)
-        {
-            CallEntryPointImpl(entryPoint, pArgument, hasArgument, hasReturnValue, pReturnValue);
-        }
-
-        [UnmanagedCallersOnly]
-        [StackTraceHidden]
-        [RequiresUnsafe]
-        internal static unsafe void CallEntryPointWithCatch(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue, Exception* pException)
+        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue, bool propagateExceptions)
         {
             try
             {
-                CallEntryPointImpl(entryPoint, pArgument, hasArgument, hasReturnValue, pReturnValue);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
+                string[]? argument = pArgument is not null ? *pArgument : null;
 
-        [StackTraceHidden]
-        [RequiresUnsafe]
-        private static unsafe void CallEntryPointImpl(IntPtr entryPoint, string[]* pArgument, bool hasArgument, bool hasReturnValue, int* pReturnValue)
-        {
-            string[]? argument = pArgument is not null ? *pArgument : null;
-
-            if (hasArgument)
-            {
-                if (hasReturnValue)
+                if (hasArgument)
                 {
-                    *pReturnValue = ((delegate*<string[]?, int>)entryPoint)(argument);
+                    if (hasReturnValue)
+                    {
+                        *pReturnValue = ((delegate*<string[]?, int>)entryPoint)(argument);
+                    }
+                    else
+                    {
+                        ((delegate*<string[]?, void>)entryPoint)(argument);
+                    }
                 }
                 else
                 {
-                    ((delegate*<string[]?, void>)entryPoint)(argument);
+                    if (hasReturnValue)
+                    {
+                        *pReturnValue = ((delegate*<int>)entryPoint)();
+                    }
+                    else
+                    {
+                        ((delegate*<void>)entryPoint)();
+                    }
                 }
             }
-            else
+            catch (Exception) when (!propagateExceptions)
             {
-                if (hasReturnValue)
-                {
-                    *pReturnValue = ((delegate*<int>)entryPoint)();
-                }
-                else
-                {
-                    ((delegate*<void>)entryPoint)();
-                }
             }
         }
 
