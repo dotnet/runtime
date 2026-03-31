@@ -42,6 +42,17 @@ namespace ILCompiler.DependencyAnalysis
                         context.MetadataTypeSymbol(targetType),
                         context.NecessaryTypeSymbol(trimmingTargetType),
                         "Type in external type map is cast target");
+
+                    // If the key type has a canonical form, it could be created at runtime by the type loader.
+                    // If there is a type loader template for it, create the generic type instantiation eagerly.
+                    TypeDesc canonKey = trimmingTargetType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    if (canonKey != trimmingTargetType)
+                    {
+                        yield return new CombinedDependencyListEntry(
+                            context.NecessaryTypeSymbol(trimmingTargetType),
+                            context.NativeLayout.TemplateTypeLayout(canonKey),
+                            "External type map entry that could be loaded at runtime");
+                    }
                 }
             }
         }
