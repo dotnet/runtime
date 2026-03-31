@@ -9,22 +9,49 @@
 #include <runtime_version.h>
 #include <minipal/utils.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifndef _X
 #define _X(s) s
+#endif
+#ifndef _STRINGIFY
 #define _STRINGIFY(s) _X(s)
+#endif
 
+#ifndef DOTNET_CORE_DOWNLOAD_URL
 #define DOTNET_CORE_DOWNLOAD_URL _X("https://aka.ms/dotnet/download")
+#endif
+#ifndef DOTNET_CORE_APPLAUNCH_URL
 #define DOTNET_CORE_APPLAUNCH_URL _X("https://aka.ms/dotnet-core-applaunch")
+#endif
 
+#ifndef DOTNET_INFO_URL
 #define DOTNET_INFO_URL _X("https://aka.ms/dotnet/info")
+#endif
+#ifndef DOTNET_APP_LAUNCH_FAILED_URL
 #define DOTNET_APP_LAUNCH_FAILED_URL _X("https://aka.ms/dotnet/app-launch-failed")
+#endif
+#ifndef DOTNET_SDK_NOT_FOUND_URL
 #define DOTNET_SDK_NOT_FOUND_URL _X("https://aka.ms/dotnet/sdk-not-found")
+#endif
 
+#ifndef INSTALL_OR_UPDATE_NET_ERROR_MESSAGE
 #define INSTALL_OR_UPDATE_NET_ERROR_MESSAGE _X("You must install or update .NET to run this application.")
+#endif
+#ifndef INSTALL_NET_ERROR_MESSAGE
 #define INSTALL_NET_ERROR_MESSAGE _X("You must install .NET to run this application.")
+#endif
+#ifndef INSTALL_NET_DESKTOP_ERROR_MESSAGE
 #define INSTALL_NET_DESKTOP_ERROR_MESSAGE _X("You must install .NET Desktop Runtime to run this application.")
+#endif
 
+#ifndef DOC_LINK_INTRO
 #define DOC_LINK_INTRO _X("Learn more:")
+#endif
 
+#ifndef MISSING_RUNTIME_ERROR_FORMAT
 #define MISSING_RUNTIME_ERROR_FORMAT \
     _X("%s\n\n")                                \
     _X("App: %s\n")                             \
@@ -37,13 +64,22 @@
     _X("\n\n")                                  \
     _X("Download the .NET runtime:\n")          \
     _X("%s&apphost_version=%s")
+#endif
 
+#ifndef DOTNET_ROOT_ENV_VAR
 #define DOTNET_ROOT_ENV_VAR _X("DOTNET_ROOT")
+#endif
 
+#ifndef _TEXT
 #define _TEXT(x) #x
+#endif
+#ifndef _QUOTE
 #define _QUOTE(x) _TEXT(x)
+#endif
 
+#ifndef HOST_VERSION
 #define HOST_VERSION _QUOTE(RuntimeProductVersion)
+#endif
 
 // Path buffer size
 #define APPHOST_PATH_MAX 4096
@@ -90,5 +126,9 @@ void utils_get_runtime_id(char* out_rid, size_t out_rid_len);
 
 // Get the dotnet root env var name for the current architecture.
 void utils_get_dotnet_root_env_var_for_arch(char* out_name, size_t out_name_len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // APPHOST_UTILS_H

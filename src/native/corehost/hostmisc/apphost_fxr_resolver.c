@@ -62,8 +62,8 @@ static bool get_latest_fxr(const char* fxr_root, char* out_fxr_path, size_t out_
 
     pal_readdir_onlydirectories(fxr_root, collect_directory_entry, &ctx);
 
-    fx_ver_t max_ver;
-    fx_ver_init(&max_ver);
+    c_fx_ver_t max_ver;
+    c_fx_ver_init(&max_ver);
 
     uint32_t count = dn_vector_size(dir_entries);
     for (uint32_t i = 0; i < count; i++)
@@ -76,10 +76,10 @@ static bool get_latest_fxr(const char* fxr_root, char* out_fxr_path, size_t out_
         char ver_name[256];
         utils_get_filename(dir_path, ver_name, sizeof(ver_name));
 
-        fx_ver_t fx_ver;
-        if (fx_ver_parse(ver_name, &fx_ver, false))
+        c_fx_ver_t fx_ver;
+        if (c_fx_ver_parse(ver_name, &fx_ver, false))
         {
-            if (fx_ver_is_empty(&max_ver) || fx_ver_compare(&fx_ver, &max_ver) > 0)
+            if (c_fx_ver_is_empty(&max_ver) || c_fx_ver_compare(&fx_ver, &max_ver) > 0)
                 max_ver = fx_ver;
         }
     }
@@ -92,14 +92,14 @@ static bool get_latest_fxr(const char* fxr_root, char* out_fxr_path, size_t out_
     }
     dn_vector_free(dir_entries);
 
-    if (fx_ver_is_empty(&max_ver))
+    if (c_fx_ver_is_empty(&max_ver))
     {
         trace_error("Error: [%s] does not contain any version-numbered child folders", fxr_root);
         return false;
     }
 
     char max_ver_str[128];
-    fx_ver_as_str(&max_ver, max_ver_str, sizeof(max_ver_str));
+    c_fx_ver_as_str(&max_ver, max_ver_str, sizeof(max_ver_str));
 
     char fxr_dir[APPHOST_PATH_MAX];
     size_t root_len = strlen(fxr_root);

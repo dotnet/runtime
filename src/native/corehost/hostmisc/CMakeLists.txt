@@ -6,6 +6,7 @@ include(configure.cmake)
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/apphost_trace.c
+    ${CMAKE_CURRENT_LIST_DIR}/apphost_fx_ver.c
     ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.cpp
     ${CLR_SRC_NATIVE_DIR}/minipal/mutex.c
@@ -28,6 +29,8 @@ if(CLR_CMAKE_TARGET_WIN32)
         ${CMAKE_CURRENT_LIST_DIR}/longfile.h)
 else()
     list(APPEND SOURCES
+        ${CMAKE_CURRENT_LIST_DIR}/apphost_pal.c
+        ${CMAKE_CURRENT_LIST_DIR}/apphost_utils.c
         ${CMAKE_CURRENT_LIST_DIR}/pal.unix.cpp)
 endif()
 

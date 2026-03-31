@@ -8,6 +8,7 @@
 #include <_version.h>
 #else
 #include <_version.c>
+#include "apphost_utils.h"
 #endif
 
 bool file_exists_in_dir(const pal::string_t& dir, const pal::char_t* file_name, pal::string_t* out_file_path)
@@ -246,17 +247,28 @@ const pal::char_t* get_arch_name(pal::architecture arch)
 
 const pal::char_t* get_current_arch_name()
 {
+#if !defined(TARGET_WINDOWS)
+    // On non-Windows, pal::char_t == char, so we can delegate directly to the C implementation
+    return utils_get_current_arch_name();
+#else
     assert(pal::strcmp(get_arch_name(get_current_arch()), _STRINGIFY(CURRENT_ARCH_NAME)) == 0);
     return _STRINGIFY(CURRENT_ARCH_NAME);
+#endif
 }
 
 pal::string_t get_runtime_id()
 {
+#if !defined(TARGET_WINDOWS)
+    char rid[256];
+    utils_get_runtime_id(rid, sizeof(rid));
+    return pal::string_t(rid);
+#else
     pal::string_t rid;
     if (try_get_runtime_id_from_env(rid))
         return rid;
 
     return _STRINGIFY(HOST_RID_PLATFORM) _X("-") _STRINGIFY(CURRENT_ARCH_NAME);
+#endif
 }
 
 bool try_get_runtime_id_from_env(pal::string_t& out_rid)
@@ -358,7 +370,13 @@ bool try_stou(const pal::string_t& str, unsigned* num)
 
 pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch)
 {
+#if !defined(TARGET_WINDOWS)
+    char name[256];
+    utils_get_dotnet_root_env_var_for_arch(name, sizeof(name));
+    return pal::string_t(name);
+#else
     return DOTNET_ROOT_ENV_VAR _X("_") + to_upper(get_arch_name(arch));
+#endif
 }
 
 bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)
@@ -487,18 +505,9 @@ pal::string_t get_host_version_description()
 #if defined(TARGET_WINDOWS)
     return _STRINGIFY(VER_PRODUCTVERSION_STR);
 #else
-    pal::string_t info {_STRINGIFY(HOST_VERSION)};
-
-    // sccsid is @(#)Version <file_version> [@Commit: <commit_hash>]
-    // Get the commit portion if available
-    char* commit_maybe = ::strchr(&sccsid[STRING_LENGTH("@(#)Version ")], '@');
-    if (commit_maybe != nullptr)
-    {
-        info.append(" ");
-        info.append(commit_maybe);
-    }
-
-    return info;
+    char desc[512];
+    utils_get_host_version_description(desc, sizeof(desc));
+    return pal::string_t(desc);
 #endif
 }
 

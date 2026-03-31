@@ -24,6 +24,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define DIR_SEPARATOR '/'
 #define DIR_SEPARATOR_STR "/"
 #define PATH_SEPARATOR ':'
@@ -89,5 +93,9 @@ void pal_readdir_onlydirectories(const char* path, pal_readdir_callback_fn callb
 bool pal_get_dotnet_self_registered_dir(char* recv, size_t recv_len);
 bool pal_get_default_installation_dir(char* recv, size_t recv_len);
 const char* pal_get_dotnet_self_registered_config_location(char* buf, size_t buf_len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // APPHOST_PAL_H

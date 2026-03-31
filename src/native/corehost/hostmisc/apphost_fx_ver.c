@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <ctype.h>
 
-void fx_ver_init(fx_ver_t* ver)
+void c_fx_ver_init(c_fx_ver_t* ver)
 {
     ver->major = -1;
     ver->minor = -1;
@@ -18,7 +18,7 @@ void fx_ver_init(fx_ver_t* ver)
     ver->build[0] = '\0';
 }
 
-void fx_ver_set(fx_ver_t* ver, int major, int minor, int patch)
+void c_fx_ver_set(c_fx_ver_t* ver, int major, int minor, int patch)
 {
     ver->major = major;
     ver->minor = minor;
@@ -27,12 +27,12 @@ void fx_ver_set(fx_ver_t* ver, int major, int minor, int patch)
     ver->build[0] = '\0';
 }
 
-bool fx_ver_is_empty(const fx_ver_t* ver)
+bool c_fx_ver_is_empty(const c_fx_ver_t* ver)
 {
     return ver->major == -1;
 }
 
-char* fx_ver_as_str(const fx_ver_t* ver, char* out_str, size_t out_str_len)
+char* c_fx_ver_as_str(const c_fx_ver_t* ver, char* out_str, size_t out_str_len)
 {
     int written;
     if (ver->pre[0] != '\0' && ver->build[0] != '\0')
@@ -158,7 +158,7 @@ static bool valid_identifiers(const char* ids)
     return true;
 }
 
-static bool parse_internal(const char* ver_str, fx_ver_t* out_ver, bool parse_only_production)
+static bool parse_internal(const char* ver_str, c_fx_ver_t* out_ver, bool parse_only_production)
 {
     size_t ver_len = strlen(ver_str);
     if (ver_len == 0)
@@ -203,7 +203,7 @@ static bool parse_internal(const char* ver_str, fx_ver_t* out_ver, bool parse_on
         if (pat_len > 1 && pat_start[0] == '0')
             return false;
 
-        fx_ver_set(out_ver, (int)major_val, (int)minor_val, (int)patch_val);
+        c_fx_ver_set(out_ver, (int)major_val, (int)minor_val, (int)patch_val);
         return true;
     }
 
@@ -253,15 +253,15 @@ static bool parse_internal(const char* ver_str, fx_ver_t* out_ver, bool parse_on
             return false;
     }
 
-    fx_ver_set(out_ver, (int)major_val, (int)minor_val, (int)patch_val);
+    c_fx_ver_set(out_ver, (int)major_val, (int)minor_val, (int)patch_val);
     memcpy(out_ver->pre, pre_buf, strlen(pre_buf) + 1);
     memcpy(out_ver->build, build_buf, strlen(build_buf) + 1);
     return true;
 }
 
-bool fx_ver_parse(const char* ver_str, fx_ver_t* out_ver, bool parse_only_production)
+bool c_fx_ver_parse(const char* ver_str, c_fx_ver_t* out_ver, bool parse_only_production)
 {
-    fx_ver_init(out_ver);
+    c_fx_ver_init(out_ver);
     return parse_internal(ver_str, out_ver, parse_only_production);
 }
 
@@ -275,7 +275,7 @@ static size_t get_id_len(const char* ids, size_t id_start)
     return i - id_start;
 }
 
-int fx_ver_compare(const fx_ver_t* a, const fx_ver_t* b)
+int c_fx_ver_compare(const c_fx_ver_t* a, const c_fx_ver_t* b)
 {
     if (a->major != b->major)
         return (a->major > b->major) ? 1 : -1;
