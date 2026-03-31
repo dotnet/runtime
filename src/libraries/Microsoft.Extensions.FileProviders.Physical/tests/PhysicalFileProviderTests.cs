@@ -21,6 +21,14 @@ namespace Microsoft.Extensions.FileProviders
         private const int WaitTimeForTokenCallback = 10000;
 
         [Fact]
+        public void Constructor_DoesNotThrow_WhenRootDirectoryDoesNotExist()
+        {
+            string nonExistent = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+            using var provider = new PhysicalFileProvider(nonExistent);
+            Assert.Equal(nonExistent + Path.DirectorySeparatorChar, provider.Root);
+        }
+
+        [Fact]
         public void GetFileInfoReturnsNotFoundFileInfoForNullPath()
         {
             using (var provider = new PhysicalFileProvider(Path.GetTempPath()))
