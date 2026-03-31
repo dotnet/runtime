@@ -61,7 +61,8 @@ namespace Microsoft.Win32.SafeHandles
 
         // Allows for StartWithShellExecute (and its dependencies) to be trimmed when UseShellExecute is not being used.
         // On Unix, standard I/O handles are passed through to the shell process.
-        private static Func<ProcessStartInfo, SafeFileHandle?, SafeFileHandle?, SafeFileHandle?, SafeProcessHandle>? s_startWithShellExecute;
+        private delegate SafeProcessHandle StartWithShellExecuteDelegate(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder);
+        private static StartWithShellExecuteDelegate? s_startWithShellExecute;
 
         private static SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {
@@ -87,7 +88,7 @@ namespace Microsoft.Win32.SafeHandles
 
             if (startInfo.UseShellExecute)
             {
-                return s_startWithShellExecute!(startInfo, stdinHandle, stdoutHandle, stderrHandle);
+                return s_startWithShellExecute!(startInfo, stdinHandle, stdoutHandle, stderrHandle, out waitStateHolder);
             }
 
             string? filename;
@@ -128,7 +129,7 @@ namespace Microsoft.Win32.SafeHandles
                 out waitStateHolder);
         }
 
-        private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
         {
             IDictionary<string, string?> env = startInfo.Environment;
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
@@ -167,15 +168,17 @@ namespace Microsoft.Win32.SafeHandles
                     startInfo, filename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                    out ProcessWaitState.Holder? waitStateHolder,
+                    out ProcessWaitState.Holder? firstHolder,
                     throwOnNoExec: false); // return invalid handle instead of throwing on ENOEXEC
-
-                waitStateHolder?.Dispose();
 
                 if (!processHandle.IsInvalid)
                 {
+                    waitStateHolder = firstHolder;
                     return processHandle;
                 }
+
+                // ENOEXEC: the process was not started on this path; dispose the holder and try the fallback.
+                firstHolder?.Dispose();
             }
 
             // use default program to open file/url
@@ -186,9 +189,8 @@ namespace Microsoft.Win32.SafeHandles
                 startInfo, filename, openFileArgv, env, cwd,
                 setCredentials, userId, groupId, groups,
                 stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                out ProcessWaitState.Holder? waitStateHolder2);
+                out waitStateHolder);
 
-            waitStateHolder2?.Dispose();
             return result;
         }
 

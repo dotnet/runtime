@@ -101,5 +101,23 @@ namespace System.Diagnostics.Tests
 
             Assert.Throws<InvalidOperationException>(() => SafeProcessHandle.Start(startInfo));
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Windows)] // Covers platforms where UseShellExecute is supported
+        public void Start_UseShellExecuteTrue_InitializesDelegate()
+        {
+            // Setting UseShellExecute = true should call EnsureShellExecuteFunc(), which initializes
+            // the shell execute delegate. If the delegate were not set, Start would throw NullReferenceException.
+            // This test verifies the delegate is set by confirming Start throws a meaningful exception
+            // (e.g., Win32Exception, PlatformNotSupportedException) rather than NullReferenceException.
+            ProcessStartInfo startInfo = new("nonexistent_file_xyz_12345_copilot_test")
+            {
+                UseShellExecute = true,
+            };
+
+            Exception? ex = Record.Exception(() => SafeProcessHandle.Start(startInfo)?.Dispose());
+            Assert.NotNull(ex);
+            Assert.IsNotType<NullReferenceException>(ex);
+        }
     }
 }
