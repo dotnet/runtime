@@ -13335,16 +13335,44 @@ void emitter::emitDispIns(
         }
 
         case IF_RRD_RRD:
+        {
+            if (ins == INS_bt)
+            {
+                // INS_bt operands are reversed. Display them in the normal order.
+                printf("%s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg1(), attr));
+                break;
+            }
+
+            FALLTHROUGH;
+        }
+
         case IF_RWR_RRD:
+        {
+            if ((ins == INS_rol) || (ins == INS_ror) || (ins == INS_rcl) || (ins == INS_rcr) || (ins == INS_shl) ||
+                (ins == INS_shr) || (ins == INS_sar))
+            {
+                // This is the APX NDD form of these instructions.
+                printf("%s", emitRegName(id->idReg1(), attr));
+                printf(", %s", emitRegName(id->idReg2(), attr));
+                emitDispShift(ins, (BYTE)0);
+                break;
+            }
+
+            FALLTHROUGH;
+        }
+
         case IF_RRW_RRD:
         case IF_RRW_RRW:
         {
+            emitAttr tgtAttr = attr;
+            emitAttr srcAttr = attr;
+
             switch (ins)
             {
                 case INS_pmovmskb:
                 {
                     assert(!id->idIsEvexAaaContextSet());
-                    printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
+                    tgtAttr = EA_4BYTE;
                     break;
                 }
 
@@ -13354,7 +13382,7 @@ void emitter::emitDispIns(
                 case INS_cvtsi2sd64:
                 {
                     assert(!id->idIsEvexAaaContextSet());
-                    printf("%s, %s", emitRegName(id->idReg1(), EA_16BYTE), emitRegName(id->idReg2(), attr));
+                    tgtAttr = EA_16BYTE;
                     break;
                 }
 
@@ -13384,14 +13412,15 @@ void emitter::emitDispIns(
                 case INS_vcvttss2usis64:
                 {
                     assert(!id->idIsEvexAaaContextSet());
-                    printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
+                    srcAttr = EA_16BYTE;
                     break;
                 }
 
 #ifdef TARGET_AMD64
                 case INS_movsxd:
                 {
-                    printf("%s, %s", emitRegName(id->idReg1(), EA_8BYTE), emitRegName(id->idReg2(), EA_4BYTE));
+                    tgtAttr = EA_8BYTE;
+                    srcAttr = EA_4BYTE;
                     break;
                 }
 #endif // TARGET_AMD64
@@ -13399,14 +13428,7 @@ void emitter::emitDispIns(
                 case INS_movsx:
                 case INS_movzx:
                 {
-                    printf("%s, %s", emitRegName(id->idReg1(), EA_PTRSIZE), emitRegName(id->idReg2(), attr));
-                    break;
-                }
-
-                case INS_bt:
-                {
-                    // INS_bt operands are reversed. Display them in the normal order.
-                    printf("%s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg1(), attr));
+                    tgtAttr = EA_PTRSIZE;
                     break;
                 }
 
@@ -13416,11 +13438,7 @@ void emitter::emitDispIns(
                     {
                         // The idReg1 is always 4 bytes, but the size of idReg2 can vary.
                         // This logic ensures that we print `crc32 eax, bx` instead of `crc32 ax, bx`
-                        printf("%s, %s", emitRegName(id->idReg1(), EA_4BYTE), emitRegName(id->idReg2(), attr));
-                    }
-                    else
-                    {
-                        printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
+                        tgtAttr = EA_4BYTE;
                     }
                     break;
                 }
@@ -13429,43 +13447,119 @@ void emitter::emitDispIns(
                 case INS_vpbroadcastd_gpr:
                 case INS_vpbroadcastw_gpr:
                 {
-                    printf("%s", emitRegName(id->idReg1(), attr));
-                    emitDispEmbMasking(id);
-                    printf(", %s", emitRegName(id->idReg2(), EA_4BYTE));
+                    srcAttr = EA_4BYTE;
                     break;
                 }
 
                 case INS_vpbroadcastq_gpr:
                 {
-                    printf("%s", emitRegName(id->idReg1(), attr));
-                    emitDispEmbMasking(id);
-                    printf(", %s", emitRegName(id->idReg2(), EA_8BYTE));
+                    srcAttr = EA_8BYTE;
                     break;
                 }
 
-                case INS_rol:
-                case INS_ror:
-                case INS_rcl:
-                case INS_rcr:
-                case INS_shl:
-                case INS_shr:
-                case INS_sar:
+                case INS_cvtdq2pd:
+                case INS_cvtps2pd:
+                case INS_pmovsxbw:
+                case INS_pmovsxdq:
+                case INS_pmovsxwd:
+                case INS_pmovzxbw:
+                case INS_pmovzxdq:
+                case INS_pmovzxwd:
+                case INS_vcvtph2dq:
+                case INS_vcvtph2ps:
+                case INS_vcvtph2psx:
+                case INS_vcvtph2udq:
+                case INS_vcvtps2qq:
+                case INS_vcvtps2uqq:
+                case INS_vcvttph2dq:
+                case INS_vcvttph2udq:
+                case INS_vcvttps2qq:
+                case INS_vcvttps2qqs:
+                case INS_vcvttps2uqq:
+                case INS_vcvttps2uqqs:
+                case INS_vcvtudq2pd:
                 {
-                    printf("%s", emitRegName(id->idReg1(), attr));
-                    printf(", %s", emitRegName(id->idReg2(), attr));
-                    emitDispShift(ins, (BYTE)0);
+                    srcAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t> EA_SIZE(attr) / 2U));
+                    break;
+                }
+
+                case INS_pmovsxbd:
+                case INS_pmovsxwq:
+                case INS_pmovzxbd:
+                case INS_pmovzxwq:
+                case INS_vcvtph2pd:
+                case INS_vcvtph2qq:
+                case INS_vcvtph2uqq:
+                case INS_vcvttph2qq:
+                case INS_vcvttph2uqq:
+                {
+                    srcAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t> EA_SIZE(attr) / 4U));
+                    break;
+                }
+
+                case INS_pmovsxbq:
+                case INS_pmovzxbq:
+                {
+                    srcAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t> EA_SIZE(attr) / 8U));
+                    break;
+                }
+
+                case INS_cvtpd2dq:
+                case INS_cvtpd2ps:
+                case INS_cvttpd2dq:
+                case INS_vpmovdw:
+                case INS_vpmovqd:
+                case INS_vpmovsdw:
+                case INS_vpmovsqd:
+                case INS_vpmovswb:
+                case INS_vpmovusdw:
+                case INS_vpmovusqd:
+                case INS_vpmovuswb:
+                case INS_vpmovwb:
+                case INS_vcvtdq2ph:
+                case INS_vcvtpd2udq:
+                case INS_vcvtps2phx:
+                case INS_vcvtqq2ps:
+                case INS_vcvtudq2ph:
+                case INS_vcvtuqq2ps:
+                case INS_vcvttpd2dqs:
+                case INS_vcvttpd2udq:
+                case INS_vcvttpd2udqs:
+                {
+                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t> EA_SIZE(attr) / 2U));
+                    break;
+                }
+
+                case INS_vcvtpd2ph:
+                case INS_vcvtqq2ph:
+                case INS_vcvtuqq2ph:
+                case INS_vpmovdb:
+                case INS_vpmovqw:
+                case INS_vpmovsdb:
+                case INS_vpmovsqw:
+                case INS_vpmovusdb:
+                case INS_vpmovusqw:
+                {
+                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t> EA_SIZE(attr) / 4U));
+                    break;
+                }
+
+                case INS_vpmovqb:
+                case INS_vpmovsqb:
+                case INS_vpmovusqb:
+                {
+                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t> EA_SIZE(attr) / 8U));
                     break;
                 }
 
                 default:
-                {
-                    printf("%s", emitRegName(id->idReg1(), attr));
-                    emitDispEmbMasking(id);
-                    printf(", %s", emitRegName(id->idReg2(), attr));
-                    emitDispEmbRounding(id);
                     break;
-                }
             }
+
+            printf("%s", emitRegName(id->idReg1(), tgtAttr));
+            emitDispEmbMasking(id);
+            printf(", %s", emitRegName(id->idReg2(), srcAttr));
+            emitDispEmbRounding(id);
             break;
         }
 
@@ -13633,6 +13727,12 @@ void emitter::emitDispIns(
                 case INS_pinsrq:
                 {
                     attr = EA_8BYTE;
+                    break;
+                }
+
+                case INS_vcvtps2ph:
+                {
+                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>EA_SIZE(attr) / 2U));
                     break;
                 }
 
