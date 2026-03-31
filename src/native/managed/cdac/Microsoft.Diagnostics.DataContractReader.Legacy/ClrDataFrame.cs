@@ -550,13 +550,14 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
     /// <summary>
     /// Returns the count of local variables by reading the local signature header.
-    /// Returns 0 if the method has no locals.
+    /// Throws E_FAIL if the method has no local signature (matches native DAC behavior
+    /// for dynamic methods, IL stubs, and methods with no declared locals).
     /// </summary>
     private uint GetLocalVariableCount(MethodDescHandle mdh, Contracts.ModuleHandle moduleHandle)
     {
         BlobReader? reader = GetLocalSignatureReader(mdh, moduleHandle, out _);
         if (reader is null)
-            return 0;
+            throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
         BlobReader r = reader.Value;
         r.ReadSignatureHeader();

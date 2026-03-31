@@ -57,6 +57,22 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "EH clause enumeration was added after net10.0")]
+    public void GetJITType_ReturnsCorrectValue(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        CodeBlockHandle codeBlock = FindCrashMethodCodeBlock();
+        JitType jitType = Target.Contracts.ExecutionManager.GetJITType(codeBlock);
+        if (config.R2RMode == "jit")
+            Assert.Equal(JitType.Jit, jitType);
+        else if (config.R2RMode == "r2r")
+            Assert.Equal(JitType.R2R, jitType);
+        else
+            Assert.Fail($"Unexpected R2RMode value: {config.R2RMode}");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "EH clause enumeration was added after net10.0")]
     public void GetExceptionClauses_ReturnsNonEmptyList(TestConfiguration config)
     {
         InitializeDumpTest(config);

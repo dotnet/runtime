@@ -11,6 +11,11 @@ namespace Microsoft.Win32.SafeHandles
         public SafeProcessHandle() : base (default(bool)) { }
         public SafeProcessHandle(System.IntPtr existingHandle, bool ownsHandle) : base (default(bool)) { }
         protected override bool ReleaseHandle() { throw null; }
+        public int ProcessId { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static Microsoft.Win32.SafeHandles.SafeProcessHandle Start(System.Diagnostics.ProcessStartInfo startInfo) { throw null; }
     }
 }
 namespace System.Diagnostics
@@ -253,6 +258,9 @@ namespace System.Diagnostics
         public bool RedirectStandardInput { get { throw null; } set { } }
         public bool RedirectStandardOutput { get { throw null; } set { } }
         public System.Text.Encoding? StandardErrorEncoding { get { throw null; } set { } }
+        public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardErrorHandle { get { throw null; } set { } }
+        public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardInputHandle { get { throw null; } set { } }
+        public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardOutputHandle { get { throw null; } set { } }
         public System.Text.Encoding? StandardInputEncoding { get { throw null; } set { } }
         public System.Text.Encoding? StandardOutputEncoding { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
