@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Configuration
                         Load(stream);
                         updated = true;
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (ex is not IOException)
                     {
                         if (reload)
                         {
