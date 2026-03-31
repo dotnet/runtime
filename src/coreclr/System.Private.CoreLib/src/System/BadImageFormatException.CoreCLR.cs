@@ -5,7 +5,7 @@ namespace System
 {
     public partial class BadImageFormatException
     {
-        private BadImageFormatException(string? fileName, string? requestingAssemblyChain, int hResult)
+        internal BadImageFormatException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
             HResult = hResult;
