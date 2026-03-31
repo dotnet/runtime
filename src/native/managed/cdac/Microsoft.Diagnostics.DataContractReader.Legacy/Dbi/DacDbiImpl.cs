@@ -185,8 +185,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
-            string fileName = loader.GetFileName(handle);
-            hr = StringHolderAssignCopy(pStrFilename, fileName);
+            if (!loader.TryGetSimpleName(handle, out string simpleName))
+                throw new InvalidOperationException("Failed to get module simple name");
+            hr = StringHolderAssignCopy(pStrFilename, simpleName);
         }
         catch (System.Exception ex)
         {
