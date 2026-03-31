@@ -427,7 +427,7 @@ namespace System.IO.Tests
                     // Most intermittent failures in FSW are caused by either a shortage of resources (e.g. inotify instances)
                     // or by insufficient time to execute (e.g. CI gets bogged down). Immediately re-running a failed test
                     // won't resolve the first issue, so we wait a little while hoping that things clear up for the next run.
-                    WaitUnlessCancelled(500);
+                    WaitUnlessCancelled(RetryDelayMilliseconds);
                 }
 
                 AutoResetEvent errorOccurred = new AutoResetEvent(false);
