@@ -697,9 +697,11 @@ private:
     DispatchInfo*    m_pDispatchInfo; // The dispatch info used to expose IDispatch to COM.
     IID              m_IID; // The IID of the interface.
 
-    // This data structure has the following trailing members
-    // SLOT          m_slots[]; // vtable entries (m_cbSlots of them, plus the 3 or 7 from IUnk/IDisp)
-    // ComCallMethodDesc m_comCallMethodDesc[]; // descriptors for the COM call, not true MethodDesc*. (m_cbSlots of them)
+    // This data structure has the following trailing members in its allocated block:
+    // SLOT              m_slots[]; // vtable entries (m_cbSlots of them, plus the 3 or 7 from IUnk/IDisp)
+    // For interface COM method tables, an inline ComCallMethodDesc m_comCallMethodDesc[] array (m_cbSlots entries)
+    // may follow the slots. For class-interface layouts, the ComCallMethodDesc[] block is allocated separately and
+    // referenced via m_pMDescr. Basic COM method tables may have no ComCallMethodDesc descriptors at all.
 
     friend struct ::cdac_data<ComMethodTable>;
 };
