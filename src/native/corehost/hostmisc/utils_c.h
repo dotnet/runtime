@@ -91,6 +91,12 @@ void utils_replace_char(pal_char_t* path, pal_char_t match, pal_char_t repl);
 // Check if a file exists in a directory. If found, writes full path to out_file_path.
 bool utils_file_exists_in_dir(const pal_char_t* dir, const pal_char_t* file_name, pal_char_t* out_file_path, size_t out_path_len);
 
+// Check if a file exists in a directory. If found, returns a dynamically allocated full path (caller must free).
+bool utils_file_exists_in_dir_alloc(const pal_char_t* dir, const pal_char_t* file_name, pal_char_t** out_file_path);
+
+// Get the directory portion of a path. Returns a dynamically allocated string (caller must free).
+pal_char_t* utils_get_directory_alloc(const pal_char_t* path);
+
 // Get architecture name string.
 const pal_char_t* utils_get_current_arch_name(void);
 

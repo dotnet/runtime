@@ -95,8 +95,8 @@ hostfxr_main_fn hostfxr_resolver_resolve_main_v1(const hostfxr_resolver_t* resol
 void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const char* app_root)
 {
     resolver->hostfxr_dll = NULL;
-    resolver->dotnet_root[0] = '\0';
-    resolver->fxr_path[0] = '\0';
+    resolver->dotnet_root = NULL;
+    resolver->fxr_path = NULL;
     resolver->status_code = Success;
 
     fxr_search_location search_loc = search_location_default;
@@ -111,36 +111,49 @@ void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const char* app_root)
 
     trace_info(".NET root search location options: %d", search_loc);
 
-    char app_relative_dotnet_path[APPHOST_PATH_MAX];
-    app_relative_dotnet_path[0] = '\0';
+    char* app_relative_dotnet_path = NULL;
     if (app_relative_dotnet[0] != '\0')
     {
-        snprintf(app_relative_dotnet_path, sizeof(app_relative_dotnet_path), "%s", app_root);
-        utils_append_path(app_relative_dotnet_path, sizeof(app_relative_dotnet_path), app_relative_dotnet);
+        size_t root_len = strlen(app_root);
+        size_t rel_len = strlen(app_relative_dotnet);
+        size_t total = root_len + 1 + rel_len + 1;
+        app_relative_dotnet_path = (char*)malloc(total);
+        if (app_relative_dotnet_path != NULL)
+        {
+            snprintf(app_relative_dotnet_path, total, "%s", app_root);
+            utils_append_path(app_relative_dotnet_path, total, app_relative_dotnet);
+        }
     }
 
-    const char* app_relative_ptr = app_relative_dotnet_path[0] != '\0' ? app_relative_dotnet_path : NULL;
-
-    if (!fxr_resolver_try_get_path(app_root, search_loc, app_relative_ptr,
-        resolver->dotnet_root, sizeof(resolver->dotnet_root),
-        resolver->fxr_path, sizeof(resolver->fxr_path)))
+    char* dotnet_root = NULL;
+    char* fxr_path = NULL;
+    if (!fxr_resolver_try_get_path(app_root, search_loc, app_relative_dotnet_path,
+        &dotnet_root, &fxr_path))
     {
         resolver->status_code = CoreHostLibMissingFailure;
     }
-    else if (!pal_is_path_fully_qualified(resolver->fxr_path))
+    else if (!pal_is_path_fully_qualified(fxr_path))
     {
-        trace_error("Path to %s must be fully qualified: [%s]", LIBFXR_NAME, resolver->fxr_path);
+        trace_error("Path to %s must be fully qualified: [%s]", LIBFXR_NAME, fxr_path);
+        free(dotnet_root);
+        free(fxr_path);
         resolver->status_code = CoreHostLibMissingFailure;
     }
-    else if (pal_load_library(resolver->fxr_path, &resolver->hostfxr_dll))
+    else if (pal_load_library(fxr_path, &resolver->hostfxr_dll))
     {
+        resolver->dotnet_root = dotnet_root;
+        resolver->fxr_path = fxr_path;
         resolver->status_code = Success;
     }
     else
     {
-        trace_error("The library %s was found, but loading it from %s failed", LIBFXR_NAME, resolver->fxr_path);
+        trace_error("The library %s was found, but loading it from %s failed", LIBFXR_NAME, fxr_path);
+        free(dotnet_root);
+        free(fxr_path);
         resolver->status_code = CoreHostLibLoadFailure;
     }
+
+    free(app_relative_dotnet_path);
 }
 
 void hostfxr_resolver_cleanup(hostfxr_resolver_t* resolver)
@@ -150,4 +163,8 @@ void hostfxr_resolver_cleanup(hostfxr_resolver_t* resolver)
         pal_unload_library(resolver->hostfxr_dll);
         resolver->hostfxr_dll = NULL;
     }
+    free(resolver->dotnet_root);
+    resolver->dotnet_root = NULL;
+    free(resolver->fxr_path);
+    resolver->fxr_path = NULL;
 }

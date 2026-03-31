@@ -13,8 +13,8 @@
 typedef struct hostfxr_resolver
 {
     void* hostfxr_dll;
-    char dotnet_root[4096];
-    char fxr_path[4096];
+    char* dotnet_root;  // dynamically allocated, NULL if not set
+    char* fxr_path;     // dynamically allocated, NULL if not set
     int status_code; // StatusCode enum value
 } hostfxr_resolver_t;
 

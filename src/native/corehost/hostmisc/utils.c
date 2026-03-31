@@ -49,6 +49,73 @@ bool utils_file_exists_in_dir(const pal_char_t* dir, const pal_char_t* file_name
     return true;
 }
 
+bool utils_file_exists_in_dir_alloc(const pal_char_t* dir, const pal_char_t* file_name, pal_char_t** out_file_path)
+{
+    size_t dir_len = strlen(dir);
+    size_t name_len = strlen(file_name);
+    size_t total = dir_len + 1 + name_len + 1; // dir + sep + name + NUL
+
+    pal_char_t* file_path = (pal_char_t*)malloc(total * sizeof(pal_char_t));
+    if (file_path == NULL)
+        return false;
+
+    memcpy(file_path, dir, dir_len * sizeof(pal_char_t));
+    if (dir_len > 0 && dir[dir_len - 1] != '/')
+    {
+        file_path[dir_len] = '/';
+        memcpy(file_path + dir_len + 1, file_name, (name_len + 1) * sizeof(pal_char_t));
+    }
+    else
+    {
+        memcpy(file_path + dir_len, file_name, (name_len + 1) * sizeof(pal_char_t));
+    }
+
+    if (!pal_file_exists(file_path))
+    {
+        free(file_path);
+        return false;
+    }
+
+    *out_file_path = file_path;
+    return true;
+}
+
+pal_char_t* utils_get_directory_alloc(const pal_char_t* path)
+{
+    if (path == NULL || path[0] == '\0')
+        return NULL;
+
+    size_t len = strlen(path);
+    pal_char_t* buf = (pal_char_t*)malloc((len + 2) * sizeof(pal_char_t)); // +2 for trailing separator and NUL
+    if (buf == NULL)
+        return NULL;
+    memcpy(buf, path, (len + 1) * sizeof(pal_char_t));
+
+    // Remove trailing separators
+    while (len > 0 && buf[len - 1] == '/')
+        buf[--len] = '\0';
+
+    // Find last separator
+    pal_char_t* last_sep = strrchr(buf, '/');
+    if (last_sep == NULL)
+    {
+        // No separator found - return path + "/"
+        buf[len] = '/';
+        buf[len + 1] = '\0';
+        return buf;
+    }
+
+    // Remove trailing separators before the found position
+    pal_char_t* pos = last_sep;
+    while (pos > buf && *(pos - 1) == '/')
+        pos--;
+
+    size_t dir_len = (size_t)(pos - buf) + 1; // +1 for the trailing separator
+    buf[dir_len] = '/';
+    buf[dir_len + 1] = '\0';
+    return buf;
+}
+
 void utils_get_directory(const pal_char_t* path, pal_char_t* out_dir, size_t out_dir_len)
 {
     if (path == NULL || path[0] == '\0')

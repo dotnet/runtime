@@ -139,21 +139,24 @@ static void propagate_error_writer_cleanup(propagate_error_writer_state_t* state
 static int exe_start(const int argc, const char* argv[])
 {
     // Use realpath to find the path of the host, resolving any symlinks.
-    char host_path[APPHOST_PATH_MAX];
-    if (!pal_get_own_executable_path(host_path, sizeof(host_path)) || !pal_fullpath(host_path, sizeof(host_path)))
+    char* host_path = (char*)malloc(APPHOST_PATH_MAX);
+    if (host_path == NULL)
+        return CurrentHostFindFailure;
+
+    if (!pal_get_own_executable_path(host_path, APPHOST_PATH_MAX) || !pal_fullpath(host_path, APPHOST_PATH_MAX))
     {
         trace_error("Failed to resolve full path of the current executable [%s]", host_path);
+        free(host_path);
         return CurrentHostFindFailure;
     }
 
-    char app_path[APPHOST_PATH_MAX];
-    char app_root[APPHOST_PATH_MAX];
     bool requires_hostfxr_startupinfo_interface = false;
 
     // FEATURE_APPHOST path
     char embedded_app_name[EMBED_MAX];
     if (!is_exe_enabled_for_execution(embedded_app_name, sizeof(embedded_app_name)))
     {
+        free(host_path);
         return AppHostExeNotBoundFailure;
     }
 
@@ -162,20 +165,47 @@ static int exe_start(const int argc, const char* argv[])
         requires_hostfxr_startupinfo_interface = true;
     }
 
-    utils_get_directory(host_path, app_path, sizeof(app_path));
-    utils_append_path(app_path, sizeof(app_path), embedded_app_name);
+    char* app_dir = utils_get_directory_alloc(host_path);
+    if (app_dir == NULL)
+    {
+        free(host_path);
+        return AppPathFindFailure;
+    }
+
+    size_t dir_len = strlen(app_dir);
+    size_t name_len = strlen(embedded_app_name);
+    size_t app_path_len = dir_len + name_len + 1;
+    char* app_path = (char*)malloc(app_path_len);
+    if (app_path == NULL)
+    {
+        free(app_dir);
+        free(host_path);
+        return AppPathFindFailure;
+    }
+    snprintf(app_path, app_path_len, "%s", app_dir);
+    utils_append_path(app_path, app_path_len, embedded_app_name);
 
     if (bundle_marker_is_bundle())
     {
         trace_info("Detected Single-File app bundle");
     }
-    else if (!pal_fullpath(app_path, sizeof(app_path)))
+    else if (!pal_fullpath(app_path, app_path_len))
     {
         trace_error("The application to execute does not exist: '%s'.", app_path);
+        free(app_path);
+        free(app_dir);
+        free(host_path);
         return AppPathFindFailure;
     }
 
-    utils_get_directory(app_path, app_root, sizeof(app_root));
+    free(app_dir);
+    char* app_root = utils_get_directory_alloc(app_path);
+    if (app_root == NULL)
+    {
+        free(app_path);
+        free(host_path);
+        return AppPathFindFailure;
+    }
 
     hostfxr_resolver_t fxr;
     hostfxr_resolver_init(&fxr, app_root);
@@ -184,6 +214,9 @@ static int exe_start(const int argc, const char* argv[])
     if (rc != Success)
     {
         hostfxr_resolver_cleanup(&fxr);
+        free(app_root);
+        free(app_path);
+        free(host_path);
         return rc;
     }
 
@@ -193,13 +226,13 @@ static int exe_start(const int argc, const char* argv[])
         if (hostfxr_main_bundle_startupinfo != NULL)
         {
             const char* host_path_cstr = host_path;
-            const char* dotnet_root_cstr = fxr.dotnet_root[0] != '\0' ? fxr.dotnet_root : NULL;
+            const char* dotnet_root_cstr = fxr.dotnet_root != NULL && fxr.dotnet_root[0] != '\0' ? fxr.dotnet_root : NULL;
             const char* app_path_cstr = app_path[0] != '\0' ? app_path : NULL;
             int64_t bundle_header_offset = bundle_marker_header_offset();
 
             trace_info("Invoking fx resolver [%s] hostfxr_main_bundle_startupinfo", fxr.fxr_path);
             trace_info("Host path: [%s]", host_path);
-            trace_info("Dotnet path: [%s]", fxr.dotnet_root);
+            trace_info("Dotnet path: [%s]", fxr.dotnet_root != NULL ? fxr.dotnet_root : "");
             trace_info("App path: [%s]", app_path);
             trace_info("Bundle Header Offset: [%" PRId64 "]", bundle_header_offset);
 
@@ -212,7 +245,7 @@ static int exe_start(const int argc, const char* argv[])
         else
         {
             trace_error("The required library %s does not support single-file apps.", fxr.fxr_path);
-            need_newer_framework_error(fxr.dotnet_root, host_path);
+            need_newer_framework_error(fxr.dotnet_root != NULL ? fxr.dotnet_root : "", host_path);
             rc = FrameworkMissingFailure;
         }
     }
@@ -222,12 +255,12 @@ static int exe_start(const int argc, const char* argv[])
         if (hostfxr_main_startupinfo != NULL)
         {
             const char* host_path_cstr = host_path;
-            const char* dotnet_root_cstr = fxr.dotnet_root[0] != '\0' ? fxr.dotnet_root : NULL;
+            const char* dotnet_root_cstr = fxr.dotnet_root != NULL && fxr.dotnet_root[0] != '\0' ? fxr.dotnet_root : NULL;
             const char* app_path_cstr = app_path[0] != '\0' ? app_path : NULL;
 
             trace_info("Invoking fx resolver [%s] hostfxr_main_startupinfo", fxr.fxr_path);
             trace_info("Host path: [%s]", host_path);
-            trace_info("Dotnet path: [%s]", fxr.dotnet_root);
+            trace_info("Dotnet path: [%s]", fxr.dotnet_root != NULL ? fxr.dotnet_root : "");
             trace_info("App path: [%s]", app_path);
 
             hostfxr_set_error_writer_fn set_error_writer = hostfxr_resolver_resolve_set_error_writer(&fxr);
@@ -238,7 +271,7 @@ static int exe_start(const int argc, const char* argv[])
 
             if (trace_get_error_writer() != NULL && rc == (int)FrameworkMissingFailure && set_error_writer == NULL)
             {
-                need_newer_framework_error(fxr.dotnet_root, host_path);
+                need_newer_framework_error(fxr.dotnet_root != NULL ? fxr.dotnet_root : "", host_path);
             }
 
             propagate_error_writer_cleanup(&propagate_state);
@@ -272,6 +305,9 @@ static int exe_start(const int argc, const char* argv[])
     }
 
     hostfxr_resolver_cleanup(&fxr);
+    free(app_root);
+    free(app_path);
+    free(host_path);
     return rc;
 }
 

@@ -23,16 +23,14 @@ typedef enum
 // root_path: directory of the app
 // search: search location flags
 // app_relative_dotnet_root: optional app-relative .NET root path (may be NULL or empty)
-// out_dotnet_root: receives the dotnet root directory
-// out_fxr_path: receives the full path to the hostfxr library
-// All output buffers must be at least APPHOST_PATH_MAX bytes.
+// out_dotnet_root: receives a newly allocated string with the dotnet root directory (caller must free)
+// out_fxr_path: receives a newly allocated string with the full path to the hostfxr library (caller must free)
+// On failure, *out_dotnet_root and *out_fxr_path are set to NULL.
 bool fxr_resolver_try_get_path(
     const char* root_path,
     fxr_search_location search,
     const char* app_relative_dotnet_root,
-    char* out_dotnet_root,
-    size_t out_dotnet_root_len,
-    char* out_fxr_path,
-    size_t out_fxr_path_len);
+    char** out_dotnet_root,
+    char** out_fxr_path);
 
 #endif // FXR_RESOLVER_C_H
