@@ -8,14 +8,21 @@ namespace System;
 /// <summary>Provides downlevel polyfills for static members on <see cref="Environment"/>.</summary>
 internal static class EnvironmentPolyfills
 {
+    private static int s_processId;
+
     extension(Environment)
     {
         public static int ProcessId
         {
             get
             {
-                using Process currentProcess = Process.GetCurrentProcess();
-                return currentProcess.Id;
+                int processId = s_processId;
+                if (processId == 0)
+                {
+                    using Process currentProcess = Process.GetCurrentProcess();
+                    s_processId = processId = currentProcess.Id;
+                }
+                return processId;
             }
         }
     }
