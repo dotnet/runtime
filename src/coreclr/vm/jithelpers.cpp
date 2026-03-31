@@ -2506,6 +2506,24 @@ void _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc)
     hlpDynamicFuncTable[ftnNum].pfnHelper = (PCODE)pFunc;
 }
 
+VMAUXILIARYSYMBOLDEF hlpAuxiliarySymbolTable[MAX_AUXILIARY_SYMBOLS];
+DWORD g_auxiliarySymbolCount = 0;
+
+void SetAuxiliarySymbol(void* pFunc, const char* name)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(g_auxiliarySymbolCount < MAX_AUXILIARY_SYMBOLS);
+    hlpAuxiliarySymbolTable[g_auxiliarySymbolCount].pfnAuxiliarySymbol = (PCODE)pFunc;
+    hlpAuxiliarySymbolTable[g_auxiliarySymbolCount].name = name;
+    g_auxiliarySymbolCount++;
+}
+
 PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
 {
     STANDARD_VM_CONTRACT;

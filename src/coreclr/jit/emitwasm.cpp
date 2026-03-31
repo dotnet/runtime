@@ -721,7 +721,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MEMADDR:
         {
             dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_MEMORY_ADDR_SLEB);
+            // TODO-WASM: The below reloc we're emitting here is specific to R2R and assumes the address we want
+            // is an offset from __image_base
+            dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_MEMORY_ADDR_REL_SLEB);
             break;
         }
         case IF_FUNCPTR:
