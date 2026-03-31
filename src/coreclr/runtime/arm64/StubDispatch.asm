@@ -13,15 +13,30 @@
     MACRO
         CHECK_CACHE_ENTRY $entry
         ;; Check a single entry in the cache.
-        ;;  x9   : Cache data structure. Also used for target address jump.
+        ;;  x9   : Cache data structure
         ;;  x10  : Instance MethodTable*
         ;;  x11  : Indirection cell address, preserved
-        ;;  x12  : Trashed
-        ldr     x12, [x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 16))]
+        ;;  x12, x13  : Trashed
+        ;;
+        ;; Use ldp to load both m_pInstanceType and m_pTargetCode in a single instruction.
+        ;; On ARM64 two separate ldr instructions can be reordered across a control dependency,
+        ;; which means a concurrent atomic cache entry update (via stlxp) could be observed as a
+        ;; torn read (new type, old target). ldp is single-copy atomic for the pair on FEAT_LSE2
+        ;; hardware (ARMv8.4+). The cbz guard ensures correctness on pre-LSE2 hardware too:
+        ;; a torn read can only produce a zero target (entries go from 0,0 to type,target),
+        ;; so we treat it as a cache miss.
+        IF (OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 16)) > 504
+        ;; ldp's signed immediate offset must be in [-512,504] for 64-bit registers.
+        ;; Use add to reach far entries in the 32/64 slot stubs.
+        add     x12, x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 16))
+        ldp     x12, x13, [x12]
+        ELSE
+        ldp     x12, x13, [x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 16))]
+        ENDIF
         cmp     x10, x12
         bne     %ft0
-        ldr     x9, [x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + ($entry * 16) + 8)]
-        br      x9
+        cbz     x13, %ft0
+        br      x13
 0
     MEND
 
