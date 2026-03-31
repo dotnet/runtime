@@ -13479,7 +13479,7 @@ void emitter::emitDispIns(
                 case INS_vcvttps2uqqs:
                 case INS_vcvtudq2pd:
                 {
-                    srcAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t> EA_SIZE(attr) / 2U));
+                    srcAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 2U));
                     break;
                 }
 
@@ -13493,14 +13493,14 @@ void emitter::emitDispIns(
                 case INS_vcvttph2qq:
                 case INS_vcvttph2uqq:
                 {
-                    srcAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t> EA_SIZE(attr) / 4U));
+                    srcAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 4U));
                     break;
                 }
 
                 case INS_pmovsxbq:
                 case INS_pmovzxbq:
                 {
-                    srcAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t> EA_SIZE(attr) / 8U));
+                    srcAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 8U));
                     break;
                 }
 
@@ -13526,7 +13526,7 @@ void emitter::emitDispIns(
                 case INS_vcvttpd2udq:
                 case INS_vcvttpd2udqs:
                 {
-                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t> EA_SIZE(attr) / 2U));
+                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 2U));
                     break;
                 }
 
@@ -13540,7 +13540,7 @@ void emitter::emitDispIns(
                 case INS_vpmovusdb:
                 case INS_vpmovusqw:
                 {
-                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t> EA_SIZE(attr) / 4U));
+                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 4U));
                     break;
                 }
 
@@ -13548,7 +13548,7 @@ void emitter::emitDispIns(
                 case INS_vpmovsqb:
                 case INS_vpmovusqb:
                 {
-                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t> EA_SIZE(attr) / 8U));
+                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 8U));
                     break;
                 }
 
@@ -13732,7 +13732,7 @@ void emitter::emitDispIns(
 
                 case INS_vcvtps2ph:
                 {
-                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>EA_SIZE(attr) / 2U));
+                    tgtAttr = static_cast<emitAttr>(std::max(16U, static_cast<uint32_t>(EA_SIZE(attr)) / 2U));
                     break;
                 }
 
