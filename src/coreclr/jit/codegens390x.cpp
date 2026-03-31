@@ -440,9 +440,15 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // defined(TARGET_ARM64)
 
+        case GT_DIV:
+            if (varTypeIsFloating(treeNode->TypeGet()))
+            {
+                genCodeForBinary(treeNode->AsOp());
+                break;
+            }
+            FALLTHROUGH;
 //        case GT_MOD:
 //        case GT_UMOD:
-//        case GT_DIV:
 //        case GT_UDIV:
 //            genCodeForDivMod(treeNode->AsOp());
 //            break;
@@ -486,9 +492,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 #endif // !defined(TARGET_64BIT)
 
-//        case GT_CAST:
-//            genCodeForCast(treeNode->AsOp());
-//            break;
+        case GT_CAST:
+            genCodeForCast(treeNode->AsOp());
+            break;
 //
 //        case GT_BITCAST:
 //            genCodeForBitCast(treeNode->AsOp());
@@ -4318,64 +4324,46 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 //
 void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 {
-    _ASSERTE("!NYI");
-#if 0
     // float <--> double conversions are always non-overflow ones
     assert(treeNode->OperGet() == GT_CAST);
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
-    assert(genIsValidFloatReg(targetReg));
-
     GenTree* op1 = treeNode->AsOp()->gtOp1;
-    assert(!op1->isContained());                  // Cannot be contained
+    assert(genIsValidFloatReg(targetReg));
     assert(genIsValidFloatReg(op1->GetRegNum())); // Must be a valid float reg.
+
 
     var_types dstType = treeNode->CastToType();
     var_types srcType = op1->TypeGet();
     assert(varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
     genConsumeOperands(treeNode->AsOp());
-
-    // treeNode must be a reg
-    assert(!treeNode->isContained());
-
-#if defined(TARGET_ARM)
-
-    if (srcType != dstType)
+    instruction ins;
+    switch (srcType)
     {
-        instruction insVcvt = (srcType == TYP_FLOAT) ? INS_vcvt_f2d  // convert Float to Double
-                                                     : INS_vcvt_d2f; // convert Double to Float
-
-        GetEmitter()->emitIns_R_R(insVcvt, emitTypeSize(treeNode), treeNode->GetRegNum(), op1->GetRegNum());
-    }
-    else
-    {
-        GetEmitter()->emitIns_Mov(INS_vmov, emitTypeSize(treeNode), treeNode->GetRegNum(), op1->GetRegNum(),
-                                  /* canSkip */ true);
-    }
-
-#elif defined(TARGET_ARM64)
-
-    if (srcType != dstType)
-    {
-        insOpts cvtOption = (srcType == TYP_FLOAT) ? INS_OPTS_S_TO_D  // convert Single to Double
-                                                   : INS_OPTS_D_TO_S; // convert Double to Single
-
-        GetEmitter()->emitIns_R_R(INS_fcvt, emitActualTypeSize(treeNode), treeNode->GetRegNum(), op1->GetRegNum(),
-                                  cvtOption);
-    }
-    else
-    {
-        // If double to double cast or float to float cast. Emit a move instruction.
-        GetEmitter()->emitIns_Mov(INS_mov, emitActualTypeSize(treeNode), treeNode->GetRegNum(), op1->GetRegNum(),
-                                  /* canSkip */ true);
+        case TYP_FLOAT:
+            if (dstType == TYP_DOUBLE)
+                ins = INS_ldebr;
+            else
+                _ASSERTE("!NYI");
+            break;
+        case TYP_DOUBLE:
+            if (dstType == TYP_FLOAT)
+                ins = INS_ledbr;
+            else
+                _ASSERTE("!NYI");
+            break;
+        default:
+            _ASSERTE("Unhandled type");
+            unreached();
+            break;
     }
 
-#endif // TARGET*
+    GetEmitter()->emitIns_R_R(ins, emitTypeSize(dstType), treeNode->GetRegNum(), op1->GetRegNum());
+
 
     genProduceReg(treeNode);
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -4713,7 +4701,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     var_types        targetType = treeNode->TypeGet();
     emitter*         emit       = GetEmitter();
 
-    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_OR, GT_XOR, GT_AND,
+    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_OR, GT_XOR, GT_AND,
                             GT_AND_NOT));
 
     GenTree* op1 = treeNode->gtGetOp1();
@@ -4737,16 +4725,16 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 {
     instruction ins;
 
-   // if (varTypeIsFloating(type))
-   //     return CodeGen::ins_MathOp(oper, type);
+    if (varTypeIsFloating(type))
+        return CodeGen::ins_MathOp(oper, type);
 
     switch (oper)
     {
         case GT_ADD:
-            ins = INS_ark;
+            ins = varTypeIsLong(type) ? INS_agrk : INS_ark;
             break;
         case GT_SUB:
-            ins = INS_srk;
+            ins = varTypeIsLong(type) ? INS_sgrk : INS_srk;
             break;
         case GT_AND:
             ins = INS_nrk;
@@ -4761,7 +4749,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
             ins = INS_ncrk;
             break;        
         case GT_MUL:
-            ins = INS_mul;
+            ins = varTypeIsFloating(type) ? INS_msgrkc : INS_mul;
             break;
 #if 0
 #if !defined(USE_HELPERS_FOR_INT_DIV)
@@ -5639,8 +5627,6 @@ void CodeGen::genFuncletEpilog()
 //
 void CodeGen::genFloatToIntCast(GenTree* treeNode)
 {
-    _ASSERTE("!NYI");
-#if 0
     // we don't expect to see overflow detecting float/double --> int type conversions here
     // as they should have been converted into helper calls by front-end.
     assert(treeNode->OperGet() == GT_CAST);
@@ -5662,48 +5648,73 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     // we expect the front-end or lowering phase to have generated two levels of cast.
     //
     emitAttr dstSize = EA_ATTR(genTypeSize(dstType));
-   noway_assert((dstSize == EA_4BYTE) || (dstSize == EA_8BYTE));
+    noway_assert((dstSize == EA_4BYTE) || (dstSize == EA_8BYTE));
 
-    instruction ins       = INS_fcvtzs;    // default to sign converts
-    insOpts     cvtOption = INS_OPTS_NONE; // invalid value
+    instruction ins;
 
     if (varTypeIsUnsigned(dstType))
     {
-        ins = INS_fcvtzu; // use unsigned converts
+        if (srcType == TYP_DOUBLE)
+        {
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_clfdbr;
+            }
+            else
+            {
+                assert(dstSize == EA_8BYTE);
+                ins = INS_clgdbr;
+            }
+        }
+        else
+        {
+            assert(srcType == TYP_FLOAT);
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_clfebr;
+            }
+            else
+            {
+                assert(dstSize == EA_8BYTE);
+                ins = INS_clgebr;
+            }
+        }
     }
 
-    if (srcType == TYP_DOUBLE)
-    {
-        if (dstSize == EA_4BYTE)
-        {
-            cvtOption = INS_OPTS_D_TO_4BYTE;
-        }
-        else
-        {
-            assert(dstSize == EA_8BYTE);
-            cvtOption = INS_OPTS_D_TO_8BYTE;
-        }
-    }
     else
     {
-        assert(srcType == TYP_FLOAT);
-        if (dstSize == EA_4BYTE)
+        if (srcType == TYP_DOUBLE)
         {
-            cvtOption = INS_OPTS_S_TO_4BYTE;
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_cfdbr;
+            }
+            else
+            {
+                assert(dstSize == EA_8BYTE);
+                ins = INS_cgdbr;
+            }
         }
         else
         {
-            assert(dstSize == EA_8BYTE);
-            cvtOption = INS_OPTS_S_TO_8BYTE;
+            assert(srcType == TYP_FLOAT);
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_cfebr;
+            }
+            else
+            {
+                assert(dstSize == EA_8BYTE);
+                ins = INS_cgebr;
+            }
         }
     }
 
     genConsumeOperands(treeNode->AsOp());
 
-    GetEmitter()->emitIns_R_R(ins, dstSize, treeNode->GetRegNum(), op1->GetRegNum(), cvtOption);
+    GetEmitter()->emitIns_R_R(ins, dstSize, treeNode->GetRegNum(), op1->GetRegNum());
 
     genProduceReg(treeNode);
-#endif
 }
 
 /*****************************************************************************

@@ -49,6 +49,17 @@ static bool strictArmAsm;
 			      (r1 << 4) | r2));					\
 }										\
 
+#define S390_RRF_2(dst, opc, r1, m3, r2)					\
+{										\
+	dst += emitOutputLong (dst, (opc << 16 | (m3 << 12) |   \
+                (r1 << 4) | r2)); 			\
+}										\
+
+#define S390_RRF_4(dst, opc, r1, m3, r2, m4)					\
+{										\
+	dst += emitOutputLong (dst, (opc << 16 | (m3 << 12) | (m4 << 8) | (r1 << 4) | r2)); 			\
+}										\
+
 #define S390_RIL_a(dst, opc, r1, i2)						\
 {										\
 	dst += emitOutputWord (dst, (((opc >> 4) << 8) | (r1 << 4) |		\

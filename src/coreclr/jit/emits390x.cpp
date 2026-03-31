@@ -1705,13 +1705,10 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 // true if this 'imm' can be encoded as a input operand to a fmov instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_fmov(double immDbl)
 {
-    _ASSERTE(!"NYI");
-#if 0
     if (canEncodeFloatImm8(immDbl))
         return true;
 
     return false;
-#endif
 }
 
 // true if this 'imm' can be encoded as a input operand to an add instruction
@@ -2533,8 +2530,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ bool emitter::canEncodeFloatImm8(double immDbl, emitter::floatImm8* wbFPI)
 {
-    _ASSERTE(!"NYI");
-#if 0
     bool   canEncode = false;
     double val       = immDbl;
 
@@ -2581,7 +2576,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     }
 
     return canEncode;
-#endif
 }
 
 /*****************************************************************************
@@ -5487,7 +5481,9 @@ void emitter::emitIns_R_R_R(instruction     ins,
 #endif
         case INS_mul:
         case INS_ark:
+        case INS_agrk:
         case INS_srk:
+        case INS_sgrk:
             if (isVectorRegister(reg1))
             {
                 // ASIMD instruction
@@ -6355,6 +6351,7 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
             break;
 #endif
         case INS_mul:
+        case INS_msgrkc:
         case INS_ark:
         case INS_srk:
             setFlags = false;
@@ -7425,6 +7422,8 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
         case INS_st:
         case INS_l:
+        case INS_ley:
+        case INS_ldy:
             assert(isValidGeneralDatasize(size) || isValidVectorDatasize(size));
             scale    = genLog2(EA_SIZE_IN_BYTES(size));
             isLdrStr = true;
@@ -7674,6 +7673,8 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             break;
 
         case INS_st:
+        case INS_stey:
+        case INS_stdy:
             if (isGeneralRegister(reg1))
             {
                 assert(isValidGeneralDatasize(size));
@@ -10555,6 +10556,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RX_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
             break;
 
+        case INS_ley:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            break;
+
+        case INS_ldy:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            break;
+
         case INS_lgr:
             op = emitInsCode(ins, fmt);
             S390_RRE(dst, op, id->idReg1(), id->idReg2());
@@ -10576,7 +10589,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
             break;
 
+        case INS_agrk:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+            break;
+
         case INS_srk:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+            break;
+
+        case INS_sgrk:
             op = emitInsCode(ins, fmt);
             S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
             break;
@@ -10605,9 +10628,114 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             op = emitInsCode(ins, fmt);
             S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
             break;
-        
-        
-	   
+
+        case INS_msgrkc:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_a(dst, op, id->idReg3(), id->idReg1(), id->idReg2());
+            break;
+
+        case INS_aebr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
+        case INS_adbr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
+        case INS_sebr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
+        case INS_sdbr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
+        case INS_meebr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
+        case INS_mdbr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
+        case INS_debr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
+        case INS_ddbr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
+        case INS_stey:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            break;
+
+        case INS_stdy:
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            S390_RXY_a(dst, op, id->idReg1(), 0, id->idReg2(), imm);
+            break;
+
+        case INS_cfebr:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_2(dst, op, id->idReg1(), 5, id->idReg2());
+            break;
+
+        case INS_cfdbr:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_2(dst, op, id->idReg1(), 5, id->idReg2());
+            break;
+
+        case INS_cgebr:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_2(dst, op, id->idReg1(), 5, id->idReg2());
+            break;
+
+        case INS_cgdbr:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_2(dst, op, id->idReg1(), 5, id->idReg2());
+            break;
+
+        case INS_clfebr:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_4(dst, op, id->idReg1(), 5, id->idReg2(), 0);
+            break;
+
+        case INS_clfdbr:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_4(dst, op, id->idReg1(), 5, id->idReg2(), 0);
+            break;
+
+        case INS_clgebr:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_4(dst, op, id->idReg1(), 5, id->idReg2(), 0);
+            break;
+
+        case INS_clgdbr:
+            op = emitInsCode(ins, fmt);
+            S390_RRF_4(dst, op, id->idReg1(), 5, id->idReg2(), 0);
+            break;
+
+        case INS_ledbr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
+        case INS_ldebr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            break;
+
         default:
             _ASSERTE(!"NYI");
             break;
@@ -13277,7 +13405,15 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         {
 #endif
             // We can just multiply.
-            emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
+            if (dst->gtType == TYP_FLOAT || dst->gtType == TYP_DOUBLE)
+            {
+                emitIns_R_R(ins, attr, src1->GetRegNum(), src2->GetRegNum());
+            }
+            else
+            {
+                emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
+            }
+
 #if 0
         }
 #endif

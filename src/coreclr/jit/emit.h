@@ -1171,18 +1171,22 @@ protected:
             int size = 4;
             switch (idIns())
             {
-		case INS_ret:
-		case INS_br:
-		case INS_nop:
-			size = 2;
-			break;
-		case INS_lgfi:
-		case INS_stg:
-		case INS_lay:
-		case INS_stmg:
-		case INS_lmg:
-			size = 6;
-			break;
+                case INS_ret:
+                case INS_br:
+                case INS_nop:
+                    size = 2;
+                    break;
+                case INS_lgfi:
+                case INS_stg:
+                case INS_lay:
+                case INS_ley:
+                case INS_ldy:
+                case INS_stmg:
+                case INS_stey:
+                case INS_stdy:
+                case INS_lmg:
+                    size = 6;
+                    break;
                 default:
                     break;
             }
