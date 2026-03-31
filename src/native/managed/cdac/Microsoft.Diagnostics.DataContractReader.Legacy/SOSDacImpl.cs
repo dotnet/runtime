@@ -4991,6 +4991,8 @@ public sealed unsafe partial class SOSDacImpl
             ClrDataAddress r2rImageBaseAddr = r2rImageBase.ToClrDataAddress(_target);
             ClrDataAddress r2rImageEndAddr = r2rImageEnd.ToClrDataAddress(_target);
 
+            bool isEligibleForTieredCompilation = runtimeTypeSystemContract.IsEligibleForTieredCompilation(methodDescHandle);
+
             int count = 0;
             foreach (NativeCodeVersionHandle nativeCodeVersionHandle in codeVersions.GetNativeCodeVersions(methodDescPtr, ilCodeVersionHandle))
             {
@@ -5002,7 +5004,7 @@ public sealed unsafe partial class SOSDacImpl
                 {
                     nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.ReadyToRun;
                 }
-                else if (runtimeTypeSystemContract.IsEligibleForTieredCompilation(methodDescHandle))
+                else if (isEligibleForTieredCompilation)
                 {
                     switch (codeVersions.GetOptimizationTier(nativeCodeVersionHandle))
                     {

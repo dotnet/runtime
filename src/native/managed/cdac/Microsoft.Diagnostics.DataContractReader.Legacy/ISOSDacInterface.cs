@@ -948,15 +948,15 @@ public struct DacpTieredVersionData
 {
     public enum OptimizationTier
     {
-        Unknown,
-        MinOptJitted,
-        Optimized,
-        QuickJitted,
-        OptimizedTier1,
-        ReadyToRun,
-        OptimizedTier1OSR,
-        QuickJittedInstrumented,
-        OptimizedTier1Instrumented,
+        Unknown = 0,
+        MinOptJitted = 1,
+        Optimized = 2,
+        QuickJitted = 3,
+        OptimizedTier1 = 4,
+        ReadyToRun = 5,
+        OptimizedTier1OSR = 6,
+        QuickJittedInstrumented = 7,
+        OptimizedTier1Instrumented = 8,
     }
 
     public ClrDataAddress nativeCodeAddr;
