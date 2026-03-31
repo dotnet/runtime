@@ -705,12 +705,14 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.Load(float*)" />
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe Vector3 Load(float* source) => LoadUnsafe(in *source);
 
         /// <inheritdoc cref="Vector4.LoadAligned(float*)" />
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe Vector3 LoadAligned(float* source)
         {
             if (((nuint)(source) % Alignment) != 0)
@@ -724,6 +726,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LoadAlignedNonTemporal(float*)" />
         [Intrinsic]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe Vector3 LoadAlignedNonTemporal(float* source) => LoadAligned(source);
 
         /// <inheritdoc cref="Vector128.LoadUnsafe{T}(ref readonly T)" />

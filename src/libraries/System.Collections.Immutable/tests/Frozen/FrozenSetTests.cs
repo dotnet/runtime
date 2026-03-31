@@ -434,6 +434,14 @@ namespace System.Collections.Frozen.Tests
             ulong lo = unchecked((ulong)rand.Next());
             return (hi << 32) | lo;
         }
+
+        [OuterLoop("Takes several seconds")]
+        [Theory]
+        [InlineData(8_000_000)]
+        public void CreateHugeSet_Success(int largeCount)
+        {
+            GenericISetFactory(largeCount);
+        }
     }
 
     public class FrozenSet_Generic_Tests_int : FrozenSet_Generic_Tests<int>

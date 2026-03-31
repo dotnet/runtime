@@ -1355,13 +1355,6 @@ public:
         return TT_U2M;
     }
 
-    //------------------------------------------------------------------------
-    // Performs cleanup on an exception unwind
-    //------------------------------------------------------------------------
-#ifndef DACCESS_COMPILE
-    void ExceptionUnwind_Impl();
-#endif
-
 protected:
     TADDR           m_pvDatum;        // type depends on the sub class
 
@@ -2558,6 +2551,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_isFaulting = isFaulting;
+    }
+
+    Interception GetInterception_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_isFaulting ? INTERCEPTION_EXCEPTION : INTERCEPTION_NONE;
     }
 
     void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)

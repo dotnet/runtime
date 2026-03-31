@@ -32,6 +32,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _r2rJitManager = new ReadyToRunJitManager(_target);
     }
 
+    public void Flush()
+    {
+        _codeInfos.Clear();
+    }
+
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
     private sealed class CodeBlock
     {
@@ -56,14 +61,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         CodeHeap = 0x02,
         RangeList = 0x04,
     }
-
-    private enum JitTypes
-    {
-        TYPE_UNKNOWN = 0,
-        TYPE_JIT = 1,
-        TYPE_R2R = 2,
-        TYPE_INTERPRETER = 3
-    };
 
     private enum ExceptionClauseFlags_1 : uint
     {
@@ -242,25 +239,25 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         jitManager.GetMethodRegionInfo(range, codeInfoHandle.Address.Value, out hotSize, out coldStart, out coldSize);
     }
 
-    uint IExecutionManager.GetJITType(CodeBlockHandle codeInfoHandle)
+    JitType IExecutionManager.GetJITType(CodeBlockHandle codeInfoHandle)
     {
         RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
         if (range.Data == null)
-            return 0;
+            return JitType.Unknown;
 
         JitManager jitManager = GetJitManager(range.Data);
 
         if (jitManager == _eeJitManager)
         {
-            return (uint)JitTypes.TYPE_JIT;
+            return JitType.Jit;
         }
         else if (jitManager == _r2rJitManager)
         {
-            return (uint)JitTypes.TYPE_R2R;
+            return JitType.R2R;
         }
         else
         {
-            return (uint)JitTypes.TYPE_UNKNOWN;
+            return JitType.Unknown;
         }
     }
 

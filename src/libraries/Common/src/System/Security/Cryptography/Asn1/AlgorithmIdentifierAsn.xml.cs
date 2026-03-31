@@ -110,8 +110,52 @@ namespace System.Security.Cryptography.Asn1
     internal ref partial struct ValueAlgorithmIdentifierAsn
     {
         internal string Algorithm;
-        internal ReadOnlySpan<byte> Parameters;
-        internal bool HasParameters;
+
+        internal ReadOnlySpan<byte> Parameters
+        {
+            get;
+            set
+            {
+                HasParameters = true;
+                field = value;
+            }
+        }
+
+        internal bool HasParameters { get; private set; }
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+
+            try
+            {
+                writer.WriteObjectIdentifier(Algorithm);
+            }
+            catch (ArgumentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            if (HasParameters)
+            {
+
+                try
+                {
+                    writer.WriteEncodedValue(Parameters);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                }
+            }
+
+            writer.PopSequence(tag);
+        }
 
         internal static void Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet, out ValueAlgorithmIdentifierAsn decoded)
         {

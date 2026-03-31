@@ -62,12 +62,14 @@ TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
 TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva);
+TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
 IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
 IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
+bool TryGetSimpleName(ModuleHandle handle, out string simpleName);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
@@ -101,6 +103,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
 | `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
+| `Module` | `SimpleName` | Simple name of the Module (UTF-8, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
 | `Module` | `AvailableTypeParams` | Pointer to an EETypeHashTable |
 | `Module` | `InstMethodHashTable` | Pointer to an InstMethodHashTable |
@@ -130,6 +133,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `PEImageLayout` | `Base` | Base address of the image layout |
 | `PEImageLayout` | `Size` | Size of the image layout |
 | `PEImageLayout` | `Flags` | Flags associated with the PEImageLayout |
+| `PEImageLayout` | `Format` | Format discriminator (PE or Webcil) for the image layout |
 | `CGrowableSymbolStream` | `Buffer` | Pointer to the raw symbol stream buffer start |
 | `CGrowableSymbolStream` | `Size` | Size of the raw symbol stream buffer |
 | `AppDomain` | `RootAssembly` | Pointer to the root assembly |
@@ -168,6 +172,11 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
 | `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
 | `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
+| `WebcilHeader` | `CoffSections` | Number of COFF sections in the Webcil image |
+| `WebcilSectionHeader` | `VirtualSize` | Virtual size of the section |
+| `WebcilSectionHeader` | `VirtualAddress` | RVA of the section |
+| `WebcilSectionHeader` | `SizeOfRawData` | Size of the section's raw data |
+| `WebcilSectionHeader` | `PointerToRawData` | File offset to the section's raw data |
 
 
 
@@ -183,6 +192,7 @@ IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer
 | --- | --- | --- | --- |
 | `ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED` | uint | Flag in Assembly NotifyFlags indicating the Assembly will notify profilers. | `0x1` |
 | `DefaultDomainFriendlyName` | string | Friendly name returned when `AppDomain.FriendlyName` is null (matches native `DEFAULT_DOMAIN_FRIENDLY_NAME`) | `"DefaultDomain"` |
+| `MaxWebcilSections` | ushort | Maximum number of COFF sections supported in a Webcil image (must stay in sync with native `WEBCIL_MAX_SECTIONS`) | `16` |
 
 Contracts used:
 | Contract Name |
@@ -205,6 +215,13 @@ private enum PEImageFlags : uint
 {
     FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
 };
+
+// Must stay in sync with native PEImageLayout::ImageFormat values.
+private enum ImageFormat : uint
+{
+    PE = 0,
+    Webcil = 1,
+}
 ```
 
 ### Method Implementations
@@ -373,7 +390,17 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
 
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
 {
-    if (rva == 0)
+    return GetRvaData(peAssemblyPtr, rva, isNullOk: false);
+}
+
+TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva)
+{
+    return GetRvaData(peAssemblyPtr, rva, isNullOk: true);
+}
+
+private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNullOk)
+{
+    if (rva == 0 && !isNullOk)
         return TargetPointer.Null;
     TargetPointer peImage = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
     if(peImage == TargetPointer.Null)
@@ -396,48 +423,90 @@ TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
     }
     else
     {
-        // find NT headers using DOS header
-        uint dosHeaderLfanew = target.Read<uint>(baseAddress + /* ImageDosHeader::LfanewOffset */);
-        TargetPointer ntHeadersPtr = baseAddress + dosHeaderLfanew;
-
-        TargetPointer optionalHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */;
-
-        // Get number of sections from file header
-        TargetPointer fileHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::FileHeaderOffset */;
-        uint numberOfSections = target.Read<uint>(fileHeaderPtr + /* ImageFileHeader::NumberOfSectionsOffset */);
-
-        // Calculate first section address (after NT headers and optional header)
-        uint imageFileHeaderSize = target.Read<ushort>(fileHeaderPtr + /* ImageFileHeader::SizeOfOptionalHeaderOffset */);
-        TargetPointer firstSectionPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */ + imageFileHeaderSize;
-
-        // Find the section containing this RVA
-        TargetPointer sectionPtr = TargetPointer.Null;
-        uint sectionHeaderSize = /* sizeof(ImageSectionHeader native struct) */;
-
-        for (uint i = 0; i < numberOfSections; i++)
-        {
-            TargetPointer currentSectionPtr = firstSectionPtr + (i * sectionHeaderSize);
-            uint virtualAddress = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
-            uint sizeOfRawData = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::SizeOfRawDataOffset */);
-
-            if (rva >= VirtualAddress && rva < VirtualAddress + SizeOfRawData)
-            {
-                sectionPtr = currentSectionPtr;
-            }
-        }
-        if (sectionPtr == TargetPointer.Null)
-        {
-            throw new InvalidOperationException("Failed to read from image.");
-        }
-        else
-        {
-            // Convert RVA to file offset using section information
-            uint sectionVirtualAddress = target.Read<uint>(sectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
-            uint sectionPointerToRawData = target.Read<uint>(sectionPtr + /* ImageSectionHeader::PointerToRawDataOffset */);
-            offset = ((rva - sectionVirtualAddress) + sectionPointerToRawData);
-        }
+        offset = RvaToOffset(rva, peImageLayout);
     }
     return baseAddress + offset;
+}
+
+uint RvaToOffset(int rva, Data.PEImageLayout imageLayout)
+{
+    uint format = target.Read<uint>(imageLayout + /* PEImageLayout::Format offset */);
+    if (format == (uint)ImageFormat.Webcil)
+        return WebcilRvaToOffset(rva, imageLayout);
+
+    TargetPointer baseAddress = target.ReadPointer(imageLayout + /* PEImageLayout::Base offset */);
+
+    // find NT headers using DOS header
+    uint dosHeaderLfanew = target.Read<uint>(baseAddress + /* ImageDosHeader::LfanewOffset */);
+    TargetPointer ntHeadersPtr = baseAddress + dosHeaderLfanew;
+
+    // Get number of sections from file header
+    TargetPointer fileHeaderPtr = ntHeadersPtr + /* ImageNTHeaders::FileHeaderOffset */;
+    uint numberOfSections = target.Read<uint>(fileHeaderPtr + /* ImageFileHeader::NumberOfSectionsOffset */);
+
+    // Calculate first section address (after NT headers and optional header)
+    uint imageFileHeaderSize = target.Read<ushort>(fileHeaderPtr + /* ImageFileHeader::SizeOfOptionalHeaderOffset */);
+    TargetPointer firstSectionPtr = ntHeadersPtr + /* ImageNTHeaders::OptionalHeaderOffset */ + imageFileHeaderSize;
+
+    // Find the section containing this RVA
+    TargetPointer sectionPtr = TargetPointer.Null;
+    uint sectionHeaderSize = /* sizeof(ImageSectionHeader native struct) */;
+
+    for (uint i = 0; i < numberOfSections; i++)
+    {
+        TargetPointer currentSectionPtr = firstSectionPtr + (i * sectionHeaderSize);
+        uint virtualAddress = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
+        uint sizeOfRawData = target.Read<uint>(currentSectionPtr + /* ImageSectionHeader::SizeOfRawDataOffset */);
+
+        if (rva >= virtualAddress && rva < virtualAddress + sizeOfRawData)
+        {
+            sectionPtr = currentSectionPtr;
+        }
+    }
+    if (sectionPtr == TargetPointer.Null)
+    {
+        throw new InvalidOperationException("Failed to read from image.");
+    }
+
+    // Convert RVA to file offset using section information
+    uint sectionVirtualAddress = target.Read<uint>(sectionPtr + /* ImageSectionHeader::VirtualAddressOffset */);
+    uint sectionPointerToRawData = target.Read<uint>(sectionPtr + /* ImageSectionHeader::PointerToRawDataOffset */);
+    return (rva - sectionVirtualAddress) + sectionPointerToRawData;
+}
+
+uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
+{
+    if (rva < 0)
+        throw new InvalidOperationException("Negative RVA in Webcil image.");
+
+    TargetPointer headerBase = imageLayout.Base;
+    Data.WebcilHeader webcilHeader = // read WebcilHeader at headerBase
+    uint webcilHeaderSize = /* sizeof(WebcilHeader) from type info */;
+    uint webcilSectionSize = /* sizeof(WebcilSectionHeader) from type info */;
+
+    ushort numSections = webcilHeader.CoffSections;
+    if (numSections == 0 || numSections > MaxWebcilSections)
+        throw new InvalidOperationException("Invalid Webcil section count.");
+
+    TargetPointer sectionTableBase = headerBase + webcilHeaderSize;
+
+    for (int i = 0; i < numSections; i++)
+    {
+        TargetPointer sectionPtr = sectionTableBase + (uint)(i * (int)webcilSectionSize);
+        Data.WebcilSectionHeader section = // read WebcilSectionHeader at sectionPtr
+
+        uint rvaUnsigned = (uint)rva;
+        if (rvaUnsigned >= section.VirtualAddress)
+        {
+            uint offset = rvaUnsigned - section.VirtualAddress;
+            if (offset < section.VirtualSize && offset < section.SizeOfRawData)
+            {
+                return offset + section.PointerToRawData;
+            }
+        }
+    }
+
+    throw new InvalidOperationException("Failed to resolve RVA in Webcil image.");
 }
 
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
@@ -506,6 +575,16 @@ private static ModuleFlags GetFlags(uint flags)
 ModuleFlags GetFlags(ModuleHandle handle)
 {
     return GetFlags(target.Read<uint>(handle.Address + /* Module::Flags offset */));
+}
+
+bool TryGetSimpleName(ModuleHandle handle, out string simpleName)
+{
+    TargetPointer simpleNameStart = target.ReadPointer(handle.Address + /* Module::SimpleName offset */);
+    if (simpleNameStart == TargetPointer.Null)
+        return false;
+    byte[] simpleNameBytes = // Read<byte> from target starting at simpleNameStart until null terminator
+    simpleName = // convert to string, throw on invalid UTF-8
+    return true;
 }
 
 string GetPath(ModuleHandle handle)
