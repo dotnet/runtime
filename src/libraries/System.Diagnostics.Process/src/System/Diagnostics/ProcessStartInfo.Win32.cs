@@ -45,7 +45,5 @@ namespace System.Diagnostics
                 }
             }
         }
-
-        public bool UseShellExecute { get; set; }
     }
 }
