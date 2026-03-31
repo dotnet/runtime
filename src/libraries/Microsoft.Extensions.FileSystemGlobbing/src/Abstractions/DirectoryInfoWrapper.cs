@@ -63,22 +63,26 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// Returns an instance of <see cref="DirectoryInfoBase" /> that represents a subdirectory.
         /// </summary>
         /// <remarks>
-        /// If <paramref name="path" /> equals '..', this returns the parent directory.
+        /// If <paramref name="name" /> equals '..', this returns the parent directory.
         /// </remarks>
-        /// <param name="path">The directory name</param>
-        /// <returns>The directory</returns>
-        public override DirectoryInfoBase GetDirectory(string path)
+        /// <param name="name">The directory name</param>
+        /// <returns>Instance of <see cref="DirectoryInfoBase" /> even if the directory does not exist</returns>
+        public override DirectoryInfoBase GetDirectory(string name)
         {
-            bool isParentPath = string.Equals(path, "..", StringComparison.Ordinal);
+            bool isParentPath = string.Equals(name, "..", StringComparison.Ordinal);
 
             return new DirectoryInfoWrapper(
-                new DirectoryInfo(Path.Combine(_directoryInfo.FullName, path)),
+                new DirectoryInfo(Path.Combine(_directoryInfo.FullName, name)),
                 isParentPath);
         }
 
-        /// <inheritdoc />
-        public override FileInfoBase GetFile(string path)
-            => new FileInfoWrapper(new FileInfo(Path.Combine(_directoryInfo.FullName, path)));
+        /// <summary>
+        /// Returns an instance of <see cref="FileInfoBase" /> that represents a file in the directory
+        /// </summary>
+        /// <param name="name">The file name</param>
+        /// <returns>Instance of <see cref="FileInfoBase" /> even if the file does not exist</returns>
+        public override FileInfoBase GetFile(string name)
+            => new FileInfoWrapper(new FileInfo(Path.Combine(_directoryInfo.FullName, name)));
 
         /// <inheritdoc />
         public override string Name => _isParentPath ? ".." : _directoryInfo.Name;
