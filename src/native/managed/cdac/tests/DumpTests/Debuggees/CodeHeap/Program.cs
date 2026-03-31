@@ -20,7 +20,7 @@ using System.Runtime.CompilerServices;
 internal static class Program
 {
     // Keep the delegate rooted so the HostCodeHeap survives GC until the crash.
-    private static Delegate s_dynamicDelegate;
+    private static Delegate? s_dynamicDelegate;
 
     private static void Main()
     {
