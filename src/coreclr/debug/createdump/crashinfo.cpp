@@ -455,7 +455,7 @@ CrashInfo::EnumerateManagedModules()
             }
 
             DacpGetModuleData moduleData;
-            if (SUCCEEDED(hr = moduleData.Request(pClrDataModule.GetPtr())))
+            if (SUCCEEDED(hr = moduleData.Request(pClrDataModule)))
             {
                 uint64_t loadedPEAddress = CONVERT_FROM_SIGN_EXTENDED(moduleData.LoadedPEAddress);
 

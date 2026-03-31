@@ -49,9 +49,17 @@ extern void trace_verbose_printf(const char* format, ...);
 typedef int T_CONTEXT;
 #include <dacprivate.h>
 
+#ifndef _ASSERTE
 #define _ASSERTE(expr) assert(expr)
+#define UNDEF__ASSERTE
+#endif // _ASSERTE
+
 #include <holder.h>
+
+#ifdef UNDEF__ASSERTE
 #undef _ASSERTE
+#undef UNDEF__ASSERTE
+#endif // UNDEF__ASSERTE
 
 #ifdef HOST_UNIX
 #include <minipal/strings.h>
