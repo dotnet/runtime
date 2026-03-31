@@ -64,6 +64,13 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void ProcessId_InvalidHandle_ThrowsInvalidOperationException()
+        {
+            using SafeProcessHandle invalidHandle = new SafeProcessHandle();
+            Assert.Throws<InvalidOperationException>(() => invalidHandle.ProcessId);
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // We don't use pidfd on Unix yet
         public void CanGetProcessIdForCopyOfTheHandle()
         {
