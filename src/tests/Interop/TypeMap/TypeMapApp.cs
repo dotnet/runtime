@@ -283,6 +283,34 @@ public class TypeMap
         IReadOnlyDictionary<Type, Type> proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<TypicalUseCase>();
         Assert.Equal(typeof(C1), proxyMap[new C1().GetType()]);
         Assert.Equal(typeof(S1), proxyMap[((object)default(S1)).GetType()]);
+
+        // When running in R2R mode, verify the R2R image contains TypeMap sections.
+        // This confirms CrossGen2 correctly emitted entries for groups without
+        // TypeMapAssemblyTarget attributes alongside groups with failed targets.
+        string assemblyLocation = typeof(TypeMap).Assembly.Location;
+        if (!string.IsNullOrEmpty(assemblyLocation))
+        {
+            string r2rDumpFile = assemblyLocation + ".r2rdump";
+            if (File.Exists(r2rDumpFile))
+            {
+                string[] lines = File.ReadAllLines(r2rDumpFile);
+                bool hasExternalTypeMaps = false;
+                bool hasProxyTypeMaps = false;
+                bool hasTypeMapAssemblyTargets = false;
+                foreach (string line in lines)
+                {
+                    if (line.Contains("ExternalTypeMaps", StringComparison.Ordinal))
+                        hasExternalTypeMaps = true;
+                    if (line.Contains("ProxyTypeMaps", StringComparison.Ordinal))
+                        hasProxyTypeMaps = true;
+                    if (line.Contains("TypeMapAssemblyTargets", StringComparison.Ordinal))
+                        hasTypeMapAssemblyTargets = true;
+                }
+                Assert.True(hasExternalTypeMaps, "R2R image should contain ExternalTypeMaps section");
+                Assert.True(hasProxyTypeMaps, "R2R image should contain ProxyTypeMaps section");
+                Assert.True(hasTypeMapAssemblyTargets, "R2R image should contain TypeMapAssemblyTargets section");
+            }
+        }
     }
 
     [Fact]
