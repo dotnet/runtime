@@ -176,6 +176,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 	case GT_IND:
 	    genCodeForIndir(treeNode->AsIndir());
+	    break;
 
         default:
 	    abort();

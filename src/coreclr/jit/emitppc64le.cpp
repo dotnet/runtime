@@ -307,7 +307,29 @@ void emitter::emitIns_R_R(instruction     ins,
 			  insOpts         opt /* = INS_OPTS_NONE */,
 			  insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
-    _ASSERTE(!"NYI");
+    if (IsMovInstruction(ins))
+    {
+        assert(!"Please use emitIns_Mov() to correctly handle move elision");
+        emitIns_Mov(ins, attr, reg1, reg2, /* canSkip */ false, opt);
+    }
+
+    emitAttr  size     = EA_SIZE(attr);
+    emitAttr  elemsize = EA_UNKNOWN;
+    insFormat fmt      = IF_NONE;
+
+    switch (ins)
+    {
+        case INS_lwa:
+	    break;
+	
+	default:
+	    abort();
+    }
+
+    instrDesc* id = emitNewInstr(size);
+    id->idIns(ins);
+    appendToCurIG(id);
+
 }
 
 
