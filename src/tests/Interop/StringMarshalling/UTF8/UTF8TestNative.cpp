@@ -43,7 +43,7 @@ char* utf16_to_utf8(const wchar_t *srcstring)
 
     if (!nc)
     {
-        return 0;
+        return nullptr;
     }
 
     pszUTF8[nc] = '\0';
@@ -81,7 +81,7 @@ wchar_t* utf8_to_utf16(const char *utf8)
 
     if (!nc)
     {
-        return 0;
+        return nullptr;
     }
     //MultiByteToWideChar do not null terminate the string when cbMultiByte is not -1
     wszTextUTF16[nc] = '\0';

@@ -85,13 +85,13 @@ namespace StringMarshaling
         public static IEnumerable<object[]> Utf8StringsWithIndex()
         {
             for (int i = 0; i < Utf8Strings.Length; i++)
-                yield return new object[] { Utf8Strings[i], i };
+                yield return [Utf8Strings[i], i];
         }
 
         public static IEnumerable<object[]> NonNullUtf8StringsWithIndex()
         {
             for (int i = 0; i < Utf8Strings.Length - 1; i++)
-                yield return new object[] { Utf8Strings[i], i };
+                yield return [Utf8Strings[i], i];
         }
 
         [Theory]
@@ -106,7 +106,7 @@ namespace StringMarshaling
         [MemberData(nameof(Utf8StringsWithIndex))]
         public static void TestOutStringParameter(string orgString, int index)
         {
-            string nativeString = StringParameterInOut(orgString, index);
+            string nativeString = StringParameterOut(orgString, index);
             Assert.Equal(orgString, nativeString);
         }
 
@@ -182,8 +182,8 @@ namespace StringMarshaling
         [Fact]
         public static void TestEmptyString()
         {
-            StringParameterInOut(string.Empty, 0);
-            StringParameterOut(string.Empty, 0);
+            Assert.Null(StringParameterInOut(string.Empty, 0));
+            Assert.Null(StringParameterOut(string.Empty, 0));
         }
 
         [Fact]
