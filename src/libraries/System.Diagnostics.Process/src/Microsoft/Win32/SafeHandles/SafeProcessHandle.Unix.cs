@@ -104,9 +104,10 @@ namespace Microsoft.Win32.SafeHandles
             // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
             // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
             // Handle can be null only for UseShellExecute or platforms that don't support Console.Open* methods like Android.
-            bool usesTerminal = (stdinHandle is not null && Interop.Sys.IsATty(stdinHandle))
+            bool usesTerminal = ProcessUtils.PlatformSupportsConsole
+                && ((stdinHandle is not null && Interop.Sys.IsATty(stdinHandle))
                 || (stdoutHandle is not null && Interop.Sys.IsATty(stdoutHandle))
-                || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle));
+                || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle)));
 
             filename = ProcessUtils.ResolvePath(startInfo.FileName);
             argv = ProcessUtils.ParseArgv(startInfo);
