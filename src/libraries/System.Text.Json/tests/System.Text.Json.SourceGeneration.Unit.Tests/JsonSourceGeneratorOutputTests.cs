@@ -317,6 +317,24 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """, nameof(UnsafeAccessors_InitOnlyProperties));
         }
 
+        [Fact]
+        public void UnsafeAccessors_GenericTypeInitOnlyProperties()
+        {
+            VerifyAgainstBaseline("""
+                using System.Text.Json.Serialization;
+                namespace TestApp
+                {
+                    [JsonSerializable(typeof(GenericProps<int>))]
+                    internal partial class MyContext : JsonSerializerContext { }
+                    public class GenericProps<T>
+                    {
+                        public T Value { get; init; }
+                        public string Label { get; init; }
+                    }
+                }
+                """, nameof(UnsafeAccessors_GenericTypeInitOnlyProperties));
+        }
+
         #region Baseline comparison infrastructure
 
         private static readonly string s_baselinesRelativePath = IO.Path.Combine(
