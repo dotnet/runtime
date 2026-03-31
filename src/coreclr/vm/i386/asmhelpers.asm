@@ -994,6 +994,7 @@ _TheUMEntryPrestub@0 proc public
     jmp     eax     ; Tail Jmp
 _TheUMEntryPrestub@0 endp
 
+ifdef FEATURE_COMINTEROP
 _GenericComCallStub@0 proc public
 
     ; Pop ComCallMethodDesc* pushed by prestub
