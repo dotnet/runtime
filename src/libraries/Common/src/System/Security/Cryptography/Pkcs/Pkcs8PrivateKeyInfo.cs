@@ -177,7 +177,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(
                 password,
-                source,
+                source.Span,
                 out int localRead);
 
             Memory<byte> decryptedMemory = decrypted;
@@ -208,7 +208,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             ArraySegment<byte> decrypted = KeyFormatHelper.DecryptPkcs8(
                 passwordBytes,
-                source,
+                source.Span,
                 out int localRead);
 
             Memory<byte> decryptedMemory = decrypted;

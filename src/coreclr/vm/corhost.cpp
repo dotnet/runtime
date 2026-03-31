@@ -244,13 +244,11 @@ static PTRARRAYREF SetCommandLineArgs(PCWSTR pwzAssemblyPath, int argc, PCWSTR* 
 
     PCWSTR exePath = Bundle::AppIsBundle() ? static_cast<PCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath;
 
-    PTRARRAYREF result;
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENVIRONMENT__INITIALIZE_COMMAND_LINE_ARGS);
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(exePath);
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(argc);
-    args[ARGNUM_2] = PTR_TO_ARGHOLDER(argv);
-    CALL_MANAGED_METHOD_RETREF(result, PTRARRAYREF, args);
+    PTRARRAYREF result = NULL;
+    GCPROTECT_BEGIN(result);
+    UnmanagedCallersOnlyCaller initializeCommandLineArgs(METHOD__ENVIRONMENT__INITIALIZE_COMMAND_LINE_ARGS);
+    initializeCommandLineArgs.InvokeThrowing(exePath, argc, argv, &result);
+    GCPROTECT_END();
 
     return result;
 }

@@ -67,7 +67,7 @@ namespace System.Speech.Internal.SapiInterop
 
         internal int GetPropertyNum(string name)
         {
-            return (int)_proxy.Invoke(delegate { return GetProperty(_proxy.Recognizer, name, true); });
+            return (int)_proxy.Invoke(delegate { return GetProperty(_proxy.Recognizer, name, true); })!;
         }
         internal void SetPropertyString(string name, string value)
         {
@@ -76,7 +76,7 @@ namespace System.Speech.Internal.SapiInterop
 
         internal string GetPropertyString(string name)
         {
-            return (string)_proxy.Invoke(delegate { return GetProperty(_proxy.Recognizer, name, false); });
+            return (string)_proxy.Invoke(delegate { return GetProperty(_proxy.Recognizer, name, false); })!;
         }
 
         // ISpRecognizer Methods
@@ -99,15 +99,15 @@ namespace System.Speech.Internal.SapiInterop
             ISpObjectToken sapiObjectToken;
             return (RecognizerInfo)_proxy.Invoke(delegate
           {
-              RecognizerInfo recognizerInfo;
+              RecognizerInfo? recognizerInfo;
               _proxy.Recognizer.GetRecognizer(out sapiObjectToken);
 
               IntPtr sapiTokenId;
               try
               {
                   sapiObjectToken.GetId(out sapiTokenId);
-                  string tokenId = Marshal.PtrToStringUni(sapiTokenId);
-                  recognizerInfo = RecognizerInfo.Create(ObjectToken.Open(null, tokenId, false));
+                  string tokenId = Marshal.PtrToStringUni(sapiTokenId)!;
+                  recognizerInfo = RecognizerInfo.Create(ObjectToken.Open(null, tokenId, false)!);
                   if (recognizerInfo == null)
                   {
                       throw new InvalidOperationException(SR.Get(SRID.RecognizerNotFound));
@@ -120,10 +120,10 @@ namespace System.Speech.Internal.SapiInterop
               }
 
               return recognizerInfo;
-          });
+          })!;
         }
 
-        internal void SetInput(object input, bool allowFormatChanges)
+        internal void SetInput(object? input, bool allowFormatChanges)
         {
             _proxy.Invoke2(delegate { _proxy.Recognizer.SetInput(input, allowFormatChanges); });
         }
@@ -131,13 +131,13 @@ namespace System.Speech.Internal.SapiInterop
         internal SapiRecoContext CreateRecoContext()
         {
             ISpRecoContext context;
-            return (SapiRecoContext)_proxy.Invoke(delegate { _proxy.Recognizer.CreateRecoContext(out context); return new SapiRecoContext(context, _proxy); });
+            return (SapiRecoContext)_proxy.Invoke(delegate { _proxy.Recognizer.CreateRecoContext(out context); return new SapiRecoContext(context, _proxy); })!;
         }
 
         internal SPRECOSTATE GetRecoState()
         {
             SPRECOSTATE state;
-            return (SPRECOSTATE)_proxy.Invoke(delegate { _proxy.Recognizer.GetRecoState(out state); return state; });
+            return (SPRECOSTATE)_proxy.Invoke(delegate { _proxy.Recognizer.GetRecoState(out state); return state; })!;
         }
 
         internal void SetRecoState(SPRECOSTATE state)
@@ -148,7 +148,7 @@ namespace System.Speech.Internal.SapiInterop
         internal SPRECOGNIZERSTATUS GetStatus()
         {
             SPRECOGNIZERSTATUS status;
-            return (SPRECOGNIZERSTATUS)_proxy.Invoke(delegate { _proxy.Recognizer.GetStatus(out status); return status; });
+            return (SPRECOGNIZERSTATUS)_proxy.Invoke(delegate { _proxy.Recognizer.GetStatus(out status); return status; })!;
         }
 
         internal IntPtr GetFormat(SPSTREAMFORMATTYPE WaveFormatType)
@@ -158,18 +158,18 @@ namespace System.Speech.Internal.SapiInterop
               Guid formatId;
               IntPtr ppCoMemWFEX;
               _proxy.Recognizer.GetFormat(WaveFormatType, out formatId, out ppCoMemWFEX); return ppCoMemWFEX;
-          });
+          })!;
         }
 
-        internal SAPIErrorCodes EmulateRecognition(string phrase)
+        internal SAPIErrorCodes EmulateRecognition(string? phrase)
         {
             object displayAttributes = " "; // Passing a null object here doesn't work because EmulateRecognition doesn't handle VT_EMPTY
-            return (SAPIErrorCodes)_proxy.Invoke(delegate { return _proxy.SapiSpeechRecognizer.EmulateRecognition(phrase, ref displayAttributes, 0); });
+            return (SAPIErrorCodes)_proxy.Invoke(delegate { return _proxy.SapiSpeechRecognizer.EmulateRecognition(phrase, ref displayAttributes, 0); })!;
         }
 
         internal SAPIErrorCodes EmulateRecognition(ISpPhrase iSpPhrase, uint dwCompareFlags)
         {
-            return (SAPIErrorCodes)_proxy.Invoke(delegate { return _proxy.Recognizer2.EmulateRecognitionEx(iSpPhrase, dwCompareFlags); });
+            return (SAPIErrorCodes)_proxy.Invoke(delegate { return _proxy.Recognizer2.EmulateRecognitionEx(iSpPhrase, dwCompareFlags); })!;
         }
 
         #endregion
@@ -224,7 +224,7 @@ namespace System.Speech.Internal.SapiInterop
         private static object GetProperty(ISpRecognizer sapiRecognizer, string name, bool integer)
         {
             SAPIErrorCodes errorCode;
-            object result = null;
+            object? result = null;
 
             if (integer)
             {

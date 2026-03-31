@@ -102,6 +102,14 @@ public abstract class ContractRegistry
     /// Gets an instance of the BuiltInCOM contract for the target.
     /// </summary>
     public virtual IBuiltInCOM BuiltInCOM => GetContract<IBuiltInCOM>();
+    /// <summary>
+    /// Gets an instance of the ConditionalWeakTable contract for the target.
+    /// </summary>
+    public virtual IConditionalWeakTable ConditionalWeakTable => GetContract<IConditionalWeakTable>();
+    /// <summary>
+    /// Gets an instance of the AuxiliarySymbols contract for the target.
+    /// </summary>
+    public virtual IAuxiliarySymbols AuxiliarySymbols => GetContract<IAuxiliarySymbols>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
 
