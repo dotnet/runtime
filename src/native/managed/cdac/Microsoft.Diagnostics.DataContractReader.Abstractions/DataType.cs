@@ -162,7 +162,7 @@ public enum DataType
     InterfaceEntry,
     ComInterfaceEntry,
     InternalComInterfaceDispatch,
-
+    AuxiliarySymbolInfo,
 
     /* GC Data Types */
 
@@ -175,4 +175,6 @@ public enum DataType
     HandleTableBucket,
     HandleTable,
     TableSegment,
+    CardTableInfo,
+    RegionFreeList,
 }

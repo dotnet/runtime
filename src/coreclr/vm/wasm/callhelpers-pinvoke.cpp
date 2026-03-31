@@ -135,6 +135,7 @@ extern "C" {
     int32_t SystemNative_ReadDir (void *, void *);
     int32_t SystemNative_ReadFromNonblocking (void *, void *, int32_t);
     int32_t SystemNative_ReadLink (void *, void *, int32_t);
+    int64_t SystemNative_ReadV (void *, void *, int32_t);
     void * SystemNative_Realloc (void *, void *);
     int32_t SystemNative_Rename (void *, void *);
     int32_t SystemNative_RmDir (void *);
@@ -151,6 +152,7 @@ extern "C" {
     int32_t SystemNative_Unlink (void *);
     int32_t SystemNative_Write (void *, void *, int32_t);
     int32_t SystemNative_WriteToNonblocking (void *, void *, int32_t);
+    int64_t SystemNative_WriteV (void *, void *, int32_t);
 } // extern "C"
 
 static const Entry s_libSystem_Globalization_Native [] = {
@@ -277,6 +279,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_ReadDir) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadFromNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadLink) // System.Private.CoreLib
+    DllImportEntry(SystemNative_ReadV) // System.Private.CoreLib
     DllImportEntry(SystemNative_Realloc) // System.Private.CoreLib
     DllImportEntry(SystemNative_Rename) // System.Private.CoreLib
     DllImportEntry(SystemNative_RmDir) // System.Private.CoreLib
@@ -293,6 +296,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_Write) // System.Console, System.Private.CoreLib
     DllImportEntry(SystemNative_WriteToNonblocking) // System.Private.CoreLib
+    DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
 };
 
 static const Entry s_libSystem_Native_Browser [] = {
@@ -317,7 +321,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 8},
-    {"libSystem.Native", s_libSystem_Native, 92},
+    {"libSystem.Native", s_libSystem_Native, 94},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };

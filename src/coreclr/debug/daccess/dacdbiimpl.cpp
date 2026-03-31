@@ -1270,7 +1270,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMP
                                                                 wszFilePath,
                                                                 cchFilePath);
 
-        pStrFilename->AssignCopy(wszFilePath);
+        IfFailThrow(pStrFilename->AssignCopy(wszFilePath));
         *pResult = ret;
         }
     }

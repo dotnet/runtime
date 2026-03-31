@@ -5,7 +5,6 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Reflection.Internal;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
@@ -14,54 +13,29 @@ namespace System.Reflection
         public static void WriteBytes(this byte[] buffer, int start, byte value, int byteCount)
         {
             Debug.Assert(buffer.Length > 0);
-
             new Span<byte>(buffer, start, byteCount).Fill(value);
         }
 
-        public static void WriteDouble(this byte[] buffer, int start, double value)
-        {
-#if NET
+        public static void WriteDouble(this byte[] buffer, int start, double value) =>
             WriteUInt64(buffer, start, BitConverter.DoubleToUInt64Bits(value));
-#else
-            unsafe
-            {
-                WriteUInt64(buffer, start, *(ulong*)&value);
-            }
-#endif
-        }
 
-        public static void WriteSingle(this byte[] buffer, int start, float value)
-        {
-#if NET
+        public static void WriteSingle(this byte[] buffer, int start, float value) =>
             WriteUInt32(buffer, start, BitConverter.SingleToUInt32Bits(value));
-#else
-            unsafe
-            {
-                WriteUInt32(buffer, start, *(uint*)&value);
-            }
-#endif
-        }
-
-        public static void WriteByte(this byte[] buffer, int start, byte value)
-        {
-            // Perf: The compiler emits a check when pinning the buffer. It's thus not worth doing so.
-            buffer[start] = value;
-        }
 
         public static void WriteUInt16(this byte[] buffer, int start, ushort value) =>
-            Unsafe.WriteUnaligned(ref buffer[start], !BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(start), value);
 
         public static void WriteUInt16BE(this byte[] buffer, int start, ushort value) =>
-            Unsafe.WriteUnaligned(ref buffer[start], BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
+            BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(start), value);
 
         public static void WriteUInt32BE(this byte[] buffer, int start, uint value) =>
-            Unsafe.WriteUnaligned(ref buffer[start], BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
+            BinaryPrimitives.WriteUInt32BigEndian(buffer.AsSpan(start), value);
 
         public static void WriteUInt32(this byte[] buffer, int start, uint value) =>
-            Unsafe.WriteUnaligned(ref buffer[start], !BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(start), value);
 
         public static void WriteUInt64(this byte[] buffer, int start, ulong value) =>
-            Unsafe.WriteUnaligned(ref buffer[start], !BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(value) : value);
+            BinaryPrimitives.WriteUInt64LittleEndian(buffer.AsSpan(start), value);
 
         public const int SizeOfSerializedDecimal = sizeof(byte) + 3 * sizeof(uint);
 
@@ -72,7 +46,7 @@ namespace System.Reflection
             uint low, mid, high;
             value.GetBits(out isNegative, out scale, out low, out mid, out high);
 
-            WriteByte(buffer, start, (byte)(scale | (isNegative ? 0x80 : 0x00)));
+            buffer[start] = (byte)(scale | (isNegative ? 0x80 : 0x00));
             WriteUInt32(buffer, start + 1, low);
             WriteUInt32(buffer, start + 5, mid);
             WriteUInt32(buffer, start + 9, high);
@@ -82,45 +56,9 @@ namespace System.Reflection
 
         public static void WriteGuid(this byte[] buffer, int start, Guid value)
         {
-#if NET
             bool written = value.TryWriteBytes(buffer.AsSpan(start));
             // This function is not public, callers have to ensure that enough space is available.
             Debug.Assert(written);
-#else
-            unsafe
-            {
-                fixed (byte* dst = &buffer[start])
-                {
-                    byte* src = (byte*)&value;
-
-                    uint a = *(uint*)(src + 0);
-                    unchecked
-                    {
-                        dst[0] = (byte)a;
-                        dst[1] = (byte)(a >> 8);
-                        dst[2] = (byte)(a >> 16);
-                        dst[3] = (byte)(a >> 24);
-
-                        ushort b = *(ushort*)(src + 4);
-                        dst[4] = (byte)b;
-                        dst[5] = (byte)(b >> 8);
-
-                        ushort c = *(ushort*)(src + 6);
-                        dst[6] = (byte)c;
-                        dst[7] = (byte)(c >> 8);
-                    }
-
-                    dst[8] = src[8];
-                    dst[9] = src[9];
-                    dst[10] = src[10];
-                    dst[11] = src[11];
-                    dst[12] = src[12];
-                    dst[13] = src[13];
-                    dst[14] = src[14];
-                    dst[15] = src[15];
-                }
-            }
-#endif
         }
 
         public static unsafe void WriteUTF8(this byte[] buffer, int start, char* charPtr, int charCount, int byteCount, bool allowUnpairedSurrogates)

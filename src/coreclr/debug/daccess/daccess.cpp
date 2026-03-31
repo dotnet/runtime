@@ -5295,50 +5295,14 @@ ClrDataAccess::GetFullMethodName(
 }
 
 PCSTR
-ClrDataAccess::GetJitHelperName(
-    IN TADDR address,
-    IN bool dynamicHelpersOnly /*=false*/
-    )
+ClrDataAccess::GetJitHelperName(IN TADDR address)
 {
-    const static PCSTR s_rgHelperNames[] = {
-#define JITHELPER(code,fn,sig) #code,
-#include <jithelpers.h>
-    };
-    static_assert(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
-
-#ifdef TARGET_UNIX
-    if (!dynamicHelpersOnly)
-#else
-    if (!dynamicHelpersOnly && g_runtimeLoadedBaseAddress <= address &&
-            address < g_runtimeLoadedBaseAddress + g_runtimeVirtualSize)
-#endif // TARGET_UNIX
+    PCODE pCode = PINSTRToPCODE(address);
+    for (unsigned i = 0; i < g_auxiliarySymbolCount; i++)
     {
-        // Read the whole table from the target in one shot for better performance
-        VMHELPDEF * pTable = static_cast<VMHELPDEF *>(
-            PTR_READ(dac_cast<TADDR>(&hlpFuncTable), CORINFO_HELP_COUNT * sizeof(VMHELPDEF)));
-
-        for (int i = 0; i < CORINFO_HELP_COUNT; i++)
+        if (pCode == hlpAuxiliarySymbolTable[i].pfnAuxiliarySymbol)
         {
-            if (address == pTable[i].pfnHelper)
-                return s_rgHelperNames[i];
-        }
-    }
-
-    // Check if its a dynamically generated JIT helper
-    const static CorInfoHelpFunc s_rgDynamicHCallIds[] = {
-#define DYNAMICJITHELPER(code, fn, binderId) code,
-#define JITHELPER(code, fn, binderId)
-#include <jithelpers.h>
-    };
-
-    // Read the whole table from the target in one shot for better performance
-    VMHELPDEF * pDynamicTable = static_cast<VMHELPDEF *>(
-        PTR_READ(dac_cast<TADDR>(&hlpDynamicFuncTable), DYNAMIC_CORINFO_HELP_COUNT * sizeof(VMHELPDEF)));
-    for (unsigned d = 0; d < DYNAMIC_CORINFO_HELP_COUNT; d++)
-    {
-        if (address == pDynamicTable[d].pfnHelper)
-        {
-            return s_rgHelperNames[s_rgDynamicHCallIds[d]];
+            return hlpAuxiliarySymbolTable[i].name;
         }
     }
 
@@ -5565,7 +5529,7 @@ ClrDataAccess::RawGetMethodName(
 
     // Do not waste time looking up name for static helper. Debugger can get the actual name from .pdb.
     PCSTR pHelperName;
-    pHelperName = GetJitHelperName(TO_TADDR(address), true /* dynamicHelpersOnly */);
+    pHelperName = GetJitHelperName(TO_TADDR(address));
     if (pHelperName != NULL)
     {
         if (displacement)

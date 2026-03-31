@@ -7,6 +7,7 @@
     <ItemGroup>
       <_DumpTypeOutput Include="$(MSBuildProjectName)"
                        DumpTypes="$(DumpTypes)"
+                       R2RModes="$(R2RModes)"
                        WindowsOnly="$(WindowsOnly)"
                        ProjectPath="$(MSBuildProjectFullPath)" />
     </ItemGroup>
