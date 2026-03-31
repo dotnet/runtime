@@ -1957,12 +1957,12 @@ private:
     MethodDesc* m_pManagedMD;
     MetaSig m_signature;
 
-    DWORD m_argumentArrayLocalNum;
-    DWORD m_argumentIsByRefArrayLocalNum;
-    DWORD m_argumentTypeLocalNum;
-    DWORD m_wrapperArrayLocalNum;
+    DWORD m_argumentArrayLocalNum = LOCAL_NUM_UNUSED;
+    DWORD m_argumentIsByRefArrayLocalNum = LOCAL_NUM_UNUSED;
+    DWORD m_argumentTypeLocalNum = LOCAL_NUM_UNUSED;
+    DWORD m_wrapperArrayLocalNum = LOCAL_NUM_UNUSED;
     CQuickArray<DWORD> m_wrapperTypes;
-    BOOL m_wrapperTypesNeeded;
+    BOOL m_wrapperTypesNeeded = FALSE;
 };
 
 #endif // FEATURE_COMINTEROP
