@@ -83,8 +83,6 @@ namespace System.Diagnostics
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
 
-        private static int s_cachedSerializationSwitch;
-
         /// <devdoc>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.Diagnostics.Process'/> class.
@@ -1247,77 +1245,20 @@ namespace System.Diagnostics
             Close();
 
             ProcessStartInfo startInfo = StartInfo;
-            if (startInfo.FileName.Length == 0)
-            {
-                throw new InvalidOperationException(SR.FileNameMissing);
-            }
-            if (startInfo.StandardInputEncoding != null && !startInfo.RedirectStandardInput)
-            {
-                throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
-            }
-            if (startInfo.StandardOutputEncoding != null && !startInfo.RedirectStandardOutput)
-            {
-                throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
-            }
-            if (startInfo.StandardErrorEncoding != null && !startInfo.RedirectStandardError)
-            {
-                throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
-            }
-            if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.HasArgumentList)
-            {
-                throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
-            }
-            if (startInfo.HasArgumentList)
-            {
-                int argumentCount = startInfo.ArgumentList.Count;
-                for (int i = 0; i < argumentCount; i++)
-                {
-                    if (startInfo.ArgumentList[i] is null)
-                    {
-                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
-                    }
-                }
-            }
-
-            bool anyRedirection = startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError;
-            bool anyHandle = startInfo.StandardInputHandle is not null || startInfo.StandardOutputHandle is not null || startInfo.StandardErrorHandle is not null;
-            if (startInfo.UseShellExecute && (anyRedirection || anyHandle))
-            {
-                throw new InvalidOperationException(SR.CantRedirectStreams);
-            }
-
-            if (anyHandle)
-            {
-                if (startInfo.StandardInputHandle is not null && startInfo.RedirectStandardInput)
-                {
-                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
-                }
-                if (startInfo.StandardOutputHandle is not null && startInfo.RedirectStandardOutput)
-                {
-                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
-                }
-                if (startInfo.StandardErrorHandle is not null && startInfo.RedirectStandardError)
-                {
-                    throw new InvalidOperationException(SR.CantSetHandleAndRedirect);
-                }
-
-                ValidateHandle(startInfo.StandardInputHandle, nameof(startInfo.StandardInputHandle));
-                ValidateHandle(startInfo.StandardOutputHandle, nameof(startInfo.StandardOutputHandle));
-                ValidateHandle(startInfo.StandardErrorHandle, nameof(startInfo.StandardErrorHandle));
-            }
+            startInfo.ThrowIfInvalid(out bool anyRedirection);
 
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
 
-            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref s_cachedSerializationSwitch);
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
 
             SafeFileHandle? parentInputPipeHandle = null;
             SafeFileHandle? parentOutputPipeHandle = null;
             SafeFileHandle? parentErrorPipeHandle = null;
 
-            SafeFileHandle? childInputPipeHandle = null;
-            SafeFileHandle? childOutputPipeHandle = null;
-            SafeFileHandle? childErrorPipeHandle = null;
+            SafeFileHandle? childInputHandle = null;
+            SafeFileHandle? childOutputHandle = null;
+            SafeFileHandle? childErrorHandle = null;
 
             try
             {
@@ -1329,7 +1270,7 @@ namespace System.Diagnostics
                     // Some process could be started in the meantime, so in order to prevent accidental handle inheritance,
                     // a writer lock is used around the pipe creation code.
 
-                    bool requiresLock = anyRedirection && !SupportsAtomicNonInheritablePipeCreation;
+                    bool requiresLock = anyRedirection && !ProcessUtils.SupportsAtomicNonInheritablePipeCreation;
 
                     if (requiresLock)
                     {
@@ -1340,41 +1281,41 @@ namespace System.Diagnostics
                     {
                         if (startInfo.StandardInputHandle is not null)
                         {
-                            childInputPipeHandle = startInfo.StandardInputHandle;
+                            childInputHandle = startInfo.StandardInputHandle;
                         }
                         else if (startInfo.RedirectStandardInput)
                         {
-                            SafeFileHandle.CreateAnonymousPipe(out childInputPipeHandle, out parentInputPipeHandle);
+                            SafeFileHandle.CreateAnonymousPipe(out childInputHandle, out parentInputPipeHandle);
                         }
                         else if (!OperatingSystem.IsAndroid())
                         {
-                            childInputPipeHandle = Console.OpenStandardInputHandle();
+                            childInputHandle = Console.OpenStandardInputHandle();
                         }
 
                         if (startInfo.StandardOutputHandle is not null)
                         {
-                            childOutputPipeHandle = startInfo.StandardOutputHandle;
+                            childOutputHandle = startInfo.StandardOutputHandle;
                         }
                         else if (startInfo.RedirectStandardOutput)
                         {
-                            SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputPipeHandle, asyncRead: OperatingSystem.IsWindows());
+                            SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputHandle, asyncRead: OperatingSystem.IsWindows());
                         }
                         else if (!OperatingSystem.IsAndroid())
                         {
-                            childOutputPipeHandle = Console.OpenStandardOutputHandle();
+                            childOutputHandle = Console.OpenStandardOutputHandle();
                         }
 
                         if (startInfo.StandardErrorHandle is not null)
                         {
-                            childErrorPipeHandle = startInfo.StandardErrorHandle;
+                            childErrorHandle = startInfo.StandardErrorHandle;
                         }
                         else if (startInfo.RedirectStandardError)
                         {
-                            SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorPipeHandle, asyncRead: OperatingSystem.IsWindows());
+                            SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorHandle, asyncRead: OperatingSystem.IsWindows());
                         }
                         else if (!OperatingSystem.IsAndroid())
                         {
-                            childErrorPipeHandle = Console.OpenStandardErrorHandle();
+                            childErrorHandle = Console.OpenStandardErrorHandle();
                         }
                     }
                     finally
@@ -1386,7 +1327,7 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (!StartCore(startInfo, childInputPipeHandle, childOutputPipeHandle, childErrorPipeHandle))
+                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle))
                 {
                     return false;
                 }
@@ -1409,15 +1350,15 @@ namespace System.Diagnostics
                 // by the caller via StartInfo.StandardInputHandle/OutputHandle/ErrorHandle.
                 if (startInfo.StandardInputHandle is null)
                 {
-                    childInputPipeHandle?.Dispose();
+                    childInputHandle?.Dispose();
                 }
                 if (startInfo.StandardOutputHandle is null)
                 {
-                    childOutputPipeHandle?.Dispose();
+                    childOutputHandle?.Dispose();
                 }
                 if (startInfo.StandardErrorHandle is null)
                 {
-                    childErrorPipeHandle?.Dispose();
+                    childErrorHandle?.Dispose();
                 }
             }
 
@@ -1441,18 +1382,6 @@ namespace System.Diagnostics
             }
 
             return true;
-        }
-
-        private static void ValidateHandle(SafeFileHandle? handle, string paramName)
-        {
-            if (handle is not null)
-            {
-                if (handle.IsInvalid)
-                {
-                    throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
-                }
-                ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
-            }
         }
 
         /// <devdoc>
@@ -1909,13 +1838,6 @@ namespace System.Diagnostics
         private void CheckDisposed()
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-        }
-
-        private static Win32Exception CreateExceptionForErrorStartingProcess(string errorMessage, int errorCode, string fileName, string? workingDirectory)
-        {
-            string directoryForException = string.IsNullOrEmpty(workingDirectory) ? Directory.GetCurrentDirectory() : workingDirectory;
-            string msg = SR.Format(SR.ErrorStartingProcess, fileName, directoryForException, errorMessage);
-            return new Win32Exception(errorCode, msg);
         }
 
         /// <summary>

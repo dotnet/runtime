@@ -1521,7 +1521,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // By publishing the index to block map, we are also indicating
     // that try regions may no longer be contiguous.
     //
-    assert(fgTrysNotContiguous());
+    assert(!fgTrysContiguous());
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
