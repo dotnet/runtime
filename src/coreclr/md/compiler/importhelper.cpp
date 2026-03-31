@@ -2496,33 +2496,23 @@ ImportHelper::ImportTypeDef(
         IfFailGo(CreateModuleRefFromScope(pMiniMdEmit, pCommonImport, &tkOuterRes));
     }
     else if (MvidAssemImport != MvidAssemEmit)
-    {
-        if (pCommonAssemImport)
-        {
-            // The TypeDef is from a different Assembly.
+    {   
+        // The TypeDef is from a different Assembly.
 
-            // Import and Emit scopes can't be identical and be from different
-            // Assemblies at the same time.
-            _ASSERTE(MvidImport != MvidEmit &&
-                     "Import scope can't be identical to the Emit scope and be from a different Assembly at the same time.");
+        // Import and Emit scopes can't be identical and be from different
+        // Assemblies at the same time.
+        _ASSERTE(MvidImport != MvidEmit &&
+                 "Import scope can't be identical to the Emit scope and be from a different Assembly at the same time.");
 
-            _ASSERTE(pCommonAssemImport);
+        _ASSERTE(pCommonAssemImport);
 
-            // Create an AssemblyRef corresponding to the import scope.
-            IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
-                                                   pMiniMdEmit,
-                                                   pCommonAssemImport,
-                                                   pbHashValue,
-                                                   cbHashValue,
-                                                   &tkOuterRes));
-        }
-        else
-        {
-            // <REVISIT_TODO>@FUTURE: review this fix! We may want to return error in the future.
-            // This is to enable smc to reference SPCL while it does not have the manifest for SPCL opened.</REVISIT_TODO>
-            // Create a Nil ResolutionScope to the TypeRef.
-            tkOuterRes = mdTokenNil;
-        }
+        // Create an AssemblyRef corresponding to the import scope.
+        IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
+                                               pMiniMdEmit,
+                                               pCommonAssemImport,
+                                               pbHashValue,
+                                               cbHashValue,
+                                               &tkOuterRes));
     }
 
     // Get the nesting hierarchy for the Type from the import scope and create
@@ -2738,12 +2728,6 @@ HRESULT ImportHelper::ImportTypeRef(
         }
         else if (TypeFromToken(tkOuterImportRes) == mdtModule)
         {
-            _ASSERTE(pCommonAssemImport != NULL);
-            if (pCommonAssemImport == NULL)
-            {
-                IfFailGo(E_UNEXPECTED);
-            }
-
             // Type is from a different Assembly.
             IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
                                                    pMiniMdEmit,
@@ -2855,12 +2839,6 @@ HRESULT ImportHelper::ImportTypeRef(
         }
         else if (TypeFromToken(tkOuterImportRes) == mdtModuleRef)
         {
-            _ASSERTE(pCommonAssemImport != NULL);
-            if (pCommonAssemImport == NULL)
-            {
-                IfFailGo(E_UNEXPECTED);
-            }
-
             // Type is from a different Assembly.
             IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
                                                    pMiniMdEmit,
@@ -3198,6 +3176,12 @@ ImportHelper::CreateAssemblyRefFromAssembly(
 
     // Set output to Nil.
     *ptkAssemblyRef = mdTokenNil;
+
+    _ASSERTE(pCommonAssemImport != NULL);
+    if (pCommonAssemImport == NULL)
+    {
+        IfFailGo(E_UNEXPECTED);
+    }
 
     // Get the Assembly props.
     IfFailGo(pCommonAssemImport->CommonGetAssemblyProps(
