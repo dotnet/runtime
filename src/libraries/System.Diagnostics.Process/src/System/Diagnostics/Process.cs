@@ -1048,7 +1048,14 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process GetProcessById(int processId)
         {
-            return GetProcessById(processId, ".");
+            // Avoid calling GetProcessById(processId, ".") so that the remote machine code path
+            // (reachable from the 2-arg overload) is not included when only local machine support is needed.
+            if (!ProcessManager.IsProcessRunning(processId))
+            {
+                throw new ArgumentException(SR.Format(SR.MissingProcess, processId.ToString()));
+            }
+
+            return new Process(".", false, processId, null);
         }
 
         /// <devdoc>

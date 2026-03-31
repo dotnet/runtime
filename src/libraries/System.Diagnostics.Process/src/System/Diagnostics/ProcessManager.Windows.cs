@@ -14,12 +14,46 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
+        // Allows PerformanceCounterLib (and its dependencies) to be trimmed when remote machine
+        // support is not used. s_getRemoteProcessInfos is only assigned in EnsureRemoteMachineFuncs,
+        // which is only called from public APIs that accept a remote machine name.
+        private static Func<string, bool, ProcessInfo[]>? s_getRemoteProcessInfos;
+
+        // Called from public APIs that accept remote machine names to initialize remote machine support.
+        internal static void EnsureRemoteMachineFuncs() =>
+            s_getRemoteProcessInfos ??= NtProcessManager.GetProcessInfos;
+
         /// <summary>Gets whether the process with the specified ID is currently running.</summary>
         /// <param name="processId">The process ID.</param>
         /// <returns>true if the process is running; otherwise, false.</returns>
         public static bool IsProcessRunning(int processId)
         {
-            return IsProcessRunning(processId, ".");
+            // Avoid calling IsProcessRunning(processId, ".") so that the remote machine code path
+            // (reachable from the 2-arg overload) is not included when only local machine support is needed.
+            // Performance optimization: First try to OpenProcess by id.
+            // Attempt to open handle for Idle process (processId == 0) fails with ERROR_INVALID_PARAMETER.
+            if (processId != 0)
+            {
+                using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION | ProcessOptions.SYNCHRONIZE, false, processId))
+                {
+                    if (processHandle.IsInvalid)
+                    {
+                        int error = Marshal.GetLastWin32Error();
+                        if (error == Interop.Errors.ERROR_INVALID_PARAMETER)
+                        {
+                            Debug.Assert(processId != 0, "OpenProcess fails with ERROR_INVALID_PARAMETER for Idle Process");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        bool signaled = false;
+                        return !HasExited(processHandle, ref signaled, out _);
+                    }
+                }
+            }
+
+            return Array.IndexOf(GetProcessIds(), processId) >= 0;
         }
 
         /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
@@ -67,7 +101,8 @@ namespace System.Diagnostics
                 return NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
             }
 
-            ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
+            EnsureRemoteMachineFuncs();
+            ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName, true);
             if (string.IsNullOrEmpty(processNameFilter))
             {
                 return processInfos;
@@ -94,7 +129,7 @@ namespace System.Diagnostics
             if (IsRemoteMachine(machineName))
             {
                 // remote case: we take the hit of looping through all results
-                ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
+                ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName, true);
                 foreach (ProcessInfo processInfo in processInfos)
                 {
                     if (processInfo.ProcessId == processId)
@@ -125,7 +160,7 @@ namespace System.Diagnostics
             if (IsRemoteMachine(machineName))
             {
                 // remote case: we take the hit of looping through all results
-                ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
+                ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName, true);
                 foreach (ProcessInfo processInfo in processInfos)
                 {
                     if (processInfo.ProcessId == processId)
@@ -157,13 +192,16 @@ namespace System.Diagnostics
         /// <returns>An array of process IDs from the specified machine.</returns>
         public static int[] GetProcessIds(string machineName)
         {
-            // Due to the lack of support for EnumModules() on coresysserver, we rely
-            // on PerformanceCounters to get the ProcessIds for both remote desktop
-            // and the local machine, unlike Desktop on which we rely on PCs only for
-            // remote machines.
-            return IsRemoteMachine(machineName) ?
-                NtProcessManager.GetProcessIds(machineName, true) :
-                GetProcessIds();
+            if (!IsRemoteMachine(machineName))
+            {
+                return GetProcessIds();
+            }
+
+            EnsureRemoteMachineFuncs();
+            ProcessInfo[] infos = s_getRemoteProcessInfos!(machineName, true);
+            int[] ids = new int[infos.Length];
+            for (int i = 0; i < infos.Length; i++) ids[i] = infos[i].ProcessId;
+            return ids;
         }
 
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
