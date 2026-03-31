@@ -401,13 +401,15 @@ public partial class ZipArchiveEntry
             if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
             {
                 _everOpenedForWrite = true;
+                // Capture the data descriptor size before WriteLocalFileHeader clears the DataDescriptor bit flag.
+                int dataDescriptorSize = GetDataDescriptorSize();
                 await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, cancellationToken).ConfigureAwait(false);
 
                 // If we know that we need to update the file header (but don't need to load and update the data itself)
-                // then advance the position past it.
+                // then advance the position past the compressed data and any trailing data descriptor.
                 if (_compressedSize != 0)
                 {
-                    _archive.ArchiveStream.Seek(_compressedSize, SeekOrigin.Current);
+                    _archive.ArchiveStream.Seek(_compressedSize + dataDescriptorSize, SeekOrigin.Current);
                 }
             }
         }
