@@ -226,12 +226,9 @@ namespace System.IO.Tests
 
             // Filter out Created and Changed events as there is a race-condition when moving a file and then observing a parent folder. It receives Create and Changed events although Watcher is not registered yet.
             // Also filter out duplicate events as Mac FSEvents can deliver the same Deleted event multiple times.
-            Func<FiredEvent, bool>? isFilteredOut = null;
-            if (skipOldEvents)
-            {
-                var deduplicateFilter = CreateDeduplicatingFilter();
-                isFilteredOut = x => (x.EventType & (WatcherChangeTypes.Created | WatcherChangeTypes.Changed)) != 0 || deduplicateFilter(x);
-            }
+            Func<FiredEvent, bool>? isFilteredOut = skipOldEvents
+                ? CreateDeduplicatingFilter(WatcherChangeTypes.Created | WatcherChangeTypes.Changed)
+                : null;
 
             IEnumerable<FiredEvent> events = ExpectEvents(watcher, filesCount, action, isFilteredOut);
 

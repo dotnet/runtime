@@ -506,12 +506,14 @@ namespace System.IO.Tests
 
         }
 
-        // Returns a predicate that returns true for duplicate FiredEvents (same EventType and path(s)).
+        // Returns a predicate that returns true for events that should be filtered out.
+        // Events whose type matches filteredTypes are always filtered; remaining events are deduplicated
+        // so that only the first occurrence passes through.
         // Used on platforms like macOS where FSEvents may deliver the same event more than once.
-        internal static Func<FiredEvent, bool> CreateDeduplicatingFilter()
+        internal static Func<FiredEvent, bool> CreateDeduplicatingFilter(WatcherChangeTypes filteredTypes = 0)
         {
             var seenEvents = new ConcurrentDictionary<FiredEvent, bool>();
-            return firedEvent => !seenEvents.TryAdd(firedEvent, true);
+            return firedEvent => (firedEvent.EventType & filteredTypes) != 0 || !seenEvents.TryAdd(firedEvent, true);
         }
 
         // Observe until an expected count of events is triggered, otherwise fail. Return all filtered events.
