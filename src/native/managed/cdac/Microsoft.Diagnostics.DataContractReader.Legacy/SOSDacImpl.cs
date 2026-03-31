@@ -918,7 +918,7 @@ public sealed unsafe partial class SOSDacImpl
         if (_legacyImpl is not null)
         {
             uint neededLocal = 0;
-            DacpJitCodeHeapInfo[]? legacyHeaps = codeHeaps is not null ? new DacpJitCodeHeapInfo[count] : null;
+            DacpJitCodeHeapInfo[]? legacyHeaps = codeHeaps is not null ? new DacpJitCodeHeapInfo[(int)count] : null;
             int hrLocal = _legacyImpl.GetCodeHeapList(jitManager, count, legacyHeaps, codeHeaps is null && pNeeded is null ? null : &neededLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
