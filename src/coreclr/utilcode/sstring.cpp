@@ -1856,7 +1856,7 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
     }
 
     // We don't have enough space in our buffer, do dynamic allocation.
-    LocalAllocHolder<WCHAR> string;
+    LocalAllocHolder<LPWSTR> string;
 
     DWORD result = ::FormatMessage(dwFlags | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_ARGUMENT_ARRAY,
                                       lpSource, dwMessageId, dwLanguageId,
@@ -1864,16 +1864,14 @@ BOOL SString::FormatMessage(DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId, 
 
     if (result == 0)
         RETURN FALSE;
-    else
-    {
-        WCHAR* stringRaw = string;
-        _ASSERTE(stringRaw != NULL);
-        if (stringRaw[result-1] == W(' '))
-            stringRaw[result-1] = W('\0');
 
-        Set(stringRaw);
-        RETURN TRUE;
-    }
+    LPWSTR stringRaw = string;
+    _ASSERTE(stringRaw != NULL);
+    if (stringRaw[result-1] == W(' '))
+        stringRaw[result-1] = W('\0');
+
+    Set(stringRaw);
+    RETURN TRUE;
 }
 
 #if 1

@@ -991,7 +991,6 @@ FORCEINLINE void DeleteArray(TYPE *value)
 {
     STATIC_CONTRACT_WRAPPER;
     delete [] value;
-    value = NULL;
 }
 
 template<typename _TYPE>
@@ -1102,31 +1101,6 @@ using ResetPointerHolder = SpecializedWrapper<_TYPE, detail::ZeroMem<_TYPE>::Inv
 FORCEINLINE void VoidCloseHandle(HANDLE h) { if (h != NULL) CloseHandle(h); }
 typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidCloseHandle, (UINT_PTR) -1> HandleHolder;
 
-class MapViewHolder final
-{
-    void* m_ptr;
-    void Release()
-    {
-        STATIC_CONTRACT_WRAPPER;
-        if (m_ptr != NULL)
-        {
-            ::UnmapViewOfFile(m_ptr);
-            m_ptr = NULL;
-        }
-    }
-public:
-    MapViewHolder() : m_ptr{ NULL } { STATIC_CONTRACT_LEAF; }
-    explicit MapViewHolder(void* ptr) : m_ptr{ ptr } { STATIC_CONTRACT_LEAF; }
-
-    MapViewHolder(const MapViewHolder&) = delete;
-    MapViewHolder& operator=(const MapViewHolder&) = delete;
-    MapViewHolder(MapViewHolder&&) = delete;
-    MapViewHolder& operator=(MapViewHolder&&) = delete;
-
-    ~MapViewHolder() noexcept { STATIC_CONTRACT_WRAPPER; Release(); }
-
-    operator void*() const { STATIC_CONTRACT_LEAF; return m_ptr; }
-};
 
 //-----------------------------------------------------------------------------
 // Misc holders
@@ -1134,40 +1108,99 @@ public:
 
 // A holder for HMODULE.
 FORCEINLINE void HolderFreeLibrary(HMODULE h) { FreeLibrary(h); }
-
 typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, 0> HModuleHolder;
 
 template<typename T>
-class LocalAllocHolder final
+class LifetimeHolder final
 {
-    T* m_value;
+    using Type = typename T::Type;
+    Type m_value;
 
-    void Release()
-    {
-#ifdef HOST_WINDOWS
-        (LocalFree)((void*)m_value);
-#else
-        (free)((void*)m_value);
-#endif
-        m_value = NULL;
-    }
 public:
-    LocalAllocHolder() : m_value{ NULL } { STATIC_CONTRACT_LEAF; }
+    LifetimeHolder() : m_value{ T::Default() } { STATIC_CONTRACT_LEAF; }
+    explicit LifetimeHolder(Type value) : m_value{ value } { STATIC_CONTRACT_LEAF; }
 
-    LocalAllocHolder(const LocalAllocHolder&) = delete;
-    LocalAllocHolder& operator=(const LocalAllocHolder&) = delete;
-    LocalAllocHolder(LocalAllocHolder&&) = delete;
-    LocalAllocHolder& operator=(LocalAllocHolder&&) = delete;
+    LifetimeHolder(const LifetimeHolder&) = delete;
+    LifetimeHolder& operator=(const LifetimeHolder&) = delete;
 
-    ~LocalAllocHolder() noexcept
+    LifetimeHolder(LifetimeHolder&& other)
+        : m_value{ other.Detach() }
     {
         STATIC_CONTRACT_WRAPPER;
-        Release();
     }
 
-    operator T*() const { STATIC_CONTRACT_LEAF; return m_value; }
-    T** operator&() { STATIC_CONTRACT_LEAF; _ASSERTE(m_value == NULL); return &m_value; }
+    LifetimeHolder& operator=(LifetimeHolder&& other)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (this != &other)
+        {
+            Free();
+            m_value = other.Detach();
+        }
+        return *this;
+    }
+
+    ~LifetimeHolder() noexcept { STATIC_CONTRACT_WRAPPER; Free(); }
+
+    LifetimeHolder& operator=(Type value)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        Free();
+        m_value = value;
+        return *this;
+    }
+
+    operator Type() const { STATIC_CONTRACT_LEAF; return m_value; }
+    Type* operator&() { STATIC_CONTRACT_LEAF; _ASSERTE(m_value == T::Default()); return &m_value; }
+
+    void Free()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        typename T::Free(m_value);
+        m_value = T::Default();
+    }
+
+    Type Detach()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        Type value = m_value;
+        m_value = T::Default();
+        return value;
+    }
 };
+
+struct MapViewTraits final
+{
+    using Type = void*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (h != NULL)
+            ::UnmapViewOfFile(h);
+    }
+};
+
+using MapViewHolder = LifetimeHolder<MapViewTraits>;
+
+template<typename T>
+struct LocalAllocTraits final
+{
+    using Type = T;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
+#ifdef HOST_WINDOWS
+        ::LocalFree((void*)h);
+#else
+        ::free((void*)h);
+#endif
+    }
+};
+
+template<typename T>
+using LocalAllocHolder = LifetimeHolder<LocalAllocTraits<T>>;
 
 //
 // We need the following methods to have volatile arguments, so that they can accept
@@ -1209,104 +1242,35 @@ public:
 //
 //  } // close key on out of scope via RegCloseKey.
 //-----------------------------------------------------------------------------
-
-class HKEYHolder
+struct HKEYTraits final
 {
-    HKEY m_value;
-    bool m_release;
-
-    void Release()
+    using Type = HKEY;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
     {
         STATIC_CONTRACT_WRAPPER;
-        if (m_value != NULL && m_release)
-            ::RegCloseKey(m_value);
-        m_value = NULL;
-    }
-
-public:
-    HKEYHolder()
-        : m_value{ NULL }, m_release{ true }
-    {
-        STATIC_CONTRACT_LEAF;
-    }
-
-    HKEYHolder(const HKEYHolder&) = delete;
-    HKEYHolder& operator=(const HKEYHolder&) = delete;
-    HKEYHolder(HKEYHolder&&) = delete;
-    HKEYHolder& operator=(HKEYHolder&&) = delete;
-
-    ~HKEYHolder() noexcept { STATIC_CONTRACT_WRAPPER; Release(); }
-
-    void SuppressRelease() { STATIC_CONTRACT_LEAF; m_release = false; }
-
-    void operator=(HKEY p)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        Release();
-        m_value = p;
-    }
-
-    operator HKEY() { STATIC_CONTRACT_LEAF; return m_value; }
-
-    HKEY* operator&()
-    {
-        STATIC_CONTRACT_LEAF;
-        _ASSERTE(m_value == NULL);
-        return &m_value;
+        if (h != NULL)
+            ::RegCloseKey(h);
     }
 };
+
+using HKEYHolder = LifetimeHolder<HKEYTraits>;
 #endif // HOST_WINDOWS
 
 #ifdef FEATURE_COMINTEROP
-class BSTRHolder final
+struct BSTRTraits final
 {
-    BSTR m_str;
-public:
-    BSTRHolder()
-        : m_str{}
-    {
-        STATIC_CONTRACT_LEAF;
-    }
-    explicit BSTRHolder(BSTR str)
-        : m_str{ str }
-    {
-        STATIC_CONTRACT_LEAF;
-    }
-    ~BSTRHolder() noexcept
+    using Type = BSTR;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
     {
         STATIC_CONTRACT_WRAPPER;
-        Free();
+        if (h != NULL)
+            ::SysFreeString(h);
     }
-
-    BSTRHolder(const BSTRHolder&) = delete;
-    BSTRHolder& operator=(const BSTRHolder&) = delete;
-    BSTRHolder(BSTRHolder&&) = delete;
-    BSTRHolder& operator=(BSTRHolder&&) = delete;
-
-    void Free()
-    {
-        STATIC_CONTRACT_WRAPPER;
-        ::SysFreeString(m_str);
-        m_str = NULL;
-    }
-
-    void Attach(BSTR str)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        Free();
-        _ASSERTE(m_str == NULL);
-        m_str = str;
-    }
-
-    BSTR* operator&()
-    {
-        STATIC_CONTRACT_LEAF;
-        _ASSERTE(m_str == NULL);
-        return &m_str;
-    }
-
-    operator BSTR() const { STATIC_CONTRACT_LEAF; return m_str; }
 };
+
+using BSTRHolder = LifetimeHolder<BSTRTraits>;
 #endif // FEATURE_COMINTEROP
 
 //----------------------------------------------------------------------------
