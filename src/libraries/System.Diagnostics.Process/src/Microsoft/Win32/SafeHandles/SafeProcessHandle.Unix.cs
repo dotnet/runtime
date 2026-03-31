@@ -168,17 +168,16 @@ namespace Microsoft.Win32.SafeHandles
                     startInfo, filename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     stdinHandle, stdoutHandle, stderrHandle, usesTerminal,
-                    out ProcessWaitState.Holder? firstHolder,
+                    out waitStateHolder,
                     throwOnNoExec: false); // return invalid handle instead of throwing on ENOEXEC
 
                 if (!processHandle.IsInvalid)
                 {
-                    waitStateHolder = firstHolder;
                     return processHandle;
                 }
 
                 // ENOEXEC: the process was not started on this path; dispose the holder and try the fallback.
-                firstHolder?.Dispose();
+                waitStateHolder?.Dispose();
             }
 
             // use default program to open file/url
