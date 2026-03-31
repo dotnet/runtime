@@ -64,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.AddSymbol(this);
             WasmTypeNode typeNode;
 
-            RelocType tableIndexPointerRelocType = factory.Target.PointerSize == 4 ? RelocType.WASM_TABLE_INDEX_U32 : RelocType.WASM_TABLE_INDEX_U64;
+            RelocType tableIndexPointerRelocType = factory.Target.PointerSize == 4 ? RelocType.WASM_TABLE_INDEX_I32 : RelocType.WASM_TABLE_INDEX_I64;
 
             if (_import.Signature is GenericLookupSignature)
             {

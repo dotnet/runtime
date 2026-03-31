@@ -185,9 +185,8 @@ DEFINE_METHOD(COM_OBJECT,           CTOR,                   .ctor,              
 #endif // FOR_ILLINK
 
 DEFINE_CLASS(LICENSE_INTEROP_PROXY,  InternalInteropServices, LicenseInteropProxy)
-DEFINE_METHOD(LICENSE_INTEROP_PROXY, CREATE,                  Create,                  SM_RetObj)
-DEFINE_METHOD(LICENSE_INTEROP_PROXY, GETCURRENTCONTEXTINFO,   GetCurrentContextInfo,   IM_RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid)
-DEFINE_METHOD(LICENSE_INTEROP_PROXY, SAVEKEYINCURRENTCONTEXT, SaveKeyInCurrentContext, IM_IntPtr_RetVoid)
+DEFINE_METHOD(LICENSE_INTEROP_PROXY, GETCURRENTCONTEXTINFO_AND_PROXY,   GetCurrentContextInfoAndProxy,  NoSig)
+DEFINE_METHOD(LICENSE_INTEROP_PROXY, SAVEKEYINCURRENTCONTEXT,           SaveKeyInCurrentContext,        NoSig)
 
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
@@ -309,6 +308,7 @@ DEFINE_METHOD(EXCEPTION,            GET_SOURCE_BSTR,        GetSourceBstr,      
 DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT_BSTR,  GetHelpContextBstr,         SM_PtrException_PtrIntPtr_PtrUInt_PtrException_RetVoid)
 #endif // FEATURE_COMINTEROP
 DEFINE_METHOD(EXCEPTION,            CREATE_TARGET_INVOCATION_EXCEPTION, CreateTargetInvocationException, SM_PtrException_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(EXCEPTION,            CREATE_ARGUMENT_EXCEPTION, CreateArgumentException,         NoSig)
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
@@ -316,6 +316,12 @@ DEFINE_METHOD(SYSTEM_EXCEPTION,     STR_EX_CTOR,            .ctor,              
 
 
 DEFINE_CLASS(TYPE_INIT_EXCEPTION,   System,                 TypeInitializationException)
+
+DEFINE_CLASS(TYPE_LOAD_EXCEPTION,   System,                 TypeLoadException)
+DEFINE_METHOD(TYPE_LOAD_EXCEPTION,  CREATE,                 Create,    NoSig)
+
+DEFINE_CLASS(FILE_LOAD_EXCEPTION,   IO,                     FileLoadException)
+DEFINE_METHOD(FILE_LOAD_EXCEPTION,  CREATE,                 Create,    NoSig)
 
 DEFINE_CLASS(VALUETASK_1, Tasks, ValueTask`1)
 DEFINE_METHOD(VALUETASK_1, GET_ISCOMPLETED, get_IsCompleted, NoSig)

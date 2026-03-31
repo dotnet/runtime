@@ -49,6 +49,10 @@ interface DotnetHostBuilder {
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
     /**
+     * @deprecated This method is no longer supported and will be removed in a future version.
+     */
+    withConfigSrc(configSrc: string): DotnetHostBuilder;
+    /**
      * "command line" arguments for the Main() method.
      * @param args
      */
