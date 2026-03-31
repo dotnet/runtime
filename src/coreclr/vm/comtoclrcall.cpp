@@ -6,6 +6,7 @@
 //
 
 #include "common.h"
+#include <numeric_limits>
 
 #include "vars.hpp"
 #include "clrtypes.h"
@@ -543,14 +544,15 @@ namespace
 
     float ComStubReturnR4NaN()
     {
-        int tmp = CLR_NAN_32;
-        return *(float*)&tmp;
+        LIMITED_METHOD_CONTRACT;
+        // COMPAT: Use -qNaN as our canonical NaN value.
+        return -std::numeric_limits<float>::quiet_NaN();
     }
 
     double ComStubReturnR8NaN()
     {
-        INT64 tmp = CLR_NAN_64;
-        return *(double*)&tmp;
+        LIMITED_METHOD_CONTRACT;
+        return std::numeric_limits<double>::quiet_NaN();
     }
 
     void ComStubReturnVoid()

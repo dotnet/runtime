@@ -960,7 +960,7 @@ _ComStubReturnR4NaN@0 proc public
     add     esp, edx            ; pop bytes of the stack
     push    ecx                 ; return address
 
-    push    0FFC00000h          ; CLR_NAN_32
+    push    0FFC00000h          ; -std::numeric_limits<float>::quiet_NaN() in IEEE 754
     fld     dword ptr [esp]
     add     esp, 4
 
@@ -975,8 +975,8 @@ _ComStubReturnR8NaN@0 proc public
     add     esp, edx            ; pop bytes of the stack
     push    ecx                 ; return address
 
-    push    0FFF80000h          ; high dword of CLR_NAN_64
-    push    000000000h          ; low dword of CLR_NAN_64
+    push    0FFF80000h          ; high dword of std::numeric_limits<double>::quiet_NaN() in IEEE 754
+    push    000000000h          ; low dword of std::numeric_limits<double>::quiet_NaN() in IEEE 754
     fld     qword ptr [esp]
     add     esp, 8
 
