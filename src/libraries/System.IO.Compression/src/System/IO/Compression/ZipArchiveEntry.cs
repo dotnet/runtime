@@ -1009,15 +1009,36 @@ namespace System.IO.Compression
         /// <summary>
         /// Returns the number of bytes occupied by the data descriptor following the compressed data,
         /// or 0 if the entry does not use a data descriptor (bit 3 of the general purpose bit flag is not set).
+        /// The actual archive bytes are read to detect whether the optional 4-byte signature (0x08074B50)
+        /// is present, and the version-to-extract field is used to determine Zip64 format rather than
+        /// the compressed/uncompressed sizes alone, because the "pretendStreaming" code path can produce
+        /// a signature-less Zip64 descriptor even when sizes fit in 32 bits.
         /// </summary>
         internal int GetDataDescriptorSize()
         {
             if ((_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
                 return 0;
 
-            return AreSizesTooLarge
-                ? ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.UncompressedSize + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.UncompressedSize
-                : ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.UncompressedSize + ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.UncompressedSize;
+            long descriptorStart = GetOffsetOfCompressedData() + _compressedSize;
+            long savedPosition = _archive.ArchiveStream.Position;
+            _archive.ArchiveStream.Seek(descriptorStart, SeekOrigin.Begin);
+
+            bool hasSignature = false;
+            Span<byte> buffer = stackalloc byte[sizeof(uint)];
+            if (_archive.ArchiveStream.Read(buffer) == sizeof(uint))
+            {
+                hasSignature = buffer.SequenceEqual(ZipLocalFileHeader.DataDescriptorSignatureConstantBytes);
+            }
+
+            _archive.ArchiveStream.Seek(savedPosition, SeekOrigin.Begin);
+
+            bool isZip64 = _versionToExtract >= ZipVersionNeededValues.Zip64;
+
+            int size = hasSignature ? sizeof(uint) : 0;
+            size += sizeof(uint); // CRC32
+            size += isZip64 ? 2 * sizeof(long) : 2 * sizeof(uint);
+
+            return size;
         }
 
         private static CompressionLevel MapCompressionLevel(BitFlagValues generalPurposeBitFlag, ZipCompressionMethod compressionMethod)
