@@ -370,13 +370,7 @@ bool try_stou(const pal::string_t& str, unsigned* num)
 
 pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch)
 {
-#if !defined(TARGET_WINDOWS)
-    char name[256];
-    utils_get_dotnet_root_env_var_for_arch(name, sizeof(name));
-    return pal::string_t(name);
-#else
     return DOTNET_ROOT_ENV_VAR _X("_") + to_upper(get_arch_name(arch));
-#endif
 }
 
 bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)

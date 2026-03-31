@@ -30,7 +30,7 @@ static inline std::string palstr_to_narrow(const pal::string_t& s)
 #if defined(_WIN32)
     std::string result;
     result.reserve(s.size());
-    for (auto c : s)
+    for (pal::char_t c : s)
         result.push_back(static_cast<char>(c));
     return result;
 #else
