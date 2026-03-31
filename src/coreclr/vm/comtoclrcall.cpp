@@ -6,7 +6,7 @@
 //
 
 #include "common.h"
-#include <numeric_limits>
+#include <limits>
 
 #include "vars.hpp"
 #include "clrtypes.h"
@@ -552,7 +552,8 @@ namespace
     double ComStubReturnR8NaN()
     {
         LIMITED_METHOD_CONTRACT;
-        return std::numeric_limits<double>::quiet_NaN();
+        // COMPAT: Use -qNaN as our canonical NaN value.
+        return -std::numeric_limits<double>::quiet_NaN();
     }
 
     void ComStubReturnVoid()

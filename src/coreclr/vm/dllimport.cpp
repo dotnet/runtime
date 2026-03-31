@@ -10,6 +10,7 @@
 
 
 #include "common.h"
+#include <limits>
 
 #include "vars.hpp"
 #include "stublink.h"
@@ -589,13 +590,13 @@ public:
             break;
         case ELEMENT_TYPE_R4:
             pcsExceptionHandler->EmitPOP();
-            pcsExceptionHandler->EmitLDC_R4(CLR_NAN_32);
+            pcsExceptionHandler->EmitLDC_R4(-std::numeric_limits<float>::quiet_NaN());
             _ASSERTE(retvalLocalNum != (DWORD)-1);
             pcsExceptionHandler->EmitSTLOC(retvalLocalNum);
             break;
         case ELEMENT_TYPE_R8:
             pcsExceptionHandler->EmitPOP();
-            pcsExceptionHandler->EmitLDC_R8(CLR_NAN_64);
+            pcsExceptionHandler->EmitLDC_R8(-std::numeric_limits<double>::quiet_NaN());
             _ASSERTE(retvalLocalNum != (DWORD)-1);
             pcsExceptionHandler->EmitSTLOC(retvalLocalNum);
             break;
