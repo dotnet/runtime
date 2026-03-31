@@ -142,13 +142,11 @@ namespace System
         {
             try
             {
-                string[]? argument = pArgument is not null ? *pArgument : null;
-                bool hasArgument = pArgument is not null;
-                bool hasReturnValue = pReturnValue is not null;
-
-                if (hasArgument)
+                if (pArgument != null)
                 {
-                    if (hasReturnValue)
+                    string[]? argument = *pArgument;
+
+                    if (pReturnValue != null)
                     {
                         *pReturnValue = ((delegate*<string[]?, int>)entryPoint)(argument);
                     }
@@ -159,7 +157,7 @@ namespace System
                 }
                 else
                 {
-                    if (hasReturnValue)
+                    if (pReturnValue != null)
                     {
                         *pReturnValue = ((delegate*<int>)entryPoint)();
                     }
