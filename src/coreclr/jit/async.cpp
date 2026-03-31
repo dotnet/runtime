@@ -559,6 +559,8 @@ PhaseStatus AsyncTransformation::Run()
     {
         JITDUMP("Found %d tail awaits in %d blocks\n", numTailAwaits, blocksWithTailAwaits.Height());
         TransformTailAwaits(blocksWithTailAwaits);
+        m_compiler->fgInvalidateDfsTree();
+
         if (numNormalAwaits > 0)
         {
             // This may have changed blocks, so refind the normal awaits.
