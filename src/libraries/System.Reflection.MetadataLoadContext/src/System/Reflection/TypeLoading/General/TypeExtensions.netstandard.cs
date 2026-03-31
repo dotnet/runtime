@@ -5,7 +5,7 @@
 
 namespace System.Reflection.TypeLoading
 {
-    // For code that have to interact with "Type" rather than "RoType", some handy extensions that "add" the NetCore reflection apis to NetStandard.
+    // For code that has to interact with "Type" rather than "RoType", some handy extensions that "add" the NetCore reflection APIs to NetStandard.
     internal static class NetCoreApiEmulators
     {
         // On NetStandard, have to do with slower emulations.
@@ -26,7 +26,7 @@ namespace System.Reflection.TypeLoading
         extension(Type)
         {
             // Signature Types do not exist on NetStandard 2.0 but it's possible we could reach this if a NetCore app uses the NetStandard build of this library.
-            public static Type MakeGenericSignatureType(Type genericTypeDefinition, Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_MakeGenericType_SignatureTypes);
+            public static Type MakeGenericSignatureType(Type genericTypeDefinition, params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_MakeGenericType_SignatureTypes);
         }
 
 #pragma warning restore IDE0060
