@@ -218,6 +218,9 @@ void DbgTransportSession::Shutdown()
 // TerminateProcess and for unhandled native exceptions and asserts.
 void DbgTransportSession::AbortConnection()
 {
+    if (m_channel == NULL)
+        return;
+
     m_channel->CloseConnection();
 }
 
