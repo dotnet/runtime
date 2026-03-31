@@ -248,6 +248,15 @@ def main():
             WHERE tr.console_log_path IS NOT NULL AND tr.console_log_path != ''
             AND f.failure_category != 'infrastructure'
         """).fetchall()
+        # Compute shared_paths: console_log_path values used by multiple test_results rows
+        shared_paths = set()
+        path_counts = {}
+        for r in rows:
+            p = r["console_log_path"]
+            path_counts[p] = path_counts.get(p, 0) + 1
+        for p, c in path_counts.items():
+            if c > 1:
+                shared_paths.add(p)
         skipped_shared = 0
         for r in rows:
             log_path = r["console_log_path"]
