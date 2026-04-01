@@ -13,8 +13,19 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ProxyTypeMapObjectNode(TypeMapManager manager, INativeFormatTypeReferenceProvider externalReferences) : ObjectNode, ISymbolDefinitionNode
+    internal sealed class ProxyTypeMapObjectNode : ObjectNode, ISymbolDefinitionNode
     {
+        private readonly TypeMapManager _manager;
+        private readonly INativeFormatTypeReferenceProvider _externalReferences;
+        private readonly ModuleDesc _module;
+
+        public ProxyTypeMapObjectNode(TypeMapManager manager, INativeFormatTypeReferenceProvider externalReferences, ModuleDesc module = null)
+        {
+            _manager = manager;
+            _externalReferences = externalReferences;
+            _module = module;
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
@@ -27,19 +38,28 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapGroupHashTable);
 
-            foreach (IProxyTypeMapNode proxyTypeMap in manager.GetProxyTypeMaps())
+            foreach (IProxyTypeMapNode proxyTypeMap in _manager.GetProxyTypeMaps())
             {
                 TypeDesc typeMapGroup = proxyTypeMap.TypeMapGroup;
-                typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), proxyTypeMap.CreateTypeMap(factory, writer, hashTableSection, externalReferences));
+                typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), proxyTypeMap.CreateTypeMap(factory, writer, hashTableSection, _externalReferences));
             }
 
             byte[] hashTableBytes = writer.Save();
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, [this]);
         }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            ProxyTypeMapObjectNode otherNode = (ProxyTypeMapObjectNode)other;
+            return comparer.Compare(_module, otherNode._module);
+        }
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__proxy_type_map__"u8);
+            if (_module is not null)
+                sb.Append(_module.Assembly.GetName().Name);
         }
 
         public int Offset => 0;

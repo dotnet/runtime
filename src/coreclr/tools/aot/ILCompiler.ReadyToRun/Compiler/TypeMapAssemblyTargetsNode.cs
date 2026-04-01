@@ -5,18 +5,27 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.NativeFormat;
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.ReadyToRun
 {
     internal class TypeMapAssemblyTargetsNode : ObjectNode, ISymbolDefinitionNode
     {
-        private TypeMapMetadata _assemblyTypeMaps;
-        private ImportReferenceProvider _importReferenceProvider;
+        private readonly TypeMapMetadata _assemblyTypeMaps;
+        private readonly ImportReferenceProvider _importReferenceProvider;
+        private readonly ModuleDesc _triggeringModule;
 
-        public TypeMapAssemblyTargetsNode(TypeMapMetadata assemblyTypeMaps, ImportReferenceProvider importReferenceProvider)
+        public TypeMapAssemblyTargetsNode(TypeMapMetadata assemblyTypeMaps, ImportReferenceProvider importReferenceProvider, ModuleDesc triggeringModule)
         {
             _assemblyTypeMaps = assemblyTypeMaps;
             _importReferenceProvider = importReferenceProvider;
+            _triggeringModule = triggeringModule;
+        }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            TypeMapAssemblyTargetsNode otherNode = (TypeMapAssemblyTargetsNode)other;
+            return comparer.Compare(_triggeringModule, otherNode._triggeringModule);
         }
 
         public override bool IsShareable => false;
@@ -87,7 +96,12 @@ namespace ILCompiler.ReadyToRun
             return builder.ToObjectData();
         }
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
-        protected override string GetName(NodeFactory context) => "Type Map Assembly Targets Tables";
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb) => sb.Append(nameMangler.CompilationUnitPrefix).Append("__TypeMapAssemblyTargets"u8);
+        protected override string GetName(NodeFactory context) => $"Type Map Assembly Targets Tables ({_triggeringModule.Assembly.GetName().Name})";
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.CompilationUnitPrefix)
+              .Append("__TypeMapAssemblyTargets__"u8)
+              .Append(_triggeringModule.Assembly.GetName().Name);
+        }
     }
 }
