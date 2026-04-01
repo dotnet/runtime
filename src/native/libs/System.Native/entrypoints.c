@@ -287,6 +287,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_HandleNonCanceledPosixSignal)
     DllImportEntry(SystemNative_SetPosixSignalHandler)
     DllImportEntry(SystemNative_GetPlatformSignalNumber)
+    DllImportEntry(SystemNative_GetPlatformSIGSTOP)
     DllImportEntry(SystemNative_GetGroups)
     DllImportEntry(SystemNative_GetEnv)
     DllImportEntry(SystemNative_GetEnviron)

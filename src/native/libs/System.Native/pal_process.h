@@ -57,13 +57,6 @@ typedef enum
     PAL_RLIMIT_NOFILE = 9,  // Number of open files
 } RLimitResources;
 
-typedef enum
-{
-    PAL_NONE = 0,
-    PAL_SIGKILL = 9, /* kill the specified process */
-    PAL_SIGSTOP = 19,
-} Signals;
-
 /**
  * Constants for passing to the first parameter of syslog.
  * These are a combination of flags where the lower bits are
