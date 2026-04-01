@@ -4596,6 +4596,22 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AtanhDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void AtanhDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector64<double> actualResult = Vector64.Atanh(Vector64.Create(value));
+            AssertEqual(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AtanhSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void AtanhSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector64<float> actualResult = Vector64.Atanh(Vector64.Create(value));
+            AssertEqual(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
+        }
+
+        [Theory]
         [MemberData(nameof(GenericMathTestMemberData.CosDouble), MemberType = typeof(GenericMathTestMemberData))]
         public void CosDoubleTest(double value, double expectedResult, double variance)
         {

@@ -878,7 +878,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.AtanhSingle<Vector256<float>, Vector256<int>, Vector256<uint>, Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    return VectorMath.AtanhSingle<Vector256<float>, Vector256<int>, Vector256<uint>, Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AtanhSingle<Vector256<float>, Vector256<int>, Vector256<uint>, Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+                }
             }
             else
             {
