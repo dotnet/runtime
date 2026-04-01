@@ -487,6 +487,18 @@ namespace System.IO.Tests
             return newWatcher;
         }
 
+        /// <summary>
+        /// Asserts that the file-system entry at <paramref name="path"/> is fully removed within
+        /// <see cref="RetryDelayMilliseconds"/> milliseconds. Call this before recreating a deleted path
+        /// in a cleanup lambda so that NTFS pending-delete races do not silently no-op the recreation.
+        /// </summary>
+        public static void WaitForPathToBeDeleted(string path)
+        {
+            Assert.True(
+                SpinWait.SpinUntil(() => !Path.Exists(path), RetryDelayMilliseconds),
+                $"Timed out waiting for '{path}' to be deleted.");
+        }
+
         internal readonly struct FiredEvent
         {
             public FiredEvent(WatcherChangeTypes eventType, string dir1, string dir2 = "") => (EventType, Dir1, Dir2) = (eventType, dir1, dir2);
