@@ -47,7 +47,8 @@ public class ComputeBatchTimeout : Task
             int count = counts.GetValueOrDefault(bid, 1);
             // 20 minutes per suite to account for WASM startup overhead + test execution;
             // minimum 30 minutes to handle the heaviest individual suites (e.g. Cryptography ~17m)
-            int totalMinutes = Math.Max(30, count * 20);
+            // Cap at 23:59 to prevent hh format wrapping at 24 hours
+            int totalMinutes = Math.Min(1439, Math.Max(30, count * 20));
             var ts = TimeSpan.FromMinutes(totalMinutes);
 
             var helixItem = new TaskItem(ItemPrefix + "Batch-" + bid);
