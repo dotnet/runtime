@@ -130,10 +130,8 @@ internal partial class MockDescriptors
             Builder.TargetTestHelpers.Write(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.Flags)].Offset, sizeof(uint)), isActive ? (uint)CodeVersions_1.NativeCodeVersionNodeFlags.IsActiveChild : 0u);
             Builder.TargetTestHelpers.WriteNUInt(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.ILVersionId)].Offset, Builder.TargetTestHelpers.PointerSize), ilVersionId);
             Builder.TargetTestHelpers.WritePointer(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.GCCoverageInfo)].Offset, Builder.TargetTestHelpers.PointerSize), gcCoverageInfo ?? TargetPointer.Null);
-            if (optimizationTier.HasValue)
-            {
-                Builder.TargetTestHelpers.Write(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.OptimizationTier)].Offset, sizeof(uint)), optimizationTier.Value);
-            }
+            uint optimizationTierValue = optimizationTier ?? (uint)NativeCodeVersionOptimizationTier.OptimizationTierUnknown;
+            Builder.TargetTestHelpers.Write(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.OptimizationTier)].Offset, sizeof(uint)), optimizationTierValue);
         }
 
         public (TargetPointer First, TargetPointer Active) AddNativeCodeVersionNodesForMethod(TargetPointer methodDesc, int count, int activeIndex, TargetCodePointer activeNativeCode, TargetNUInt ilVersion, TargetPointer? firstNode = null)

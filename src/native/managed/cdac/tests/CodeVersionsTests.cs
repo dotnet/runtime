@@ -734,6 +734,7 @@ public class CodeVersionsTests
             yield return [arch, 3u, NativeCodeVersionOptimizationTier.OptimizationTierOptimized];
             yield return [arch, 4u, NativeCodeVersionOptimizationTier.OptimizationTier0Instrumented];
             yield return [arch, 5u, NativeCodeVersionOptimizationTier.OptimizationTier1Instrumented];
+            yield return [arch, 0xFFFFFFFFu, NativeCodeVersionOptimizationTier.OptimizationTierUnknown];
         }
     }
 
