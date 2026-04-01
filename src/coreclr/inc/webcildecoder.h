@@ -137,7 +137,8 @@ private:
 
     // Webcil is always flat, never mapped in the PE sense
     BOOL IsMapped() const { return FALSE; }
-    BOOL IsRelocated() const { return FALSE; }
+    BOOL IsRelocated() const { return m_relocated; }
+    void SetRelocated() { m_relocated = TRUE; }
     BOOL IsFlat() const { return HasContents(); }
 
     // ------------------------------------------------------------
@@ -258,6 +259,7 @@ private:
     TADDR                m_base;
     COUNT_T              m_size;
     BOOL                 m_hasContents;
+    BOOL                 m_relocated = FALSE;
     const WebcilHeader  *m_pHeader;
     mutable IMAGE_COR20_HEADER *m_pCorHeader;
 };

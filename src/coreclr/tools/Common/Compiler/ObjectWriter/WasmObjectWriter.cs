@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
@@ -414,7 +413,7 @@ namespace ILCompiler.ObjectWriter
             Utf8String debugDirectoryDefName = _wellKnownSymbols[SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode];
             SymbolDefinition debugDirectoryDef = _definedSymbols[debugDirectoryDefName];
             uint peDebugRva = (uint)ResolveSymbolRVA(webcilSections, debugDirectoryDef);
-            Debug.Assert(_webcilSegment.Header.PeDebugRva != 0);
+            Debug.Assert(peDebugRva != 0);
             uint peDebugSize = (uint)debugDirectoryDef.Size;
 
             // The index of the reloc section is either: 0 (if no reloc section) OR
@@ -960,9 +959,9 @@ namespace ILCompiler.ObjectWriter
 
         private WasmImport[] _defaultGlobalImports = new[]
         {
-            new WasmImport("env", "__stack_pointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
-            new WasmImport("env", "__image_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
-            new WasmImport("env", "__image_function_pointer_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageFunctionPointerBaseGlobalIndex),
+            new WasmImport("webcil", "__stack_pointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
+            new WasmImport("webcil", "__image_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
+            new WasmImport("webcil", "__image_function_pointer_base", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageFunctionPointerBaseGlobalIndex),
         };
 
         private void WriteImports()

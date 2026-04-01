@@ -8,8 +8,6 @@ using System.Collections.Generic;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter.WasmInstructions;
-using System.Buffers.Binary;
-using System.IO;
 
 namespace ILCompiler.ObjectWriter
 {

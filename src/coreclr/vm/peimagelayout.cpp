@@ -233,12 +233,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_WEBCIL
-    if (!IsWebcilFormat())
-#endif // FEATURE_WEBCIL
-    {
-        _ASSERTE(IsPEFormat());
-    }
+    _ASSERTE(IsPEFormat() || IsWebcilFormat());
 
     SetRelocated();
 
