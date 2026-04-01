@@ -1163,7 +1163,7 @@ struct Param
     CorEntryPointType EntryType;
     DWORD cCommandArgs;
     LPWSTR *wzArgs;
-    BOOL propagateExceptions;
+    bool propagateExceptions;
 } param;
 
 #if defined(TARGET_BROWSER)
@@ -1215,10 +1215,9 @@ static void RunMainInternal(Param* pParam)
 
 /* static */
 HRESULT RunMain(MethodDesc *pFD ,
-                short numSkipArgs,
                 INT32 *piRetVal,
                 PTRARRAYREF *stringArgs /*=NULL*/,
-                BOOL propagateExceptions)
+                bool propagateExceptions)
 {
     STATIC_CONTRACT_THROWS;
     _ASSERTE(piRetVal);
@@ -1331,7 +1330,7 @@ void RunManagedStartup()
     managedStartup.InvokeThrowing(s_wszDiagnosticStartupHookPaths);
 }
 
-INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads, BOOL propagateExceptions)
+INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, bool propagateExceptions)
 {
     CONTRACTL
     {
@@ -1395,7 +1394,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
             RunManagedStartup();
 
-            hr = RunMain(pMeth, 1, &iRetVal, stringArgs, propagateExceptions);
+            hr = RunMain(pMeth, &iRetVal, stringArgs, propagateExceptions);
 
             Thread::CleanUpForManagedThreadInNative(pThread);
         }

@@ -332,12 +332,10 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         // Here we call the managed method that gets the cmdLineArgs array.
         arguments = SetCommandLineArgs(pwzAssemblyPath, argc, argv);
 
-        BOOL propagateExceptions = !CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions);
-
-        if (!propagateExceptions)
+        if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions))
         {
             EX_TRY
-                DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */, propagateExceptions);
+                DWORD retval = pAssembly->ExecuteMainMethod(&arguments, true /* propagateExceptions */);
                 if (pReturnValue)
                 {
                     *pReturnValue = retval;
@@ -346,7 +344,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         }
         else
         {
-            DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */, propagateExceptions);
+            DWORD retval = pAssembly->ExecuteMainMethod(&arguments, false /* propagateExceptions */);
             if (pReturnValue)
             {
                 *pReturnValue = retval;
