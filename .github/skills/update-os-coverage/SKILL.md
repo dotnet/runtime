@@ -226,7 +226,13 @@ Not all Helix queues run in the default PR pipeline (`runtime`). Some distros ar
 | CentOS Stream | linux_x64 | `libraries/helix-queues-setup.yml` |
 | Alpine (versioned) | linux_musl_x64, linux_musl_arm64 | `libraries/helix-queues-setup.yml`, `coreclr/templates/helix-queues-setup.yml` |
 
-After creating a PR, tell the user whether the changed queues require an extra-platforms run to get CI coverage. If so, include a `/azp run runtime-extra-platforms` comment on the PR (or instruct the user to post one).
+After creating a PR, check whether the changed queues require an extra-platforms run to get CI coverage. If so, post the trigger comment on the PR directly:
+
+```bash
+gh pr comment <pr-number> --body "/azp run runtime-extra-platforms"
+```
+
+Tell the user you've triggered the pipeline and why it was needed.
 
 ### 7. Check other branches
 
