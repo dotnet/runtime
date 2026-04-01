@@ -295,8 +295,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
     }
 
-    if (
-        ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
+    if (((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
          ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0)))
     {
         SetMultiplyUsed(dstAddr DEBUGARG("LowerBlockStore destination address"));
