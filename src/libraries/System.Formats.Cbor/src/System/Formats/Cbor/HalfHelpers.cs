@@ -6,8 +6,15 @@ using System.Runtime.InteropServices;
 
 namespace System.Formats.Cbor
 {
-    internal static partial class HalfHelpers
+    internal static class HalfHelpers
     {
+#if NET
+        public static float HalfToFloat(Half value)
+            => (float)value;
+
+        public static double HalfToDouble(Half value)
+            => (double)value;
+#else
         // Half constants
         private const ushort HalfExponentMask = 0x7C00;
         private const ushort HalfExponentShift = 10;
@@ -201,5 +208,6 @@ namespace System.Formats.Cbor
         private static uint ShiftRightJam(uint i, int dist)
             => dist < 31 ? (i >> dist) | (i << (-dist & 31) != 0 ? 1U : 0U) : (i != 0 ? 1U : 0U);
         #endregion
+#endif
     }
 }

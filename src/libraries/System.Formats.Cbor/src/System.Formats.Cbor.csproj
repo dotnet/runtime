@@ -38,19 +38,25 @@ System.Formats.Cbor.CborWriter</PackageDescription>
     <Compile Include="System\Formats\Cbor\CborContentException.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="System\Formats\Cbor\HalfHelpers.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="System\Formats\Cbor\HalfHelpers.netcoreapp.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReader.Simple.netcoreapp.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.netcoreapp.cs" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="System\Formats\Cbor\Polyfills.cs" />
-    <Compile Include="System\Formats\Cbor\HalfHelpers.netstandard.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.netstandard.cs" />
-    <Compile Include="$(CommonPath)Polyfills\DateTimeOffsetPolyfills.cs" Link="Common\Polyfills\DateTimeOffsetPolyfills.cs" />
-    <Compile Include="$(CommonPath)Polyfills\HashCodePolyfills.cs" Link="Common\Polyfills\HashCodePolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BigIntegerPolyfills.cs" Link="Common\Polyfills\BigIntegerPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BinaryPrimitivesPolyfills.cs" Link="Common\Polyfills\BinaryPrimitivesPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DateTimeOffsetPolyfills.cs" Link="Common\Polyfills\DateTimeOffsetPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DecimalPolyfills.cs" Link="Common\Polyfills\DecimalPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\HashCodePolyfills.cs" Link="Common\Polyfills\HashCodePolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StackPolyfills.cs" Link="Common\Polyfills\StackPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

@@ -16,6 +16,19 @@ namespace System
 
         public static bool Contains(this string s, char value) =>
             s.IndexOf(value) >= 0;
+
+        internal delegate void SpanAction<T, in TArg>(Span<T> span, TArg arg);
+
+        extension(string)
+        {
+            public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
+            {
+                char[] arr = new char[length];
+                action(arr, state);
+
+                return new string(arr);
+            }
+        }
     }
 }
 
