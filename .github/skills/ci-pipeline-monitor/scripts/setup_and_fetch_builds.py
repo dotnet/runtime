@@ -80,8 +80,8 @@ CREATE TABLE IF NOT EXISTS test_results (
     console_log_url   TEXT,
     exit_code         INTEGER,              -- from console log (script-extracted)
     console_log_path  TEXT,                 -- path to full console log file on disk
-    error_message     TEXT,                 -- extracted by agent (verbatim copy-paste from console log)
-    stack_trace       TEXT,                 -- extracted by agent (verbatim copy-paste from console log)
+    error_message     TEXT,                 -- initially from AzDO Test Results API; may be enriched/overwritten by agent with console-log snippet
+    stack_trace       TEXT,                 -- initially from AzDO Test Results API; may be enriched/overwritten by agent with console-log snippet
     failure_id        INTEGER,
     FOREIGN KEY (failure_id) REFERENCES failures(id)
 );

@@ -104,8 +104,8 @@ CREATE TABLE test_results (
     console_log_url   TEXT,
     exit_code         INTEGER,              -- from console log (script-extracted)
     console_log_path  TEXT,                 -- path to full console log file on disk (in helix-logs/)
-    error_message     TEXT,                 -- from API (Step 3) + enriched by agent (Step 4)
-    stack_trace       TEXT,                 -- from API (Step 3) + enriched by agent (Step 4)
+    error_message     TEXT,                 -- initially from AzDO Test Results API; may be enriched/overwritten by agent with console-log snippet
+    stack_trace       TEXT,                 -- initially from AzDO Test Results API; may be enriched/overwritten by agent with console-log snippet
     failure_id        INTEGER,              -- NULL until Step 4 assigns a group
     FOREIGN KEY (failure_id) REFERENCES failures(id)
 );
