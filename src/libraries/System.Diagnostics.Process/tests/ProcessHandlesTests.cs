@@ -414,7 +414,8 @@ namespace System.Diagnostics.Tests
         public void InheritedHandles_ThrowsForInvalidHandle()
         {
             string exe = OperatingSystem.IsWindows() ? "cmd" : "sh";
-            using SafeFileHandle handle = new(nint.Zero, ownsHandle: false); // IsInvalid == true
+            using SafeFileHandle handle = new(-1, ownsHandle: false);
+            Assert.True(handle.IsInvalid);
             ProcessStartInfo startInfo = new(exe) { InheritedHandles = [handle] };
             Assert.Throws<ArgumentException>(() => Process.Start(startInfo));
         }

@@ -402,6 +402,7 @@ namespace System.Diagnostics
                     ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
                 }
             }
+
             if (anyHandle)
             {
                 if (StandardInputHandle is not null && RedirectStandardInput)
