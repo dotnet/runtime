@@ -542,43 +542,34 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task Watch_DoesNotFireForSiblingDirectoryWithSharedPrefix()
         {
-            string tempDir = Path.Combine(Path.GetTempPath(), "pfw_sibling_test_" + Guid.NewGuid().ToString("N"));
+            using var tempDir = new TempDirectory(GetTestFilePath());
 
-            try
-            {
-                Directory.CreateDirectory(tempDir);
+            string rootDir = Path.Combine(tempDir.Path, "rootDir");
+            string siblingDir = Path.Combine(tempDir.Path, "nextDir");
 
-                string rootDir = Path.Combine(tempDir, "rootDir");
-                string siblingDir = Path.Combine(tempDir, "nextDir");
+            Assert.Equal(rootDir.Length, siblingDir.Length);
+            Assert.NotEqual(rootDir, siblingDir);
 
-                Assert.Equal(rootDir.Length, siblingDir.Length);
-                Assert.NotEqual(rootDir, siblingDir);
+            // rootDir doesn't exist yet — the FSW watches tempDir (ancestor of rootDir).
+            using var fsw = new FileSystemWatcher(tempDir.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(
+                rootDir, fsw, pollForChanges: false);
 
-                // rootDir doesn't exist yet — the FSW watches tempDir (ancestor of rootDir).
-                using var fsw = new FileSystemWatcher(tempDir);
-                using var physicalFilesWatcher = new PhysicalFilesWatcher(
-                    rootDir, fsw, pollForChanges: false);
+            var token = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            Task changed = WhenChanged(token);
 
-                var token = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
-                Task changed = WhenChanged(token);
+            Directory.CreateDirectory(rootDir);
+            Directory.CreateDirectory(siblingDir);
 
-                Directory.CreateDirectory(rootDir);
-                Directory.CreateDirectory(siblingDir);
+            // Create a file with the same name in the sibling directory — token must NOT fire
+            File.WriteAllText(Path.Combine(siblingDir, "appsettings.json"), "{}");
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(changed.IsCompleted, "Token must not fire for a file in a sibling directory with a shared prefix.");
 
-                // Create a file with the same name in the sibling directory — token must NOT fire
-                File.WriteAllText(Path.Combine(siblingDir, "appsettings.json"), "{}");
-                await Task.Delay(WaitTimeForTokenToFire);
-                Assert.False(changed.IsCompleted, "Token must not fire for a file in a sibling directory with a shared prefix.");
+            // Create the file in the actual root directory — token must fire
+            File.WriteAllText(Path.Combine(rootDir, "appsettings.json"), "{}");
 
-                // Create the file in the actual root directory — token must fire
-                File.WriteAllText(Path.Combine(rootDir, "appsettings.json"), "{}");
-
-                await changed;
-            }
-            finally
-            {
-                Directory.Delete(tempDir, recursive: true);
-            }
+            await changed;
         }
 
         private class TestPollingChangeToken : IPollingChangeToken
