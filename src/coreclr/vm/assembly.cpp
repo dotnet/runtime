@@ -1258,6 +1258,7 @@ HRESULT RunMain(MethodDesc *pFD ,
     ETWFireEvent(Main_V1);
 
     Param param;
+    const short numSkipArgs = 1;
 
     param.pFD = pFD;
     param.numSkipArgs = numSkipArgs;
@@ -1406,8 +1407,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, bool propagateExcepti
     // AppDomain.ExecuteAssembly()
     if (pMeth) {
 #if !defined(TARGET_BROWSER)
-        if (waitForOtherThreads)
-            RunMainPost();
+        RunMainPost();
 #endif // !TARGET_BROWSER
     }
     else {
