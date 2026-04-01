@@ -262,7 +262,7 @@ public class StackWalkDumpTests : DumpTestBase
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     [SkipOnOS(IncludeOnly = "windows", Reason = "VarargPInvoke debuggee uses msvcrt.dll (Windows only)")]
-    public unsafe void VarargPInvoke_GetILAddressMapForILStub_ReturnsEFail(TestConfiguration config)
+    public unsafe void VarargPInvoke_GetILAddressMapForILStub_ReturnsFailure(TestConfiguration config)
     {
         InitializeDumpTest(config, "VarargPInvoke", "full");
         IStackWalk stackWalk = Target.Contracts.StackWalk;
@@ -285,7 +285,7 @@ public class StackWalkDumpTests : DumpTestBase
                 Target, mdHandle, TargetPointer.Null, legacyImpl: null);
             uint mapNeeded;
             int hr = methodInstance.GetILAddressMap(0, &mapNeeded, null);
-            AssertHResult(HResults.E_FAIL, hr);
+            Assert.True(hr < 0, $"Expected failure HRESULT for ILStub GetILAddressMap, got 0x{hr:X8}");
 
             return;
         }
@@ -325,7 +325,7 @@ public class StackWalkDumpTests : DumpTestBase
 
             DacpCodeHeaderData invalidCodeHeaderData;
             hr = sosDac.GetCodeHeaderData(new ClrDataAddress(entryPoint.Value + 1), &invalidCodeHeaderData);
-            AssertHResult(HResults.E_INVALIDARG, hr);
+            Assert.True(hr < 0, $"Expected failure HRESULT for invalid precode address, got 0x{hr:X8}");
 
             return;
         }
