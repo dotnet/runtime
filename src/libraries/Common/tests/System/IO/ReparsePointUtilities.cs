@@ -266,15 +266,8 @@ public static partial class MountHelper
         if (deleteDirectory)
         {
             string dirPath = mountPoint.TrimEnd(Path.DirectorySeparatorChar);
-            try
-            {
-                if (Directory.Exists(dirPath))
-                    Directory.Delete(dirPath, recursive: true);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(string.Format("Warning: failed to delete directory '{0}': {1}", dirPath, ex.Message));
-            }
+            if (Directory.Exists(dirPath))
+                Directory.Delete(dirPath, recursive: true);
         }
     }
 
