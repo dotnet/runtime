@@ -1157,7 +1157,6 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
 struct Param
 {
     MethodDesc *pFD;
-    short numSkipArgs;
     INT32 *piRetVal;
     PTRARRAYREF *stringArgs;
     CorEntryPointType EntryType;
@@ -1258,10 +1257,8 @@ HRESULT RunMain(MethodDesc *pFD ,
     ETWFireEvent(Main_V1);
 
     Param param;
-    const short numSkipArgs = 1;
 
     param.pFD = pFD;
-    param.numSkipArgs = numSkipArgs;
     param.piRetVal = piRetVal;
     param.stringArgs = stringArgs;
     param.EntryType = EntryType;
