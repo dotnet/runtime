@@ -3221,5 +3221,230 @@ namespace System.Runtime.Intrinsics
 
             return ax + ax * g * poly + (TVectorDouble.Create(PIBY2) & gtHalf);
         }
+
+        public static TVectorDouble AtanDouble<TVectorDouble>(TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // This code is based on `atan` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2023 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // --------------------
+            // Argument reduction to range [-7/16,7/16]
+            // Use the following identities:
+            // atan(x) = pi/2 - atan(1/x)                when x > 39/16
+            //         = arctan(1.5) + atan((x-1.5)/(1+1.5*x))  when 19/16 < x <= 39/16
+            //         = pi/4 + atan((x-1)/(1+x))        when 11/16 < x <= 19/16
+            //         = arctan(0.5) + atan((2x-1)/(2+x))       when 7/16 < x <= 11/16
+            //         = atan(x)                         when x <= 7/16
+            //
+            // Core approximation: Remez(4,4) on [-7/16,7/16]
+
+            // Range boundaries
+            const double R7_16 = 0.4375;    // 7/16
+            const double R11_16 = 0.6875;   // 11/16
+            const double R19_16 = 1.1875;   // 19/16
+            const double R39_16 = 2.4375;   // 39/16
+
+            // (chi, clo) pairs for high-precision addition
+            const double CHI_0 = 0.0;
+            const double CLO_0 = 0.0;
+            const double CHI_HALF = 4.63647609000806093515e-01;  // arctan(0.5)
+            const double CLO_HALF = 2.26987774529616809294e-17;
+            const double CHI_1 = 7.85398163397448278999e-01;     // arctan(1.0) = pi/4
+            const double CLO_1 = 3.06161699786838240164e-17;
+            const double CHI_1_5 = 9.82793723247329054082e-01;   // arctan(1.5)
+            const double CLO_1_5 = 1.39033110312309953701e-17;
+            const double CHI_INF = 1.57079632679489655800e+00;   // arctan(inf) = pi/2
+            const double CLO_INF = 6.12323399573676480327e-17;
+
+            // Remez(4,4) polynomial coefficients for numerator
+            const double P0 = 0.268297920532545909e0;
+            const double P1 = 0.447677206805497472e0;
+            const double P2 = 0.220638780716667420e0;
+            const double P3 = 0.304455919504853031e-1;
+            const double P4 = 0.142316903342317766e-3;
+
+            // Remez(4,4) polynomial coefficients for denominator
+            const double Q0 = 0.804893761597637733e0;
+            const double Q1 = 0.182596787737507063e1;
+            const double Q2 = 0.141254259931958921e1;
+            const double Q3 = 0.424602594203847109e0;
+            const double Q4 = 0.389525873944742195e-1;
+
+            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
+            TVectorDouble v = TVectorDouble.Abs(x);
+
+            // Determine which region each element falls into
+            TVectorDouble gtR39_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R39_16));
+            TVectorDouble gtR19_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R19_16));
+            TVectorDouble gtR11_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R11_16));
+            TVectorDouble gtR7_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R7_16));
+
+            // Compute reduced argument for each region
+
+            // Region 5: x > 39/16: reduced = -1/v
+            TVectorDouble reduced5 = -TVectorDouble.One / v;
+
+            // Region 4: 19/16 < x <= 39/16: reduced = (v-1.5)/(1+1.5*v)
+            TVectorDouble reduced4 = (v - TVectorDouble.Create(1.5)) / (TVectorDouble.One + TVectorDouble.Create(1.5) * v);
+
+            // Region 3: 11/16 < x <= 19/16: reduced = (v-1)/(1+v)
+            TVectorDouble reduced3 = (v - TVectorDouble.One) / (TVectorDouble.One + v);
+
+            // Region 2: 7/16 < x <= 11/16: reduced = (2*v-1)/(2+v)
+            TVectorDouble reduced2 = (TVectorDouble.Create(2.0) * v - TVectorDouble.One) / (TVectorDouble.Create(2.0) + v);
+
+            // Region 1: x <= 7/16: reduced = v
+            TVectorDouble reduced1 = v;
+
+            // Select reduced argument
+            TVectorDouble reduced = TVectorDouble.ConditionalSelect(gtR39_16, reduced5,
+                                    TVectorDouble.ConditionalSelect(gtR19_16, reduced4,
+                                    TVectorDouble.ConditionalSelect(gtR11_16, reduced3,
+                                    TVectorDouble.ConditionalSelect(gtR7_16, reduced2, reduced1))));
+
+            // Select chi (high part of constant)
+            TVectorDouble chi = TVectorDouble.ConditionalSelect(gtR39_16, TVectorDouble.Create(CHI_INF),
+                               TVectorDouble.ConditionalSelect(gtR19_16, TVectorDouble.Create(CHI_1_5),
+                               TVectorDouble.ConditionalSelect(gtR11_16, TVectorDouble.Create(CHI_1),
+                               TVectorDouble.ConditionalSelect(gtR7_16, TVectorDouble.Create(CHI_HALF), TVectorDouble.Create(CHI_0)))));
+
+            // Select clo (low part of constant)
+            TVectorDouble clo = TVectorDouble.ConditionalSelect(gtR39_16, TVectorDouble.Create(CLO_INF),
+                               TVectorDouble.ConditionalSelect(gtR19_16, TVectorDouble.Create(CLO_1_5),
+                               TVectorDouble.ConditionalSelect(gtR11_16, TVectorDouble.Create(CLO_1),
+                               TVectorDouble.ConditionalSelect(gtR7_16, TVectorDouble.Create(CLO_HALF), TVectorDouble.Create(CLO_0)))));
+
+            // Compute s = reduced^2
+            TVectorDouble s = reduced * reduced;
+
+            // Evaluate numerator polynomial: P0 + s*(P1 + s*(P2 + s*(P3 + s*P4)))
+            TVectorDouble num = TVectorDouble.Create(P4);
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(P3));
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(P2));
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(P1));
+            num = TVectorDouble.MultiplyAddEstimate(num, s, TVectorDouble.Create(P0));
+
+            // Evaluate denominator polynomial: Q0 + s*(Q1 + s*(Q2 + s*(Q3 + s*Q4)))
+            TVectorDouble denom = TVectorDouble.Create(Q4);
+            denom = TVectorDouble.MultiplyAddEstimate(denom, s, TVectorDouble.Create(Q3));
+            denom = TVectorDouble.MultiplyAddEstimate(denom, s, TVectorDouble.Create(Q2));
+            denom = TVectorDouble.MultiplyAddEstimate(denom, s, TVectorDouble.Create(Q1));
+            denom = TVectorDouble.MultiplyAddEstimate(denom, s, TVectorDouble.Create(Q0));
+
+            // q = reduced * s * num / denom
+            TVectorDouble q = reduced * s * num / denom;
+
+            // result = chi - ((q - clo) - reduced)
+            TVectorDouble result = chi - ((q - clo) - reduced);
+
+            // Restore sign
+            result ^= sign;
+
+            return result;
+        }
+
+        public static TVectorDouble Atan2Double<TVectorDouble>(TVectorDouble y, TVectorDouble x)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // The AMD AOCL-LibM scalar atan2 implementation (atan2.c) uses a lookup table
+            // (ATAN_TABLE with 241 entries) which cannot be trivially vectorized due to the
+            // cost of gather instructions. Instead, this computes atan2(y,x) using the
+            // already-vectorized AtanDouble implementation with quadrant adjustments.
+            // - atan2(±∞, +∞) = ±pi/4
+            // - atan2(±∞, -∞) = ±3pi/4
+            // - atan2(±y, +∞) = ±0
+            // - atan2(±y, -∞) = ±pi
+
+            const double PI = 3.141592653589793;           // 0x1.921fb54442d18p1
+
+            // Check for x being negative using standard comparison
+            TVectorDouble xLessThanZero = TVectorDouble.LessThan(x, TVectorDouble.Zero);
+
+            // For signed zero handling: check if x is -0 specifically
+            // We detect -0 by checking: x == 0 AND 1/x < 0 (since 1/-0 = -∞)
+            TVectorDouble xIsZero = TVectorDouble.Equals(x, TVectorDouble.Zero);
+            TVectorDouble recipX = TVectorDouble.One / x;
+            TVectorDouble recipXNegative = TVectorDouble.LessThan(recipX, TVectorDouble.Zero);
+            TVectorDouble xIsNegativeOrNegZero = xLessThanZero | (xIsZero & recipXNegative);
+
+            // Check for y sign using same technique
+            TVectorDouble yLessThanZero = TVectorDouble.LessThan(y, TVectorDouble.Zero);
+            TVectorDouble yIsZero = TVectorDouble.Equals(y, TVectorDouble.Zero);
+            TVectorDouble recipY = TVectorDouble.One / y;
+            TVectorDouble recipYNegative = TVectorDouble.LessThan(recipY, TVectorDouble.Zero);
+            TVectorDouble yIsNegativeOrNegZero = yLessThanZero | (yIsZero & recipYNegative);
+
+            // Compute atan(y/x) for the general case
+            TVectorDouble ratio = y / x;
+            TVectorDouble atanResult = AtanDouble<TVectorDouble>(ratio);
+
+            // For x < 0 (or x = -0), we need to adjust by ±π
+            TVectorDouble piAdjust = TVectorDouble.ConditionalSelect(
+                yIsNegativeOrNegZero,
+                TVectorDouble.Create(-PI),
+                TVectorDouble.Create(PI)
+            );
+
+            // Apply pi adjustment when x is negative (or -0)
+            TVectorDouble result = TVectorDouble.ConditionalSelect(
+                xIsNegativeOrNegZero,
+                atanResult + piAdjust,
+                atanResult
+            );
+
+            // Special case: when both y = ±0 and x = ±0
+            // atan2(±0, +0) = ±0
+            // atan2(±0, -0) = ±π
+            TVectorDouble zeroResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, TVectorDouble.Create(-0.0), TVectorDouble.Zero);
+            TVectorDouble piResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, TVectorDouble.Create(-PI), TVectorDouble.Create(PI));
+
+            TVectorDouble bothZero = xIsZero & yIsZero;
+            TVectorDouble zeroXResult = TVectorDouble.ConditionalSelect(xIsNegativeOrNegZero, piResult, zeroResult);
+            result = TVectorDouble.ConditionalSelect(bothZero, zeroXResult, result);
+
+            // Special case: when both x and y are infinite
+            // atan2(±∞, +∞) = ±π/4
+            // atan2(±∞, -∞) = ±3π/4
+            const double PI_OVER_4 = 0.78539816339744830961;   // 0x1.921fb54442d18p-1
+            const double THREE_PI_OVER_4 = 2.3561944901923449; // 0x1.2d97c7f3321d2p+1
+            TVectorDouble xIsInf = TVectorDouble.Equals(TVectorDouble.Abs(x), TVectorDouble.Create(double.PositiveInfinity));
+            TVectorDouble yIsInf = TVectorDouble.Equals(TVectorDouble.Abs(y), TVectorDouble.Create(double.PositiveInfinity));
+            TVectorDouble bothInf = xIsInf & yIsInf;
+            TVectorDouble infBaseAngle = TVectorDouble.ConditionalSelect(xIsNegativeOrNegZero, TVectorDouble.Create(THREE_PI_OVER_4), TVectorDouble.Create(PI_OVER_4));
+            TVectorDouble infResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, -infBaseAngle, infBaseAngle);
+            result = TVectorDouble.ConditionalSelect(bothInf, infResult, result);
+
+            return result;
+        }
+
+        public static TVectorSingle Atan2Single<TVectorSingle, TVectorDouble>(TVectorSingle y, TVectorSingle x)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // Widens to double and calls Atan2Double for improved accuracy.
+
+            if (TVectorSingle.ElementCount == TVectorDouble.ElementCount)
+            {
+                TVectorDouble dy = Widen<TVectorSingle, TVectorDouble>(y);
+                TVectorDouble dx = Widen<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(Atan2Double<TVectorDouble>(dy, dx));
+            }
+            else
+            {
+                TVectorDouble dyLo = WidenLower<TVectorSingle, TVectorDouble>(y);
+                TVectorDouble dyHi = WidenUpper<TVectorSingle, TVectorDouble>(y);
+                TVectorDouble dxLo = WidenLower<TVectorSingle, TVectorDouble>(x);
+                TVectorDouble dxHi = WidenUpper<TVectorSingle, TVectorDouble>(x);
+                return Narrow<TVectorDouble, TVectorSingle>(
+                    Atan2Double<TVectorDouble>(dyLo, dxLo),
+                    Atan2Double<TVectorDouble>(dyHi, dxHi)
+                );
+            }
+        }
     }
 }
