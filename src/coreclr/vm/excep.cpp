@@ -10138,7 +10138,7 @@ static VOID GetAssemblyDetailInfo(SString    &sType,
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -10178,7 +10178,7 @@ static VOID GetGenericArgAssemblyDetailInfo(SString    &sType,
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
