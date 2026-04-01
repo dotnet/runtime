@@ -3,19 +3,18 @@
 
 #include "fx_ver_c.h"
 
-#include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
 #include <ctype.h>
+#include <minipal/utils.h>
 
 void c_fx_ver_init(c_fx_ver_t* ver)
 {
     ver->major = -1;
     ver->minor = -1;
     ver->patch = -1;
-    ver->pre[0] = '\0';
-    ver->build[0] = '\0';
+    ver->pre[0] = _X('\0');
+    ver->build[0] = _X('\0');
 }
 
 void c_fx_ver_set(c_fx_ver_t* ver, int major, int minor, int patch)
@@ -23,8 +22,8 @@ void c_fx_ver_set(c_fx_ver_t* ver, int major, int minor, int patch)
     ver->major = major;
     ver->minor = minor;
     ver->patch = patch;
-    ver->pre[0] = '\0';
-    ver->build[0] = '\0';
+    ver->pre[0] = _X('\0');
+    ver->build[0] = _X('\0');
 }
 
 bool c_fx_ver_is_empty(const c_fx_ver_t* ver)
@@ -32,81 +31,79 @@ bool c_fx_ver_is_empty(const c_fx_ver_t* ver)
     return ver->major == -1;
 }
 
-char* c_fx_ver_as_str(const c_fx_ver_t* ver, char* out_str, size_t out_str_len)
+pal_char_t* c_fx_ver_as_str(const c_fx_ver_t* ver, pal_char_t* out_str, size_t out_str_len)
 {
-    int written;
-    if (ver->pre[0] != '\0' && ver->build[0] != '\0')
+    if (ver->pre[0] != _X('\0') && ver->build[0] != _X('\0'))
     {
-        written = snprintf(out_str, out_str_len, "%d.%d.%d%s%s",
+        pal_str_printf(out_str, out_str_len, _X("%d.%d.%d") _X("%s") _X("%s"),
             ver->major, ver->minor, ver->patch, ver->pre, ver->build);
     }
-    else if (ver->pre[0] != '\0')
+    else if (ver->pre[0] != _X('\0'))
     {
-        written = snprintf(out_str, out_str_len, "%d.%d.%d%s",
+        pal_str_printf(out_str, out_str_len, _X("%d.%d.%d") _X("%s"),
             ver->major, ver->minor, ver->patch, ver->pre);
     }
     else
     {
-        written = snprintf(out_str, out_str_len, "%d.%d.%d",
+        pal_str_printf(out_str, out_str_len, _X("%d.%d.%d"),
             ver->major, ver->minor, ver->patch);
     }
 
-    (void)written;
     return out_str;
 }
 
-static size_t index_of_non_numeric(const char* str, size_t start)
+static size_t index_of_non_numeric(const pal_char_t* str, size_t start)
 {
-    for (size_t i = start; str[i] != '\0'; i++)
+    for (size_t i = start; str[i] != _X('\0'); i++)
     {
-        if (str[i] < '0' || str[i] > '9')
+        if (str[i] < _X('0') || str[i] > _X('9'))
             return i;
     }
     return (size_t)-1; // npos equivalent
 }
 
-static bool try_stou(const char* str, size_t len, unsigned* num)
+static bool try_stou(const pal_char_t* str, size_t len, unsigned* num)
 {
     if (len == 0)
         return false;
 
     for (size_t i = 0; i < len; i++)
     {
-        if (str[i] < '0' || str[i] > '9')
+        if (str[i] < _X('0') || str[i] > _X('9'))
             return false;
     }
 
     // Convert substring to unsigned
-    char buf[32];
-    if (len >= sizeof(buf))
+    pal_char_t buf[32];
+    if (len >= ARRAY_SIZE(buf))
         return false;
-    memcpy(buf, str, len);
-    buf[len] = '\0';
+    memcpy(buf, str, len * sizeof(pal_char_t));
+    buf[len] = _X('\0');
 
-    *num = (unsigned)strtoul(buf, NULL, 10);
+    *num = (unsigned)pal_strtoul(buf, NULL, 10);
     return true;
 }
 
-static bool valid_identifier_char_set(const char* id, size_t len)
+static bool valid_identifier_char_set(const pal_char_t* id, size_t len)
 {
     for (size_t i = 0; i < len; i++)
     {
-        char c = id[i];
-        if (c >= 'A')
+        pal_char_t c = id[i];
+        if (c >= _X('A'))
         {
-            if ((c > 'Z' && c < 'a') || c > 'z')
+            if ((c > _X('Z') && c < _X('a')) || c > _X('z'))
                 return false;
         }
         else
         {
-            if ((c < '0' && c != '-') || c > '9')
+            if ((c < _X('0') && c != _X('-')) || c > _X('9'))
                 return false;
         }
     }
     return true;
 }
 
-static bool valid_identifier(const char* id, size_t id_len, bool build_meta)
+static bool valid_identifier(const pal_char_t* id, size_t id_len, bool build_meta)
 {
     if (id_len == 0)
         return false;
@@ -114,13 +111,13 @@ static bool valid_identifier(const char* id, size_t id_len, bool build_meta)
     if (!valid_identifier_char_set(id, id_len))
         return false;
 
-    if (!build_meta && id[0] == '0' && id_len > 1)
+    if (!build_meta && id[0] == _X('0') && id_len > 1)
     {
         // Check if all-numeric (no leading zeros allowed)
         bool all_numeric = true;
         for (size_t i = 1; i < id_len; i++)
         {
-            if (id[i] < '0' || id[i] > '9')
+            if (id[i] < _X('0') || id[i] > _X('9'))
             {
                 all_numeric = false;
                 break;
@@ -132,22 +129,22 @@ static bool valid_identifier(const char* id, size_t id_len, bool build_meta)
     return true;
 }
 
-static bool valid_identifiers(const char* ids)
+static bool valid_identifiers(const pal_char_t* ids)
 {
-    if (ids[0] == '\0')
+    if (ids[0] == _X('\0'))
         return true;
 
-    bool prerelease = ids[0] == '-';
-    bool build_meta = ids[0] == '+';
+    bool prerelease = ids[0] == _X('-');
+    bool build_meta = ids[0] == _X('+');
 
     if (!(prerelease || build_meta))
         return false;
 
-    size_t len = strlen(ids);
+    size_t len = pal_strlen(ids);
     size_t id_start = 1;
     for (size_t i = 1; i <= len; i++)
     {
-        if (i == len || ids[i] == '.')
+        if (i == len || ids[i] == _X('.'))
         {
             if (!valid_identifier(ids + id_start, i - id_start, build_meta))
                 return false;
@@ -158,14 +155,14 @@ static bool valid_identifiers(const char* ids)
     return true;
 }
 
-static bool parse_internal(const char* ver_str, c_fx_ver_t* out_ver, bool parse_only_production)
+static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool parse_only_production)
 {
-    size_t ver_len = strlen(ver_str);
+    size_t ver_len = pal_strlen(ver_str);
     if (ver_len == 0)
         return false;
 
     // Find first dot (major.minor separator)
-    const char* maj_dot = strchr(ver_str, '.');
+    const pal_char_t* maj_dot = pal_strchr(ver_str, _X('.'));
     if (maj_dot == NULL)
         return false;
 
@@ -173,12 +170,12 @@ static bool parse_internal(const char* ver_str, c_fx_ver_t* out_ver, bool parse_
     unsigned major_val = 0;
     if (!try_stou(ver_str, maj_len, &major_val))
         return false;
-    if (maj_len > 1 && ver_str[0] == '0')
+    if (maj_len > 1 && ver_str[0] == _X('0'))
         return false; // no leading zeros
 
     // Find second dot (minor.patch separator)
-    const char* min_start = maj_dot + 1;
-    const char* min_dot = strchr(min_start, '.');
+    const pal_char_t* min_start = maj_dot + 1;
+    const pal_char_t* min_dot = pal_strchr(min_start, _X('.'));
     if (min_dot == NULL)
         return false;
 
@@ -186,21 +183,21 @@ static bool parse_internal(const char* ver_str, c_fx_ver_t* out_ver, bool parse_
     unsigned minor_val = 0;
     if (!try_stou(min_start, min_len, &minor_val))
         return false;
-    if (min_len > 1 && min_start[0] == '0')
+    if (min_len > 1 && min_start[0] == _X('0'))
         return false; // no leading zeros
 
     // Parse patch (and potentially prerelease/build)
-    const char* pat_start = min_dot + 1;
+    const pal_char_t* pat_start = min_dot + 1;
     size_t pat_non_numeric = index_of_non_numeric(pat_start, 0);
 
     unsigned patch_val = 0;
     if (pat_non_numeric == (size_t)-1)
     {
         // Entire remainder is patch
-        size_t pat_len = strlen(pat_start);
+        size_t pat_len = pal_strlen(pat_start);
         if (!try_stou(pat_start, pat_len, &patch_val))
             return false;
-        if (pat_len > 1 && pat_start[0] == '0')
+        if (pat_len > 1 && pat_start[0] == _X('0'))
             return false;
 
         c_fx_ver_set(out_ver, (int)major_val, (int)minor_val, (int)patch_val);
@@ -212,54 +209,54 @@ static bool parse_internal(const char* ver_str, c_fx_ver_t* out_ver, bool parse_
 
     if (!try_stou(pat_start, pat_non_numeric, &patch_val))
         return false;
-    if (pat_non_numeric > 1 && pat_start[0] == '0')
+    if (pat_non_numeric > 1 && pat_start[0] == _X('0'))
         return false;
 
     // Parse prerelease and build
-    const char* pre_start = pat_start + pat_non_numeric;
-    const char* build_start = strchr(pre_start, '+');
+    const pal_char_t* pre_start = pat_start + pat_non_numeric;
+    const pal_char_t* build_start = pal_strchr(pre_start, _X('+'));
 
-    char pre_buf[256];
-    pre_buf[0] = '\0';
+    pal_char_t pre_buf[256];
+    pre_buf[0] = _X('\0');
     if (build_start != NULL)
     {
         size_t pre_len = (size_t)(build_start - pre_start);
-        if (pre_len >= sizeof(pre_buf))
+        if (pre_len >= ARRAY_SIZE(pre_buf))
             return false;
-        memcpy(pre_buf, pre_start, pre_len);
-        pre_buf[pre_len] = '\0';
+        memcpy(pre_buf, pre_start, pre_len * sizeof(pal_char_t));
+        pre_buf[pre_len] = _X('\0');
     }
     else
     {
-        size_t pre_len = strlen(pre_start);
-        if (pre_len >= sizeof(pre_buf))
+        size_t pre_len = pal_strlen(pre_start);
+        if (pre_len >= ARRAY_SIZE(pre_buf))
             return false;
-        memcpy(pre_buf, pre_start, pre_len + 1);
+        memcpy(pre_buf, pre_start, (pre_len + 1) * sizeof(pal_char_t));
     }
 
     if (!valid_identifiers(pre_buf))
         return false;
 
-    char build_buf[256];
-    build_buf[0] = '\0';
+    pal_char_t build_buf[256];
+    build_buf[0] = _X('\0');
     if (build_start != NULL)
     {
-        size_t build_len = strlen(build_start);
-        if (build_len >= sizeof(build_buf))
+        size_t build_len = pal_strlen(build_start);
+        if (build_len >= ARRAY_SIZE(build_buf))
             return false;
-        memcpy(build_buf, build_start, build_len + 1);
+        memcpy(build_buf, build_start, (build_len + 1) * sizeof(pal_char_t));
 
         if (!valid_identifiers(build_buf))
             return false;
     }
 
     c_fx_ver_set(out_ver, (int)major_val, (int)minor_val, (int)patch_val);
-    memcpy(out_ver->pre, pre_buf, strlen(pre_buf) + 1);
-    memcpy(out_ver->build, build_buf, strlen(build_buf) + 1);
+    memcpy(out_ver->pre, pre_buf, (pal_strlen(pre_buf) + 1) * sizeof(pal_char_t));
+    memcpy(out_ver->build, build_buf, (pal_strlen(build_buf) + 1) * sizeof(pal_char_t));
     return true;
 }
 
-bool c_fx_ver_parse(const char* ver_str, c_fx_ver_t* out_ver, bool parse_only_production)
+bool c_fx_ver_parse(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool parse_only_production)
 {
     c_fx_ver_init(out_ver);
     return parse_internal(ver_str, out_ver, parse_only_production);
@@ -267,10 +264,10 @@ bool c_fx_ver_parse(const char* ver_str, c_fx_ver_t* out_ver, bool parse_only_pr
 
 // Get a dot-delimited identifier starting at position idStart.
 // Returns length of the identifier.
-static size_t get_id_len(const char* ids, size_t id_start)
+static size_t get_id_len(const pal_char_t* ids, size_t id_start)
 {
     size_t i = id_start;
-    while (ids[i] != '\0' && ids[i] != '.')
+    while (ids[i] != _X('\0') && ids[i] != _X('.'))
         i++;
     return i - id_start;
 }
@@ -286,8 +283,8 @@ int c_fx_ver_compare(const c_fx_ver_t* a, const c_fx_ver_t* b)
     if (a->patch != b->patch)
         return (a->patch > b->patch) ? 1 : -1;
 
-    bool a_empty = (a->pre[0] == '\0');
-    bool b_empty = (b->pre[0] == '\0');
+    bool a_empty = (a->pre[0] == _X('\0'));
+    bool b_empty = (b->pre[0] == _X('\0'));
 
     if (a_empty || b_empty)
     {
@@ -296,8 +293,8 @@ int c_fx_ver_compare(const c_fx_ver_t* a, const c_fx_ver_t* b)
     }
 
     // Both are non-empty prerelease
-    assert(a->pre[0] == '-');
-    assert(b->pre[0] == '-');
+    assert(a->pre[0] == _X('-'));
+    assert(b->pre[0] == _X('-'));
 
     // Compare prerelease identifiers
     size_t id_start = 1;
@@ -305,10 +302,10 @@ int c_fx_ver_compare(const c_fx_ver_t* a, const c_fx_ver_t* b)
     {
         if (a->pre[i] != b->pre[i])
         {
-            if (a->pre[i] == '\0' && b->pre[i] == '.')
+            if (a->pre[i] == _X('\0') && b->pre[i] == _X('.'))
                 return -1;
 
-            if (b->pre[i] == '\0' && a->pre[i] == '.')
+            if (b->pre[i] == _X('\0') && a->pre[i] == _X('.'))
                 return 1;
 
             // Compare individual identifiers
@@ -327,7 +324,7 @@ int c_fx_ver_compare(const c_fx_ver_t* a, const c_fx_ver_t* b)
 
             // String comparison
             size_t min_len = ida_len < idb_len ? ida_len : idb_len;
-            int cmp = strncmp(a->pre + id_start, b->pre + id_start, min_len);
+            int cmp = pal_strncmp(a->pre + id_start, b->pre + id_start, min_len);
             if (cmp != 0)
                 return cmp;
             if (ida_len != idb_len)
@@ -336,9 +333,9 @@ int c_fx_ver_compare(const c_fx_ver_t* a, const c_fx_ver_t* b)
         }
         else
         {
-            if (a->pre[i] == '\0')
+            if (a->pre[i] == _X('\0'))
                 break;
-            if (a->pre[i] == '.')
+            if (a->pre[i] == _X('.'))
                 id_start = i + 1;
         }
     }

@@ -110,6 +110,11 @@ typedef char pal_char_t;
 
 // String operations
 #define pal_strlen(s) wcslen(s)
+#define pal_strcmp(a, b) wcscmp(a, b)
+#define pal_strncmp(a, b, n) wcsncmp(a, b, n)
+#define pal_strchr(s, c) wcschr(s, c)
+#define pal_strrchr(s, c) wcsrchr(s, c)
+#define pal_strtoul(s, e, b) wcstoul(s, e, b)
 #define pal_str_vprintf(buf, count, fmt, args) _vsnwprintf_s(buf, count, _TRUNCATE, fmt, args)
 #define pal_strlen_vprintf(fmt, args) _vscwprintf(fmt, args)
 #define pal_str_printf(buf, count, fmt, ...) _snwprintf_s(buf, count, _TRUNCATE, fmt, __VA_ARGS__)
@@ -162,6 +167,11 @@ extern "C" {
 
 // String operations
 #define pal_strlen(s) strlen(s)
+#define pal_strcmp(a, b) strcmp(a, b)
+#define pal_strncmp(a, b, n) strncmp(a, b, n)
+#define pal_strchr(s, c) strchr(s, c)
+#define pal_strrchr(s, c) strrchr(s, c)
+#define pal_strtoul(s, e, b) strtoul(s, e, b)
 #define pal_str_vprintf(buf, count, fmt, args) vsnprintf(buf, (size_t)(count), fmt, args)
 #define pal_strlen_vprintf(fmt, args) vsnprintf(NULL, 0, fmt, args)
 #define pal_str_printf(buf, count, fmt, ...) snprintf(buf, (size_t)(count), fmt, __VA_ARGS__)

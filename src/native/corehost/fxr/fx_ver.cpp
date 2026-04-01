@@ -2,41 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // C++ wrapper around the C implementation in fx_ver_c.h / fx_ver.c.
-// On Unix, pal::char_t == char so strings are passed directly.
-// On Windows, pal::char_t == wchar_t so ASCII version strings are
-// converted between narrow and wide representations.
+// The C API uses pal_char_t, so strings are passed directly without conversion.
 
 #include <cassert>
+#include <minipal/utils.h>
 #include "pal.h"
 #include "fx_ver.h"
 #include "fx_ver_c.h"
-
-// Helper to convert a narrow C string to pal::string_t
-static inline pal::string_t narrow_to_palstr(const char* s)
-{
-#if defined(_WIN32)
-    pal::string_t result;
-    for (const char* p = s; *p; ++p)
-        result.push_back(static_cast<pal::char_t>(*p));
-    return result;
-#else
-    return pal::string_t(s);
-#endif
-}
-
-// Helper to convert a pal::string_t to narrow C string (for ASCII content like version strings)
-static inline std::string palstr_to_narrow(const pal::string_t& s)
-{
-#if defined(_WIN32)
-    std::string result;
-    result.reserve(s.size());
-    for (pal::char_t c : s)
-        result.push_back(static_cast<char>(c));
-    return result;
-#else
-    return s;
-#endif
-}
 
 fx_ver_t::fx_ver_t(int major, int minor, int patch, const pal::string_t& pre, const pal::string_t& build)
     : m_major(major)
@@ -97,24 +69,21 @@ pal::string_t fx_ver_t::as_str() const
     c_fx_ver_t c_ver;
     c_fx_ver_set(&c_ver, m_major, m_minor, m_patch);
 
-    std::string pre_narrow = palstr_to_narrow(m_pre);
-    std::string build_narrow = palstr_to_narrow(m_build);
+    size_t pre_len = m_pre.size();
+    size_t build_len = m_build.size();
+    if (pre_len >= ARRAY_SIZE(c_ver.pre))
+        pre_len = ARRAY_SIZE(c_ver.pre) - 1;
+    if (build_len >= ARRAY_SIZE(c_ver.build))
+        build_len = ARRAY_SIZE(c_ver.build) - 1;
 
-    size_t pre_len = pre_narrow.size();
-    size_t build_len = build_narrow.size();
-    if (pre_len >= sizeof(c_ver.pre))
-        pre_len = sizeof(c_ver.pre) - 1;
-    if (build_len >= sizeof(c_ver.build))
-        build_len = sizeof(c_ver.build) - 1;
+    memcpy(c_ver.pre, m_pre.c_str(), pre_len * sizeof(pal_char_t));
+    c_ver.pre[pre_len] = _X('\0');
+    memcpy(c_ver.build, m_build.c_str(), build_len * sizeof(pal_char_t));
+    c_ver.build[build_len] = _X('\0');
 
-    memcpy(c_ver.pre, pre_narrow.c_str(), pre_len);
-    c_ver.pre[pre_len] = '\0';
-    memcpy(c_ver.build, build_narrow.c_str(), build_len);
-    c_ver.build[build_len] = '\0';
-
-    char buf[512];
-    c_fx_ver_as_str(&c_ver, buf, sizeof(buf));
-    return narrow_to_palstr(buf);
+    pal_char_t buf[512];
+    c_fx_ver_as_str(&c_ver, buf, ARRAY_SIZE(buf));
+    return pal::string_t(buf);
 }
 
 /* static */
@@ -124,20 +93,17 @@ int fx_ver_t::compare(const fx_ver_t& a, const fx_ver_t& b)
     c_fx_ver_set(&c_a, a.m_major, a.m_minor, a.m_patch);
     c_fx_ver_set(&c_b, b.m_major, b.m_minor, b.m_patch);
 
-    std::string a_pre = palstr_to_narrow(a.m_pre);
-    std::string b_pre = palstr_to_narrow(b.m_pre);
+    size_t a_pre_len = a.m_pre.size();
+    size_t b_pre_len = b.m_pre.size();
+    if (a_pre_len >= ARRAY_SIZE(c_a.pre))
+        a_pre_len = ARRAY_SIZE(c_a.pre) - 1;
+    if (b_pre_len >= ARRAY_SIZE(c_b.pre))
+        b_pre_len = ARRAY_SIZE(c_b.pre) - 1;
 
-    size_t a_pre_len = a_pre.size();
-    size_t b_pre_len = b_pre.size();
-    if (a_pre_len >= sizeof(c_a.pre))
-        a_pre_len = sizeof(c_a.pre) - 1;
-    if (b_pre_len >= sizeof(c_b.pre))
-        b_pre_len = sizeof(c_b.pre) - 1;
-
-    memcpy(c_a.pre, a_pre.c_str(), a_pre_len);
-    c_a.pre[a_pre_len] = '\0';
-    memcpy(c_b.pre, b_pre.c_str(), b_pre_len);
-    c_b.pre[b_pre_len] = '\0';
+    memcpy(c_a.pre, a.m_pre.c_str(), a_pre_len * sizeof(pal_char_t));
+    c_a.pre[a_pre_len] = _X('\0');
+    memcpy(c_b.pre, b.m_pre.c_str(), b_pre_len * sizeof(pal_char_t));
+    c_b.pre[b_pre_len] = _X('\0');
 
     return c_fx_ver_compare(&c_a, &c_b);
 }
@@ -145,14 +111,13 @@ int fx_ver_t::compare(const fx_ver_t& a, const fx_ver_t& b)
 /* static */
 bool fx_ver_t::parse(const pal::string_t& ver, fx_ver_t* fx_ver, bool parse_only_production)
 {
-    std::string narrow_ver = palstr_to_narrow(ver);
     c_fx_ver_t c_ver;
 
-    if (!c_fx_ver_parse(narrow_ver.c_str(), &c_ver, parse_only_production))
+    if (!c_fx_ver_parse(ver.c_str(), &c_ver, parse_only_production))
         return false;
 
-    pal::string_t pre = narrow_to_palstr(c_ver.pre);
-    pal::string_t build = narrow_to_palstr(c_ver.build);
+    pal::string_t pre(c_ver.pre);
+    pal::string_t build(c_ver.build);
 
     *fx_ver = fx_ver_t(c_ver.major, c_ver.minor, c_ver.patch, pre, build);
 

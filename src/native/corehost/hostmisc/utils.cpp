@@ -4,11 +4,11 @@
 #include "utils.h"
 #include "trace.h"
 #include "bundle/info.h"
+#include "utils_c.h"
 #if defined(TARGET_WINDOWS)
 #include <_version.h>
 #else
 #include <_version.c>
-#include "utils_c.h"
 #endif
 
 bool file_exists_in_dir(const pal::string_t& dir, const pal::char_t* file_name, pal::string_t* out_file_path)
@@ -247,28 +247,15 @@ const pal::char_t* get_arch_name(pal::architecture arch)
 
 const pal::char_t* get_current_arch_name()
 {
-#if !defined(TARGET_WINDOWS)
-    // On non-Windows, pal::char_t == char, so we can delegate directly to the C implementation
-    return utils_get_current_arch_name();
-#else
     assert(pal::strcmp(get_arch_name(get_current_arch()), _STRINGIFY(CURRENT_ARCH_NAME)) == 0);
-    return _STRINGIFY(CURRENT_ARCH_NAME);
-#endif
+    return utils_get_current_arch_name();
 }
 
 pal::string_t get_runtime_id()
 {
-#if !defined(TARGET_WINDOWS)
-    char rid[256];
-    utils_get_runtime_id(rid, sizeof(rid));
+    pal_char_t rid[256];
+    utils_get_runtime_id(rid, ARRAY_SIZE(rid));
     return pal::string_t(rid);
-#else
-    pal::string_t rid;
-    if (try_get_runtime_id_from_env(rid))
-        return rid;
-
-    return _STRINGIFY(HOST_RID_PLATFORM) _X("-") _STRINGIFY(CURRENT_ARCH_NAME);
-#endif
 }
 
 bool try_get_runtime_id_from_env(pal::string_t& out_rid)
@@ -496,13 +483,9 @@ pal::string_t get_download_url(const pal::char_t* framework_name, const pal::cha
 
 pal::string_t get_host_version_description()
 {
-#if defined(TARGET_WINDOWS)
-    return _STRINGIFY(VER_PRODUCTVERSION_STR);
-#else
-    char desc[512];
-    utils_get_host_version_description(desc, sizeof(desc));
+    pal_char_t desc[512];
+    utils_get_host_version_description(desc, ARRAY_SIZE(desc));
     return pal::string_t(desc);
-#endif
 }
 
 pal::string_t to_lower(const pal::char_t* in) {

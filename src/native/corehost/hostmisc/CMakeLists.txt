@@ -7,6 +7,7 @@ include(configure.cmake)
 set(SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/trace.c
     ${CMAKE_CURRENT_LIST_DIR}/fx_ver.c
+    ${CMAKE_CURRENT_LIST_DIR}/utils.c
     ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../fxr/fx_ver.cpp
     ${CLR_SRC_NATIVE_DIR}/minipal/mutex.c
@@ -29,8 +30,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         ${CMAKE_CURRENT_LIST_DIR}/longfile.h)
 else()
     list(APPEND SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/pal.c
-        ${CMAKE_CURRENT_LIST_DIR}/utils.c
+        ${CMAKE_CURRENT_LIST_DIR}/pal.unix.c
         ${CMAKE_CURRENT_LIST_DIR}/pal.unix.cpp)
 endif()
 
@@ -73,7 +73,7 @@ add_library(hostmisc::public ALIAS hostmisc_public)
 if(NOT CLR_CMAKE_TARGET_WIN32)
     set(HOSTMISC_C_SOURCES
         ${CMAKE_CURRENT_LIST_DIR}/trace.c
-        ${CMAKE_CURRENT_LIST_DIR}/pal.c
+        ${CMAKE_CURRENT_LIST_DIR}/pal.unix.c
         ${CMAKE_CURRENT_LIST_DIR}/utils.c
         ${CMAKE_CURRENT_LIST_DIR}/fx_ver.c
         ${CMAKE_CURRENT_LIST_DIR}/fxr_resolver.c

@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "pal_c.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,8 +19,8 @@ typedef struct c_fx_ver
     int major;
     int minor;
     int patch;
-    char pre[256];   // prerelease label with leading '-', or empty
-    char build[256]; // build label with leading '+', or empty
+    pal_char_t pre[256];   // prerelease label with leading '-', or empty
+    pal_char_t build[256]; // build label with leading '+', or empty
 } c_fx_ver_t;
 
 // Initialize a version to empty (-1.-1.-1)
@@ -31,13 +33,13 @@ void c_fx_ver_set(c_fx_ver_t* ver, int major, int minor, int patch);
 bool c_fx_ver_is_empty(const c_fx_ver_t* ver);
 
 // Parse a version string. Returns true on success.
-bool c_fx_ver_parse(const char* ver_str, c_fx_ver_t* out_ver, bool parse_only_production);
+bool c_fx_ver_parse(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool parse_only_production);
 
 // Compare two versions. Returns <0, 0, >0.
 int c_fx_ver_compare(const c_fx_ver_t* a, const c_fx_ver_t* b);
 
 // Convert version to string representation. Returns pointer to out_str.
-char* c_fx_ver_as_str(const c_fx_ver_t* ver, char* out_str, size_t out_str_len);
+pal_char_t* c_fx_ver_as_str(const c_fx_ver_t* ver, pal_char_t* out_str, size_t out_str_len);
 
 #ifdef __cplusplus
 }

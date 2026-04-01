@@ -89,10 +89,13 @@ void utils_append_path(pal_char_t* path, size_t path_len, const pal_char_t* comp
 void utils_replace_char(pal_char_t* path, pal_char_t match, pal_char_t repl);
 
 // Check if a file exists in a directory. If found, writes full path to out_file_path.
+// Only available on non-Windows (requires pal_file_exists).
+#if !defined(_WIN32)
 bool utils_file_exists_in_dir(const pal_char_t* dir, const pal_char_t* file_name, pal_char_t* out_file_path, size_t out_path_len);
 
 // Check if a file exists in a directory. If found, returns a dynamically allocated full path (caller must free).
 bool utils_file_exists_in_dir_alloc(const pal_char_t* dir, const pal_char_t* file_name, pal_char_t** out_file_path);
+#endif // !_WIN32
 
 // Get the directory portion of a path. Returns a dynamically allocated string (caller must free).
 pal_char_t* utils_get_directory_alloc(const pal_char_t* path);
@@ -114,7 +117,10 @@ bool utils_ends_with(const pal_char_t* value, const pal_char_t* suffix);
 
 // Get dotnet root from environment variables (DOTNET_ROOT_<ARCH> or DOTNET_ROOT).
 // Returns true if found. out_env_var_name gets the name of the env var used.
+// Only available on non-Windows (requires pal_fullpath).
+#if !defined(_WIN32)
 bool utils_get_dotnet_root_from_env(pal_char_t* out_env_var_name, size_t env_var_name_len, pal_char_t* recv, size_t recv_len);
+#endif // !_WIN32
 
 // Convert string to uppercase in-place.
 void utils_to_upper(pal_char_t* str);
