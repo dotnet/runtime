@@ -384,7 +384,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       SourceType="Computed"
       AssetKind="Build"
       AssetRole="Primary"
-      CopyToOutputDirectory="PreserveNewest"
+      CopyToOutputDirectory="Never"
       CopyToPublishDirectory="Never"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
@@ -403,7 +403,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       SourceType="Framework"
       AssetKind="Build"
       AssetRole="Primary"
-      CopyToOutputDirectory="PreserveNewest"
+      CopyToOutputDirectory="Never"
       CopyToPublishDirectory="Never"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
@@ -432,7 +432,7 @@ Copyright (c) .NET Foundation. All rights reserved.
          path (obj/fx/{SourceId}/) to bin/wwwroot/_framework/ at build time. -->
     <ItemGroup>
       <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)"
-        AssetMode="All" CopyToOutputDirectory="PreserveNewest" />
+        AssetMode="All" CopyToOutputDirectory="Never" />
       <WasmStaticWebAsset Include="@(_WasmMaterializedFrameworkAssets)" />
     </ItemGroup>
 
