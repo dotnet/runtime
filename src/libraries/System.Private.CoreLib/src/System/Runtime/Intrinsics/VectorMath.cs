@@ -3303,7 +3303,7 @@ namespace System.Runtime.Intrinsics
              TVectorDouble result = TVectorDouble.ConditionalSelect(transformMask, vTransform, vNormal);
 
              // Handle special cases: |x| > 1 returns NaN, x = ±1 returns 0 or π
-             TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(TVectorDouble.Abs(x), TVectorDouble.One);
+             TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(ax, TVectorDouble.One);
              result = TVectorDouble.ConditionalSelect(absXGreaterThanOne, TVectorDouble.Create(double.NaN), result);
 
              TVectorDouble xEqualsOne = TVectorDouble.Equals(x, TVectorDouble.One);

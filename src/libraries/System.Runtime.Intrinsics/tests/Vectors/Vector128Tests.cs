@@ -5306,6 +5306,22 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AcosDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void AcosDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector128<double> actualResult = Vector128.Acos(Vector128.Create(value));
+            AssertEqual(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AcosSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void AcosSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector128<float> actualResult = Vector128.Acos(Vector128.Create(value));
+            AssertEqual(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
+        }
+
+        [Theory]
         [MemberData(nameof(GenericMathTestMemberData.AsinDouble), MemberType = typeof(GenericMathTestMemberData))]
         public void AsinDoubleTest(double value, double expectedResult, double variance)
         {

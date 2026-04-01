@@ -758,10 +758,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Computes the arc cosine of each element in a vector.</summary>
-        /// <param name="vector">The vector whose arc cosine is to be computed.</param>
-        /// <returns>A vector whose elements are the arc cosine of the corresponding elements in <paramref name="vector" />.</returns>
-        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        /// <inheritdoc cref="Vector256.Acos(Vector256{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<double> Acos(Vector512<double> vector)
         {
@@ -778,10 +775,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Computes the arc cosine of each element in a vector.</summary>
-        /// <param name="vector">The vector whose arc cosine is to be computed.</param>
-        /// <returns>A vector whose elements are the arc cosine of the corresponding elements in <paramref name="vector" />.</returns>
-        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        /// <inheritdoc cref="Vector256.Acos(Vector256{float})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<float> Acos(Vector512<float> vector)
         {
