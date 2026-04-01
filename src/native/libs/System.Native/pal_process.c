@@ -237,7 +237,7 @@ static int SetCloexecForFd(void* context, int fd)
 // When inheritedFdCount == 0, close fds outright since none should be inherited.
 // When inheritedFdCount > 0, only set FD_CLOEXEC so the caller can selectively clear it for inherited fds.
 // Used when OS-specific bulk methods (close_range, fdwalk) are unavailable or fail.
-static void SetCloexecForAllFds(int inheritedFdCount)
+static void SetCloexecForAllFdsFallback(int inheritedFdCount)
 {
     struct rlimit rl;
     int maxFd;
@@ -583,6 +583,8 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         // Restrict handle inheritance when inheritedFdCount >= 0
         if (inheritedFdCount >= 0)
         {
+            // When inheritedFdCount == 0, we want to close all fds >= 3 outright (flag 0).
+            // When inheritedFdCount > 0, we want to set CLOEXEC so we can clear it for inherited fds.
 #if HAVE_CLOSEFROM
             // closefrom(fd) closes all FDs >= fd. Available on BSD and macOS 10.12+.
             // Only use it when there are no user-provided fds to preserve;
@@ -596,46 +598,46 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 #if HAVE_CLOSE_RANGE
                 if (close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
                 {
-                    SetCloexecForAllFds(inheritedFdCount);
+                    SetCloexecForAllFdsFallback(inheritedFdCount);
                 }
 #elif defined(__NR_close_range)
                 if (syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
                 {
-                    SetCloexecForAllFds(inheritedFdCount);
+                    SetCloexecForAllFdsFallback(inheritedFdCount);
                 }
 #elif HAVE_FDWALK
                 if (fdwalk(SetCloexecForFd, NULL) != 0)
                 {
-                    SetCloexecForAllFds(inheritedFdCount);
+                    SetCloexecForAllFdsFallback(inheritedFdCount);
                 }
 #else
-                SetCloexecForAllFds(inheritedFdCount);
+                SetCloexecForAllFdsFallback(inheritedFdCount);
 #endif
             }
 #elif HAVE_CLOSE_RANGE
-            // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34),
-            // set CLOEXEC on all FDs >= 3 in one call. FDs 0-2 are stdin/stdout/stderr.
-            // This must be called AFTER the dup2 calls above so that if stdinFd/stdoutFd/stderrFd
-            // are >= 3, they don't get CLOEXEC set before being duplicated to 0/1/2.
-            if (close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
+            // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).
+            // When inheritedFdCount == 0, use flag 0 to close fds immediately (no exec-time overhead).
+            // When inheritedFdCount > 0, use CLOSE_RANGE_CLOEXEC so inherited fds can be kept open.
+            // FDs 0-2 are stdin/stdout/stderr; must be called AFTER the dup2 calls above.
+            if (close_range(3, UINT_MAX, inheritedFdCount > 0 ? CLOSE_RANGE_CLOEXEC : 0) != 0)
             {
-                SetCloexecForAllFds(inheritedFdCount);
+                SetCloexecForAllFdsFallback(inheritedFdCount);
             }
 #elif defined(__NR_close_range)
             // On Linux with older glibc that doesn't expose close_range() as a function,
             // use the raw syscall number if the kernel supports it (kernel >= 5.9).
-            if (syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
+            if (syscall(__NR_close_range, 3, UINT_MAX, inheritedFdCount > 0 ? CLOSE_RANGE_CLOEXEC : 0) != 0)
             {
-                SetCloexecForAllFds(inheritedFdCount);
+                SetCloexecForAllFdsFallback(inheritedFdCount);
             }
 #elif HAVE_FDWALK
             // On Illumos/Solaris, use fdwalk() to set FD_CLOEXEC on all open fds >= 3.
             if (fdwalk(SetCloexecForFd, NULL) != 0)
             {
-                SetCloexecForAllFds(inheritedFdCount);
+                SetCloexecForAllFdsFallback(inheritedFdCount);
             }
 #else
-            SetCloexecForAllFds(inheritedFdCount);
+            SetCloexecForAllFdsFallback(inheritedFdCount);
 #endif
 
             // Remove CLOEXEC from user-provided inherited file descriptors so they survive execve.
