@@ -8,9 +8,6 @@ namespace System.Numerics;
 
 internal static class BitOperations
 {
-    // C# no-alloc optimization that directly wraps the data section of the dll (similar to string constants)
-    // https://github.com/dotnet/roslyn/pull/24621
-
     private static ReadOnlySpan<byte> TrailingZeroCountDeBruijn =>
     [
         00, 01, 28, 02, 29, 14, 24, 03,
