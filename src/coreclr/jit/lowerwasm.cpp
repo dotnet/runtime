@@ -287,8 +287,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         if (src->OperIs(GT_IND))
         {
             GenTree* srcAddr = src->gtGetOp1();
-            // Only set the source as multiply-used if it's faulting or we're not using a native opcode for the
-            // copy/fill operation. This avoids failures later in compilation in obscure cases.
             if ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
                 ((src->gtFlags & GTF_IND_NONFAULTING) == 0))
             {
@@ -298,8 +296,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     }
 
     if (
-        // For native opcode copies/fills with a non-faulting destination, we can't reliably mark the address as
-        // multiply-used - it will cause failures later in compilation. So avoid those cases too.
         ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
          ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0)))
     {
