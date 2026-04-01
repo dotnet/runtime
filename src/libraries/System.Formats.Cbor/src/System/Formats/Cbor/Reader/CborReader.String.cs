@@ -387,7 +387,7 @@ namespace System.Formats.Cbor
             }
 
             // build the string using range data
-            string output = CborHelpers.BuildStringFromIndefiniteLengthTextString(concatenatedStringSize, (ranges, _data.Slice(_offset), utf8Encoding), BuildString);
+            string output = string.Create(concatenatedStringSize, (ranges, _data.Slice(_offset), utf8Encoding), BuildString);
 
             AdvanceBuffer(encodingLength);
             AdvanceDataItemCounters();

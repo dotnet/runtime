@@ -8,20 +8,29 @@ internal static class BitConverterPolyfills
 {
     extension(BitConverter)
     {
+        public static int SingleToInt32Bits(float value)
+        {
+            unsafe { return *(int*)&value; }
+        }
+
+        public static float Int32BitsToSingle(int value)
+        {
+            unsafe { return *(float*)&value; }
+        }
+
         public static uint SingleToUInt32Bits(float value)
         {
-            unsafe
-            {
-                return *(uint*)&value;
-            }
+            unsafe { return *(uint*)&value; }
+        }
+
+        public static float UInt32BitsToSingle(uint value)
+        {
+            unsafe { return *(float*)&value; }
         }
 
         public static ulong DoubleToUInt64Bits(double value)
         {
-            unsafe
-            {
-                return *(ulong*)&value;
-            }
+            unsafe { return *(ulong*)&value; }
         }
     }
 }

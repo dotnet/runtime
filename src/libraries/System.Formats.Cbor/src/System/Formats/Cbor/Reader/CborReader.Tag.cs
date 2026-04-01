@@ -125,7 +125,7 @@ namespace System.Formats.Cbor
                         }
 
                         TimeSpan timespan = TimeSpan.FromSeconds(seconds);
-                        return CborHelpers.UnixEpoch + timespan;
+                        return DateTimeOffset.UnixEpoch + timespan;
 
                     default:
                         throw new CborContentException(SR.Cbor_Reader_InvalidUnixTimeEncoding);
@@ -175,7 +175,7 @@ namespace System.Formats.Cbor
                 }
 
                 byte[] unsignedBigEndianEncoding = ReadByteString();
-                BigInteger unsignedValue = CborHelpers.CreateBigIntegerFromUnsignedBigEndianBytes(unsignedBigEndianEncoding);
+                BigInteger unsignedValue = CreateBigIntegerFromUnsignedBigEndianBytes(unsignedBigEndianEncoding);
                 return isNegative ? -1 - unsignedValue : unsignedValue;
             }
             catch
@@ -291,5 +291,29 @@ namespace System.Formats.Cbor
 
             return result;
         }
+
+        private static BigInteger CreateBigIntegerFromUnsignedBigEndianBytes(byte[] bigEndianBytes)
+#if NET
+            => new BigInteger(bigEndianBytes, isUnsigned: true, isBigEndian: true);
+#else
+        {
+            if (bigEndianBytes.Length == 0)
+                return BigInteger.Zero;
+
+            byte[] littleEndianBytes = (byte[])bigEndianBytes.Clone();
+            Array.Reverse(littleEndianBytes);
+
+            // BigInteger(byte[]) expects little-endian signed (two's complement).
+            // If the high bit is set, append a 0x00 so BigInteger doesn't interpret it as negative.
+            if ((littleEndianBytes[littleEndianBytes.Length - 1] & 0x80) != 0)
+            {
+                byte[] extended = new byte[littleEndianBytes.Length + 1];
+                Array.Copy(littleEndianBytes, extended, littleEndianBytes.Length);
+                littleEndianBytes = extended;
+            }
+
+            return new BigInteger(littleEndianBytes);
+        }
+#endif
     }
 }

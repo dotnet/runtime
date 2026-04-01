@@ -6,8 +6,15 @@ using System.Runtime.InteropServices;
 
 namespace System.Formats.Cbor
 {
-    internal static partial class HalfHelpers
+    internal static class HalfHelpers
     {
+#if NET
+        public static float HalfToFloat(Half value)
+            => (float)value;
+
+        public static double HalfToDouble(Half value)
+            => (double)value;
+#else
         // Half constants
         private const ushort HalfExponentMask = 0x7C00;
         private const ushort HalfExponentShift = 10;
@@ -53,7 +60,7 @@ namespace System.Formats.Cbor
             {
                 if (sig == 0)
                 {
-                    return CborHelpers.UInt32BitsToSingle(sign ? FloatSignMask : 0); // Positive / Negative zero
+                    return BitConverter.UInt32BitsToSingle(sign ? FloatSignMask : 0); // Positive / Negative zero
                 }
                 (exp, sig) = NormSubnormalF16Sig(sig);
                 exp -= 1;
@@ -62,7 +69,7 @@ namespace System.Formats.Cbor
             return CreateSingle(sign, (byte)(exp + 0x70), sig << 13);
 
             static float CreateSingle(bool sign, byte exp, uint sig)
-                => CborHelpers.Int32BitsToSingle((int)(((sign ? 1U : 0U) << FloatSignShift) + ((uint)exp << FloatExponentShift) + sig));
+                => BitConverter.Int32BitsToSingle((int)(((sign ? 1U : 0U) << FloatSignShift) + ((uint)exp << FloatExponentShift) + sig));
         }
 
         public static bool HalfIsNaN(ushort value)
@@ -119,7 +126,7 @@ namespace System.Formats.Cbor
             uint signInt = (sign ? 1U : 0U) << FloatSignShift;
             uint sigInt = (uint)(significand >> 41);
 
-            return CborHelpers.UInt32BitsToSingle(signInt | NaNBits | sigInt);
+            return BitConverter.UInt32BitsToSingle(signInt | NaNBits | sigInt);
         }
         #endregion
 
@@ -128,7 +135,7 @@ namespace System.Formats.Cbor
         {
             const int SingleMaxExponent = 0xFF;
 
-            uint floatInt = CborHelpers.SingleToUInt32Bits(value);
+            uint floatInt = BitConverter.SingleToUInt32Bits(value);
             bool sign = (floatInt & FloatSignMask) >> FloatSignShift != 0;
             int exp = (int)(floatInt & FloatExponentMask) >> FloatExponentShift;
             uint sig = floatInt & FloatSignificandMask;
@@ -201,5 +208,6 @@ namespace System.Formats.Cbor
         private static uint ShiftRightJam(uint i, int dist)
             => dist < 31 ? (i >> dist) | (i << (-dist & 31) != 0 ? 1U : 0U) : (i != 0 ? 1U : 0U);
         #endregion
+#endif
     }
 }
