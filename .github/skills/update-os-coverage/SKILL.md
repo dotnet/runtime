@@ -204,7 +204,31 @@ After editing, verify:
 
 3. **Variable names are unchanged** — only the `value` fields change, never the `name` fields.
 
-### 6. Check other branches
+### 6. CI pipeline coverage
+
+Not all Helix queues run in the default PR pipeline (`runtime`). Some distros are only exercised by the **extra-platforms** pipeline (`runtime-extra-platforms`), which runs on a daily schedule and can be triggered on PRs with `/azp run runtime-extra-platforms`.
+
+**Distros behind the `isExtraPlatformsBuild` guard** (extra-platforms pipeline required):
+
+| Distro | Platform | File |
+|--------|----------|------|
+| Debian | linux_x64, linux_arm | `libraries/helix-queues-setup.yml` |
+| Fedora | linux_x64 | `libraries/helix-queues-setup.yml` |
+| openSUSE | linux_x64 | `libraries/helix-queues-setup.yml` |
+| Alpine edge | linux_musl_x64 | `libraries/helix-queues-setup.yml` |
+
+**Distros in the default PR pipeline** (always exercised):
+
+| Distro | Platform | File |
+|--------|----------|------|
+| Ubuntu | linux_x64, linux_arm64 | `libraries/helix-queues-setup.yml` |
+| AzureLinux | linux_x64, linux_arm64 | `libraries/helix-queues-setup.yml`, `coreclr/templates/helix-queues-setup.yml` |
+| CentOS Stream | linux_x64 | `libraries/helix-queues-setup.yml` |
+| Alpine (versioned) | linux_musl_x64, linux_musl_arm64 | `libraries/helix-queues-setup.yml`, `coreclr/templates/helix-queues-setup.yml` |
+
+After creating a PR, tell the user whether the changed queues require an extra-platforms run to get CI coverage. If so, include a `/azp run runtime-extra-platforms` comment on the PR (or instruct the user to post one).
+
+### 7. Check other branches
 
 After updating `main`, check whether release branches also need updates:
 
@@ -223,11 +247,11 @@ Release branches should be updated when:
 
 Note: Release branch updates should be done in separate PRs.
 
-### 7. Cross-reference with supported-os
+### 8. Cross-reference with supported-os
 
 Check if the relevant `supported-os.json` in dotnet/core needs corresponding updates. The file lives under the pattern `release-notes/<version>/supported-os.json` (for example, `release-notes/8.0/supported-os.json`) in the [release-notes directory](https://github.com/dotnet/core/tree/main/release-notes). If a new version is being added to Helix but isn't yet in supported-os, inform the user to run the `update-supported-os` skill in dotnet/core.
 
-### 8. Create PR
+### 9. Create PR
 
 1. Create a branch:
    ```bash
@@ -244,6 +268,7 @@ Check if the relevant `supported-os.json` in dotnet/core needs corresponding upd
    - Table of changes (old version → new version, which slots)
    - EOL dates for old and new versions
    - Confirmation that container images are available
+   - Which CI pipeline(s) need to run (see [step 6](#6-ci-pipeline-coverage))
    - Link to the [os-onboarding guide](https://github.com/dotnet/runtime/blob/main/docs/project/os-onboarding.md)
    - Link to tracking issue if applicable (e.g. [dotnet/core#9638](https://github.com/dotnet/core/issues/9638))
 
