@@ -1446,11 +1446,10 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void UserCredentialsCantBeCombinedWithInheritedHandles()
+        public void UserNameCantBeCombinedWithInheritedHandles()
         {
             using Process longRunning = CreateProcessLong();
             longRunning.StartInfo.UserName = nameof(ProcessStartInfo.UserName);
-            longRunning.StartInfo.PasswordInClearText = nameof(ProcessStartInfo.PasswordInClearText);
             longRunning.StartInfo.InheritedHandles = [];
 
             Assert.Throws<InvalidOperationException>(() => longRunning.Start());
