@@ -41,6 +41,11 @@ HRESULT ConnectToChannel(
 // Debugger::Startup() in debugger.cpp).
 DbgTransportSession *g_pDbgTransport = NULL;
 
+// Pipe names stored for use in AbortConnection(). Stored separately from m_channel to avoid
+// accessing the channel pointer which may be concurrently updated by the transport worker thread.
+static char s_abortConnectionInPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+static char s_abortConnectionOutPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+
 #include "ddmarshalutil.h"
 #endif // !RIGHT_SIDE_COMPILE
 
@@ -123,7 +128,11 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
 #else // RIGHT_SIDE_COMPILE
     m_pDCB = pDCB;
 
-    HRESULT hr = CreateChannel(ProcessDescriptor::FromCurrentProcess(), &m_channel);
+    ProcessDescriptor procDesc = ProcessDescriptor::FromCurrentProcess();
+    PAL_GetTransportPipeName(s_abortConnectionInPipeName, procDesc.m_Pid, procDesc.m_ApplicationGroupId, "in");
+    PAL_GetTransportPipeName(s_abortConnectionOutPipeName, procDesc.m_Pid, procDesc.m_ApplicationGroupId, "out");
+
+    HRESULT hr = CreateChannel(procDesc, &m_channel);
     if (FAILED(hr))
         return hr;
 
@@ -218,10 +227,10 @@ void DbgTransportSession::Shutdown()
 // TerminateProcess and for unhandled native exceptions and asserts.
 void DbgTransportSession::AbortConnection()
 {
-    if (m_channel == NULL)
-        return;
-
-    m_channel->CloseConnection();
+    // Unlink the transport pipes directly from the stored names to avoid accessing
+    // m_channel which may be concurrently updated by the transport worker thread.
+    unlink(s_abortConnectionInPipeName);
+    unlink(s_abortConnectionOutPipeName);
 }
 
 // API used only by the LS to drive the transport into a state where it won't accept connections. This is used
