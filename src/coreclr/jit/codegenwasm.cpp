@@ -2901,7 +2901,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     assert(isNativeOp || blkOp->GetLayout()->HasGCPtr());
 #endif // DEBUG
 
-    bool      nullCheckDest = ((blkOp->gtFlags & GTF_IND_NONFAULTING) == 0) && !dstOnStack;
+    bool      nullCheckDest = (blkOp->gtFlags & GTF_IND_NONFAULTING) == 0;
     bool      nullCheckSrc  = false;
     GenTree*  dest          = blkOp->Addr();
     GenTree*  src           = blkOp->Data();

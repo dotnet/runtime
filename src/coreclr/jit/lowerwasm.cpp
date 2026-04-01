@@ -298,11 +298,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     }
 
     if (
-        // We know trivially that we won't nullcheck a destination that is a local variable's address, so we can
-        // skip generating the temporary for that case. If we don't do this, we get an error during regalloc caused
-        // by RewriteLocalStackStore creating and lowering a block store too 'late' to mark the dstAddr as multiply
-        // used successfully.
-        !dstAddr->OperIs(GT_LCL_ADDR) &&
         // For native opcode copies/fills with a non-faulting destination, we can't reliably mark the address as
         // multiply-used - it will cause failures later in compilation. So avoid those cases too.
         ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
