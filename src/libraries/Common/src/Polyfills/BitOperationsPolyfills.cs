@@ -32,7 +32,6 @@ internal static class BitOperations
     {
         value |= 1;
 
-
         // Fill trailing zeros with ones, eg 00010010 becomes 00011111
         value |= value >> 01;
         value |= value >> 02;
