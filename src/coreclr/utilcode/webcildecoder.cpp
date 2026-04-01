@@ -139,8 +139,15 @@ BOOL WebcilDecoder::HasBaseRelocations() const
     LIMITED_METHOD_CONTRACT;
     if (!HasWebcilHeaders())
         return FALSE;
+
     const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-    return pHeader->Reserved0 != 0;
+    uint32_t relocSectionIndex = pHeader->Reserved0;
+    uint16_t numSections = pHeader->CoffSections;
+
+    if (relocSectionIndex == 0 || relocSectionIndex > numSections)
+        return FALSE;
+
+    return TRUE;
 }
 
 CHECK WebcilDecoder::CheckWebcilHeaders() const
