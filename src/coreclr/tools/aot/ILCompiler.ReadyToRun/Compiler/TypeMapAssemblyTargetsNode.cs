@@ -32,6 +32,14 @@ namespace ILCompiler.ReadyToRun
             DependencyList dependencies = [];
             foreach (var map in _assemblyTypeMaps.Maps)
             {
+                // Skip groups where assembly target attributes were present but all failed to resolve
+                // (e.g. when the target assembly name doesn't exist). The runtime will fall back to
+                // attribute processing for these groups. Groups with no assembly target attributes
+                // at all should still emit an entry so the runtime knows they are precached and
+                // avoids unnecessary fallback to attribute scanning.
+                if (map.Value.TargetModules.Count == 0 && map.Value.HasAssemblyTargetAttributes)
+                    continue;
+
                 var groupType = map.Key;
                 dependencies.Add(new DependencyListEntry(_importReferenceProvider.GetImportToType(groupType), "Type Map Assembly Target"));
                 foreach (var targetModule in map.Value.TargetModules)
@@ -59,6 +67,10 @@ namespace ILCompiler.ReadyToRun
 
             foreach (var map in _assemblyTypeMaps.Maps)
             {
+                // Skip groups where assembly target attributes were present but all failed to resolve.
+                if (map.Value.TargetModules.Count == 0 && map.Value.HasAssemblyTargetAttributes)
+                    continue;
+
                 var groupType = map.Key;
                 Vertex groupTypeVertex = _importReferenceProvider.EncodeReferenceToType(writer, groupType);
                 VertexSequence modules = new();

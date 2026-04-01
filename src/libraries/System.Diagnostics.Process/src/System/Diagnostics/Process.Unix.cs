@@ -69,7 +69,7 @@ namespace System.Diagnostics
                 return;
             }
 
-            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGKILL);
+            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
             if (killResult != 0)
             {
                 Interop.Error error = Interop.Sys.GetLastError();
@@ -105,7 +105,7 @@ namespace System.Diagnostics
 
             // Stop the process, so it won't start additional children.
             // This is best effort: kill can return before the process is stopped.
-            int stopResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGSTOP);
+            int stopResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSIGSTOP());
             if (stopResult != 0)
             {
                 Interop.Error error = Interop.Sys.GetLastError();
@@ -119,7 +119,7 @@ namespace System.Diagnostics
 
             List<Process> children = GetChildProcesses();
 
-            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGKILL);
+            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
             if (killResult != 0)
             {
                 Interop.Error error = Interop.Sys.GetLastError();
