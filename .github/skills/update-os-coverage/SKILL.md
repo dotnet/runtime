@@ -67,7 +67,7 @@ Where:
 - `<HostQueue>` — physical host queue, e.g. `AzureLinux.3.Amd64.Open`
 - `<image-tag>` — container image tag, e.g. `fedora-44-helix-amd64`
 
-Most distro variables also have `_internal` counterparts (e.g. `helix_linux_x64_<distro>_oldest_internal`) that use the same queue/image but drop the `.Open` suffix. When updating a distro version, update both the `.Open` and `_internal` entries.
+Some platform variables have `_internal` counterparts (e.g. `helix_linux_x64_<distro>_oldest_internal`) that use the same queue/image but drop the `.Open` suffix. When an `_internal` counterpart exists, update both the `.Open` and `_internal` entries.
 
 ### helix-queues-setup.yml files
 
@@ -167,9 +167,9 @@ For each reference found in step 3:
    | openSUSE | `openSUSE.<ver>.Amd64.Open` | `opensuse-<ver>-helix-amd64` |
    | Ubuntu | `Ubuntu.<ver-no-dots>.Amd64.Open` | `ubuntu-<ver>-helix-amd64` |
 
-   Architecture suffixes vary: `Amd64`, `Arm64`, `Arm32` for queue names; `amd64`, `arm64v8`, `arm32v7` for image tags.
+   Architecture suffixes vary: `Amd64`, `Arm64`, `ArmArch`, `Arm32` for queue names; `amd64`, `arm64v8`, `arm32v7` for image tags.
 
-   For ARM-based queues, the host queue is typically `Ubuntu.2204.ArmArch.Open` (not AzureLinux).
+   For ARM-based queues, host queues are often `Ubuntu.2204.ArmArch.Open`, but some queues (for example `helix_linux_arm64_oldest`) use AzureLinux-based host queues such as `AzureLinux.3.Arm64.Open`. Follow the existing pattern for the specific queue in `eng/pipelines/helix-platforms.yml` when updating versions.
 
 ### 5. Validate changes
 
@@ -196,7 +196,7 @@ After editing, verify:
 After updating `main`, check whether release branches also need updates:
 
 ```bash
-for branch in $(git branch -r | grep -E 'origin/release/' | head -10); do
+for branch in $(git branch -r | grep -E 'origin/release/'); do
   echo "=== $branch ==="
   git show "$branch:eng/pipelines/helix-platforms.yml" 2>/dev/null | grep -n -i "<distro>" || echo "(no matches or file not found)"
 done
@@ -210,7 +210,7 @@ Note: Release branch updates should be done in separate PRs.
 
 ### 7. Cross-reference with supported-os
 
-Check if the [supported-os.json](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.json) in dotnet/core needs corresponding updates. If a new version is being added to Helix but isn't yet in supported-os, inform the user to run the `update-supported-os` skill in dotnet/core.
+Check if the relevant `supported-os.json` in dotnet/core needs corresponding updates. The file lives under the pattern `release-notes/<version>/supported-os.json` (for example, `release-notes/8.0/supported-os.json`) in the [release-notes directory](https://github.com/dotnet/core/tree/main/release-notes). If a new version is being added to Helix but isn't yet in supported-os, inform the user to run the `update-supported-os` skill in dotnet/core.
 
 ### 8. Create PR
 
