@@ -15,9 +15,11 @@ namespace System.Runtime.CompilerServices
         internal static int[]? s_table;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThrowInvalidCastException")]
+        [RequiresUnsafe]
         private static partial void ThrowInvalidCastExceptionInternal(void* fromTypeHnd, void* toTypeHnd);
 
         [DoesNotReturn]
+        [RequiresUnsafe]
         internal static void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd)
         {
             ThrowInvalidCastExceptionInternal(fromTypeHnd, toTypeHnd);
@@ -25,6 +27,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DoesNotReturn]
+        [RequiresUnsafe]
         internal static void ThrowInvalidCastException(object fromType, void* toTypeHnd)
         {
             ThrowInvalidCastExceptionInternal(RuntimeHelpers.GetMethodTable(fromType), toTypeHnd);
@@ -33,10 +36,12 @@ namespace System.Runtime.CompilerServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall)]
+        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private static object? IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj)
         {
             if (IsInstanceOf_NoCacheLookup(toTypeHnd, false, ObjectHandleOnStack.Create(ref obj)))
@@ -47,6 +52,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private static object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj)
         {
             IsInstanceOf_NoCacheLookup(toTypeHnd, true, ObjectHandleOnStack.Create(ref obj));
@@ -57,6 +63,7 @@ namespace System.Runtime.CompilerServices
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
         // this test must deal with all kinds of type tests
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static object? IsInstanceOfAny(void* toTypeHnd, object? obj)
         {
             if (obj != null)
@@ -88,6 +95,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         private static object? IsInstanceOfInterface(void* toTypeHnd, object? obj)
         {
             const int unrollSize = 4;
@@ -157,6 +165,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         private static object? IsInstanceOfClass(void* toTypeHnd, object? obj)
         {
             if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
@@ -208,6 +217,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private static object? IsInstance_Helper(void* toTypeHnd, object obj)
         {
             CastResult result = CastCache.TryGet(s_table!, (nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
@@ -228,6 +238,7 @@ namespace System.Runtime.CompilerServices
         // Unlike the ChkCastInterface and ChkCastClass functions,
         // this test must deal with all kinds of type tests
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static object? ChkCastAny(void* toTypeHnd, object? obj)
         {
             CastResult result;
@@ -257,6 +268,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private static object? ChkCast_Helper(void* toTypeHnd, object obj)
         {
             CastResult result = CastCache.TryGet(s_table!, (nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
@@ -270,6 +282,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         private static object? ChkCastInterface(void* toTypeHnd, object? obj)
         {
             const int unrollSize = 4;
@@ -336,6 +349,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         private static object? ChkCastClass(void* toTypeHnd, object? obj)
         {
             if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
@@ -349,6 +363,7 @@ namespace System.Runtime.CompilerServices
         // Optimized helper for classes. Assumes that the trivial cases
         // has been taken care of by the inlined check
         [DebuggerHidden]
+        [RequiresUnsafe]
         private static object? ChkCastClassSpecial(void* toTypeHnd, object obj)
         {
             MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
@@ -395,6 +410,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
         {
             // This will throw NullReferenceException if obj is null.
@@ -417,6 +433,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         private static ref object? LdelemaRef(object?[] array, nint index, void* type)
         {
             // This will throw NullReferenceException if array is null.
@@ -467,6 +484,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private static void StelemRef_Helper(ref object? element, void* elementType, object obj)
         {
             CastResult result = CastCache.TryGet(s_table!, (nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
@@ -480,6 +498,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         private static void StelemRef_Helper_NoCacheLookup(ref object? element, void* elementType, object obj)
         {
             Debug.Assert(obj != null);
@@ -512,6 +531,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private static void ArrayTypeCheck_Helper(object obj, void* elementType)
         {
             Debug.Assert(obj != null);
@@ -524,6 +544,7 @@ namespace System.Runtime.CompilerServices
 
         // Helpers for boxing
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static object? Box_Nullable(MethodTable* srcMT, ref byte nullableData)
         {
             Debug.Assert(srcMT->IsNullable);
@@ -540,6 +561,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static object Box(MethodTable* typeMT, ref byte unboxedData)
         {
             Debug.Assert(typeMT != null);
@@ -583,6 +605,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static bool IsNullableForType(MethodTable* typeMT, MethodTable* boxedMT)
         {
             if (!typeMT->IsNullable)
@@ -611,6 +634,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private static void Unbox_Nullable_NotIsNullableForType(ref byte destPtr, MethodTable* typeMT, object obj)
         {
             // Also allow true nullables to be unboxed normally.
@@ -623,6 +647,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static void Unbox_Nullable(ref byte destPtr, MethodTable* typeMT, object? obj)
         {
             if (obj == null)
@@ -657,6 +682,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static object? ReboxFromNullable(MethodTable* srcMT, object src)
         {
             ref byte nullableData = ref src.GetRawData();
@@ -665,6 +691,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private static ref byte Unbox_Helper(MethodTable* pMT1, object obj)
         {
             // must be a value type
@@ -686,6 +713,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private static void Unbox_TypeTest_Helper(MethodTable *pMT1, MethodTable *pMT2)
         {
             if ((!pMT1->IsPrimitive || !pMT2->IsPrimitive ||
@@ -700,6 +728,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         private static void Unbox_TypeTest(MethodTable *pMT1, MethodTable *pMT2)
         {
             if (pMT1 == pMT2)

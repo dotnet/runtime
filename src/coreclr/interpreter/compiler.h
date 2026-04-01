@@ -233,7 +233,9 @@ enum InterpInstFlags
 {
     INTERP_INST_FLAG_CALL               = 0x01,
     // Flag used internally by the var offset allocator
-    INTERP_INST_FLAG_ACTIVE_CALL        = 0x02
+    INTERP_INST_FLAG_ACTIVE_CALL        = 0x02,
+    // The IL stack is empty at this instruction
+    INTERP_INST_FLAG_EMPTY_IL_STACK    = 0x04
 };
 
 struct InterpInst
@@ -670,6 +672,9 @@ private:
     int32_t m_currentILOffset;
     InterpInst* m_pInitLocalsIns;
 
+    // Indicates that we are going to generate the first interpreter byte code instruction for an IL opcode with an empty stack.
+    bool        m_isFirstInstForEmptyILStack = true;
+
     // If the method has a hidden argument, GenerateCode allocates a var to store it and
     //  populates the var at method entry
     int32_t m_hiddenArgumentVar;
@@ -819,7 +824,7 @@ public:
 private:
     // Instructions
     InterpBasicBlock *m_pCBB, *m_pEntryBB;
-    InterpInst* m_pLastNewIns;
+    InterpInst* m_pLastNewIns = nullptr;
 
     int32_t     GetInsLength(InterpInst *pIns);
     bool        InsIsNop(InterpInst *pIns);

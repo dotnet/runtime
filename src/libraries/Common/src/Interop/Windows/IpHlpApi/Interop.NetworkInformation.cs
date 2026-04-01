@@ -148,9 +148,15 @@ internal static partial class Interop
             private IntPtr _friendlyName;
             internal string FriendlyName => Marshal.PtrToStringUni(_friendlyName)!;
 
-            private fixed byte _address[MAX_ADAPTER_ADDRESS_LENGTH];
+            private AddrBuffer _address;
             private uint _addressLength;
-            internal byte[] Address => MemoryMarshal.CreateReadOnlySpan<byte>(ref _address[0], (int)_addressLength).ToArray();
+            internal byte[] Address => ((ReadOnlySpan<byte>)_address).Slice(0, (int)_addressLength).ToArray();
+
+            [InlineArray(MAX_ADAPTER_ADDRESS_LENGTH)]
+            private struct AddrBuffer
+            {
+                private byte _element0;
+            }
 
             internal AdapterFlags flags;
             internal uint mtu;
@@ -158,8 +164,8 @@ internal static partial class Interop
             internal OperationalStatus operStatus;
             internal uint ipv6Index;
 
-            private fixed uint _zoneIndices[16];
-            internal uint[] ZoneIndices => MemoryMarshal.CreateReadOnlySpan<uint>(ref _zoneIndices[0], 16).ToArray();
+            private InlineArray16<uint> _zoneIndices;
+            internal uint[] ZoneIndices => ((ReadOnlySpan<uint>)_zoneIndices).ToArray();
 
             internal IntPtr firstPrefix;
 
@@ -172,11 +178,17 @@ internal static partial class Interop
             internal ulong luid;
             internal IpSocketAddress dhcpv4Server;
             internal uint compartmentId;
-            internal fixed byte networkGuid[16];
+            internal InlineArray16<byte> networkGuid;
             internal InterfaceConnectionType connectionType;
             internal InterfaceTunnelType tunnelType;
             internal IpSocketAddress dhcpv6Server; // Never available in Windows.
-            internal fixed byte dhcpv6ClientDuid[130];
+            internal Dhcpv6ClientDuidBuffer dhcpv6ClientDuid;
+
+            [InlineArray(130)]
+            internal struct Dhcpv6ClientDuidBuffer
+            {
+                private byte _element0;
+            }
             internal uint dhcpv6ClientDuidLength;
             internal uint dhcpV6Iaid;
 
@@ -224,13 +236,13 @@ internal static partial class Interop
         internal unsafe struct IpAddrString
         {
             internal IpAddrString* Next;      /* struct _IpAddressList* */
-            internal fixed byte IpAddress[16];
-            internal fixed byte IpMask[16];
+            internal InlineArray16<byte> IpAddress;
+            internal InlineArray16<byte> IpMask;
             internal uint Context;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal unsafe struct MibIfRow2 // MIB_IF_ROW2
+        internal struct MibIfRow2 // MIB_IF_ROW2
         {
             private const int GuidLength = 16;
             private const int IfMaxStringSize = 256;
@@ -239,11 +251,23 @@ internal static partial class Interop
             internal ulong interfaceLuid;
             internal uint interfaceIndex;
             internal Guid interfaceGuid;
-            internal fixed char alias[IfMaxStringSize + 1]; // Null terminated string.
-            internal fixed char description[IfMaxStringSize + 1]; // Null terminated string.
+            internal AliasBuffer alias; // Null terminated string.
+            internal AliasBuffer description; // Null terminated string.
             internal uint physicalAddressLength;
-            internal fixed byte physicalAddress[IfMaxPhysAddressLength]; // ANSI
-            internal fixed byte permanentPhysicalAddress[IfMaxPhysAddressLength]; // ANSI
+            internal PhysAddrBuffer physicalAddress; // ANSI
+            internal PhysAddrBuffer permanentPhysicalAddress; // ANSI
+
+            [InlineArray(IfMaxStringSize + 1)]
+            internal struct AliasBuffer
+            {
+                private char _element0;
+            }
+
+            [InlineArray(IfMaxPhysAddressLength)]
+            internal struct PhysAddrBuffer
+            {
+                private byte _element0;
+            }
             internal uint mtu;
             internal NetworkInterfaceType type;
             internal InterfaceTunnelType tunnelType;
@@ -370,11 +394,17 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct MibIcmpStatsEx
+        internal struct MibIcmpStatsEx
         {
             internal uint dwMsgs;
             internal uint dwErrors;
-            internal fixed uint rgdwTypeCount[256];
+            internal TypeCountBuffer rgdwTypeCount;
+
+            [InlineArray(256)]
+            internal struct TypeCountBuffer
+            {
+                private uint _element0;
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]

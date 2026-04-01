@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Authentication.ExtendedProtection;
@@ -147,17 +148,23 @@ namespace System.Net
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct MessageHeader
+            private struct MessageHeader
             {
-                public fixed byte Header[HeaderLength];
+                public HeaderBuffer Header;
                 public MessageType MessageType;
                 private byte _unused1;
                 private byte _unused2;
                 private byte _unused3;
+
+                [InlineArray(HeaderLength)]
+                public struct HeaderBuffer
+                {
+                    private byte _element0;
+                }
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct Version
+            private struct Version
             {
                 public byte VersionMajor;
                 public byte VersionMinor;
@@ -175,7 +182,7 @@ namespace System.Net
 
             // Type 1 message
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct NegotiateMessage
+            private struct NegotiateMessage
             {
                 public MessageHeader Header;
                 private Flags _flags;
@@ -191,15 +198,22 @@ namespace System.Net
 
             // TYPE 2 message
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct ChallengeMessage
+            private struct ChallengeMessage
             {
                 public MessageHeader Header;
                 public MessageField TargetName;
                 private Flags _flags;
-                public fixed byte ServerChallenge[ChallengeLength];
+                public ChallengeBuffer ServerChallenge;
+
+                [InlineArray(ChallengeLength)]
+                public struct ChallengeBuffer
+                {
+                    private byte _element0;
+                }
                 private ulong _unused;
                 public MessageField TargetInfo;
                 public Version Version;
+
                 public Flags Flags
                 {
                     readonly get => BitConverter.IsLittleEndian ? _flags : (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
@@ -209,7 +223,7 @@ namespace System.Net
 
             // TYPE 3 message
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct AuthenticateMessage
+            private struct AuthenticateMessage
             {
                 public MessageHeader Header;
                 public MessageField LmChallengeResponse;
@@ -220,7 +234,14 @@ namespace System.Net
                 public MessageField EncryptedRandomSessionKey;
                 private Flags _flags;
                 public Version Version;
-                public fixed byte Mic[16];
+                public MicBuffer Mic;
+
+                [InlineArray(DigestLength)]
+                public struct MicBuffer
+                {
+                    private byte _element0;
+                }
+
                 public Flags Flags
                 {
                     readonly get => BitConverter.IsLittleEndian ? _flags : (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
@@ -230,22 +251,28 @@ namespace System.Net
 
             // Set temp to ConcatenationOf(Responserversion, HiResponserversion, Z(6), Time, ClientChallenge, Z(4), ServerName, Z(4))
             [StructLayout(LayoutKind.Sequential)]
-            private unsafe struct NtChallengeResponse
+            private struct NtChallengeResponse
             {
-                public fixed byte Hmac[DigestLength];
+                public DigestBuffer Hmac;
                 public byte Responserversion;
                 public byte HiResponserversion;
                 private byte _reserved1;
                 private byte _reserved2;
                 private int _reserved3;
                 private long _time;
-                public fixed byte ClientChallenge[ChallengeLength];
+                public ChallengeMessage.ChallengeBuffer ClientChallenge;
                 private int _reserved4;
-                public fixed byte ServerInfo[4]; // Has to be non-zero size, so set it to the Z(4) padding
+                public InlineArray4<byte> ServerInfo; // Has to be non-zero size, so set it to the Z(4) padding
                 public long Time
                 {
                     readonly get => BitConverter.IsLittleEndian ? _time : BinaryPrimitives.ReverseEndianness(_time);
                     set => _time = BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
+                }
+
+                [InlineArray(DigestLength)]
+                public struct DigestBuffer
+                {
+                    private byte _element0;
                 }
             }
 
@@ -422,7 +449,7 @@ namespace System.Net
             // Set temp to ConcatenationOf(Responserversion, HiResponserversion, Z(6), Time, ClientChallenge, Z(4), ServerName, Z(4))
             // Set NTProofStr to HMAC_MD5(ResponseKeyNT, ConcatenationOf(CHALLENGE_MESSAGE.ServerChallenge, temp))
             // Set NtChallengeResponse to ConcatenationOf(NTProofStr, temp)
-            private unsafe void makeNtlm2ChallengeResponse(DateTime time, ReadOnlySpan<byte> ntlm2hash, ReadOnlySpan<byte> serverChallenge, Span<byte> clientChallenge, ReadOnlySpan<byte> serverInfo, ref MessageField field, Span<byte> payload, ref int payloadOffset)
+            private static unsafe void makeNtlm2ChallengeResponse(DateTime time, ReadOnlySpan<byte> ntlm2hash, ReadOnlySpan<byte> serverChallenge, Span<byte> clientChallenge, ReadOnlySpan<byte> serverInfo, ref MessageField field, Span<byte> payload, ref int payloadOffset)
             {
                 Debug.Assert(serverChallenge.Length == ChallengeLength);
                 Debug.Assert(clientChallenge.Length == ChallengeLength);
@@ -435,7 +462,7 @@ namespace System.Net
                 temp.Responserversion = 1;
                 temp.Time = time.ToFileTimeUtc();
 
-                clientChallenge.CopyTo(MemoryMarshal.CreateSpan(ref temp.ClientChallenge[0], ChallengeLength));
+                clientChallenge.CopyTo((Span<byte>)temp.ClientChallenge);
                 serverInfo.CopyTo(MemoryMarshal.CreateSpan(ref temp.ServerInfo[0], serverInfo.Length));
 
                 // Calculate NTProofStr
@@ -708,7 +735,7 @@ namespace System.Net
                     hmacMic.AppendData(_negotiateMessage);
                     hmacMic.AppendData(blob);
                     hmacMic.AppendData(responseBytes.AsSpan(0, payloadOffset));
-                    hmacMic.GetHashAndReset(MemoryMarshal.CreateSpan(ref response.Mic[0], hmacMic.HashLengthInBytes));
+                    hmacMic.GetHashAndReset((Span<byte>)response.Mic);
                 }
 
                 // Derive signing keys

@@ -1231,10 +1231,9 @@ namespace System.Runtime
             }
 
             //
-            // Update the cache. We only consider type-based conversion rules here.
-            // Therefore a negative result cannot rule out convertibility for IDynamicInterfaceCastable.
+            // Update the cache
             //
-            if (retObj != null || !(pTargetType->IsInterface && pSourceType->IsIDynamicInterfaceCastable))
+            if (!pSourceType->IsIDynamicInterfaceCastable || !pTargetType->IsInterface)
             {
                 nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
                 s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, retObj != null);
@@ -1273,8 +1272,11 @@ namespace System.Runtime
             //
             // Update the cache
             //
-            nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
-            s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, true);
+            if (!pSourceType->IsIDynamicInterfaceCastable || !pTargetType->IsInterface)
+            {
+                nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
+                s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, true);
+            }
 
             return obj;
         }

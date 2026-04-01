@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -522,12 +523,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="source">The source from which the vector will be loaded.</param>
         /// <returns>The vector loaded from <paramref name="source" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
+        [RequiresUnsafe]
         static virtual TSelf Load(T* source) => TSelf.LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
         /// <param name="source">The aligned source from which the vector will be loaded.</param>
         /// <returns>The vector loaded from <paramref name="source" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
+        [RequiresUnsafe]
         static virtual TSelf LoadAligned(T* source)
         {
             if (((nuint)(source) % (uint)(TSelf.Alignment)) != 0)
@@ -542,6 +545,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The vector loaded from <paramref name="source" />.</returns>
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
+        [RequiresUnsafe]
         static virtual TSelf LoadAlignedNonTemporal(T* source) => TSelf.LoadAligned(source);
 
         /// <summary>Loads a vector from the given source.</summary>
@@ -718,12 +722,14 @@ namespace System.Runtime.Intrinsics
         /// <param name="source">The vector that will be stored.</param>
         /// <param name="destination">The destination at which <paramref name="source" /> will be stored.</param>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
+        [RequiresUnsafe]
         static virtual void Store(TSelf source, T* destination) => TSelf.StoreUnsafe(source, ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
         /// <param name="source">The vector that will be stored.</param>
         /// <param name="destination">The aligned destination at which <paramref name="source" /> will be stored.</param>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
+        [RequiresUnsafe]
         static virtual void StoreAligned(TSelf source, T* destination)
         {
             if (((nuint)(destination) % (uint)(TSelf.Alignment)) != 0)
@@ -738,6 +744,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="destination">The aligned destination at which <paramref name="source" /> will be stored.</param>
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
+        [RequiresUnsafe]
         static virtual void StoreAlignedNonTemporal(TSelf source, T* destination) => TSelf.StoreAligned(source, destination);
 
         /// <summary>Stores a vector at the given destination.</summary>

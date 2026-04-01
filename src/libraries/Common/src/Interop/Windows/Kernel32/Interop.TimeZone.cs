@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -30,37 +32,56 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal unsafe struct TIME_DYNAMIC_ZONE_INFORMATION
+        internal struct TIME_DYNAMIC_ZONE_INFORMATION
         {
+            [InlineArray(32)]
+            internal struct NameBuffer
+            {
+                private char _element0;
+            }
+
+            [InlineArray(128)]
+            internal struct TimeZoneKeyNameBuffer
+            {
+                private char _element0;
+            }
+
             internal int Bias;
-            internal fixed char StandardName[32];
+            internal NameBuffer StandardName;
             internal SYSTEMTIME StandardDate;
             internal int StandardBias;
-            internal fixed char DaylightName[32];
+            internal NameBuffer DaylightName;
             internal SYSTEMTIME DaylightDate;
             internal int DaylightBias;
-            internal fixed char TimeZoneKeyName[128];
+            internal TimeZoneKeyNameBuffer TimeZoneKeyName;
             internal byte DynamicDaylightTimeDisabled;
 
             internal string GetTimeZoneKeyName()
             {
-                fixed (char* p = TimeZoneKeyName)
-                    return new string(p);
+                ReadOnlySpan<char> span = TimeZoneKeyName;
+                int idx = span.IndexOf('\0');
+                return new string(idx >= 0 ? span[..idx] : span);
             }
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal unsafe struct TIME_ZONE_INFORMATION
+        internal struct TIME_ZONE_INFORMATION
         {
+            [InlineArray(32)]
+            internal struct NameBuffer
+            {
+                private char _element0;
+            }
+
             internal int Bias;
-            internal fixed char StandardName[32];
+            internal NameBuffer StandardName;
             internal SYSTEMTIME StandardDate;
             internal int StandardBias;
-            internal fixed char DaylightName[32];
+            internal NameBuffer DaylightName;
             internal SYSTEMTIME DaylightDate;
             internal int DaylightBias;
 
-            internal TIME_ZONE_INFORMATION(in TIME_DYNAMIC_ZONE_INFORMATION dtzi)
+            internal unsafe TIME_ZONE_INFORMATION(in TIME_DYNAMIC_ZONE_INFORMATION dtzi)
             {
                 // The start of TIME_DYNAMIC_ZONE_INFORMATION has identical layout as TIME_ZONE_INFORMATION
                 fixed (TIME_ZONE_INFORMATION* pTo = &this)
@@ -70,14 +91,16 @@ internal static partial class Interop
 
             internal string GetStandardName()
             {
-                fixed (char* p = StandardName)
-                    return new string(p);
+                ReadOnlySpan<char> span = StandardName;
+                int idx = span.IndexOf('\0');
+                return new string(idx >= 0 ? span[..idx] : span);
             }
 
             internal string GetDaylightName()
             {
-                fixed (char* p = DaylightName)
-                    return new string(p);
+                ReadOnlySpan<char> span = DaylightName;
+                int idx = span.IndexOf('\0');
+                return new string(idx >= 0 ? span[..idx] : span);
             }
         }
 

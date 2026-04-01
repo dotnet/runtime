@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -186,6 +187,7 @@ namespace System.Runtime.CompilerServices
         internal static void WriteBarrier(ref object? dst, object? obj) => dst = obj;
 
         [Intrinsic]
+        [RequiresUnsafe]
         internal static unsafe void SetNextCallGenericContext(void* value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
         [Intrinsic]

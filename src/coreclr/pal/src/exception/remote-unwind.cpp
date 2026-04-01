@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     remote-unwind.cpp
 
 Abstract:
-
     Implementation of out of context unwind using libunwind8
     remote unwind API.
 
@@ -35,7 +32,6 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 --*/
 
 #ifdef HOST_UNIX
@@ -67,7 +63,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 
 #include "crosscomp.h"
 
-#define KNONVOLATILE_CONTEXT_POINTERS T_KNONVOLATILE_CONTEXT_POINTERS
 #define CONTEXT T_CONTEXT
 
 #else // HOST_UNIX
@@ -79,7 +74,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 #include "debugmacros.h"
 #include "crosscomp.h"
 
-#define KNONVOLATILE_CONTEXT_POINTERS T_KNONVOLATILE_CONTEXT_POINTERS
 #define CONTEXT T_CONTEXT
 
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
