@@ -57,6 +57,7 @@ void WebcilDecoder::Init(void *flatBase, COUNT_T size)
     m_hasContents = (size > 0);
     m_pHeader = (m_hasContents && size >= sizeof(WebcilHeader)) ? (const WebcilHeader *)flatBase : NULL;
     m_pCorHeader = NULL;
+    m_relocated = FALSE;
 }
 
 void WebcilDecoder::Reset()
@@ -67,6 +68,7 @@ void WebcilDecoder::Reset()
     m_hasContents = FALSE;
     m_pHeader = NULL;
     m_pCorHeader = NULL;
+    m_relocated = FALSE;
 }
 
 // ------------------------------------------------------------
