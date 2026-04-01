@@ -257,7 +257,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_InternalBufferSize()
         {
             FileSystemWatcher watcher = new FileSystemWatcher();
@@ -362,7 +361,6 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.Windows)]  // Casing matters on Linux
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_OnCreatedWithMismatchedCasingGivesExpectedFullPath()
         {
             using (var fsw = new FileSystemWatcher(TestDirectory))
@@ -455,7 +453,6 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix FSW don't trigger on a file rename.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Windows_OnRenameGivesExpectedFullPath()
         {
             string file = CreateTestFile(TestDirectory, "file");
@@ -569,7 +566,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_WatchingAliasedFolderResolvesToRealPathWhenWatching()
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");
@@ -933,7 +929,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_File_Delete_MultipleFilters()
         {
             // Check delete events against multiple filters
@@ -958,7 +953,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_Create_MultipleFilters()
         {
             FileSystemWatcherTest.Execute(() =>
@@ -975,15 +969,14 @@ namespace System.IO.Tests
                     watcher.Filters.Add(Path.GetFileName(directoryOne));
                     watcher.Filters.Add(Path.GetFileName(directoryTwo));
 
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: null, expectedPath: directoryOne);
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: null, expectedPath: directoryTwo);
-                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: null, expectedPath: directoryThree);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: () => { try { Directory.Delete(directoryOne); } catch (DirectoryNotFoundException) { } }, expectedPath: directoryOne);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: () => { try { Directory.Delete(directoryTwo); } catch (DirectoryNotFoundException) { } }, expectedPath: directoryTwo);
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: () => { try { Directory.Delete(directoryThree); } catch (DirectoryNotFoundException) { } }, expectedPath: directoryThree);
                 }
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_Create_Filter_Ctor()
         {
             FileSystemWatcherTest.Execute(() =>
@@ -999,15 +992,14 @@ namespace System.IO.Tests
                 {
                     watcher.Filters.Add(Path.GetFileName(directoryTwo));
 
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: null, expectedPath: directoryOne);
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: null, expectedPath: directoryTwo);
-                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: null, expectedPath: directoryThree);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryOne), cleanup: () => { try { Directory.Delete(directoryOne); } catch (DirectoryNotFoundException) { } }, expectedPath: directoryOne);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryTwo), cleanup: () => { try { Directory.Delete(directoryTwo); } catch (DirectoryNotFoundException) { } }, expectedPath: directoryTwo);
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => Directory.CreateDirectory(directoryThree), cleanup: () => { try { Directory.Delete(directoryThree); } catch (DirectoryNotFoundException) { } }, expectedPath: directoryThree);
                 }
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_Delete_MultipleFilters()
         {
             using var tempDir = new TempDirectory();
@@ -1027,7 +1019,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_File_Create_MultipleFilters()
         {
             FileSystemWatcherTest.Execute(() =>
@@ -1042,15 +1033,14 @@ namespace System.IO.Tests
                     watcher.Filters.Add(fileOne.Name);
                     watcher.Filters.Add(fileTwo.Name);
 
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: null, expectedPath: fileOne.FullName);
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: null, expectedPath: fileTwo.FullName);
-                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: null, expectedPath: fileThree.FullName);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: () => fileOne.Delete(), expectedPath: fileOne.FullName);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: () => fileTwo.Delete(), expectedPath: fileTwo.FullName);
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: () => fileThree.Delete(), expectedPath: fileThree.FullName);
                 }
             }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_ModifyFiltersConcurrentWithEvents()
         {
             FileSystemWatcherTest.Execute(() =>
@@ -1078,9 +1068,9 @@ namespace System.IO.Tests
                     thread.IsBackground = true;
                     thread.Start();
 
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: null, expectedPath: fileOne.FullName);
-                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: null, expectedPath: fileTwo.FullName);
-                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: null, expectedPath: fileThree.FullName);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: () => fileOne.Delete(), expectedPath: fileOne.FullName);
+                    ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: () => fileTwo.Delete(), expectedPath: fileTwo.FullName);
+                    ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: () => fileThree.Delete(), expectedPath: fileThree.FullName);
 
                     cts.Cancel();
                     waitForThread();
@@ -1102,7 +1092,6 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Linux)]  // Reads MaxUsersWatches from Linux OS files
         [OuterLoop("This test will use all available watchers and can cause failures in other concurrent tests or system processes.")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_CreateManyConcurrentWatches()
         {
             int maxUserWatches = int.Parse(File.ReadAllText("/proc/sys/fs/inotify/max_user_watches"));

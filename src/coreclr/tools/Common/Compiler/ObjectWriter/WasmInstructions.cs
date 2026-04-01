@@ -415,7 +415,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
                     break;
 
                 case RelocType.WASM_TABLE_INDEX_SLEB:
-                case RelocType.WASM_MEMORY_ADDR_SLEB:
+                case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                     DwarfHelper.WritePaddedSLEB128(buffer.Slice(pos, relocSize), 0);
                     break;
 
@@ -566,7 +566,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
         public static WasmExpr ConstRVA(ISymbolNode symbolNode)
         {
-            return new WasmLEBConstantReloc(WasmExprKind.I32Const, symbolNode, RelocType.WASM_MEMORY_ADDR_SLEB);
+            return new WasmLEBConstantReloc(WasmExprKind.I32Const, symbolNode, RelocType.WASM_MEMORY_ADDR_REL_SLEB);
         }
 
         public static WasmExpr Add => new WasmBinaryExpr(WasmExprKind.I32Add);

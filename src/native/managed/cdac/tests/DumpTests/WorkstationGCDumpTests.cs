@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Xunit;
 
@@ -138,5 +141,83 @@ public class WorkstationGCDumpTests : DumpTestBase
             Assert.True(pointer <= limit,
                 $"Expected allocPtr (0x{pointer:X}) <= allocLimit (0x{limit:X})");
         }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_GetHandleTableMemoryRegions(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
+
+        IReadOnlyList<GCMemoryRegionData> regions = gcContract.GetHandleTableMemoryRegions();
+        Assert.NotNull(regions);
+        Assert.True(regions.Count > 0, "Expected at least one handle table memory region");
+        Assert.All(regions, region =>
+        {
+            Assert.NotEqual(TargetPointer.Null, region.Start);
+            Assert.True(region.Size > 0, $"Expected non-zero size for region starting at 0x{region.Start:X}");
+            Assert.Equal(0, region.Heap);
+        });
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_GetGCBookkeepingMemoryRegions(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
+
+        IReadOnlyList<GCMemoryRegionData> regions = gcContract.GetGCBookkeepingMemoryRegions();
+        Assert.NotNull(regions);
+        Assert.True(regions.Count > 0, "Expected at least one bookkeeping memory region");
+        Assert.All(regions, region =>
+        {
+            Assert.NotEqual(TargetPointer.Null, region.Start);
+            Assert.True(region.Size > 0, $"Expected non-zero size for region starting at 0x{region.Start:X}");
+        });
+
+        HashSet<TargetPointer> uniqueStarts = new(regions.Select(r => r.Start));
+        Assert.Equal(regions.Count, uniqueStarts.Count);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_GetGCFreeRegions(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
+
+        IReadOnlyList<GCMemoryRegionData> regions = gcContract.GetGCFreeRegions();
+        Assert.NotNull(regions);
+        Assert.All(regions, region =>
+        {
+            Assert.NotEqual(TargetPointer.Null, region.Start);
+            Assert.True(region.Size > 0, $"Expected non-zero size for region starting at 0x{region.Start:X}");
+        });
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_FreeRegionsHaveValidKind(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
+
+        IReadOnlyList<GCMemoryRegionData> regions = gcContract.GetGCFreeRegions();
+        Assert.NotNull(regions);
+        Assert.All(regions, region =>
+        {
+            FreeRegionKind kind = (FreeRegionKind)region.ExtraData;
+            Assert.True(Enum.IsDefined(kind),
+                $"ExtraData {region.ExtraData} is not a valid FreeRegionKind");
+            Assert.True(kind != FreeRegionKind.FreeUnknownRegion,
+                $"Region at 0x{region.Start:X} has FreeUnknownRegion kind");
+            Assert.Equal(0, region.Heap);
+        });
     }
 }

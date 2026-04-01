@@ -100,6 +100,18 @@ public static class SingleFileTestRunner
             failCount = await projectRunner.Run(
                 projectAssembly, reporterMessageHandler, null, logger, pipelineStartup);
         }
+        catch (Exception ex)
+        {
+            // ProjectAssemblyRunner.Run has an internal catch-all that logs the
+            // primary failure, then unconditionally sends TestExecutionSummaries.
+            // When the summaries are empty (because the failure prevented the
+            // summary from being recorded), the reporter's WriteDefaultSummary
+            // crashes on Max() over the empty collection.  ConsoleRunner handles
+            // this with an outer catch; we need the same protection so the real
+            // error (already logged above) isn't masked by the secondary crash.
+            consoleHelper.WriteLine("error: {0}", ex.Message);
+            failCount = 1;
+        }
         finally
         {
             if (pipelineStartup is not null)

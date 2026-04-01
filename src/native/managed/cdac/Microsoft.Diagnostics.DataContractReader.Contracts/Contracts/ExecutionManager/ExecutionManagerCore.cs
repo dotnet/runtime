@@ -298,6 +298,36 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         }
         return TargetPointer.Null;
     }
+
+    bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
+    {
+        return ((IExecutionManager)this).GetStartAddress(codeInfoHandle) !=
+               ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
+    }
+
+    bool IExecutionManager.IsFilterFunclet(CodeBlockHandle codeInfoHandle)
+    {
+        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
+        IExecutionManager eman = this;
+
+        if (!eman.IsFunclet(codeInfoHandle))
+            return false;
+
+        TargetPointer funcletStartAddress = eman.GetFuncletStartAddress(codeInfoHandle).AsTargetPointer;
+        uint funcletStartOffset = (uint)(funcletStartAddress - info.StartAddress);
+
+        List<ExceptionClauseInfo> clauses = eman.GetExceptionClauses(codeInfoHandle);
+        foreach (ExceptionClauseInfo clause in clauses)
+        {
+            if (clause.ClauseType == ExceptionClauseInfo.ExceptionClauseFlags.Filter && clause.FilterOffset == funcletStartOffset)
+                return true;
+        }
+
+        return false;
+    }
+
     TargetPointer IExecutionManager.GetUnwindInfo(CodeBlockHandle codeInfoHandle)
     {
         RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
