@@ -62,7 +62,7 @@ namespace Mono.Linker.Tests
             var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
             Assert.IsNotNull(module);
             var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature(input, module, new TestResolver());
-            CollectionAssert.Contains(parseResults, member);
+            Assert.Contains(member, parseResults);
         }
 
         public static void CheckUnresolvedDocumentationSignature(IMemberDefinition member, string input)
@@ -70,7 +70,7 @@ namespace Mono.Linker.Tests
             var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
             Assert.IsNotNull(module);
             var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature(input, module, new TestResolver());
-            CollectionAssert.DoesNotContain(parseResults, member);
+            Assert.DoesNotContain(member, parseResults);
         }
 
         // testcases
