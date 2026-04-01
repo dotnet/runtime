@@ -140,6 +140,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TargetTypeUnconditional2))]
     [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TrimTarget1))]
     [RemovedTypeInAssembly("library2.dll", typeof(Mono.Linker.Tests.Cases.Reflection.Dependencies.Library2.TrimTarget2))]
+    [RemovedTypeInAssembly("test", typeof(ArrayTypeTrimTargetUnusedClass))]
+    [RemovedTypeInAssembly("test", typeof(ArrayTypeTrimTargetUnusedTarget))]
     class TypeMap
     {
         [Kept]

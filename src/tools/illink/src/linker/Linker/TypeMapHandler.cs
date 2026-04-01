@@ -175,7 +175,7 @@ namespace Mono.Linker
         {
             if (attr.Attribute.ConstructorArguments is [{ Value: TypeReference sourceType }, _])
             {
-                // This is a TypeMapAssociationAttribute, which has a single type argument.
+                // This is a TypeMapAssociationAttribute with two constructor type arguments (source and proxy).
                 // Strip parameterized types (array, pointer, etc.) to use the element type as the source type,
                 // since those types cannot be tracked at the definition level by the trimmer.
                 while (sourceType is TypeSpecification and not GenericInstanceType)
