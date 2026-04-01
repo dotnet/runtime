@@ -449,8 +449,6 @@ public:
 
 #endif
 
-    bool    RuntimeAsync()                 const { LIMITED_METHOD_CONTRACT; return runtimeAsync; }
-
 #ifdef FEATURE_INTERPRETER
     bool    EnableInterpreter()            const { LIMITED_METHOD_CONTRACT; return enableInterpreter; }
 #endif
@@ -653,8 +651,6 @@ private: //----------------------------------------------------------------
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
     bool fUseCachedInterfaceDispatch;
 #endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
-
-    bool runtimeAsync; // True if the runtime supports async methods
 
 public:
 

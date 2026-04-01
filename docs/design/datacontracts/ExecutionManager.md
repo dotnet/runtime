@@ -28,7 +28,7 @@ struct CodeBlockHandle
     // Get the method region info (hot and cold code size, and cold code start address)
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
     // Get the JIT type
-    uint GetJITType(CodeBlockHandle codeInfoHandle);
+    JitType GetJITType(CodeBlockHandle codeInfoHandle);
     // Attempt to get the method desc of an entrypoint
     TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint);
 
@@ -336,14 +336,13 @@ public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePo
 
 ```
 
-`GetJitType` returns the JIT type by finding the JIT manager for the data range containing the relevant code block. We return TYPE_JIT for the EEJitManager, TYPE_R2R for the R2RJitManager, and TYPE_UNKNOWN for any other value.
+`GetJITType` returns the JIT type by finding the JIT manager for the data range containing the relevant code block. We return `Jit` for the `EEJitManager`, `R2R` for the `R2RJitManager`, and `Unknown` for any other value.
 ```csharp
-private enum JITTypes
+public enum JitType : uint
 {
-    TYPE_UNKNOWN = 0,
-    TYPE_JIT = 1,
-    TYPE_R2R = 2,
-    TYPE_INTERPRETER = 3
+    Unknown = 0,
+    Jit = 1,
+    R2R = 2
 };
 ```
 `NonVirtualEntry2MethodDesc` attempts to find a method desc from an entrypoint. If portable entrypoints are enabled, we attempt to read the entrypoint data structure to find the method table. We also attempt to find the method desc from a precode stub. Finally, we attempt to find the method desc using `GetMethodInfo` as described above.
