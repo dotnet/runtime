@@ -184,6 +184,22 @@ namespace System.Text.Json.SourceGeneration.Tests
             await base.ClassWithIgnoredAndPrivateMembers_DoesNotIncludeIgnoredMetadata();
         }
 
+        [Fact]
+        public override async Task JsonIgnoreCondition_TypeLevel_Always_ThrowsInvalidOperation()
+        {
+            // In the source generator path, 'JsonIgnoreCondition.Always' on a type emits a diagnostic warning
+            // and the attribute is ignored, so all properties are serialized normally.
+            var obj = new ClassWithTypeLevelIgnore_Always
+            {
+                MyString = "value",
+                MyInt = 42
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""MyString"":""value""", json);
+            Assert.Contains(@"""MyInt"":42", json);
+        }
+
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
         [JsonSerializable(typeof(ClassWithNewSlotField))]
         [JsonSerializable(typeof(int))]
@@ -348,6 +364,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor))]
         [JsonSerializable(typeof(StructWithStructProperty_IgnoreConditionWhenWritingDefault_Ctor))]
         [JsonSerializable(typeof(JsonIgnoreCondition_WhenReadingWritingTestModel))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_WhenWritingNull))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_WhenWritingDefault))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_Always))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_PropertyOverride))]
+        [JsonSerializable(typeof(StructWithTypeLevelIgnore_WhenWritingNull))]
+        [JsonSerializable(typeof(BaseClassWithProperties))]
+        [JsonSerializable(typeof(DerivedClassWithTypeLevelIgnore))]
         [JsonSerializable(typeof(SmallStructWithValueAndReferenceTypes))]
         [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedDictionary))]
         [JsonSerializable(typeof(Class1))]
@@ -626,6 +649,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor))]
         [JsonSerializable(typeof(StructWithStructProperty_IgnoreConditionWhenWritingDefault_Ctor))]
         [JsonSerializable(typeof(JsonIgnoreCondition_WhenReadingWritingTestModel))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_WhenWritingNull))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_WhenWritingDefault))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_Always))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_PropertyOverride))]
+        [JsonSerializable(typeof(StructWithTypeLevelIgnore_WhenWritingNull))]
+        [JsonSerializable(typeof(BaseClassWithProperties))]
+        [JsonSerializable(typeof(DerivedClassWithTypeLevelIgnore))]
         [JsonSerializable(typeof(SmallStructWithValueAndReferenceTypes))]
         [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedDictionary))]
         [JsonSerializable(typeof(Class1))]

@@ -8,4 +8,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface IContract
 {
     static virtual string Name => throw new NotImplementedException();
+
+    /// <summary>
+    /// Clear any cached data held by this contract.
+    /// Called when the target process state may have changed (e.g. on resume).
+    /// </summary>
+    void Flush() { }
 }

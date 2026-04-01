@@ -61,11 +61,11 @@ internal partial class MockDescriptors
                 (nameof(Constants.Globals.StringMethodTable), TestStringMethodTableGlobalAddress),
                 (nameof(Constants.Globals.ArrayBoundsZero), TestArrayBoundsZeroGlobalAddress),
                 (nameof(Constants.Globals.SyncTableEntries), TestSyncTableEntriesGlobalAddress),
-                (nameof(Constants.Globals.ObjectHeaderSize), Builder.TargetTestHelpers.ObjHeaderSize),
                 (nameof(Constants.Globals.SyncBlockValueToObjectOffset), TestSyncBlockValueToObjectOffset),
                 (nameof(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex), 0x08000000u),
                 (nameof(Constants.Globals.SyncBlockIsHashCode), 0x04000000u),
                 (nameof(Constants.Globals.SyncBlockIndexMask), (1u << 26) - 1),
+                (nameof(Constants.Globals.SyncBlockHashCodeMask), (1u << 26) - 1),
             ]).ToArray();
         }
 
@@ -75,6 +75,7 @@ internal partial class MockDescriptors
                 Builder.TargetTestHelpers,
                 [
                     ObjectFields,
+                    ObjectHeaderFields,
                     StringFields,
                     ArrayFields,
                     SyncTableEntryFields,
