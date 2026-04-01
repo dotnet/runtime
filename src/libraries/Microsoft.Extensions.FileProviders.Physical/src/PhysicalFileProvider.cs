@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.FileProviders
             Root = PathUtils.EnsureTrailingSlash(fullRoot);
             if (!Directory.Exists(Root))
             {
-                throw new DirectoryNotFoundException(Root);
+                throw new DirectoryNotFoundException(Root, Root);
             }
 
             _filters = filters;

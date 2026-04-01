@@ -34,7 +34,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (!Directory.Exists(value))
                 {
-                    throw new DirectoryNotFoundException(SR.Format(SR.DirectoryNotFound, value));
+                    throw new DirectoryNotFoundException(SR.Format(SR.DirectoryNotFound, value), value);
                 }
 
                 SetStringOptionHelper(LdapOption.LDAP_OPT_X_TLS_CACERTDIR, value);
