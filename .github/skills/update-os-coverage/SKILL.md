@@ -67,6 +67,8 @@ Where:
 - `<HostQueue>` — physical host queue, e.g. `AzureLinux.3.Amd64.Open`
 - `<image-tag>` — container image tag, e.g. `fedora-44-helix-amd64`
 
+Most distro variables also have `_internal` counterparts (e.g. `helix_linux_x64_<distro>_oldest_internal`) that use the same queue/image but drop the `.Open` suffix. When updating a distro version, update both the `.Open` and `_internal` entries.
+
 ### helix-queues-setup.yml files
 
 These files reference OS versions directly (not via variables) in conditional blocks per platform. Each inline reference follows the same `(<QueueName>)<HostQueue>@<image>` format.
@@ -158,6 +160,7 @@ For each reference found in step 3:
    | Distro | Queue name pattern | Image tag pattern |
    |--------|--------------------|-------------------|
    | Alpine | `Alpine.<ver-no-dots>.Amd64.Open` | `alpine-<ver>-helix-amd64` |
+   | Alpine (edge) | `Alpine.edge.Amd64.Open` | `alpine-edge-helix-amd64` |
    | CentOS Stream | `Centos.<ver>.Amd64.Open` | `centos-stream-<ver>-helix-amd64` |
    | Debian | `Debian.<ver>.Amd64.Open` | `debian-<ver>-helix-amd64` |
    | Fedora | `Fedora.<ver>.Amd64.Open` | `fedora-<ver>-helix-amd64` |
@@ -228,6 +231,8 @@ Check if the [supported-os.json](https://github.com/dotnet/core/blob/main/releas
    - Confirmation that container images are available
    - Link to the [os-onboarding guide](https://github.com/dotnet/runtime/blob/main/docs/project/os-onboarding.md)
    - Link to tracking issue if applicable (e.g. [dotnet/core#9638](https://github.com/dotnet/core/issues/9638))
+
+> 📝 **AI-generated content disclosure:** When posting any content to GitHub (PR descriptions, comments) under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
 
 ## Audit mode
 
