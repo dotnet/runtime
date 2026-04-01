@@ -14,7 +14,7 @@ import { validateEngineFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
-// WASM-TODO: downloadOnly - Blazor render mode auto pre-download. Really no start.
+// WASM-TODO: downloadOnly https://github.com/dotnet/runtime/issues/124896
 // WASM-TODO: debugLevel
 
 // many things happen in parallel here, but order matters for performance!

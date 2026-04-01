@@ -116,12 +116,9 @@ public class WebcilConverter
         var coffHeader = headers.CoffHeader!;
         var sections = headers.SectionHeaders;
         WebcilHeader header = default;
-        header.Id[0] = (byte)'W';
-        header.Id[1] = (byte)'b';
-        header.Id[2] = (byte)'I';
-        header.Id[3] = (byte)'L';
-        header.VersionMajor = Internal.Constants.WC_VERSION_MAJOR;
-        header.VersionMinor = Internal.Constants.WC_VERSION_MINOR;
+        header.Id = WebcilConstants.WEBCIL_MAGIC;
+        header.VersionMajor = WebcilConstants.WC_VERSION_MAJOR;
+        header.VersionMinor = WebcilConstants.WC_VERSION_MINOR;
         header.CoffSections = (ushort)coffHeader.NumberOfSections;
         header.Reserved0 = 0;
         header.PeCliHeaderRva = (uint)peHeader.CorHeaderTableDirectory.RelativeVirtualAddress;
@@ -154,10 +151,10 @@ public class WebcilConverter
 
             var newHeader = new WebcilSectionHeader
             (
-                virtualSize: sectionHeader.VirtualSize,
-                virtualAddress: sectionHeader.VirtualAddress,
-                sizeOfRawData: sectionHeader.SizeOfRawData,
-                pointerToRawData: curSectionPos.Position
+                virtualSize: (uint)sectionHeader.VirtualSize,
+                virtualAddress: (uint)sectionHeader.VirtualAddress,
+                sizeOfRawData: (uint)sectionHeader.SizeOfRawData,
+                pointerToRawData: (uint)curSectionPos.Position
             );
 
             pos += sizeof(WebcilSectionHeader);
@@ -181,6 +178,7 @@ public class WebcilConverter
     {
         if (!BitConverter.IsLittleEndian)
         {
+            webcilHeader.Id = BinaryPrimitives.ReverseEndianness(webcilHeader.Id);
             webcilHeader.VersionMajor = BinaryPrimitives.ReverseEndianness(webcilHeader.VersionMajor);
             webcilHeader.VersionMinor = BinaryPrimitives.ReverseEndianness(webcilHeader.VersionMinor);
             webcilHeader.CoffSections = BinaryPrimitives.ReverseEndianness(webcilHeader.CoffSections);
@@ -252,7 +250,7 @@ public class WebcilConverter
         for (int i = 0; i < peSections.Length; i++)
         {
             // Write zero padding to reach the aligned section position
-            int paddingNeeded = wcSections[i].PointerToRawData - (int)outStream.Position;
+            int paddingNeeded = (int)wcSections[i].PointerToRawData - (int)outStream.Position;
             if (paddingNeeded > 0)
             {
                 outStream.Write(new byte[paddingNeeded], 0, paddingNeeded);
@@ -289,13 +287,13 @@ public class WebcilConverter
         {
             if (relativeVirtualAddress >= section.VirtualAddress && relativeVirtualAddress < section.VirtualAddress + section.VirtualSize)
             {
-                uint offsetInSection = relativeVirtualAddress - (uint)section.VirtualAddress;
-                if (offsetInSection >= (uint)section.SizeOfRawData)
+                uint offsetInSection = relativeVirtualAddress - section.VirtualAddress;
+                if (offsetInSection >= section.SizeOfRawData)
                 {
                     throw new InvalidOperationException(
                         $"relative virtual address 0x{relativeVirtualAddress:X} is in virtual tail of section (offset {offsetInSection} >= SizeOfRawData {section.SizeOfRawData})");
                 }
-                FilePosition pos = section.PointerToRawData + (int)offsetInSection;
+                FilePosition pos = (int)(section.PointerToRawData + offsetInSection);
                 return pos;
             }
         }
@@ -338,7 +336,7 @@ public class WebcilConverter
             if (peFileOffset >= peSection.PointerToRawData && peFileOffset < peSection.PointerToRawData + peSection.SizeOfRawData)
             {
                 int offsetInSection = peFileOffset - peSection.PointerToRawData;
-                return wcSections[i].PointerToRawData + offsetInSection;
+                return (int)wcSections[i].PointerToRawData + offsetInSection;
             }
         }
 

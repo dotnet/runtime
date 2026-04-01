@@ -1053,9 +1053,9 @@ PhaseStatus Compiler::fgWasmControlFlow()
     //
     // We don't install our DFS tree as "the" DFS tree as it is non-standard.
     //
-    FgWasm            fgWasm(this);
-    bool              hasBlocksOnlyReachableViaEH = false;
-    FlowGraphDfsTree* dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
+    FgWasm                  fgWasm(this);
+    bool                    hasBlocksOnlyReachableViaEH = false;
+    FlowGraphDfsTree* const dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
 
     if (hasBlocksOnlyReachableViaEH)
     {
@@ -1067,7 +1067,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     }
 
     assert(dfsTree->IsForWasm());
-    FlowGraphNaturalLoops* loops = FlowGraphNaturalLoops::Find(dfsTree);
+    FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
 
     // We should have transformed these away earlier
     //
@@ -1075,8 +1075,16 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
     // Create descriptions of the try regions that can be enumerated in RPO
     //
-    FlowGraphTryRegions* tryRegions = FlowGraphTryRegions::Build(this, dfsTree);
+    FlowGraphTryRegions* const tryRegions = FlowGraphTryRegions::Build(this, dfsTree);
     JITDUMPEXEC(FlowGraphTryRegions::Dump(tryRegions));
+
+    // We cannot handle multiple entry try regions yet.
+    //
+    if (tryRegions->HasMultipleEntryTryRegions())
+    {
+        JITDUMP("\nThere are multiple entry try regions\n");
+        NYI_WASM("Multiple entry try regions");
+    }
 
     // Our interval ends are at the starts of blocks, so we need a block that
     // comes after all existing blocks. So allocate one extra slot.
@@ -1521,7 +1529,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // By publishing the index to block map, we are also indicating
     // that try regions may no longer be contiguous.
     //
-    assert(fgTrysNotContiguous());
+    assert(!fgTrysContiguous());
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -2049,10 +2057,10 @@ PhaseStatus Compiler::fgWasmEhFlow()
 
         if (commonEnclosingTryIndex == innermostDispatchingTryIndex)
         {
-            JITDUMP("Continuation " FMT_BB " is within dispatching try EH#%02u; cannot handle this case yet\n",
+            JITDUMP("Continuation " FMT_BB " is within dispatching try EH#%02u, marking as catch resumption\n",
                     continuationBlock->bbNum, innermostDispatchingTryIndex);
 
-            NYI_WASM("WasmEHFlow: continuation is within dispatching try");
+            fgWasmHasCatchResumptions = true;
         }
 
         ArrayStack<BasicBlock*>* catchRetBlocks = getCatchRetBlocksForTryRegion(innermostDispatchingTryIndex);
@@ -2319,6 +2327,7 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     //
     BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, succCount, cases, caseCount, true);
     switchBlock->SetSwitch(swtDesc);
+    switchBlock->SetFlags(BBF_CATCH_RESUMPTION);
 
     // Build the IR for the switch
     //

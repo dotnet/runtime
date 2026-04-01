@@ -1931,6 +1931,7 @@ namespace System.Text.Json.SourceGeneration
                     JsonKnownNamingPolicy.SnakeCaseUpper => JsonNamingPolicy.SnakeCaseUpper,
                     JsonKnownNamingPolicy.KebabCaseLower => JsonNamingPolicy.KebabCaseLower,
                     JsonKnownNamingPolicy.KebabCaseUpper => JsonNamingPolicy.KebabCaseUpper,
+                    JsonKnownNamingPolicy.PascalCase => JsonNamingPolicy.PascalCase,
                     _ => null,
                 };
 

@@ -39,6 +39,8 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
+    <Compile Include="$(CommonPath)Polyfills\TextWriterPolyfills.cs" Link="Common\Polyfills\TextWriterPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\EncodingPolyfills.cs" Link="Common\Polyfills\EncodingPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup>

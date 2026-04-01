@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    public sealed class ThreadPoolBoundHandle : IDisposable
+    public sealed partial class ThreadPoolBoundHandle : IDisposable
     {
         public SafeHandle Handle => null!;
 
