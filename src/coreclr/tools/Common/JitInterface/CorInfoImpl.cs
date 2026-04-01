@@ -1087,7 +1087,7 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(ftn);
             pIsAggressiveInline = !method.IsNoInlining && method.IsAggressiveInlining;
-            if (method.IsPInvoke)
+            if (method is IL.Stubs.PInvokeTargetNativeMethod)
                 return false;
             MethodIL methodIL = _compilation.GetMethodIL(method);
             if (methodIL is not null)
