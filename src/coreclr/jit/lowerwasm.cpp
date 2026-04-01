@@ -287,30 +287,26 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         if (src->OperIs(GT_IND))
         {
             GenTree* srcAddr = src->gtGetOp1();
-            if (
-                (blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
-                ((src->gtFlags & GTF_IND_NONFAULTING) == 0)
-            )
+            // Only set the source as multiply-used if it's faulting or we're not using a native opcode for the
+            // copy/fill operation. This avoids failures later in compilation in obscure cases.
+            if ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
+                ((src->gtFlags & GTF_IND_NONFAULTING) == 0))
             {
                 SetMultiplyUsed(srcAddr DEBUGARG("LowerBlockStore source address (indirection)"));
             }
         }
     }
 
-    // TODO-WASM-CQ: Identify the specific cases where we can skip doing this and still generate valid code
-    // in codegen, i.e. non-faulting destination combined with native opcode. Right now this adds some code
-    // bloat due to creating a temporary for a destination that may only get used once.
-    // We know trivially that we won't nullcheck a destination that is a local variable's address, so we can
-    // skip generating the temporary for that case. If we don't do this, we get an error during regalloc caused
-    // by RewriteLocalStackStore creating and lowering a block store too 'late' to mark the dstAddr as multiply
-    // used successfully.
     if (
+        // We know trivially that we won't nullcheck a destination that is a local variable's address, so we can
+        // skip generating the temporary for that case. If we don't do this, we get an error during regalloc caused
+        // by RewriteLocalStackStore creating and lowering a block store too 'late' to mark the dstAddr as multiply
+        // used successfully.
         !dstAddr->OperIs(GT_LCL_ADDR) &&
-        (
-            (blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
-            ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0)
-        )
-    )
+        // For native opcode copies/fills with a non-faulting destination, we can't reliably mark the address as
+        // multiply-used - it will cause failures later in compilation. So avoid those cases too.
+        ((blkNode->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) ||
+         ((blkNode->gtFlags & GTF_IND_NONFAULTING) == 0)))
     {
         SetMultiplyUsed(dstAddr DEBUGARG("LowerBlockStore destination address"));
     }

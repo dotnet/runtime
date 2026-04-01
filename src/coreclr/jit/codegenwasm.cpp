@@ -2918,11 +2918,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     {
         nullCheckSrc = (src->gtFlags & GTF_IND_NONFAULTING) == 0;
         src          = src->gtGetOp1();
-        if (isNativeOp && !nullCheckSrc)
-        {
-            ;
-        }
-        else
+        // We need to match lowering and only fetch a register for src when we're expected to.
+        if (!isNativeOp || nullCheckSrc)
         {
             srcReg = GetMultiUseOperandReg(src);
         }
@@ -2958,7 +2955,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     }
     else if (isNativeOp && !nullCheckDest)
     {
-        ;
+        // We need to match lowering in this specific case by not fetching a register for dest.
     }
     else if (isCopyBlk || nullCheckDest)
     {
