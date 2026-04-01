@@ -286,6 +286,51 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Creates an empty encrypted entry in the Zip archive with the specified entry name.
+        /// The encryption key material is derived from the password and stored on the entry
+        /// so that a subsequent call to <see cref="ZipArchiveEntry.Open()"/> produces an encrypted stream.
+        /// </summary>
+        /// <param name="entryName">A path relative to the root of the archive, indicating the name of the entry to be created.</param>
+        /// <param name="password">The password to use for encrypting the entry.</param>
+        /// <param name="encryptionMethod">The encryption method to use.</param>
+        /// <returns>A wrapper for the newly created file entry in the archive.</returns>
+        /// <exception cref="ArgumentException"><paramref name="entryName"/> is a zero-length string.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="entryName"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="password"/> is empty.</exception>
+        /// <exception cref="NotSupportedException">The ZipArchive does not support writing.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive has already been closed.</exception>
+        public ZipArchiveEntry CreateEntry(string entryName, ReadOnlySpan<char> password, ZipEncryptionMethod encryptionMethod)
+        {
+            ZipArchiveEntry entry = DoCreateEntry(entryName, null);
+            entry.PrepareEncryption(password, encryptionMethod);
+
+            return entry;
+        }
+
+        /// <summary>
+        /// Creates an empty encrypted entry in the Zip archive with the specified entry name and compression level.
+        /// The encryption key material is derived from the password and stored on the entry
+        /// so that a subsequent call to <see cref="ZipArchiveEntry.Open()"/> produces an encrypted stream.
+        /// </summary>
+        /// <param name="entryName">A path relative to the root of the archive, indicating the name of the entry to be created.</param>
+        /// <param name="compressionLevel">The level of the compression (speed/memory vs. compressed size trade-off).</param>
+        /// <param name="password">The password to use for encrypting the entry.</param>
+        /// <param name="encryptionMethod">The encryption method to use.</param>
+        /// <returns>A wrapper for the newly created file entry in the archive.</returns>
+        /// <exception cref="ArgumentException"><paramref name="entryName"/> is a zero-length string.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="entryName"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="password"/> is empty.</exception>
+        /// <exception cref="NotSupportedException">The ZipArchive does not support writing.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive has already been closed.</exception>
+        public ZipArchiveEntry CreateEntry(string entryName, CompressionLevel compressionLevel, ReadOnlySpan<char> password, ZipEncryptionMethod encryptionMethod)
+        {
+            ZipArchiveEntry entry = DoCreateEntry(entryName, compressionLevel);
+            entry.PrepareEncryption(password, encryptionMethod);
+
+            return entry;
+        }
+
+        /// <summary>
         /// Releases the unmanaged resources used by ZipArchive and optionally finishes writing the archive and releases the managed resources.
         /// </summary>
         /// <param name="disposing">true to finish writing the archive and release unmanaged and managed resources, false to release only unmanaged resources.</param>

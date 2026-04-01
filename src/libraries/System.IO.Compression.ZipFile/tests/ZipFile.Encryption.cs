@@ -14,10 +14,10 @@ namespace System.IO.Compression.Tests
         {
             foreach (var method in new[]
             {
-                EncryptionMethod.ZipCrypto,
-                EncryptionMethod.Aes128,
-                EncryptionMethod.Aes192,
-                EncryptionMethod.Aes256
+                ZipEncryptionMethod.ZipCrypto,
+                ZipEncryptionMethod.Aes128,
+                ZipEncryptionMethod.Aes192,
+                ZipEncryptionMethod.Aes256
             })
             {
                 yield return new object[] { method, false };
@@ -28,14 +28,14 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task Encryption_SingleEntry_RoundTrip(EncryptionMethod encryptionMethod, bool async)
+        public async Task Encryption_SingleEntry_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
             string entryName = "test.txt";
             string content = "Secret Content";
             string password = "password123";
 
-            var entries = new[] { (entryName, content, (string?)password, (EncryptionMethod?)encryptionMethod) };
+            var entries = new[] { (entryName, content, (string?)password, (ZipEncryptionMethod?)encryptionMethod) };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
 
@@ -51,14 +51,14 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task Encryption_MultipleEntries_SamePassword_RoundTrip(EncryptionMethod encryptionMethod, bool async)
+        public async Task Encryption_MultipleEntries_SamePassword_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
             string password = "SharedPassword";
             var entries = new[]
             {
-                ("file1.txt", "Content 1", (string?)password, (EncryptionMethod?)encryptionMethod),
-                ("folder/file2.txt", "Content 2", (string?)password, (EncryptionMethod?)encryptionMethod)
+                ("file1.txt", "Content 1", (string?)password, (ZipEncryptionMethod?)encryptionMethod),
+                ("folder/file2.txt", "Content 2", (string?)password, (ZipEncryptionMethod?)encryptionMethod)
             };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
@@ -77,13 +77,13 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task Encryption_MixedPlainAndEncrypted_RoundTrip(EncryptionMethod encryptionMethod, bool async)
+        public async Task Encryption_MixedPlainAndEncrypted_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
             var entries = new[]
             {
-                ("plain.txt", "Plain Content", (string?)null, (EncryptionMethod?)null),
-                ("encrypted.txt", "Encrypted Content", (string?)"pass", (EncryptionMethod?)encryptionMethod)
+                ("plain.txt", "Plain Content", (string?)null, (ZipEncryptionMethod?)null),
+                ("encrypted.txt", "Encrypted Content", (string?)"pass", (ZipEncryptionMethod?)encryptionMethod)
             };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
@@ -110,9 +110,9 @@ namespace System.IO.Compression.Tests
             string archivePath = GetTempArchivePath();
             var entries = new[]
             {
-                ("zipcrypto.txt", "ZipCrypto Content", (string?)"pass1", (EncryptionMethod?)EncryptionMethod.ZipCrypto),
-                ("aes128.txt", "AES128 Content", (string?)"pass2", (EncryptionMethod?)EncryptionMethod.Aes128),
-                ("aes256.txt", "AES256 Content", (string?)"pass3", (EncryptionMethod?)EncryptionMethod.Aes256)
+                ("zipcrypto.txt", "ZipCrypto Content", (string?)"pass1", (ZipEncryptionMethod?)ZipEncryptionMethod.ZipCrypto),
+                ("aes128.txt", "AES128 Content", (string?)"pass2", (ZipEncryptionMethod?)ZipEncryptionMethod.Aes128),
+                ("aes256.txt", "AES256 Content", (string?)"pass3", (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256)
             };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
@@ -139,12 +139,12 @@ namespace System.IO.Compression.Tests
             byte[] content = new byte[size];
             new Random(42).NextBytes(content);
             string password = "password123";
-            var encryptionMethod = EncryptionMethod.Aes256;
+            var encryptionMethod = ZipEncryptionMethod.Aes256;
 
             using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
             {
-                ZipArchiveEntry entry = archive.CreateEntry(entryName);
-                Stream s = entry.Open(password, encryptionMethod);
+                ZipArchiveEntry entry = archive.CreateEntry(entryName, password, encryptionMethod);
+                Stream s = entry.Open();
                 using (s)
                 {
                     if (async)
@@ -179,7 +179,7 @@ namespace System.IO.Compression.Tests
         {
             string archivePath = GetTempArchivePath();
             string password = "correct";
-            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256) };
+            var entries = new[] { ("test.txt", "content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256) };
             CreateArchiveWithEntries(archivePath, entries, async: false).GetAwaiter().GetResult();
 
             using (ZipArchive archive = ZipFile.OpenRead(archivePath))
@@ -194,7 +194,7 @@ namespace System.IO.Compression.Tests
         {
             string archivePath = GetTempArchivePath();
             string password = "correct";
-            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.ZipCrypto) };
+            var entries = new[] { ("test.txt", "content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.ZipCrypto) };
             CreateArchiveWithEntries(archivePath, entries, async: false).GetAwaiter().GetResult();
 
             using (ZipArchive archive = ZipFile.OpenRead(archivePath))
@@ -209,7 +209,7 @@ namespace System.IO.Compression.Tests
         public async Task OpeningPlainEntryWithPassword_Throws(bool async)
         {
             string archivePath = GetTempArchivePath();
-            var entries = new[] { ("plain.txt", "content", (string?)null, (EncryptionMethod?)null) };
+            var entries = new[] { ("plain.txt", "content", (string?)null, (ZipEncryptionMethod?)null) };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
             using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
@@ -227,7 +227,7 @@ namespace System.IO.Compression.Tests
         {
             string archivePath = GetTempArchivePath();
             string password = "pass";
-            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256) };
+            var entries = new[] { ("test.txt", "content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256) };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
             using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
@@ -237,12 +237,12 @@ namespace System.IO.Compression.Tests
 
                 if (async)
                 {
-                    await entry.ExtractToFileAsync(destFile, overwrite: true, password: password.AsMemory());
+                    await entry.ExtractToFileAsync(destFile, new ZipExtractionOptions { OverwriteFiles = true, Password = password.AsMemory() });
                     Assert.Equal("content", await File.ReadAllTextAsync(destFile));
                 }
                 else
                 {
-                    entry.ExtractToFile(destFile, overwrite: true, password: password);
+                    entry.ExtractToFile(destFile, new ZipExtractionOptions { OverwriteFiles = true, Password = password.AsMemory() });
                     Assert.Equal("content", File.ReadAllText(destFile));
                 }
             }
@@ -250,22 +250,22 @@ namespace System.IO.Compression.Tests
 
         private string GetTempArchivePath() => GetTestFilePath();
 
-        private async Task CreateArchiveWithEntries(string archivePath, (string Name, string Content, string? Password, EncryptionMethod? Encryption)[] entries, bool async)
+        private async Task CreateArchiveWithEntries(string archivePath, (string Name, string Content, string? Password, ZipEncryptionMethod? Encryption)[] entries, bool async)
         {
             using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
             {
                 foreach (var (name, content, password, encryption) in entries)
                 {
-                    ZipArchiveEntry entry = archive.CreateEntry(name);
-                    Stream s;
+                    ZipArchiveEntry entry;
                     if (password != null && encryption.HasValue)
                     {
-                        s = entry.Open(password, encryption.Value);
+                        entry = archive.CreateEntry(name, password, encryption.Value);
                     }
                     else
                     {
-                        s = await OpenEntryStream(async, entry);
+                        entry = archive.CreateEntry(name);
                     }
+                    Stream s = await OpenEntryStream(async, entry);
 
                     using (s)
                     using (StreamWriter w = new StreamWriter(s, Encoding.UTF8))
@@ -309,7 +309,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task UpdateMode_ModifyEncryptedEntry_RoundTrip(EncryptionMethod encryptionMethod, bool async)
+        public async Task UpdateMode_ModifyEncryptedEntry_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
             string entryName = "test.txt";
@@ -318,7 +318,7 @@ namespace System.IO.Compression.Tests
             string password = "password123";
 
             // Create archive with encrypted entry
-            var entries = new[] { (entryName, originalContent, (string?)password, (EncryptionMethod?)encryptionMethod) };
+            var entries = new[] { (entryName, originalContent, (string?)password, (ZipEncryptionMethod?)encryptionMethod) };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
             // Verify original content
@@ -363,7 +363,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task UpdateMode_ReadOnlyEncryptedEntry_NoModification(EncryptionMethod encryptionMethod, bool async)
+        public async Task UpdateMode_ReadOnlyEncryptedEntry_NoModification(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
             string entryName = "test.txt";
@@ -371,7 +371,7 @@ namespace System.IO.Compression.Tests
             string password = "password123";
 
             // Create archive with encrypted entry
-            var entries = new[] { (entryName, content, (string?)password, (EncryptionMethod?)encryptionMethod) };
+            var entries = new[] { (entryName, content, (string?)password, (ZipEncryptionMethod?)encryptionMethod) };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
             // Open in Update mode, read the entry but don't modify it
@@ -405,13 +405,13 @@ namespace System.IO.Compression.Tests
         {
             string archivePath = GetTempArchivePath();
             string password = "password123";
-            var encryptionMethod = EncryptionMethod.Aes256;
+            var encryptionMethod = ZipEncryptionMethod.Aes256;
 
             var entries = new[]
             {
-                ("file1.txt", "Content 1", (string?)password, (EncryptionMethod?)encryptionMethod),
-                ("file2.txt", "Content 2", (string?)password, (EncryptionMethod?)encryptionMethod),
-                ("file3.txt", "Content 3", (string?)password, (EncryptionMethod?)encryptionMethod)
+                ("file1.txt", "Content 1", (string?)password, (ZipEncryptionMethod?)encryptionMethod),
+                ("file2.txt", "Content 2", (string?)password, (ZipEncryptionMethod?)encryptionMethod),
+                ("file3.txt", "Content 3", (string?)password, (ZipEncryptionMethod?)encryptionMethod)
             };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
@@ -452,8 +452,8 @@ namespace System.IO.Compression.Tests
 
             var entries = new[]
             {
-                ("plain.txt", "Plain Content", (string?)null, (EncryptionMethod?)null),
-                ("encrypted.txt", "Encrypted Content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256)
+                ("plain.txt", "Plain Content", (string?)null, (ZipEncryptionMethod?)null),
+                ("encrypted.txt", "Encrypted Content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256)
             };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
@@ -507,13 +507,13 @@ namespace System.IO.Compression.Tests
             new Random(42).NextBytes(originalContent);
             new Random(43).NextBytes(modifiedContent);
             string password = "password123";
-            var encryptionMethod = EncryptionMethod.Aes256;
+            var encryptionMethod = ZipEncryptionMethod.Aes256;
 
             // Create archive with large encrypted entry
             using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
             {
-                ZipArchiveEntry entry = archive.CreateEntry(entryName);
-                using (Stream s = entry.Open(password, encryptionMethod))
+                ZipArchiveEntry entry = archive.CreateEntry(entryName, password, encryptionMethod);
+                using (Stream s = entry.Open())
                 {
                     if (async)
                         await s.WriteAsync(originalContent, 0, originalContent.Length);
@@ -561,7 +561,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task UpdateMode_EncryptedEntry_EmptyAfterModification(EncryptionMethod encryptionMethod, bool async)
+        public async Task UpdateMode_EncryptedEntry_EmptyAfterModification(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
             string entryName = "test.txt";
@@ -569,7 +569,7 @@ namespace System.IO.Compression.Tests
             string password = "password123";
 
             // Create archive with encrypted entry
-            var entries = new[] { (entryName, originalContent, (string?)password, (EncryptionMethod?)encryptionMethod) };
+            var entries = new[] { (entryName, originalContent, (string?)password, (ZipEncryptionMethod?)encryptionMethod) };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
             // Open in Update mode and clear the content
@@ -600,7 +600,7 @@ namespace System.IO.Compression.Tests
         {
             string archivePath = GetTempArchivePath();
             string password = "correct";
-            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256) };
+            var entries = new[] { ("test.txt", "content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256) };
             CreateArchiveWithEntries(archivePath, entries, async: false).GetAwaiter().GetResult();
 
             using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Update))
@@ -616,7 +616,7 @@ namespace System.IO.Compression.Tests
         {
             string archivePath = GetTempArchivePath();
             string password = "correct";
-            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.ZipCrypto) };
+            var entries = new[] { ("test.txt", "content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.ZipCrypto) };
             CreateArchiveWithEntries(archivePath, entries, async: false).GetAwaiter().GetResult();
 
             using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Update))
@@ -638,9 +638,9 @@ namespace System.IO.Compression.Tests
 
             var entries = new[]
             {
-                ("keep.txt", "Keep This Content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256),
-                ("delete.txt", "Delete This Content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256),
-                ("modify.txt", "Original Content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256)
+                ("keep.txt", "Keep This Content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256),
+                ("delete.txt", "Delete This Content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256),
+                ("modify.txt", "Original Content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256)
             };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
@@ -705,8 +705,8 @@ namespace System.IO.Compression.Tests
 
             var entries = new[]
             {
-                ("plain.txt", "Plain Content", (string?)null, (EncryptionMethod?)null),
-                ("encrypted.txt", "Encrypted Content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256)
+                ("plain.txt", "Plain Content", (string?)null, (ZipEncryptionMethod?)null),
+                ("encrypted.txt", "Encrypted Content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256)
             };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
@@ -756,8 +756,8 @@ namespace System.IO.Compression.Tests
 
             var entries = new[]
             {
-                ("plain.txt", "Plain Content", (string?)null, (EncryptionMethod?)null),
-                ("encrypted.txt", "Encrypted Content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256)
+                ("plain.txt", "Plain Content", (string?)null, (ZipEncryptionMethod?)null),
+                ("encrypted.txt", "Encrypted Content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256)
             };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
@@ -807,11 +807,11 @@ namespace System.IO.Compression.Tests
 
             var entries = new[]
             {
-                ("keep1.txt", "Keep 1", (string?)null, (EncryptionMethod?)null),
-                ("delete1.txt", "Delete 1", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256),
-                ("keep2.txt", "Keep 2", (string?)password, (EncryptionMethod?)EncryptionMethod.ZipCrypto),
-                ("delete2.txt", "Delete 2", (string?)null, (EncryptionMethod?)null),
-                ("modify.txt", "Original", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes128)
+                ("keep1.txt", "Keep 1", (string?)null, (ZipEncryptionMethod?)null),
+                ("delete1.txt", "Delete 1", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256),
+                ("keep2.txt", "Keep 2", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.ZipCrypto),
+                ("delete2.txt", "Delete 2", (string?)null, (ZipEncryptionMethod?)null),
+                ("modify.txt", "Original", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes128)
             };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
@@ -852,7 +852,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task UpdateMode_AllEncryptionTypes_EditAllEntries(EncryptionMethod encryptionMethod, bool async)
+        public async Task UpdateMode_AllEncryptionTypes_EditAllEntries(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
             string password = "password123";
@@ -860,9 +860,9 @@ namespace System.IO.Compression.Tests
             // Create archive with multiple entries using the same encryption method
             var entries = new[]
             {
-                ("entry1.txt", "Content 1", (string?)password, (EncryptionMethod?)encryptionMethod),
-                ("entry2.txt", "Content 2", (string?)password, (EncryptionMethod?)encryptionMethod),
-                ("entry3.txt", "Content 3", (string?)password, (EncryptionMethod?)encryptionMethod)
+                ("entry1.txt", "Content 1", (string?)password, (ZipEncryptionMethod?)encryptionMethod),
+                ("entry2.txt", "Content 2", (string?)password, (ZipEncryptionMethod?)encryptionMethod),
+                ("entry3.txt", "Content 3", (string?)password, (ZipEncryptionMethod?)encryptionMethod)
             };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
@@ -916,11 +916,11 @@ namespace System.IO.Compression.Tests
             // Create archive with entries using different AES strengths
             var entries = new[]
             {
-                ("aes128.txt", "AES-128 content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes128),
-                ("aes192.txt", "AES-192 content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes192),
-                ("aes256.txt", "AES-256 content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256),
-                ("zipcrypto.txt", "ZipCrypto content", (string?)password, (EncryptionMethod?)EncryptionMethod.ZipCrypto),
-                ("plain.txt", "Plain content", (string?)null, (EncryptionMethod?)null)
+                ("aes128.txt", "AES-128 content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes128),
+                ("aes192.txt", "AES-192 content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes192),
+                ("aes256.txt", "AES-256 content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256),
+                ("zipcrypto.txt", "ZipCrypto content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.ZipCrypto),
+                ("plain.txt", "Plain content", (string?)null, (ZipEncryptionMethod?)null)
             };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
@@ -948,7 +948,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [SkipOnCI("Takes significant time and disk space to create 4GB+ files")]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
-        public async Task Encryption_TrueZip64_LargeEntry_RoundTrip(EncryptionMethod encryptionMethod, bool async)
+        public async Task Encryption_TrueZip64_LargeEntry_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
 
@@ -975,8 +975,8 @@ namespace System.IO.Compression.Tests
                 // Create archive
                 using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
                 {
-                    ZipArchiveEntry entry = archive.CreateEntry(entryName, CompressionLevel.NoCompression);
-                    using (Stream s = entry.Open(password, encryptionMethod))
+                    ZipArchiveEntry entry = archive.CreateEntry(entryName, CompressionLevel.NoCompression, password, encryptionMethod);
+                    using (Stream s = entry.Open())
                     {
                         long written = 0;
                         while (written < size)
@@ -1040,7 +1040,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [SkipOnCI("Takes significant time and disk space to create 4GB+ files")]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
-        public async Task Encryption_TrueZip64_LargeEntry_UpdateMode_Throws(EncryptionMethod encryptionMethod, bool async)
+        public async Task Encryption_TrueZip64_LargeEntry_UpdateMode_Throws(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
 
@@ -1065,8 +1065,8 @@ namespace System.IO.Compression.Tests
 
                 using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
                 {
-                    ZipArchiveEntry entry = archive.CreateEntry(entryName, CompressionLevel.NoCompression);
-                    using (Stream s = entry.Open(password, encryptionMethod))
+                    ZipArchiveEntry entry = archive.CreateEntry(entryName, CompressionLevel.NoCompression, password, encryptionMethod);
+                    using (Stream s = entry.Open())
                     {
                         long written = 0;
                         while (written < size)
@@ -1103,12 +1103,12 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task ExtractToFile_EncryptedEntry_Success(EncryptionMethod encryptionMethod, bool async)
+        public async Task ExtractToFile_EncryptedEntry_Success(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
             string password = "TestPassword123";
             string content = "Encrypted content for ExtractToFile test";
-            var entries = new[] { ("encrypted.txt", content, (string?)password, (EncryptionMethod?)encryptionMethod) };
+            var entries = new[] { ("encrypted.txt", content, (string?)password, (ZipEncryptionMethod?)encryptionMethod) };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
             using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
@@ -1121,12 +1121,12 @@ namespace System.IO.Compression.Tests
 
                 if (async)
                 {
-                    await entry.ExtractToFileAsync(destFile, overwrite: false, password: password.AsMemory());
+                    await entry.ExtractToFileAsync(destFile, new ZipExtractionOptions { OverwriteFiles = false, Password = password.AsMemory() });
                     Assert.Equal(content, await File.ReadAllTextAsync(destFile));
                 }
                 else
                 {
-                    entry.ExtractToFile(destFile, overwrite: false, password: password);
+                    entry.ExtractToFile(destFile, new ZipExtractionOptions { OverwriteFiles = false, Password = password.AsMemory() });
                     Assert.Equal(content, File.ReadAllText(destFile));
                 }
             }
@@ -1135,12 +1135,12 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task ExtractToFile_EncryptedEntry_Overwrite_Success(EncryptionMethod encryptionMethod, bool async)
+        public async Task ExtractToFile_EncryptedEntry_Overwrite_Success(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
             string password = "TestPassword123";
             string content = "Updated encrypted content";
-            var entries = new[] { ("encrypted.txt", content, (string?)password, (EncryptionMethod?)encryptionMethod) };
+            var entries = new[] { ("encrypted.txt", content, (string?)password, (ZipEncryptionMethod?)encryptionMethod) };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
             string destFile = GetTestFilePath();
@@ -1154,12 +1154,12 @@ namespace System.IO.Compression.Tests
 
                 if (async)
                 {
-                    await entry.ExtractToFileAsync(destFile, overwrite: true, password: password.AsMemory());
+                    await entry.ExtractToFileAsync(destFile, new ZipExtractionOptions { OverwriteFiles = true, Password = password.AsMemory() });
                     Assert.Equal(content, await File.ReadAllTextAsync(destFile));
                 }
                 else
                 {
-                    entry.ExtractToFile(destFile, overwrite: true, password: password);
+                    entry.ExtractToFile(destFile, new ZipExtractionOptions { OverwriteFiles = true, Password = password.AsMemory() });
                     Assert.Equal(content, File.ReadAllText(destFile));
                 }
             }
@@ -1172,7 +1172,7 @@ namespace System.IO.Compression.Tests
         {
             string archivePath = GetTempArchivePath();
             string password = "CorrectPassword";
-            var entries = new[] { ("encrypted.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256) };
+            var entries = new[] { ("encrypted.txt", "content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256) };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
             using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
@@ -1183,11 +1183,11 @@ namespace System.IO.Compression.Tests
 
                 if (async)
                 {
-                    await Assert.ThrowsAsync<InvalidDataException>(() => entry.ExtractToFileAsync(destFile, overwrite: false, password: "WrongPassword".AsMemory()));
+                    await Assert.ThrowsAsync<InvalidDataException>(() => entry.ExtractToFileAsync(destFile, new ZipExtractionOptions { OverwriteFiles = false, Password = "WrongPassword".AsMemory() }));
                 }
                 else
                 {
-                    Assert.Throws<InvalidDataException>(() => entry.ExtractToFile(destFile, overwrite: false, password: "WrongPassword"));
+                    Assert.Throws<InvalidDataException>(() => entry.ExtractToFile(destFile, new ZipExtractionOptions { OverwriteFiles = false, Password = "WrongPassword".AsMemory() }));
                 }
             }
         }
@@ -1199,16 +1199,16 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task ExtractToDirectory_MultipleEncryptedEntries_SamePassword_Success(EncryptionMethod encryptionMethod, bool async)
+        public async Task ExtractToDirectory_MultipleEncryptedEntries_SamePassword_Success(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
             string password = "SharedPassword";
             var entries = new[]
             {
-                ("file1.txt", "Content 1", (string?)password, (EncryptionMethod?)encryptionMethod),
-                ("file2.txt", "Content 2", (string?)password, (EncryptionMethod?)encryptionMethod),
-                ("subfolder/file3.txt", "Content 3", (string?)password, (EncryptionMethod?)encryptionMethod),
-                ("subfolder/nested/file4.txt", "Content 4", (string?)password, (EncryptionMethod?)encryptionMethod)
+                ("file1.txt", "Content 1", (string?)password, (ZipEncryptionMethod?)encryptionMethod),
+                ("file2.txt", "Content 2", (string?)password, (ZipEncryptionMethod?)encryptionMethod),
+                ("subfolder/file3.txt", "Content 3", (string?)password, (ZipEncryptionMethod?)encryptionMethod),
+                ("subfolder/nested/file4.txt", "Content 4", (string?)password, (ZipEncryptionMethod?)encryptionMethod)
             };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
@@ -1218,11 +1218,11 @@ namespace System.IO.Compression.Tests
             {
                 if (async)
                 {
-                    await archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: false, password.AsMemory());
+                    await archive.ExtractToDirectoryAsync(tempDir.Path, new ZipExtractionOptions { OverwriteFiles = false, Password = password.AsMemory() });
                 }
                 else
                 {
-                    archive.ExtractToDirectory(tempDir.Path, overwriteFiles: false, password);
+                    archive.ExtractToDirectory(tempDir.Path, new ZipExtractionOptions { OverwriteFiles = false, Password = password.AsMemory() });
                 }
             }
 
@@ -1244,9 +1244,9 @@ namespace System.IO.Compression.Tests
             // Create entries with different passwords
             var entries = new[]
             {
-                ("file1.txt", "Content 1", (string?)"Password1", (EncryptionMethod?)EncryptionMethod.Aes256),
-                ("file2.txt", "Content 2", (string?)"Password2", (EncryptionMethod?)EncryptionMethod.Aes256),
-                ("file3.txt", "Content 3", (string?)"Password3", (EncryptionMethod?)EncryptionMethod.Aes256)
+                ("file1.txt", "Content 1", (string?)"Password1", (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256),
+                ("file2.txt", "Content 2", (string?)"Password2", (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256),
+                ("file3.txt", "Content 3", (string?)"Password3", (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256)
             };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
@@ -1258,12 +1258,12 @@ namespace System.IO.Compression.Tests
                 if (async)
                 {
                     await Assert.ThrowsAsync<InvalidDataException>(() =>
-                        archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: false, "Password1".AsMemory()));
+                        archive.ExtractToDirectoryAsync(tempDir.Path, new ZipExtractionOptions { OverwriteFiles = false, Password = "Password1".AsMemory() }));
                 }
                 else
                 {
                     Assert.Throws<InvalidDataException>(() =>
-                        archive.ExtractToDirectory(tempDir.Path, overwriteFiles: false, "Password1"));
+                        archive.ExtractToDirectory(tempDir.Path, new ZipExtractionOptions { OverwriteFiles = false, Password = "Password1".AsMemory() }));
                 }
             }
         }
@@ -1271,14 +1271,14 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task ExtractToDirectory_EncryptedWithOverwrite_Success(EncryptionMethod encryptionMethod, bool async)
+        public async Task ExtractToDirectory_EncryptedWithOverwrite_Success(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
             string password = "TestPassword";
             var entries = new[]
             {
-                ("file1.txt", "New Content 1", (string?)password, (EncryptionMethod?)encryptionMethod),
-                ("file2.txt", "New Content 2", (string?)password, (EncryptionMethod?)encryptionMethod)
+                ("file1.txt", "New Content 1", (string?)password, (ZipEncryptionMethod?)encryptionMethod),
+                ("file2.txt", "New Content 2", (string?)password, (ZipEncryptionMethod?)encryptionMethod)
             };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
@@ -1292,11 +1292,11 @@ namespace System.IO.Compression.Tests
             {
                 if (async)
                 {
-                    await archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: true, password.AsMemory());
+                    await archive.ExtractToDirectoryAsync(tempDir.Path, new ZipExtractionOptions { OverwriteFiles = true, Password = password.AsMemory() });
                 }
                 else
                 {
-                    archive.ExtractToDirectory(tempDir.Path, overwriteFiles: true, password);
+                    archive.ExtractToDirectory(tempDir.Path, new ZipExtractionOptions { OverwriteFiles = true, Password = password.AsMemory() });
                 }
             }
 
@@ -1314,7 +1314,7 @@ namespace System.IO.Compression.Tests
             string password = "TestPassword";
             var entries = new[]
             {
-                ("file1.txt", "New Content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256)
+                ("file1.txt", "New Content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256)
             };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
@@ -1328,12 +1328,12 @@ namespace System.IO.Compression.Tests
                 if (async)
                 {
                     await Assert.ThrowsAsync<IOException>(() =>
-                        archive.ExtractToDirectoryAsync(tempDir.Path, overwriteFiles: false, password.AsMemory()));
+                        archive.ExtractToDirectoryAsync(tempDir.Path, new ZipExtractionOptions { OverwriteFiles = false, Password = password.AsMemory() }));
                 }
                 else
                 {
                     Assert.Throws<IOException>(() =>
-                        archive.ExtractToDirectory(tempDir.Path, overwriteFiles: false, password));
+                        archive.ExtractToDirectory(tempDir.Path, new ZipExtractionOptions { OverwriteFiles = false, Password = password.AsMemory() }));
                 }
             }
 
@@ -1351,7 +1351,7 @@ namespace System.IO.Compression.Tests
         {
             string archivePath = GetTempArchivePath();
             string password = "secret";
-            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.ZipCrypto) };
+            var entries = new[] { ("test.txt", "content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.ZipCrypto) };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
             using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
@@ -1388,14 +1388,14 @@ namespace System.IO.Compression.Tests
                     // Read access in create mode throws
                     await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.Read, "password".AsMemory()));
                     // Encryption without password throws
-                    await Assert.ThrowsAsync<ArgumentNullException>(() => entry.OpenAsync(FileAccess.Write, null!, EncryptionMethod.Aes256));
-                    await Assert.ThrowsAsync<ArgumentNullException>(() => entry.OpenAsync(FileAccess.Write, "".AsMemory(), EncryptionMethod.Aes256));
+                    Assert.Throws<ArgumentException>(() => archive.CreateEntry("test_null.txt", (string)null!, ZipEncryptionMethod.Aes256));
+                    Assert.Throws<ArgumentException>(() => archive.CreateEntry("test_empty.txt", "", ZipEncryptionMethod.Aes256));
                 }
                 else
                 {
                     Assert.Throws<InvalidOperationException>(() => entry.Open(FileAccess.Read, "password"));
-                    Assert.Throws<InvalidOperationException>(() => entry.Open(FileAccess.Write, null!, EncryptionMethod.Aes256));
-                    Assert.Throws<IOException>(() => entry.Open(FileAccess.Write, "", EncryptionMethod.Aes256));
+                    Assert.Throws<ArgumentException>(() => archive.CreateEntry("test_null.txt", (string)null!, ZipEncryptionMethod.Aes256));
+                    Assert.Throws<ArgumentException>(() => archive.CreateEntry("test_empty.txt", "", ZipEncryptionMethod.Aes256));
                 }
             }
         }
@@ -1407,7 +1407,7 @@ namespace System.IO.Compression.Tests
         {
             string archivePath = GetTempArchivePath();
             string password = "secret";
-            var entries = new[] { ("test.txt", "content", (string?)password, (EncryptionMethod?)EncryptionMethod.Aes256) };
+            var entries = new[] { ("test.txt", "content", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256) };
             await CreateArchiveWithEntries(archivePath, entries, async);
 
             using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
@@ -1441,7 +1441,7 @@ namespace System.IO.Compression.Tests
         {
             foreach (var row in EncryptionMethodAndBoolTestData())
             {
-                var method = (EncryptionMethod)row[0];
+                var method = (ZipEncryptionMethod)row[0];
                 var async = (bool)row[1];
 
                 yield return new object[] { method, false, async }; // no compression overload
@@ -1452,7 +1452,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(CreateEntryFromFile_Encrypted_TestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task CreateEntryFromFile_Encrypted_RoundTrip(EncryptionMethod encryptionMethod, bool useCompression, bool async)
+        public async Task CreateEntryFromFile_Encrypted_RoundTrip(ZipEncryptionMethod encryptionMethod, bool useCompression, bool async)
         {
             string archivePath = GetTempArchivePath();
             string sourcePath = GetTestFilePath();
@@ -1501,9 +1501,9 @@ namespace System.IO.Compression.Tests
         {
             foreach (var method in new[]
             {
-                EncryptionMethod.Aes128,
-                EncryptionMethod.Aes192,
-                EncryptionMethod.Aes256
+                ZipEncryptionMethod.Aes128,
+                ZipEncryptionMethod.Aes192,
+                ZipEncryptionMethod.Aes256
             })
             {
                 yield return new object[] { method, false };
@@ -1523,8 +1523,8 @@ namespace System.IO.Compression.Tests
 
             using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
             {
-                ZipArchiveEntry entry = archive.CreateEntry(entryName);
-                using (Stream s = entry.Open(password, EncryptionMethod.ZipCrypto))
+                ZipArchiveEntry entry = archive.CreateEntry(entryName, password, ZipEncryptionMethod.ZipCrypto);
+                using (Stream s = entry.Open())
                 using (StreamWriter w = new StreamWriter(s, Encoding.UTF8))
                 {
                     if (async)
@@ -1546,7 +1546,7 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(AesEncryptionMethodAndBoolTestData))]
         [PlatformSpecific(TestPlatforms.Browser)]
-        public async Task Browser_AesEncryption_Throws_PlatformNotSupportedException(EncryptionMethod encryptionMethod, bool async)
+        public async Task Browser_AesEncryption_Throws_PlatformNotSupportedException(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
             string entryName = "test.txt";
@@ -1554,8 +1554,7 @@ namespace System.IO.Compression.Tests
 
             using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
             {
-                ZipArchiveEntry entry = archive.CreateEntry(entryName);
-                Assert.Throws<PlatformNotSupportedException>(() => entry.Open(password, encryptionMethod));
+                Assert.Throws<PlatformNotSupportedException>(() => archive.CreateEntry(entryName, password, encryptionMethod));
             }
         }
 

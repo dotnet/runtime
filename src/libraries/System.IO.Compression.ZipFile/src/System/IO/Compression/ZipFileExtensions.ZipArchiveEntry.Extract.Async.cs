@@ -118,10 +118,20 @@ public static partial class ZipFileExtensions
         }
     }
 
-    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default) =>
-        await ExtractToFileAsync(source, destinationFileName, false, password, cancellationToken).ConfigureAwait(false);
+    /// <summary>
+    /// Asynchronously creates a file on the file system with the entry's contents using the specified extraction options.
+    /// </summary>
+    public static Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, ZipExtractionOptions options, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
 
-    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, bool overwrite, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default)
+        if (!options.Password.IsEmpty)
+            return ExtractToFileAsync(source, destinationFileName, options.OverwriteFiles, options.Password, cancellationToken);
+        else
+            return ExtractToFileAsync(source, destinationFileName, options.OverwriteFiles, cancellationToken);
+    }
+
+    private static async Task ExtractToFileAsync(ZipArchiveEntry source, string destinationFileName, bool overwrite, ReadOnlyMemory<char> password, CancellationToken cancellationToken = default)
     {
         if (password.IsEmpty)
         {
@@ -196,7 +206,7 @@ public static partial class ZipFileExtensions
             // If it is a file:
             // Create containing directory:
             Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
-            await source.ExtractToFileAsync(fileDestinationPath, overwrite: overwrite, password: password, cancellationToken).ConfigureAwait(false);
+            await ExtractToFileAsync(source, fileDestinationPath, overwrite, password, cancellationToken).ConfigureAwait(false);
         }
     }
 }

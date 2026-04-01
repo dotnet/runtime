@@ -53,7 +53,7 @@
     <Compile Include="System\IO\Compression\ZLibStream.cs" />
     <Compile Include="System\IO\Compression\ZipCompressionMethod.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
-    <Compile Include="System\IO\Compression\EncryptionMethod.cs" />
+    <Compile Include="System\IO\Compression\ZipEncryptionMethod.cs" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.cs" />
     <Compile Include="System\IO\Compression\WinZipAesStream.cs" />
     <Compile Include="System\IO\Compression\WinZipAesKeyMaterial.cs" />

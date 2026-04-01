@@ -52,14 +52,28 @@ namespace System.IO.Compression.Tests
             s_winZipAesStreamType = assembly.GetType("System.IO.Compression.WinZipAesStream", throwOnError: true)!;
             s_winZipAesKeyMaterialType = assembly.GetType("System.IO.Compression.WinZipAesKeyMaterial", throwOnError: true)!;
 
-            // Use WinZipAesKeyMaterial.Create directly since it's the underlying implementation
-            // and we need a delegate to handle ReadOnlySpan<char> (ref struct can't be boxed for MethodInfo.Invoke)
             MethodInfo createKeyMethod = s_winZipAesKeyMaterialType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
                 new[] { typeof(ReadOnlySpan<char>), typeof(byte[]), typeof(int) },
                 null)!;
-            s_createKey = createKeyMethod.CreateDelegate<CreateKeyDelegate>();
+
+            // CreateDelegate can't handle value-type return covariance (struct → object boxing).
+            // Use DynamicMethod to emit a wrapper that calls the target and boxes the result.
+            var dm = new System.Reflection.Emit.DynamicMethod(
+                "CreateKeyWrapper",
+                typeof(object),
+                new[] { typeof(ReadOnlySpan<char>), typeof(byte[]), typeof(int) },
+                typeof(WinZipAesStreamConformanceTests).Module,
+                skipVisibility: true);
+            var il = dm.GetILGenerator();
+            il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
+            il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
+            il.Emit(System.Reflection.Emit.OpCodes.Ldarg_2);
+            il.Emit(System.Reflection.Emit.OpCodes.Call, createKeyMethod);
+            il.Emit(System.Reflection.Emit.OpCodes.Box, s_winZipAesKeyMaterialType);
+            il.Emit(System.Reflection.Emit.OpCodes.Ret);
+            s_createKey = dm.CreateDelegate<CreateKeyDelegate>();
 
             s_createMethod = s_winZipAesStreamType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,

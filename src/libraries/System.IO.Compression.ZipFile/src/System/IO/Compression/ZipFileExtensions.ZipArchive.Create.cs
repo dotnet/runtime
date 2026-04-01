@@ -77,7 +77,7 @@ namespace System.IO.Compression
                                                           string sourceFileName, string entryName, CompressionLevel compressionLevel) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel);
 
-        public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination, string sourceFileName, string entryName, ReadOnlySpan<char> password, EncryptionMethod encryption) =>
+        public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination, string sourceFileName, string entryName, ReadOnlySpan<char> password, ZipEncryptionMethod encryption) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, null, password, encryption);
 
 
@@ -113,7 +113,7 @@ namespace System.IO.Compression
         /// <returns>A wrapper for the newly created entry.</returns>
         public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination,
                                                           string sourceFileName, string entryName, CompressionLevel compressionLevel,
-                                                          ReadOnlySpan<char> password, EncryptionMethod encryption) =>
+                                                          ReadOnlySpan<char> password, ZipEncryptionMethod encryption) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, password, encryption);
 
         internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
@@ -134,16 +134,14 @@ namespace System.IO.Compression
 
         internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
                                                               string sourceFileName, string entryName, CompressionLevel? compressionLevel,
-                                                              ReadOnlySpan<char> password, EncryptionMethod encryption)
+                                                              ReadOnlySpan<char> password, ZipEncryptionMethod encryption)
         {
 
-            (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: false);
+            (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: false, password, encryption);
 
             using (fs)
             {
-                using (Stream es = encryption != EncryptionMethod.None
-                    ? entry.Open(password, encryption)
-                    : entry.Open())
+                using (Stream es = entry.Open())
                 {
                     fs.CopyTo(es);
                 }
@@ -152,7 +150,7 @@ namespace System.IO.Compression
             return entry;
         }
 
-        private static (FileStream, ZipArchiveEntry) InitializeDoCreateEntryFromFile(ZipArchive destination, string sourceFileName, string entryName, CompressionLevel? compressionLevel, bool useAsync)
+        private static (FileStream, ZipArchiveEntry) InitializeDoCreateEntryFromFile(ZipArchive destination, string sourceFileName, string entryName, CompressionLevel? compressionLevel, bool useAsync, ReadOnlySpan<char> password = default, ZipEncryptionMethod encryption = ZipEncryptionMethod.None)
         {
             ArgumentNullException.ThrowIfNull(destination);
             ArgumentNullException.ThrowIfNull(sourceFileName);
@@ -165,9 +163,19 @@ namespace System.IO.Compression
 
             FileStream fs = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read, ZipFile.FileStreamBufferSize, useAsync);
 
-            ZipArchiveEntry entry = compressionLevel.HasValue ?
-                                    destination.CreateEntry(entryName, compressionLevel.Value) :
-                                    destination.CreateEntry(entryName);
+            ZipArchiveEntry entry;
+            if (!password.IsEmpty && encryption != ZipEncryptionMethod.None)
+            {
+                entry = compressionLevel.HasValue
+                    ? destination.CreateEntry(entryName, compressionLevel.Value, password, encryption)
+                    : destination.CreateEntry(entryName, password, encryption);
+            }
+            else
+            {
+                entry = compressionLevel.HasValue
+                    ? destination.CreateEntry(entryName, compressionLevel.Value)
+                    : destination.CreateEntry(entryName);
+            }
 
             DateTime lastWrite = File.GetLastWriteTime(sourceFileName);
 

@@ -20,7 +20,8 @@ namespace System.IO.Compression.Tests
 
         private static readonly Type s_zipCryptoStreamType;
         private static readonly Type s_zipCryptoKeysType;
-        private static readonly MethodInfo s_createKeyMethod;
+        private delegate object CreateKeyDelegate(ReadOnlySpan<char> password);
+        private static readonly CreateKeyDelegate s_createKey;
         private static readonly MethodInfo s_createEncryptionMethod;
         private static readonly MethodInfo s_createDecryptionMethod;
 
@@ -30,11 +31,25 @@ namespace System.IO.Compression.Tests
             s_zipCryptoStreamType = assembly.GetType("System.IO.Compression.ZipCryptoStream", throwOnError: true)!;
             s_zipCryptoKeysType = assembly.GetType("System.IO.Compression.ZipCryptoKeys", throwOnError: true)!;
 
-            s_createKeyMethod = s_zipCryptoStreamType.GetMethod("CreateKey",
+            MethodInfo createKeyMethod = s_zipCryptoStreamType.GetMethod("CreateKey",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new[] { typeof(ReadOnlyMemory<char>) },
+                new[] { typeof(ReadOnlySpan<char>) },
                 null)!;
+
+            // Use DynamicMethod to box the struct return value.
+            var dm = new System.Reflection.Emit.DynamicMethod(
+                "CreateKeyWrapper",
+                typeof(object),
+                new[] { typeof(ReadOnlySpan<char>) },
+                typeof(ZipCryptoStreamConformanceTests).Module,
+                skipVisibility: true);
+            var il = dm.GetILGenerator();
+            il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
+            il.Emit(System.Reflection.Emit.OpCodes.Call, createKeyMethod);
+            il.Emit(System.Reflection.Emit.OpCodes.Box, s_zipCryptoKeysType);
+            il.Emit(System.Reflection.Emit.OpCodes.Ret);
+            s_createKey = dm.CreateDelegate<CreateKeyDelegate>();
 
             s_createEncryptionMethod = s_zipCryptoStreamType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
@@ -58,7 +73,7 @@ namespace System.IO.Compression.Tests
         protected override Task<Stream?> CreateWriteOnlyStreamCore(byte[]? initialData)
         {
             var ms = new MemoryStream();
-            object keys = s_createKeyMethod.Invoke(null, new object[] { TestPassword.AsMemory() })!;
+            object keys = s_createKey(TestPassword);
 
             var encryptStream = (Stream)s_createEncryptionMethod.Invoke(null, new object?[]
             {
@@ -76,7 +91,7 @@ namespace System.IO.Compression.Tests
         protected override Task<Stream?> CreateReadOnlyStreamCore(byte[]? initialData)
         {
             byte[] plaintext = initialData ?? Array.Empty<byte>();
-            object keys = s_createKeyMethod.Invoke(null, new object[] { TestPassword.AsMemory() })!;
+            object keys = s_createKey(TestPassword);
 
             // The check byte is the HIGH byte of the password verifier (little-endian format)
             byte expectedCheckByte = (byte)(PasswordVerifier >> 8);

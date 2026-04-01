@@ -21,7 +21,9 @@ namespace System.IO.Compression.Tests
         private const ushort PasswordVerifier = 0x1234;
 
         private static readonly Type s_zipCryptoStreamType;
-        private static readonly MethodInfo s_createKeyMethod;
+        private static readonly Type s_zipCryptoKeysType;
+        private delegate object CreateKeyDelegate(ReadOnlySpan<char> password);
+        private static readonly CreateKeyDelegate s_createKey;
         private static readonly MethodInfo s_createEncryptionMethod;
         private static readonly MethodInfo s_createDecryptionMethod;
         private static readonly MethodInfo s_createAsyncMethod;
@@ -30,29 +32,44 @@ namespace System.IO.Compression.Tests
         {
             var assembly = typeof(ZipArchive).Assembly;
             s_zipCryptoStreamType = assembly.GetType("System.IO.Compression.ZipCryptoStream", throwOnError: true)!;
+            s_zipCryptoKeysType = assembly.GetType("System.IO.Compression.ZipCryptoKeys", throwOnError: true)!;
 
-            s_createKeyMethod = s_zipCryptoStreamType.GetMethod("CreateKey",
-                BindingFlags.Public | BindingFlags.Static,
+            MethodInfo createKeyMethod = s_zipCryptoStreamType.GetMethod("CreateKey",
+                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new[] { typeof(ReadOnlyMemory<char>) },
+                new[] { typeof(ReadOnlySpan<char>) },
                 null)!;
+
+            // Use DynamicMethod to box the struct return value.
+            var dm = new System.Reflection.Emit.DynamicMethod(
+                "CreateKeyWrapper",
+                typeof(object),
+                new[] { typeof(ReadOnlySpan<char>) },
+                typeof(ZipCryptoStreamWrappedConformanceTests).Module,
+                skipVisibility: true);
+            var il = dm.GetILGenerator();
+            il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
+            il.Emit(System.Reflection.Emit.OpCodes.Call, createKeyMethod);
+            il.Emit(System.Reflection.Emit.OpCodes.Box, s_zipCryptoKeysType);
+            il.Emit(System.Reflection.Emit.OpCodes.Ret);
+            s_createKey = dm.CreateDelegate<CreateKeyDelegate>();
 
             s_createEncryptionMethod = s_zipCryptoStreamType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new[] { typeof(Stream), typeof(byte[]), typeof(ushort), typeof(bool), typeof(uint?), typeof(bool) },
+                new[] { typeof(Stream), s_zipCryptoKeysType, typeof(ushort), typeof(bool), typeof(uint?), typeof(bool) },
                 null)!;
 
             s_createDecryptionMethod = s_zipCryptoStreamType.GetMethod("Create",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new[] { typeof(Stream), typeof(byte[]), typeof(byte), typeof(bool), typeof(bool) },
+                new[] { typeof(Stream), s_zipCryptoKeysType, typeof(byte), typeof(bool), typeof(bool) },
                 null)!;
 
             s_createAsyncMethod = s_zipCryptoStreamType.GetMethod("CreateAsync",
                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                null,
-               new[] { typeof(Stream), typeof(byte[]), typeof(byte), typeof(bool), typeof(CancellationToken), typeof(bool) },
+               new[] { typeof(Stream), s_zipCryptoKeysType, typeof(byte), typeof(bool), typeof(CancellationToken), typeof(bool) },
                null);
         }
 
@@ -76,7 +93,7 @@ namespace System.IO.Compression.Tests
 
         protected override async Task<StreamPair> CreateWrappedConnectedStreamsAsync(StreamPair wrapped, bool leaveOpen = false)
         {
-            byte[] keyBytes = (byte[])s_createKeyMethod.Invoke(null, new object[] { TestPassword.AsMemory() })!;
+            object keys = s_createKey(TestPassword);
 
             // The check byte is the HIGH byte of the password verifier (little-endian format)
             byte expectedCheckByte = (byte)(PasswordVerifier >> 8); // 0x12
@@ -84,7 +101,7 @@ namespace System.IO.Compression.Tests
             // Create the encryption stream (write-only) - wraps stream1
             var encryptStream = (Stream)s_createEncryptionMethod.Invoke(null, new object?[]
             {
-                wrapped.Stream1, keyBytes, PasswordVerifier, true /* encrypting */, null /* crc32 */, leaveOpen
+                wrapped.Stream1, keys, PasswordVerifier, true /* encrypting */, null /* crc32 */, leaveOpen
             })!;
 
             // Write and flush the header so the decryption stream can read it
@@ -96,7 +113,7 @@ namespace System.IO.Compression.Tests
             // Now create the decryption stream (read-only) - wraps stream2
             // This will read and validate the 12-byte header
             // Use async factory method to support AsyncOnlyStream wrappers
-            var decryptStream = await CreateDecryptStreamAsync(wrapped.Stream2, keyBytes, expectedCheckByte, leaveOpen).ConfigureAwait(false);
+            var decryptStream = await CreateDecryptStreamAsync(wrapped.Stream2, keys, expectedCheckByte, leaveOpen).ConfigureAwait(false);
 
             // Read the byte we wrote to trigger the header
             byte[] readBuffer = new byte[1];
@@ -105,12 +122,12 @@ namespace System.IO.Compression.Tests
             return (encryptStream, decryptStream);
         }
 
-        private static async Task<Stream> CreateDecryptStreamAsync(Stream baseStream, byte[] keyBytes, byte expectedCheckByte, bool leaveOpen)
+        private static async Task<Stream> CreateDecryptStreamAsync(Stream baseStream, object keys, byte expectedCheckByte, bool leaveOpen)
         {
             // CreateAsync returns Task<ZipCryptoStream>, await it and get the result
             var task = (Task)s_createAsyncMethod.Invoke(null, new object[]
             {
-                    baseStream, keyBytes, expectedCheckByte, false /* encrypting */, CancellationToken.None, leaveOpen
+                    baseStream, keys, expectedCheckByte, false /* encrypting */, CancellationToken.None, leaveOpen
             })!;
             await task.ConfigureAwait(false);
 

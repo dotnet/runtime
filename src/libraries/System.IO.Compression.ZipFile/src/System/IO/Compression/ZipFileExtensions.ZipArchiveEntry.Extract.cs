@@ -106,26 +106,23 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Creates a file on the file system with the entry's contents decrypted using the specified password.
-        /// The last write time of the file is set to the entry's last write time.
-        /// This method does not allow overwriting of an existing file with the same name.
+        /// Creates a file on the file system with the entry's contents using the specified extraction options.
         /// </summary>
         /// <param name="source">The zip archive entry to extract a file from.</param>
         /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.</param>
-        /// <param name="password">The password used to decrypt the encrypted entry.</param>
-        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, ReadOnlySpan<char> password) =>
-            ExtractToFile(source, destinationFileName, overwrite: false, password: password);
+        /// <param name="options">The extraction options including password and overwrite behavior.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/>, <paramref name="destinationFileName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, ZipExtractionOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
 
-        /// <summary>
-        /// Creates a file on the file system with the entry's contents decrypted using the specified password.
-        /// The last write time of the file is set to the entry's last write time.
-        /// This method allows overwriting of an existing file with the same name.
-        /// </summary>
-        /// <param name="source">The zip archive entry to extract a file from.</param>
-        /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.</param>
-        /// <param name="overwrite">True to indicate overwrite.</param>
-        /// <param name="password">The password used to decrypt the encrypted entry.</param>
-        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite, ReadOnlySpan<char> password)
+            if (!options.Password.IsEmpty)
+                ExtractToFile(source, destinationFileName, options.OverwriteFiles, options.Password.Span);
+            else
+                ExtractToFile(source, destinationFileName, options.OverwriteFiles);
+        }
+
+        private static void ExtractToFile(ZipArchiveEntry source, string destinationFileName, bool overwrite, ReadOnlySpan<char> password)
         {
             if (password.IsEmpty)
             {
@@ -245,7 +242,7 @@ namespace System.IO.Compression
                 // Create containing directory:
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
                 if (!password.IsEmpty)
-                    source.ExtractToFile(fileDestinationPath, overwrite: overwrite, password: password);
+                    ExtractToFile(source, fileDestinationPath, overwrite, password);
                 else
                     source.ExtractToFile(fileDestinationPath, overwrite: overwrite);
             }

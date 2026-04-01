@@ -400,6 +400,42 @@ namespace System.IO.Compression
                                                CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding) =>
             DoCreateFromDirectory(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding);
 
+        /// <summary>
+        /// Creates a zip archive at the specified path containing the files and directories from the specified directory,
+        /// using the specified creation options.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path to the directory to be archived.</param>
+        /// <param name="destinationArchiveFileName">The path of the archive to be created.</param>
+        /// <param name="options">The creation options including compression level, encryption, encoding, and whether to include the base directory.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/>, <paramref name="destinationArchiveFileName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
+        public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, ZipFileCreationOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+
+            (sourceDirectoryName, destinationArchiveFileName) = GetFullPathsForDoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName);
+
+            using ZipArchive archive = Open(destinationArchiveFileName, ZipArchiveMode.Create, options.EntryNameEncoding);
+            CreateZipArchiveFromDirectory(sourceDirectoryName, archive, options.CompressionLevel, options.IncludeBaseDirectory, options.Password.Span, options.EncryptionMethod);
+        }
+
+        /// <summary>
+        /// Creates a zip archive in the specified stream containing the files and directories from the specified directory,
+        /// using the specified creation options.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path to the directory to be archived.</param>
+        /// <param name="destination">The stream where the zip archive is to be stored.</param>
+        /// <param name="options">The creation options including compression level, encryption, encoding, and whether to include the base directory.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/>, <paramref name="destination"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
+        public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, ZipFileCreationOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+
+            sourceDirectoryName = ValidateAndGetFullPathForDoCreateFromDirectory(sourceDirectoryName, destination, options.CompressionLevel);
+
+            using ZipArchive archive = new ZipArchive(destination, ZipArchiveMode.Create, leaveOpen: true, options.EntryNameEncoding);
+            CreateZipArchiveFromDirectory(sourceDirectoryName, archive, options.CompressionLevel, options.IncludeBaseDirectory, options.Password.Span, options.EncryptionMethod);
+        }
+
         private static void DoCreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName,
                                                   CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding)
 
@@ -448,6 +484,46 @@ namespace System.IO.Compression
                             // Create entry marking an empty dir:
                             // FullName never returns a directory separator character on the end,
                             // but Zip archives require it to specify an explicit directory:
+                            string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length), appendPathSeparator: true);
+                            archive.CreateEntry(entryName);
+                        }
+                        break;
+                    case CreateEntryType.Unsupported:
+                    default:
+                        throw new IOException(SR.Format(SR.ZipUnsupportedFile, fullPath));
+                }
+            }
+
+            FinalizeCreateZipArchiveFromDirectory(archive, di, includeBaseDirectory, directoryIsEmpty);
+        }
+
+        private static void CreateZipArchiveFromDirectory(string sourceDirectoryName, ZipArchive archive,
+                                                          CompressionLevel compressionLevel, bool includeBaseDirectory,
+                                                          ReadOnlySpan<char> password, ZipEncryptionMethod encryptionMethod)
+        {
+            (bool directoryIsEmpty, string basePath, DirectoryInfo di, FileSystemEnumerable<(string, CreateEntryType)> fse) =
+                InitializeCreateZipArchiveFromDirectory(sourceDirectoryName, includeBaseDirectory);
+
+            bool hasEncryption = !password.IsEmpty && encryptionMethod != ZipEncryptionMethod.None;
+
+            foreach ((string fullPath, CreateEntryType type) in fse)
+            {
+                directoryIsEmpty = false;
+
+                switch (type)
+                {
+                    case CreateEntryType.File:
+                        {
+                            string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length));
+                            if (hasEncryption)
+                                ZipFileExtensions.DoCreateEntryFromFile(archive, fullPath, entryName, compressionLevel, password, encryptionMethod);
+                            else
+                                ZipFileExtensions.DoCreateEntryFromFile(archive, fullPath, entryName, compressionLevel);
+                        }
+                        break;
+                    case CreateEntryType.Directory:
+                        if (ArchivingUtils.IsDirEmpty(fullPath))
+                        {
                             string entryName = ArchivingUtils.EntryFromPath(fullPath.AsSpan(basePath.Length), appendPathSeparator: true);
                             archive.CreateEntry(entryName);
                         }
