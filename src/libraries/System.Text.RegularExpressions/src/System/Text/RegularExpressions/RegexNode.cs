@@ -544,9 +544,10 @@ namespace System.Text.RegularExpressions
                         RegexNode existingChild = node.Child(node.ChildCount() - 1);
 
                         // If the last child of a Concatenate is not a backtracking construct but an Alternate
-                        // (or conditional) exists earlier with trailing nodes after it, distribute those trailing
-                        // nodes into each branch to make the Alternate the last child, enabling atomic wrapping.
-                        // e.g. (?:abc|def)$ => (?:abc$|def$) which then becomes (?>abc$|def$)
+                        // (or conditional) exists earlier with trailing simple nodes (One, NotOne, Set, Multi) after it,
+                        // distribute those trailing nodes into each branch to make the Alternate the last child,
+                        // enabling atomic wrapping.
+                        // e.g. (?:abc|def)x => (?:abcx|defx) which then becomes (?>abcx|defx)
                         // e.g. (?:a*|b*)b => (?:a*b|b*b) which then becomes (?>a*b|b*b)
                         if (node.Kind == RegexNodeKind.Concatenate &&
                             existingChild.Kind is not (RegexNodeKind.Alternate or RegexNodeKind.BackreferenceConditional or RegexNodeKind.ExpressionConditional or RegexNodeKind.Loop or RegexNodeKind.Lazyloop) &&
@@ -704,6 +705,16 @@ namespace System.Text.RegularExpressions
                 {
                     int trailingCount = childCount - 1 - i;
                     int branches = child.ChildCount();
+
+                    // Only distribute simple character-matching nodes (One, NotOne, Set, Multi).
+                    // Complex nodes (loops, captures, anchors, etc.) are not distributed.
+                    for (int j = 0; j < trailingCount; j++)
+                    {
+                        if (concat.Child(i + 1 + j).Kind is not (RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set or RegexNodeKind.Multi))
+                        {
+                            return null;
+                        }
+                    }
 
                     // Heuristic: limit distribution to keep code size increase reasonable.
                     // Each trailing node is duplicated into each branch, so the total
