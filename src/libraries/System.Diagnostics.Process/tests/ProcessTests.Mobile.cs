@@ -7,8 +7,8 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [PlatformSpecific(TestPlatforms.Android)]
-    public class AndroidProcessTests : ProcessTestBase
+    [PlatformSpecific(TestPlatforms.Android | TestPlatforms.MacCatalyst)]
+    public class MobileProcessTests : ProcessTestBase
     {
         private const string NonExistentPath = "/nonexistent_path_for_testing_1234567890";
 

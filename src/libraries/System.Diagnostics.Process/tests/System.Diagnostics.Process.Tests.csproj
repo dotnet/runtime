@@ -75,11 +75,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs" 
              Link="Common\Interop\Unix\System.Native\Interop.PosixSignal.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
-    <Compile Include="ProcessTests.Android.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst'">
-    <Compile Include="ProcessTests.MacCatalyst.cs" />
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'maccatalyst'">
+    <Compile Include="ProcessTests.Mobile.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
