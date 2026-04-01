@@ -32,5 +32,5 @@ internal sealed class NativeCodeVersionNode : IData<NativeCodeVersionNode>
     public TargetNUInt ILVersionId { get; init; }
 
     public TargetPointer? GCCoverageInfo { get; init; }
-    public uint? OptimizationTier { get; init; }
+    public uint OptimizationTier { get; init; }
 }
