@@ -401,5 +401,32 @@ namespace System.Diagnostics.Tests
             Assert.Equal(expectInherited ? 42 : 0, bytesRead > 0 ? buffer[0] : 0);
             Assert.Equal(expectInherited ? RemoteExecutor.SuccessExitCode : HandleNotInheritedExitCode, exitCode);
         }
+        [Fact]
+        public void InheritedHandles_ThrowsForNullHandle()
+        {
+            string exe = OperatingSystem.IsWindows() ? "cmd" : "sh";
+            ProcessStartInfo startInfo = new(exe) { InheritedHandles = [null!] };
+            Assert.Throws<ArgumentNullException>(() => Process.Start(startInfo));
+        }
+
+        [Fact]
+        public void InheritedHandles_ThrowsForInvalidHandle()
+        {
+            string exe = OperatingSystem.IsWindows() ? "cmd" : "sh";
+            using SafeFileHandle handle = new(nint.Zero, ownsHandle: false); // IsInvalid == true
+            ProcessStartInfo startInfo = new(exe) { InheritedHandles = [handle] };
+            Assert.Throws<ArgumentException>(() => Process.Start(startInfo));
+        }
+
+        [Fact]
+        public void InheritedHandles_ThrowsForClosedHandle()
+        {
+            string exe = OperatingSystem.IsWindows() ? "cmd" : "sh";
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readPipe, out SafeFileHandle writePipe);
+            readPipe.Dispose();
+            writePipe.Dispose();
+            ProcessStartInfo startInfo = new(exe) { InheritedHandles = [readPipe] };
+            Assert.Throws<ObjectDisposedException>(() => Process.Start(startInfo));
+        }
     }
 }

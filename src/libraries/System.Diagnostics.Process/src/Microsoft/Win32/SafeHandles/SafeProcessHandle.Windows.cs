@@ -206,6 +206,7 @@ namespace Microsoft.Win32.SafeHandles
                             else
                             {
                                 Interop.Kernel32.STARTUPINFO startupInfo = startupInfoEx.StartupInfo;
+                                startupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
 
                                 retVal = Interop.Advapi32.CreateProcessWithLogonW(
                                     startInfo.UserName,

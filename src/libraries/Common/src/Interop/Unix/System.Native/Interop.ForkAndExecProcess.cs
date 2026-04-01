@@ -23,7 +23,7 @@ internal static partial class Interop
             int result = -1;
 
             bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
-            bool inheritedHandleRefsAdded = false;
+            int inheritedRefsAdded = 0;
             try
             {
                 int stdinRawFd = -1, stdoutRawFd = -1, stderrRawFd = -1;
@@ -58,7 +58,12 @@ internal static partial class Interop
                     for (int i = 0; i < inheritedFdCount; i++)
                     {
                         SafeHandle handle = inheritedHandles[i];
-                        handle.DangerousAddRef(ref inheritedHandleRefsAdded);
+                        bool added = false;
+                        handle.DangerousAddRef(ref added);
+                        if (added)
+                        {
+                            inheritedRefsAdded++;
+                        }
                         inheritedFds[i] = handle.DangerousGetHandle().ToInt32();
                     }
                 }
@@ -88,12 +93,10 @@ internal static partial class Interop
                 if (stderrRefAdded)
                     stderrFd!.DangerousRelease();
 
-                if (inheritedHandleRefsAdded && inheritedHandles is not null)
+                // Only release the handles that were successfully AddRef'd
+                for (int i = 0; i < inheritedRefsAdded; i++)
                 {
-                    for (int i = 0; i < inheritedHandles.Count; i++)
-                    {
-                        inheritedHandles[i].DangerousRelease();
-                    }
+                    inheritedHandles![i].DangerousRelease();
                 }
             }
         }
