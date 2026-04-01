@@ -2102,8 +2102,6 @@ void gc_heap::background_mark_phase ()
 
 #ifdef FEATURE_JAVAMARSHAL
 
-    // FIXME Any reason this code should be different for BGC ? Otherwise extract it to some common method ?
-
 #ifdef MULTIPLE_HEAPS
     dprintf(3, ("Joining for short weak handle scan"));
     bgc_t_join.join(this, gc_join_bridge_processing);
