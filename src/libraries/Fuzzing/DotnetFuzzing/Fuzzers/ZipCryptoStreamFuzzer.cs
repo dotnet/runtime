@@ -34,13 +34,32 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
 #pragma warning restore IL2026
 
     // ReadOnlySpan<char> is a ref struct and cannot be boxed for MethodInfo.Invoke,
-    // so we use a strongly-typed delegate instead.
+    // and CreateDelegate cannot handle struct-to-object return covariance.
+    // Use DynamicMethod to emit a wrapper that boxes the struct return value.
     private delegate object CreateKeyDelegate(ReadOnlySpan<char> password);
 
 #pragma warning disable IL2077 // dynamic access to non-public members
-    private static readonly CreateKeyDelegate _createKey = _zipCryptoStreamType.GetMethod(
-        "CreateKey",
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!.CreateDelegate<CreateKeyDelegate>();
+    private static readonly CreateKeyDelegate _createKey = CreateBoxingDelegate();
+
+    private static CreateKeyDelegate CreateBoxingDelegate()
+    {
+        MethodInfo createKeyMethod = _zipCryptoStreamType.GetMethod(
+            "CreateKey",
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        var dm = new System.Reflection.Emit.DynamicMethod(
+            "CreateKeyWrapper",
+            typeof(object),
+            [typeof(ReadOnlySpan<char>)],
+            typeof(ZipCryptoStreamFuzzer).Module,
+            skipVisibility: true);
+        var il = dm.GetILGenerator();
+        il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
+        il.Emit(System.Reflection.Emit.OpCodes.Call, createKeyMethod);
+        il.Emit(System.Reflection.Emit.OpCodes.Box, _zipCryptoKeysType);
+        il.Emit(System.Reflection.Emit.OpCodes.Ret);
+        return dm.CreateDelegate<CreateKeyDelegate>();
+    }
 
     private static readonly MethodInfo _createMethod = _zipCryptoStreamType.GetMethod(
         "Create",

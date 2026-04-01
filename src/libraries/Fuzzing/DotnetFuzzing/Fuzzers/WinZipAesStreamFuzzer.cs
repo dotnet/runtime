@@ -26,16 +26,37 @@ internal sealed class WinZipAesStreamFuzzer : IFuzzer
 #pragma warning restore IL2026
 
     // ReadOnlySpan<char> is a ref struct and cannot be boxed for MethodInfo.Invoke,
-    // so we use a strongly-typed delegate instead.
+    // and CreateDelegate cannot handle struct-to-object return covariance.
+    // Use DynamicMethod to emit a wrapper that boxes the struct return value.
     private delegate object CreateKeyDelegate(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits);
 
 #pragma warning disable IL2077 // dynamic access to non-public members
-    private static readonly CreateKeyDelegate _createKey = _winZipAesKeyMaterialType.GetMethod(
-        "Create",
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
-        binder: null,
-        types: [typeof(ReadOnlySpan<char>), typeof(byte[]), typeof(int)],
-        modifiers: null)!.CreateDelegate<CreateKeyDelegate>();  
+    private static readonly CreateKeyDelegate _createKey = CreateBoxingDelegate();
+
+    private static CreateKeyDelegate CreateBoxingDelegate()
+    {
+        MethodInfo createKeyMethod = _winZipAesKeyMaterialType.GetMethod(
+            "Create",
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
+            binder: null,
+            types: [typeof(ReadOnlySpan<char>), typeof(byte[]), typeof(int)],
+            modifiers: null)!;
+
+        var dm = new System.Reflection.Emit.DynamicMethod(
+            "CreateKeyWrapper",
+            typeof(object),
+            [typeof(ReadOnlySpan<char>), typeof(byte[]), typeof(int)],
+            typeof(WinZipAesStreamFuzzer).Module,
+            skipVisibility: true);
+        var il = dm.GetILGenerator();
+        il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
+        il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
+        il.Emit(System.Reflection.Emit.OpCodes.Ldarg_2);
+        il.Emit(System.Reflection.Emit.OpCodes.Call, createKeyMethod);
+        il.Emit(System.Reflection.Emit.OpCodes.Box, _winZipAesKeyMaterialType);
+        il.Emit(System.Reflection.Emit.OpCodes.Ret);
+        return dm.CreateDelegate<CreateKeyDelegate>();
+    }
 
     private static readonly MethodInfo _createMethod = _winZipAesStreamType.GetMethod(
         "Create",
