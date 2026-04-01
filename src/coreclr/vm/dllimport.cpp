@@ -191,10 +191,10 @@ static bool IsSharedStubScenario(DWORD dwStubFlags)
         return false;
     }
 
-    // Forward P/Invoke stubs (non-CALLI, non-vararg) are not shared across different
-    // target methods, but they still use the ILStubCache for de-duplication when
-    // multiple threads race to create a stub for the same target. The hash blob for
-    // these stubs is keyed by target MethodDesc rather than by signature.
+    if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags) && !SF_IsVarArgStub(dwStubFlags))
+    {
+        return false;
+    }
 
     return true;
 }
@@ -4237,36 +4237,9 @@ namespace
         PCCOR_SIGNATURE pvNativeType;
     };
 
-    ILStubHashBlob* CreateHashBlob(PInvokeStubParameters* pParams, MethodDesc* pTargetMD)
+    ILStubHashBlob* CreateHashBlob(PInvokeStubParameters* pParams)
     {
         STANDARD_VM_CONTRACT;
-
-        // The hash blob for a forward P/Invoke stub is just the target MethodDesc pointer.
-        // In order to help avoid collisions, ensure various blob sizes are different.
-        // See asserts below.
-        constexpr size_t forwardPInvokeHashBlobSize = sizeof(ILStubHashBlobBase) + sizeof(MethodDesc*);
-
-        DWORD dwStubFlags = pParams->m_dwStubFlags;
-
-        // The target MethodDesc may be NULL for field marshalling.
-        // Forward P/Invoke stubs (non-CALLI, non-vararg) each target a specific method,
-        // so the hash blob is just the target MethodDesc pointer. This ensures racing
-        // threads for the same P/Invoke converge on the same DynamicMethodDesc in the
-        // ILStubCache, while different P/Invoke methods get distinct cache entries.
-        if (pTargetMD != NULL
-            && SF_IsForwardPInvokeStub(dwStubFlags)
-            && !SF_IsCALLIStub(dwStubFlags)
-            && !SF_IsVarArgStub(dwStubFlags))
-        {
-            const size_t blobSize = forwardPInvokeHashBlobSize;
-            NewArrayHolder<BYTE> pBytes = new BYTE[blobSize];
-            ZeroMemory(pBytes, blobSize);
-            ILStubHashBlob* pBlob = (ILStubHashBlob*)(BYTE*)pBytes;
-            pBlob->m_cbSizeOfBlob = blobSize;
-            memcpy(pBlob->m_rgbBlobData, &pTargetMD, sizeof(pTargetMD));
-            pBytes.SuppressRelease();
-            return pBlob;
-        }
 
         PInvokeStubHashBlob*    pBlob;
 
@@ -4321,8 +4294,6 @@ namespace
 
         if (cbSizeOfBlob.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
-
-        _ASSERTE(cbSizeOfBlob.Value() != forwardPInvokeHashBlobSize);
 
         static_assert(nltMaxValue   <= 0xFF);
         static_assert(nlfMaxValue   <= 0xFF);
@@ -4980,14 +4951,16 @@ namespace
     class ILStubCreatorHelper
     {
     public:
-        ILStubCreatorHelper(PInvokeStubParameters* pParams, MethodDesc *pTargetMD)
-            : m_pParams(pParams)
-            , m_pTargetMD(pTargetMD)
-            , m_pStubMD(NULL)
-            , m_bILStubCreator(false)
+        ILStubCreatorHelper(MethodDesc *pTargetMD,
+                            PInvokeStubParameters* pParams
+                            ) :
+            m_pTargetMD(pTargetMD),
+            m_pParams(pParams),
+            m_pStubMD(NULL),
+            m_bILStubCreator(false)
         {
             STANDARD_VM_CONTRACT;
-            m_pHashParams = CreateHashBlob(m_pParams, m_pTargetMD);
+            m_pHashParams = CreateHashBlob(m_pParams);
         }
 
         ~ILStubCreatorHelper()
@@ -5049,10 +5022,11 @@ namespace
         }
 
     private:
-        PInvokeStubParameters*           m_pParams;
         MethodDesc*                      m_pTargetMD;
-        MethodDesc*                      m_pStubMD;
+        PInvokeStubParameters*           m_pParams;
         NewArrayHolder<ILStubHashBlob>   m_pHashParams;
+        AllocMemTracker*                 m_pAmTracker;
+        MethodDesc*                      m_pStubMD;
         AllocMemTracker                  m_amTracker;
         bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
     };  //ILStubCreatorHelper
@@ -5152,7 +5126,7 @@ namespace
         // remove it from cache if OOM occurs
 
         {
-            ILStubCreatorHelper ilStubCreatorHelper(&params, pTargetMD);
+            ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
 
             // take the domain level lock
             ListLockHolder pILStubLock(AppDomain::GetCurrentDomain()->GetILStubGenLock());
@@ -5750,7 +5724,7 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
     COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
 
-    // Only vararg P/Invoke use shared stubs, they need a precode to push the hidden argument.
+    // Vararg P/Invoke use shared stubs, they need a precode to push the hidden argument.
     (void)pNMD->GetOrCreatePrecode();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 

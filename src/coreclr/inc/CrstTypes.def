@@ -240,7 +240,7 @@ Crst IJWHash
 End
 
 Crst ILStubGen
-    AcquiredBefore DeadlockDetection UniqueStack UnresolvedClassLock FusionAppCtx AssemblyLoader
+    AcquiredBefore DeadlockDetection UniqueStack
 End
 
 Crst InstMethodHashTable
