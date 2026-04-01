@@ -65,6 +65,9 @@ inline PEImageLayout::~PEImageLayout()
 inline PEImageLayout::PEImageLayout()
     : m_refCount(1)
     , m_format(FORMAT_PE)
+#ifdef FEATURE_WEBCIL
+    , m_tableBaseOffset(0)
+#endif
     , m_pOwner(NULL)
 {
     LIMITED_METHOD_CONTRACT;
@@ -267,7 +270,7 @@ inline BOOL PEImageLayout::IsDll() const
 inline BOOL PEImageLayout::HasBaseRelocations() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    PE_OR_WEBCIL(HasBaseRelocations(), FALSE)
+    DECODER_DISPATCH(HasBaseRelocations())
 }
 
 inline const void *PEImageLayout::GetPreferredBase() const

@@ -76,6 +76,11 @@ public:
 
     void ApplyBaseRelocations(bool relocationMustWriteCopy);
 
+#ifdef FEATURE_WEBCIL
+    void SetTableBaseOffset(SSIZE_T tableBaseOffset) { m_tableBaseOffset = tableBaseOffset; }
+    SSIZE_T GetTableBaseOffset() const { return m_tableBaseOffset; }
+#endif
+
     // ------------------------------------------------------------
     // Format query
     // ------------------------------------------------------------
@@ -238,6 +243,7 @@ protected:
     PEDecoder m_peDecoder;
 #ifdef FEATURE_WEBCIL
     WebcilDecoder m_webcilDecoder;
+    SSIZE_T m_tableBaseOffset;
 #endif
 
 public:

@@ -134,6 +134,15 @@ BOOL WebcilDecoder::HasWebcilHeaders() const
     RETURN TRUE;
 }
 
+BOOL WebcilDecoder::HasBaseRelocations() const
+{
+    LIMITED_METHOD_CONTRACT;
+    if (!HasWebcilHeaders())
+        return FALSE;
+    const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
+    return pHeader->Reserved0 != 0;
+}
+
 CHECK WebcilDecoder::CheckWebcilHeaders() const
 {
     CONTRACT_CHECK
@@ -741,11 +750,17 @@ BOOL WebcilDecoder::HasDirectoryEntry(int entry) const
     LIMITED_METHOD_CONTRACT;
 
     // Webcil has no PE IMAGE_DATA_DIRECTORY array.
-    // Only the debug directory is stored in the WebcilHeader.
+    // Only the debug directory and base relocation directory are supported.
     if (entry == IMAGE_DIRECTORY_ENTRY_DEBUG && HasWebcilHeaders())
     {
         const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
         return pHeader->PeDebugRva != 0 && pHeader->PeDebugSize != 0;
+    }
+
+    if (entry == IMAGE_DIRECTORY_ENTRY_BASERELOC && HasWebcilHeaders())
+    {
+        const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
+        return pHeader->Reserved0 != 0;
     }
 
     return FALSE;
@@ -781,6 +796,36 @@ TADDR WebcilDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
             *pSize = debugSize;
 
         return GetRvaData(debugRva);
+    }
+
+    // Base relocations: Reserved0 is the 1-based index of the relocations section
+    if (entry == IMAGE_DIRECTORY_ENTRY_BASERELOC && HasWebcilHeaders())
+    {
+        const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
+        uint16_t relocSectionIndex = pHeader->Reserved0;
+        if (relocSectionIndex == 0)
+        {
+            if (pSize != NULL)
+                *pSize = 0;
+            return (TADDR)0;
+        }
+
+        // Convert from 1-based to 0-based index and validate
+        uint16_t sectionIndex = relocSectionIndex - 1;
+        if (sectionIndex >= pHeader->CoffSections)
+        {
+            if (pSize != NULL)
+                *pSize = 0;
+            return (TADDR)0;
+        }
+
+        const WebcilSectionHeader *sections = (const WebcilSectionHeader *)(m_base + sizeof(WebcilHeader));
+        const WebcilSectionHeader *relocSection = &sections[sectionIndex];
+
+        if (pSize != NULL)
+            *pSize = relocSection->SizeOfRawData;
+
+        return (TADDR)(m_base + relocSection->PointerToRawData);
     }
 
     if (pSize != NULL)

@@ -48,7 +48,7 @@ struct WebcilHeader
     uint16_t VersionMajor;   // 0
     uint16_t VersionMinor;   // 0
     uint16_t CoffSections;
-    uint16_t Reserved0;
+    uint16_t Reserved0;      // 1-based index of the base relocations section, or 0 if none
     uint32_t PeCliHeaderRva;
     uint32_t PeCliHeaderSize;
     uint32_t PeDebugRva;
@@ -151,7 +151,7 @@ private:
     BOOL HasNTHeaders() const { return FALSE; }
     CHECK CheckNTHeaders() const;
     BOOL Has32BitNTHeaders() const { return FALSE; }
-    BOOL HasBaseRelocations() const { return FALSE; }
+    BOOL HasBaseRelocations() const;
     BOOL HasWriteableSections() const { return FALSE; }
     BOOL HasTls() const { return FALSE; }
 
