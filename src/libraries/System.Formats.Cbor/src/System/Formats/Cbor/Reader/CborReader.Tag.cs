@@ -293,24 +293,10 @@ namespace System.Formats.Cbor
         }
 
         private static BigInteger CreateBigIntegerFromUnsignedBigEndianBytes(byte[] bigEndianBytes)
-        {
-            if (bigEndianBytes.Length == 0)
-                return new BigInteger(bigEndianBytes);
-
-            byte[] temp;
-            if ((bigEndianBytes[0] & 0x80) != 0)
-            {
-                var bytesPlusOne = new byte[bigEndianBytes.Length + 1];
-                bigEndianBytes.CopyTo(bytesPlusOne.AsSpan(1));
-                temp = bytesPlusOne;
-            }
-            else
-            {
-                temp = bigEndianBytes;
-            }
-
-            temp.AsSpan().Reverse();
-            return new BigInteger(temp);
-        }
+#if NET
+            => new BigInteger(bigEndianBytes, isUnsigned: true, isBigEndian: true);
+#else
+            => BigIntegerPolyfills.Create(bigEndianBytes, isUnsigned: true, isBigEndian: true);
+#endif
     }
 }
