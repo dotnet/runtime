@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Globalization
@@ -242,6 +243,7 @@ namespace System.Globalization
             }
         }
 
+        [RequiresUnsafe]
         private unsafe int FindString(
                     uint dwFindNLSStringFlags,
                     ReadOnlySpan<char> lpStringSource,
@@ -293,6 +295,7 @@ namespace System.Globalization
             }
         }
 
+        [RequiresUnsafe]
         private unsafe int NlsIndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -304,6 +307,7 @@ namespace System.Globalization
             return FindString(positionFlag | (uint)GetNativeCompareFlags(options), source, target, matchLengthPtr);
         }
 
+        [RequiresUnsafe]
         private unsafe bool NlsStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -325,6 +329,7 @@ namespace System.Globalization
             return false;
         }
 
+        [RequiresUnsafe]
         private unsafe bool NlsEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

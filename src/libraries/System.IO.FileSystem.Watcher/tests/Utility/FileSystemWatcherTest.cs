@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -21,7 +22,7 @@ namespace System.IO.Tests
         // going to fail the test.  If we don't expect an event to occur, then we need
         // to keep the timeout short, as in a successful run we'll end up waiting for
         // the entire timeout specified.
-        public const int WaitForExpectedEventTimeout = 500;         // ms to wait for an event to happen
+        public const int WaitForExpectedEventTimeout = 1000;         // ms to wait for an event to happen
         public const int LongWaitTimeout = 50000;                   // ms to wait for an event that takes a longer time than the average operation
         public const int SubsequentExpectedWait = 10;               // ms to wait for checks that occur after the first.
         public const int WaitForExpectedEventTimeout_NoRetry = 3000;// ms to wait for an event that isn't surrounded by a retry.
@@ -503,6 +504,16 @@ namespace System.IO.Tests
 
             public override string ToString() => $"{EventType} {Dir1} {Dir2}";
 
+        }
+
+        // Returns a predicate that returns true for events that should be filtered out.
+        // Events whose type matches filteredTypes are always filtered; remaining events are deduplicated
+        // so that only the first occurrence passes through.
+        // Used on platforms like macOS where FSEvents may deliver the same event more than once.
+        internal static Func<FiredEvent, bool> CreateDeduplicatingFilter(WatcherChangeTypes filteredTypes = 0)
+        {
+            var seenEvents = new ConcurrentDictionary<FiredEvent, bool>();
+            return firedEvent => (firedEvent.EventType & filteredTypes) != 0 || !seenEvents.TryAdd(firedEvent, true);
         }
 
         // Observe until an expected count of events is triggered, otherwise fail. Return all filtered events.

@@ -173,7 +173,10 @@ namespace System.IO.Tests
             Action action = () => Array.ForEach(dirs, dir => Directory.Move(dir.DirectoryInWatchedDir, dir.DirectoryInUnwatchedDir));
 
             // Filter out Created events as there is a race-condition when moving a directory and then observing a parent folder. It receives Create event although Watcher is not registered yet.
-            Func<FiredEvent, bool>? isFilteredOut = skipOldEvents ? x => x.EventType == WatcherChangeTypes.Created : null;
+            // Also filter out duplicate events as Mac FSEvents can deliver the same Deleted event multiple times.
+            Func<FiredEvent, bool>? isFilteredOut = skipOldEvents
+                ? CreateDeduplicatingFilter(WatcherChangeTypes.Created)
+                : null;
 
             IEnumerable<FiredEvent> events = ExpectEvents(watcher, filesCount, action, isFilteredOut);
 

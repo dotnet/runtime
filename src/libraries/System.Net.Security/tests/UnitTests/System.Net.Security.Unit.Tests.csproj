@@ -34,8 +34,12 @@
     <Compile Include="$(CommonTestPath)System\Net\Security\FakeNegotiateServer.cs"
              Link="Common\System\Net\Security\FakeNegotiateServer.cs" />
     <!-- Common test files -->
-    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs"
-             Link="Common\System\AppContextSwitchHelper.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="Common\System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\LocalAppContextSwitches.Net.cs"
+             Link="Common\System\Net\LocalAppContextSwitches.Net.cs" />
+    <Compile Include="..\..\src\System\Net\Security\LocalAppContextSwitches.cs"
+             Link="ProductionCode\System\Net\Security\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"

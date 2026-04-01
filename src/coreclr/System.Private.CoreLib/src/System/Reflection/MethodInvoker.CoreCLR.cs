@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
 
 namespace System.Reflection
@@ -30,9 +31,11 @@ namespace System.Reflection
             _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
         }
 
+        [RequiresUnsafe]
         private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr* args) =>
             RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: false);
 
+        [RequiresUnsafe]
         private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr* args) =>
             RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: obj is null);
     }

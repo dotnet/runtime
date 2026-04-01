@@ -14,9 +14,9 @@ namespace System.Speech.Recognition
 
         void SetGrammarPriority(Grammar grammar, int priority);
 
-        Grammar GetGrammarFromId(ulong id);
+        Grammar? GetGrammarFromId(ulong id);
 
-        void SetDictationContext(Grammar grammar, string precedingText, string subsequentText);
+        void SetDictationContext(Grammar grammar, string? precedingText, string? subsequentText);
 
         #endregion
     }

@@ -3603,24 +3603,28 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1h_scatter_[s64]index[_s64](svbool_t pg, int16_t *base, svint64_t indices, svint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitNarrowingNonTemporal(Vector<long> mask, short* address, Vector<long> indices, Vector<long> data) => Scatter16BitNarrowingNonTemporal(mask, address, indices, data);
 
         /// <summary>
         /// void svstnt1h_scatter_[u64]index[_s64](svbool_t pg, int16_t *base, svuint64_t indices, svint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitNarrowingNonTemporal(Vector<long> mask, short* address, Vector<ulong> indices, Vector<long> data) => Scatter16BitNarrowingNonTemporal(mask, address, indices, data);
 
         /// <summary>
         /// void svstnt1h_scatter_[s64]index[_u64](svbool_t pg, uint16_t *base, svint64_t indices, svuint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitNarrowingNonTemporal(Vector<ulong> mask, ushort* address, Vector<long> indices, Vector<ulong> data) => Scatter16BitNarrowingNonTemporal(mask, address, indices, data);
 
         /// <summary>
         /// void svstnt1h_scatter_[u64]index[_u64](svbool_t pg, uint16_t *base, svuint64_t indices, svuint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitNarrowingNonTemporal(Vector<ulong> mask, ushort* address, Vector<ulong> indices, Vector<ulong> data) => Scatter16BitNarrowingNonTemporal(mask, address, indices, data);
 
 
@@ -3630,36 +3634,42 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1h_scatter_[u32]offset[_s32](svbool_t pg, int16_t *base, svuint32_t offsets, svint32_t data)
         ///   STNT1H Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<int> mask, short* address, Vector<uint> offsets, Vector<int> data) => Scatter16BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1h_scatter_[s64]offset[_s64](svbool_t pg, int16_t *base, svint64_t offsets, svint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, short* address, Vector<long> offsets, Vector<long> data) => Scatter16BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1h_scatter_[u64]offset[_s64](svbool_t pg, int16_t *base, svuint64_t offsets, svint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, short* address, Vector<ulong> offsets, Vector<long> data) => Scatter16BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1h_scatter_[u32]offset[_u32](svbool_t pg, uint16_t *base, svuint32_t offsets, svuint32_t data)
         ///   STNT1H Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<uint> mask, ushort* address, Vector<uint> offsets, Vector<uint> data) => Scatter16BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1h_scatter_[s64]offset[_u64](svbool_t pg, uint16_t *base, svint64_t offsets, svuint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, ushort* address, Vector<long> offsets, Vector<ulong> data) => Scatter16BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1h_scatter_[u64]offset[_u64](svbool_t pg, uint16_t *base, svuint64_t offsets, svuint64_t data)
         ///   STNT1H Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter16BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, ushort* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter16BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
 
@@ -3681,24 +3691,28 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1w_scatter_[s64]index[_s64](svbool_t pg, int32_t *base, svint64_t indices, svint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitNarrowingNonTemporal(Vector<long> mask, int* address, Vector<long> indices, Vector<long> data) => Scatter32BitNarrowingNonTemporal(mask, address, indices, data);
 
         /// <summary>
         /// void svstnt1w_scatter_[u64]index[_s64](svbool_t pg, int32_t *base, svuint64_t indices, svint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitNarrowingNonTemporal(Vector<long> mask, int* address, Vector<ulong> indices, Vector<long> data) => Scatter32BitNarrowingNonTemporal(mask, address, indices, data);
 
         /// <summary>
         /// void svstnt1w_scatter_[s64]index[_u64](svbool_t pg, uint32_t *base, svint64_t indices, svuint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitNarrowingNonTemporal(Vector<ulong> mask, uint* address, Vector<long> indices, Vector<ulong> data) => Scatter32BitNarrowingNonTemporal(mask, address, indices, data);
 
         /// <summary>
         /// void svstnt1w_scatter_[u64]index[_u64](svbool_t pg, uint32_t *base, svuint64_t indices, svuint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitNarrowingNonTemporal(Vector<ulong> mask, uint* address, Vector<ulong> indices, Vector<ulong> data) => Scatter32BitNarrowingNonTemporal(mask, address, indices, data);
 
 
@@ -3708,24 +3722,28 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1w_scatter_[s64]offset[_s64](svbool_t pg, int32_t *base, svint64_t offsets, svint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, int* address, Vector<long> offsets, Vector<long> data) => Scatter32BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1w_scatter_[u64]offset[_s64](svbool_t pg, int32_t *base, svuint64_t offsets, svint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, int* address, Vector<ulong> offsets, Vector<long> data) => Scatter32BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1w_scatter_[s64]offset[_u64](svbool_t pg, uint32_t *base, svint64_t offsets, svuint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, uint* address, Vector<long> offsets, Vector<ulong> data) => Scatter32BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1w_scatter_[u64]offset[_u64](svbool_t pg, uint32_t *base, svuint64_t offsets, svuint64_t data)
         ///   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter32BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, uint* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter32BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
 
@@ -3764,36 +3782,42 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1b_scatter_[u32]offset[_s32](svbool_t pg, int8_t *base, svuint32_t offsets, svint32_t data)
         ///   STNT1B Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<int> mask, sbyte* address, Vector<uint> offsets, Vector<int> data) => Scatter8BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1b_scatter_[s64]offset[_s64](svbool_t pg, int8_t *base, svint64_t offsets, svint64_t data)
         ///   STNT1B Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, sbyte* address, Vector<long> offsets, Vector<long> data) => Scatter8BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1b_scatter_[u64]offset[_s64](svbool_t pg, int8_t *base, svuint64_t offsets, svint64_t data)
         ///   STNT1B Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<long> mask, sbyte* address, Vector<ulong> offsets, Vector<long> data) => Scatter8BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1b_scatter_[u32]offset[_u32](svbool_t pg, uint8_t *base, svuint32_t offsets, svuint32_t data)
         ///   STNT1B Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<uint> mask, byte* address, Vector<uint> offsets, Vector<uint> data) => Scatter8BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1b_scatter_[s64]offset[_u64](svbool_t pg, uint8_t *base, svint64_t offsets, svuint64_t data)
         ///   STNT1B Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, byte* address, Vector<long> offsets, Vector<ulong> data) => Scatter8BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1b_scatter_[u64]offset[_u64](svbool_t pg, uint8_t *base, svuint64_t offsets, svuint64_t data)
         ///   STNT1B Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void Scatter8BitWithByteOffsetsNarrowingNonTemporal(Vector<ulong> mask, byte* address, Vector<ulong> offsets, Vector<ulong> data) => Scatter8BitWithByteOffsetsNarrowingNonTemporal(mask, address, offsets, data);
 
 
@@ -3842,36 +3866,42 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1_scatter_[s64]index[_f64](svbool_t pg, float64_t *base, svint64_t indices, svfloat64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<double> mask, double* address, Vector<long> indices, Vector<double> data) => ScatterNonTemporal(mask, address, indices, data);
 
         /// <summary>
         /// void svstnt1_scatter_[u64]index[_f64](svbool_t pg, float64_t *base, svuint64_t indices, svfloat64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<double> mask, double* address, Vector<ulong> indices, Vector<double> data) => ScatterNonTemporal(mask, address, indices, data);
 
         /// <summary>
         /// void svstnt1_scatter_[s64]index[_s64](svbool_t pg, int64_t *base, svint64_t indices, svint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<long> mask, long* address, Vector<long> indices, Vector<long> data) => ScatterNonTemporal(mask, address, indices, data);
 
         /// <summary>
         /// void svstnt1_scatter_[u64]index[_s64](svbool_t pg, int64_t *base, svuint64_t indices, svint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<long> mask, long* address, Vector<ulong> indices, Vector<long> data) => ScatterNonTemporal(mask, address, indices, data);
 
         /// <summary>
         /// void svstnt1_scatter_[s64]index[_u64](svbool_t pg, uint64_t *base, svint64_t indices, svuint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<ulong> mask, ulong* address, Vector<long> indices, Vector<ulong> data) => ScatterNonTemporal(mask, address, indices, data);
 
         /// <summary>
         /// void svstnt1_scatter_[u64]index[_u64](svbool_t pg, uint64_t *base, svuint64_t indices, svuint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterNonTemporal(Vector<ulong> mask, ulong* address, Vector<ulong> indices, Vector<ulong> data) => ScatterNonTemporal(mask, address, indices, data);
 
 
@@ -3881,54 +3911,63 @@ namespace System.Runtime.Intrinsics.Arm
         /// void svstnt1_scatter_[s64]offset[_f64](svbool_t pg, float64_t *base, svint64_t offsets, svfloat64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<double> mask, double* address, Vector<long> offsets, Vector<double> data) => ScatterWithByteOffsetsNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1_scatter_[u64]offset[_f64](svbool_t pg, float64_t *base, svuint64_t offsets, svfloat64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<double> mask, double* address, Vector<ulong> offsets, Vector<double> data) => ScatterWithByteOffsetsNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1_scatter_[u32]offset[_s32](svbool_t pg, int32_t *base, svuint32_t offsets, svint32_t data)
         ///   STNT1W Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<int> mask, int* address, Vector<uint> offsets, Vector<int> data) => ScatterWithByteOffsetsNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1_scatter_[s64]offset[_s64](svbool_t pg, int64_t *base, svint64_t offsets, svint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<long> mask, long* address, Vector<long> offsets, Vector<long> data) => ScatterWithByteOffsetsNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1_scatter_[u64]offset[_s64](svbool_t pg, int64_t *base, svuint64_t offsets, svint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<long> mask, long* address, Vector<ulong> offsets, Vector<long> data) => ScatterWithByteOffsetsNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1_scatter_[u32]offset[_f32](svbool_t pg, float32_t *base, svuint32_t offsets, svfloat32_t data)
         ///   STNT1W Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<float> mask, float* address, Vector<uint> offsets, Vector<float> data) => ScatterWithByteOffsetsNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1_scatter_[u32]offset[_u32](svbool_t pg, uint32_t *base, svuint32_t offsets, svuint32_t data)
         ///   STNT1W Zdata.S, Pg, [Zoffsets.S, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<uint> mask, uint* address, Vector<uint> offsets, Vector<uint> data) => ScatterWithByteOffsetsNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1_scatter_[s64]offset[_u64](svbool_t pg, uint64_t *base, svint64_t offsets, svuint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<ulong> mask, ulong* address, Vector<long> offsets, Vector<ulong> data) => ScatterWithByteOffsetsNonTemporal(mask, address, offsets, data);
 
         /// <summary>
         /// void svstnt1_scatter_[u64]offset[_u64](svbool_t pg, uint64_t *base, svuint64_t offsets, svuint64_t data)
         ///   STNT1D Zdata.D, Pg, [Zoffsets.D, Xbase]
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void ScatterWithByteOffsetsNonTemporal(Vector<ulong> mask, ulong* address, Vector<ulong> offsets, Vector<ulong> data) => ScatterWithByteOffsetsNonTemporal(mask, address, offsets, data);
 
 
