@@ -124,6 +124,7 @@ namespace System.IO.Compression
         public int ExternalAttributes { get { throw null; } set { } }
         public string FullName { get { throw null; } }
         public bool IsEncrypted { get { throw null; } }
+        public System.IO.Compression.ZipEncryptionMethod EncryptionMethod { get { throw null; } }
         public System.DateTimeOffset LastWriteTime { get { throw null; } set { } }
         public long Length { get { throw null; } }
         public string Name { get { throw null; } }

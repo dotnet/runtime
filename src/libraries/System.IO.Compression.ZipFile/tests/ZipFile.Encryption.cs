@@ -1560,5 +1560,39 @@ namespace System.IO.Compression.Tests
 
         #endregion
 
+        [Theory]
+        [InlineData(ZipEncryptionMethod.None)]
+        [InlineData(ZipEncryptionMethod.ZipCrypto)]
+        [InlineData(ZipEncryptionMethod.Aes128)]
+        [InlineData(ZipEncryptionMethod.Aes192)]
+        [InlineData(ZipEncryptionMethod.Aes256)]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
+        public void EncryptionMethod_Property_ReflectsEntryEncryption(ZipEncryptionMethod expectedMethod)
+        {
+            string archivePath = GetTempArchivePath();
+            string entryName = "test.txt";
+            string content = "Hello";
+            string password = "password123";
+
+            using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            {
+                ZipArchiveEntry entry = expectedMethod != ZipEncryptionMethod.None
+                    ? archive.CreateEntry(entryName, password, expectedMethod)
+                    : archive.CreateEntry(entryName);
+
+                using (StreamWriter writer = new StreamWriter(entry.Open()))
+                {
+                    writer.Write(content);
+                }
+            }
+
+            using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry entry = archive.GetEntry(entryName)!;
+                Assert.Equal(expectedMethod, entry.EncryptionMethod);
+                Assert.Equal(expectedMethod != ZipEncryptionMethod.None, entry.IsEncrypted);
+            }
+        }
+
     }
 }

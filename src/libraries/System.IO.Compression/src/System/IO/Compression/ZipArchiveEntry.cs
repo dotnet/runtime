@@ -94,6 +94,12 @@ namespace System.IO.Compression
                     _ => throw new InvalidDataException(SR.InvalidAesStrength)
                 };
             }
+            else if (_isEncrypted)
+            {
+                // Encrypted but no AES extra field means ZipCrypto
+                Encryption = ZipEncryptionMethod.ZipCrypto;
+                CompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
+            }
             else
             {
                 // Non-AES entry: compression method from CD is the real method
@@ -204,6 +210,17 @@ namespace System.IO.Compression
         /// Gets a value that indicates whether the entry is encrypted.
         /// </summary>
         public bool IsEncrypted => _isEncrypted;
+
+        /// <summary>
+        /// Gets the encryption method used to encrypt the entry.
+        /// </summary>
+        /// <value>
+        /// <see cref="ZipEncryptionMethod.None"/> if the entry is not encrypted;
+        /// otherwise, the specific encryption method (e.g., <see cref="ZipEncryptionMethod.ZipCrypto"/>,
+        /// <see cref="ZipEncryptionMethod.Aes128"/>, <see cref="ZipEncryptionMethod.Aes192"/>,
+        /// or <see cref="ZipEncryptionMethod.Aes256"/>).
+        /// </value>
+        public ZipEncryptionMethod EncryptionMethod => _encryptionMethod;
 
         /// <summary>
         /// Gets the compression method used to compress the entry.
