@@ -75,10 +75,9 @@ automatically:
   `az login` from prerequisites)
 - **GitHub API (triage)** — the agent uses GitHub MCP tools built into Copilot
   CLI, authenticated via your Copilot CLI login. No separate configuration needed.
-- **GitHub API (validation)** — `validate_results.py` makes a small number of
-  unauthenticated spot-check searches against `api.github.com` to verify NEW
-  failures. Subject to GitHub's unauthenticated rate limit (10 searches/minute),
-  which is sufficient for typical runs with few NEW failures.
+- **GitHub API (validation)** — `validate_results.py` spot-checks NEW failures
+  against the unauthenticated GitHub Search API (`api.github.com`). Rate-limited
+  to 10 searches/minute, with automatic pauses between requests. No auth needed.
 
 ## How It Works
 

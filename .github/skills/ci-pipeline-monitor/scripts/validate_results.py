@@ -12,7 +12,6 @@ import json
 import os
 import re
 import sqlite3
-import subprocess
 import sys
 import time
 import urllib.error
@@ -392,6 +391,8 @@ def main():
     # 16d. Verify NEW failures have no matching GitHub issue by searching GitHub API.
     # The LLM may skip or fabricate search results. This check actually hits the
     # GitHub Search API for each NEW failure's test_name to confirm no issue exists.
+    # Uses unauthenticated API (10 req/min). For >10 NEW failures, searches are
+    # batched with rate-limit pauses.
     total += 1
     new_failures = conn.execute("""
         SELECT id, title, test_name FROM failures
@@ -399,46 +400,30 @@ def main():
     """).fetchall()
     missed_matches = []
     search_failures = 0
-    gh_available = subprocess.run(
-        ["gh", "auth", "status"], capture_output=True, timeout=10
-    ).returncode == 0 if new_failures else True
-    if not gh_available:
-        print("    [INFO] gh CLI not authenticated — running 'gh auth login'...")
-        subprocess.run(["gh", "auth", "login"], timeout=120)
-        gh_available = subprocess.run(
-            ["gh", "auth", "status"], capture_output=True, timeout=10
-        ).returncode == 0
-    if not gh_available:
-        print("    [INFO] gh CLI still not authenticated — falling back to unauthenticated GitHub Search API")
-    for r in new_failures:
+    batch_start = time.monotonic()
+    for i, r in enumerate(new_failures):
+        # Unauthenticated rate limit: 10 req/min — pause after every 10th request
+        if i > 0 and i % 10 == 0:
+            elapsed = time.monotonic() - batch_start
+            wait = 60 - elapsed
+            if wait > 0:
+                print(f"    [INFO] Rate limit: pausing {wait:.0f}s before next batch")
+                time.sleep(wait)
+            batch_start = time.monotonic()
         test_name = r["test_name"]
         found_issue = None
         try:
-            if gh_available:
-                result = subprocess.run(
-                    ["gh", "api", "search/issues",
-                     "-f", f"q={test_name} repo:dotnet/runtime is:issue",
-                     "-f", "per_page=5"],
-                    capture_output=True, text=True, timeout=30
-                )
-                if result.returncode != 0:
-                    print(f"    [WARN] GitHub search failed for '{test_name}': {result.stderr.strip()}")
-                    search_failures += 1
-                    continue
-                data = json.loads(result.stdout)
-            else:
-                q = urllib.parse.quote(test_name)
-                url = (
-                    f"https://api.github.com/search/issues?"
-                    f"q={q}+repo:dotnet/runtime+is:issue&per_page=5"
-                )
-                req = urllib.request.Request(url, headers={
-                    "Accept": "application/vnd.github+json",
-                    "User-Agent": "ci-pipeline-monitor-validator",
-                })
-                with urllib.request.urlopen(req, timeout=15) as resp:
-                    data = json.loads(resp.read())
-                time.sleep(6)  # unauthenticated rate limit: 10 req/min
+            q = urllib.parse.quote(test_name)
+            url = (
+                f"https://api.github.com/search/issues?"
+                f"q={q}+repo:dotnet/runtime+is:issue&per_page=5"
+            )
+            req = urllib.request.Request(url, headers={
+                "Accept": "application/vnd.github+json",
+                "User-Agent": "ci-pipeline-monitor-validator",
+            })
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read())
             for item in data.get("items", []):
                 title = item.get("title", "")
                 body = item.get("body", "") or ""
