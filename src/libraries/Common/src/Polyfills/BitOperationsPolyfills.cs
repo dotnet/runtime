@@ -28,15 +28,10 @@ internal static class BitOperations
     /// Returns the integer (floor) log of the specified value, base 2.
     /// Note that by convention, input value 0 returns 0 since log(0) is undefined.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int Log2(uint value) =>
-        // Fallback contract is 0->0
-        Log2SoftwareFallback(value | 1);
-
-    private static int Log2SoftwareFallback(uint value)
+    public static int Log2(uint value)
     {
-        // No AggressiveInlining due to large method size
-        // Has conventional contract 0->0 (Log(0) is undefined)
+        value |= 1;
+
 
         // Fill trailing zeros with ones, eg 00010010 becomes 00011111
         value |= value >> 01;
