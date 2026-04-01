@@ -15,8 +15,7 @@ Update OS version references in Helix queue definition files. These files contro
 
 ## When to use
 
-- A new OS version is released and should be added to Helix testing
-- A new OS version is expected to ship within 3 months (one quarter) and a prereqs container image already exists — this is a good candidate for early onboarding to `main`
+- A new OS version is released (or expected to ship within one quarter and a prereqs container image already exists) and should be added to Helix testing
 - An OS version is approaching or has reached EOL and should be replaced
 - Periodic audit to ensure Helix coverage matches the supported-os matrix (for example, [`release-notes/11.0/supported-os.json`](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.json); update the version segment to match your target)
 - Upgrading "oldest" or "latest" version slots for a distro
@@ -52,22 +51,10 @@ This file defines named variables following a consistent pattern:
 # <Distro> <arch>
 # Latest: <version>
 - name: helix_linux_x64_<distro>_latest
-  value: (<QueueName>)<HostQueue>@<container-image>
-
-# Oldest: <version>
-- name: helix_linux_x64_<distro>_oldest
-  value: (<QueueName>)<HostQueue>@<container-image>
+  value: (<QueueName>)<HostQueue>@mcr.microsoft.com/dotnet-buildtools/prereqs:<image-tag>
 ```
 
-The value format for container-based queues is:
-```
-(<QueueName>)<HostQueue>@mcr.microsoft.com/dotnet-buildtools/prereqs:<image-tag>
-```
-
-Where:
-- `<QueueName>` — Helix queue identifier, e.g. `Fedora.44.Amd64.Open`
-- `<HostQueue>` — physical host queue, e.g. `AzureLinux.3.Amd64.Open`
-- `<image-tag>` — container image tag, e.g. `fedora-44-helix-amd64`
+Where `<QueueName>` is the Helix queue identifier (e.g. `Fedora.44.Amd64.Open`), `<HostQueue>` is the physical host queue (e.g. `AzureLinux.3.Amd64.Open`), and `<image-tag>` is the container image tag (e.g. `fedora-44-helix-amd64`).
 
 Some platform variables have `_internal` counterparts (e.g. `helix_linux_x64_oldest_internal`, `helix_linux_musl_arm32_latest_internal`) that use the same queue/image but drop the `.Open` suffix. When an `_internal` counterpart exists, update both the `.Open` and `_internal` entries.
 
@@ -102,28 +89,10 @@ curl -sL https://github.com/dotnet/versions/raw/refs/heads/main/build-info/docke
   | jq '[.repos[].images[].platforms[].simpleTags[]] | map(select(startswith("<distro>-<version>"))) | sort | .[]'
 ```
 
-Examples:
-```bash
-# Check for Fedora 44 images
-curl -sL https://github.com/dotnet/versions/raw/refs/heads/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json \
-  | jq '[.repos[].images[].platforms[].simpleTags[]] | map(select(startswith("fedora-44"))) | sort | .[]'
-
-# Check for Ubuntu 26.04 images
-curl -sL https://github.com/dotnet/versions/raw/refs/heads/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json \
-  | jq '[.repos[].images[].platforms[].simpleTags[]] | map(select(startswith("ubuntu-26.04"))) | sort | .[]'
-```
-
-If the image is **not found**, stop and inform the user. The image must be created first at [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker). Check if an issue or PR already exists:
+If the image is **not found**, stop and inform the user. The image must be created first at [dotnet/dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker). Check if an open issue or PR already exists:
 
 ```bash
 gh search issues "<distro> <version>" --repo dotnet/dotnet-buildtools-prereqs-docker --state open
-```
-
-If `gh` is not authenticated, use the GitHub API directly:
-
-```bash
-curl -s "https://api.github.com/search/issues?q=repo:dotnet/dotnet-buildtools-prereqs-docker+state:open+<distro>+<version>" \
-  | jq '.items[] | {title, html_url}'
 ```
 
 ### 2. Check EOL dates
@@ -164,7 +133,6 @@ For each reference found in step 3:
 2. **Update `helix-queues-setup.yml` files** — libraries, coreclr, and installer templates
    - Search for inline references to the old version and update them
    - These are direct queue strings, not variable references
-   - Not all distros appear in all files — only update references that exist
 
 3. **Version naming conventions** — follow existing patterns exactly:
 
@@ -190,17 +158,7 @@ For each reference found in step 3:
 
 After editing, verify:
 
-1. **No stale references remain:**
-   ```bash
-   grep -rn -i "<old-version-pattern>" \
-     eng/pipelines/helix-platforms.yml \
-     eng/pipelines/libraries/helix-queues-setup.yml \
-     eng/pipelines/coreclr/templates/helix-queues-setup.yml \
-     eng/pipelines/installer/helix-queues-setup.yml \
-     eng/pipelines/common/templates/pipeline-with-resources.yml \
-     docs/workflow/using-docker.md
-   ```
-   Stale references to the old version are acceptable only if intentionally kept (e.g. the version is still used for `oldest`).
+1. **No stale references remain** — re-run the grep from step 3, replacing the distro name with the old version pattern. Stale references are acceptable only if intentionally kept (e.g. the version is still used for `oldest`).
 
 2. **All new references are syntactically consistent** — compare with adjacent entries in the same file to verify formatting.
 
@@ -269,18 +227,7 @@ Check if the relevant `supported-os.json` in dotnet/core needs corresponding upd
 
 ### 9. Create PR
 
-1. Create a branch:
-   ```bash
-   git checkout -b update-helix-<distro>-<version>
-   ```
-
-2. Commit changes:
-   ```bash
-   git add eng/pipelines/
-   git commit -m "Update <distro> Helix queues to <version>"
-   ```
-
-3. The PR description should include:
+The PR description should include:
    - Table of changes (old version → new version, which slots)
    - EOL dates for old and new versions
    - Confirmation that container images are available
