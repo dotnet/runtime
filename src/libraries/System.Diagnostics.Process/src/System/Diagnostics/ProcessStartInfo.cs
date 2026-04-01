@@ -214,9 +214,13 @@ namespace System.Diagnostics
         /// Concurrent calls to <see cref="Process.Start()"/> or <see cref="SafeProcessHandle.Start(ProcessStartInfo)"/> that share the same <see cref="InheritedHandles"/> list instance
         /// are not supported. The list must not be modified while a process start is in progress.
         /// </para>
-        /// <remarks>
+        /// <para>
+        /// Two concurrent process starts that use different <see cref="InheritedHandles"/> list instances but contain the same <see cref="SafeHandle"/> object
+        /// are not supported. The implementation temporarily modifies each handle's inheritance flags and this is not thread-safe across concurrent starts sharing the same handle.
+        /// </para>
+        /// <para>
         /// This API can't be used together with <see cref="UseShellExecute"/> set to <see langword="true"/> or when specifying a user name via the <see cref="UserName"/> property.
-        /// </remarks>
+        /// </para>
         /// <para>
         /// On Windows, the implementation will temporarily enable inheritance on each handle in this list
         /// by modifying the handle's flags using <see href="https://learn.microsoft.com/windows/win32/api/handleapi/nf-handleapi-sethandleinformation">SetHandleInformation</see>.
@@ -347,7 +351,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal void ThrowIfInvalid(out bool anyRedirection)
+        internal void ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles)
         {
             if (FileName.Length == 0)
             {
@@ -393,11 +397,15 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
             }
 
+            // Snapshot the list to prevent TOCTOU races: a caller could mutate InheritedHandles
+            // between validation and the actual CreateProcess/fork-exec call.
             if (InheritedHandles is not null)
             {
-                for (int i = 0; i < InheritedHandles.Count; i++)
+                IList<SafeHandle> list = InheritedHandles;
+                var snapshot = new SafeHandle[list.Count];
+                for (int i = 0; i < snapshot.Length; i++)
                 {
-                    SafeHandle? handle = InheritedHandles[i];
+                    SafeHandle? handle = list[i];
                     if (handle is null)
                     {
                         throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
@@ -407,7 +415,13 @@ namespace System.Diagnostics
                         throw new ArgumentException(SR.Arg_InvalidHandle, nameof(InheritedHandles));
                     }
                     ObjectDisposedException.ThrowIf(handle.IsClosed, handle);
+                    snapshot[i] = handle;
                 }
+                inheritedHandles = snapshot;
+            }
+            else
+            {
+                inheritedHandles = null;
             }
 
             if (anyHandle)

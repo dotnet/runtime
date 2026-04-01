@@ -83,7 +83,7 @@ internal static partial class Interop
             void* lpValue,
             nuint cbSize,
             void* lpPreviousValue,
-            nuint lpReturnSize);
+            nuint* lpReturnSize);
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static unsafe partial void DeleteProcThreadAttributeList(void* lpAttributeList);

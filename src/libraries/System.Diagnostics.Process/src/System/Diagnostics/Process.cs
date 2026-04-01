@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Text;
@@ -1245,7 +1246,7 @@ namespace System.Diagnostics
             Close();
 
             ProcessStartInfo startInfo = StartInfo;
-            startInfo.ThrowIfInvalid(out bool anyRedirection);
+            startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
 
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
@@ -1327,7 +1328,7 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle))
+                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles))
                 {
                     return false;
                 }

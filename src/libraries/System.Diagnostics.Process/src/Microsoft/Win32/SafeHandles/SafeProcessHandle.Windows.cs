@@ -21,7 +21,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private static Func<ProcessStartInfo, SafeProcessHandle>? s_startWithShellExecute;
 
-        internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
+        internal static unsafe SafeProcessHandle StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandlesSnapshot = null)
         {
             if (startInfo.UseShellExecute)
                 return s_startWithShellExecute!(startInfo);
@@ -43,7 +43,7 @@ namespace Microsoft.Win32.SafeHandles
             SafeFileHandle? inheritableStdoutHandle = null;
             SafeFileHandle? inheritableStderrHandle = null;
 
-            IList<SafeHandle>? inheritedHandles = startInfo.InheritedHandles;
+            SafeHandle[]? inheritedHandles = inheritedHandlesSnapshot;
             bool hasInheritedHandles = inheritedHandles is not null;
 
             // When InheritedHandles is set, we use PROC_THREAD_ATTRIBUTE_HANDLE_LIST to restrict inheritance.
@@ -116,7 +116,7 @@ namespace Microsoft.Win32.SafeHandles
                 int handleCount = 0;
                 if (hasInheritedHandles)
                 {
-                    int maxHandleCount = 3 + inheritedHandles!.Count;
+                    int maxHandleCount = 3 + inheritedHandles!.Length;
                     handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)maxHandleCount, (nuint)sizeof(IntPtr));
 
                     // Add the effective stdio handles (already made inheritable via DuplicateAsInheritableIfNeeded)
@@ -201,12 +201,15 @@ namespace Microsoft.Win32.SafeHandles
                     fixed (char* environmentBlockPtr = environmentBlock)
                     fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
                     {
+                        // When InheritedHandles is set but handleCount is 0 (e.g. empty list, no stdio),
+                        // pass false to prevent all inheritable handles from leaking to the child.
+                        bool bInheritHandles = !hasInheritedHandles || handleCount > 0;
                         retVal = Interop.Kernel32.CreateProcess(
                             null,                // we don't need this since all the info is in commandLine
                             commandLinePtr,      // pointer to the command line string
                             ref unused_SecAttrs, // address to process security attributes, we don't need to inherit the handle
                             ref unused_SecAttrs, // address to thread security attributes.
-                            true,                // handle inheritance flag
+                            bInheritHandles,     // handle inheritance flag
                             creationFlags,       // creation flags
                             environmentBlockPtr, // pointer to new environment block
                             workingDirectory,    // pointer to current directory name
@@ -442,19 +445,19 @@ namespace Microsoft.Win32.SafeHandles
                 handlesToInherit,
                 (nuint)(handleCount * sizeof(IntPtr)),
                 null,
-                0))
+                null))
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
         }
 
         private static unsafe void PrepareHandleAllowList(
-            IList<SafeHandle> inheritedHandles,
+            SafeHandle[] inheritedHandles,
             IntPtr* handlesToInherit,
             ref int handleCount,
             ref SafeHandle?[]? handlesToRelease)
         {
-            handlesToRelease = new SafeHandle[inheritedHandles.Count];
+            handlesToRelease = new SafeHandle[inheritedHandles.Length];
             int handleIndex = 0;
 
             foreach (SafeHandle handle in inheritedHandles)
