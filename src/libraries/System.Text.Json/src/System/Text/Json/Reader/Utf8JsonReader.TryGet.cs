@@ -605,7 +605,7 @@ namespace System.Text.Json
             // The following logic reconciles the two implementations to enforce consistent behavior.
             if (!(Utf8Parser.TryParse(span, out value, out int bytesConsumed)
                   && span.Length == bytesConsumed
-                  && JsonHelpers.IsFinite(value)))
+                  && float.IsFinite(value)))
             {
                 ThrowHelper.ThrowFormatException(NumericType.Single);
             }
@@ -662,7 +662,7 @@ namespace System.Text.Json
             // The following logic reconciles the two implementations to enforce consistent behavior.
             if (!(Utf8Parser.TryParse(span, out value, out int bytesConsumed)
                   && span.Length == bytesConsumed
-                  && JsonHelpers.IsFinite(value)))
+                  && double.IsFinite(value)))
             {
                 ThrowHelper.ThrowFormatException(NumericType.Double);
             }

@@ -2031,7 +2031,45 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetJitHelperFunctionName(ip, count, name, pNeeded) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (!_target.Contracts.AuxiliarySymbols.TryGetAuxiliarySymbolName(ip.ToTargetPointer(_target), out string? symbolName))
+                throw new ArgumentException();
+
+            uint needed = 0;
+            OutputBufferHelpers.CopyUtf8StringToBuffer(name, count, &needed, symbolName);
+            if (needed > count && name != null)
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            if (pNeeded != null)
+                *pNeeded = needed;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            byte[]? nameLocal = name != null && count > 0 ? new byte[count] : null;
+            uint neededLocal;
+            int hrLocal;
+            fixed (byte* ptr = nameLocal)
+            {
+                hrLocal = _legacyImpl.GetJitHelperFunctionName(ip, count, ptr, &neededLocal);
+            }
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+                Debug.Assert(name == null || new ReadOnlySpan<byte>(name, (int)neededLocal).SequenceEqual(nameLocal!.AsSpan(0, (int)neededLocal)));
+            }
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetJitManagerList(uint count, DacpJitManagerInfo* managers, uint* pNeeded)
     {
         int hr = HResults.S_OK;
@@ -2583,10 +2621,10 @@ public sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            if (frameAddr == 0 || ppMD == null)
+            if (frameAddr == 0 || ppMD is null)
                 throw new ArgumentException();
 
-            IStackWalk stackWalkContract = _target.Contracts.StackWalk;
+            Contracts.IStackWalk stackWalkContract = _target.Contracts.StackWalk;
             TargetPointer methodDescPtr = stackWalkContract.GetMethodDescPtr(frameAddr.ToTargetPointer(_target));
             if (methodDescPtr == TargetPointer.Null)
                 throw new ArgumentException();
@@ -3864,8 +3902,79 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSStackRefEnum : ISOSStackRefEnum
+    {
+        private readonly SOSStackRefData[] _refs;
+        private uint _index;
+
+        public SOSStackRefEnum(SOSStackRefData[] refs)
+        {
+            _refs = refs;
+        }
+
+        int ISOSStackRefEnum.Next(uint count, SOSStackRefData[] refs, uint* pFetched)
+        {
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pFetched is null || refs is null)
+                    throw new NullReferenceException();
+
+                count = Math.Min(count, (uint)refs.Length);
+                uint written = 0;
+                while (written < count && _index < _refs.Length)
+                    refs[written++] = _refs[(int)_index++];
+
+                *pFetched = written;
+                // COMPAT: S_FALSE means more items remain, S_OK means enumeration is complete.
+                // This is the inverse of the standard COM IEnumXxx convention, but matches
+                // the legacy DAC behavior (see SOSHandleEnum.Next).
+                hr = _index < _refs.Length ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+
+            return hr;
+        }
+
+        int ISOSStackRefEnum.EnumerateErrors(DacComNullableByRef<ISOSStackRefErrorEnum> ppEnum)
+        {
+            return HResults.E_NOTIMPL;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            _index = Math.Min(_index + count, (uint)_refs.Length);
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Reset()
+        {
+            _index = 0;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            if (pCount is null) return HResults.E_POINTER;
+            *pCount = (uint)_refs.Length;
+            return HResults.S_OK;
+        }
+    }
+
     int ISOSDacInterface.GetStackReferences(int osThreadID, DacComNullableByRef<ISOSStackRefEnum> ppEnum)
-        => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
+    {
+        // Stack reference enumeration is not yet complete in the cDAC — capital-F Frame
+        // GC root scanning (ScanFrameRoots) is still pending. Fall through to the legacy
+        // DAC so that consumers (dump tests, SOS) continue to work while the implementation
+        // is in progress.
+        return _legacyImpl is not null
+            ? _legacyImpl.GetStackReferences(osThreadID, ppEnum)
+            : HResults.E_NOTIMPL;
+    }
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)
     {

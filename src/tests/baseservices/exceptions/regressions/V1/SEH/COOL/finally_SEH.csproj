@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="finally.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

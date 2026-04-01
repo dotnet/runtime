@@ -80,7 +80,7 @@ namespace System.Diagnostics.Tests
             return filename;
         }
         
-        private static void SendSignal(PosixSignal signal, int processId)
+        private static void SendSignal(PosixSignal signal, Process process)
         {
             uint dwCtrlEvent = signal switch
             {
@@ -89,7 +89,7 @@ namespace System.Diagnostics.Tests
                 _ => throw new ArgumentOutOfRangeException(nameof(signal))
             };
 
-            if (!Interop.GenerateConsoleCtrlEvent(dwCtrlEvent, (uint)processId))
+            if (!Interop.GenerateConsoleCtrlEvent(dwCtrlEvent, (uint)process.Id))
             {
                 int error = Marshal.GetLastWin32Error();
                 if (error == Interop.Errors.ERROR_INVALID_FUNCTION && PlatformDetection.IsInContainer)

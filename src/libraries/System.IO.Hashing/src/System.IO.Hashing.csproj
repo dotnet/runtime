@@ -42,6 +42,7 @@ System.IO.Hashing.XxHash32</PackageDescription>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\IO\Hashing\BitOperations.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StreamPolyfills.cs" Link="Common\Polyfills\StreamPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
