@@ -18,5 +18,5 @@ internal sealed class MethodDescCodeData : IData<MethodDescCodeData>
 
     public TargetCodePointer TemporaryEntryPoint { get; set; }
     public TargetPointer VersioningState { get; set; }
-    public uint? OptimizationTier { get; init; }
+    public uint OptimizationTier { get; init; }
 }
