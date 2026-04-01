@@ -819,6 +819,47 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Computes the arc cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Acos(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AcosDouble<Vector64<double>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Acos<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the arc cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Acos(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.AcosSingle<Vector64<float>, Vector64<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AcosSingle<Vector64<float>, Vector64<int>, Vector64<double>, Vector64<long>>(vector);
+                }
+            }
+            else
+            {
+                return Acos<float>(vector);
+            }
+        }
+
         /// <summary>Computes the cos of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its Cos computed.</param>
         /// <returns>A vector whose elements are the cos of the elements in <paramref name="vector" />.</returns>
@@ -3697,6 +3738,20 @@ namespace System.Runtime.Intrinsics
 #else
             return Shuffle(vector, indices);
 #endif
+        }
+
+        internal static Vector64<T> Acos<T>(Vector64<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Acos(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
         }
 
         internal static Vector64<T> Asin<T>(Vector64<T> vector)
