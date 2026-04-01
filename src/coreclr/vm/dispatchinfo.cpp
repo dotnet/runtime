@@ -2153,17 +2153,8 @@ void DispatchInfo::MarshalParamManagedToNativeRef(DispatchMemberInfo *pMemberInf
         VARTYPE ElementVt = V_VT(pRefVar) & ~(VT_BYREF | VT_ARRAY);
         MethodTable *pElementMT = (*(BASEARRAYREF *)pSrcObj)->GetArrayElementTypeHandle().GetMethodTable();
 
-        PCODE pStructMarshalStubAddress = NULL;
-        GCPROTECT_BEGIN(*pSrcObj);
-        if (ElementVt == VT_RECORD && pElementMT->IsBlittable())
-        {
-            GCX_PREEMP();
-            pStructMarshalStubAddress = PInvoke::GetEntryPointForStructMarshalStub(pElementMT);
-        }
-        GCPROTECT_END();
-
         // Convert the contents of the managed array into the original SAFEARRAY.
-        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *)pSrcObj, *V_ARRAYREF(pRefVar), ElementVt, pElementMT, pStructMarshalStubAddress);
+        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF *)pSrcObj, *V_ARRAYREF(pRefVar), ElementVt, pElementMT);
     }
     else
 {
