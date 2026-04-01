@@ -111,6 +111,8 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     }
     public enum WasmExprKind
     {
+        If = 0x04,
+        End = 0x0B,
         CallIndirect = 0x11,
         LocalGet = 0x20,
         LocalSet = 0x21,
@@ -119,6 +121,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         GlobalSet = 0x24,
         I32Const = 0x41,
         I64Const = 0x42,
+        I32Ge_s = 0x4E,
         I32Add = 0x6A,
         I32Sub = 0x6B,
         I32Load = 0x28,
@@ -151,6 +154,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             {
                 case WasmExprKind.I32Add:
                 case WasmExprKind.I32Sub:
+                case WasmExprKind.I32Ge_s:
                     return true;
 
                 default:
@@ -498,6 +502,14 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         // base class defaults are sufficient as the base class encodes just the opcode
     }
 
+    class WasmUnaryExpr : WasmExpr
+    {
+        public WasmUnaryExpr(WasmExprKind kind) : base(kind)
+        {
+        }
+        // base class defaults are sufficient as the base class encodes just the opcode
+    }
+
     // Represents a memory.init expression.
     // Binary encoding: 0xFC prefix + u32(8) sub-opcode + u32(dataSegmentIndex) + u32(memoryIndex)
     class WasmMemoryInitExpr : WasmExpr
@@ -609,6 +621,34 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
+    enum WasmBlockType : byte
+    {
+        Empty = 0x40,
+        I32 = 0x7F,
+        I64 = 0x7E,
+        F32 = 0x7D,
+        F64 = 0x7C,
+        V128 = 0x7B,
+    }
+    class WasmBlockStartExpr : WasmExpr
+    {
+        WasmBlockType BlockType;
+        public WasmBlockStartExpr(WasmExprKind kind, WasmBlockType blockType) : base(kind)
+        {
+            BlockType = blockType;
+        }
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            buffer[pos++] = (byte)BlockType;
+            return pos;
+        }
+        public override int EncodeSize()
+        {
+            return base.EncodeSize() + 1;
+        }
+    }
+
     // ************************************************
     // Simple DSL wrapper for creating Wasm expressions
     // ************************************************
@@ -653,6 +693,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
         public static WasmExpr Add => new WasmBinaryExpr(WasmExprKind.I32Add);
         public static WasmExpr Sub => new WasmBinaryExpr(WasmExprKind.I32Sub);
+        public static WasmExpr Ge_s => new WasmBinaryExpr(WasmExprKind.I32Ge_s);
         public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.I32Load, 4, offset);
         public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction(WasmExprKind.I32Store, 4, offset);
     }
@@ -700,5 +741,10 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     static class Ref
     {
         public static WasmExpr NullFuncRef => new WasmRefNullExpr(WasmAbsheaptype.Func);
+    }
+    static class Block
+    {
+        public static WasmExpr If(WasmBlockType blockType) => new WasmBlockStartExpr(WasmExprKind.If, blockType);
+        public static WasmExpr End => new WasmUnaryExpr(WasmExprKind.End);
     }
 }

@@ -100,7 +100,7 @@ function libCoreRunFactory() {
                 };
             }
 
-            function readLittleEndianU32FromDataSegment0(bufferSource) {
+            function readPayloadSizeAndTableSize(bufferSource) {
                 const bytes = asUint8Array(bufferSource);
 
                 if (bytes.length < 8) {
@@ -147,8 +147,14 @@ function libCoreRunFactory() {
                             throw new Error("Data segment 0 is shorter than 4 bytes");
                         }
 
-                        const valueView = new DataView(bytes.buffer, bytes.byteOffset + segment0.dataStart, 4);
-                        return valueView.getUint32(0, true);
+                        const valueView = new DataView(bytes.buffer, bytes.byteOffset + segment0.dataStart, segment0.dataLength);
+                        const payloadSize = valueView.getUint32(0, true);
+                        const tableSize = segment0.dataLength >= 8 ? valueView.getUint32(4, true) : 0;
+
+                        return {
+                            payloadSize,
+                            tableSize
+                        };
                     }
 
                     offset = sectionEnd;
@@ -176,11 +182,16 @@ function libCoreRunFactory() {
             const tableStartIndex = wasmTable.length;
 
             var payloadSize = 0;
+            var tableSize = 0;
             try {
-                payloadSize = readLittleEndianU32FromDataSegment0(wasmBytes);
+                const sizes = readPayloadSizeAndTableSize(wasmBytes);
+                payloadSize = sizes.payloadSize;
+                tableSize = sizes.tableSize;
             } catch {
                 payloadSize = 0;
+                tableSize = 0;
             }
+            wasmTable.grow(tableSize);
 
             var payloadPtr = 0;
             var wasmInstance;
@@ -209,6 +220,9 @@ function libCoreRunFactory() {
             }
 
             wasmInstance.exports.getWebcilPayload(payloadPtr, payloadSize);
+            if (tableSize > 0) {
+                wasmInstance.exports.fillWebcilTable();
+            }
             HEAPU32[outDataStartPtr >>> 2 >>> 0] = payloadPtr;
             HEAPU32[outSize >>> 2 >>> 0] = payloadSize;
             HEAPU32[(outSize + 4) >>> 2 >>> 0] = 0;

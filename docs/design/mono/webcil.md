@@ -74,6 +74,66 @@ module without instantiating it to properly parse the ECMA-335 metadata in the W
 
 (**Note**: the wrapper may be versioned independently of the payload.)
 
+Version 1 of webcil adds an additional capability. If data segment 0 is at least 8 bytes
+in size, and the second 4 bytes has a non-zero value when interpreted as a 4 byte little endian
+value, then that second 4 bytes shall be the number of table entries required for the webassembly
+module to be loaded, and the module shall import a table, as well as stackPointer, tableBase, and
+imageBase globals. There shall also be a fillWebcilTable function which will initialilize the table
+with appropriate values. The getWebcilPayload api shall be enhanced to fill in the TableBase field
+of the WebcilHeader.
+
+``` wat
+(module
+  (data "\0f\00\00\00\01\00\00\00") ;; data segment 0: payload size as a 8 byte's of LE uint32. This specifies a webcilPayload of size 15 bytes with 1 table entry required
+  (data "webcil Payload\cc")  ;; data segment 1: webcil payload
+  (import "webcil" "memory" (memory (;0;) 1))
+  (import "webcil" "stackPointer" (global (;0;) (mut i32)))
+  (import "webcil" "imageBase" (global (;1;) i32))
+  (import "webcil" "tableBase" (global (;2;) i32))
+  (import "webcil" "table" (table (;0;) 1 funcref))
+  (global (export "webcilVersion") i32 (i32.const 1))
+  (func (export "getWebcilSize") (param $destPtr i32) (result)
+    local.get $destPtr
+    i32.const 0
+    i32.const 4
+    memory.init 0)
+  (func (export "getWebcilPayload") (param $d i32) (param $n i32) (result)
+  ;; Copy from the passive data segment
+    local.get $d
+    i32.const 0
+    local.get $n
+    memory.init 1
+  ;; Set the table base, if the amount of data to write is large enough
+    local.get 1
+    i32.const 32 ;; the amount of bytes required so that the write below does not overflow the size specified
+    i32.lt_s
+    if 0
+     local.get 0
+     global.get 2 ;; get the tableBase from the global assigned during instantiate
+     i32.store 28
+    end
+    )
+  (func (export "fillWebcilTable") (result)
+    global.get 2 ;; function pointers to fill in start at tableBase
+    i32.const 0
+    i32.const 1 ;; There is 1 element in elem segment 0
+    table.init 0 0)
+  (func (param $d i32) (result i32) ;; Example of function to be injected into "table"
+    local.get 0)
+  (elem (;0;) func 3))
+```
+
+(**Rationale**: With this approach it is possible to identify without loading the webcil module
+exactly the allocations/table growth/globals which are needed to load the webcil module via
+instantiateStreaming without actually loading the module.)
+
+(**Rationale**: Using a new function called fillWebcilTable to fill in the table enables future
+multithreading logic which may require instantiating the table in multiple workers, without
+recopying the memory from the webassembly segment into the memory space.)
+
+(**Rationale**: The getWebcilPayload api filling in the TableBase field of the WebcilHeader allows
+the runtime to put a more complex implementation of the relocations scheme into the code which is part
+of the runtime's wasm code, reducing the volume of code needed in each webcil file.)
 
 ### Webcil payload
 

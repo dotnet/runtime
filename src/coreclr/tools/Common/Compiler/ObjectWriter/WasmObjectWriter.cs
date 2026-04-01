@@ -315,6 +315,16 @@ namespace ILCompiler.ObjectWriter
                 ]
         );
 
+        WasmFunctionBody FillWebcilTable(int tableSize) => new WasmFunctionBody(
+            new WasmFuncType(new([]), new([])), // (func)
+                [
+                    Global.Get(WasmObjectWriter.ImageFunctionPointerBaseGlobalIndex),
+                    I32.Const(0),
+                    I32.Const(tableSize),
+                    Table.Init(0, 0)
+                ]
+        );
+
         WasmFunctionBody GetWebcilPayload => new WasmFunctionBody(
             new WasmFuncType(new([WasmValueType.I32, WasmValueType.I32]), new([])), // (func ($d i32) ($n i32))
                 [
@@ -322,18 +332,14 @@ namespace ILCompiler.ObjectWriter
                     I32.Const(0),
                     Local.Get(1), // (local.get $n)
                     Memory.Init(1),
-                    // WASM_TODO, we should logically only be writing if the offset is within the size of the payload, but for simplicity we will just write out the full section including headers and rely on the caller to provide a large enough buffer and ignore the extra data if they only want the payload.
+                    Local.Get(1),
+                    I32.Const(32),
+                    I32.Ge_s,
+                    Block.If(WasmBlockType.Empty),
                     Local.Get(0), // (local.get $d)
                     Global.Get(WasmObjectWriter.ImageFunctionPointerBaseGlobalIndex), // (global.get $tableBase)
                     I32.Store((ulong)WebcilEncoder.TableBaseOffset), // i32.store offset=TableBaseOffset
-
-                    // WASM_TODO, should we move the table grow/fill logic to another helper, since this isn't actually just getting the payload anymore. Also we need to detect errors somehow, since table.grow can fail!
-                    Ref.NullFuncRef,
-                    I32.Const(_uniqueSymbols.Count),
-                    Table.Grow(0),
-                    I32.Const(0),
-                    I32.Const(_uniqueSymbols.Count),
-                    Table.Init(0, 0)
+                    Block.End
                 ]
         );
 
@@ -486,9 +492,12 @@ namespace ILCompiler.ObjectWriter
         {
 
             _webcilSegment = BuildWebcilDataSegment();
+            int totalMethodCount = _methodCount + 3;
 
             InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
             InsertWasmStub(new Utf8String("getWebcilPayload"), GetWebcilPayload);
+            InsertWasmStub(new Utf8String("fillWebcilTable"), FillWebcilTable(totalMethodCount));
+            Debug.Assert(_methodCount == totalMethodCount);
 
             WriteDataCountSection();
 
@@ -665,8 +674,9 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(webcilStream.Position == _webcilSegment.GetFlatMappedSize(), $"Total Size Mismatch: {webcilStream.Position} != {_webcilSegment.GetFlatMappedSize()}");
 
             // Create passive data segment for encoding the size of the webcil payload (size must fit in 32-bit uint)
-            byte[] lengthBuffer = new byte[sizeof(uint)];
+            byte[] lengthBuffer = new byte[sizeof(uint) * 2];
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)_webcilSegment.GetFlatMappedSize());
+            BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)_uniqueSymbols.Count);
             MemoryStream webcilSizeSegmentStream = new MemoryStream(lengthBuffer);
             WasmDataSegment webcilSizeSegment = new WasmDataSegment(webcilSizeSegmentStream, new Utf8String("webcilCount"),
                 WasmDataSectionType.Passive, null);
