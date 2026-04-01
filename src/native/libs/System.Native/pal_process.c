@@ -255,18 +255,22 @@ static void SetCloexecForAllFds(int inheritedFdCount)
     }
     for (int fd = 3; fd < maxFd; fd++)
     {
-        int flags = fcntl(fd, F_GETFD);
-        if (flags == -1)
-        {
-            continue; // fd not open
-        }
         if (inheritedFdCount == 0)
         {
             close(fd);
         }
-        else if ((flags & FD_CLOEXEC) == 0)
+        else
         {
-            fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
+            int flags = fcntl(fd, F_GETFD);
+            if (flags == -1)
+            {
+                continue; // fd not open
+            }
+
+            if ((flags & FD_CLOEXEC) == 0)
+            {
+                fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
+            }
         }
     }
 }

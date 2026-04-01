@@ -401,6 +401,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(expectInherited ? 42 : 0, bytesRead > 0 ? buffer[0] : 0);
             Assert.Equal(expectInherited ? RemoteExecutor.SuccessExitCode : HandleNotInheritedExitCode, exitCode);
         }
+
         [Fact]
         public void InheritedHandles_ThrowsForNullHandle()
         {
