@@ -10135,13 +10135,7 @@ static VOID GetAssemblyDetailInfo(SString    &sType,
                                   PEAssembly *pPEAssembly,
                                   SString    &sAssemblyDetailInfo)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     SString sAlcName;
     pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
@@ -10175,13 +10169,7 @@ static VOID GetGenericArgAssemblyDetailInfo(SString    &sType,
                                             PEAssembly *pPEAssembly,
                                             SString    &sAssemblyDetailInfo)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     SString sAlcName;
     pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
