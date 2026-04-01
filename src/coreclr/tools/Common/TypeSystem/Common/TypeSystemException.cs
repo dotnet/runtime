@@ -155,11 +155,6 @@ namespace Internal.TypeSystem
                 : base(ExceptionStringID.BadImageFormatGeneric)
             {
             }
-
-            internal BadImageFormatException(ExceptionStringID id, string fileName)
-                : base(id, fileName)
-            {
-            }
         }
 
         public class MarshalDirectiveException : TypeSystemException
