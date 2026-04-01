@@ -3,12 +3,13 @@ trigger: none
 pr:
   branches:
     include:
-    - "*"
+    - main
+    - release/*.0
   paths:
     include:
-    - src/libraries/System.Net.Http/tests/StressTests/HttpStress/*
-    - src/libraries/Common/tests/System/Net/StressTests/*
-    - eng/pipelines/libraries/stress/*
+    - src/libraries/System.Net.Http/tests/StressTests/HttpStress/**
+    - src/libraries/Common/tests/System/Net/StressTests/**
+    - eng/pipelines/libraries/stress/**
 
 schedules:
 - cron: "0 13 * * *" # 1PM UTC => 5 AM PST
