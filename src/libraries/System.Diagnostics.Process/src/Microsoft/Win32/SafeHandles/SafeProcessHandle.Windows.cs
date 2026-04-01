@@ -125,9 +125,9 @@ namespace Microsoft.Win32.SafeHandles
                     AddHandleToInheritList(inheritableStderrHandle ?? stderrHandle, handlesToInherit, ref handleCount);
 
                     PrepareHandleAllowList(inheritedHandles, handlesToInherit, ref handleCount, ref handlesToRelease);
+                    BuildProcThreadAttributeList(handlesToInherit, handleCount, ref attributeListBuffer);
                 }
 
-                BuildProcThreadAttributeList(handlesToInherit, handleCount, ref attributeListBuffer);
                 startupInfoEx.lpAttributeList = attributeListBuffer;
 
                 bool retVal;

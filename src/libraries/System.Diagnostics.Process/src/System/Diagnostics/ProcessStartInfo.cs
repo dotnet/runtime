@@ -206,13 +206,6 @@ namespace System.Diagnostics
         /// and the handles from this list. If the list is empty, only the standard handles are inherited.
         /// </para>
         /// <para>
-        /// The handles specified in this list are always inherited by the child process on all supported platforms.
-        /// However, the restriction that prevents other handles from being inherited is only enforced on platforms
-        /// that have the necessary OS support. On platforms without such support (for example, Linux kernels older
-        /// than 5.9), other inheritable file descriptors may still be
-        /// inherited by the child process even when this property is set.
-        /// </para>
-        /// <para>
         /// Handles in this list should not have inheritance enabled beforehand.
         /// If they do, they could be unintentionally inherited by other processes started concurrently with different APIs,
         /// which may lead to security or resource management issues.
