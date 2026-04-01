@@ -3655,44 +3655,103 @@ namespace System.Text.RegularExpressions
                     subsequent?.FindStartingLiteralNode() is RegexNode literal &&
                     CanEmitIndexOf(literal, out int literalLength))
                 {
-                    // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
-                    // if (endingPos < 0)
-                    // {
-                    //     goto doneLabel;
-                    // }
-                    Ldloca(inputSpan);
-                    Ldloc(startingPos);
-                    if (literalLength > 1)
+                    // If CanReduceLoopBacktrackingToSinglePosition determines only the last consumed character
+                    // can succeed, we can just check it directly instead of repeatedly searching with LastIndexOf.
+                    if (subsequent is not null && RegexNode.CanReduceLoopBacktrackingToSinglePosition(node, subsequent))
                     {
-                        // Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos
-                        Ldloca(inputSpan);
-                        Call(SpanGetLengthMethod);
+                        // endingPos--;
                         Ldloc(endingPos);
-                        Ldc(literalLength - 1);
-                        Add();
-                        Call(MathMinIntIntMethod);
+                        Ldc(1);
+                        Sub();
+                        Stloc(endingPos);
+
+                        // if (!literal.Matches(inputSpan[endingPos])) goto doneLabel;
+                        Ldloca(inputSpan);
+                        Ldloc(endingPos);
+                        Call(SpanGetItemMethod);
+                        LdindU2();
+                        switch (literal.Kind)
+                        {
+                            case RegexNodeKind.One or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy:
+                                Ldc(literal.Ch);
+                                BneFar(doneLabel);
+                                break;
+
+                            case RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy:
+                                Ldc(literal.Ch);
+                                BeqFar(doneLabel);
+                                break;
+
+                            case RegexNodeKind.Multi:
+                                Ldc(literal.Str![0]);
+                                BneFar(doneLabel);
+                                break;
+
+                            default: // Set, Setloop, Setloopatomic, Setlazy
+                                EmitMatchCharacterClass(literal.Str!);
+                                BrfalseFar(doneLabel);
+                                break;
+                        }
+
+                        // pos = endingPos;
+                        Ldloc(endingPos);
+                        Stloc(pos);
+
+                        // We've now checked the only backtrack position that can succeed. Force any
+                        // subsequent backtrack to fail immediately by setting endingPos to 0, which
+                        // guarantees the "startingPos >= endingPos" guard (emitted above) will be true
+                        // on re-entry. Note: if the emitter's backtracking structure changes (e.g. the
+                        // guard condition or how endingPos is used beyond the guard and stack save/restore),
+                        // this assumption would need to be revisited.
+                        // endingPos = 0;
+                        Ldc(0);
+                        Stloc(endingPos);
                     }
                     else
                     {
-                        // endingPos - startingPos
+                        // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
+                        // if (endingPos < 0)
+                        // {
+                        //     goto doneLabel;
+                        // }
+                        Ldloca(inputSpan);
+                        Ldloc(startingPos);
+                        if (literalLength > 1)
+                        {
+                            // Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos
+                            Ldloca(inputSpan);
+                            Call(SpanGetLengthMethod);
+                            Ldloc(endingPos);
+                            Ldc(literalLength - 1);
+                            Add();
+                            Call(MathMinIntIntMethod);
+                        }
+                        else
+                        {
+                            // endingPos - startingPos
+                            Ldloc(endingPos);
+                        }
+                        Ldloc(startingPos);
+                        Sub();
+                        Call(SpanSliceIntIntMethod);
+
+                        EmitIndexOf(literal, useLast: true, negate: false);
+                        Stloc(endingPos);
+
                         Ldloc(endingPos);
+                        Ldc(0);
+                        BltFar(doneLabel);
+
+                        // endingPos += startingPos;
+                        Ldloc(endingPos);
+                        Ldloc(startingPos);
+                        Add();
+                        Stloc(endingPos);
+
+                        // pos = endingPos;
+                        Ldloc(endingPos);
+                        Stloc(pos);
                     }
-                    Ldloc(startingPos);
-                    Sub();
-                    Call(SpanSliceIntIntMethod);
-
-                    EmitIndexOf(literal, useLast: true, negate: false);
-                    Stloc(endingPos);
-
-                    Ldloc(endingPos);
-                    Ldc(0);
-                    BltFar(doneLabel);
-
-                    // endingPos += startingPos;
-                    Ldloc(endingPos);
-                    Ldloc(startingPos);
-                    Add();
-                    Stloc(endingPos);
                 }
                 else
                 {
@@ -3701,11 +3760,11 @@ namespace System.Text.RegularExpressions
                     Ldc(!rtl ? 1 : -1);
                     Sub();
                     Stloc(endingPos);
-                }
 
-                // pos = endingPos;
-                Ldloc(endingPos);
-                Stloc(pos);
+                    // pos = endingPos;
+                    Ldloc(endingPos);
+                    Stloc(pos);
+                }
 
                 if (!rtl)
                 {
@@ -4526,9 +4585,10 @@ namespace System.Text.RegularExpressions
                     return;
                 }
 
-                // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
-                // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.
-                const int MaxUnrollSize = 16;
+                // Limit for unrolling vs creating a loop. Benchmarking shows vectorized operations
+                // (e.g. ContainsAnyExcept) beat unrolled scalar checks at counts above ~4-8, so
+                // we unroll up to/including this threshold and use a loop with vectorization beyond it.
+                const int MaxUnrollSize = 7;
 
                 if (iterations <= MaxUnrollSize)
                 {

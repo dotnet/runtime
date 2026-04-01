@@ -9,6 +9,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
+using System.Text.Unicode;
 using static System.Buffers.StringSearchValuesHelper;
 
 namespace System.Buffers
@@ -143,9 +144,9 @@ namespace System.Buffers
 
             if (nonAsciiAffectedByCaseConversion)
             {
-                if (ContainsIncompleteSurrogatePairs(values))
+                if (ContainsInvalidValues(values))
                 {
-                    // Aho-Corasick can't deal with the matching semantics of standalone surrogate code units.
+                    // Aho-Corasick can't deal with the matching semantics of invalid values.
                     // We will use a slow but correct O(n * m) fallback implementation.
                     return new MultiStringIgnoreCaseSearchValuesFallback(uniqueValues);
                 }
@@ -502,33 +503,13 @@ namespace System.Buffers
             }
         }
 
-        private static bool ContainsIncompleteSurrogatePairs(ReadOnlySpan<string> values)
+        private static bool ContainsInvalidValues(ReadOnlySpan<string> values)
         {
             foreach (string value in values)
             {
-                int i = value.AsSpan().IndexOfAnyInRange(CharUnicodeInfo.HIGH_SURROGATE_START, CharUnicodeInfo.LOW_SURROGATE_END);
-                if (i < 0)
+                if (!Utf16.IsValid(value))
                 {
-                    continue;
-                }
-
-                for (; (uint)i < (uint)value.Length; i++)
-                {
-                    if (char.IsHighSurrogate(value[i]))
-                    {
-                        if ((uint)(i + 1) >= (uint)value.Length || !char.IsLowSurrogate(value[i + 1]))
-                        {
-                            // High surrogate not followed by a low surrogate.
-                            return true;
-                        }
-
-                        i++;
-                    }
-                    else if (char.IsLowSurrogate(value[i]))
-                    {
-                        // Low surrogate not preceded by a high surrogate.
-                        return true;
-                    }
+                    return true;
                 }
             }
 

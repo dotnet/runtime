@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.X509Certificates
     public class X509Chain : IDisposable
     {
         private X509ChainPolicy? _chainPolicy;
-        private volatile X509ChainStatus[]? _lazyChainStatus;
+        private X509ChainStatus[]? _lazyChainStatus;
         private X509ChainElementCollection? _chainElements;
         private IChainPal? _pal;
         private bool _useMachineContext;

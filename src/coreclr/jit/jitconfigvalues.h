@@ -593,6 +593,18 @@ OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimizat
 OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
                   "JitAsyncDefaultValueAnalysisRange") // Enable async default value analysis based on method hash range
 
+// Enable async preserved value analysis based on method hash range. This
+// analysis computes state that is guaranteed to not have been changed since
+// the last time suspension happened, and skips storing them in the case where
+// a continuation is being reused.
+OPT_CONFIG_STRING(JitAsyncPreservedValueAnalysisRange, "JitAsyncPreservedValueAnalysisRange")
+
+// Enable continuation reuse based on method hash range
+OPT_CONFIG_STRING(JitAsyncReuseContinuationsRange, "JitAsyncReuseContinuationsRange")
+// Save and reuse continuation instances in runtime async functions. Also
+// implies use of shared continuation layouts for all suspension points.
+RELEASE_CONFIG_INTEGER(JitAsyncReuseContinuations, "JitAsyncReuseContinuations", 1)
+
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
 RELEASE_CONFIG_INTEGER(JitOptRepeatCount, "JitOptRepeatCount", 2) // Number of times to repeat opts when repeating
@@ -863,6 +875,14 @@ CONFIG_INTEGER(JitUseScalableVectorT, "JitUseScalableVectorT", 0)
 // Disable emitDispIns by default
 CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #endif // defined(TARGET_LOONGARCH64)
+
+#if defined(TARGET_WASM)
+// Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
+CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
+// Specify methods that will fail with R2R unsupported after codegen.
+// Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
+CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
+#endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.
 RELEASE_CONFIG_INTEGER(JitEnregStructLocals, "JitEnregStructLocals", 1)

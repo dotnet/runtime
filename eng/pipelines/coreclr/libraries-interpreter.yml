@@ -22,7 +22,7 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
+          buildConfig: Release
           platforms:
           - windows_x64
           - osx_arm64

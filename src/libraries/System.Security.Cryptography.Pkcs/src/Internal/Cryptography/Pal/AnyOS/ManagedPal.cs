@@ -122,7 +122,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                 try
                 {
-                    AsnReader reader = new AsnReader(contentEncryptionAlgorithm.Parameters.Value, AsnEncodingRules.BER);
+                    ValueAsnReader reader = new(contentEncryptionAlgorithm.Parameters.Value.Span, AsnEncodingRules.BER);
                     alg.IV = reader.ReadOctetString();
 
                     if (alg.IV.Length != alg.BlockSize / 8)

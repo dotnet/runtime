@@ -449,8 +449,8 @@ namespace System.Text.Tests
                 {
                     // We'll build up the exception message ourselves so the dev knows what code point failed.
                     throw EqualException.ForMismatchedValues(
-                        expected: UnicodeData.GetUnicodeCategory(rune.Value),
-                        actual: Rune.GetUnicodeCategory(rune),
+                        expected: UnicodeData.GetUnicodeCategory(rune.Value).ToString(),
+                        actual: Rune.GetUnicodeCategory(rune).ToString(),
                         banner: FormattableString.Invariant($@"Rune.GetUnicodeCategory(U+{rune.Value:X4}) returned wrong value."));
                 }
             }

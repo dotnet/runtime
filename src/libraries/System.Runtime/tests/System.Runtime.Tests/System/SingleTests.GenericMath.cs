@@ -29,7 +29,7 @@ namespace System.Tests
                 return;
             }
 
-            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual);
+            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString());
         }
 
         //

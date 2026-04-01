@@ -1125,7 +1125,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
 //
 //    This method can add kills even if killMask is RBM_NONE, if this tree is one of the
 //    special cases that signals that we can't permit callee save registers to hold GC refs.
-
+//
 bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskTP killMask)
 {
     bool insertedKills = false;
@@ -1164,43 +1164,23 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                     {
                         continue;
                     }
-                Interval*  interval   = getIntervalForLocalVar(varIndex);
-                const bool isCallKill = ((killMask.getLow() == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
-                SingleTypeRegSet regsKillMask = killMask.GetRegSetForType(interval->registerType);
 
-                if (isCallKill)
-                {
-                    interval->preferCalleeSave = true;
-                }
-
-                // We are more conservative about allocating callee-saves registers to write-thru vars, since
-                // a call only requires reloading after (not spilling before). So we record (above) the fact
-                // that we'd prefer a callee-save register, but we don't update the preferences at this point.
-                // See the "heuristics for writeThru intervals" in 'buildIntervals()'.
-                if (!interval->isWriteThru || !isCallKill)
-                {
-                    SingleTypeRegSet newPreferences = allRegs(interval->registerType) & (~regsKillMask);
-
-                    if (newPreferences != RBM_NONE)
-                    {
-                        if (!interval->isWriteThru)
-                        {
-                            // Update the register aversion as long as this is not write-thru vars for
-                            // reason mentioned above.
-                            interval->registerAversion |= regsKillMask;
-                        }
-                        interval->updateRegisterPreferences(newPreferences);
-                    }
-                    else
-                    {
-                        // If there are no callee-saved registers, the call could kill all the registers.
-                        // This is a valid state, so in that case assert should not trigger. The RA will spill in order
-                        // to free a register later.
-                        assert(m_compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType) == RBM_NONE) ||
-                               varTypeIsStruct(varDsc->lvType));
-                    }
-                }
+                Interval* interval = getIntervalForLocalVar(varIndex);
+                updateIntervalPreferencesForKill(interval, killMask);
             }
+        }
+
+        // Now update preferences of LIR edges to avoid the killed registers.
+        for (RefInfoListNode* cur = defList.Begin(); cur != defList.End(); cur = cur->Next())
+        {
+            Interval* interval = cur->ref->getInterval();
+            if (interval->isLocalVar)
+            {
+                // Handled via liveness above
+                continue;
+            }
+
+            updateIntervalPreferencesForKill(interval, killMask);
         }
 
         insertedKills = true;
@@ -1214,6 +1194,46 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
     }
 
     return insertedKills;
+}
+
+//------------------------------------------------------------------------
+// updateIntervalPreferencesForKill:
+//   Update the specified interval to take into account that some registers will
+//   be killed while it is live.
+//
+// Arguments:
+//    interval - The interval
+//    killMask - Registers that will be killed during the interval's lifetime
+//
+void LinearScan::updateIntervalPreferencesForKill(Interval* interval, regMaskTP killMask)
+{
+    const bool       isCallKill   = ((killMask.getLow() == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
+    SingleTypeRegSet regsKillMask = killMask.GetRegSetForType(interval->registerType);
+
+    if (isCallKill)
+    {
+        interval->preferCalleeSave = true;
+    }
+
+    // We are more conservative about allocating callee-saves registers to write-thru vars, since
+    // a call only requires reloading after (not spilling before). So we record (above) the fact
+    // that we'd prefer a callee-save register, but we don't update the preferences at this point.
+    // See the "heuristics for writeThru intervals" in 'buildIntervals()'.
+    if (!interval->isWriteThru || !isCallKill)
+    {
+        SingleTypeRegSet newPreferences = allRegs(interval->registerType) & (~regsKillMask);
+
+        if (newPreferences != RBM_NONE)
+        {
+            if (!interval->isWriteThru)
+            {
+                // Update the register aversion as long as this is not write-thru vars for
+                // reason mentioned above.
+                interval->registerAversion |= regsKillMask;
+            }
+            interval->updateRegisterPreferences(newPreferences);
+        }
+    }
 }
 
 //------------------------------------------------------------------------
