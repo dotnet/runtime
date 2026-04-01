@@ -418,8 +418,9 @@ namespace ILCompiler.ObjectWriter
 
             // The index of the reloc section is either: 0 (if no reloc section) OR
             // the 1-based index of the section, which in our case is assumed to be the last section
-            if (webcilSections.Length > 0)
+            if (_baseRelocMap.Count > 0)
             {
+                Debug.Assert(webcilSections.Length > 0);
                 Debug.Assert(webcilSections[webcilSections.Length - 1].Name.ToString() == "reloc");
             }
             ushort relocSectionIdx = _baseRelocMap.Count > 0 ? checked((ushort)webcilSections.Length) : (ushort)0;
