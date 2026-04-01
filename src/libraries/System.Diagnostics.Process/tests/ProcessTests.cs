@@ -170,7 +170,7 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                SendSignal(signal, remoteHandle.Process.Id);
+                SendSignal(signal, remoteHandle.Process);
 
                 Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
                 Assert.Equal(0, remoteHandle.Process.ExitCode);
@@ -243,7 +243,7 @@ namespace System.Diagnostics.Tests
             {
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalRegistrationCreatedMessage, WaitInMS);
 
-                SendSignal(signal, remoteHandle.Process.Id);
+                SendSignal(signal, remoteHandle.Process);
 
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerStartedMessage, WaitInMS);
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerDisposedMessage, WaitInMS);
@@ -253,11 +253,11 @@ namespace System.Diagnostics.Tests
                 if (PlatformDetection.IsMonoRuntime && signal == PosixSignal.SIGQUIT && !PlatformDetection.IsWindows)
                 {
                     // Terminate process using SIGTERM instead.
-                    SendSignal(PosixSignal.SIGTERM, remoteHandle.Process.Id);
+                    SendSignal(PosixSignal.SIGTERM, remoteHandle.Process);
                 }
                 else
                 {
-                    SendSignal(signal, remoteHandle.Process.Id);
+                    SendSignal(signal, remoteHandle.Process);
                 }
 
                 Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));

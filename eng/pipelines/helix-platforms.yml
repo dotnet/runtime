@@ -150,22 +150,22 @@ variables:
   # Linux ARM32
   # Latest: Debian 13
   - name: helix_linux_arm32_latest
-    value: (Debian.13.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+    value: (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   - name: helix_linux_arm32_latest_internal
-    value: (Debian.13.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+    value: (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   # Oldest: Debian 13
   - name: helix_linux_arm32_oldest
-    value: (Debian.13.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+    value: (Debian.13.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   - name: helix_linux_arm32_oldest_internal
-    value: (Debian.13.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+    value: (Debian.13.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
 
   # Linux ARM64
   # Latest: Ubuntu 26.04
   - name: helix_linux_arm64_latest
-    value: (Ubuntu.2604.ArmArch.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8
+    value: (Ubuntu.2604.ArmArch.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8
 
   # Oldest: Ubuntu 22.04
   - name: helix_linux_arm64_oldest
@@ -183,32 +183,32 @@ variables:
   # Linux musl ARM32
   # Latest: Alpine 3.23
   - name: helix_linux_musl_arm32_latest
-    value: (Alpine.323.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
+    value: (Alpine.323.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
 
   - name: helix_linux_musl_arm32_latest_internal
-    value: (Alpine.323.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
+    value: (Alpine.323.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
 
   # Oldest: Alpine 3.23
   - name: helix_linux_musl_arm32_oldest
-    value: (Alpine.323.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
+    value: (Alpine.323.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
 
   - name: helix_linux_musl_arm32_oldest_internal
-    value: (Alpine.323.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
+    value: (Alpine.323.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
 
   # Linux musl ARM64
   # Latest: Alpine 3.23
   - name: helix_linux_musl_arm64_latest
-    value: (Alpine.323.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
+    value: (Alpine.323.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
 
   - name: helix_linux_musl_arm64_latest_internal
-    value: (Alpine.323.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
+    value: (Alpine.323.Arm64)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
 
   # Oldest: Alpine 3.23
   - name: helix_linux_musl_arm64_oldest
-    value: (Alpine.323.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
+    value: (Alpine.323.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
 
   - name: helix_linux_musl_arm64_oldest_internal
-    value: (Alpine.323.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
+    value: (Alpine.323.Arm64)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
 
   # ===========================================
   # Windows Platforms

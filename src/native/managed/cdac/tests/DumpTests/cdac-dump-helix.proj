@@ -176,25 +176,44 @@
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="set test_exit_code=%25ERRORLEVEL%25" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="test_exit_code=$?" />
+          Include="test_exit_code=%24%3F" />
     </ItemGroup>
 
     <!-- Archive dumps for download regardless of test outcome. -->
     <ItemGroup>
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
           Include="tar -czf %25HELIX_WORKITEM_UPLOAD_ROOT%25\dumps.tar.gz -C %25HELIX_WORKITEM_PAYLOAD%25\dumps ." />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="set archive_exit_code=%25ERRORLEVEL%25" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="tar -czf $HELIX_WORKITEM_UPLOAD_ROOT/dumps.tar.gz -C $HELIX_WORKITEM_PAYLOAD/dumps ." />
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+          Include="archive_exit_code=%24%3F" />
     </ItemGroup>
 
-    <!-- Propagate test exit code without directly exiting the parent Helix work item shell (see GH issue #126196). -->
+    <!--
+      Propagate result exit code without directly exiting the parent Helix work item shell
+      (see GH issue #126196). Test failure takes priority; otherwise report archive failure.
+    -->
     <ItemGroup Condition="'$(DumpOnly)' != 'true'">
       <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
-          Include="%25ComSpec%25 /C exit %25test_exit_code%25" />
+          Include="set result_exit_code=0" />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="if %25archive_exit_code%25 NEQ 0 set result_exit_code=%25archive_exit_code%25" />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="if %25test_exit_code%25 NEQ 0 set result_exit_code=%25test_exit_code%25" />
+      <_HelixCommandLines Condition="'$(TargetOS)' == 'windows'"
+          Include="%25ComSpec%25 /C exit %25result_exit_code%25" />
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+          Include="result_exit_code=0" />
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+          Include="if [ %24archive_exit_code -ne 0 ]%3B then result_exit_code=%24archive_exit_code%3B fi" />
+      <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
+          Include="if [ %24test_exit_code -ne 0 ]%3B then result_exit_code=%24test_exit_code%3B fi" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
           Include="set_return() { return $1%3B }" />
       <_HelixCommandLines Condition="'$(TargetOS)' != 'windows'"
-          Include="set_return $test_exit_code" />
+          Include="set_return %24result_exit_code" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(_HelixCommandFile)" Lines="@(_HelixCommandLines)" Overwrite="true" />

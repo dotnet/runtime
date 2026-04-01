@@ -11,16 +11,22 @@
 ===========================================================*/
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
-        private int _processId = -1;
+
+        // Allows for StartWithShellExecute (and its dependencies) to be trimmed when UseShellExecute is not being used.
+        // s_startWithShellExecute is defined in platform-specific partial files with OS-appropriate delegate signatures.
+        internal static void EnsureShellExecuteFunc() =>
+            s_startWithShellExecute ??= StartWithShellExecute;
 
         /// <summary>
         /// Gets the process ID.
@@ -31,16 +37,15 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Validate();
 
-                if (_processId == -1)
+                if (field == -1)
                 {
-                    _processId = GetProcessIdCore();
+                    field = GetProcessIdCore();
                 }
 
-                return _processId;
-
+                return field;
             }
-            private set => _processId = value;
-        }
+            private set;
+        } = -1;
 
         /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeHandle" />.
@@ -118,6 +123,48 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle);
+        }
+
+        /// <summary>
+        /// Sends a request to the OS to terminate the process.
+        /// </summary>
+        /// <remarks>
+        /// This method does not throw if the process has already exited.
+        /// On Windows, the handle must have <c>PROCESS_TERMINATE</c> access.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="Win32Exception">The process could not be terminated.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public void Kill()
+        {
+            Validate();
+            SignalCore(PosixSignal.SIGKILL);
+        }
+
+        /// <summary>
+        /// Sends a signal to the process.
+        /// </summary>
+        /// <param name="signal">The signal to send.</param>
+        /// <returns>
+        /// <see langword="true"/> if the signal was sent successfully;
+        /// <see langword="false"/> if the process has already exited (or never existed) and the signal was not delivered.
+        /// </returns>
+        /// <remarks>
+        /// On Windows, only <see cref="PosixSignal.SIGKILL"/> is supported and is mapped to <see cref="Kill"/>.
+        /// On Windows, the handle must have <c>PROCESS_TERMINATE</c> access.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="PlatformNotSupportedException">The specified signal is not supported on this platform.</exception>
+        /// <exception cref="Win32Exception">The signal could not be sent.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public bool Signal(PosixSignal signal)
+        {
+            Validate();
+            return SignalCore(signal);
         }
 
         private void Validate()
