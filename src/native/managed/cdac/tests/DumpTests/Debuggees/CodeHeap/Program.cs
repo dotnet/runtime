@@ -52,7 +52,7 @@ internal static class Program
 
         var fn = (Func<int, int>)method.CreateDelegate(typeof(Func<int, int>));
         s_dynamicDelegate = fn;
-        int result = fn(41);
+        _ = fn(41);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
