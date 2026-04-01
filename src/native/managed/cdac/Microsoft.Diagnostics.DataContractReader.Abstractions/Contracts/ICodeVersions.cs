@@ -102,14 +102,3 @@ public readonly struct CodeVersions : ICodeVersions
 {
     // throws NotImplementedException for all methods
 }
-
-public enum NativeCodeVersionOptimizationTier : uint
-{
-    OptimizationTier0,
-    OptimizationTier1,
-    OptimizationTier1OSR,
-    OptimizationTierOptimized,
-    OptimizationTier0Instrumented,
-    OptimizationTier1Instrumented,
-    OptimizationTierUnknown = 0xFFFFFFFF
-}

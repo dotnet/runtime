@@ -424,9 +424,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         if (codeVersionHandle.IsExplicit)
         {
             NativeCodeVersionNode nativeCodeVersionNode = _target.ProcessedData.GetOrAdd<NativeCodeVersionNode>(codeVersionHandle.CodeVersionNodeAddress);
-            return nativeCodeVersionNode.OptimizationTier is null
-                ? NativeCodeVersionOptimizationTier.OptimizationTierUnknown
-                : (NativeCodeVersionOptimizationTier) nativeCodeVersionNode.OptimizationTier;
+            return RuntimeTypeSystem_1.GetOptimizationTier(nativeCodeVersionNode.OptimizationTier);
         }
         else
         {

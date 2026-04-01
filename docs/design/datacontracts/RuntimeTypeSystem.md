@@ -127,6 +127,19 @@ public enum ArrayFunctionType
 ```
 
 ```csharp
+public enum NativeCodeVersionOptimizationTier
+{
+    OptimizationTierUnknown,
+    OptimizationTier0,
+    OptimizationTier1,
+    OptimizationTier1OSR,
+    OptimizationTierOptimized,
+    OptimizationTier0Instrumented,
+    OptimizationTier1Instrumented,
+}
+```
+
+```csharp
 partial interface IRuntimeTypeSystem : IContract
 {
     public virtual MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer);
@@ -429,6 +442,20 @@ The contract additionally depends on these data descriptors
 | `FnPtrTypeDesc` | `RetAndArgTypes` | Pointer to an array of TypeHandle addresses. This length of this is 1 more than `NumArgs` |
 | `GenericsDictInfo` | `NumDicts` | Number of instantiation dictionaries, including inherited ones, in this `GenericsDictInfo` |
 | `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
+
+The value of the `NativeCodeVersionNode::OptimizationTier` field is one of:
+```csharp
+private enum NativeCodeVersionOptimizationTier_1 : uint
+{
+    OptimizationTier0 = 0,
+    OptimizationTier1 = 1,
+    OptimizationTier1OSR = 2,
+    OptimizationTierOptimized = 3,
+    OptimizationTier0Instrumented = 4,
+    OptimizationTier1Instrumented = 5,
+    OptimizationTierUnknown = 0xFFFFFFFF
+}
+```
 
 Contracts used:
 | Contract Name |

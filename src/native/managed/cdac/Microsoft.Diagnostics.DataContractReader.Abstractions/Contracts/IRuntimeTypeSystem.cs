@@ -78,6 +78,18 @@ public enum ArrayFunctionType
     Constructor = 3
 }
 
+public enum NativeCodeVersionOptimizationTier : uint
+{
+    OptimizationTierUnknown,
+    OptimizationTier0,
+    OptimizationTier1,
+    OptimizationTier1OSR,
+    OptimizationTierOptimized,
+    OptimizationTier0Instrumented,
+    OptimizationTier1Instrumented,
+}
+
+
 public interface IRuntimeTypeSystem : IContract
 {
     static string IContract.Name => nameof(RuntimeTypeSystem);

@@ -23,19 +23,6 @@ internal struct NativeCodeVersionHandle
 ```
 
 ```csharp
-public enum NativeCodeVersionOptimizationTier : uint
-{
-    OptimizationTier0,
-    OptimizationTier1,
-    OptimizationTier1OSR,
-    OptimizationTierOptimized,
-    OptimizationTier0Instrumented,
-    OptimizationTier1Instrumented,
-    OptimizationTierUnknown = 0xFFFFFFFF
-}
-```
-
-```csharp
 // Return a handle to the active version of the IL code for a given method descriptor
 public virtual ILCodeVersionHandle GetActiveILCodeVersion(TargetPointer methodDesc);
 // Return a handle to the IL code version representing the given native code version

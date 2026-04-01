@@ -325,6 +325,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     }
 
+    private enum NativeCodeVersionOptimizationTier_1 : uint
+    {
+        OptimizationTier0,
+        OptimizationTier1,
+        OptimizationTier1OSR,
+        OptimizationTierOptimized,
+        OptimizationTier0Instrumented,
+        OptimizationTier1Instrumented,
+        OptimizationTierUnknown = 0xFFFFFFFF
+    }
+
     private sealed class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
     {
         public static InstantiatedMethodDesc Create(Target target, TargetPointer address) => new InstantiatedMethodDesc(target, address);
@@ -1645,6 +1656,20 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return TargetPointer.Null;
     }
 
+    internal static NativeCodeVersionOptimizationTier GetOptimizationTier(uint? optimizationTier)
+    {
+        return (NativeCodeVersionOptimizationTier_1?)optimizationTier switch
+        {
+            NativeCodeVersionOptimizationTier_1.OptimizationTier0 => NativeCodeVersionOptimizationTier.OptimizationTier0,
+            NativeCodeVersionOptimizationTier_1.OptimizationTier1 => NativeCodeVersionOptimizationTier.OptimizationTier1,
+            NativeCodeVersionOptimizationTier_1.OptimizationTier1OSR => NativeCodeVersionOptimizationTier.OptimizationTier1OSR,
+            NativeCodeVersionOptimizationTier_1.OptimizationTierOptimized => NativeCodeVersionOptimizationTier.OptimizationTierOptimized,
+            NativeCodeVersionOptimizationTier_1.OptimizationTier0Instrumented => NativeCodeVersionOptimizationTier.OptimizationTier0Instrumented,
+            NativeCodeVersionOptimizationTier_1.OptimizationTier1Instrumented => NativeCodeVersionOptimizationTier.OptimizationTier1Instrumented,
+            _ => NativeCodeVersionOptimizationTier.OptimizationTierUnknown,
+        };
+    }
+
     NativeCodeVersionOptimizationTier IRuntimeTypeSystem.GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
@@ -1653,9 +1678,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return NativeCodeVersionOptimizationTier.OptimizationTierUnknown;
 
         Data.MethodDescCodeData codeData = _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(codeDataAddress);
-        return codeData.OptimizationTier is null
-            ? NativeCodeVersionOptimizationTier.OptimizationTierUnknown
-            : (NativeCodeVersionOptimizationTier)codeData.OptimizationTier;
+        return GetOptimizationTier(codeData.OptimizationTier);
     }
 
     bool IRuntimeTypeSystem.IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle)
