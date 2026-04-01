@@ -17,7 +17,7 @@ Update OS version references in Helix queue definition files. These files contro
 
 - A new OS version is released and should be added to Helix testing
 - An OS version is approaching or has reached EOL and should be replaced
-- Periodic audit to ensure Helix coverage matches the supported-os matrix (e.g. [`release-notes/11.0/supported-os.json`](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.json) — adjust the version to match your target)
+- Periodic audit to ensure Helix coverage matches the supported-os matrix (for example, [`release-notes/11.0/supported-os.json`](https://github.com/dotnet/core/blob/main/release-notes/11.0/supported-os.json); update the version segment to match your target)
 - Upgrading "oldest" or "latest" version slots for a distro
 
 ## When NOT to use
