@@ -211,8 +211,13 @@ namespace System.Diagnostics
         /// which may lead to security or resource management issues.
         /// </para>
         /// <para>
-        /// Concurrent calls to <see cref="Process.Start()"/> that share the same <see cref="InheritedHandles"/> list instance
+        /// Concurrent calls to <see cref="Process.Start()"/> or <see cref="SafeProcessHandle.Start(ProcessStartInfo)"/> that share the same <see cref="InheritedHandles"/> list instance
         /// are not supported. The list must not be modified while a process start is in progress.
+        /// </para>
+        /// <para>
+        /// On Unix, the implementation will modify each file descriptor in the child process
+        /// by removing the FD_CLOEXEC flag. This modification occurs after the fork and before the exec,
+        /// so it does not affect the parent process.
         /// </para>
         /// <para>
         /// On Windows, the implementation will temporarily enable inheritance on each handle in this list
@@ -222,9 +227,8 @@ namespace System.Diagnostics
         /// The handles themselves are not duplicated; they are made inheritable and passed to the child process.
         /// </para>
         /// <para>
-        /// On Unix, the implementation will modify each file descriptor in the child process
-        /// by removing the FD_CLOEXEC flag. This modification occurs after the fork and before the exec,
-        /// so it does not affect the parent process.
+        /// On Windows, when this property is used with <see cref="UserName"/> and <see cref="Password"/> or <see cref="PasswordInClearText"/> to start a process under different credentials,
+        /// the <see href="https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessasuserw">CreateProcessAsUserW</see> function is used to create the process.
         /// </para>
         /// </remarks>
         /// <value>
