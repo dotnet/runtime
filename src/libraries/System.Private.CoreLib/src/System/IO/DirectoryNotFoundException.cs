@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
@@ -35,11 +36,73 @@ namespace System.IO
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }
 
+        public DirectoryNotFoundException(string? message, string? directoryPath)
+            : base(message)
+        {
+            HResult = HResults.COR_E_DIRECTORYNOTFOUND;
+            DirectoryPath = directoryPath;
+        }
+
+        public DirectoryNotFoundException(string? message, string? directoryPath, Exception? innerException)
+            : base(message, innerException)
+        {
+            HResult = HResults.COR_E_DIRECTORYNOTFOUND;
+            DirectoryPath = directoryPath;
+        }
+
+        public override string Message
+        {
+            get
+            {
+                SetMessageField();
+                Debug.Assert(_message != null, "_message was null after calling SetMessageField");
+                return _message;
+            }
+        }
+
+        private void SetMessageField()
+        {
+            if (_message is null)
+            {
+                if (DirectoryPath is null)
+                    _message = SR.Arg_DirectoryNotFoundException;
+                else
+                    _message = SR.Format(SR.IO_DirectoryNotFound_Path, DirectoryPath);
+            }
+        }
+
+        public string? DirectoryPath { get; }
+
+        public override string ToString()
+        {
+            string s = GetType().ToString() + ": " + Message;
+
+            if (!string.IsNullOrEmpty(DirectoryPath))
+                s += Environment.NewLineConst + SR.Format(SR.IO_DirectoryName_Name, DirectoryPath);
+
+            if (InnerException is not null)
+                s += Environment.NewLineConst + InnerExceptionPrefix + InnerException.ToString();
+
+            if (StackTrace is not null)
+                s += Environment.NewLineConst + StackTrace;
+
+            return s;
+        }
+
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         protected DirectoryNotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            DirectoryPath = info.GetString("DirectoryNotFound_DirectoryPath");
+        }
+
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("DirectoryNotFound_DirectoryPath", DirectoryPath, typeof(string));
         }
     }
 }

@@ -2840,6 +2840,12 @@
   <data name="IO_FileLoad_FileName" xml:space="preserve">
     <value>Could not load the file '{0}'.</value>
   </data>
+  <data name="IO_DirectoryName_Name" xml:space="preserve">
+    <value>Directory path: '{0}'</value>
+  </data>
+  <data name="IO_DirectoryNotFound_Path" xml:space="preserve">
+    <value>Could not find directory '{0}'.</value>
+  </data>
   <data name="IO_FileName_Name" xml:space="preserve">
     <value>File name: '{0}'</value>
   </data>
