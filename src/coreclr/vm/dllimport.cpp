@@ -579,7 +579,7 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    virtual void FinishEmit(MethodDesc* pStubMD)
+    virtual COR_ILMETHOD_DECODER* FinishEmit(MethodDesc* pStubMD, ILStubResolver* pResolver)
     {
         STANDARD_VM_CONTRACT;
 
@@ -807,12 +807,15 @@ public:
             ConvertMethodDescSigToModuleIndependentSig(pStubMD);
         }
 
+        pResolver->SetStubTargetMethodSig(
+            GetStubTargetMethodSig(),
+            GetStubTargetMethodSigLength());
+
         if (hasTryCatchExceptionHandler)
         {
             EmitExceptionHandler(&nativeReturnType, &managedReturnType);
         }
 
-        ILStubResolver* pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
         COR_ILMETHOD_DECODER* pILHeader = pResolver->FinalizeILStub(&m_slIL, jitFlags);
 
         // Extract resolved EH clause info for logging and ETW
@@ -889,6 +892,7 @@ public:
                 );
         }
 
+        return pILHeader;
     }
 
     //
@@ -1166,8 +1170,6 @@ public:
         m_slIL.SetStubTargetMethodSig(pSig, cSig);
         m_qbNativeFnSigBuffer.Shrink(0);
     }
-
-    TokenLookupMap* GetTokenLookupMap() { WRAPPER_NO_CONTRACT; return m_slIL.GetTokenLookupMap(); }
 
     DWORD GetFlags() const { return m_dwStubFlags; }
 
@@ -1530,7 +1532,7 @@ public:
         }
     }
 
-    void FinishEmit(MethodDesc* pStubMD)
+    COR_ILMETHOD_DECODER* FinishEmit(MethodDesc* pStubMD, ILStubResolver* pResolver)
     {
         if (m_wrapperTypesNeeded)
         {
@@ -1555,7 +1557,7 @@ public:
             }
         }
 
-        ILStubState::FinishEmit(pStubMD);
+        return ILStubState::FinishEmit(pStubMD, pResolver);
     }
 
     void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD)
@@ -3651,16 +3653,18 @@ static MarshalInfo::MarshalType DoMarshalReturnValue(MetaSig&           msig,
 // Note that this function may now throw if it fails to create
 // a stub.
 //---------------------------------------------------------
-static void CreatePInvokeStubWorker(ILStubState*               pss,
-                                    StubSigDesc*             pSigDesc,
-                                    CorNativeLinkType        nlType,
-                                    CorNativeLinkFlags       nlFlags,
-                                    CorInfoCallConvExtension unmgdCallConv,
-                                    DWORD                    dwStubFlags,
-                                    MethodDesc               *pMD,
-                                    mdParamDef*              pParamTokenArray,
-                                    int                      iLCIDArg
-                                    )
+static COR_ILMETHOD_DECODER* CreatePInvokeStubWorker(
+    ILStubState*             pss,
+    ILStubResolver*          pResolver,
+    StubSigDesc*             pSigDesc,
+    CorNativeLinkType        nlType,
+    CorNativeLinkFlags       nlFlags,
+    CorInfoCallConvExtension unmgdCallConv,
+    DWORD                    dwStubFlags,
+    MethodDesc*              pMD,
+    mdParamDef*              pParamTokenArray,
+    int                      iLCIDArg
+    )
 {
     CONTRACTL
     {
@@ -3922,7 +3926,7 @@ static void CreatePInvokeStubWorker(ILStubState*               pss,
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
     // has been set in the stub MD (code:DynamicMethodDesc.SetNativeStackArgSize)
-    pss->FinishEmit(pMD);
+    return pss->FinishEmit(pMD, pResolver);
 }
 
 static void CreateStructMarshalIL(MethodTable* pMT, PInvokeStubLinker* stubLinker, DWORD dwMarshalOperationFlags)
@@ -5240,6 +5244,7 @@ namespace
                                 }
 
                                 CreatePInvokeStubWorker(pss,
+                                                        pResolver,
                                                         pSigDesc,
                                                         nlType,
                                                         nlFlags,
@@ -5248,12 +5253,6 @@ namespace
                                                         pStubMD,
                                                         pParamTokenArray,
                                                         iLCIDArg);
-
-                                pResolver->SetTokenLookupMap(pss->GetTokenLookupMap());
-
-                                pResolver->SetStubTargetMethodSig(
-                                    pss->GetStubTargetMethodSig(),
-                                    pss->GetStubTargetMethodSigLength());
 
                                 // we successfully generated the IL stub
                                 sgh.SuppressRelease();
