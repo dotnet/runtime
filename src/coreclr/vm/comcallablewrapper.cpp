@@ -276,8 +276,6 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
     }
     CONTRACT_END;
 
-    ComCallMethodDesc* pCMD = NULL;
-
     SLOT* rgVtable = (SLOT*)((ComMethodTable *)this+1);
 
     // Our entries in the vtable are UMEntryThunk stubs.
