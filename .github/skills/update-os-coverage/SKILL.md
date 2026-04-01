@@ -208,7 +208,7 @@ After editing, verify:
 
 Not all Helix queues run in the default PR pipeline (`runtime`). Some distros are only exercised by the **extra-platforms** pipeline (`runtime-extra-platforms`), which runs on a daily schedule and can be triggered on PRs with `/azp run runtime-extra-platforms`.
 
-**Distros behind the `isExtraPlatformsBuild` guard** (extra-platforms pipeline required):
+**Distros behind the `isExtraPlatformsBuild` guard** — need `runtime-extra-platforms`:
 
 | Distro | Platform | File |
 |--------|----------|------|
@@ -217,7 +217,7 @@ Not all Helix queues run in the default PR pipeline (`runtime`). Some distros ar
 | openSUSE | linux_x64 | `libraries/helix-queues-setup.yml` |
 | Alpine edge | linux_musl_x64 | `libraries/helix-queues-setup.yml` |
 
-**Distros in the default PR pipeline** (always exercised):
+**Distros in the default PR pipeline** — no extra pipeline needed:
 
 | Distro | Platform | File |
 |--------|----------|------|
@@ -226,13 +226,15 @@ Not all Helix queues run in the default PR pipeline (`runtime`). Some distros ar
 | CentOS Stream | linux_x64 | `libraries/helix-queues-setup.yml` |
 | Alpine (versioned) | linux_musl_x64, linux_musl_arm64 | `libraries/helix-queues-setup.yml`, `coreclr/templates/helix-queues-setup.yml` |
 
-After creating a PR, check whether the changed queues require an extra-platforms run to get CI coverage. If so, post the trigger comment on the PR directly:
+**Decision:** After creating a PR, cross-reference the distros you changed against the tables above. Only trigger `runtime-extra-platforms` if **at least one** changed distro is in the first table. If every changed distro is in the second table, the default `runtime` pipeline provides full coverage and no extra pipeline run is needed.
+
+When extra-platforms is needed, post the trigger comment on the PR:
 
 ```bash
 gh pr comment <pr-number> --body "/azp run runtime-extra-platforms"
 ```
 
-Tell the user you've triggered the pipeline and why it was needed.
+Tell the user you've triggered the pipeline and which distros required it.
 
 ### 7. Check other branches
 
