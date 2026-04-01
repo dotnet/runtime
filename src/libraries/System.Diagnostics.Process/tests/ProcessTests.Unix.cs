@@ -909,18 +909,12 @@ namespace System.Diagnostics.Tests
             using (Process nonChildProcess = CreateNonChildProcess())
             {
                 // Kill the process.
-                int rv = kill(nonChildProcess.Id, SIGKILL);
-                Assert.Equal(0, rv);
+                Assert.True(nonChildProcess.SafeHandle.Signal(PosixSignal.SIGKILL));
 
                 // Wait until the process is reaped.
-                while (rv == 0)
+                while (!nonChildProcess.HasExited)
                 {
-                    rv = kill(nonChildProcess.Id, 0);
-                    if (rv == 0)
-                    {
-                        // process still exists, wait some time.
-                        await Task.Delay(100);
-                    }
+                    await Task.Delay(100);
 
                     DateTime now = DateTime.UtcNow;
                     if (start.Ticks + (Helpers.PassingTestTimeoutMilliseconds * 10_000) <= now.Ticks)
@@ -1024,11 +1018,6 @@ namespace System.Diagnostics.Tests
         [DllImport("libc")]
         private static extern unsafe int setgroups(int length, uint* groups);
 
-        private const int SIGKILL = 9;
-
-        [DllImport("libc", SetLastError = true)]
-        private static extern int kill(int pid, int sig);
-
         [DllImport("libc", SetLastError = true)]
         private static extern int open(string pathname, int flags);
 
@@ -1062,14 +1051,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        private static void SendSignal(PosixSignal signal, int processId)
-        {
-            int result = kill(processId, Interop.Sys.GetPlatformSignalNumber(signal));
-            if (result != 0)
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), $"Failed to send signal {signal} to process {processId}");
-            }
-        }
+        private static void SendSignal(PosixSignal signal, Process process) => Assert.True(process.SafeHandle.Signal(signal));
 
         private static unsafe void ReEnableCtrlCHandlerIfNeeded(PosixSignal signal) { }
 
@@ -1115,7 +1097,7 @@ namespace System.Diagnostics.Tests
                 AssertRemoteProcessStandardOutputLine(childHandle, ChildReadyMessage, WaitInMS);
 
                 // Send SIGCONT to the child process
-                SendSignal(PosixSignal.SIGCONT, childHandle.Process.Id);
+                Assert.True(childHandle.Process.SafeHandle.Signal(PosixSignal.SIGCONT));
 
                 Assert.True(childHandle.Process.WaitForExit(WaitInMS));
                 Assert.Equal(RemotelyInvokable.SuccessExitCode, childHandle.Process.ExitCode);
