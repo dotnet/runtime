@@ -236,6 +236,8 @@ gh pr comment <pr-number> --body "/azp run runtime-extra-platforms"
 
 Tell the user you've triggered the pipeline and which distros required it.
 
+> **Note:** The `outerloop` pipeline (`libraries/outerloop.yml`) does not add Linux distro coverage beyond the default pipeline — the extra-platforms distros (Fedora, Debian, openSUSE) are explicitly excluded from outerloop runs. Do **not** trigger outerloop for Linux distro version changes unless the user explicitly requests it.
+
 ### 7. Check other branches
 
 After updating `main`, check whether release branches also need updates:
