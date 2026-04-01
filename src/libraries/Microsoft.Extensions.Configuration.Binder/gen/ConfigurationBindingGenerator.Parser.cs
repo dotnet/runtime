@@ -757,7 +757,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             (missingParameters ??= new()).Add(parameterName);
                         }
-                        else if (parameter.RefKind is not RefKind.None)
+                        else if (parameter.RefKind is not RefKind.None || propertySpec.IsIgnored)
                         {
                             (invalidParameters ??= new()).Add(parameterName);
                         }

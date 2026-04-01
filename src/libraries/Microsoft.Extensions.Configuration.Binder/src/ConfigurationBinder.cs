@@ -627,6 +627,11 @@ namespace Microsoft.Extensions.Configuration
             HashSet<string> propertyNames = new(StringComparer.OrdinalIgnoreCase);
             foreach (PropertyInfo prop in properties)
             {
+                if (IsIgnoredProperty(prop))
+                {
+                    continue;
+                }
+
                 propertyNames.Add(prop.Name);
             }
 

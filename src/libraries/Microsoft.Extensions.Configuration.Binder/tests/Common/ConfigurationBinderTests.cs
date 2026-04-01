@@ -1483,6 +1483,25 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void ThrowOnClassWithPrimaryCtorAndIgnoredProperty()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ClassWithPrimaryCtorAndIgnoredProperty>());
+
+            Assert.Equal(
+                SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, typeof(ClassWithPrimaryCtorAndIgnoredProperty), "color"),
+                ex.Message);
+        }
+
+        [Fact]
         public void CanBindClassWithPrimaryCtorWithDefaultValues()
         {
             var dic = new Dictionary<string, string>
