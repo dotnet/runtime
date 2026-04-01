@@ -31,6 +31,12 @@
 #include "request_common.h"
 #include "conditionalweaktable.h"
 
+#ifndef USE_DAC_TABLE_RVA
+extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+#include <clrconfignocache.h>
+#define CAN_USE_CDAC
+#endif
+
 //-----------------------------------------------------------------------------
 // Have standard enter and leave macros at the DacDbi boundary to enforce
 // standard behavior.
@@ -274,14 +280,60 @@ DacDbiInterfaceInstance(
 
     HRESULT hrStatus = pDac->Initialize();
 
-    if (SUCCEEDED(hrStatus))
-    {
-        *ppInterface = pDac;
-    }
-    else
+    if (FAILED(hrStatus))
     {
         delete pDac;
+        return hrStatus;
     }
+
+#ifdef CAN_USE_CDAC
+    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
+    if (enable.IsSet())
+    {
+        DWORD val;
+        if (enable.TryAsInteger(10, val) && val == 1)
+        {
+            uint64_t contractDescriptorAddr = 0;
+            if (TryGetSymbol(pDac->m_pTarget, pDac->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            {
+                IUnknown* legacyImpl;
+                HRESULT qiRes = pDac->QueryInterface(IID_IUnknown, (void**)&legacyImpl);
+                _ASSERTE(SUCCEEDED(qiRes));
+
+                CDAC& cdac = pDac->m_cdac;
+                cdac = CDAC::Create(contractDescriptorAddr, pDac->m_pTarget, legacyImpl);
+                if (cdac.IsValid())
+                {
+                    NonVMComHolder<IUnknown> cdacInterface = nullptr;
+                    cdac.CreateDacDbiInterface(&cdacInterface);
+                    if (cdacInterface != nullptr)
+                    {
+                        IDacDbiInterface* pCDacDbi = nullptr;
+                        HRESULT hr = cdacInterface->QueryInterface(__uuidof(IDacDbiInterface), (void**)&pCDacDbi);
+                        if (SUCCEEDED(hr))
+                        {
+                            // Lifetime is now managed by cDAC implementation
+                            pDac->Release();
+                            // Release the AddRef from the QI for legacyImpl
+                            pDac->Release();
+                            *ppInterface = pCDacDbi;
+                            return S_OK;
+                        }
+                    }
+                }
+
+                // Release the AddRef from the QI for legacyImpl
+                pDac->Release();
+            }
+
+            // If we requested to use the cDAC, but failed to create the cDAC interface, return failure
+            pDac->Release();
+            return E_FAIL;
+        }
+    }
+#endif
+
+    *ppInterface = pDac;
     return hrStatus;
 }
 

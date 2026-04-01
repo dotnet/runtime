@@ -57,9 +57,6 @@ public:
     COR_ILMETHOD_DECODER* GetILHeader();
 
 #ifndef DACCESS_COMPILE
-    // This is only set for StructMarshal interop stubs.
-    // See callsites for more details.
-    void SetLoaderHeap(PTR_LoaderHeap pLoaderHeap);
     void SetTokenLookupMap(TokenLookupMap* pMap);
     void SetJitFlags(CORJIT_FLAGS jitFlags);
     void SetStubMethodDesc(MethodDesc* pStubMD);
@@ -83,7 +80,6 @@ protected:
     };
 
     void ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState);
-    bool UseLoaderHeap();
 
     //
     // This stuff is only needed during JIT
@@ -105,7 +101,6 @@ protected:
     PTR_MethodDesc          m_pStubMD;
     PTR_MethodDesc          m_pStubTargetMD;
     CORJIT_FLAGS            m_jitFlags;
-    PTR_LoaderHeap          m_loaderHeap;
 };
 
 typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;
