@@ -812,37 +812,13 @@ public:
             EmitExceptionHandler(&nativeReturnType, &managedReturnType);
         }
 
-        UINT   maxStack;
-        size_t cbCode;
-        DWORD  cbSig;
-        BYTE * pbBuffer;
-        BYTE * pbLocalSig;
-
-        cbCode = m_slIL.Link(&maxStack);
-        cbSig = m_slIL.GetLocalSigSize();
-
-        ILStubResolver *       pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
-        COR_ILMETHOD_DECODER * pILHeader = pResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-        pbBuffer   = (BYTE *)pILHeader->Code;
-        pbLocalSig = (BYTE *)pILHeader->LocalVarSig;
-        _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-
-        size_t nEHClauses = m_slIL.GetNumEHClauses();
-        if (nEHClauses > 0)
-        {
-            COR_ILMETHOD_SECT_EH* pEHSect = pResolver->AllocEHSect(nEHClauses);
-            m_slIL.WriteEHClauses(pEHSect);
-        }
-
-        m_slIL.GenerateCode(pbBuffer, cbCode);
-        m_slIL.GetLocalSig(pbLocalSig, cbSig);
-
-        pResolver->SetJitFlags(jitFlags);
+        ILStubResolver* pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
+        COR_ILMETHOD_DECODER* pILHeader = pResolver->FinalizeILStub(&m_slIL, jitFlags);
 
         // Extract resolved EH clause info for logging and ETW
         ILStubEHClause cleanupTryFinally{};
         ILStubEHClause tryCatchClause{};
-        for (size_t i = 0; i < nEHClauses; i++)
+        for (size_t i = 0; i < pILHeader->EHCount(); i++)
         {
             ILStubEHClause clause{};
             m_slIL.GetEHClause(i, &clause);
@@ -867,11 +843,11 @@ public:
 
             pStubMD->GetSig(&pManagedSig, &cManagedSig);
 
-            PrettyPrintSig(pManagedSig,  cManagedSig, "*",  &qbManaged, pStubMD->GetMDImport(), NULL);
-            PrettyPrintSig(pbLocalSig,   cbSig, NULL, &qbLocal,   pIMDI, NULL);
+            PrettyPrintSig(pManagedSig, cManagedSig, "*",  &qbManaged, pStubMD->GetMDImport(), NULL);
+            PrettyPrintSig(pILHeader->LocalVarSig, pILHeader->cbLocalVarSig, NULL, &qbLocal,   pIMDI, NULL);
 
             LOG((LF_STUBS, LL_INFO1000, "incoming managed sig: %p: %s\n", pManagedSig, qbManaged.Ptr()));
-            LOG((LF_STUBS, LL_INFO1000, "locals sig:           %p: %s\n", pbLocalSig+1, qbLocal.Ptr()));
+            LOG((LF_STUBS, LL_INFO1000, "locals sig:           %p: %s\n", pILHeader->LocalVarSig, qbLocal.Ptr()));
 
             if (cleanupTryFinally.cbHandlerLength != 0)
             {
@@ -903,13 +879,13 @@ public:
         {
             EtwOnILStubGenerated(
                 pStubMD,
-                pbLocalSig,
-                cbSig,
+                pILHeader->LocalVarSig,
+                pILHeader->cbLocalVarSig,
                 jitFlags,
                 &tryCatchClause,
                 &cleanupTryFinally,
-                maxStack,
-                (DWORD)cbCode
+                pILHeader->GetMaxStack(),
+                (DWORD)pILHeader->GetCodeSize()
                 );
         }
 
