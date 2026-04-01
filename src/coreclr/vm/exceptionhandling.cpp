@@ -3619,7 +3619,7 @@ static bool IsTopmostDebuggerU2MCatchHandlerFrame(Frame *pFrame)
     return (pFrame->GetFrameIdentifier() == FrameIdentifier::DebuggerU2MCatchHandlerFrame) && (pFrame->PtrNextFrame() == FRAME_TOP);
 }
 
-static bool IsRuntimeUcoEntryPointMethod(MethodDesc* pMethodDesc)
+static bool IsRuntimeEntryPointMethod(MethodDesc* pMethodDesc)
 {
     return (pMethodDesc == CoreLibBinder::GetMethod(METHOD__ENVIRONMENT__CALL_ENTRY_POINT)) ||
            (pMethodDesc == CoreLibBinder::GetMethod(METHOD__ENVIRONMENT__CALL_ENTRY_POINT_UTF16_STRING_RET_INT));
@@ -4005,7 +4005,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
 
 #ifdef HOST_WINDOWS
                 MethodDesc* pMethodDesc = codeInfo.GetMethodDesc();
-                if ((pMethodDesc != NULL) && IsRuntimeUcoEntryPointMethod(pMethodDesc))
+                if ((pMethodDesc != NULL) && IsRuntimeEntryPointMethod(pMethodDesc))
                 {
                     // Runtime-invoked UCO entrypoint calls should behave like the
                     // internal call path and not as external-native propagation.
