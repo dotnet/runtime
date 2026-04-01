@@ -337,7 +337,9 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
     , m_compiler(theCompiler)
     , treeLifeUpdater(nullptr)
 #ifdef TARGET_WASM
-    , WasmLocalsDecls(theCompiler->getAllocator(CMK_Codegen))
+    , m_spRegs(theCompiler->getAllocator(CMK_Codegen))
+    , m_fpRegs(theCompiler->getAllocator(CMK_Codegen))
+    , WasmLocalsDecls(theCompiler->compFuncInfoCount, nullptr, theCompiler->getAllocator(CMK_Codegen))
 #endif
 {
 }

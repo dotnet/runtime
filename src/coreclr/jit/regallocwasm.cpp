@@ -18,6 +18,11 @@ RegAllocInterface* GetRegisterAllocator(Compiler* compiler)
 WasmRegAlloc::WasmRegAlloc(Compiler* compiler)
     : m_compiler(compiler)
     , m_codeGen(compiler->codeGen)
+    , m_currentBlock(nullptr)
+    , m_currentFunclet(0)
+    , m_spRegs(compiler->getAllocator(CMK_LSRA))
+    , m_fpRegs(compiler->getAllocator(CMK_LSRA))
+    , m_exRegs(compiler->getAllocator(CMK_LSRA))
 {
 }
 
@@ -87,9 +92,14 @@ void WasmRegAlloc::IdentifyCandidates()
         }
     }
 
-    if (anyFrameLocals || m_compiler->compLocallocUsed)
+    if (anyFrameLocals || m_compiler->compLocallocUsed || (m_compiler->compFuncInfoCount > 1))
     {
         AllocateFramePointer();
+    }
+
+    if (m_compiler->compFuncInfoCount > 1)
+    {
+        AllocateExceptionPointer();
     }
 }
 
@@ -138,9 +148,15 @@ void WasmRegAlloc::InitializeStackPointer()
 //
 void WasmRegAlloc::AllocateStackPointer()
 {
-    if (m_spReg == REG_NA)
+
+    if (m_spRegs.size() == 0)
     {
-        m_spReg = AllocateVirtualRegister(TYP_I_IMPL);
+        regNumber spReg = AllocateVirtualRegister(TYP_I_IMPL);
+
+        for (unsigned i = 0; i < m_compiler->compFuncInfoCount; i++)
+        {
+            m_spRegs.push_back(spReg);
+        }
     }
 }
 
@@ -149,18 +165,44 @@ void WasmRegAlloc::AllocateStackPointer()
 //
 void WasmRegAlloc::AllocateFramePointer()
 {
-    assert(m_fpReg == REG_NA);
+    assert(m_fpRegs.size() == 0);
 
     // FP is initialized with SP in the prolog, so ensure the latter is allocated.
     AllocateStackPointer();
 
-    if (m_compiler->compLocallocUsed)
+    // If we have funclets or localloc, we must have an FP.
+    bool const      needsFP = m_compiler->compLocallocUsed || (m_compiler->compFuncInfoCount > 1);
+    regNumber const fpReg   = needsFP ? AllocateVirtualRegister(TYP_I_IMPL) : m_spRegs[0];
+
+    for (unsigned i = 0; i < m_compiler->compFuncInfoCount; i++)
     {
-        m_fpReg = AllocateVirtualRegister(TYP_I_IMPL);
+        m_fpRegs.push_back(fpReg);
     }
-    else
+}
+
+//------------------------------------------------------------------------
+// AllocateExceptionPointer: Allocate a virtual register for the exception pointer.
+//
+void WasmRegAlloc::AllocateExceptionPointer()
+{
+    assert(m_exRegs.size() == 0);
+    regNumber exReg = REG_NA;
+    m_exRegs.resize(m_compiler->compFuncInfoCount, REG_NA);
+
+    for (unsigned i = 0; i < m_compiler->compFuncInfoCount; i++)
     {
-        m_fpReg = m_spReg;
+        const FuncInfoDsc& funcInfo = m_compiler->compFuncInfos[i];
+        EHblkDsc* const    ehDsc    = m_compiler->ehGetDsc(funcInfo.funEHIndex);
+
+        if (ehDsc->HasCatchHandler())
+        {
+            if (exReg == REG_NA)
+            {
+                exReg = AllocateVirtualRegister(TYP_REF);
+            }
+
+            m_exRegs[i] = exReg;
+        }
     }
 }
 
@@ -268,6 +310,11 @@ void WasmRegAlloc::CollectReferencesForBlock(BasicBlock* block)
 {
     m_currentBlock = block;
 
+    if (m_compiler->bbIsFuncletBeg(block))
+    {
+        m_currentFunclet = m_compiler->funGetFuncIdx(block);
+    }
+
     // We may modify the range while iterating.
     //
     // For now, we assume reordering happens only for already visited
@@ -350,6 +397,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 
         case GT_INDEX_ADDR:
             CollectReferencesForIndexAddr(node->AsIndexAddr());
+            break;
+
+        case GT_CATCH_ARG:
+            CollectReferencesForCatchArg(node);
             break;
 
         default:
@@ -517,9 +568,24 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
     if (lclVar->GetLclNum() == m_compiler->lvaWasmSpArg)
     {
         lclVar->ChangeOper(GT_PHYSREG);
-        lclVar->AsPhysReg()->gtSrcReg = m_spReg;
+        lclVar->AsPhysReg()->gtSrcReg = m_spRegs[m_currentFunclet];
         CollectReference(lclVar);
     }
+}
+
+//------------------------------------------------------------------------
+// CollectReferencesForCatchArg: Collect virtual register references for a CATCH_ARG node.
+//
+// Rewrites SP references into PHYS_REGs.
+//
+// Arguments:
+//    catchArg - The CATCH_ARG node
+//
+void WasmRegAlloc::CollectReferencesForCatchArg(GenTree* catchArg)
+{
+    catchArg->ChangeOper(GT_PHYSREG);
+    catchArg->AsPhysReg()->gtSrcReg = m_exRegs[m_currentFunclet];
+    CollectReference(catchArg);
 }
 
 //------------------------------------------------------------------------
@@ -732,180 +798,246 @@ void WasmRegAlloc::ResolveReferences()
         unsigned Index;
     };
 
-    PhysicalRegBank virtToPhysRegMap[static_cast<unsigned>(WasmValueType::Count)];
-    for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
+    // Process funclet by funclet
+    //
+    for (m_currentFunclet = 0; m_currentFunclet < m_compiler->compFuncInfoCount; m_currentFunclet++)
     {
-        VirtualRegStack& virtRegs = m_virtualRegs[static_cast<unsigned>(type)];
-        PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
-        physRegs.DeclaredCount    = virtRegs.Count();
-    }
-
-    unsigned indexBase = 0;
-    for (unsigned argLclNum = 0; argLclNum < m_compiler->info.compArgsCount; argLclNum++)
-    {
-        const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(argLclNum);
-        for (const ABIPassingSegment& segment : abiInfo.Segments())
+        PhysicalRegBank virtToPhysRegMap[static_cast<unsigned>(WasmValueType::Count)];
+        for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
-            if (segment.IsPassedInRegister())
-            {
-                WasmValueType argType;
-                regNumber     argReg   = segment.GetRegister();
-                unsigned      argIndex = UnpackWasmReg(argReg, &argType);
-                indexBase              = max(indexBase, argIndex + 1);
+            VirtualRegStack& virtRegs = m_virtualRegs[static_cast<unsigned>(type)];
+            PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
+            physRegs.DeclaredCount    = virtRegs.Count();
+        }
 
-                LclVarDsc* argVarDsc = m_compiler->lvaGetDesc(argLclNum);
-                if ((argVarDsc->GetRegNum() == argReg) || (m_spReg == argReg))
+        unsigned           indexBase = 0;
+        const FuncInfoDsc& funcInfo  = m_compiler->compFuncInfos[m_currentFunclet];
+
+        switch (funcInfo.funKind)
+        {
+            case FuncKind::FUNC_ROOT:
+            {
+                assert(m_currentFunclet == 0);
+                for (unsigned argLclNum = 0; argLclNum < m_compiler->info.compArgsCount; argLclNum++)
                 {
-                    assert(abiInfo.HasExactlyOneRegisterSegment());
-                    virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
-                }
+                    const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(argLclNum);
+                    for (const ABIPassingSegment& segment : abiInfo.Segments())
+                    {
+                        if (segment.IsPassedInRegister())
+                        {
+                            WasmValueType argType;
+                            regNumber     argReg   = segment.GetRegister();
+                            unsigned      argIndex = UnpackWasmReg(argReg, &argType);
+                            indexBase              = max(indexBase, argIndex + 1);
 
-                const ParameterRegisterLocalMapping* mapping =
-                    m_compiler->FindParameterRegisterLocalMappingByRegister(argReg);
-                if ((mapping != nullptr) && (m_compiler->lvaGetDesc(mapping->LclNum)->GetRegNum() == argReg))
+                            LclVarDsc* argVarDsc = m_compiler->lvaGetDesc(argLclNum);
+                            if ((argVarDsc->GetRegNum() == argReg) || (m_spRegs[0] == argReg))
+                            {
+                                assert(abiInfo.HasExactlyOneRegisterSegment());
+                                virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
+                            }
+
+                            const ParameterRegisterLocalMapping* mapping =
+                                m_compiler->FindParameterRegisterLocalMappingByRegister(argReg);
+                            if ((mapping != nullptr) &&
+                                (m_compiler->lvaGetDesc(mapping->LclNum)->GetRegNum() == argReg))
+                            {
+                                virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+
+            case FuncKind::FUNC_HANDLER:
+            case FuncKind::FUNC_FILTER:
+            {
+                assert(m_currentFunclet > 0);
+
+                // TODO: add ABI information for funclets?
+                //
+                // All funclets have two intial arguments sp and fp.
+                //
+                WasmValueType argType = TypeToWasmValueType(TYP_I_IMPL);
+
+                virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
+                virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
+                indexBase += 2;
+
+                // Filter and catch have a third argument - the exception object.
+                //
+                EHblkDsc* const eh = m_compiler->ehGetDsc(funcInfo.funEHIndex);
+                if ((funcInfo.funKind == FuncKind::FUNC_FILTER) || eh->HasCatchHandler())
                 {
+                    argType = TypeToWasmValueType(TYP_REF);
                     virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
+                    indexBase += 1;
                 }
             }
-        }
-    }
-    for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
-    {
-        PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
-        physRegs.IndexBase        = indexBase;
-        physRegs.Index            = indexBase;
-        indexBase += physRegs.DeclaredCount;
-    }
 
-    auto allocPhysReg = [&](regNumber virtReg, LclVarDsc* varDsc) {
-        regNumber physReg;
-        if ((varDsc != nullptr) && varDsc->lvIsRegArg && !varDsc->lvIsStructField)
-        {
-            unsigned                     lclNum  = m_compiler->lvaGetLclNum(varDsc);
-            const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
-            assert(abiInfo.HasExactlyOneRegisterSegment());
-            physReg = abiInfo.Segment(0).GetRegister();
-        }
-        else if ((varDsc != nullptr) && varDsc->lvIsParamRegTarget)
-        {
-            unsigned                             lclNum = m_compiler->lvaGetLclNum(varDsc);
-            const ParameterRegisterLocalMapping* mapping =
-                m_compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
-            assert(mapping != nullptr);
-            physReg = mapping->RegisterSegment->GetRegister();
-        }
-        else
-        {
-            WasmValueType type         = WasmRegToType(virtReg);
-            unsigned      physRegIndex = virtToPhysRegMap[static_cast<unsigned>(type)].Index++;
-            physReg                    = MakeWasmReg(physRegIndex, type);
+            break;
+
+            default:
+                assert(!"Unexpected funclet kind");
+                break;
         }
 
-        assert(genIsValidReg(physReg));
-        if ((varDsc != nullptr) && varDsc->lvIsRegCandidate())
+        for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
-            if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget)
-            {
-                // This is the register codegen will move the local from its ABI location in prolog.
-                varDsc->SetArgInitReg(physReg);
-            }
-
-            // This is the location for the "first" def. In our case all defs share the same register.
-            varDsc->SetRegNum(physReg);
-            varDsc->lvRegister = true;
-            varDsc->lvOnFrame  = false;
-        }
-        return physReg;
-    };
-
-    // Allocate all our virtual registers to physical ones.
-    regNumber spVirtReg = m_spReg;
-    if (spVirtReg != REG_NA)
-    {
-        m_spReg = allocPhysReg(spVirtReg, m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg));
-    }
-    if (m_fpReg != REG_NA)
-    {
-        m_fpReg = (spVirtReg == m_fpReg) ? m_spReg : allocPhysReg(m_fpReg, nullptr);
-    }
-
-    for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
-    {
-        unsigned lclNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
-        if (lclNum == m_compiler->lvaWasmSpArg)
-        {
-            continue; // Handled above.
+            PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
+            physRegs.IndexBase        = indexBase;
+            physRegs.Index            = indexBase;
+            indexBase += physRegs.DeclaredCount;
         }
 
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-        if (varDsc->lvIsRegCandidate())
-        {
-            allocPhysReg(varDsc->GetRegNum(), varDsc);
-        }
-    }
-
-    for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
-    {
-        TemporaryRegBank& regs = temporaryRegMap[static_cast<unsigned>(type)];
-        for (unsigned i = 0; i < regs.Count; i++)
-        {
-            regs.Regs[i] = allocPhysReg(regs.Regs[i], nullptr);
-        }
-    }
-
-    // Now remap all remaining virtual register references.
-    unsigned refsCount = m_lastVirtualRegRefsCount;
-    for (VirtualRegReferences* refs = m_virtualRegRefs; refs != nullptr; refs = refs->Prev)
-    {
-        for (size_t i = 0; i < refsCount; i++)
-        {
-            GenTree* node = refs->Nodes[i];
-            if (node->OperIs(GT_PHYSREG))
-            {
-                assert(node->AsPhysReg()->gtSrcReg == spVirtReg);
-                node->AsPhysReg()->gtSrcReg = m_spReg;
-                assert(!genIsValidReg(node->GetRegNum())); // Currently we do not need to multi-use any PHYSREGs.
-                continue;
-            }
-
+        auto allocPhysReg = [&](regNumber virtReg, LclVarDsc* varDsc) {
             regNumber physReg;
-            if (node->OperIs(GT_STORE_LCL_VAR))
+            if ((varDsc != nullptr) && varDsc->lvIsRegArg && !varDsc->lvIsStructField)
             {
-                physReg = m_compiler->lvaGetDesc(node->AsLclVarCommon())->GetRegNum();
+                unsigned                     lclNum  = m_compiler->lvaGetLclNum(varDsc);
+                const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
+                assert(abiInfo.HasExactlyOneRegisterSegment());
+                physReg = abiInfo.Segment(0).GetRegister();
+            }
+            else if ((varDsc != nullptr) && varDsc->lvIsParamRegTarget)
+            {
+                unsigned                             lclNum = m_compiler->lvaGetLclNum(varDsc);
+                const ParameterRegisterLocalMapping* mapping =
+                    m_compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
+                assert(mapping != nullptr);
+                physReg = mapping->RegisterSegment->GetRegister();
             }
             else
             {
-                assert(!node->OperIsLocal() || !m_compiler->lvaGetDesc(node->AsLclVarCommon())->lvIsRegCandidate());
-                WasmValueType type;
-                unsigned      index = UnpackWasmReg(node->GetRegNum(), &type);
-                physReg             = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
+                WasmValueType type         = WasmRegToType(virtReg);
+                unsigned      physRegIndex = virtToPhysRegMap[static_cast<unsigned>(type)].Index++;
+                physReg                    = MakeWasmReg(physRegIndex, type);
             }
 
-            node->SetRegNum(physReg);
-        }
-        refsCount = ARRAY_SIZE(refs->Nodes);
-    }
+            assert(genIsValidReg(physReg));
+            if ((varDsc != nullptr) && varDsc->lvIsRegCandidate())
+            {
+                if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget)
+                {
+                    // This is the register codegen will move the local from its ABI location in prolog.
+                    varDsc->SetArgInitReg(physReg);
+                }
 
-    for (NodeInternalRegistersTable::Node* nodeWithInternalRegs : m_codeGen->internalRegisters.Iterate())
-    {
-        InternalRegs* regs  = &nodeWithInternalRegs->GetValueRef();
-        unsigned      count = regs->Count();
-        for (unsigned i = 0; i < count; i++)
-        {
-            WasmValueType type;
-            unsigned      index   = UnpackWasmReg(regs->GetAt(i), &type);
-            regNumber     physReg = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
-            regs->SetAt(i, physReg);
-        }
-    }
+                // This is the location for the "first" def. In our case all defs share the same register.
+                //
+                // Note this holds even across funclets, since any local that is referred to in multiple funclets
+                // or in both funclets and the main method won't be a register candidate (we hope).
+                // (need to verify that if we have a local with two disjoint live ranges that doesn't cross a
+                // funclet boundary that we get this right).
+                //
+                varDsc->SetRegNum(physReg);
+                varDsc->lvRegister = true;
+                varDsc->lvOnFrame  = false;
+            }
+            return physReg;
+        };
 
-    jitstd::vector<CodeGenInterface::WasmLocalsDecl>& decls = m_compiler->codeGen->WasmLocalsDecls;
-    for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
-    {
-        PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
-        if (physRegs.DeclaredCount != 0)
+        // Allocate all our virtual registers to physical ones.
+        //
+        regNumber spVirtReg = m_spRegs[m_currentFunclet];
+        if (spVirtReg != REG_NA)
         {
-            decls.push_back({type, physRegs.DeclaredCount});
+            m_spRegs[m_currentFunclet] = allocPhysReg(spVirtReg, m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg));
+        }
+
+        if (m_fpRegs[m_currentFunclet] != REG_NA)
+        {
+            m_fpRegs[m_currentFunclet] = (spVirtReg == m_fpRegs[m_currentFunclet])
+                                             ? m_spRegs[m_currentFunclet]
+                                             : allocPhysReg(m_fpRegs[m_currentFunclet], nullptr);
+        }
+
+        for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
+        {
+            unsigned lclNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
+            if (lclNum == m_compiler->lvaWasmSpArg)
+            {
+                continue; // Handled above.
+            }
+
+            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+            if (varDsc->lvIsRegCandidate())
+            {
+                allocPhysReg(varDsc->GetRegNum(), varDsc);
+            }
+        }
+
+        for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
+        {
+            TemporaryRegBank& regs = temporaryRegMap[static_cast<unsigned>(type)];
+            for (unsigned i = 0; i < regs.Count; i++)
+            {
+                regs.Regs[i] = allocPhysReg(regs.Regs[i], nullptr);
+            }
+        }
+
+        // Now remap all remaining virtual register references.
+        unsigned refsCount = m_lastVirtualRegRefsCount;
+        for (VirtualRegReferences* refs = m_virtualRegRefs; refs != nullptr; refs = refs->Prev)
+        {
+            for (size_t i = 0; i < refsCount; i++)
+            {
+                GenTree* node = refs->Nodes[i];
+                if (node->OperIs(GT_PHYSREG))
+                {
+                    assert(node->AsPhysReg()->gtSrcReg == spVirtReg);
+                    node->AsPhysReg()->gtSrcReg = m_spRegs[m_currentFunclet];
+                    assert(!genIsValidReg(node->GetRegNum())); // Currently we do not need to multi-use any PHYSREGs.
+                    continue;
+                }
+
+                regNumber physReg;
+                if (node->OperIs(GT_STORE_LCL_VAR))
+                {
+                    physReg = m_compiler->lvaGetDesc(node->AsLclVarCommon())->GetRegNum();
+                }
+                else
+                {
+                    assert(!node->OperIsLocal() || !m_compiler->lvaGetDesc(node->AsLclVarCommon())->lvIsRegCandidate());
+                    WasmValueType type;
+                    unsigned      index = UnpackWasmReg(node->GetRegNum(), &type);
+                    physReg             = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
+                }
+
+                node->SetRegNum(physReg);
+            }
+            refsCount = ARRAY_SIZE(refs->Nodes);
+        }
+
+        for (NodeInternalRegistersTable::Node* nodeWithInternalRegs : m_codeGen->internalRegisters.Iterate())
+        {
+            // We need to filter to just the references in the current funclet.
+            //
+            InternalRegs* regs  = &nodeWithInternalRegs->GetValueRef();
+            unsigned      count = regs->Count();
+            for (unsigned i = 0; i < count; i++)
+            {
+                WasmValueType type;
+                unsigned      index   = UnpackWasmReg(regs->GetAt(i), &type);
+                regNumber     physReg = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
+                regs->SetAt(i, physReg);
+            }
+        }
+
+        assert(m_compiler->codeGen->WasmLocalsDecls[m_currentFunclet] == nullptr);
+
+        jitstd::vector<CodeGenInterface::WasmLocalsDecl>* decls = new (m_compiler->getAllocator(CMK_Codegen))
+            jitstd::vector<CodeGenInterface::WasmLocalsDecl>(m_compiler->getAllocator(CMK_Codegen));
+        m_compiler->codeGen->WasmLocalsDecls[m_currentFunclet] = decls;
+
+        for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
+        {
+            PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
+            if (physRegs.DeclaredCount != 0)
+            {
+                decls->push_back({type, physRegs.DeclaredCount});
+            }
         }
     }
 }
@@ -917,21 +1049,46 @@ void WasmRegAlloc::ResolveReferences()
 //
 void WasmRegAlloc::PublishAllocationResults()
 {
-    if (m_spReg != REG_NA)
+#ifdef DEBUG
+    for (unsigned i = 0; i < m_spRegs.size(); i++)
     {
-        m_codeGen->SetStackPointerReg(m_spReg);
-        JITDUMP("Allocated SP into %s\n", getRegName(m_spReg));
+        if (i == 0)
+        {
+            JITDUMP("Allocated function SP into: %s\n", getRegName(m_spRegs[i]));
+        }
+        else
+        {
+            JITDUMP("Allocated Funclet %u SP into %s\n", i, getRegName(m_spRegs[i]));
+        }
     }
-    if (m_fpReg != REG_NA)
+
+    for (unsigned i = 0; i < m_fpRegs.size(); i++)
     {
-        m_codeGen->SetFramePointerReg(m_fpReg);
-        m_codeGen->setFramePointerUsed(true);
-        JITDUMP("Allocated FP into %s\n", getRegName(m_fpReg));
+        if (i == 0)
+        {
+            JITDUMP("Allocated function FP into: %s\n", getRegName(m_fpRegs[i]));
+        }
+        else
+        {
+            JITDUMP("Allocated Funclet %u FP into %s\n", i, getRegName(m_fpRegs[i]));
+        }
+    }
+
+#endif // DEBUG
+
+    m_codeGen->SetStackPointerRegs(m_spRegs);
+
+    if (m_fpRegs.size() != 0)
+    {
+        m_codeGen->SetFramePointerRegs(m_fpRegs);
     }
     else
     {
         m_codeGen->setFramePointerUsed(false);
     }
+
+    // We don't need to publish the exRegs for codegen; all references were in codegen
+    // and all were converted to GT_PHYSREG.
 
     m_compiler->raMarkStkVars();
     m_compiler->compRegAllocDone = true;

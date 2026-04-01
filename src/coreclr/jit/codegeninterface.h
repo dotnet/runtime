@@ -271,29 +271,27 @@ public:
     }
 
 #if !HAS_FIXED_REGISTER_SET
+
 private:
-    // For targets without a fixed SP/FP, these are the registers with which they are associated.
-    PhasedVar<regNumber> m_cgStackPointerReg = REG_NA;
-    PhasedVar<regNumber> m_cgFramePointerReg = REG_NA;
+    jitstd::vector<regNumber> m_spRegs;
+    jitstd::vector<regNumber> m_fpRegs;
 
 public:
-    void SetStackPointerReg(regNumber reg)
+    void SetStackPointerRegs(jitstd::vector<regNumber>& regs)
     {
-        assert(reg != REG_NA);
-        m_cgStackPointerReg = reg;
+        m_spRegs = regs;
     }
-    void SetFramePointerReg(regNumber reg)
+    void SetFramePointerRegs(jitstd::vector<regNumber>& regs)
     {
-        assert(reg != REG_NA);
-        m_cgFramePointerReg = reg;
+        m_fpRegs = regs;
     }
-    regNumber GetStackPointerReg() const
+    regNumber GetStackPointerReg(unsigned funcletIndex) const
     {
-        return m_cgStackPointerReg;
+        return m_spRegs[funcletIndex];
     }
-    regNumber GetFramePointerReg() const
+    regNumber GetFramePointerReg(unsigned funcletIndex) const
     {
-        return m_cgFramePointerReg;
+        return m_fpRegs[funcletIndex];
     }
 #else  // HAS_FIXED_REGISTER_SET
     regNumber GetStackPointerReg() const
@@ -407,7 +405,9 @@ public:
         unsigned      Count;
     };
 
-    jitstd::vector<WasmLocalsDecl> WasmLocalsDecls;
+    // Per-funclet vectors of local declarations
+    //
+    jitstd::vector<jitstd::vector<WasmLocalsDecl>*> WasmLocalsDecls;
 #endif
 
 #ifdef DEBUG

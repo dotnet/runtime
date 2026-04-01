@@ -78,6 +78,7 @@ class WasmRegAlloc : public RegAllocInterface
     Compiler*             m_compiler;
     CodeGenInterface*     m_codeGen;
     BasicBlock*           m_currentBlock;
+    unsigned              m_currentFunclet;
     VirtualRegStack       m_virtualRegs[static_cast<int>(WasmValueType::Count)];
     unsigned              m_lastVirtualRegRefsCount = 0;
     VirtualRegReferences* m_virtualRegRefs          = nullptr;
@@ -86,8 +87,13 @@ class WasmRegAlloc : public RegAllocInterface
     // The meaning of these fields is borrowed (partially) from the C ABI for WASM. We define "the SP" to be the local
     // which is used to make calls - the stack on entry to callees. We term "the FP" to be the local which is used to
     // access the fixed potion of the frame. For fixed-size frames (no localloc), these will be the same.
-    regNumber m_spReg = REG_NA;
-    regNumber m_fpReg = REG_NA;
+    //
+    // These values are per funclet region. In funclets FP will differ from SP, and will likely differ from FP in the
+    // main function body.
+    //
+    jitstd::vector<regNumber> m_spRegs;
+    jitstd::vector<regNumber> m_fpRegs;
+    jitstd::vector<regNumber> m_exRegs;
 
 public:
     WasmRegAlloc(Compiler* compiler);
@@ -111,6 +117,7 @@ private:
     void      InitializeStackPointer();
     void      AllocateStackPointer();
     void      AllocateFramePointer();
+    void      AllocateExceptionPointer();
     regNumber AllocateVirtualRegister(var_types type);
     regNumber AllocateVirtualRegister(WasmValueType type);
     regNumber AllocateTemporaryRegister(var_types type);
@@ -129,6 +136,7 @@ private:
     void      CollectReferencesForBlockStore(GenTreeBlk* node);
     void      CollectReferencesForLclVar(GenTreeLclVar* lclVar);
     void      CollectReferencesForIndexAddr(GenTreeIndexAddr* indexAddrNode);
+    void      CollectReferencesForCatchArg(GenTree* node);
     void      RewriteLocalStackStore(GenTreeLclVarCommon* node);
     void      CollectReference(GenTree* node);
     void      RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node);
