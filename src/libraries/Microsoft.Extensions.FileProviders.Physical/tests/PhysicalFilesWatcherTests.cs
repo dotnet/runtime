@@ -424,7 +424,6 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task CreateFileChangeToken_RootDeletedAndRecreated_TokenFiresWhenFileCreated()
         {
             using var root = new TempDirectory(GetTestFilePath());
@@ -439,7 +438,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             Directory.Delete(rootPath, recursive: true);
             await Task.Delay(WaitTimeForTokenToFire);
 
-            // Re-watch the same file — root is now missing, so this goes through PendingCreationWatcher
+            // Re-watch the same file — root is now missing, so this goes through PendingCreationWatcher where available
             IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("file.txt");
 
             Task changed = WhenChanged(token);
