@@ -700,8 +700,9 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:[ab][0-9]|[ab])x", "[ab][0-9]x")]
         // Suffix extraction should not merge branches with different trailing anchors
         [InlineData(@"abc$|xyz\z", @"(?:abc|xyz)$")]
-        // Non-anchor trailing nodes: distribution is limited by heuristic (too many trailing nodes or branches)
-        [InlineData(@"abcxy|defxy|ghixy|jklxy|mnoxy|pqrxy", @"(?:abc|def|ghi|jkl|mno|pqr)xy")]
+        // Non-anchor trailing nodes: distribution heuristic limits trailingCount * branches to 20
+        // With 11 branches and 2 trailing nodes, 2*11=22 > 20 so distribution is blocked
+        [InlineData(@"(?:ab|cd|ef|gh|ij|kl|mn|op|qr|st|uv)x.", @"abx.|cdx.|efx.|ghx.|ijx.|klx.|mnx.|opx.|qrx.|stx.|uvx.")]
         public void PatternsReduceDifferently(string actual, string expected)
         {
             // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.
