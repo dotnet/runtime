@@ -1302,9 +1302,6 @@ class DeadCodeElimination
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void Consume(object o) { }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static bool TypeCheckUnknown<T>() => GetUnknown() is GenUsedForExternal<T>;
-
         public static void Run()
         {
             var map = TypeMapping.GetOrCreateExternalTypeMapping<Universe>();
@@ -1319,7 +1316,7 @@ class DeadCodeElimination
                 ThrowIfUsableMethodTable(mappedType);
                 if (mappedType.Name != nameof(ConditionalTypeMapEntry))
                     throw new Exception();
-                
+
                 if ((bool)typeof(TestInteropMapTrimming).GetMethod(nameof(TypeCheckUnknown)).MakeGenericMethod(GetObjectType()).Invoke(null, null))
                 {
                     Console.WriteLine("Unexpected!");
@@ -1367,6 +1364,9 @@ class DeadCodeElimination
         {
             return map.GetValueOrDefault(new GenUsedForProxy<T>().GetType());
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool TypeCheckUnknown<T>() where T : class => GetUnknown() is GenUsedForExternal<T>;
     }
 
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
