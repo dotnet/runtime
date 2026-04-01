@@ -257,7 +257,7 @@ NoFloatingPointRetVal
     NESTED_ENTRY ComCallPreStub,,UMEntryPrestubUnwindFrameChainHandler
 
     ; Save arguments and return address
-    PROLOG_SAVE_REG_PAIR           fp, lr, #-232!
+    PROLOG_SAVE_REG_PAIR           fp, lr, #-240!
     SAVE_ARGUMENT_REGISTERS        sp, 16
     SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96
     PROLOG_SAVE_REG                x19, #224 ; save x19 which we will use to store the secret argument
@@ -276,7 +276,7 @@ NoFloatingPointRetVal
     EPILOG_RESTORE_REG                x19, #224 ; restore x19's original value
     RESTORE_ARGUMENT_REGISTERS        sp, 16
     RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, 96
-    EPILOG_RESTORE_REG_PAIR           fp, lr, #232!
+    EPILOG_RESTORE_REG_PAIR           fp, lr, #240!
 
     ; and tailcall to the actual method
     EPILOG_BRANCH_REG x16
