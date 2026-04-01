@@ -664,109 +664,6 @@ namespace System.Runtime.CompilerServices
             }
 
             [StackTraceHidden]
-            private unsafe void InstrumentedDispatchContinuations()
-            {
-                ExecutionAndSyncBlockStore contexts = default;
-                contexts.Push();
-
-                AsyncDispatcherInfo asyncDispatcherInfo;
-                asyncDispatcherInfo.Next = AsyncDispatcherInfo.t_current;
-                asyncDispatcherInfo.NextContinuation = MoveContinuationState();
-                AsyncDispatcherInfo.t_current = &asyncDispatcherInfo;
-
-                AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
-                AsyncInstrumentationHelper.ResumeRuntimeAsyncContext(this, ref asyncDispatcherInfo, flags);
-
-                while (true)
-                {
-                    Debug.Assert(asyncDispatcherInfo.NextContinuation != null);
-                    Continuation curContinuation = asyncDispatcherInfo.NextContinuation;
-                    try
-                    {
-                        Continuation? nextContinuation = curContinuation.Next;
-                        asyncDispatcherInfo.NextContinuation = nextContinuation;
-
-                        ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
-
-                        AsyncInstrumentationHelper.ResumeRuntimeAsyncMethod(ref asyncDispatcherInfo, flags, curContinuation);
-                        Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
-
-                        if (newContinuation != null)
-                        {
-                            newContinuation.Next = nextContinuation;
-                            AsyncInstrumentationHelper.SuspendRuntimeAsyncContext(flags, curContinuation, newContinuation);
-                            AsyncInstrumentationHelper.HandleSuspended(this, flags, newContinuation);
-
-                            contexts.Pop();
-                            AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
-                            return;
-                        }
-
-                        AsyncInstrumentationHelper.CompleteRuntimeAsyncMethod(flags, curContinuation);
-                    }
-                    catch (Exception ex)
-                    {
-                        uint unwindedFrames = 1; // Count current frame.
-                        Continuation? handlerContinuation = UnwindToPossibleHandler(asyncDispatcherInfo.NextContinuation, ex, ref unwindedFrames);
-                        if (handlerContinuation == null)
-                        {
-                            AsyncInstrumentationHelper.UnwindRuntimeAsyncMethodUnhandledException(ref asyncDispatcherInfo, flags, ex, curContinuation, unwindedFrames);
-
-                            // Tail of AsyncTaskMethodBuilderT.SetException
-                            bool successfullySet = ex is OperationCanceledException oce ?
-                                TrySetCanceled(oce.CancellationToken, oce) :
-                                TrySetException(ex);
-
-                            contexts.Pop();
-
-                            AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
-
-                            if (!successfullySet)
-                            {
-                                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
-                            }
-
-                            return;
-                        }
-
-                        AsyncInstrumentationHelper.UnwindRuntimeAsyncMethodHandledException(flags, curContinuation, unwindedFrames);
-
-                        handlerContinuation.SetException(ex);
-                        asyncDispatcherInfo.NextContinuation = handlerContinuation;
-                    }
-
-                    if (asyncDispatcherInfo.NextContinuation == null)
-                    {
-                        AsyncInstrumentationHelper.CompleteRuntimeAsyncContext(ref asyncDispatcherInfo, flags);
-
-                        bool successfullySet = TrySetResult(m_result);
-
-                        contexts.Pop();
-
-                        AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
-
-                        if (!successfullySet)
-                        {
-                            ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
-                        }
-
-                        return;
-                    }
-
-                    if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation))
-                    {
-                        AsyncInstrumentationHelper.SuspendRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation);
-
-                        contexts.Pop();
-                        AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
-                        return;
-                    }
-
-                    flags = AsyncInstrumentation.ActiveFlags;
-                }
-            }
-
-            [StackTraceHidden]
             // NOTE, any changes done to this method needs to be replicate in InstrumentedDispatchContinuations as well.
             private unsafe void DispatchContinuations()
             {
@@ -867,6 +764,109 @@ namespace System.Runtime.CompilerServices
                         InstrumentedDispatchContinuations();
                         return;
                     }
+                }
+            }
+
+            [StackTraceHidden]
+            private unsafe void InstrumentedDispatchContinuations()
+            {
+                ExecutionAndSyncBlockStore contexts = default;
+                contexts.Push();
+
+                AsyncDispatcherInfo asyncDispatcherInfo;
+                asyncDispatcherInfo.Next = AsyncDispatcherInfo.t_current;
+                asyncDispatcherInfo.NextContinuation = MoveContinuationState();
+                AsyncDispatcherInfo.t_current = &asyncDispatcherInfo;
+
+                AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
+                AsyncInstrumentationHelper.ResumeRuntimeAsyncContext(this, ref asyncDispatcherInfo, flags);
+
+                while (true)
+                {
+                    Debug.Assert(asyncDispatcherInfo.NextContinuation != null);
+                    Continuation curContinuation = asyncDispatcherInfo.NextContinuation;
+                    try
+                    {
+                        Continuation? nextContinuation = curContinuation.Next;
+                        asyncDispatcherInfo.NextContinuation = nextContinuation;
+
+                        ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
+
+                        AsyncInstrumentationHelper.ResumeRuntimeAsyncMethod(ref asyncDispatcherInfo, flags, curContinuation);
+                        Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
+
+                        if (newContinuation != null)
+                        {
+                            newContinuation.Next = nextContinuation;
+                            AsyncInstrumentationHelper.SuspendRuntimeAsyncContext(flags, curContinuation, newContinuation);
+                            AsyncInstrumentationHelper.HandleSuspended(this, flags, newContinuation);
+
+                            contexts.Pop();
+                            AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
+                            return;
+                        }
+
+                        AsyncInstrumentationHelper.CompleteRuntimeAsyncMethod(flags, curContinuation);
+                    }
+                    catch (Exception ex)
+                    {
+                        uint unwindedFrames = 1; // Count current frame.
+                        Continuation? handlerContinuation = UnwindToPossibleHandler(asyncDispatcherInfo.NextContinuation, ex, ref unwindedFrames);
+                        if (handlerContinuation == null)
+                        {
+                            AsyncInstrumentationHelper.UnwindRuntimeAsyncMethodUnhandledException(ref asyncDispatcherInfo, flags, ex, curContinuation, unwindedFrames);
+
+                            // Tail of AsyncTaskMethodBuilderT.SetException
+                            bool successfullySet = ex is OperationCanceledException oce ?
+                                TrySetCanceled(oce.CancellationToken, oce) :
+                                TrySetException(ex);
+
+                            contexts.Pop();
+
+                            AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
+
+                            if (!successfullySet)
+                            {
+                                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
+                            }
+
+                            return;
+                        }
+
+                        AsyncInstrumentationHelper.UnwindRuntimeAsyncMethodHandledException(flags, curContinuation, unwindedFrames);
+
+                        handlerContinuation.SetException(ex);
+                        asyncDispatcherInfo.NextContinuation = handlerContinuation;
+                    }
+
+                    if (asyncDispatcherInfo.NextContinuation == null)
+                    {
+                        AsyncInstrumentationHelper.CompleteRuntimeAsyncContext(ref asyncDispatcherInfo, flags);
+
+                        bool successfullySet = TrySetResult(m_result);
+
+                        contexts.Pop();
+
+                        AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
+
+                        if (!successfullySet)
+                        {
+                            ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
+                        }
+
+                        return;
+                    }
+
+                    if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation))
+                    {
+                        AsyncInstrumentationHelper.SuspendRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation);
+
+                        contexts.Pop();
+                        AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
+                        return;
+                    }
+
+                    flags = AsyncInstrumentation.ActiveFlags;
                 }
             }
 
