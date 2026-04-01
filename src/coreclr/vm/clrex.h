@@ -672,10 +672,10 @@ class EEFileLoadException : public EEException
     EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException = NULL);
     ~EEFileLoadException();
 
-    void SetRequestingAssemblyChain(const SString &name)
+    void SetRequestingAssemblyChain(const SString &requestingAssemblyChain)
     {
         WRAPPER_NO_CONTRACT;
-        m_requestingAssemblyChain = name;
+        m_requestingAssemblyChain = requestingAssemblyChain;
     }
 
     // virtual overrides

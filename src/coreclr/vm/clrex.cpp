@@ -1587,7 +1587,7 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     GCPROTECT_BEGIN(gc);
 
     LPCWSTR pFileName = m_name.GetUnicode();
-    LPCWSTR pRequestingChain = m_requestingAssemblyChain.GetUnicode();
+    LPCWSTR pRequestingChain = m_requestingAssemblyChain.IsEmpty() ? nullptr : m_requestingAssemblyChain.GetUnicode();
     UnmanagedCallersOnlyCaller createFileLoadEx(METHOD__FILE_LOAD_EXCEPTION__CREATE);
 
     FileLoadExceptionKind kind = GetFileLoadExceptionKind(m_hr);

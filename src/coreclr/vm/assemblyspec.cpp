@@ -731,6 +731,7 @@ PEAssembly *AssemblySpecBindingCache::LookupFile(AssemblySpec *pSpec, BOOL fThro
     }
 }
 
+// Caller should hold a lock for this cache when calling this method
 Assembly *AssemblySpecBindingCache::LookupParentAssemblyForAssembly(Assembly *pAssembly)
 {
     CONTRACTL
