@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         private static Task WhenChanged(IChangeToken token, bool withTimeout = true)
         {
-            var tcs = new TaskCompletionSource<bool>();
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             token.RegisterChangeCallback(_ => tcs.TrySetResult(true), null);
 
             if (withTimeout)
