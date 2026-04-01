@@ -21,8 +21,8 @@ namespace System.Threading.Tasks.Tests
         private static readonly FieldInfo TaskTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncTaskTimestamps");
         private static readonly FieldInfo ContinuationTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncContinuationTimestamps");
         private static readonly FieldInfo ActiveTasksField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_currentActiveTasks");
-        private static readonly FieldInfo TplEventSource = GetCorLibClassStaticField("System.Threading.Tasks.TplEventSource", "Log");
-        private static readonly FieldInfo ActiveFlags = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "_activeFlags");
+        private static readonly FieldInfo TplEventSourceLogField = GetCorLibClassStaticField("System.Threading.Tasks.TplEventSource", "Log");
+        private static readonly FieldInfo ActiveFlagsField = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "_activeFlags");
 
         private static object _debuggerLock = new object();
         private static TestEventListener? _debuggerTplInstance;
@@ -37,21 +37,21 @@ namespace System.Threading.Tasks.Tests
             lock (_debuggerLock)
             {
                 // Touch TplEventSource.Log making sure provider is initialized.
-                TplEventSource.GetValue(null);
+                TplEventSourceLogField.GetValue(null);
 
-                long flags = Convert.ToInt64(ActiveFlags.GetValue(null));
+                long flags = Convert.ToInt64(ActiveFlagsField.GetValue(null));
                 Assert.True(flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {DisabledInstrumentationFlags}");
 
                 _debuggerTplInstance = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose);
                 AsyncDebuggingEnabledField.SetValue(null, true);
 
-                flags = Convert.ToInt64(ActiveFlags.GetValue(null));
+                flags = Convert.ToInt64(ActiveFlagsField.GetValue(null));
                 Assert.True(flags == EnabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {EnabledInstrumentationFlags}");
 
                 // Initialize collections.
                 Func().GetAwaiter().GetResult();
 
-                flags = Convert.ToInt64(ActiveFlags.GetValue(null));
+                flags = Convert.ToInt64(ActiveFlagsField.GetValue(null));
                 Assert.True(flags == EnabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {EnabledInstrumentationFlags}");
 
                 var activeTasks = (Dictionary<int, Task>)ActiveTasksField.GetValue(null);
@@ -74,7 +74,7 @@ namespace System.Threading.Tasks.Tests
                 _debuggerTplInstance.Dispose();
                 _debuggerTplInstance = null;
 
-                long flags = Convert.ToInt64(ActiveFlags.GetValue(null));
+                long flags = Convert.ToInt64(ActiveFlagsField.GetValue(null));
                 Assert.True(flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {DisabledInstrumentationFlags}");
             }
         }

@@ -645,8 +645,7 @@ namespace System.Runtime.CompilerServices
 
                 private static void DebuggerHandleSuspended(RuntimeAsyncTask<T> task, Continuation? newContinuation = null)
                 {
-                    ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-                    Continuation? nc = state.SentinelContinuation!.Next;
+                    Continuation? nc = t_runtimeAsyncAwaitState.SentinelContinuation!.Next;
 
                     if (nc != null)
                     {
