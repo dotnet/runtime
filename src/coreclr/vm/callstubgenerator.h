@@ -124,12 +124,14 @@ class CallStubGenerator
         ReturnTypeSwiftLowered,
 #endif // TARGET_APPLE
 #endif // TARGET_ARM64
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        ReturnTypeFloat,
+        ReturnType2Float,
         ReturnType2I8,
         ReturnType2Double,
         ReturnTypeFloatInt,
         ReturnTypeIntFloat,
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
     };
 
     enum class RoutineType
@@ -237,7 +239,7 @@ class CallStubGenerator
 public:
     // Generate the call stub for the given method.
     CallStubHeader *GenerateCallStub(MethodDesc *pMD, AllocMemTracker *pamTracker, bool interpreterToNative);
-    CallStubHeader *GenerateCallStubForSig(MetaSig &sig);
+    CallStubHeader *GenerateCallStubForSig(MetaSig &sig, MethodDesc *pContextMD = nullptr);
 
 private:
     static size_t ComputeTempStorageSize(const MetaSig& sig)

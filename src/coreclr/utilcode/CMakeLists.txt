@@ -47,6 +47,7 @@ set(UTILCODE_COMMON_SOURCES
   stresslog.cpp
   debug.cpp
   pedecoder.cpp
+  webcildecoder.cpp
   winfix.cpp
   longfilepathwrappers.cpp
   yieldprocessornormalized.cpp

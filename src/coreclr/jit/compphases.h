@@ -110,6 +110,7 @@ CompPhaseNameMacro(PHASE_EMPTY_FINALLY_3,            "Remove empty finally 3",  
 CompPhaseNameMacro(PHASE_EMPTY_TRY_3,                "Remove empty try 3",             false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_TRY_CATCH_FAULT_3,    "Remove empty try-catch-fault 3", false, -1, false)
 CompPhaseNameMacro(PHASE_OPT_UPDATE_FLOW_GRAPH,      "Update flow graph opt pass",     false, -1, false)
+CompPhaseNameMacro(PHASE_OPT_DFS_BLOCKS,             "Remove unreachable blocks",      false, -1, false)
 CompPhaseNameMacro(PHASE_STRESS_SPLIT_TREE,          "Stress gtSplitTree",             false, -1, false)
 CompPhaseNameMacro(PHASE_EXPAND_RTLOOKUPS,           "Expand runtime lookups",         false, -1, true)
 CompPhaseNameMacro(PHASE_EXPAND_STATIC_INIT,         "Expand static init",             false, -1, true)
@@ -124,6 +125,7 @@ CompPhaseNameMacro(PHASE_REPAIR_PROFILE_POST_MORPH,  "Repair profile post-morph"
 CompPhaseNameMacro(PHASE_REPAIR_PROFILE_PRE_LAYOUT,  "Repair profile pre-layout",      false, -1, false)
 
 CompPhaseNameMacro(PHASE_DFS_BLOCKS_WASM,            "Wasm remove unreachable blocks", false, -1, false)
+CompPhaseNameMacro(PHASE_WASM_EH_FLOW,               "Wasm eh control flow",           false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_TRANSFORM_SCCS,        "Wasm transform sccs",            false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_CONTROL_FLOW,          "Wasm control flow",              false, -1, false)
 

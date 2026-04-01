@@ -4,6 +4,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -24,7 +25,7 @@ namespace System.Speech.Recognition
 
 #pragma warning disable 6504
 #pragma warning disable 6507
-        internal Grammar(Uri uri, string ruleName, object[] parameters)
+        internal Grammar(Uri uri, string? ruleName, object[]? parameters)
         {
             ArgumentNullException.ThrowIfNull(uri);
 
@@ -32,14 +33,14 @@ namespace System.Speech.Recognition
             InitialGrammarLoad(ruleName, parameters, false);
         }
         public Grammar(string path)
-            : this(path, (string)null, null)
+            : this(path, (string?)null, null)
         {
         }
         public Grammar(string path, string ruleName)
             : this(path, ruleName, null)
         {
         }
-        public Grammar(string path, string ruleName, object[] parameters)
+        public Grammar(string path, string? ruleName, object[]? parameters)
         {
             try
             {
@@ -52,25 +53,25 @@ namespace System.Speech.Recognition
 
             InitialGrammarLoad(ruleName, parameters, false);
         }
-        public Grammar(SrgsDocument srgsDocument)
+        public Grammar(SrgsDocument? srgsDocument)
             : this(srgsDocument, null, null, null)
         {
         }
-        public Grammar(SrgsDocument srgsDocument, string ruleName)
+        public Grammar(SrgsDocument? srgsDocument, string? ruleName)
             : this(srgsDocument, ruleName, null, null)
         {
         }
-        public Grammar(SrgsDocument srgsDocument, string ruleName, object[] parameters)
+        public Grammar(SrgsDocument? srgsDocument, string? ruleName, object[]? parameters)
             : this(srgsDocument, ruleName, null, parameters)
         {
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public Grammar(SrgsDocument srgsDocument, string ruleName, Uri baseUri)
+        public Grammar(SrgsDocument? srgsDocument, string? ruleName, Uri? baseUri)
             : this(srgsDocument, ruleName, baseUri, null)
         {
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public Grammar(SrgsDocument srgsDocument, string ruleName, Uri baseUri, object[] parameters)
+        public Grammar(SrgsDocument? srgsDocument, string? ruleName, Uri? baseUri, object[]? parameters)
         {
             ArgumentNullException.ThrowIfNull(srgsDocument);
 
@@ -83,21 +84,21 @@ namespace System.Speech.Recognition
             : this(stream, null, null, null)
         {
         }
-        public Grammar(Stream stream, string ruleName)
+        public Grammar(Stream stream, string? ruleName)
             : this(stream, ruleName, null, null)
         {
         }
-        public Grammar(Stream stream, string ruleName, object[] parameters)
+        public Grammar(Stream stream, string? ruleName, object[]? parameters)
             : this(stream, ruleName, null, parameters)
         {
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public Grammar(Stream stream, string ruleName, Uri baseUri)
+        public Grammar(Stream stream, string? ruleName, Uri? baseUri)
             : this(stream, ruleName, baseUri, null)
         {
         }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public Grammar(Stream stream, string ruleName, Uri baseUri, object[] parameters)
+        public Grammar(Stream stream, string? ruleName, Uri? baseUri, object[]? parameters)
         {
             ArgumentNullException.ThrowIfNull(stream);
 
@@ -118,7 +119,7 @@ namespace System.Speech.Recognition
             InitialGrammarLoad(null, null, false);
         }
 
-        private Grammar(string onInitParameters, Stream stream, string ruleName)
+        private Grammar(string? onInitParameters, Stream stream, string ruleName)
         {
             _appStream = stream;
             _onInitParameters = onInitParameters;
@@ -139,7 +140,7 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Methods
-        public static Grammar LoadLocalizedGrammarFromType(Type type, params object[] onInitParameters)
+        public static Grammar? LoadLocalizedGrammarFromType(Type type, params object[]? onInitParameters)
         {
             ArgumentNullException.ThrowIfNull(type);
 
@@ -148,11 +149,11 @@ namespace System.Speech.Recognition
                 throw new ArgumentException(SR.Get(SRID.StrongTypedGrammarNotAGrammar), nameof(type));
             }
 
-            Assembly assembly = Assembly.GetAssembly(type);
+            Assembly assembly = Assembly.GetAssembly(type)!;
 
             foreach (Type typeTarget in assembly.GetTypes())
             {
-                string cultureId = null;
+                string? cultureId = null;
                 if (typeTarget == type || typeTarget.IsSubclassOf(type))
                 {
                     if (typeTarget.GetField("__cultureId") != null)
@@ -160,20 +161,20 @@ namespace System.Speech.Recognition
                         // Get the association table
                         try
                         {
-                            cultureId = (string)typeTarget.InvokeMember("__cultureId", BindingFlags.GetField, null, null, null, null);
+                            cultureId = (string?)typeTarget.InvokeMember("__cultureId", BindingFlags.GetField, null, null, null, null);
                         }
                         catch (Exception e)
                         {
-                            if (!(e is System.MissingFieldException))
+                            if (e is not MissingFieldException)
                             {
                                 throw;
                             }
                         }
-                        if (Helpers.CompareInvariantCulture(new CultureInfo(int.Parse(cultureId, CultureInfo.InvariantCulture)), CultureInfo.CurrentUICulture))
+                        if (Helpers.CompareInvariantCulture(new CultureInfo(int.Parse(cultureId!, CultureInfo.InvariantCulture)), CultureInfo.CurrentUICulture))
                         {
                             try
                             {
-                                return (Grammar)assembly.CreateInstance(typeTarget.FullName, false, BindingFlags.CreateInstance, null, onInitParameters, null, null);
+                                return (Grammar?)assembly.CreateInstance(typeTarget.FullName!, false, BindingFlags.CreateInstance, null, onInitParameters, null, null);
                             }
                             catch (MissingMemberException)
                             {
@@ -202,6 +203,7 @@ namespace System.Speech.Recognition
                 // In theory we could throw in certain scenarios but this is probably simplest.
                 if (_grammarState != GrammarState.Unloaded && _enabled != value)
                 {
+                    System.Diagnostics.Debug.Assert(_recognizer != null, "Recognizer should have been set when not unloaded");
                     _recognizer.SetGrammarState(this, value);
                 }
                 _enabled = value; // Only on success
@@ -222,6 +224,7 @@ namespace System.Speech.Recognition
                 // In theory we could throw in certain scenarios but this is probably simplest.
                 if (_grammarState != GrammarState.Unloaded && !_weight.Equals(value))
                 {
+                    System.Diagnostics.Debug.Assert(_recognizer != null, "Recognizer should have been set when not unloaded");
                     _recognizer.SetGrammarWeight(this, value);
                 }
                 _weight = value; // Only on success
@@ -244,6 +247,7 @@ namespace System.Speech.Recognition
                 }
                 if (_grammarState != GrammarState.Unloaded && _priority != value)
                 {
+                    System.Diagnostics.Debug.Assert(_recognizer != null, "Recognizer should have been set when not unloaded");
                     _recognizer.SetGrammarPriority(this, value);
                 }
                 _priority = value; // Only on success.
@@ -257,7 +261,7 @@ namespace System.Speech.Recognition
             get { return _grammarName; }
             set { _grammarName = value ?? string.Empty; }
         }
-        public string RuleName
+        public string? RuleName
         {
             get { return _ruleName; }
         }
@@ -265,7 +269,7 @@ namespace System.Speech.Recognition
         {
             get { return _grammarState == GrammarState.Loaded; }
         }
-        internal Uri Uri
+        internal Uri? Uri
         {
             get { return _uri; }
         }
@@ -275,13 +279,13 @@ namespace System.Speech.Recognition
         #region public Events
 
         // The event fired upon a recognition.
-        public event EventHandler<SpeechRecognizedEventArgs> SpeechRecognized;
+        public event EventHandler<SpeechRecognizedEventArgs>? SpeechRecognized;
 
         #endregion
 
         #region Internal Properties
 
-        internal IRecognizerInternal Recognizer
+        internal IRecognizerInternal? Recognizer
         {
             get { return _recognizer; }
             set { _recognizer = value; }
@@ -336,7 +340,7 @@ namespace System.Speech.Recognition
             }
         }
 
-        internal Exception LoadException
+        internal Exception? LoadException
         {
             get { return _loadException; }
             set { _loadException = value; }
@@ -344,12 +348,12 @@ namespace System.Speech.Recognition
 
         // There properties are read-only:
 
-        internal byte[] CfgData
+        internal byte[]? CfgData
         {
             get { return _cfgData; }
         }
 
-        internal Uri BaseUri
+        internal Uri? BaseUri
         {
             get { return _baseUri; }
         }
@@ -383,7 +387,7 @@ namespace System.Speech.Recognition
 
         // Arbitrary data that is attached and removed by the RecognizerBase.
         // This allow RecognizerBase.Grammars to be a simple list without the extra data being stored separately.
-        internal InternalGrammarData InternalData
+        internal InternalGrammarData? InternalData
         {
             get { return _internalData; }
             set { _internalData = value; }
@@ -399,7 +403,7 @@ namespace System.Speech.Recognition
         ///
         /// The grammar name can be either pointing to a CFG, an Srgs or DLL (stand alone or GAC).
         /// </summary>
-        internal static Grammar Create(string grammarName, string ruleName, string onInitParameter, out Uri redirectUri)
+        internal static Grammar? Create(string grammarName, string ruleName, string? onInitParameter, out Uri? redirectUri)
         {
             redirectUri = null;
 
@@ -407,8 +411,7 @@ namespace System.Speech.Recognition
             grammarName = grammarName.Trim();
 
             // Get an Uri for the grammar. Could fail for GACed values.
-            Uri uriGrammar;
-            bool hasUri = Uri.TryCreate(grammarName, UriKind.Absolute, out uriGrammar);
+            bool hasUri = Uri.TryCreate(grammarName, UriKind.Absolute, out Uri? uriGrammar);
 
             int posDll = grammarName.IndexOf(".dll", StringComparison.OrdinalIgnoreCase);
             if (!hasUri || (posDll > 0 && posDll == grammarName.Length - 4))
@@ -417,7 +420,7 @@ namespace System.Speech.Recognition
                 if (hasUri)
                 {
                     // regular dll, should use LoadFrom ()
-                    if (uriGrammar.IsFile)
+                    if (uriGrammar!.IsFile)
                     {
                         assembly = Assembly.LoadFrom(uriGrammar.LocalPath);
                     }
@@ -437,8 +440,8 @@ namespace System.Speech.Recognition
             try
             {
                 // Standard Srgs or CFG, just create the grammar
-                string localPath;
-                using (Stream stream = s_resourceLoader.LoadFile(uriGrammar, out localPath, out redirectUri))
+                string? localPath;
+                using (Stream stream = s_resourceLoader.LoadFile(uriGrammar!, out localPath, out redirectUri))
                 {
                     try
                     {
@@ -469,7 +472,7 @@ namespace System.Speech.Recognition
 
         // Helper method used to indicate if this grammar has a dictation Uri or not.
         // This is here because the functionality needs to be a common place.
-        internal static bool IsDictationGrammar(Uri uri)
+        internal static bool IsDictationGrammar([NotNullWhen(true)] Uri? uri)
         {
             // Note that must check IsAbsoluteUri before Scheme because Uri.Scheme may throw on a relative Uri
             if (uri == null || !uri.IsAbsoluteUri || uri.Scheme != "grammar" ||
@@ -483,7 +486,7 @@ namespace System.Speech.Recognition
 
         // Helper method used to indicate if this grammar has a dictation Uri or not.
         // This is here because the functionality needs to be a common place.
-        internal bool IsDictation(Uri uri)
+        internal bool IsDictation([NotNullWhen(true)] Uri? uri)
         {
             bool isDictationGrammar = IsDictationGrammar(uri);
 
@@ -500,13 +503,13 @@ namespace System.Speech.Recognition
         /// </summary>
         /// <param name="grammarId">SAPI id</param>
         /// <returns>null if not found</returns>
-        internal Grammar Find(long grammarId)
+        internal Grammar? Find(long grammarId)
         {
             if (_ruleRefs != null)
             {
                 foreach (Grammar ruleRef in _ruleRefs)
                 {
-                    Grammar found;
+                    Grammar? found;
 
                     if (grammarId == ruleRef._sapiGrammarId)
                     {
@@ -525,13 +528,13 @@ namespace System.Speech.Recognition
         /// Find a grammar in a tree or rule refs grammar from a rule name
         /// </summary>
         /// <returns>null if not found</returns>
-        internal Grammar Find(string ruleName)
+        internal Grammar? Find(string ruleName)
         {
             if (_ruleRefs != null)
             {
                 foreach (Grammar ruleRef in _ruleRefs)
                 {
-                    Grammar found;
+                    Grammar? found;
 
                     if (ruleName == ruleRef.RuleName)
                     {
@@ -556,7 +559,7 @@ namespace System.Speech.Recognition
             _sapiGrammarId = grammarId;
         }
 
-        internal MethodInfo MethodInfo(string method)
+        internal MethodInfo? MethodInfo(string method)
         {
             return GetType().GetMethod(method, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         }
@@ -567,14 +570,16 @@ namespace System.Speech.Recognition
 
         internal GrammarOptions _semanticTag;
 
-        internal System.Speech.Internal.SrgsCompiler.AppDomainGrammarProxy _proxy;
+        internal System.Speech.Internal.SrgsCompiler.AppDomainGrammarProxy? _proxy;
 
-        internal ScriptRef[] _scripts;
+        internal ScriptRef[]? _scripts;
 
         #endregion
 
         #region Protected Methods
-        protected string ResourceName
+
+        [DisallowNull]
+        protected string? ResourceName
         {
             get
             {
@@ -596,6 +601,7 @@ namespace System.Speech.Recognition
         // In MSS this is {currently} called when GetCfg is called.
         // The cfg data is stored in the _cfgData field, which is not currently reset to null ever.
         // After calling this method the passed in Stream / SrgsDocument are set to null.
+        [MemberNotNull(nameof(_cfgData))]
         private void LoadAndCompileCfgData(bool isImportedGrammar, bool stgInit)
         {
 #if DEBUG
@@ -607,7 +613,7 @@ namespace System.Speech.Recognition
             Stream stream = IsStg ? LoadCfgFromResource(stgInit) : LoadCfg(isImportedGrammar, stgInit);
 
             // Check if the grammar needs to be rebuilt
-            SrgsRule[] extraRules = RunOnInit(IsStg); // list of extra rule to append to the current CFG
+            SrgsRule[]? extraRules = RunOnInit(IsStg); // list of extra rule to append to the current CFG
             if (extraRules != null)
             {
                 MemoryStream streamCombined = CombineCfg(_ruleName, stream, extraRules);
@@ -632,7 +638,7 @@ namespace System.Speech.Recognition
         private MemoryStream LoadCfg(bool isImportedGrammar, bool stgInit)
         {
             // No parameters to the constructors
-            Uri uriGrammar = Uri;
+            Uri? uriGrammar = Uri;
             MemoryStream stream = new();
 
             if (uriGrammar != null)
@@ -663,7 +669,7 @@ namespace System.Speech.Recognition
             else
             {
                 // If stream, load
-                SrgsGrammarCompiler.CompileXmlOrCopyCfg(_appStream, stream, null);
+                SrgsGrammarCompiler.CompileXmlOrCopyCfg(_appStream!, stream, null);
             }
 
             stream.Position = 0;
@@ -685,17 +691,17 @@ namespace System.Speech.Recognition
         /// dependent classes.
         /// The matching algorithm pick a class that match the culture.
         /// </summary>
-        private static Grammar LoadGrammarFromAssembly(Assembly assembly, string ruleName, string onInitParameters)
+        private static Grammar? LoadGrammarFromAssembly(Assembly assembly, string ruleName, string? onInitParameters)
         {
             Type grammarType = typeof(Grammar);
-            Type matchingType = null;
+            Type? matchingType = null;
 
             foreach (Type typeTarget in assembly.GetTypes())
             {
                 // must be a grammar object
                 if (typeTarget.IsSubclassOf(grammarType))
                 {
-                    string cultureId = null;
+                    string? cultureId = null;
 
                     // Set the base class for this rule
                     if (typeTarget.Name == ruleName)
@@ -712,25 +718,25 @@ namespace System.Speech.Recognition
                             // Get the association table
                             try
                             {
-                                cultureId = (string)typeTarget.InvokeMember("__cultureId", BindingFlags.GetField, null, null, null, null);
+                                cultureId = (string?)typeTarget.InvokeMember("__cultureId", BindingFlags.GetField, null, null, null, null);
                             }
                             catch (Exception e)
                             {
-                                if (!(e is System.MissingFieldException))
+                                if (e is not MissingFieldException)
                                 {
                                     throw;
                                 }
                             }
 
                             // Check for the current culture or any compatible culture (parent en-us or en for e.g.)
-                            if (Helpers.CompareInvariantCulture(new CultureInfo(int.Parse(cultureId, CultureInfo.InvariantCulture)), CultureInfo.CurrentUICulture))
+                            if (Helpers.CompareInvariantCulture(new CultureInfo(int.Parse(cultureId!, CultureInfo.InvariantCulture)), CultureInfo.CurrentUICulture))
                             {
                                 try
                                 {
-                                    object[] initParams = MatchInitParameters(typeTarget, onInitParameters, assembly.GetName().Name, ruleName);
+                                    object?[] initParams = MatchInitParameters(typeTarget, onInitParameters, assembly.GetName().Name, ruleName);
 
                                     // The CLR does the match for the right constructor based on the onInitParameters types
-                                    return (Grammar)assembly.CreateInstance(typeTarget.FullName, false, BindingFlags.CreateInstance, null, initParams, null, null);
+                                    return (Grammar?)assembly.CreateInstance(typeTarget.FullName!, false, BindingFlags.CreateInstance, null, initParams!, null, null);
                                 }
                                 catch (MissingMemberException)
                                 {
@@ -747,11 +753,11 @@ namespace System.Speech.Recognition
         /// <summary>
         /// Construct a list of parameters from a sapi:params string.
         /// </summary>
-        private static object[] MatchInitParameters(Type type, string onInitParameters, string grammar, string rule)
+        private static object?[] MatchInitParameters(Type type, string? onInitParameters, string? grammar, string rule)
         {
             ConstructorInfo[] cis = type.GetConstructors();
             NameValuePair[] pairs = ParseInitParams(onInitParameters);
-            object[] values = new object[pairs.Length];
+            object?[] values = new object?[pairs.Length];
             bool foundConstructor = false;
             for (int iCtor = 0; iCtor < cis.Length && !foundConstructor; iCtor++)
             {
@@ -802,7 +808,7 @@ namespace System.Speech.Recognition
         /// Parse the value for a type from a string to a strong type.
         /// If the type does not support the Parse method then the operation fails.
         /// </summary>
-        private static object ParseValue(Type type, string value)
+        private static object? ParseValue(Type type, string value)
         {
             if (type == typeof(string))
             {
@@ -841,7 +847,7 @@ namespace System.Speech.Recognition
         /// Split the init parameter strings into an array of name/values
         /// The format must be "name:value". If the ':' then parameter is anonymous.
         /// </summary>
-        private static NameValuePair[] ParseInitParams(string initParameters)
+        private static NameValuePair[] ParseInitParams(string? initParameters)
         {
             if (string.IsNullOrEmpty(initParameters))
             {
@@ -868,7 +874,7 @@ namespace System.Speech.Recognition
             return pairs;
         }
 
-        private void InitialGrammarLoad(string ruleName, object[] parameters, bool isImportedGrammar)
+        private void InitialGrammarLoad(string? ruleName, object[]? parameters, bool isImportedGrammar)
         {
             _ruleName = ruleName;
             _parameters = parameters;
@@ -883,9 +889,9 @@ namespace System.Speech.Recognition
         private void CreateSandbox(MemoryStream stream)
         {
             // Checks if it contains .NET Semantic code
-            byte[] assemblyContent;
-            byte[] assemblyDebugSymbols;
-            ScriptRef[] scripts;
+            byte[]? assemblyContent;
+            byte[]? assemblyDebugSymbols;
+            ScriptRef[]? scripts;
             stream.Position = 0;
 
             // This must be before the SAPI load to avoid some conflict with SAPI server when getting at the
@@ -904,9 +910,9 @@ namespace System.Speech.Recognition
         private Stream LoadCfgFromResource(bool stgInit)
         {
             // Strongly typed grammar get the Cfg data
-            Assembly assembly = Assembly.GetAssembly(GetType());
+            Assembly assembly = Assembly.GetAssembly(GetType())!;
 
-            Stream stream = assembly.GetManifestResourceStream(ResourceName);
+            Stream? stream = assembly.GetManifestResourceStream(ResourceName!);
 
             if (stream == null)
             {
@@ -914,7 +920,7 @@ namespace System.Speech.Recognition
             }
             try
             {
-                ScriptRef[] scripts = CfgGrammar.LoadIL(stream);
+                ScriptRef[]? scripts = CfgGrammar.LoadIL(stream);
                 if (scripts == null)
                 {
                     throw new ArgumentException(SR.Get(SRID.CannotLoadDotNetSemanticCode));
@@ -934,7 +940,7 @@ namespace System.Speech.Recognition
             return stream;
         }
 
-        private static MemoryStream CombineCfg(string rule, Stream stream, SrgsRule[] extraRules)
+        private static MemoryStream CombineCfg(string? rule, Stream stream, SrgsRule[] extraRules)
         {
             using (MemoryStream streamExtra = new())
             {
@@ -974,19 +980,19 @@ namespace System.Speech.Recognition
 
 #pragma warning disable 56507 // check for null or empty strings
 
-        private SrgsRule[] RunOnInit(bool stg)
+        private SrgsRule[]? RunOnInit(bool stg)
         {
-            SrgsRule[] extraRules = null;
+            SrgsRule[]? extraRules = null;
             bool onInitInvoked = false;
 
             // Get the name of the onInit method to run
-            string methodName = ScriptRef.OnInitMethod(_scripts, _ruleName);
+            string? methodName = ScriptRef.OnInitMethod(_scripts, _ruleName);
 
             if (methodName != null)
             {
                 if (_proxy != null)
                 {
-                    Exception appDomainException;
+                    Exception? appDomainException;
                     extraRules = _proxy.OnInit(methodName, _parameters, _onInitParameters, out appDomainException);
                     onInitInvoked = true;
                     if (appDomainException != null)
@@ -996,6 +1002,8 @@ namespace System.Speech.Recognition
                 }
                 else
                 {
+                    System.Diagnostics.Debug.Assert(_parameters != null);
+
                     // call OnInit if any - should be based on Rule
                     Type[] types = new Type[_parameters.Length];
 
@@ -1003,13 +1011,12 @@ namespace System.Speech.Recognition
                     {
                         types[i] = _parameters[i].GetType();
                     }
-                    MethodInfo onInit = GetType().GetMethod(methodName, types);
+                    MethodInfo? onInit = GetType().GetMethod(methodName, types);
 
                     // If somehow we failed to find a constructor, let the system handle it
                     if (onInit != null)
                     {
-                        System.Diagnostics.Debug.Assert(_parameters != null);
-                        extraRules = (SrgsRule[])onInit.Invoke(this, _parameters);
+                        extraRules = (SrgsRule[]?)onInit.Invoke(this, _parameters);
                         onInitInvoked = true;
                     }
                     else
@@ -1029,7 +1036,7 @@ namespace System.Speech.Recognition
 
         // Pulls the required data out of a stream containing a cfg.
         // Stream must point to start of cfg on entry and is reset to same point on exit.
-        private static string CheckRuleName(Stream stream, string rulename, bool isImportedGrammar, bool stgInit, out bool sapi53Only, out GrammarOptions grammarOptions)
+        private static string CheckRuleName(Stream stream, string? rulename, bool isImportedGrammar, bool stgInit, out bool sapi53Only, out GrammarOptions grammarOptions)
         {
             sapi53Only = false;
             long initialPosition = stream.Position;
@@ -1037,13 +1044,15 @@ namespace System.Speech.Recognition
             CfgGrammar.CfgHeader header;
             using (StreamMarshaler streamHelper = new(stream)) // Use StreamMarshaler which helps deserialize certain data types
             {
-                CfgGrammar.CfgSerializedHeader serializedHeader = null;
-                header = CfgGrammar.ConvertCfgHeader(streamHelper, false, true, out serializedHeader);
+                CfgGrammar.CfgSerializedHeader? serializedHeader = null;
+                header = CfgGrammar.ConvertCfgHeader(streamHelper, includeAllGrammarData: false, loadSymbols: true, out serializedHeader);
+                System.Diagnostics.Debug.Assert(header.rules != null, "CFG header's rules should have been loaded");
+                System.Diagnostics.Debug.Assert(header.pszSymbols != null, "Symbols should be loaded when loadSymbols: true is set");
 
                 StringBlob symbols = header.pszSymbols;
 
                 // Calc the root rule
-                string rootRule = header.ulRootRuleIndex != 0xffffffff && header.ulRootRuleIndex < header.rules.Length ? symbols.FromOffset(header.rules[header.ulRootRuleIndex]._nameOffset) : null;
+                string? rootRule = header.ulRootRuleIndex != 0xffffffff && header.ulRootRuleIndex < header.rules.Length ? symbols.FromOffset(header.rules[header.ulRootRuleIndex]._nameOffset) : null;
 
                 // Get if we have semantic interpretation
                 sapi53Only = (header.GrammarOptions & (GrammarOptions.MssV1 | GrammarOptions.W3cV1 | GrammarOptions.STG | GrammarOptions.IpaPhoneme)) != 0;
@@ -1076,7 +1085,7 @@ namespace System.Speech.Recognition
                 }
                 else
                 {
-                    rulename = rootRule;
+                    rulename = rootRule!;
                 }
 
                 grammarOptions = header.GrammarOptions & GrammarOptions.TagFormat;
@@ -1091,34 +1100,34 @@ namespace System.Speech.Recognition
 
 #pragma warning disable 56524 // You cannot dispose an object we don't create
 
-        private byte[] _cfgData;
+        private byte[]? _cfgData;
 
-        private Stream _appStream;
+        private Stream? _appStream;
         private bool _isSrgsDocument;
-        private SrgsDocument _srgsDocument;
+        private SrgsDocument? _srgsDocument;
 
-        private GrammarBuilder _grammarBuilder;
+        private GrammarBuilder? _grammarBuilder;
 
 #pragma warning restore 56524
 
-        private IRecognizerInternal _recognizer;
+        private IRecognizerInternal? _recognizer;
         private GrammarState _grammarState;
-        private Exception _loadException;
-        private Uri _uri;
-        private Uri _baseUri;
-        private string _ruleName;
-        private string _resources;
-        private object[] _parameters;
-        private string _onInitParameters;
+        private Exception? _loadException;
+        private Uri? _uri;
+        private Uri? _baseUri;
+        private string? _ruleName;
+        private string? _resources;
+        private object[]? _parameters { get; set; }
+        private string? _onInitParameters;
         private bool _enabled = true;
         private bool _isStg;
         private bool _sapi53Only;
         private uint _sapiGrammarId;
         private float _weight = 1.0f;
         private int _priority;
-        private InternalGrammarData _internalData;
+        private InternalGrammarData? _internalData;
         private string _grammarName = string.Empty;
-        private Collection<Grammar> _ruleRefs;
+        private Collection<Grammar>? _ruleRefs;
         private static readonly ResourceLoader s_resourceLoader = new();
 
 #if DEBUG

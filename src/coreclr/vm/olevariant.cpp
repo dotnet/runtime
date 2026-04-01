@@ -2158,7 +2158,7 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
         }
         else
         {
-            MethodDescCallSite castVariant(METHOD__VARIANT__CAST_VARIANT);
+            UnmanagedCallersOnlyCaller castVariant(METHOD__VARIANT__CAST_VARIANT);
 
             // MarshalOleRefVariantForObjectNoCast has checked that the variant is not an array
             // so we can use the marshal cast helper to coerce the object to the proper type.
@@ -2166,11 +2166,7 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
             VariantInit(&vtmp);
             VARTYPE vt = V_VT(pOle) & ~VT_BYREF;
 
-            ARG_SLOT args[3];
-            args[0] = ObjToArgSlot(*pObj);
-            args[1] = (ARG_SLOT)vt;
-            args[2] = PtrToArgSlot(&vtmp);
-            castVariant.Call(args);
+            castVariant.InvokeThrowing(pObj, (INT32)vt, &vtmp);
 
             // Managed implementation of CastVariant should either return correct type or throw.
             _ASSERTE(V_VT(&vtmp) == vt);
@@ -2760,10 +2756,8 @@ void OleVariant::MarshalObjectForOleVariantUncommon(const VARIANT *pOle, OBJECTR
     }
     else
     {
-        MethodDescCallSite convertVariantToObject(METHOD__VARIANT__CONVERT_VARIANT_TO_OBJECT);
-        ARG_SLOT args[] = { PtrToArgSlot(pOle) };
-        SetObjectReference( pObj,
-                            convertVariantToObject.Call_RetOBJECTREF(args) );
+        UnmanagedCallersOnlyCaller convertVariantToObject(METHOD__VARIANT__CONVERT_VARIANT_TO_OBJECT);
+        convertVariantToObject.InvokeThrowing(pOle, pObj);
     }
 }
 
@@ -2802,14 +2796,8 @@ void OleVariant::MarshalOleVariantForObjectUncommon(OBJECTREF * const & pObj, VA
     }
     else
     {
-        MethodDescCallSite convertObjectToVariant(METHOD__VARIANT__CONVERT_OBJECT_TO_VARIANT);
-
-        ARG_SLOT args[] = {
-                ObjToArgSlot(*pObj),
-                PtrToArgSlot(pOle),
-                };
-
-        convertObjectToVariant.Call(args);
+        UnmanagedCallersOnlyCaller convertObjectToVariant(METHOD__VARIANT__CONVERT_OBJECT_TO_VARIANT);
+        convertObjectToVariant.InvokeThrowing(pObj, pOle);
     }
 
     veh.SuppressRelease();
@@ -4209,10 +4197,8 @@ void OleVariant::ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj)
     if (bstr == NULL)
         return;
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__CONVERT_TO_MANAGED);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(bstr);
-    CALL_MANAGED_METHOD_RETREF(*pStringObj, STRINGREF, args);
+    UnmanagedCallersOnlyCaller convertToManaged(METHOD__BSTRMARSHALER__CONVERT_TO_MANAGED_UCO);
+    convertToManaged.InvokeThrowing((INT_PTR)bstr, pStringObj);
 }
 
 BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
@@ -4229,20 +4215,13 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
     }
     CONTRACT_END;
 
-    // Initiatilize the return BSTR value to null.
-    BSTR bstr = NULL;
-
     if (*pStringObj == NULL)
     {
         RETURN NULL;
     }
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(nullptr);
-    CALL_MANAGED_METHOD(bstr, BSTR, args);
-    RETURN bstr;
+    UnmanagedCallersOnlyCaller convertToNative(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE_UCO);
+    RETURN (BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj);
 }
 
 extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle)

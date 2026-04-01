@@ -30,7 +30,7 @@ namespace System.Net.Http
         // This is owned by the callback and will be deallocated when the sessionHandle has been closed.
         private GCHandle _operationHandle;
         private WinHttpTransportContext? _transportContext;
-        private volatile bool _disposed; // To detect redundant calls.
+        private int _disposed; // To detect redundant calls.
 
         public WinHttpRequestState()
         {
@@ -191,17 +191,15 @@ namespace System.Net.Http
 #if DEBUG
             Interlocked.Increment(ref s_dbg_callDispose);
 #endif
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GCHandle=0x{ToIntPtr():X}, disposed={_disposed}, disposing={disposing}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GCHandle=0x{ToIntPtr():X}, disposed={_disposed != 0}, disposing={disposing}");
 
             // Since there is no finalizer and this class is sealed, the disposing parameter should be TRUE.
             Debug.Assert(disposing, "WinHttpRequestState.Dispose() should have disposing=TRUE");
 
-            if (_disposed)
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
             {
                 return;
             }
-
-            _disposed = true;
 
             if (_operationHandle.IsAllocated)
             {

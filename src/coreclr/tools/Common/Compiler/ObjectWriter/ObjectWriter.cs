@@ -9,14 +9,15 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
+
 using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
-using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -186,22 +187,15 @@ namespace ILCompiler.ObjectWriter
                 definedSymbol.SectionIndex == sectionIndex)
             {
                 // Resolve the relocation to already defined symbol and write it into data
-                fixed (byte *pData = data)
+                fixed (byte* pData = data)
                 {
-                    // RyuJIT generates the Thumb bit in the addend and we also get it from
-                    // the symbol value. The AAELF ABI specification defines the R_ARM_THM_JUMP24
-                    // and R_ARM_THM_MOVW_PREL_NC relocations using the formula ((S + A) | T) – P.
-                    // The thumb bit is thus supposed to be only added once.
-                    // For R_ARM_THM_JUMP24 the thumb bit cannot be encoded, so mask it out.
-                    //
-                    // R2R doesn't use add the thumb bit to the symbol value, so we don't need to do this here.
-#if !READYTORUN
-                    long maskThumbBitOut = relocType is IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
-                    long maskThumbBitIn = relocType is IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
-#else
-                    long maskThumbBitOut = 0;
-                    long maskThumbBitIn = 0;
-#endif
+                    // Method symbols should be defined with the thumb bit (+1) set per the AAELF ABI
+                    // convention. For BRANCH24, the encoding cannot represent the thumb bit
+                    // (per AAELF formula ((S + A) | T) – P), so strip it from the symbol value.
+                    // NOTE: R2R doesn't currently add the thumb bit to the symbol value, so this is a NOP.
+                    long symbolValue = relocType is IMAGE_REL_BASED_THUMB_BRANCH24
+                        ? definedSymbol.Value & ~1L
+                        : definedSymbol.Value;
                     long adjustedAddend = addend;
 
                     adjustedAddend -= relocType switch
@@ -212,9 +206,8 @@ namespace ILCompiler.ObjectWriter
                         _ => 0
                     };
 
-                    adjustedAddend += definedSymbol.Value & ~maskThumbBitOut;
+                    adjustedAddend += symbolValue;
                     adjustedAddend += Relocation.ReadValue(relocType, (void*)pData);
-                    adjustedAddend |= definedSymbol.Value & maskThumbBitIn;
                     adjustedAddend -= offset;
 
                     if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && !Relocation.FitsInThumb2BlRel24((int)adjustedAddend))
@@ -331,11 +324,13 @@ namespace ILCompiler.ObjectWriter
         {
             SortedSet<Utf8String> undefinedSymbolSet = new SortedSet<Utf8String>();
             foreach (var relocationList in _sectionIndexToRelocations)
-            foreach (var symbolicRelocation in relocationList)
             {
-                if (!_definedSymbols.ContainsKey(symbolicRelocation.SymbolName))
+                foreach (var symbolicRelocation in relocationList)
                 {
-                    undefinedSymbolSet.Add(symbolicRelocation.SymbolName);
+                    if (!_definedSymbols.ContainsKey(symbolicRelocation.SymbolName))
+                    {
+                        undefinedSymbolSet.Add(symbolicRelocation.SymbolName);
+                    }
                 }
             }
             return undefinedSymbolSet;
@@ -378,11 +373,10 @@ namespace ILCompiler.ObjectWriter
             List<ChecksumsToCalculate> checksumRelocations = [];
             foreach (DependencyNode depNode in nodes)
             {
-
                 // TODO-WASM: emit symbol ranges properly when code and data are separated
                 // Right now we still need to determine placements for some traditionally text-placed nodes,
                 // such as DebugDirectoryEntryNode and AssemblyStubNode
-                if (depNode is ISymbolRangeNode symbolRange && LayoutMode == CodeDataLayout.Unified)
+                if (depNode is ISymbolRangeNode symbolRange)
                 {
                     symbolRangeNodes.Add(symbolRange);
                     continue;
@@ -435,23 +429,19 @@ namespace ILCompiler.ObjectWriter
                 // R2R records the thumb bit in the addend when needed, so we don't have to do it here.
                 long thumbBit = 0;
 #endif
-
                 if (node is WasmTypeNode signature)
                 {
                     RecordMethodSignature(signature);
                 }
 
-                if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayout.Separate)
+                if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
                 {
+                    Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
+
                     // Record only information we can get from the MethodDesc here. The actual
                     // body will be emitted by the call to EmitData() at the end
                     // of this loop iteration.
-                    RecordMethodDeclaration((ISymbolDefinitionNode)node, methodNode.Method);
-                }
-                else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
-                {
-                    // TODO-WASM: handle AssemblyStubNode properly here instead of skipping
-                    continue;
+                    RecordMethodDeclaration(codeNode);
                 }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
@@ -654,7 +644,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethodDeclaration(ISymbolDefinitionNode node, MethodDesc desc)
+        private protected virtual void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }

@@ -514,6 +514,8 @@ namespace Internal.JitInterface
                                                //  e.g. directly loading from or storing to a C++ global.
         WASM_MEMORY_ADDR_SLEB,               // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
                                                //  e.g. taking the address of a C++ global.
+        WASM_MEMORY_ADDR_REL_SLEB,           // Wasm: a relative linear memory index encoded as a 5-byte varint32. Used as the immediate argument of an i32.const instruction,
+                                               // e.g. in R2R scenarios, encoding an offset from __image_base
         WASM_TYPE_INDEX_LEB,                 // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
         WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
     }
@@ -1513,11 +1515,11 @@ namespace Internal.JitInterface
         CORJIT_FLAG_OSR                     = 7, // Generate alternate version for On Stack Replacement
         CORJIT_FLAG_ALT_JIT                 = 8, // JIT should consider itself an ALT_JIT
         CORJIT_FLAG_FROZEN_ALLOC_ALLOWED    = 9, // JIT is allowed to use *_MAYBEFROZEN allocators
-        // CORJIT_FLAG_UNUSED               = 10,
+        CORJIT_FLAG_PORTABLE_ENTRY_POINTS   = 10, // Use portable entrypoints for managed calling convention (see clr-abi.md for details)
         CORJIT_FLAG_AOT                     = 11, // Do ahead-of-time code generation (ReadyToRun or NativeAOT)
         CORJIT_FLAG_PROF_ENTERLEAVE         = 12, // Instrument prologues/epilogues
         CORJIT_FLAG_PROF_NO_PINVOKE_INLINE  = 13, // Disables PInvoke inlining
-        // CORJIT_FLAG_UNUSED               = 14,
+        CORJIT_FLAG_ASYNC                   = 14,  // Generate code for use as an async function
         CORJIT_FLAG_RELOC                   = 15, // Generate relocatable code
         CORJIT_FLAG_IL_STUB                 = 16, // method is an IL stub
         CORJIT_FLAG_PROCSPLIT               = 17, // JIT should separate code into hot and cold sections
@@ -1536,7 +1538,6 @@ namespace Internal.JitInterface
         // ARM only
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
-        CORJIT_FLAG_ASYNC                   = 31,  // Generate code for use as an async function
     }
 
     public struct CORJIT_FLAGS
