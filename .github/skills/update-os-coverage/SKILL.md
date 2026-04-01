@@ -41,7 +41,7 @@ OS version references appear in these pipeline files:
 | `eng/pipelines/coreclr/templates/helix-queues-setup.yml` | CoreCLR Helix queue assignments — inline OS version references |
 | `eng/pipelines/installer/helix-queues-setup.yml` | Installer Helix queue assignments |
 | `eng/pipelines/common/templates/pipeline-with-resources.yml` | Build container definitions (not Helix queues, but OS version references for build images) |
-| `docs/workflow/using-docker.md` | Documents the official build/test Docker images — should stay in sync with `pipeline-with-resources.yml` |
+| `docs/workflow/using-docker.md` | Documents the official build/test Docker images — update only when build image versions change (cross-compilation images, not Helix test images) |
 
 ### helix-platforms.yml structure
 
@@ -68,7 +68,7 @@ Where:
 - `<HostQueue>` — physical host queue, e.g. `AzureLinux.3.Amd64.Open`
 - `<image-tag>` — container image tag, e.g. `fedora-44-helix-amd64`
 
-Some platform variables have `_internal` counterparts (e.g. `helix_linux_x64_<distro>_oldest_internal`) that use the same queue/image but drop the `.Open` suffix. When an `_internal` counterpart exists, update both the `.Open` and `_internal` entries.
+Some platform variables have `_internal` counterparts (e.g. `helix_linux_x64_oldest_internal`, `helix_linux_musl_arm32_latest_internal`) that use the same queue/image but drop the `.Open` suffix. When an `_internal` counterpart exists, update both the `.Open` and `_internal` entries.
 
 ### helix-queues-setup.yml files
 
@@ -89,6 +89,8 @@ If the user provides only a distro name without specifying slots, determine the 
 - If the distro currently has `latest == oldest`: only update `latest` to the new version
 
 ## Process
+
+Requires `curl` and `jq` for the verification and audit steps below.
 
 ### 1. Verify container image availability
 
@@ -114,6 +116,13 @@ If the image is **not found**, stop and inform the user. The image must be creat
 
 ```bash
 gh search issues "<distro> <version>" --repo dotnet/dotnet-buildtools-prereqs-docker --state open
+```
+
+If `gh` is not authenticated, use the GitHub API directly:
+
+```bash
+curl -s "https://api.github.com/search/issues?q=repo:dotnet/dotnet-buildtools-prereqs-docker+state:open+<distro>+<version>" \
+  | jq '.items[] | {title, html_url}'
 ```
 
 ### 2. Check EOL dates
@@ -168,6 +177,8 @@ For each reference found in step 3:
    | openSUSE | `openSUSE.<ver>.Amd64.Open` | `opensuse-<ver>-helix-amd64` |
    | Ubuntu | `Ubuntu.<ver-no-dots>.Amd64.Open` | `ubuntu-<ver>-helix-amd64` |
 
+   AzureLinux (e.g. `AzureLinux.3.Amd64.Open`) appears as both a standalone VM queue and the primary host queue for container-based distros. It does not follow the container image pattern above.
+
    Architecture suffixes vary: `Amd64`, `Arm64`, `ArmArch`, `Arm32` for queue names; `amd64`, `arm64v8`, `arm32v7` for image tags.
 
    For ARM-based queues, host queues are often `Ubuntu.2204.ArmArch.Open`, but some queues (for example `helix_linux_arm64_oldest`) use AzureLinux-based host queues such as `AzureLinux.3.Arm64.Open`. Follow the existing pattern for the specific queue in `eng/pipelines/helix-platforms.yml` when updating versions.
@@ -202,6 +213,8 @@ for branch in $(git branch -r | grep -E 'origin/release/'); do
   git show "$branch:eng/pipelines/helix-platforms.yml" 2>/dev/null | grep -n -i "<distro>" || echo "(no matches or file not found)"
 done
 ```
+
+> **Note**: In shallow clones, remote release branches may not be visible. Run `git fetch origin 'refs/heads/release/*:refs/remotes/origin/release/*'` first, or check release branches via GitHub.
 
 Release branches should be updated when:
 - The old version is EOL or approaching EOL
