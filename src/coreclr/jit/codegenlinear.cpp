@@ -2339,7 +2339,7 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
 //   Generates code for GT_CATCH_ARG.
 //
 // Arguments:
-//    tree - the GT_CAST node.
+//    tree - the GT_CATCH_ARG node.
 //
 void CodeGen::genCodeForCatchArg(GenTree* tree)
 {

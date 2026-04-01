@@ -256,7 +256,8 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
 
     RefPosition*     useRefPosition   = defRefPosition->nextRefPosition;
     SingleTypeRegSet useRegAssignment = useRefPosition->registerAssignment;
-    bool             useRegConflict   = false;
+    regMaskTP        inUse            = regsBusyUntilKill | regsInUseThisLocation;
+    bool             useRegConflict = (useRegAssignment & ~inUse.GetRegSetForType(interval->registerType)) == RBM_NONE;
 
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CONFLICT));
     if (useRefPosition->isFixedRegRef)
@@ -274,20 +275,11 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
             // OK, no conflicting FixedReg references.
             // Now, check to see whether it is currently in use.
             RegRecord* useRegRecord = getRegisterRecord(useReg);
-            if (useRegRecord->assignedInterval != nullptr)
+            if (!useRegConflict && (useRegRecord->assignedInterval != nullptr))
             {
                 RefPosition* possiblyConflictingRef         = useRegRecord->assignedInterval->recentRefPosition;
                 LsraLocation possiblyConflictingRefLocation = possiblyConflictingRef->getRefEndLocation();
                 if (possiblyConflictingRefLocation >= defRefPosition->nodeLocation)
-                {
-                    useRegConflict = true;
-                }
-            }
-            if (!useRegConflict)
-            {
-                // The use-reg may be busy at this point due to being a
-                // delay-free use from the previous location.
-                if (isRegInUse(useReg, interval->registerType))
                 {
                     useRegConflict = true;
                 }
