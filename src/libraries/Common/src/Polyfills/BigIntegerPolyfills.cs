@@ -6,29 +6,6 @@ namespace System.Numerics;
 /// <summary>Provides downlevel polyfills for instance methods on <see cref="BigInteger"/>.</summary>
 internal static class BigIntegerPolyfills
 {
-    public static BigInteger Create(ReadOnlySpan<byte> value, bool isUnsigned, bool isBigEndian)
-    {
-        if (value.IsEmpty)
-            return BigInteger.Zero;
-
-        byte[] bytes = value.ToArray();
-
-        if (isBigEndian)
-            Array.Reverse(bytes);
-
-        // BigInteger(byte[]) expects little-endian signed (two's complement).
-        // If the caller says unsigned and the high bit is set, append a 0x00
-        // so BigInteger doesn't interpret it as negative.
-        if (isUnsigned && (bytes[bytes.Length - 1] & 0x80) != 0)
-        {
-            byte[] extended = new byte[bytes.Length + 1];
-            Array.Copy(bytes, extended, bytes.Length);
-            bytes = extended;
-        }
-
-        return new BigInteger(bytes);
-    }
-
     extension(BigInteger self)
     {
         public byte[] ToByteArray(bool isUnsigned, bool isBigEndian)
