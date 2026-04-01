@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -503,6 +504,16 @@ namespace System.IO.Tests
 
             public override string ToString() => $"{EventType} {Dir1} {Dir2}";
 
+        }
+
+        // Returns a predicate that returns true for events that should be filtered out.
+        // Events whose type matches filteredTypes are always filtered; remaining events are deduplicated
+        // so that only the first occurrence passes through.
+        // Used on platforms like macOS where FSEvents may deliver the same event more than once.
+        internal static Func<FiredEvent, bool> CreateDeduplicatingFilter(WatcherChangeTypes filteredTypes = 0)
+        {
+            var seenEvents = new ConcurrentDictionary<FiredEvent, bool>();
+            return firedEvent => (firedEvent.EventType & filteredTypes) != 0 || !seenEvents.TryAdd(firedEvent, true);
         }
 
         // Observe until an expected count of events is triggered, otherwise fail. Return all filtered events.
