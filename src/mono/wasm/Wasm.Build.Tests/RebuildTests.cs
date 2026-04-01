@@ -51,6 +51,44 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData(Configuration.Debug)]
         [InlineData(Configuration.Release)]
+        public void IncrementalPublish_NoChanges_SkipsWebcilAndBootJson(Configuration config)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "incremental_pub_noop");
+            UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
+
+            (_, string firstBinlog) = BuildProjectWithoutAssert(config, info.ProjectName, new PublishOptions(Label: "first"));
+            _testOutput.WriteLine($"First publish binlog: {firstBinlog}");
+
+            // no-op publish
+            (_, string secondBinlog) = BuildProjectWithoutAssert(config, info.ProjectName, new PublishOptions(UseCache: false, Label: "second"));
+            _testOutput.WriteLine($"Second publish binlog: {secondBinlog}");
+
+            AssertTargetSkipped(secondBinlog, "GeneratePublishWasmBootJson");
+        }
+
+        [Theory]
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
+        public void IncrementalPublish_SourceChange_RunsBootJson(Configuration config)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "incremental_pub_src");
+            UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
+
+            BuildProjectWithoutAssert(config, info.ProjectName, new PublishOptions(Label: "first"));
+
+            // modify app source to trigger recompilation
+            string programPath = Path.Combine(_projectDir, "Common", "Program.cs");
+            File.AppendAllText(programPath, Environment.NewLine + "// incremental publish trigger");
+
+            (_, string secondBinlog) = BuildProjectWithoutAssert(config, info.ProjectName, new PublishOptions(UseCache: false, Label: "second"));
+            _testOutput.WriteLine($"Second publish binlog: {secondBinlog}");
+
+            AssertTargetRan(secondBinlog, "GeneratePublishWasmBootJson");
+        }
+
+        [Theory]
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
         public void IncrementalBuild_NoChanges_SkipsWebcilAndBootJson(Configuration config)
         {
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "incremental_noop");
