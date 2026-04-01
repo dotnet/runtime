@@ -408,7 +408,7 @@ namespace System.Diagnostics
                     SafeHandle? handle = list[i];
                     if (handle is null)
                     {
-                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
+                        throw new ArgumentNullException("item", SR.InheritedHandlesMayNotContainNull);
                     }
                     if (handle.IsInvalid)
                     {
