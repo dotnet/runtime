@@ -27,6 +27,7 @@ namespace System.Runtime.InteropServices
         /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [OverloadResolutionPriority(1)] // Prioritize this overload over the ReadOnlySpan overload so types convertible to both resolve to this mutable version.
         public static unsafe Span<byte> AsBytes<T>(Span<T> span)
             where T : struct
         {
@@ -111,6 +112,7 @@ namespace System.Runtime.InteropServices
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [OverloadResolutionPriority(1)] // Prioritize this overload over the ReadOnlySpan overload so types convertible to both resolve to this mutable version.
         public static unsafe Span<TTo> Cast<TFrom, TTo>(Span<TFrom> span)
             where TFrom : struct
             where TTo : struct

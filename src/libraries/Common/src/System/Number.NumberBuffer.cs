@@ -65,7 +65,7 @@ namespace System
             public void CheckConsistency()
             {
 #if DEBUG
-                Debug.Assert((Kind == NumberBufferKind.Integer) || (Kind == NumberBufferKind.Decimal) || (Kind == NumberBufferKind.FloatingPoint));
+                Debug.Assert(Kind is NumberBufferKind.Integer or NumberBufferKind.Decimal or NumberBufferKind.FloatingPoint);
                 Debug.Assert(Digits[0] != '0', "Leading zeros should never be stored in a Number");
 
                 int numDigits;
@@ -92,7 +92,7 @@ namespace System
             //
             public override string ToString()
             {
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
 
                 sb.Append('[');
                 sb.Append('"');

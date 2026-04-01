@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Runs the stress test using docker-compose
+# Runs the stress test using docker compose
 
 [CmdletBinding(PositionalBinding = $false)]
 Param(
@@ -50,7 +50,7 @@ if ($useWindowsContainers) {
 }
 
 if (!$noBuild) {
-    # Dockerize the stress app using docker-compose
+    # Dockerize the stress app using docker compose
     $BuildArgs = @(
         "--build-arg", "VERSION=$Version",
         "--build-arg", "CONFIGURATION=$configuration"
@@ -61,10 +61,10 @@ if (!$noBuild) {
     $originalErrorPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        write-output "docker-compose --file $COMPOSE_FILE build $buildArgs"
-        docker-compose --file $COMPOSE_FILE build @buildArgs 2>&1
+        write-output "docker compose --file $COMPOSE_FILE build $buildArgs"
+        docker compose --file $COMPOSE_FILE build @buildArgs 2>&1
         if ($LASTEXITCODE -ne 0) {
-            throw "docker-compose exited with error code $LASTEXITCODE"
+            throw "docker compose exited with error code $LASTEXITCODE"
         }
     }
     finally {
@@ -86,5 +86,5 @@ if (!$buildOnly) {
 
     $env:STRESS_CLIENT_ARGS = $clientStressArgs
     $env:STRESS_SERVER_ARGS = $serverStressArgs
-    docker-compose --file "$COMPOSE_FILE" up --abort-on-container-exit
+    docker compose --file "$COMPOSE_FILE" up --abort-on-container-exit
 }

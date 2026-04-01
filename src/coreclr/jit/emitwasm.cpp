@@ -152,9 +152,7 @@ void emitter::emitAddressConstant(void* address)
     // Load our module base from __r2r_start, then load our address constant, then sum them.
     // FIXME-WASM: Make this a named constant or a reloc that crossgen2 fills in.
     emitIns_I(INS_global_get, EA_4BYTE, 1 /* __r2r_start */);
-    // emitIns_I(INS_i32_const_address, EA_PTRSIZE, address);
-    // FIXME-WASM: Just a hack for now because const_address relocations throw in crossgen2.
-    emitIns_I(INS_i32_const, EA_PTRSIZE, (int32_t)(((size_t)address) & 0xFFFFFFFFu));
+    emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
     emitIns(INS_i32_add);
 }
 
@@ -723,7 +721,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MEMADDR:
         {
             dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_MEMORY_ADDR_SLEB);
+            // TODO-WASM: The below reloc we're emitting here is specific to R2R and assumes the address we want
+            // is an offset from __image_base
+            dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_MEMORY_ADDR_REL_SLEB);
             break;
         }
         case IF_FUNCPTR:

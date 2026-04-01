@@ -736,6 +736,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return default;
     }
 
+    public bool IsEnum(TypeHandle typeHandle)
+    {
+        // Enums have Category_PrimitiveValueType in their MethodTable flags and their
+        // InternalCorElementType is a primitive type (I1, U1, I2, U2, I4, U4, I8, U8),
+        // not ValueType. Regular primitive value types (IntPtr/UIntPtr) have Category_TruePrimitive.
+        if (!typeHandle.IsMethodTable())
+            return false;
+
+        CorElementType sigType = GetSignatureCorElementType(typeHandle);
+        if (sigType != CorElementType.ValueType)
+            return false;
+
+        CorElementType internalType = (CorElementType)GetClassData(typeHandle).InternalCorElementType;
+        return internalType != CorElementType.ValueType;
+    }
+
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     public bool IsArray(TypeHandle typeHandle, out uint rank)
     {

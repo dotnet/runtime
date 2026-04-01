@@ -32,11 +32,11 @@ namespace System.Numerics
                                                          | NumberStyles.AllowThousands | NumberStyles.AllowExponent
                                                          | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
 
-        public static readonly Complex Zero = new Complex(0.0, 0.0);
-        public static readonly Complex One = new Complex(1.0, 0.0);
-        public static readonly Complex ImaginaryOne = new Complex(0.0, 1.0);
-        public static readonly Complex NaN = new Complex(double.NaN, double.NaN);
-        public static readonly Complex Infinity = new Complex(double.PositiveInfinity, double.PositiveInfinity);
+        public static readonly Complex Zero = new(0.0, 0.0);
+        public static readonly Complex One = new(1.0, 0.0);
+        public static readonly Complex ImaginaryOne = new(0.0, 1.0);
+        public static readonly Complex NaN = new(double.NaN, double.NaN);
+        public static readonly Complex Infinity = new(double.PositiveInfinity, double.PositiveInfinity);
 
         private const double InverseOfLog10 = 0.43429448190325; // 1 / Log(10)
 
@@ -395,8 +395,7 @@ namespace System.Numerics
 
         public static Complex Asin(Complex value)
         {
-            double b, bPrime, v;
-            Asin_Internal(Math.Abs(value.Real), Math.Abs(value.Imaginary), out b, out bPrime, out v);
+            Asin_Internal(Math.Abs(value.Real), Math.Abs(value.Imaginary), out double b, out double bPrime, out double v);
 
             double u;
             if (bPrime < 0.0)
@@ -428,8 +427,7 @@ namespace System.Numerics
 
         public static Complex Acos(Complex value)
         {
-            double b, bPrime, v;
-            Asin_Internal(Math.Abs(value.Real), Math.Abs(value.Imaginary), out b, out bPrime, out v);
+            Asin_Internal(Math.Abs(value.Real), Math.Abs(value.Imaginary), out double b, out double bPrime, out double v);
 
             double u;
             if (bPrime < 0.0)
@@ -483,7 +481,7 @@ namespace System.Numerics
 
         public static Complex Atan(Complex value)
         {
-            Complex two = new Complex(2.0, 0.0);
+            Complex two = new(2.0, 0.0);
             return (ImaginaryOne / two) * (Log(One - ImaginaryOne * value) - Log(One + ImaginaryOne * value));
         }
 
@@ -908,7 +906,7 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        static Complex IAdditiveIdentity<Complex, Complex>.AdditiveIdentity => new Complex(0.0, 0.0);
+        static Complex IAdditiveIdentity<Complex, Complex>.AdditiveIdentity => new(0.0, 0.0);
 
         //
         // IDecrementOperators
@@ -929,20 +927,20 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
-        static Complex IMultiplicativeIdentity<Complex, Complex>.MultiplicativeIdentity => new Complex(1.0, 0.0);
+        static Complex IMultiplicativeIdentity<Complex, Complex>.MultiplicativeIdentity => new(1.0, 0.0);
 
         //
         // INumberBase
         //
 
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static Complex INumberBase<Complex>.One => new Complex(1.0, 0.0);
+        static Complex INumberBase<Complex>.One => new(1.0, 0.0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
         static int INumberBase<Complex>.Radix => 2;
 
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static Complex INumberBase<Complex>.Zero => new Complex(0.0, 0.0);
+        static Complex INumberBase<Complex>.Zero => new(0.0, 0.0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static Complex INumberBase<Complex>.Abs(Complex value) => Abs(value);
@@ -2253,7 +2251,7 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
-        static Complex ISignedNumber<Complex>.NegativeOne => new Complex(-1.0, 0.0);
+        static Complex ISignedNumber<Complex>.NegativeOne => new(-1.0, 0.0);
 
         //
         // ISpanFormattable

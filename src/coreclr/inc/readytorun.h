@@ -532,4 +532,13 @@ enum ReadyToRunHFAElemType : DWORD
     READYTORUN_HFA_ELEMTYPE_Vector128 = 4,
 };
 
+struct READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT
+{
+    void* Target;
+    DWORD RelocOffset;
+#ifdef TARGET_64BIT
+    DWORD Padding;
+#endif
+};
+
 #endif // __READYTORUN_H__
