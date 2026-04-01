@@ -519,7 +519,7 @@ public struct DACEHInfo
 public enum SOSStackSourceType : uint
 {
     SOS_StackSourceIP = 0,
-    SOS_StackSourceFrame = 1
+    SOS_StackSourceFrame = 1,
 }
 
 public struct SOSStackRefData

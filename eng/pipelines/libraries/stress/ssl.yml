@@ -4,6 +4,11 @@ pr:
   branches:
     include:
     - "*"
+  paths:
+    include:
+    - src/libraries/System.Net.Security/tests/StressTests/SslStress/**
+    - src/libraries/Common/tests/System/Net/StressTests/**
+    - eng/pipelines/libraries/stress/**
 
 schedules:
 - cron: "0 13 * * *" # 1PM UTC => 5 AM PST

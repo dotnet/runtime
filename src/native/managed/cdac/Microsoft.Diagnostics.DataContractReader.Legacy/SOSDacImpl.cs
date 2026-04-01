@@ -2621,10 +2621,10 @@ public sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            if (frameAddr == 0 || ppMD == null)
+            if (frameAddr == 0 || ppMD is null)
                 throw new ArgumentException();
 
-            IStackWalk stackWalkContract = _target.Contracts.StackWalk;
+            Contracts.IStackWalk stackWalkContract = _target.Contracts.StackWalk;
             TargetPointer methodDescPtr = stackWalkContract.GetMethodDescPtr(frameAddr.ToTargetPointer(_target));
             if (methodDescPtr == TargetPointer.Null)
                 throw new ArgumentException();
@@ -3902,8 +3902,79 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSStackRefEnum : ISOSStackRefEnum
+    {
+        private readonly SOSStackRefData[] _refs;
+        private uint _index;
+
+        public SOSStackRefEnum(SOSStackRefData[] refs)
+        {
+            _refs = refs;
+        }
+
+        int ISOSStackRefEnum.Next(uint count, SOSStackRefData[] refs, uint* pFetched)
+        {
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pFetched is null || refs is null)
+                    throw new NullReferenceException();
+
+                count = Math.Min(count, (uint)refs.Length);
+                uint written = 0;
+                while (written < count && _index < _refs.Length)
+                    refs[written++] = _refs[(int)_index++];
+
+                *pFetched = written;
+                // COMPAT: S_FALSE means more items remain, S_OK means enumeration is complete.
+                // This is the inverse of the standard COM IEnumXxx convention, but matches
+                // the legacy DAC behavior (see SOSHandleEnum.Next).
+                hr = _index < _refs.Length ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+
+            return hr;
+        }
+
+        int ISOSStackRefEnum.EnumerateErrors(DacComNullableByRef<ISOSStackRefErrorEnum> ppEnum)
+        {
+            return HResults.E_NOTIMPL;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            _index = Math.Min(_index + count, (uint)_refs.Length);
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Reset()
+        {
+            _index = 0;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            if (pCount is null) return HResults.E_POINTER;
+            *pCount = (uint)_refs.Length;
+            return HResults.S_OK;
+        }
+    }
+
     int ISOSDacInterface.GetStackReferences(int osThreadID, DacComNullableByRef<ISOSStackRefEnum> ppEnum)
-        => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
+    {
+        // Stack reference enumeration is not yet complete in the cDAC — capital-F Frame
+        // GC root scanning (ScanFrameRoots) is still pending. Fall through to the legacy
+        // DAC so that consumers (dump tests, SOS) continue to work while the implementation
+        // is in progress.
+        return _legacyImpl is not null
+            ? _legacyImpl.GetStackReferences(osThreadID, ppEnum)
+            : HResults.E_NOTIMPL;
+    }
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)
     {
