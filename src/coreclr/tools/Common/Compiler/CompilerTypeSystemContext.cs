@@ -209,7 +209,7 @@ namespace ILCompiler
                     }
                     catch (BadImageFormatException ex)
                     {
-                        throw new BadImageFormatException(ex.Message, filePath, ex);
+                        throw new BadImageFormatException(ex.Message, filePath);
                     }
                 }
                 else
