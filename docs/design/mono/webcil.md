@@ -130,7 +130,7 @@ struct WebcilHeader {
 };
 ```
 
-#### Webcil Header (V1 Changes) 
+#### Webcil Header (V1 Changes)
 For Webcil V1, the Reserved0 field may be used to store a 1-based index which corresponds to a
 base reloc section.
 ```
@@ -193,7 +193,7 @@ file identification utilities, dependency analyzers, etc.
 
 
 ### Webcil V1 (Base Relocations)
-It is possible to specify base relocations in the standard PE base relocation format in Webcil V1. 
+It is possible to specify base relocations in the standard PE base relocation format in Webcil V1.
 Relocations are grouped by page (default 4kb), and each relocation entry is a `uint16_t` containing:
 
 - Relocation Type (upper 4 bits)
@@ -203,6 +203,6 @@ Relocations are grouped by page (default 4kb), and each relocation entry is a `u
   - IMAGE_REL_BASED_WASM64_TABLE (wasm64)
 - Offset (lower 12 bits)
 
-IMAGE_REL_BASED_WASM{32, 64}_TABLE relocations represent a "table base offset" fixup; They should be used to indicate places
+`IMAGE_REL_BASED_WASM{32, 64}_TABLE` relocations represent a "table base offset" fixup; They should be used to indicate places
 where function pointer table indices need to be offset after the Webcil payload has been loaded by the runtime. The offset will
 be dependent on the state of the table when an implementation's loader loads a Webcil module.
