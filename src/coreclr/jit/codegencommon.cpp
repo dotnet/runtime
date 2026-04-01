@@ -63,12 +63,19 @@ CodeGenInterface* getCodeGenerator(Compiler* comp)
     return new (comp, CMK_Codegen) CodeGen(comp);
 }
 
+#if HAS_FIXED_REGISTER_SET
+//------------------------------------------------------------------------
+// NodeInternalRegisters::NodeInternalRegisters: construct the
+//    internal registers tracking data
+//
+// Arguments:
+//    comp -- compiler instance
+//
 NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
     : m_table(comp->getAllocator(CMK_LSRA))
 {
 }
 
-#if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------
 // Add: Add internal allocated registers for the specified node.
 //
@@ -170,6 +177,59 @@ unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
     return m_table.Lookup(tree, &regs) ? genCountBits(regs & mask) : 0;
 }
 #else  // !HAS_FIXED_REGISTER_SET
+
+//------------------------------------------------------------------------
+// NodeInternalRegisters: construct the
+//    internal registers tracking data
+//
+// Arguments:
+//    comp -- compiler instance
+//
+NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
+    : m_compiler(comp)
+    , m_tables(comp->compFuncInfoCount, nullptr, comp->getAllocator(CMK_LSRA))
+{
+}
+
+//------------------------------------------------------------------------
+// GetOrCreateTable: get the internal register table for nodes in this funclet region
+//   or create it if it does not yet exist.
+//
+// Parameters:
+//   funcletIndex - Index of the funclet
+//
+// Returns:
+//   Pointer to the internal register table.
+//
+NodeInternalRegistersTable* NodeInternalRegisters::GetOrCreateTable(unsigned funcletIndex)
+{
+    assert(funcletIndex < m_tables.size());
+    NodeInternalRegistersTable* table = m_tables[funcletIndex];
+    if (table == nullptr)
+    {
+        table = new (m_compiler->getAllocator(CMK_LSRA)) NodeInternalRegistersTable(m_compiler->getAllocator(CMK_LSRA));
+        m_tables[funcletIndex] = table;
+    }
+    return table;
+}
+
+//------------------------------------------------------------------------
+// GetTable: get the internal register table for nodes in this funclet region
+//   or create it if it does not yet exist.
+//
+// Parameters:
+//   funcletIndex - Index of the funclet
+//
+// Returns:
+//   Pointer to the internal register table.
+//
+NodeInternalRegistersTable* NodeInternalRegisters::GetTable(unsigned funcletIndex)
+{
+    assert(funcletIndex < m_tables.size());
+    NodeInternalRegistersTable* table = m_tables[funcletIndex];
+    return table;
+}
+
 //------------------------------------------------------------------------
 // InternalRegs: construct an empty 'InternalRegs' instance.
 //
@@ -276,12 +336,14 @@ regNumber InternalRegs::Extract()
 // Add: Add a register to the set of ones internally allocated for this node.
 //
 // Parameters:
+//   funcletIndex -- index of the funclet region for the tree
 //   tree - IR node to add the internal allocated register to
 //   reg  - The register to add
 //
-void NodeInternalRegisters::Add(GenTree* tree, regNumber reg)
+void NodeInternalRegisters::Add(unsigned funcletIndex, GenTree* tree, regNumber reg)
 {
-    InternalRegs* regs = m_table.LookupPointerOrAdd(tree, InternalRegs{});
+    NodeInternalRegistersTable* const table = GetOrCreateTable(funcletIndex);
+    InternalRegs* const               regs  = table->LookupPointerOrAdd(tree, InternalRegs{});
     regs->Add(reg);
 }
 
@@ -289,14 +351,20 @@ void NodeInternalRegisters::Add(GenTree* tree, regNumber reg)
 // GetAll: Get the internally allocated registers for the specified node.
 //
 // Parameters:
+//   funcletIndex -- index of the funclet region for the tree
 //   tree - IR node to get the registers for
 //
 // Returns:
 //   Pointer to the registers, nullptr if there are none.
 //
-InternalRegs* NodeInternalRegisters::GetAll(GenTree* tree)
+InternalRegs* NodeInternalRegisters::GetAll(unsigned funcletIndex, GenTree* tree)
 {
-    InternalRegs* regs = m_table.LookupPointer(tree);
+    NodeInternalRegistersTable* const table = GetTable(funcletIndex);
+    if (table == nullptr)
+    {
+        return nullptr;
+    }
+    InternalRegs* const regs = table->LookupPointer(tree);
     assert((regs == nullptr) || !regs->IsEmpty());
     return regs;
 }
@@ -304,12 +372,15 @@ InternalRegs* NodeInternalRegisters::GetAll(GenTree* tree)
 //------------------------------------------------------------------------
 // Iterate: Get the iterator for the internal register table.
 //
+// Parameters:
+//   table -- pointer to the internal register table for a codegen region.
+//
 // Returns:
 //   A 'for'-loop compatible iterator of the table entries.
 //
-NodeInternalRegistersTable::KeyValueIteration NodeInternalRegisters::Iterate()
+NodeInternalRegistersTable::KeyValueIteration NodeInternalRegisters::Iterate(NodeInternalRegistersTable* table)
 {
-    return NodeInternalRegistersTable::KeyValueIteration(&m_table);
+    return NodeInternalRegistersTable::KeyValueIteration(table);
 }
 #endif // !HAS_FIXED_REGISTER_SET
 

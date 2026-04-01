@@ -754,7 +754,7 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 regNumber WasmRegAlloc::RequestInternalRegister(GenTree* node, var_types type)
 {
     regNumber reg = AllocateTemporaryRegister(type);
-    m_codeGen->internalRegisters.Add(node, reg);
+    m_codeGen->internalRegisters.Add(m_currentFunclet, node, reg);
     return reg;
 }
 
@@ -1010,18 +1010,21 @@ void WasmRegAlloc::ResolveReferences()
             refsCount = ARRAY_SIZE(refs->Nodes);
         }
 
-        for (NodeInternalRegistersTable::Node* nodeWithInternalRegs : m_codeGen->internalRegisters.Iterate())
+        NodeInternalRegistersTable* const internalRegTable = m_codeGen->internalRegisters.GetTable(m_currentFunclet);
+        if (internalRegTable != nullptr)
         {
-            // We need to filter to just the references in the current funclet.
-            //
-            InternalRegs* regs  = &nodeWithInternalRegs->GetValueRef();
-            unsigned      count = regs->Count();
-            for (unsigned i = 0; i < count; i++)
+            for (NodeInternalRegistersTable::Node* nodeWithInternalRegs :
+                 m_codeGen->internalRegisters.Iterate(internalRegTable))
             {
-                WasmValueType type;
-                unsigned      index   = UnpackWasmReg(regs->GetAt(i), &type);
-                regNumber     physReg = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
-                regs->SetAt(i, physReg);
+                InternalRegs* regs  = &nodeWithInternalRegs->GetValueRef();
+                unsigned      count = regs->Count();
+                for (unsigned i = 0; i < count; i++)
+                {
+                    WasmValueType type;
+                    unsigned      index   = UnpackWasmReg(regs->GetAt(i), &type);
+                    regNumber     physReg = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
+                    regs->SetAt(i, physReg);
+                }
             }
         }
 

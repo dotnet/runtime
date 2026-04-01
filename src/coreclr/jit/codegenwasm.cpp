@@ -1285,7 +1285,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
     genConsumeOperands(treeNode);
 
     const bool    is64BitOp = treeNode->TypeIs(TYP_LONG);
-    InternalRegs* regs      = internalRegisters.GetAll(treeNode);
+    InternalRegs* regs      = internalRegisters.GetAll(m_compiler->compCurrFuncIdx, treeNode);
     regNumber     op1Reg    = GetMultiUseOperandReg(treeNode->gtGetOp1());
     regNumber     op2Reg    = GetMultiUseOperandReg(treeNode->gtGetOp2());
 
@@ -2825,7 +2825,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
 
         // Fetch the internal register we reserved during RA
-        InternalRegs* regs = internalRegisters.GetAll(tree);
+        InternalRegs* regs = internalRegisters.GetAll(m_compiler->compCurrFuncIdx, tree);
         assert(regs->Count() == 1);
         regNumber sizeReg = regs->Extract();
         assert(WasmRegToType(sizeReg) == TypeToWasmValueType(TYP_I_IMPL));

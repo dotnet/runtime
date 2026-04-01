@@ -61,7 +61,12 @@ public:
 using NodeInternalRegistersTable = JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, InternalRegs>;
 class NodeInternalRegisters
 {
+#if HAS_FIXED_REGISTER_SET
     NodeInternalRegistersTable m_table;
+#else  // !HAS_FIXED_REGISTER_SET
+    Compiler*                                   m_compiler;
+    jitstd::vector<NodeInternalRegistersTable*> m_tables;
+#endif // !HAS_FIXED_REGISTER_SET
 
 public:
     NodeInternalRegisters(Compiler* comp);
@@ -73,9 +78,11 @@ public:
     regMaskTP GetAll(GenTree* tree);
     unsigned  Count(GenTree* tree, regMaskTP mask = static_cast<regMaskTP>(-1));
 #else  // !HAS_FIXED_REGISTER_SET
-    void                                          Add(GenTree* tree, regNumber reg);
-    InternalRegs*                                 GetAll(GenTree* tree);
-    NodeInternalRegistersTable::KeyValueIteration Iterate();
+    NodeInternalRegistersTable*                   GetOrCreateTable(unsigned funcletIndex);
+    NodeInternalRegistersTable*                   GetTable(unsigned funcletIndex);
+    void                                          Add(unsigned funcletIndex, GenTree* tree, regNumber reg);
+    InternalRegs*                                 GetAll(unsigned funcletIndex, GenTree* tree);
+    NodeInternalRegistersTable::KeyValueIteration Iterate(NodeInternalRegistersTable* table);
 #endif // !HAS_FIXED_REGISTER_SET
 };
 
