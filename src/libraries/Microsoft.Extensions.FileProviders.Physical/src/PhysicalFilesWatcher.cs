@@ -296,11 +296,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("wasi")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
             // For a file name change or a directory's name change notify registered tokens.
@@ -329,21 +325,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("wasi")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
         private void OnChanged(object sender, FileSystemEventArgs e)
         {
             OnFileSystemEntryChange(e.FullPath);
         }
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("wasi")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
         private void OnError(object sender, ErrorEventArgs e)
         {
             // Notify all cache entries on error.
@@ -364,11 +352,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("wasi")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
         private void OnFileSystemEntryChange(string fullPath)
         {
             try
@@ -398,11 +382,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("wasi")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
         private void ReportChangeForMatchedEntries(string path)
         {
             if (string.IsNullOrEmpty(path))
@@ -442,11 +422,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         // Fires tokens for any watched entries that already exist on disk. Called after enabling
         // the FileSystemWatcher to catch entries created before the watcher was active (e.g.
         // files created between _root appearing and the FSW being enabled).
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("wasi")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
         private void ReportExistingWatchedEntries()
         {
             if ((!_filePathTokenLookup.IsEmpty || !_wildcardTokenLookup.IsEmpty) && Directory.Exists(_root))
@@ -473,11 +449,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("wasi")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
         private void TryDisableFileSystemWatcher()
         {
             if (_fileWatcher != null)
@@ -591,11 +563,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 #pragma warning restore CA1416
         }
 
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("wasi")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
         private void EnsureRootCreationWatcher()
         {
             PendingCreationWatcher? newWatcher = null;
@@ -742,11 +710,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             public CancellationToken Token { get; }
 
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("wasi")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
-            [SupportedOSPlatform("maccatalyst")]
+            [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
             public PendingCreationWatcher(string directory)
             {
                 Token = _cts.Token;
@@ -792,11 +756,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 return target.Equals(path.AsSpan().TrimEnd(PathUtils.PathSeparators), StringComparison.OrdinalIgnoreCase);
             }
 
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("wasi")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
-            [SupportedOSPlatform("maccatalyst")]
+            [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
             // Returns true if _cts should be cancelled after releasing the lock.
             private bool SetupWatcherNoLock(string watchDir)
             {
@@ -858,11 +818,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 }
             }
 
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("wasi")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
-            [SupportedOSPlatform("maccatalyst")]
+            [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
             private void OnCreated(object sender, FileSystemEventArgs e)
             {
                 if (_cts.IsCancellationRequested)
@@ -904,11 +860,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 }
             }
 
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("wasi")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
-            [SupportedOSPlatform("maccatalyst")]
+            [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
             private void OnError(object sender, ErrorEventArgs e)
             {
                 lock (_lock)
@@ -937,11 +889,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 }
             }
 
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("wasi")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
-            [SupportedOSPlatform("maccatalyst")]
+            [UnsupportedOSPlatform("browser"), UnsupportedOSPlatform("wasi"), UnsupportedOSPlatform("ios"), UnsupportedOSPlatform("tvos"), SupportedOSPlatform("maccatalyst")]
             public void Dispose()
             {
                 if (Interlocked.Exchange(ref _disposed, 1) != 0)
