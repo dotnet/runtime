@@ -6,13 +6,14 @@ Selects a random Copilot PAT from a numbered pool of secrets. This addresses lim
 ## Repository Onboarding
 To use Agentic Workflows in a dotnet org repository:
 
-1. [Install the `gh aw` CLI extension][cli-setup] if you haven't already:
-   ```sh
-   gh extension install github/gh-aw
-   ```
-2. Follow the instructions for [Configuring Your Repository | Agentic Authoring | GitHub Agentic Workflows][configure-repo].
-3. Copy this `select-copilot-pat` folder into the repository under `.github/actions/select-copilot-pat`, including both the `README.md` and `action.yml`.
-4. Merge those additions into the repository and then follow the instructions for the PAT Creation and Usage below.
+1. Follow the instructions for [Configuring Your Repository | Agentic Authoring | GitHub Agentic Workflows][configure-repo].
+2. Copy this `select-copilot-pat` folder into the repository under `.github/actions/select-copilot-pat`, including both the `README.md` and `action.yml`.
+3. Merge those additions into the repository and then follow the instructions for the PAT Creation and Usage below.
+
+> **Optional:** If you plan to manage secrets or workflows from the command line (e.g., `gh aw secrets set`), [install the `gh aw` CLI extension][cli-setup]:
+> ```sh
+> gh extension install github/gh-aw
+> ```
 
 ## PAT Management
 Team members provide PATs into the pools for the repository by adding them as repository secrets with secret names matching the pattern of `<pool_name>_<0-9>`, such as `COPILOT_PAT_0`.
