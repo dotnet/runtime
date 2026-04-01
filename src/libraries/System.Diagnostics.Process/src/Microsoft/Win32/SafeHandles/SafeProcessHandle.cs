@@ -11,9 +11,11 @@
 ===========================================================*/
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -121,6 +123,48 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle);
+        }
+
+        /// <summary>
+        /// Sends a request to the OS to terminate the process.
+        /// </summary>
+        /// <remarks>
+        /// This method does not throw if the process has already exited.
+        /// On Windows, the handle must have <c>PROCESS_TERMINATE</c> access.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="Win32Exception">The process could not be terminated.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public void Kill()
+        {
+            Validate();
+            SignalCore(PosixSignal.SIGKILL);
+        }
+
+        /// <summary>
+        /// Sends a signal to the process.
+        /// </summary>
+        /// <param name="signal">The signal to send.</param>
+        /// <returns>
+        /// <see langword="true"/> if the signal was sent successfully;
+        /// <see langword="false"/> if the process has already exited (or never existed) and the signal was not delivered.
+        /// </returns>
+        /// <remarks>
+        /// On Windows, only <see cref="PosixSignal.SIGKILL"/> is supported and is mapped to <see cref="Kill"/>.
+        /// On Windows, the handle must have <c>PROCESS_TERMINATE</c> access.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="PlatformNotSupportedException">The specified signal is not supported on this platform.</exception>
+        /// <exception cref="Win32Exception">The signal could not be sent.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public bool Signal(PosixSignal signal)
+        {
+            Validate();
+            return SignalCore(signal);
         }
 
         private void Validate()

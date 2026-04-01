@@ -93,20 +93,7 @@ namespace System.Diagnostics
                 if (handle.IsInvalid)
                     return;
 
-                if (!Interop.Kernel32.TerminateProcess(handle, -1))
-                {
-                    // Capture the exception
-                    var exception = new Win32Exception();
-
-                    // Don't throw if the process has exited.
-                    if (exception.NativeErrorCode == Interop.Errors.ERROR_ACCESS_DENIED &&
-                        Interop.Kernel32.GetExitCodeProcess(handle, out int localExitCode) && localExitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)
-                    {
-                        return;
-                    }
-
-                    throw exception;
-                }
+                handle.Kill();
             }
         }
 

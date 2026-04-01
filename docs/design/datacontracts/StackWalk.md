@@ -77,11 +77,24 @@ This contract depends on the following descriptors:
 | `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
 | `TailCallFrame` (x86 Windows) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
 | `TailCallFrame` (x86 Windows) | `ReturnAddress` | Frame's stored instruction pointer |
+| `ExceptionInfo` | `ExceptionFlags` | Bit flags from `ExceptionFlags` class (`exstatecommon.h`). Used for GC reference reporting during stack walks with funclet handling. |
+| `ExceptionInfo` | `StackLowBound` | Low bound of the stack range unwound by this exception |
+| `ExceptionInfo` | `StackHighBound` | High bound of the stack range unwound by this exception |
+| `ExceptionInfo` | `CSFEHClause` | Caller stack frame of the current EH clause |
+| `ExceptionInfo` | `CSFEnclosingClause` | Caller stack frame of the enclosing clause |
+| `ExceptionInfo` | `CallerOfActualHandlerFrame` | Stack frame of the caller of the catch handler |
+| `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested ExInfo |
+| `ExceptionInfo` | `PassNumber` | Exception handling pass (1 or 2) |
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | For each FrameType `<frameType>`, `<frameType>##Identifier` | `FrameIdentifier` enum value | Identifier used to determine concrete type of Frames |
+
+Constants used:
+| Source | Name | Value | Purpose |
+| --- | --- | --- | --- |
+| `ExceptionFlags` (`exstatecommon.h`) | `Ex_UnwindHasStarted` | `0x00000004` | Bit flag in `ExceptionInfo.ExceptionFlags` indicating exception unwinding (2nd pass) has started. Used by `IsInStackRegionUnwoundBySpecifiedException` to skip ExInfo trackers still in the 1st pass. |
 
 Contracts used:
 | Contract Name |
@@ -372,11 +385,11 @@ TargetPointer GetMethodDescPtr(TargetPointer framePtr)
     4. The InlinedCallFrame's return address method has a MDContext arg
 
   In this case, we report the actual interop MethodDesc. A pointer to the MethodDesc immediately follows the InlinedCallFrame in memory.
-This API is implemeted as follows:
+This API is implemented as follows:
 1. Try to get the current frame address `framePtr` with `GetFrameAddress`.
 2. If the address is not null, compute `reportInteropMD` as listed above. Otherwise skip to step 5.
 3. If `reportInteropMD`, dereference the pointer immediately following the InlinedCallFrame and return that value.
-4. If `!reportIteropMD`, return `GetMethodDescPtr(framePtr)`.
+4. If `!reportInteropMD`, return `GetMethodDescPtr(framePtr)`.
 5. Check if the current context IP is a managed context using the ExecutionManager contract. If it is a managed context, use the ExecutionManager context to find the related MethodDesc and return the pointer to it.
 ```csharp
 TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)
