@@ -741,6 +741,23 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <inheritdoc cref="Vector256.Asinh(Vector256{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<double> Asinh(Vector512<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinhDouble<Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Asinh(vector._lower),
+                    Vector256.Asinh(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector256.Asin(Vector256{float})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<float> Asin(Vector512<float> vector)
@@ -754,6 +771,23 @@ namespace System.Runtime.Intrinsics
                 return Create(
                     Vector256.Asin(vector._lower),
                     Vector256.Asin(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.Asinh(Vector256{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<float> Asinh(Vector512<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinhSingle<Vector512<float>, Vector512<int>, Vector512<uint>, Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Asinh(vector._lower),
+                    Vector256.Asinh(vector._upper)
                 );
             }
         }
