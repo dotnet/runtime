@@ -123,6 +123,10 @@ public:
                     CorInfoCallConvExtension unmgdCallConv,
                     DWORD                    dwStubFlags); // PInvokeStubFlags
 
+    static COR_ILMETHOD_DECODER* CreatePInvokeMethodIL(
+                    PInvokeMethodDesc* pMD,
+                    DynamicResolver** ppResolver);
+
 #ifdef FEATURE_COMINTEROP
     static MethodDesc* CreateFieldAccessILStub(
                     PCCOR_SIGNATURE    szMetaSig,

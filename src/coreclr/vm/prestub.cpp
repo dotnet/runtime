@@ -373,8 +373,9 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     }
 #endif // FEATURE_CODE_VERSIONING
 
-    if (pConfig->MayUsePrecompiledCode())
+    if (pConfig->MayUsePrecompiledCode() && (!IsPInvoke() || MayUsePrecompiledILStub()))
     {
+        _ASSERTE(!IsPInvoke() || GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs());
         if (pCode == (PCODE)NULL)
         {
             pCode = GetPrecompiledCode(pConfig, shouldTier);
@@ -1054,6 +1055,12 @@ bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver
 
     // When adding new methods implemented by Transient IL, consider if MethodDesc::IsDiagnosticsHidden() needs to be
     // updated as well.
+
+    if (IsPInvoke())
+    {
+        *methodILDecoder = PInvoke::CreatePInvokeMethodIL(static_cast<PInvokeMethodDesc*>(this), resolver);
+        return true;
+    }
 
     if (TryGenerateAsyncThunk(resolver, methodILDecoder))
     {
@@ -2279,7 +2286,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         pStub = MakeInstantiatingStubWorker(this);
     }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
-    else if (IsIL() || IsNoMetadata())
+    else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()))
     {
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
         if (!IsNativeCodeStableAfterInit())
@@ -2288,22 +2295,23 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
         pCode = PrepareInitialCode(callerGCMode);
-    } // end else if (IsIL() || IsNoMetadata())
-    else if (IsPInvoke())
-    {
-        if (GetModule()->IsReadyToRun() && MayUsePrecompiledILStub())
+
+        if (IsPInvoke())
         {
-            _ASSERTE(GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs());
-            // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such
-            // a stub, we'll use it directly instead and avoid emitting an IL stub.
-            PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
-            pCode = GetPrecompiledR2RCode(&config);
-            if (pCode != (PCODE)NULL)
+            PInvokeMethodDesc* pNMD = static_cast<PInvokeMethodDesc*>(this);
+            if (pNMD->IsEarlyBound())
             {
-                LOG_USING_R2R_CODE(this);
+                pNMD->InitEarlyBoundPInvokeTarget();
+            }
+            else
+            {
+                PInvokeLink(pNMD);
             }
         }
-
+    } // end else if (IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg()))
+    else if (IsPInvoke())
+    {
+        _ASSERTE(static_cast<PInvokeMethodDesc*>(this)->IsVarArgs());
         if (pCode == (PCODE)NULL)
         {
             pCode = GetStubForInteropMethod(this);

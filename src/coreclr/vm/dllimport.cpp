@@ -800,10 +800,11 @@ public:
             // is the target signature. We need to swap them.
             SwapStubSignatures(pStubMD);
         }
-        else
+        else if (pStubMD->IsDynamicMethod())
         {
             // If we're not in a Reverse stub, the signatures are correct,
-            // but we need to convert the signature into a module-independent form.
+            // but we need to convert the signature into a module-independent form
+            // if our signature is not backed by metadata.
             ConvertMethodDescSigToModuleIndependentSig(pStubMD);
         }
 
@@ -4086,6 +4087,43 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
     return true;
 }
 
+COR_ILMETHOD_DECODER* PInvoke::CreatePInvokeMethodIL(PInvokeMethodDesc* pMD, DynamicResolver** ppResolver)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pMD != nullptr);
+
+    PInvokeStaticSigInfo sigInfo;
+    PInvoke::InitializeSigInfoAndPopulatePInvokeMethodDesc(pMD, &sigInfo);
+
+    StubSigDesc sigDesc(pMD, sigInfo.GetSignature(), sigInfo.GetModule());
+
+    DWORD       dwStubFlags = sigInfo.GetStubFlags();
+    int         iLCIDArg = 0;
+    int         numArgs = 0;
+    int         numParamTokens = 0;
+    mdParamDef* pParamTokenArray = NULL;
+
+    CreatePInvokeStubAccessMetadata(&sigDesc,
+                                    sigInfo.GetCallConv(),
+                                    &dwStubFlags,
+                                    &iLCIDArg,
+                                    &numArgs);
+
+    Module *pModule = sigDesc.m_pModule;
+    numParamTokens = numArgs + 1;
+    pParamTokenArray = (mdParamDef*)_alloca(numParamTokens * sizeof(mdParamDef));
+    CollateParamTokens(pModule->GetMDImport(), sigDesc.m_tkMethodDef, numArgs, pParamTokenArray);
+
+    MethodDesc *pMD = sigDesc.m_pMD;
+
+    NewHolder<ILStubState> pStubState = new PInvoke_ILStubState(pModule, sigDesc.m_sig, &sigDesc.m_typeContext, dwStubFlags, sigInfo.GetCallConv(), iLCIDArg, pMD);
+    NewHolder<ILStubResolver> pResolver = new ILStubResolver();
+    pResolver->SetStubMethodDesc(pMD);
+
+    return CreatePInvokeStubWorker(pStubState, pResolver, &sigDesc, sigInfo.GetCharSet(), sigInfo.GetLinkFlags(), sigInfo.GetCallConv(), dwStubFlags, pMD, pParamTokenArray, iLCIDArg);
+}
+
 static void CreateLayoutClassStub(MethodTable* pMT,
     PInvokeStubLinker* linker,
     MarshalOperation op)
@@ -5698,38 +5736,23 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pStub = (PCODE)NULL;
-
-    CONSISTENCY_CHECK(*ppStubMD == NULL);
-
-    PInvokeStaticSigInfo sigInfo;
-    PInvoke::InitializeSigInfoAndPopulatePInvokeMethodDesc(pNMD, &sigInfo);
-
-    *ppStubMD = GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
-
     if (SF_IsForNumParamBytes(dwStubFlags))
+    {
+        PInvokeStaticSigInfo sigInfo;
+        PInvoke::InitializeSigInfoAndPopulatePInvokeMethodDesc(pNMD, &sigInfo);
+        GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
         return (PCODE)NULL;
-
-    if (*ppStubMD)
-    {
-        pStub = JitILStub(*ppStubMD);
     }
-    else
-    {
-        CONSISTENCY_CHECK(pNMD->IsVarArgs());
+
+    CONSISTENCY_CHECK(pNMD->IsVarArgs());
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
+    COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
-        //
-        // varargs goes through vararg PInvoke stub
-        //
-        pStub = TheVarargPInvokeStub(pNMD->HasRetBuffArg());
 
-        // Only vararg P/Invoke use shared stubs, they need a precode to push the hidden argument.
-        (void)pNMD->GetOrCreatePrecode();
+    // Only vararg P/Invoke use shared stubs, they need a precode to push the hidden argument.
+    (void)pNMD->GetOrCreatePrecode();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
-    }
 
     if (pNMD->IsEarlyBound())
     {
@@ -5740,14 +5763,10 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
         PInvokeLink(pNMD);
     }
 
-    // NOTE: For IL-stub-backed P/Invoke stubs (i.e., when *ppStubMD is non-null
-    // and the stub is obtained via JitILStub/ILStubCache), racing threads will
-    // resolve to the same DynamicMethodDesc via the ILStubCache (keyed by the
-    // target MethodDesc). The locking around the JIT operation prevents the
-    // code from being jitted more than once, and all threads get back the same
-    // PCODE. See CreateHashBlob() for the hashing logic.
-
-    return pStub;
+    //
+    // varargs goes through vararg PInvoke stub
+    //
+    return TheVarargPInvokeStub(pNMD->HasRetBuffArg());
 }
 
 PCODE JitILStub(MethodDesc* pStubMD)
