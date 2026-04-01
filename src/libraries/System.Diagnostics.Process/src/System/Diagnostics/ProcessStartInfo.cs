@@ -214,11 +214,9 @@ namespace System.Diagnostics
         /// Concurrent calls to <see cref="Process.Start()"/> or <see cref="SafeProcessHandle.Start(ProcessStartInfo)"/> that share the same <see cref="InheritedHandles"/> list instance
         /// are not supported. The list must not be modified while a process start is in progress.
         /// </para>
-        /// <para>
-        /// On Unix, the implementation will modify each file descriptor in the child process
-        /// by removing the FD_CLOEXEC flag. This modification occurs after the fork and before the exec,
-        /// so it does not affect the parent process.
-        /// </para>
+        /// <remarks>
+        /// This API can't be used together with <see cref="UseShellExecute"/> set to <see langword="true"/> or when specifying a user name via the <see cref="UserName"/> property.
+        /// </remarks>
         /// <para>
         /// On Windows, the implementation will temporarily enable inheritance on each handle in this list
         /// by modifying the handle's flags using <see href="https://learn.microsoft.com/windows/win32/api/handleapi/nf-handleapi-sethandleinformation">SetHandleInformation</see>.
@@ -227,8 +225,9 @@ namespace System.Diagnostics
         /// The handles themselves are not duplicated; they are made inheritable and passed to the child process.
         /// </para>
         /// <para>
-        /// On Windows, when this property is used with <see cref="UserName"/> and <see cref="Password"/> or <see cref="PasswordInClearText"/> to start a process under different credentials,
-        /// the <see href="https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessasuserw">CreateProcessAsUserW</see> function is used to create the process.
+        /// On Unix, the implementation will modify each file descriptor in the child process
+        /// by removing the FD_CLOEXEC flag. This modification occurs after the fork and before the exec,
+        /// so it does not affect the parent process.
         /// </para>
         /// </remarks>
         /// <value>
@@ -389,7 +388,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.CantRedirectStreams);
             }
 
-            if (UseShellExecute && InheritedHandles is not null)
+            if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))
             {
                 throw new InvalidOperationException(SR.InheritedHandlesRequiresCreateProcess);
             }

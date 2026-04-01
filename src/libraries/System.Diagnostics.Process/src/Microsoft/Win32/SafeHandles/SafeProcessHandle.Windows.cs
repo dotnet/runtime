@@ -68,7 +68,7 @@ namespace Microsoft.Win32.SafeHandles
 
             try
             {
-                startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
+                startupInfoEx.StartupInfo.cb = hasInheritedHandles ? sizeof(Interop.Kernel32.STARTUPINFOEX) : sizeof(Interop.Kernel32.STARTUPINFO);
 
                 if (stdinHandle is not null || stdoutHandle is not null || stderrHandle is not null)
                 {
@@ -154,83 +154,44 @@ namespace Microsoft.Win32.SafeHandles
                         logonFlags = Interop.Advapi32.LogonFlags.LOGON_NETCREDENTIALS_ONLY;
                     }
 
+                    // CreateProcessWithLogonW does not support STARTUPINFOEX. CreateProcessWithTokenW docs mention STARTUPINFOEX,
+                    // but they don't mention that EXTENDED_STARTUPINFO_PRESENT is not supported anyway.
+                    // CreateProcessAsUserW supports both, but it's too restrictive and simply different than CreateProcessWithLogonW in many ways.
+                    Debug.Assert(!hasInheritedHandles, "Inheriting handles is not supported when starting with alternate credentials.");
+                    Debug.Assert(startupInfoEx.StartupInfo.cb == sizeof(Interop.Kernel32.STARTUPINFO));
+
                     commandLine.NullTerminate();
                     fixed (char* passwordInClearTextPtr = startInfo.PasswordInClearText ?? string.Empty)
                     fixed (char* environmentBlockPtr = environmentBlock)
                     fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
                     {
-                        IntPtr secureStringPtr = (startInfo.Password != null) ? Marshal.SecureStringToGlobalAllocUnicode(startInfo.Password) : IntPtr.Zero;
-                        IntPtr passwordPtr = (startInfo.Password != null) ? secureStringPtr : (IntPtr)passwordInClearTextPtr;
+                        IntPtr passwordPtr = (startInfo.Password != null) ?
+                            Marshal.SecureStringToGlobalAllocUnicode(startInfo.Password) : IntPtr.Zero;
 
-                        SafeTokenHandle? tokenHandle = null;
                         try
                         {
-                            // CreateProcessWithLogonW does not support STARTUPINFOEX.
-                            // CreateProcessWithTokenW docs mention STARTUPINFOEX, but they don't mention
-                            // that EXTENDED_STARTUPINFO_PRESENT is not supported anyway.
-                            // So when we have to use EXTENDED_STARTUPINFO_PRESENT, we use CreateProcessAsUserW.
-                            // In contrary to CreateProcessWithLogonW, CreateProcessAsUserW requires privilege (SE_INCREASE_QUOTA_NAME).
-                            // That is why we use it only for the new, optional features.
-                            if ((creationFlags & Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT) != 0)
-                            {
-                                // Map LogonFlags (used by CreateProcessWithLogonW) to LOGON32_LOGON_* constants
-                                // required by LogonUser's dwLogonType parameter.
-                                int logonType = logonFlags == Interop.Advapi32.LogonFlags.LOGON_NETCREDENTIALS_ONLY
-                                    ? Interop.Advapi32.LOGON32_LOGON_NEW_CREDENTIALS
-                                    : Interop.Advapi32.LOGON32_LOGON_INTERACTIVE;
+                            Interop.Kernel32.STARTUPINFO startupInfo = startupInfoEx.StartupInfo;
 
-                                if (!Interop.Advapi32.LogonUser(startInfo.UserName, startInfo.Domain, passwordPtr, logonType, 0, out tokenHandle))
-                                {
-                                    errorCode = Marshal.GetLastWin32Error();
-                                    retVal = false;
-                                }
-                                else
-                                {
-                                    retVal = Interop.Kernel32.CreateProcessAsUser(
-                                        tokenHandle,         // token representing the user
-                                        null,                // we don't need this since all the info is in commandLine
-                                        commandLinePtr,      // pointer to the command line string
-                                        ref unused_SecAttrs, // address to process security attributes, we don't need to inherit the handle
-                                        ref unused_SecAttrs, // address to thread security attributes.
-                                        true,                // handle inheritance flag
-                                        creationFlags,       // creation flags
-                                        environmentBlockPtr, // pointer to new environment block
-                                        workingDirectory,    // pointer to current directory name
-                                        &startupInfoEx,      // pointer to STARTUPINFOEX
-                                        &processInfo         // pointer to PROCESS_INFORMATION
-                                    );
-                                    if (!retVal)
-                                        errorCode = Marshal.GetLastWin32Error();
-                                }
-                            }
-                            else
-                            {
-                                Interop.Kernel32.STARTUPINFO startupInfo = startupInfoEx.StartupInfo;
-                                startupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
-
-                                retVal = Interop.Advapi32.CreateProcessWithLogonW(
-                                    startInfo.UserName,
-                                    startInfo.Domain,
-                                    passwordPtr,
-                                    logonFlags,
-                                    null,            // we don't need this since all the info is in commandLine
-                                    commandLinePtr,
-                                    creationFlags,
-                                    (IntPtr)environmentBlockPtr,
-                                    workingDirectory,
-                                    &startupInfo,
-                                    &processInfo
-                                );
-                            }
+                            retVal = Interop.Advapi32.CreateProcessWithLogonW(
+                                startInfo.UserName,
+                                startInfo.Domain,
+                                (passwordPtr != IntPtr.Zero) ? passwordPtr : (IntPtr)passwordInClearTextPtr,
+                                logonFlags,
+                                null,                // we don't need this since all the info is in commandLine
+                                commandLinePtr,
+                                creationFlags,
+                                environmentBlockPtr,
+                                workingDirectory,
+                                &startupInfo,        // pointer to STARTUPINFO
+                                &processInfo         // pointer to PROCESS_INFORMATION
+                            );
                             if (!retVal)
                                 errorCode = Marshal.GetLastWin32Error();
                         }
                         finally
                         {
-                            if (secureStringPtr != IntPtr.Zero)
-                                Marshal.ZeroFreeGlobalAllocUnicode(secureStringPtr);
-
-                            tokenHandle?.Dispose();
+                            if (passwordPtr != IntPtr.Zero)
+                                Marshal.ZeroFreeGlobalAllocUnicode(passwordPtr);
                         }
                     }
                 }
