@@ -3362,22 +3362,12 @@ namespace System.Runtime.Intrinsics
 
             const double PI = 3.141592653589793;           // 0x1.921fb54442d18p1
 
-            // Check for x being negative using standard comparison
-            TVectorDouble xLessThanZero = TVectorDouble.LessThan(x, TVectorDouble.Zero);
+            // Use ISimdVector helpers which treat -0 as negative and detect zero
+            TVectorDouble xIsZero = TVectorDouble.IsZero(x);
+            TVectorDouble xIsNegativeOrNegZero = TVectorDouble.IsNegative(x);
 
-            // For signed zero handling: check if x is -0 specifically
-            // We detect -0 by checking: x == 0 AND 1/x < 0 (since 1/-0 = -∞)
-            TVectorDouble xIsZero = TVectorDouble.Equals(x, TVectorDouble.Zero);
-            TVectorDouble recipX = TVectorDouble.One / x;
-            TVectorDouble recipXNegative = TVectorDouble.LessThan(recipX, TVectorDouble.Zero);
-            TVectorDouble xIsNegativeOrNegZero = xLessThanZero | (xIsZero & recipXNegative);
-
-            // Check for y sign using same technique
-            TVectorDouble yLessThanZero = TVectorDouble.LessThan(y, TVectorDouble.Zero);
-            TVectorDouble yIsZero = TVectorDouble.Equals(y, TVectorDouble.Zero);
-            TVectorDouble recipY = TVectorDouble.One / y;
-            TVectorDouble recipYNegative = TVectorDouble.LessThan(recipY, TVectorDouble.Zero);
-            TVectorDouble yIsNegativeOrNegZero = yLessThanZero | (yIsZero & recipYNegative);
+            TVectorDouble yIsZero = TVectorDouble.IsZero(y);
+            TVectorDouble yIsNegativeOrNegZero = TVectorDouble.IsNegative(y);
 
             // Compute atan(y/x) for the general case
             TVectorDouble ratio = y / x;

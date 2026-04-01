@@ -250,6 +250,74 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> Atan2Double
+        {
+            get
+            {
+                yield return new object[] {  double.NaN,               double.NaN,              double.NaN,                0.0 };
+                yield return new object[] {  double.NaN,               1.0,                     double.NaN,                0.0 };
+                yield return new object[] {  1.0,                      double.NaN,              double.NaN,                0.0 };
+                yield return new object[] {  0.0,                      0.0,                     0.0,                       0.0 };
+                yield return new object[] {  0.0,                     -0.0,                     3.1415926535897932,         0.0 };                                       // atan2(+0, -0) = +pi
+                yield return new object[] { -0.0,                      0.0,                    -0.0,                       0.0 };
+                yield return new object[] { -0.0,                     -0.0,                    -3.1415926535897932,         0.0 };                                       // atan2(-0, -0) = -pi
+                yield return new object[] {  0.0,                      1.0,                     0.0,                       0.0 };
+                yield return new object[] { -0.0,                      1.0,                    -0.0,                       0.0 };
+                yield return new object[] {  0.0,                     -1.0,                     3.1415926535897932,         DoubleCrossPlatformMachineEpsilon * 10 };    // atan2(+0, -x) = +pi
+                yield return new object[] { -0.0,                     -1.0,                    -3.1415926535897932,         DoubleCrossPlatformMachineEpsilon * 10 };    // atan2(-0, -x) = -pi
+                yield return new object[] {  1.0,                      0.0,                     1.5707963267948966,        DoubleCrossPlatformMachineEpsilon * 10 };    // atan2(+y, +0) = +pi/2
+                yield return new object[] { -1.0,                      0.0,                    -1.5707963267948966,        DoubleCrossPlatformMachineEpsilon * 10 };    // atan2(-y, +0) = -pi/2
+                yield return new object[] {  1.0,                      1.0,                     0.78539816339744831,       DoubleCrossPlatformMachineEpsilon };         // atan2(1, 1) = pi/4
+                yield return new object[] { -1.0,                      1.0,                    -0.78539816339744831,       DoubleCrossPlatformMachineEpsilon };         // atan2(-1, 1) = -pi/4
+                yield return new object[] {  1.0,                     -1.0,                     2.3561944901923449,        DoubleCrossPlatformMachineEpsilon * 10 };    // atan2(1, -1) = 3pi/4
+                yield return new object[] { -1.0,                     -1.0,                    -2.3561944901923449,        DoubleCrossPlatformMachineEpsilon * 10 };    // atan2(-1, -1) = -3pi/4
+                yield return new object[] {  double.PositiveInfinity,  double.PositiveInfinity, 0.78539816339744831,       DoubleCrossPlatformMachineEpsilon };         // atan2(+inf, +inf) = pi/4
+                yield return new object[] {  double.PositiveInfinity,  double.NegativeInfinity, 2.3561944901923449,        DoubleCrossPlatformMachineEpsilon * 10 };    // atan2(+inf, -inf) = 3pi/4
+                yield return new object[] {  double.NegativeInfinity,  double.PositiveInfinity,-0.78539816339744831,       DoubleCrossPlatformMachineEpsilon };         // atan2(-inf, +inf) = -pi/4
+                yield return new object[] {  double.NegativeInfinity,  double.NegativeInfinity,-2.3561944901923449,        DoubleCrossPlatformMachineEpsilon * 10 };    // atan2(-inf, -inf) = -3pi/4
+                yield return new object[] {  1.0,                      double.PositiveInfinity, 0.0,                       0.0 };                                      // atan2(+y, +inf) = +0
+                yield return new object[] { -1.0,                      double.PositiveInfinity,-0.0,                       0.0 };                                      // atan2(-y, +inf) = -0
+                yield return new object[] {  1.0,                      double.NegativeInfinity, 3.1415926535897932,        DoubleCrossPlatformMachineEpsilon * 10 };    // atan2(+y, -inf) = +pi
+                yield return new object[] { -1.0,                      double.NegativeInfinity,-3.1415926535897932,        DoubleCrossPlatformMachineEpsilon * 10 };    // atan2(-y, -inf) = -pi
+                yield return new object[] {  double.PositiveInfinity,  1.0,                     1.5707963267948966,        DoubleCrossPlatformMachineEpsilon * 10 };    // atan2(+inf, x) = +pi/2
+                yield return new object[] {  double.NegativeInfinity,  1.0,                    -1.5707963267948966,        DoubleCrossPlatformMachineEpsilon * 10 };    // atan2(-inf, x) = -pi/2
+            }
+        }
+
+        public static IEnumerable<object[]> Atan2Single
+        {
+            get
+            {
+                yield return new object[] {  float.NaN,                float.NaN,               float.NaN,                 0.0f };
+                yield return new object[] {  float.NaN,                1.0f,                    float.NaN,                 0.0f };
+                yield return new object[] {  1.0f,                     float.NaN,               float.NaN,                 0.0f };
+                yield return new object[] {  0.0f,                     0.0f,                    0.0f,                      0.0f };
+                yield return new object[] {  0.0f,                    -0.0f,                    3.14159274f,               0.0f };                                       // atan2(+0, -0) = +pi
+                yield return new object[] { -0.0f,                     0.0f,                   -0.0f,                      0.0f };
+                yield return new object[] { -0.0f,                    -0.0f,                   -3.14159274f,               0.0f };                                       // atan2(-0, -0) = -pi
+                yield return new object[] {  0.0f,                     1.0f,                    0.0f,                      0.0f };
+                yield return new object[] { -0.0f,                     1.0f,                   -0.0f,                      0.0f };
+                yield return new object[] {  0.0f,                    -1.0f,                    3.14159274f,               SingleCrossPlatformMachineEpsilon * 10 };    // atan2(+0, -x) = +pi
+                yield return new object[] { -0.0f,                    -1.0f,                   -3.14159274f,               SingleCrossPlatformMachineEpsilon * 10 };    // atan2(-0, -x) = -pi
+                yield return new object[] {  1.0f,                     0.0f,                    1.57079637f,               SingleCrossPlatformMachineEpsilon * 10 };    // atan2(+y, +0) = +pi/2
+                yield return new object[] { -1.0f,                     0.0f,                   -1.57079637f,               SingleCrossPlatformMachineEpsilon * 10 };    // atan2(-y, +0) = -pi/2
+                yield return new object[] {  1.0f,                     1.0f,                    0.785398163f,              SingleCrossPlatformMachineEpsilon };         // atan2(1, 1) = pi/4
+                yield return new object[] { -1.0f,                     1.0f,                   -0.785398163f,              SingleCrossPlatformMachineEpsilon };         // atan2(-1, 1) = -pi/4
+                yield return new object[] {  1.0f,                    -1.0f,                    2.35619450f,               SingleCrossPlatformMachineEpsilon * 10 };    // atan2(1, -1) = 3pi/4
+                yield return new object[] { -1.0f,                    -1.0f,                   -2.35619450f,               SingleCrossPlatformMachineEpsilon * 10 };    // atan2(-1, -1) = -3pi/4
+                yield return new object[] {  float.PositiveInfinity,   float.PositiveInfinity,  0.785398163f,              SingleCrossPlatformMachineEpsilon };         // atan2(+inf, +inf) = pi/4
+                yield return new object[] {  float.PositiveInfinity,   float.NegativeInfinity,  2.35619450f,               SingleCrossPlatformMachineEpsilon * 10 };    // atan2(+inf, -inf) = 3pi/4
+                yield return new object[] {  float.NegativeInfinity,   float.PositiveInfinity, -0.785398163f,              SingleCrossPlatformMachineEpsilon };         // atan2(-inf, +inf) = -pi/4
+                yield return new object[] {  float.NegativeInfinity,   float.NegativeInfinity, -2.35619450f,               SingleCrossPlatformMachineEpsilon * 10 };    // atan2(-inf, -inf) = -3pi/4
+                yield return new object[] {  1.0f,                     float.PositiveInfinity,  0.0f,                      0.0f };                                      // atan2(+y, +inf) = +0
+                yield return new object[] { -1.0f,                     float.PositiveInfinity, -0.0f,                      0.0f };                                      // atan2(-y, +inf) = -0
+                yield return new object[] {  1.0f,                     float.NegativeInfinity,  3.14159274f,               SingleCrossPlatformMachineEpsilon * 10 };    // atan2(+y, -inf) = +pi
+                yield return new object[] { -1.0f,                     float.NegativeInfinity, -3.14159274f,               SingleCrossPlatformMachineEpsilon * 10 };    // atan2(-y, -inf) = -pi
+                yield return new object[] {  float.PositiveInfinity,   1.0f,                    1.57079637f,               SingleCrossPlatformMachineEpsilon * 10 };    // atan2(+inf, x) = +pi/2
+                yield return new object[] {  float.NegativeInfinity,   1.0f,                   -1.57079637f,               SingleCrossPlatformMachineEpsilon * 10 };    // atan2(-inf, x) = -pi/2
+            }
+        }
+
         public static IEnumerable<object[]> CosDouble
         {
             get
