@@ -31,7 +31,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
             return GetMemberAssertions(type).Select(v =>
             {
-                return new TestDataRow<(IMemberDefinition, CustomAttribute)>(v.member, v.ca);
+                return new TestDataRow<(IMemberDefinition, CustomAttribute)>((v.member, v.ca));
             });
         }
 
