@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -357,7 +358,18 @@ public unsafe class LoaderTests
             new(nameof(Data.PEImageLayout.Format), DataType.uint32),
         ]);
         var webcilHeaderLayout = helpers.LayoutFields([
+            new("Id_0", DataType.uint8),
+            new("Id_1", DataType.uint8),
+            new("Id_2", DataType.uint8),
+            new("Id_3", DataType.uint8),
+            new("VersionMajor", DataType.uint16),
+            new("VersionMinor", DataType.uint16),
             new(nameof(Data.WebcilHeader.CoffSections), DataType.uint16),
+            new("Reserved0", DataType.uint16),
+            new("PeCliHeaderRva", DataType.uint32),
+            new("PeCliHeaderSize", DataType.uint32),
+            new("PeDebugRva", DataType.uint32),
+            new("PeDebugSize", DataType.uint32),
         ]);
         var webcilSectionLayout = helpers.LayoutFields([
             new(nameof(Data.WebcilSectionHeader.VirtualSize), DataType.uint32),

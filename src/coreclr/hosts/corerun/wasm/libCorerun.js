@@ -36,6 +36,127 @@ function libCoreRunFactory() {
         $CORERUN__deps: commonDeps,
         BrowserHost_ShutdownDotnet: (exitCode) => _corerun_shutdown(exitCode),
         BrowserHost_ExternalAssemblyProbe: (pathPtr, outDataStartPtr, outSize) => {
+            function asUint8Array(bufferSource) {
+                if (bufferSource instanceof ArrayBuffer) {
+                    return new Uint8Array(bufferSource);
+                }
+
+                if (ArrayBuffer.isView(bufferSource)) {
+                    return new Uint8Array(
+                        bufferSource.buffer,
+                        bufferSource.byteOffset,
+                        bufferSource.byteLength);
+                }
+
+                throw new TypeError("Expected a BufferSource");
+            }
+
+            function readULEB128(bytes, offset, limit = bytes.length) {
+                let value = 0;
+                let shift = 0;
+
+                for (;;) {
+                    if (offset >= limit) {
+                        throw new RangeError("Unexpected end of input while reading ULEB128");
+                    }
+
+                    const b = bytes[offset++];
+                    value |= (b & 0x7f) << shift;
+
+                    if ((b & 0x80) === 0) {
+                        return { value, offset };
+                    }
+
+                    shift += 7;
+                    if (shift >= 35) {
+                        throw new RangeError("ULEB128 is too large for a u32");
+                    }
+                }
+            }
+
+            function readPassiveDataSegment(bytes, offset, limit) {
+                if (offset >= limit) {
+                    throw new RangeError("Unexpected end of input while reading data segment");
+                }
+
+                const mode = bytes[offset++];
+                if (mode !== 1) {
+                    throw new Error("Data segment is not passive");
+                }
+
+                const lenInfo = readULEB128(bytes, offset, limit);
+                const dataLength = lenInfo.value;
+                const dataStart = lenInfo.offset;
+                const dataEnd = dataStart + dataLength;
+
+                if (dataEnd > limit) {
+                    throw new RangeError("Data segment payload extends past section bounds");
+                }
+
+                return {
+                    dataStart,
+                    dataLength,
+                    offset: dataEnd
+                };
+            }
+
+            function readLittleEndianU32FromDataSegment0(bufferSource) {
+                const bytes = asUint8Array(bufferSource);
+
+                if (bytes.length < 8) {
+                    throw new Error("Not a valid wasm module");
+                }
+
+                const headerView = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+                const wasmMagic = 0x6d736100;
+                const magic = headerView.getUint32(0, true);
+                const version = headerView.getUint32(4, true);
+
+                if (magic !== wasmMagic) {
+                    throw new Error("Invalid wasm magic");
+                }
+
+                if (version !== 1) {
+                    throw new Error(`Unsupported wasm version: ${version}`);
+                }
+
+                let offset = 8;
+
+                while (offset < bytes.length) {
+                    const sectionCode = bytes[offset++];
+                    const sizeInfo = readULEB128(bytes, offset);
+                    const sectionSize = sizeInfo.value;
+                    const sectionStart = sizeInfo.offset;
+                    const sectionEnd = sectionStart + sectionSize;
+
+                    if (sectionEnd > bytes.length) {
+                        throw new RangeError("Section extends past end of module");
+                    }
+
+                    if (sectionCode === 11) {
+                        const countInfo = readULEB128(bytes, sectionStart, sectionEnd);
+                        const segmentCount = countInfo.value;
+
+                        if (segmentCount < 1) {
+                            throw new Error("Wasm data section has no segments");
+                        }
+
+                        const segment0 = readPassiveDataSegment(bytes, countInfo.offset, sectionEnd);
+
+                        if (segment0.dataLength < 4) {
+                            throw new Error("Data segment 0 is shorter than 4 bytes");
+                        }
+
+                        const valueView = new DataView(bytes.buffer, bytes.byteOffset + segment0.dataStart, 4);
+                        return valueView.getUint32(0, true);
+                    }
+
+                    offset = sectionEnd;
+                }
+
+                throw new Error("Wasm data section not found");
+            }
+
             const path = UTF8ToString(pathPtr);
             let wasmPath;
             if (path.endsWith(".dll")) {
@@ -55,74 +176,36 @@ function libCoreRunFactory() {
             const tableStartIndex = wasmTable.length;
 
             var payloadSize = 0;
-            const sections = WebAssembly.Module.customSections(wasmModule, "webcilMetadata");
-
-            if (sections !== null && sections.length === 1) {
-                const sectionBuffer = sections[0];
-
-                if (sectionBuffer.byteLength >= 8) {
-                    const view = new DataView(sectionBuffer);
-                    const version = view.getUint32(0, true);
-                    const size = view.getUint32(4, true);
-                    if (version >= 1) {
-                        payloadSize = size;
-                    }
-                }
+            try {
+                payloadSize = readLittleEndianU32FromDataSegment0(wasmBytes);
+            } catch {
+                payloadSize = 0;
             }
 
             var payloadPtr = 0;
             var wasmInstance;
-            if (payloadSize > 0) {
-                // webcil version 1. This format allows the payload to be allocated before loading the webcilModule, as well as allowing the module to access the stack/table/memory from code
-                const sp = stackSave();
-                try {
-                    const ptrPtr = stackAlloc(4);
-                    if (_posix_memalign(ptrPtr, 16, payloadSize)) {
-                        throw new Error("posix_memalign failed for Webcil payload");
-                    }
-                    payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
-                    wasmInstance = new WebAssembly.Instance(wasmModule, {
-                        webcil: {
-                            memory: wasmMemory,
-                            stackPointer: ___stack_pointer,
-                            table: wasmTable,
-                            tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
-                            imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr)
-                        }});
-                } finally {
-                    stackRestore(sp);
+            const sp = stackSave();
+            try {
+                const ptrPtr = stackAlloc(4);
+                if (_posix_memalign(ptrPtr, 16, payloadSize)) {
+                    throw new Error("posix_memalign failed for Webcil payload");
                 }
-
-                const webcilVersion = wasmInstance.exports.webcilVersion.value;
-                if (webcilVersion !== 1) {
-                    throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
-                }
-            } else {
-                // webcil version 0. This format requires the webcilModule to be loaded before the payload can be allocated. Suitable only as a container format for interpreter execution
+                payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
                 wasmInstance = new WebAssembly.Instance(wasmModule, {
-                webcil: {
-                    memory: wasmMemory
-                }});
-                const webcilVersion = wasmInstance.exports.webcilVersion.value;
-                if (webcilVersion !== 0) {
-                    throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
-                }
-                const sp = stackSave();
-                try {
-                    const sizePtr = stackAlloc(4);
-                    wasmInstance.exports.getWebcilSize(sizePtr);
-                    const payloadSize = HEAPU32[sizePtr >>> 2 >>> 0];
-                    if (payloadSize === 0) {
-                        throw new Error("Webcil payload size is 0");
-                    }
-                    const ptrPtr = stackAlloc(4);
-                    if (_posix_memalign(ptrPtr, 16, payloadSize)) {
-                        throw new Error("posix_memalign failed for Webcil payload");
-                    }
-                    payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
-                } finally {
-                    stackRestore(sp);
-                }
+                    webcil: {
+                        memory: wasmMemory,
+                        stackPointer: wasmExports.__stack_pointer,
+                        table: wasmTable,
+                        tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
+                        imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr)
+                    }});
+            } finally {
+                stackRestore(sp);
+            }
+
+            const webcilVersion = wasmInstance.exports.webcilVersion.value;
+            if ((webcilVersion > 1) || (webcilVersion < 0)) {
+                throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
             }
 
             wasmInstance.exports.getWebcilPayload(payloadPtr, payloadSize);

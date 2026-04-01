@@ -56,6 +56,23 @@ void WebcilDecoder::Init(void *flatBase, COUNT_T size)
     m_size = size;
     m_hasContents = (size > 0);
     m_pHeader = (m_hasContents && size >= sizeof(WebcilHeader)) ? (const WebcilHeader *)flatBase : NULL;
+    if (m_pHeader->VersionMajor >= 1)
+    {
+        // For version 1 and above, the section headers start after the larger header
+        if (size < sizeof(WebcilHeader_1))
+        {
+            m_pHeader = NULL; // Not enough data for even the header
+        }
+    }
+    if (!m_pHeader)
+    {
+        m_sections = NULL;
+    }
+    else
+    {
+        m_sections = (const WebcilSectionHeader *)(((uint8_t*)flatBase) + (m_pHeader->VersionMajor >= 1 ? sizeof(WebcilHeader_1) : sizeof(WebcilHeader)));
+
+    }
     m_pCorHeader = NULL;
 }
 
@@ -118,7 +135,7 @@ BOOL WebcilDecoder::HasWebcilHeaders() const
         RETURN FALSE;
     }
 
-    if (pHeader->VersionMajor != WEBCIL_VERSION_MAJOR ||
+    if ((pHeader->VersionMajor != WEBCIL_VERSION_MAJOR_0 && pHeader->VersionMajor != WEBCIL_VERSION_MAJOR_1) ||
         pHeader->VersionMinor != WEBCIL_VERSION_MINOR)
     {
         RETURN FALSE;
@@ -127,7 +144,7 @@ BOOL WebcilDecoder::HasWebcilHeaders() const
     if (pHeader->CoffSections == 0 || pHeader->CoffSections > WEBCIL_MAX_SECTIONS)
         RETURN FALSE;
 
-    COUNT_T headerEnd = sizeof(WebcilHeader) + (COUNT_T)pHeader->CoffSections * sizeof(WebcilSectionHeader);
+    COUNT_T headerEnd = static_cast<COUNT_T>(((uint8_t*)m_sections - (uint8_t*)m_base)) + (COUNT_T)pHeader->CoffSections * sizeof(WebcilSectionHeader);
     if (m_size < headerEnd)
         RETURN FALSE;
 
@@ -148,7 +165,7 @@ CHECK WebcilDecoder::CheckWebcilHeaders() const
     CHECK(HasWebcilHeaders());
 
     const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-    const WebcilSectionHeader *sections = (const WebcilSectionHeader *)(m_base + sizeof(WebcilHeader));
+    const WebcilSectionHeader *sections = m_sections;
     uint16_t numSections = pHeader->CoffSections;
 
     for (uint16_t i = 0; i < numSections; i++)
@@ -435,7 +452,7 @@ const WebcilSectionHeader *WebcilDecoder::RvaToSection(RVA rva) const
         return NULL;
 
     const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-    const WebcilSectionHeader *section = (const WebcilSectionHeader *)(m_base + sizeof(WebcilHeader));
+    const WebcilSectionHeader *section = m_sections;
     const WebcilSectionHeader *sectionEnd = section + pHeader->CoffSections;
 
     while (section < sectionEnd)
@@ -465,7 +482,7 @@ const WebcilSectionHeader *WebcilDecoder::OffsetToSection(COUNT_T fileOffset) co
         return NULL;
 
     const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-    const WebcilSectionHeader *section = (const WebcilSectionHeader *)(m_base + sizeof(WebcilHeader));
+    const WebcilSectionHeader *section = m_sections;
     const WebcilSectionHeader *sectionEnd = section + pHeader->CoffSections;
 
     while (section < sectionEnd)
@@ -704,7 +721,7 @@ COUNT_T WebcilDecoder::GetVirtualSize() const
         return m_size;
 
     const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-    const WebcilSectionHeader *section = (const WebcilSectionHeader *)(m_base + sizeof(WebcilHeader));
+    const WebcilSectionHeader *section = m_sections;
     COUNT_T maxVA = 0;
 
     for (uint16_t i = 0; i < pHeader->CoffSections; i++)
@@ -837,15 +854,15 @@ void WebcilDecoder::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThi
 
     if (enumThis)
     {
-        DacEnumMemoryRegion(m_base, sizeof(WebcilHeader));
+        const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
+        DacEnumMemoryRegion(m_base, dac_cast<TADDR>(m_sections) - dac_cast<TADDR>(m_base));
     }
 
     if (HasWebcilHeaders())
     {
         // Enumerate section headers
         const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-        DacEnumMemoryRegion(m_base + sizeof(WebcilHeader),
-                           sizeof(WebcilSectionHeader) * pHeader->CoffSections);
+        DacEnumMemoryRegion(m_sections, sizeof(WebcilSectionHeader) * pHeader->CoffSections);
 
         // Enumerate COR header if present
         if (m_pCorHeader != NULL)

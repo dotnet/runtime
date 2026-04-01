@@ -113,7 +113,7 @@ The Webcil headers consist of a Webcil header followed by a sequence of section 
 struct WebcilHeader {
     uint8_t Id[4]; // 'W' 'b' 'I' 'L'
     // 4 bytes
-    uint16_t VersionMajor; // 0
+    uint16_t VersionMajor; // 0 or 1
     uint16_t VersionMinor; // 0
     // 8 bytes
     uint16_t CoffSections;
@@ -136,6 +136,8 @@ minor format (must be 0 and 0).  Then a count of the section headers and two res
 The next pairs of integers are a subset of the PE Header data directory specifying the RVA and size
 of the CLI header, as well as the directory entry for the PE debug directory.
 
+If VersionMajor is 1, then the header structure has an additional `uint32_t` field called TableBase
+which is filled in with the value of the tableBase global value during execution of `getWebcilPayload`.
 
 #### Section header table
 

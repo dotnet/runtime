@@ -129,8 +129,11 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         I64Store = 0x37,
         F32Store = 0x38,
         F64Store = 0x39,
+        RefNull = 0xD0,
         // Variable length instructions — not directly cast to a byte, instead the prefix byte is set in the upper 8 bits of the enum, and the lower 24 bits are the extended variable length opcode
         MemoryInit = unchecked((int)0xFC000008),
+        TableInit = unchecked((int)0xFC00000C),
+        TableGrow = unchecked((int)0xFC00000F),
         V128Load = unchecked((int)0xFD00000A),
         V128Store = unchecked((int)0xFD000000),
     }
@@ -527,6 +530,85 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
+    // Represents a table.init expression.
+    // Binary encoding: 0xFC prefix + u32(12) sub-opcode + u32(dataSegmentIndex) + u32(memoryIndex)
+    class WasmTableInitExpr : WasmExpr
+    {
+        public readonly int ElemIndex;
+        public readonly int TableIndex;
+
+        public WasmTableInitExpr(int elemIndex, int tableIndex) : base(WasmExprKind.TableInit)
+        {
+            Debug.Assert(tableIndex >= 0);
+            Debug.Assert(elemIndex >= 0);
+            ElemIndex = elemIndex;
+            TableIndex = tableIndex;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (uint)ElemIndex);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), (uint)TableIndex);
+
+            return pos;
+        }
+
+        public override int EncodeSize()
+        {
+            return base.EncodeSize()
+                + (int)DwarfHelper.SizeOfULEB128((uint)TableIndex)
+                + (int)DwarfHelper.SizeOfULEB128((uint)ElemIndex);
+        }
+    }
+
+    class WasmTableGrowExpr : WasmExpr
+    {
+        public readonly uint TableIndex;
+
+        public WasmTableGrowExpr(uint tableIndex) : base(WasmExprKind.TableGrow)
+        {
+            TableIndex = tableIndex;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), TableIndex);
+            return pos;
+        }
+        public override int EncodeSize()
+        {
+            return base.EncodeSize() + (int)DwarfHelper.SizeOfULEB128(TableIndex);
+        }
+    }
+
+    enum WasmAbsheaptype : byte
+    {
+        Func = 0x70,
+    }
+
+    class WasmRefNullExpr : WasmExpr
+    {
+        WasmAbsheaptype absheaptype;
+
+        public WasmRefNullExpr(WasmAbsheaptype heapType) : base(WasmExprKind.RefNull)
+        {
+            absheaptype = heapType;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            buffer[pos++] = (byte)absheaptype;
+            return pos;
+        }
+        public override int EncodeSize()
+        {
+            return base.EncodeSize() + 1;
+        }
+    }
+
     // ************************************************
     // Simple DSL wrapper for creating Wasm expressions
     // ************************************************
@@ -609,5 +691,14 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     static class ControlFlow
     {
         public static WasmExpr CallIndirect(ISymbolNode funcType, uint tableIndex) => new WasmIndirectCallInstruction(WasmExprKind.CallIndirect, funcType, tableIndex);
+    }
+    static class Table
+    {
+        public static WasmExpr Grow(uint tableIndex) => new WasmTableGrowExpr(tableIndex);
+        public static WasmExpr Init(int elemSegmentIndex, int tableIndex = 0) => new WasmTableInitExpr(elemSegmentIndex, tableIndex);
+    }
+    static class Ref
+    {
+        public static WasmExpr NullFuncRef => new WasmRefNullExpr(WasmAbsheaptype.Func);
     }
 }

@@ -14,7 +14,7 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal static class WebcilEncoder
     {
-        public static int HeaderEncodeSize()
+        public static int HeaderEncodeSize(WebcilHeader header)
         {
             int size = sizeof(uint) +    // Id: 4
                     sizeof(ushort) +     // VersionMajor: 6
@@ -26,12 +26,18 @@ namespace ILCompiler.ObjectWriter
                     sizeof(uint) +       // PeDebugRva: 24
                     sizeof(uint);        // PeDebugSize: 28
             Debug.Assert(size == 28);
+            if (header.VersionMajor >= 1)
+            {
+                size += sizeof(uint); // TableBase: 32
+            }
             return size;
         }
 
+        public static int TableBaseOffset => 28;
+
         public static int EmitHeader(in WebcilHeader header, Stream outputStream)
         {
-            int encodeSize = HeaderEncodeSize();
+            int encodeSize = HeaderEncodeSize(header);
             Span<byte> headerBuffer = stackalloc byte[encodeSize];
             BinaryPrimitives.WriteUInt32LittleEndian(headerBuffer.Slice(0, 4), header.Id);
             BinaryPrimitives.WriteUInt16LittleEndian(headerBuffer.Slice(4, 2), header.VersionMajor);
