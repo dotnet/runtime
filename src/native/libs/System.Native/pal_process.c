@@ -234,7 +234,10 @@ static int SetCloexecForFd(void* context, int fd)
 #endif
 
 // Used when OS-specific bulk methods (close_range, fdwalk) are unavailable or fail.
-static void SetCloexecForAllFdsFallback(int inheritedFdCount)
+// Always sets FD_CLOEXEC rather than closing fds directly. Closing fds directly would close
+// waitForChildToExecPipe[WRITE_END_OF_PIPE] (which has O_CLOEXEC), making it impossible to
+// report exec() failures back to the parent when execve() fails after RestrictHandleInheritance.
+static void SetCloexecForAllFdsFallback(void)
 {
     struct rlimit rl;
     int maxFd;
@@ -251,67 +254,51 @@ static void SetCloexecForAllFdsFallback(int inheritedFdCount)
         }
     }
 
-    // Fallback: iterate over all file descriptors and set FD_CLOEXEC (or close) on each open one >= 3.
+    // Fallback: iterate over all file descriptors and set FD_CLOEXEC on each open one >= 3.
     for (int fd = 3; fd < maxFd; fd++)
     {
-        // When inheritedFdCount == 0, close fds outright since none should be inherited.
-        // When inheritedFdCount > 0, only set FD_CLOEXEC so the caller can selectively clear it for inherited fds.
-        if (inheritedFdCount == 0)
+        int flags = fcntl(fd, F_GETFD);
+        if (flags == -1)
         {
-            close(fd);
+            continue; // fd not open
         }
-        else
-        {
-            int flags = fcntl(fd, F_GETFD);
-            if (flags == -1)
-            {
-                continue; // fd not open
-            }
 
-            if ((flags & FD_CLOEXEC) == 0)
-            {
-                fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
-            }
+        if ((flags & FD_CLOEXEC) == 0)
+        {
+            fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
         }
     }
 }
 
 static void RestrictHandleInheritance(int32_t* inheritedFds, int32_t inheritedFdCount)
 {
-    // FDs 0-2 are stdin/stdout/stderr; thist method must be called AFTER the dup2 calls.
-    // When inheritedFdCount == 0, we want to close all fds >= 3 outright (flag 0).
-    // When inheritedFdCount > 0, we want to set CLOEXEC so we can clear it for inherited fds.
-
-#if HAVE_CLOSEFROM
-    // closefrom(fd) closes all FDs >= fd. Available on BSD, macOS and Solaris.
-    if (inheritedFdCount == 0)
-    {
-        closefrom(3);
-        return;
-    }
-#endif
+    // FDs 0-2 are stdin/stdout/stderr; this method must be called AFTER the dup2 calls.
+    // We always set FD_CLOEXEC rather than closing fds directly. This is critical because
+    // waitForChildToExecPipe[WRITE_END_OF_PIPE] (which has O_CLOEXEC) must remain open
+    // until execve() is called so that exec failures can be reported back to the parent.
+    // Using closefrom() or close_range() with flag 0 (direct close) would destroy this pipe.
 
 #if HAVE_CLOSE_RANGE
     // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34).
-    if (close_range(3, UINT_MAX, inheritedFdCount > 0 ? CLOSE_RANGE_CLOEXEC : 0) != 0)
+    if (close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
     {
-        SetCloexecForAllFdsFallback(inheritedFdCount);
+        SetCloexecForAllFdsFallback();
     }
 #elif defined(__NR_close_range)
     // On Linux with older glibc that doesn't expose close_range() as a function,
     // use the raw syscall number if the kernel supports it (kernel >= 5.9).
-    if (syscall(__NR_close_range, 3, UINT_MAX, inheritedFdCount > 0 ? CLOSE_RANGE_CLOEXEC : 0) != 0)
+    if (syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
     {
-        SetCloexecForAllFdsFallback(inheritedFdCount);
+        SetCloexecForAllFdsFallback();
     }
 #elif HAVE_FDWALK
     // On Illumos/Solaris, use fdwalk() to set FD_CLOEXEC on all open fds >= 3.
     if (fdwalk(SetCloexecForFd, NULL) != 0)
     {
-        SetCloexecForAllFdsFallback(inheritedFdCount);
+        SetCloexecForAllFdsFallback();
     }
 #else
-    SetCloexecForAllFdsFallback(inheritedFdCount);
+    SetCloexecForAllFdsFallback();
 #endif
 
     // Remove CLOEXEC from user-provided inherited file descriptors so they survive execve.

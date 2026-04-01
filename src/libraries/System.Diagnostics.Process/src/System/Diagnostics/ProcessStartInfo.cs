@@ -211,6 +211,10 @@ namespace System.Diagnostics
         /// which may lead to security or resource management issues.
         /// </para>
         /// <para>
+        /// Concurrent calls to <see cref="Process.Start()"/> that share the same <see cref="InheritedHandles"/> list instance
+        /// are not supported. The list must not be modified while a process start is in progress.
+        /// </para>
+        /// <para>
         /// On Windows, the implementation will temporarily enable inheritance on each handle in this list
         /// by modifying the handle's flags using <see href="https://learn.microsoft.com/windows/win32/api/handleapi/nf-handleapi-sethandleinformation">SetHandleInformation</see>.
         /// After the child process is created, inheritance will be disabled on these handles to prevent them
