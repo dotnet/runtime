@@ -207,6 +207,12 @@ check_function_exists(
     close_range
     HAVE_CLOSE_RANGE)
 
+# closefrom is available on BSD systems (FreeBSD, OpenBSD, NetBSD) and macOS 10.12+, Solaris 9+.
+# It closes all file descriptors >= fd.
+check_function_exists(
+    closefrom
+    HAVE_CLOSEFROM)
+
 # fdwalk is available on Illumos/Solaris and is used as a fallback when close_range is not available.
 check_function_exists(
     fdwalk

@@ -583,7 +583,36 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         // Restrict handle inheritance when inheritedFdCount >= 0
         if (inheritedFdCount >= 0)
         {
+#if HAVE_CLOSEFROM
+            // closefrom(fd) closes all FDs >= fd. Available on BSD and macOS 10.12+.
+            // Only use it when there are no user-provided fds to preserve;
+            // otherwise fall through to set CLOEXEC individually.
+            if (inheritedFdCount == 0)
+            {
+                closefrom(3);
+            }
+            else
+            {
 #if HAVE_CLOSE_RANGE
+                if (close_range(3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
+                {
+                    SetCloexecForAllFds(inheritedFdCount);
+                }
+#elif defined(__NR_close_range)
+                if (syscall(__NR_close_range, 3, UINT_MAX, CLOSE_RANGE_CLOEXEC) != 0)
+                {
+                    SetCloexecForAllFds(inheritedFdCount);
+                }
+#elif HAVE_FDWALK
+                if (fdwalk(SetCloexecForFd, NULL) != 0)
+                {
+                    SetCloexecForAllFds(inheritedFdCount);
+                }
+#else
+                SetCloexecForAllFds(inheritedFdCount);
+#endif
+            }
+#elif HAVE_CLOSE_RANGE
             // On systems where close_range() is available as a function (FreeBSD 12.2+, Linux glibc >= 2.34),
             // set CLOEXEC on all FDs >= 3 in one call. FDs 0-2 are stdin/stdout/stderr.
             // This must be called AFTER the dup2 calls above so that if stdinFd/stdoutFd/stderrFd
