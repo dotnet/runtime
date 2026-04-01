@@ -475,7 +475,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         // emitIns_R_R_R_R_I may emit a mov (when not redundant) for RMW instructions;
                         // the ImmOpHelper must account for that mov
-                        int numInstrs = (targetReg != op1Reg) ? 2 : 1;
+                        int                    numInstrs = (targetReg != op1Reg) ? 2 : 1;
                         HWIntrinsicImmOpHelper helper(this, intrin.op4, node, numInstrs);
 
                         for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -506,8 +506,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(hasImmediateOperand);
 
-            GenTree* shiftOp   = isRMW ? intrin.op3 : intrin.op2;
-            int      numInstrs = (isRMW && (targetReg != op1Reg)) ? 2 : 1;
+            GenTree*               shiftOp   = isRMW ? intrin.op3 : intrin.op2;
+            int                    numInstrs = (isRMW && (targetReg != op1Reg)) ? 2 : 1;
             HWIntrinsicImmOpHelper helper(this, shiftOp, node, numInstrs);
 
             for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
