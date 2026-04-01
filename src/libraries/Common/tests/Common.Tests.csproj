@@ -6,8 +6,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-osx</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs"
-             Link="Common\System\Collections\DictionaryExtensions.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DictionaryPolyfills.cs"
+             Link="Common\Polyfills\DictionaryPolyfills.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="Common\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.cs"
