@@ -448,6 +448,13 @@ PALEXPORT int32_t SystemNative_CloseDir(DIR* dir);
 PALEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets read end, pipefd[1] gets write end.
                         int32_t flags);    // 0 for defaults. Use PAL_O_CLOEXEC, PAL_O_NONBLOCK_READ, and PAL_O_NONBLOCK_WRITE for additional behavior.
 
+/**
+ * Determines if the current platform supports atomically creating pipes with non-inheritable file descriptors (pipe2).
+ *
+ * Returns 1 if supported, 0 if not supported.
+ */
+PALEXPORT int32_t SystemNative_IsAtomicNonInheritablePipeCreationSupported(void);
+
 // NOTE: Rather than a general fcntl shim, we opt to export separate functions
 // for each command. This allows use to have strongly typed arguments and saves
 // complexity around converting command codes.

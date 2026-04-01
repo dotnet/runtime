@@ -62,14 +62,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         RangeList = 0x04,
     }
 
-    private enum JitTypes
-    {
-        TYPE_UNKNOWN = 0,
-        TYPE_JIT = 1,
-        TYPE_R2R = 2,
-        TYPE_INTERPRETER = 3
-    };
-
     private enum ExceptionClauseFlags_1 : uint
     {
         Filter = 0x1,
@@ -247,25 +239,25 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         jitManager.GetMethodRegionInfo(range, codeInfoHandle.Address.Value, out hotSize, out coldStart, out coldSize);
     }
 
-    uint IExecutionManager.GetJITType(CodeBlockHandle codeInfoHandle)
+    JitType IExecutionManager.GetJITType(CodeBlockHandle codeInfoHandle)
     {
         RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
         if (range.Data == null)
-            return 0;
+            return JitType.Unknown;
 
         JitManager jitManager = GetJitManager(range.Data);
 
         if (jitManager == _eeJitManager)
         {
-            return (uint)JitTypes.TYPE_JIT;
+            return JitType.Jit;
         }
         else if (jitManager == _r2rJitManager)
         {
-            return (uint)JitTypes.TYPE_R2R;
+            return JitType.R2R;
         }
         else
         {
-            return (uint)JitTypes.TYPE_UNKNOWN;
+            return JitType.Unknown;
         }
     }
 
@@ -306,6 +298,36 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         }
         return TargetPointer.Null;
     }
+
+    bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
+    {
+        return ((IExecutionManager)this).GetStartAddress(codeInfoHandle) !=
+               ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
+    }
+
+    bool IExecutionManager.IsFilterFunclet(CodeBlockHandle codeInfoHandle)
+    {
+        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
+        IExecutionManager eman = this;
+
+        if (!eman.IsFunclet(codeInfoHandle))
+            return false;
+
+        TargetPointer funcletStartAddress = eman.GetFuncletStartAddress(codeInfoHandle).AsTargetPointer;
+        uint funcletStartOffset = (uint)(funcletStartAddress - info.StartAddress);
+
+        List<ExceptionClauseInfo> clauses = eman.GetExceptionClauses(codeInfoHandle);
+        foreach (ExceptionClauseInfo clause in clauses)
+        {
+            if (clause.ClauseType == ExceptionClauseInfo.ExceptionClauseFlags.Filter && clause.FilterOffset == funcletStartOffset)
+                return true;
+        }
+
+        return false;
+    }
+
     TargetPointer IExecutionManager.GetUnwindInfo(CodeBlockHandle codeInfoHandle)
     {
         RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);

@@ -31,6 +31,7 @@
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
+#include <spawn.h>
 #endif
 
 #ifdef __FreeBSD__
@@ -55,10 +56,6 @@ c_static_assert(PAL_LOG_DEBUG == LOG_DEBUG);
 c_static_assert(PAL_PRIO_PROCESS == (int)PRIO_PROCESS);
 c_static_assert(PAL_PRIO_PGRP == (int)PRIO_PGRP);
 c_static_assert(PAL_PRIO_USER == (int)PRIO_USER);
-
-#if !HAVE_PIPE2
-static pthread_mutex_t ProcessCreateLock = PTHREAD_MUTEX_INITIALIZER;
-#endif
 
 enum
 {
@@ -213,25 +210,129 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
                                       const char* cwd,
-                                      int32_t redirectStdin,
-                                      int32_t redirectStdout,
-                                      int32_t redirectStderr,
                                       int32_t setCredentials,
                                       uint32_t userId,
                                       uint32_t groupId,
                                       uint32_t* groups,
                                       int32_t groupsLength,
                                       int32_t* childPid,
-                                      int32_t* stdinFd,
-                                      int32_t* stdoutFd,
-                                      int32_t* stderrFd)
+                                      int32_t stdinFd,
+                                      int32_t stdoutFd,
+                                      int32_t stderrFd)
 {
-#if HAVE_FORK
-#if !HAVE_PIPE2
-    bool haveProcessCreateLock = false;
+#if HAVE_FORK || defined(TARGET_OSX)
+    assert(NULL != filename && NULL != argv && NULL != envp && NULL != childPid &&
+            (groupsLength == 0 || groups != NULL) && "null argument.");
+
+    *childPid = -1;
+
+    // Make sure we can find and access the executable. exec will do this, of course, but at that point it's already
+    // in the child process, at which point it'll translate to the child process' exit code rather than to failing
+    // the Start itself.  There's a race condition here, in that this could change prior to exec's checks, but there's
+    // little we can do about that. There are also more rigorous checks exec does, such as validating the executable
+    // format of the target; such errors will emerge via the child process' exit code.
+    if (access(filename, X_OK) != 0)
+    {
+        return -1;
+    }
 #endif
+
+#if defined(TARGET_OSX)
+    // Use posix_spawn on macOS when credentials don't need to be set,
+    // since macOS does not support setuid/setgid with posix_spawn.
+    if (!setCredentials)
+    {
+        pid_t spawnedPid;
+        posix_spawn_file_actions_t file_actions;
+        posix_spawnattr_t attr;
+        int result;
+
+        if ((result = posix_spawnattr_init(&attr)) != 0)
+        {
+            errno = result;
+            return -1;
+        }
+
+        // Build sigdefault set: only reset signals that have custom handlers,
+        // preserving SIG_IGN and SIG_DFL handlers (matching fork path behavior).
+        sigset_t sigdefault_set;
+        sigemptyset(&sigdefault_set);
+        for (int sig = 1; sig < NSIG; ++sig)
+        {
+            if (sig == SIGKILL || sig == SIGSTOP)
+            {
+                continue;
+            }
+
+            struct sigaction sa_old;
+            if (!sigaction(sig, NULL, &sa_old))
+            {
+                void (*oldhandler)(int) = handler_from_sigaction(&sa_old);
+                if (oldhandler != SIG_IGN && oldhandler != SIG_DFL)
+                {
+                    sigaddset(&sigdefault_set, sig);
+                }
+            }
+        }
+
+        // pthread_sigmask follows POSIX thread conventions: it returns an error number but does not set errno
+        sigset_t current_mask;
+        result = pthread_sigmask(SIG_SETMASK, NULL, &current_mask);
+        if (result != 0)
+        {
+            posix_spawnattr_destroy(&attr);
+            errno = result;
+            return -1;
+        }
+
+        // POSIX_SPAWN_SETSIGDEF to reset signal handlers to default
+        // POSIX_SPAWN_SETSIGMASK to set the child's signal mask
+        short flags = POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK;
+
+        if ((result = posix_spawnattr_setflags(&attr, flags)) != 0
+            || (result = posix_spawnattr_setsigdefault(&attr, &sigdefault_set)) != 0
+            || (result = posix_spawnattr_setsigmask(&attr, &current_mask)) != 0 // Set the child's signal mask to match the parent's current mask
+            || (result = posix_spawn_file_actions_init(&file_actions)) != 0)
+        {
+            int saved_errno = result;
+            posix_spawnattr_destroy(&attr);
+            errno = saved_errno;
+            return -1;
+        }
+
+        // Redirect stdin/stdout/stderr
+        if ((stdinFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdinFd, STDIN_FILENO)) != 0)
+            || (stdoutFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stdoutFd, STDOUT_FILENO)) != 0)
+            || (stderrFd != -1 && (result = posix_spawn_file_actions_adddup2(&file_actions, stderrFd, STDERR_FILENO)) != 0)
+            || (cwd != NULL && (result = posix_spawn_file_actions_addchdir_np(&file_actions, cwd)) != 0)) // Change working directory if specified
+        {
+            int saved_errno = result;
+            posix_spawn_file_actions_destroy(&file_actions);
+            posix_spawnattr_destroy(&attr);
+            errno = saved_errno;
+            return -1;
+        }
+
+        // Spawn the process
+        result = posix_spawn(&spawnedPid, filename, &file_actions, &attr, argv, envp);
+
+        posix_spawn_file_actions_destroy(&file_actions);
+        posix_spawnattr_destroy(&attr);
+
+        if (result != 0)
+        {
+            errno = result;
+            return -1;
+        }
+
+        *childPid = spawnedPid;
+        return 0;
+    }
+#endif
+
+#if HAVE_FORK
     bool success = true;
-    int stdinFds[2] = {-1, -1}, stdoutFds[2] = {-1, -1}, stderrFds[2] = {-1, -1}, waitForChildToExecPipe[2] = {-1, -1};
+    int waitForChildToExecPipe[2] = {-1, -1};
     pid_t processId = -1;
     uint32_t* getGroupsBuffer = NULL;
     sigset_t signal_set;
@@ -244,14 +345,6 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &thread_cancel_state);
 #endif
 
-    assert(NULL != filename && NULL != argv && NULL != envp && NULL != stdinFd &&
-            NULL != stdoutFd && NULL != stderrFd && NULL != childPid &&
-            (groupsLength == 0 || groups != NULL) && "null argument.");
-
-    assert((redirectStdin & ~1) == 0 && (redirectStdout & ~1) == 0 &&
-            (redirectStderr & ~1) == 0 && (setCredentials & ~1) == 0 &&
-            "Boolean redirect* inputs must be 0 or 1.");
-
     if (setCredentials && groupsLength > 0)
     {
         getGroupsBuffer = (uint32_t*)(malloc(sizeof(uint32_t) * Int32ToSizeT(groupsLength)));
@@ -260,41 +353,6 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             success = false;
             goto done;
         }
-    }
-
-    // Make sure we can find and access the executable. exec will do this, of course, but at that point it's already
-    // in the child process, at which point it'll translate to the child process' exit code rather than to failing
-    // the Start itself.  There's a race condition here, in that this could change prior to exec's checks, but there's
-    // little we can do about that. There are also more rigorous checks exec does, such as validating the executable
-    // format of the target; such errors will emerge via the child process' exit code.
-    if (access(filename, X_OK) != 0)
-    {
-        success = false;
-        goto done;
-    }
-
-#if !HAVE_PIPE2
-    // We do not have pipe2(); take the lock to emulate it race free.
-    // If another process were to be launched between the pipe creation and the fcntl call to set CLOEXEC on it, that
-    // file descriptor will be inherited into the other child process, eventually causing a deadlock either in the loop
-    // below that waits for that pipe to be closed or in StreamReader.ReadToEnd() in the calling code.
-    if (pthread_mutex_lock(&ProcessCreateLock) != 0)
-    {
-        // This check is pretty much just checking for trashed memory.
-        success = false;
-        goto done;
-    }
-    haveProcessCreateLock = true;
-#endif
-
-    // Open pipes for any requests to redirect stdin/stdout/stderr and set the
-    // close-on-exec flag to the pipe file descriptors.
-    if ((redirectStdin  && SystemNative_Pipe(stdinFds,  PAL_O_CLOEXEC) != 0) ||
-        (redirectStdout && SystemNative_Pipe(stdoutFds, PAL_O_CLOEXEC) != 0) ||
-        (redirectStderr && SystemNative_Pipe(stderrFds, PAL_O_CLOEXEC) != 0))
-    {
-        success = false;
-        goto done;
     }
 
     // We create a pipe purely for the benefit of knowing when the child process has called exec.
@@ -394,11 +452,11 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
         }
         pthread_sigmask(SIG_SETMASK, &old_signal_set, &junk_signal_set); // Not all architectures allow NULL here
 
-        // For any redirections that should happen, dup the pipe descriptors onto stdin/out/err.
-        // We don't need to explicitly close out the old pipe descriptors as they will be closed on the 'execve' call.
-        if ((redirectStdin && Dup2WithInterruptedRetry(stdinFds[READ_END_OF_PIPE], STDIN_FILENO) == -1) ||
-            (redirectStdout && Dup2WithInterruptedRetry(stdoutFds[WRITE_END_OF_PIPE], STDOUT_FILENO) == -1) ||
-            (redirectStderr && Dup2WithInterruptedRetry(stderrFds[WRITE_END_OF_PIPE], STDERR_FILENO) == -1))
+        // Map stdin/out/err for the new process to the provided fds.
+        // They are not closed on exec because dup2 clears CLOEXEC.
+        if ((stdinFd != -1 && stdinFd != STDIN_FILENO && Dup2WithInterruptedRetry(stdinFd, STDIN_FILENO) == -1) ||
+            (stdoutFd != -1 && stdoutFd != STDOUT_FILENO && Dup2WithInterruptedRetry(stdoutFd, STDOUT_FILENO) == -1) ||
+            (stderrFd != -1 && stderrFd != STDERR_FILENO && Dup2WithInterruptedRetry(stderrFd, STDERR_FILENO) == -1))
         {
             ExitChild(waitForChildToExecPipe[WRITE_END_OF_PIPE], errno);
         }
@@ -441,25 +499,10 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
     // This is the parent process. processId == pid of the child
     *childPid = processId;
-    *stdinFd = stdinFds[WRITE_END_OF_PIPE];
-    *stdoutFd = stdoutFds[READ_END_OF_PIPE];
-    *stderrFd = stderrFds[READ_END_OF_PIPE];
 
 done:;
-#if !HAVE_PIPE2
-    if (haveProcessCreateLock)
-    {
-        pthread_mutex_unlock(&ProcessCreateLock);
-    }
-#endif
 
     int priorErrno = errno;
-
-    // Regardless of success or failure, close the parent's copy of the child's end of
-    // any opened pipes.  The parent doesn't need them anymore.
-    CloseIfOpen(stdinFds[READ_END_OF_PIPE]);
-    CloseIfOpen(stdoutFds[WRITE_END_OF_PIPE]);
-    CloseIfOpen(stderrFds[WRITE_END_OF_PIPE]);
 
     // Also close the write end of the exec waiting pipe, and wait for the pipe to be closed
     // by trying to read from it (the read will wake up when the pipe is closed and broken).
@@ -480,13 +523,9 @@ done:;
         CloseIfOpen(waitForChildToExecPipe[READ_END_OF_PIPE]);
     }
 
-    // If we failed, close everything else and give back error values in all out arguments.
+    // If we failed, give back error values in all out arguments.
     if (!success)
     {
-        CloseIfOpen(stdinFds[WRITE_END_OF_PIPE]);
-        CloseIfOpen(stdoutFds[READ_END_OF_PIPE]);
-        CloseIfOpen(stderrFds[READ_END_OF_PIPE]);
-
         // Reap child
         if (processId > 0)
         {
@@ -494,9 +533,6 @@ done:;
             waitpid(processId, &status, 0);
         }
 
-        *stdinFd = -1;
-        *stdoutFd = -1;
-        *stderrFd = -1;
         *childPid = -1;
 
         errno = priorErrno;
@@ -516,9 +552,6 @@ done:;
     (void)argv;
     (void)envp;
     (void)cwd;
-    (void)redirectStdin;
-    (void)redirectStdout;
-    (void)redirectStderr;
     (void)setCredentials;
     (void)userId;
     (void)groupId;
@@ -665,26 +698,6 @@ int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limit
 
 int32_t SystemNative_Kill(int32_t pid, int32_t signal)
 {
-    switch (signal)
-    {
-        case PAL_NONE:
-             signal = 0;
-             break;
-
-        case PAL_SIGKILL:
-             signal = SIGKILL;
-             break;
-
-        case PAL_SIGSTOP:
-             signal = SIGSTOP;
-             break;
-
-        default:
-             assert_msg(false, "Unknown signal", signal);
-             errno = EINVAL;
-             return -1;
-    }
-
     return kill(pid, signal);
 }
 
