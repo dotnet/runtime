@@ -26,6 +26,7 @@ Update OS version references in Helix queue definition files. These files contro
 - Updating `supported-os.json` / `supported-os.md` → use the `update-supported-os` skill in [dotnet/core](https://github.com/dotnet/core)
 - Adding entirely new distros or architectures to Helix (requires pipeline template changes beyond version bumps)
 - Requesting new Helix VM queues → file an issue at [dotnet/dnceng](https://github.com/dotnet/dnceng)
+- Updating Windows or macOS Helix queues — these use VM-based queues with a simpler format (e.g. `Windows.11.Amd64.Client.Open`) and version updates typically require dnceng coordination
 
 ## Key files
 
@@ -262,7 +263,7 @@ When asked to audit all OS coverage:
 
 ## Reference
 
-- [OS onboarding guide](https://github.com/dotnet/runtime/blob/main/docs/project/os-onboarding.md)
+- [OS onboarding guide](/docs/project/os-onboarding.md)
 - [.NET OS Support Tracking](https://github.com/dotnet/core/issues/9638)
 - [Prereq container image lifecycle](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/main/lifecycle.md)
 - [Container image registry (image-info)](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json)
