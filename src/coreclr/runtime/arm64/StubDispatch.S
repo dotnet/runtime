@@ -32,7 +32,10 @@
         ldp     x12, x13, [x9, #(OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16) - \adj)]
         cmp     x10, x12
         bne     0f
+#ifndef TARGET_APPLE
+        // Apple ARM64 platforms have FEAT_LSE2, making ldp single-copy atomic for the pair.
         cbz     x13, 0f
+#endif
         br      x13
 0:
     .endm
