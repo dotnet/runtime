@@ -17,16 +17,85 @@ namespace System.Threading.Tasks.Tests
 
         // NOTE: This depends on private implementation details generally only used by the debugger.
         // If those ever change, this test will need to be updated as well.
-        private static readonly FieldInfo AsyncDebuggingEnabledField = GetRequiredTaskStaticField("s_asyncDebuggingEnabled");
-        private static readonly FieldInfo TaskTimestampsField = GetRequiredTaskStaticField("s_runtimeAsyncTaskTimestamps");
-        private static readonly FieldInfo ContinuationTimestampsField = GetRequiredTaskStaticField("s_runtimeAsyncContinuationTimestamps");
-        private static readonly FieldInfo ActiveTasksField = GetRequiredTaskStaticField("s_currentActiveTasks");
+        private static readonly FieldInfo AsyncDebuggingEnabledField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_asyncDebuggingEnabled");
+        private static readonly FieldInfo TaskTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncTaskTimestamps");
+        private static readonly FieldInfo ContinuationTimestampsField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_runtimeAsyncContinuationTimestamps");
+        private static readonly FieldInfo ActiveTasksField = GetCorLibClassStaticField("System.Threading.Tasks.Task", "s_currentActiveTasks");
+        private static readonly FieldInfo TplEventSource = GetCorLibClassStaticField("System.Threading.Tasks.TplEventSource", "Log");
+        private static readonly FieldInfo ActiveFlags = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "_activeFlags");
 
-        private static FieldInfo GetRequiredTaskStaticField(string fieldName)
+        private static object _debuggerLock = new object();
+        private static TestEventListener? _debuggerTplInstance;
+
+        // Tpl(0x20000) | Debugger(0x40000) | all event flags(0x7F)
+        private const long EnabledInstrumentationFlags = 0x6007F;
+        private const long DisabledInstrumentationFlags = 0x0;
+
+        private static void AttachDebugger()
         {
-            FieldInfo? field = typeof(Task).GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Static);
-            return field ?? throw new InvalidOperationException($"Expected static field '{fieldName}' to exist on type '{typeof(Task)}'.");
+            // Simulate a debugger attach to process, creating TPL event source session + setting s_asyncDebuggingEnabled.
+            lock (_debuggerLock)
+            {
+                // Touch TplEventSource.Log making sure provider is initialized.
+                TplEventSource.GetValue(null);
+
+                long flags = Convert.ToInt64(ActiveFlags.GetValue(null));
+                Assert.True(flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {DisabledInstrumentationFlags}");
+
+                _debuggerTplInstance = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose);
+                AsyncDebuggingEnabledField.SetValue(null, true);
+
+                flags = Convert.ToInt64(ActiveFlags.GetValue(null));
+                Assert.True(flags == EnabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {EnabledInstrumentationFlags}");
+
+                // Initialize collections.
+                Func().GetAwaiter().GetResult();
+
+                flags = Convert.ToInt64(ActiveFlags.GetValue(null));
+                Assert.True(flags == EnabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {EnabledInstrumentationFlags}");
+
+                var activeTasks = (Dictionary<int, Task>)ActiveTasksField.GetValue(null);
+                Assert.True(activeTasks != null, "Expected active tasks dictionary to be initialized");
+
+                var taskTimestamps = (Dictionary<int, long>)TaskTimestampsField.GetValue(null);
+                Assert.True(taskTimestamps != null, "Expected tasks timestamps dictionary to be initialized");
+
+                var continuationTimestamps = (Dictionary<object, long>)ContinuationTimestampsField.GetValue(null);
+                Assert.True(continuationTimestamps != null, "Expected continuation timestamps dictionary to be initialized");
+            }
         }
+
+        private static void DetachDebugger()
+        {
+            // Simulate a debugger detach from process.
+            lock (_debuggerLock)
+            {
+                AsyncDebuggingEnabledField.SetValue(null, false);
+                _debuggerTplInstance.Dispose();
+                _debuggerTplInstance = null;
+
+                long flags = Convert.ToInt64(ActiveFlags.GetValue(null));
+                Assert.True(flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {DisabledInstrumentationFlags}");
+            }
+        }
+
+        private static FieldInfo GetCorLibClassStaticField(string className, string fieldName)
+        {
+            Type? classType = typeof(object).Assembly.GetType(className);
+            if (classType == null)
+            {
+                throw new InvalidOperationException($"Type '{className}' doesn't exist in System.Private.CoreLib.");
+            }
+
+            FieldInfo? field = classType.GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            if (field == null)
+            {
+                throw new InvalidOperationException($"Expected static field '{fieldName}' to exist on type '{className}'.");
+            }
+
+            return field;
+        }
+
         private static int GetTaskTimestampCount() =>
             TaskTimestampsField.GetValue(null) is Dictionary<int, long> dict ? dict.Count : 0;
 
@@ -125,7 +194,7 @@ namespace System.Threading.Tasks.Tests
         {
             RemoteExecutor.Invoke(async () =>
             {
-                AsyncDebuggingEnabledField.SetValue(null, true);
+                AttachDebugger();
 
                 for (int i = 0; i < 1000; i++)
                 {
@@ -133,6 +202,9 @@ namespace System.Threading.Tasks.Tests
                 }
 
                 ValidateTimestampsCleared();
+
+                DetachDebugger();
+
             }).Dispose();
         }
 
@@ -142,7 +214,7 @@ namespace System.Threading.Tasks.Tests
         {
             RemoteExecutor.Invoke(async () =>
             {
-                AsyncDebuggingEnabledField.SetValue(null, true);
+                AttachDebugger();
 
                 for (int i = 0; i < 1000; i++)
                 {
@@ -156,6 +228,9 @@ namespace System.Threading.Tasks.Tests
                 }
 
                 ValidateTimestampsCleared();
+
+                DetachDebugger();
+
             }).Dispose();
         }
 
@@ -165,10 +240,7 @@ namespace System.Threading.Tasks.Tests
         {
             RemoteExecutor.Invoke(async () =>
             {
-                AsyncDebuggingEnabledField.SetValue(null, true);
-
-                // Run one task to ensure lazy-initialized collections are created
-                await Func();
+                AttachDebugger();
 
                 var activeTasks = (Dictionary<int, Task>)ActiveTasksField.GetValue(null);
 
@@ -199,7 +271,7 @@ namespace System.Threading.Tasks.Tests
                 // Simulate debugger detach — the flag sync should detect the mismatch
                 // and disable the Debugger flags without crashing.
                 // Timestamps are not cleared (matches existing behavior).
-                AsyncDebuggingEnabledField.SetValue(null, false);
+                DetachDebugger();
 
                 // Run one task to trigger the flag sync that detects the mismatch
                 await Func();
@@ -219,6 +291,7 @@ namespace System.Threading.Tasks.Tests
                     Assert.False(taskTimestamps.ContainsKey(postDetach.Id),
                         "Expected no task timestamp for post-detach in-flight task");
                 }
+
             }).Dispose();
         }
 
@@ -228,7 +301,7 @@ namespace System.Threading.Tasks.Tests
         {
             RemoteExecutor.Invoke(async () =>
             {
-                AsyncDebuggingEnabledField.SetValue(null, true);
+                AttachDebugger();
 
                 for (int i = 0; i < 1000; i++)
                 {
@@ -237,6 +310,9 @@ namespace System.Threading.Tasks.Tests
                 }
 
                 ValidateTimestampsCleared();
+
+                DetachDebugger();
+
             }).Dispose();
         }
 
@@ -246,7 +322,7 @@ namespace System.Threading.Tasks.Tests
         {
             RemoteExecutor.Invoke(async () =>
             {
-                AsyncDebuggingEnabledField.SetValue(null, true);
+                AttachDebugger();
 
                 for (int i = 0; i < 1000; i++)
                 {
@@ -254,6 +330,9 @@ namespace System.Threading.Tasks.Tests
                 }
 
                 ValidateTimestampsCleared();
+
+                DetachDebugger();
+
             }).Dispose();
         }
 
@@ -263,7 +342,7 @@ namespace System.Threading.Tasks.Tests
         {
             RemoteExecutor.Invoke(async () =>
             {
-                AsyncDebuggingEnabledField.SetValue(null, true);
+                AttachDebugger();
 
                 using var cts = new CancellationTokenSource();
                 cts.Cancel();
@@ -280,6 +359,9 @@ namespace System.Threading.Tasks.Tests
                 }
 
                 ValidateTimestampsCleared();
+
+                DetachDebugger();
+
             }).Dispose();
         }
 
@@ -289,10 +371,7 @@ namespace System.Threading.Tasks.Tests
         {
             RemoteExecutor.Invoke(async () =>
             {
-                AsyncDebuggingEnabledField.SetValue(null, true);
-
-                // Run one task to ensure lazy-initialized collections are created
-                await Func();
+                AttachDebugger();
 
                 var tcs1 = new TaskCompletionSource();
                 var tcs2 = new TaskCompletionSource();
@@ -343,6 +422,9 @@ namespace System.Threading.Tasks.Tests
                 {
                     Assert.False(taskTimestamps.ContainsKey(inflight.Id), "Expected task timestamp to be removed after completion");
                 }
+
+                DetachDebugger();
+
             }).Dispose();
         }
 
@@ -352,7 +434,7 @@ namespace System.Threading.Tasks.Tests
         {
             RemoteExecutor.Invoke(async () =>
             {
-                AsyncDebuggingEnabledField.SetValue(null, true);
+                AttachDebugger();
 
                 bool continuationTimestampObserved = false;
 
@@ -373,6 +455,59 @@ namespace System.Threading.Tasks.Tests
                 await inflight;
 
                 Assert.True(continuationTimestampObserved, "Expected continuation timestamp to be present during resumed method execution");
+
+                DetachDebugger();
+
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
+        public void RuntimeAsync_InFlightInstrumentationUpgrade()
+        {
+            RemoteExecutor.Invoke(async () =>
+            {
+                // Start a multi-await task WITHOUT instrumentation enabled.
+                var tcs1 = new TaskCompletionSource();
+                var tcs2 = new TaskCompletionSource();
+                Task inflight = FuncThatWaitsTwice(tcs1, tcs2);
+
+                // Task is now suspended at first await with no instrumentation.
+                // Attach the debugger mid-flight — this enables instrumentation.
+                AttachDebugger();
+
+                var activeTasks = (Dictionary<int, Task>)ActiveTasksField.GetValue(null);
+                var taskTimestamps = (Dictionary<int, long>)TaskTimestampsField.GetValue(null);
+
+                // The in-flight task was NOT tracked at creation (no instrumentation then).
+                lock (activeTasks)
+                {
+                    Assert.False(activeTasks.ContainsKey(inflight.Id),
+                        "Expected in-flight task NOT to be tracked (started before instrumentation)");
+                }
+
+                // Resume the first await — the dispatch loop's InstrumentCheckPoint should
+                // detect that instrumentation is now active and transition to the instrumented path.
+                tcs1.SetResult();
+
+                // Wait for the task to suspend at the second await.
+                bool seenTimestamp = SpinWait.SpinUntil(() =>
+                {
+                    lock (taskTimestamps)
+                    {
+                        return taskTimestamps.ContainsKey(inflight.Id);
+                    }
+                }, timeout: TimeSpan.FromSeconds(5));
+
+                Assert.True(seenTimestamp,
+                    "Expected task timestamp after mid-flight instrumentation upgrade (InstrumentCheckPoint transition)");
+
+                // Complete the second await and let the task finish.
+                tcs2.SetResult();
+                await inflight;
+
+                DetachDebugger();
+
             }).Dispose();
         }
 
