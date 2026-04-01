@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapTrimming.Universe>("GenUsedForExternal", typeof(DeadCodeElimination.TestInteropMapTrimming.GenUsedForExternal<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ExternalEntryFromGenUsed))]
 [assembly: TypeMap<DeadCodeElimination.TestInteropMapTrimming.Universe>("GenUnused", typeof(DeadCodeElimination.TestInteropMapTrimming.GenUnused<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ExternalEntryFromGenUnused))]
 [assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.SourceType), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyType))]
-[assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.GenUsedForProxy<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyFromGenUsedForProxy))]
+[assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.GenUsedForProxy<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyFromGenUsed))]
 [assembly: TypeMapAssociation<DeadCodeElimination.TestInteropMapTrimming.Universe>(typeof(DeadCodeElimination.TestInteropMapTrimming.GenUnused<object>), typeof(DeadCodeElimination.TestInteropMapTrimming.ProxyFromGenUnused))]
 
 class DeadCodeElimination
@@ -1291,7 +1291,7 @@ class DeadCodeElimination
         internal class ProxyType;
 
         internal class GenUsedForProxy<T> where T : class;
-        internal class ExternalEntryFromGenUsedForProxy;
+        internal class ProxyFromGenUsed;
         internal class GenUnused<T> where T : class;
         internal class ProxyFromGenUnused;
         internal class ExternalEntryFromGenUnused;
@@ -1352,10 +1352,10 @@ class DeadCodeElimination
             {
                 var mappedType = (Type)typeof(TestInteropMapTrimming).GetMethod(nameof(GetProxyGeneric)).MakeGenericMethod(GetObjectType()).Invoke(null, [ proxyMap ]);
                 ThrowIfUsableMethodTable(mappedType);
-                if (mappedType.Name != nameof(ProxyFromGenUsedForProxy))
+                if (mappedType.Name != nameof(ProxyFromGenUsed))
                     throw new Exception();
 
-                ThrowIfNotPresent(typeof(TestInteropMapTrimming), nameof(ProxyFromGenUsedForProxy));
+                ThrowIfNotPresent(typeof(TestInteropMapTrimming), nameof(ProxyFromGenUsed));
                 ThrowIfPresent(typeof(TestInteropMapTrimming), nameof(ProxyFromGenUnused));
 
                 [MethodImpl(MethodImplOptions.NoInlining)]
