@@ -365,11 +365,22 @@ Copyright (c) .NET Foundation. All rights reserved.
          materialization. Pre-filtering avoids MSBuild batching errors on WasmNativeBuildOutput
          metadata that only WasmNativeAsset items define. -->
     <ItemGroup Condition="'$(_WasmEnableWebcil)' == 'true'">
+      <!-- Build DLL candidates with pre-computed WebcilOutputPath metadata.
+           First filter to DLLs only, then split by culture to assign the correct output path.
+           The combined list enables MSBuild partial target execution via Outputs transform
+           (@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')): only out-of-date input/output
+           pairs are passed to the target body, skipping unchanged DLLs entirely. -->
       <_WasmDllBuildCandidates Include="@(_BuildAssetsCandidates)" Condition="'%(Extension)' == '.dll'" />
-      <_WasmDllBuildCandidatesNonCulture Include="@(_WasmDllBuildCandidates)" Condition="'%(AssetTraitName)' != 'Culture'" />
-      <_WasmDllBuildCandidatesCulture Include="@(_WasmDllBuildCandidates)" Condition="'%(AssetTraitName)' == 'Culture'" />
-      <_WasmExpectedWebcilOutputs Include="@(_WasmDllBuildCandidatesNonCulture->'$(_WasmBuildWebcilPath)%(FileName).wasm')" />
-      <_WasmExpectedWebcilOutputs Include="@(_WasmDllBuildCandidatesCulture->'$(_WasmBuildWebcilPath)%(AssetTraitValue)/%(FileName).wasm')" />
+      <_WasmDllBuildCandidatesNonCulture Include="@(_WasmDllBuildCandidates)" Condition="'%(AssetTraitName)' != 'Culture'">
+        <WebcilOutputPath>$(_WasmBuildWebcilPath)%(FileName).wasm</WebcilOutputPath>
+      </_WasmDllBuildCandidatesNonCulture>
+      <_WasmDllBuildCandidatesCulture Include="@(_WasmDllBuildCandidates)" Condition="'%(AssetTraitName)' == 'Culture'">
+        <WebcilOutputPath>$(_WasmBuildWebcilPath)%(AssetTraitValue)/%(FileName).wasm</WebcilOutputPath>
+      </_WasmDllBuildCandidatesCulture>
+      <!-- Rebuild _WasmDllBuildCandidates with WebcilOutputPath metadata from both groups -->
+      <_WasmDllBuildCandidates Remove="@(_WasmDllBuildCandidates)" />
+      <_WasmDllBuildCandidates Include="@(_WasmDllBuildCandidatesNonCulture);@(_WasmDllBuildCandidatesCulture)" />
+      <_WasmExpectedWebcilOutputs Include="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')" />
     </ItemGroup>
 
     <!-- Separate non-DLL items into native build outputs (per-project, Computed) and
@@ -384,24 +395,29 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <!-- Convert DLL assemblies to webcil format.
-       This target is incremental: when all input DLLs are older than their corresponding
-       webcil outputs, the entire target is skipped, saving the conversion task overhead.
-       The task also has internal per-file timestamp checks as a secondary optimization. -->
+       Outputs is a direct transform of the item-based Inputs, enabling MSBuild partial target
+       execution: when only some DLLs change, MSBuild passes only out-of-date pairs to the
+       target body. Property inputs (project/targets/task assembly) are global dependencies —
+       if any changes, all outputs are rebuilt.
+       Touch is needed because the task uses content comparison (MoveIfDifferent) which preserves
+       old timestamps when webcil content is unchanged. Without Touch, property-triggered full
+       rebuilds would loop since skipped outputs retain pre-existing timestamps. -->
   <Target Name="_ConvertBuildDllsToWebcil"
     DependsOnTargets="_ComputeWasmBuildCandidates"
     Condition="'$(_WasmEnableWebcil)' == 'true'"
     Inputs="@(_WasmDllBuildCandidates);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
-    Outputs="@(_WasmExpectedWebcilOutputs)">
+    Outputs="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')">
 
     <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FileWrites" ItemName="_WasmConvertedWebcilOutputs" />
     </ConvertDllsToWebcil>
 
-    <!-- The ConvertDllsToWebcil task uses content comparison and preserves old timestamps when
-         the output content is unchanged. Touch the files that were actually written so
-         MSBuild's Inputs/Outputs check sees current timestamps and can correctly skip this
-         target on subsequent builds. -->
+    <!-- Touch is needed for property-triggered full rebuilds: the task's content comparison
+         (MoveIfDifferent) preserves old timestamps for unchanged webcil files, but MSBuild
+         needs all outputs to have current timestamps to skip the target on subsequent builds.
+         For item-triggered partial rebuilds, MSBuild only passes changed items so Touch only
+         affects those outputs. -->
     <Touch Files="@(_WasmConvertedWebcilOutputs)" Condition="'@(_WasmConvertedWebcilOutputs)' != ''" />
   </Target>
 
