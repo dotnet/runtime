@@ -99,11 +99,6 @@ namespace Microsoft.Win32.SafeHandles
                 (userId, groupId, groups) = ProcessUtils.GetUserAndGroupIds(startInfo);
             }
 
-            // .NET applications don't echo characters unless there is a Console.Read operation.
-            // Unix applications expect the terminal to be in an echoing state by default.
-            // To support processes that interact with the terminal (e.g. 'vi'), we need to configure the
-            // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
-            // Handle can be null only for UseShellExecute or platforms that don't support Console.Open* methods like Android and MacCatalyst.
             bool usesTerminal = UsesTerminal(stdinHandle, stdoutHandle, stderrHandle);
 
             filename = ProcessUtils.ResolvePath(startInfo.FileName);
