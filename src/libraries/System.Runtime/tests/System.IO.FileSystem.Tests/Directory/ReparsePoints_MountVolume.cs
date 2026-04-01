@@ -110,8 +110,11 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            MountHelper.Unmount(mountedDirName);
-                            DeleteDir(mountedDirName, true);
+                            if (Directory.Exists(mountedDirName))
+                            {
+                                try { MountHelper.Unmount(mountedDirName); } catch { }
+                                DeleteDir(mountedDirName, true);
+                            }
                         }
                     }
                     else
@@ -187,8 +190,11 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            MountHelper.Unmount(mountedDirName);
-                            DeleteDir(mountedDirName, true);
+                            if (Directory.Exists(mountedDirName))
+                            {
+                                try { MountHelper.Unmount(mountedDirName); } catch { }
+                                DeleteDir(mountedDirName, true);
+                            }
                         }
                     }
                     else
@@ -262,8 +268,11 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            MountHelper.Unmount(mountedDirName);
-                            DeleteDir(mountedDirName, true);
+                            if (Directory.Exists(mountedDirName))
+                            {
+                                try { MountHelper.Unmount(mountedDirName); } catch { }
+                                DeleteDir(mountedDirName, true);
+                            }
                         }
                     }
                     else
@@ -337,8 +346,11 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            MountHelper.Unmount(mountedDirName);
-                            DeleteDir(mountedDirName, true);
+                            if (Directory.Exists(mountedDirName))
+                            {
+                                try { MountHelper.Unmount(mountedDirName); } catch { }
+                                DeleteDir(mountedDirName, true);
+                            }
                         }
                     }
                     else
