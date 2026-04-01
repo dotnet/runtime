@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Moq;
@@ -82,6 +83,65 @@ public unsafe class LoaderTests
             string actual = contract.GetFileName(handle);
             Assert.Equal(string.Empty, actual);
         }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetSimpleName(MockTarget.Architecture arch)
+    {
+        // Set up the target
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
+
+        string expected = "TestModule";
+
+        // Add the modules
+        TargetPointer moduleAddr = loader.AddModule(simpleName: expected);
+        TargetPointer moduleAddrEmptyName = loader.AddModule();
+
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
+        // Validate the expected module data
+        Contracts.ILoader contract = target.Contracts.Loader;
+        Assert.NotNull(contract);
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+            bool result = contract.TryGetSimpleName(handle, out string actual);
+            Assert.True(result);
+            Assert.Equal(expected, actual);
+        }
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddrEmptyName);
+            bool result = contract.TryGetSimpleName(handle, out string actual);
+            Assert.False(result);
+            Assert.Equal(string.Empty, actual);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetSimpleName_InvalidUtf8(MockTarget.Architecture arch)
+    {
+        // Set up the target
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
+
+        // 0xFF is not valid UTF-8
+        byte[] invalidUtf8 = [0xFF, 0xFE];
+        TargetPointer moduleAddr = loader.AddModule(simpleNameBytes: invalidUtf8);
+
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
+        Contracts.ILoader contract = target.Contracts.Loader;
+        Assert.NotNull(contract);
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        Assert.Throws<DecoderFallbackException>(() => contract.TryGetSimpleName(handle, out _));
     }
 
     private static readonly Dictionary<string, TargetPointer> MockHeapDictionary = new()

@@ -226,15 +226,13 @@ NativeImage *NativeImage::Open(
     LPCUTF8 nativeImageFileName,
     AssemblyBinder *pAssemblyBinder,
     LoaderAllocator *pLoaderAllocator,
-    bool isPlatformNative,
-    /* out */ bool *isNewNativeImage)
+    bool isPlatformNative)
 {
     STANDARD_VM_CONTRACT;
 
     NativeImage *pExistingImage = AppDomain::GetCurrentDomain()->GetNativeImage(nativeImageFileName);
     if (pExistingImage != nullptr)
     {
-        *isNewNativeImage = false;
         if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
         {
             return pExistingImage;
@@ -294,12 +292,10 @@ NativeImage *NativeImage::Open(
     if (pExistingImage == nullptr)
     {
         // No pre-existing image, new image has been stored in the map
-        *isNewNativeImage = true;
         amTracker.SuppressRelease();
         return image.Extract();
     }
     // Return pre-existing image if it was loaded into the same ALC, null otherwise
-    *isNewNativeImage = false;
     if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
     {
         return pExistingImage;

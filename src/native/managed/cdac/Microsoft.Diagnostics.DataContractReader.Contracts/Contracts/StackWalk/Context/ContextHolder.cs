@@ -14,6 +14,8 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
     public uint Size => Context.Size;
     public uint DefaultContextFlags => Context.DefaultContextFlags;
 
+    public int StackPointerRegister => Context.StackPointerRegister;
+
     public TargetPointer StackPointer { get => Context.StackPointer; set => Context.StackPointer = value; }
     public TargetPointer InstructionPointer { get => Context.InstructionPointer; set => Context.InstructionPointer = value; }
     public TargetPointer FramePointer { get => Context.FramePointer; set => Context.FramePointer = value; }

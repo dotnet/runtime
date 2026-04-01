@@ -1231,8 +1231,6 @@ public:
     // Only call this routine when you can guarantee there are no loads in progress.
     void ClearBinderContext();
 
-    static void ExceptionUnwind(Frame *pFrame);
-
     static void RaiseExitProcessEvent();
     Assembly* RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szName);
     Assembly* RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef);

@@ -1062,7 +1062,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetReferencedAssemblies(QCall::Assembly
         AssemblySpec spec;
         spec.InitializeSpec(mdAssemblyRef, pImport);
 
-        gc.pObj = (ASSEMBLYNAMEREF) AllocateObject(pAsmNameClass);
+        gc.pObj = NULL;
         spec.AssemblyNameInit(&gc.pObj);
 
         gc.ItemArray->SetAt(i, (OBJECTREF) gc.pObj);
@@ -1773,16 +1773,19 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
             (newProxyTypeEntry != nullptr && !hasPrecachedProxy) ||
             !hasPrecachedTargets)
         {
-            // Only fall back to attribute parsing for the assembly targets if they were
-            // not found in the pre-cached R2R section.
-            if (!hasPrecachedTargets)
-            {
-                ProcessTypeMapAttribute(
-                    TypeMapAssemblyTargetAttributeName,
-                    assemblies,
-                    groupTypeMT,
-                    currAssembly);
-            }
+            // Fall back to attribute parsing for the assembly targets if they were
+            // not found in the pre-cached R2R section, or if the external/proxy type
+            // maps were not pre-cached. When CrossGen2 fails to resolve an assembly
+            // target, it emits an assembly targets entry with count=0 but marks the
+            // external/proxy maps as invalid (state=0). Re-processing the assembly
+            // target attributes in that case ensures the runtime correctly loads (and
+            // throws for) unresolvable assemblies. The AssemblyTargetProcessor already
+            // deduplicates, so re-processing is safe.
+            ProcessTypeMapAttribute(
+                TypeMapAssemblyTargetAttributeName,
+                assemblies,
+                groupTypeMT,
+                currAssembly);
 
             // We will only process the specific type maps if we have a callback to process
             // the entry and the precached map was not calculated for this module.

@@ -1328,15 +1328,6 @@ void emitter::emitBegFN(bool hasFramePtr
     emitCntStackDepth = sizeof(int);
 #endif
 
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    // for random NOP insertion
-
-    emitEnableRandomNops();
-    m_compiler->info.compRNG.Init(m_compiler->info.compChecksum);
-    emitNextNop           = emitNextRandomNop();
-    emitInInstrumentation = false;
-#endif // PSEUDORANDOM_NOP_INSERTION
-
     /* Create the first IG, it will be used for the prolog */
 
     emitNxtIGnum = 1;
@@ -1361,13 +1352,6 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitNewIG();
 }
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-int emitter::emitNextRandomNop()
-{
-    return m_compiler->info.compRNG.Next(1, 9);
-}
-#endif
 
 /*****************************************************************************
  *
@@ -1615,39 +1599,6 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         emitNxtIG(true);
     }
 #endif
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    // TODO-ARM-Bug?: PSEUDORANDOM_NOP_INSERTION is not defined for TARGET_ARM
-    //     ARM - This is currently broken on TARGET_ARM
-    //     When nopSize is odd we misalign emitCurIGsize
-    //
-    if (!m_compiler->IsAot() && !emitInInstrumentation &&
-        !emitIGisInProlog(emitCurIG) && // don't do this in prolog or epilog
-        !emitIGisInEpilog(emitCurIG) &&
-        emitRandomNops // sometimes we turn off where exact codegen is needed (pinvoke inline)
-    )
-    {
-        if (emitNextNop == 0)
-        {
-            int nopSize           = 4;
-            emitInInstrumentation = true;
-            instrDesc* idnop      = emitNewInstr();
-            emitInInstrumentation = false;
-            idnop->idInsFmt(IF_NONE);
-            idnop->idIns(INS_nop);
-#if defined(TARGET_XARCH)
-            idnop->idCodeSize(nopSize);
-#else
-#error "Undefined target for pseudorandom NOP insertion"
-#endif
-
-            emitCurIGsize += nopSize;
-            emitNextNop = emitNextRandomNop();
-        }
-        else
-            emitNextNop--;
-    }
-#endif // PSEUDORANDOM_NOP_INSERTION
 
     assert(IsCodeAligned(emitCurIGsize));
 

@@ -517,10 +517,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // save any integral return value(s)
     sd  a0, 120(sp)
     sd  a1, 128(sp)
+    // save async continuation return value
+    sd  a2, 136(sp)
 
     // save any FP/HFA return value(s)
-    fsd  f0, 136(sp)
-    fsd  f1, 144(sp)
+    fsd  f0, 144(sp)
+    fsd  f1, 152(sp)
 
     addi  a0, sp, 0
     call  C_FUNC(OnHijackWorker)
@@ -530,10 +532,12 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore any integral return value(s)
     ld  a0, 120(sp)
     ld  a1, 128(sp)
+    // restore async continuation return value
+    ld  a2, 136(sp)
 
     // restore any FP/HFA return value(s)
-    fld  f0, 136(sp)
-    fld  f1, 144(sp)
+    fld  f0, 144(sp)
+    fld  f1, 152(sp)
 
     EPILOG_RESTORE_REG_PAIR   s1, s2, 16
     EPILOG_RESTORE_REG_PAIR   s3, s4, 32

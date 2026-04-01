@@ -146,27 +146,49 @@ namespace System.Reflection
             return ProcessorArchitecture.None;
         }
 
+        [UnmanagedCallersOnly]
         [RequiresUnsafe]
-        private static unsafe void ParseAsAssemblySpec(char* pAssemblyName, void* pAssemblySpec)
+        private static unsafe void ParseAsAssemblySpec(char* pAssemblyName, void* pAssemblySpec, Exception* pException)
         {
-            AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pAssemblyName));
-
-            fixed (char* pName = parts._name)
-            fixed (char* pCultureName = parts._cultureName)
-            fixed (byte* pPublicKeyOrToken = parts._publicKeyOrToken)
+            try
             {
-                NativeAssemblyNameParts nameParts = default;
+                AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pAssemblyName));
 
-                nameParts._flags = parts._flags;
-                nameParts._pName = pName;
-                nameParts._pCultureName = pCultureName;
+                fixed (char* pName = parts._name)
+                fixed (char* pCultureName = parts._cultureName)
+                fixed (byte* pPublicKeyOrToken = parts._publicKeyOrToken)
+                {
+                    NativeAssemblyNameParts nameParts = default;
 
-                nameParts._pPublicKeyOrToken = pPublicKeyOrToken;
-                nameParts._cbPublicKeyOrToken = (parts._publicKeyOrToken != null) ? parts._publicKeyOrToken.Length : 0;
+                    nameParts._flags = parts._flags;
+                    nameParts._pName = pName;
+                    nameParts._pCultureName = pCultureName;
 
-                nameParts.SetVersion(parts._version, defaultValue: ushort.MaxValue);
+                    nameParts._pPublicKeyOrToken = pPublicKeyOrToken;
+                    nameParts._cbPublicKeyOrToken = (parts._publicKeyOrToken != null) ? parts._publicKeyOrToken.Length : 0;
 
-                InitializeAssemblySpec(&nameParts, pAssemblySpec);
+                    nameParts.SetVersion(parts._version, defaultValue: ushort.MaxValue);
+
+                    InitializeAssemblySpec(&nameParts, pAssemblySpec);
+                }
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void CreateAssemblyName(AssemblyName* pResult, NativeAssemblyNameParts* pParts, Exception* pException)
+        {
+            try
+            {
+                *pResult = new AssemblyName(pParts);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
 

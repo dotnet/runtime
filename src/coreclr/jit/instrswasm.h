@@ -20,11 +20,15 @@
 #error INST must be defined before including this file.
 #endif
 
+#ifndef INST2
+#error INST2 must be defined before including this file.
+#endif
+
 // clang-format off
 
 // control flow
 //
-INST(invalid,              "INVALID",              0, IF_NONE,          BAD_CODE)
+INST2(invalid,              "INVALID",              0, IF_NONE,         0xFC, BAD_CODE)
 INST(unreachable,          "unreachable",          0, IF_OPCODE,        0x00)
 INST(label,                "label",                0, IF_RAW_ULEB128,   0x00)
 INST(catch_ref,            "catch_ref",            0, IF_CATCH_DECL,    0x00)
@@ -224,18 +228,19 @@ INST(i64_extend32_s,      "i64.extend32_s",      0, IF_OPCODE,  0xC4)
 // NOTE: per https://github.com/dotnet/runtime/issues/122309,
 // we have decided to include saturating float->int conversions
 // in our base Wasm ISA.
-INST(i32_trunc_sat_f32_s, "i32.trunc_sat_f32_s", 0, IF_OPCODE,  0x00FC)
-INST(i32_trunc_sat_f32_u, "i32.trunc_sat_f32_u", 0, IF_OPCODE,  0x01FC)
-INST(i32_trunc_sat_f64_s, "i32.trunc_sat_f64_s", 0, IF_OPCODE,  0x02FC)
-INST(i32_trunc_sat_f64_u, "i32.trunc_sat_f64_u", 0, IF_OPCODE,  0x03FC)
-INST(i64_trunc_sat_f32_s, "i64.trunc_sat_f32_s", 0, IF_OPCODE,  0x04FC)
-INST(i64_trunc_sat_f32_u, "i64.trunc_sat_f32_u", 0, IF_OPCODE,  0x05FC)
-INST(i64_trunc_sat_f64_s, "i64.trunc_sat_f64_s", 0, IF_OPCODE,  0x06FC)
-INST(i64_trunc_sat_f64_u, "i64.trunc_sat_f64_u", 0, IF_OPCODE,  0x07FC)
+INST2(i32_trunc_sat_f32_s, "i32.trunc_sat_f32_s", 0, IF_OPCODE,  0xFC, 0)
+INST2(i32_trunc_sat_f32_u, "i32.trunc_sat_f32_u", 0, IF_OPCODE,  0xFC, 1)
+INST2(i32_trunc_sat_f64_s, "i32.trunc_sat_f64_s", 0, IF_OPCODE,  0xFC, 2)
+INST2(i32_trunc_sat_f64_u, "i32.trunc_sat_f64_u", 0, IF_OPCODE,  0xFC, 3)
+INST2(i64_trunc_sat_f32_s, "i64.trunc_sat_f32_s", 0, IF_OPCODE,  0xFC, 4)
+INST2(i64_trunc_sat_f32_u, "i64.trunc_sat_f32_u", 0, IF_OPCODE,  0xFC, 5)
+INST2(i64_trunc_sat_f64_s, "i64.trunc_sat_f64_s", 0, IF_OPCODE,  0xFC, 6)
+INST2(i64_trunc_sat_f64_u, "i64.trunc_sat_f64_u", 0, IF_OPCODE,  0xFC, 7)
 
-INST(memory_copy,         "memory.copy",         0, IF_MEMIDX_MEMIDX, 0x0AFC)
-INST(memory_fill,         "memory.fill",         0, IF_ULEB128,       0x0BFC)
+INST2(memory_copy,         "memory.copy",         0, IF_MEMIDX_MEMIDX, 0xFC, 10)
+INST2(memory_fill,         "memory.fill",         0, IF_ULEB128,       0xFC, 11)
 
 // clang-format on
 
 #undef INST
+#undef INST2

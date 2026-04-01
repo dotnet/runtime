@@ -2314,52 +2314,6 @@ IUnknown* ComCallWrapper::GetBasicIP(bool inspectionOnly)
     RETURN ((cbRef != 0xbadf00d) ? pIntf : NULL);
 }
 
-struct InvokeICustomQueryInterfaceGetInterfaceArgs
-{
-    ComCallWrapper *pWrap;
-    GUID *pGuid;
-    IUnknown **ppUnk;
-    CustomQueryInterfaceResult *pRetVal;
-};
-
-VOID __stdcall InvokeICustomQueryInterfaceGetInterface_CallBack(LPVOID ptr)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(ptr));
-    }
-    CONTRACTL_END;
-    InvokeICustomQueryInterfaceGetInterfaceArgs *pArgs = (InvokeICustomQueryInterfaceGetInterfaceArgs*)ptr;
-
-    {
-        GCX_COOP();
-        OBJECTREF pObj = pArgs->pWrap->GetObjectRef();
-
-        GCPROTECT_BEGIN(pObj);
-
-        // 1. Get MD
-        MethodDesc *pMD = pArgs->pWrap->GetSimpleWrapper()->GetComCallWrapperTemplate()->GetICustomQueryInterfaceGetInterfaceMD();
-
-        // 2. Get Object Handle
-        OBJECTHANDLE hndCustomQueryInterface = pArgs->pWrap->GetObjectHandle();
-
-        // 3 construct the MethodDescCallSite
-        MethodDescCallSite GetInterface(pMD, hndCustomQueryInterface);
-
-        ARG_SLOT Args[] = {
-            ObjToArgSlot(pObj),
-            PtrToArgSlot(pArgs->pGuid),
-            PtrToArgSlot(pArgs->ppUnk),
-            };
-
-        *(pArgs->pRetVal) = (CustomQueryInterfaceResult)GetInterface.Call_RetArgSlot(Args);
-        GCPROTECT_END();
-    }
-}
-
 //--------------------------------------------------------------------------
 //  check if the interface is supported, return a index into the IMap
 //  returns -1, if pIntfMT is not supported
@@ -2601,9 +2555,18 @@ static bool GetComIPFromCCW_HandleCustomQI(
         guid = riid;
     }
 
-    InvokeICustomQueryInterfaceGetInterfaceArgs args = {pWrap, &guid, ppUnkOut, &retVal};
+    {
+        GCX_COOP();
+        OBJECTREF pObj = pWrap->GetObjectRef();
 
-    InvokeICustomQueryInterfaceGetInterface_CallBack(&args);
+        GCPROTECT_BEGIN(pObj);
+
+        UnmanagedCallersOnlyCaller callICustomQueryInterface(METHOD__STUBHELPERS__CALL_ICUSTOM_QUERY_INTERFACE);
+        INT32 result = callICustomQueryInterface.InvokeThrowing_Ret<INT32>(&pObj, &guid, ppUnkOut);
+
+        retVal = static_cast<CustomQueryInterfaceResult>(result);
+        GCPROTECT_END();
+    }
 
     // return if user already handle the QI
     if (retVal == Handled)
@@ -4674,7 +4637,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         pTemplate->m_pClassComMT = NULL;        // Defer setting this up.
         pTemplate->m_pBasicComMT = NULL;
         pTemplate->m_pDefaultItf = NULL;
-        pTemplate->m_pICustomQueryInterfaceGetInterfaceMD = NULL;
         pTemplate->m_flags = 0;
 
         // Determine the COM visibility of classes in our hierarchy.
@@ -4794,7 +4756,6 @@ ComCallWrapperTemplate *ComCallWrapperTemplate::CreateTemplateForInterface(Metho
     pTemplate->m_pClassComMT = NULL;
     pTemplate->m_pBasicComMT = NULL;
     pTemplate->m_pDefaultItf = pItfMT;
-    pTemplate->m_pICustomQueryInterfaceGetInterfaceMD = NULL;
     pTemplate->m_flags = enum_RepresentsVariantInterface;
 
     // Initialize the one ComMethodTable
@@ -4925,25 +4886,6 @@ ComMethodTable *ComCallWrapperTemplate::SetupComMethodTableForClass(MethodTable 
     }
 
     RETURN pIClassXComMT;
-}
-
-
-MethodDesc * ComCallWrapperTemplate::GetICustomQueryInterfaceGetInterfaceMD()
-{
-    CONTRACT (MethodDesc*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(m_flags & enum_ImplementsICustomQueryInterface);
-    }
-    CONTRACT_END;
-
-    if (m_pICustomQueryInterfaceGetInterfaceMD == NULL)
-        m_pICustomQueryInterfaceGetInterfaceMD = m_thClass.GetMethodTable()->GetMethodDescForInterfaceMethod(
-           CoreLibBinder::GetMethod(METHOD__ICUSTOM_QUERYINTERFACE__GET_INTERFACE),
-           TRUE /* throwOnConflict */);
-    RETURN m_pICustomQueryInterfaceGetInterfaceMD;
 }
 
 //--------------------------------------------------------------------------

@@ -124,7 +124,7 @@ namespace System.Threading
             // When this thread is about to exit, inform any subsystems that need to know.
             // For external threads that have been attached to the runtime, we'll call this
             // after the thread has been detached as it won't come through this path.
-            OnThreadExiting();
+            OnThreadExited();
         }
 
         // Max iterations to be done in SpinWait without switching GC modes.
@@ -569,7 +569,7 @@ namespace System.Threading
         }
 #endif
 
-        private void OnThreadExiting()
+        private void OnThreadExited()
         {
             // Consider this managed thread as dead.
             // The unmanaged thread is still alive, but will die soon, after cleaning up some state.
@@ -583,6 +583,20 @@ namespace System.Threading
             _waitInfo?.OnThreadExiting();
             SetJoinHandle();
 #endif
+        }
+
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void OnThreadExited(Thread* pThread, Exception* pException)
+        {
+            try
+            {
+                pThread->OnThreadExited();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]

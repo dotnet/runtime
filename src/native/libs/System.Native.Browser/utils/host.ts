@@ -3,12 +3,6 @@
 
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function setEnvironmentVariable(name: string, value: string): void {
-    // TODO-WASM: implement setEnvironmentVariable
-    throw new Error("Not implemented");
-}
-
 export function getExitStatus(): new (exitCode: number) => any {
     return _ems_.ExitStatus as any;
 }
