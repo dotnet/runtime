@@ -854,6 +854,53 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Computes the inverse hyperbolic cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The input should be greater than or equal to 1.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Acosh(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AcoshDouble<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Acosh(vector._lower),
+                    Vector64.Acosh(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the inverse hyperbolic cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The input should be greater than or equal to 1.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Acosh(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.AcoshSingle<Vector128<float>, Vector128<int>, Vector128<uint>, Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AcoshSingle<Vector128<float>, Vector128<int>, Vector128<uint>, Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Acosh(vector._lower),
+                    Vector64.Acosh(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector64.Cos(Vector64{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<double> Cos(Vector128<double> vector)
