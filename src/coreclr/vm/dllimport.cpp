@@ -54,46 +54,6 @@
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
 
-namespace
-{
-    void AppendEHClause(int nClauses, COR_ILMETHOD_SECT_EH * pEHSect, ILStubEHClause * pClause, int * pCurIdx)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (pClause->kind == ILStubEHClause::kNone)
-            return;
-
-        int idx = *pCurIdx;
-        *pCurIdx = idx + 1;
-
-        CorExceptionFlag flags;
-        switch (pClause->kind)
-        {
-        case ILStubEHClause::kFinally: flags = COR_ILEXCEPTION_CLAUSE_FINALLY; break;
-        case ILStubEHClause::kTypedCatch: flags = COR_ILEXCEPTION_CLAUSE_NONE; break;
-        default:
-            UNREACHABLE_MSG("unexpected ILStubEHClause kind");
-        }
-        _ASSERTE(idx < nClauses);
-        pEHSect->Fat.Clauses[idx].Flags = flags;
-        pEHSect->Fat.Clauses[idx].TryOffset = pClause->dwTryBeginOffset;
-        pEHSect->Fat.Clauses[idx].TryLength = pClause->cbTryLength;
-        pEHSect->Fat.Clauses[idx].HandlerOffset = pClause->dwHandlerBeginOffset;
-        pEHSect->Fat.Clauses[idx].HandlerLength = pClause->cbHandlerLength;
-        pEHSect->Fat.Clauses[idx].ClassToken = pClause->dwTypeToken;
-    }
-
-    VOID PopulateEHSect(COR_ILMETHOD_SECT_EH * pEHSect, int nClauses, ILStubEHClause * pOne, ILStubEHClause * pTwo)
-    {
-        LIMITED_METHOD_CONTRACT;
-        pEHSect->Fat.Kind       = (CorILMethod_Sect_EHTable | CorILMethod_Sect_FatFormat);
-        pEHSect->Fat.DataSize   = COR_ILMETHOD_SECT_EH_FAT::Size(nClauses);
-
-        int curIdx = 0;
-        AppendEHClause(nClauses, pEHSect, pOne, &curIdx);
-        AppendEHClause(nClauses, pEHSect, pTwo, &curIdx);
-    }
-}
-
 StubSigDesc::StubSigDesc(MethodDesc *pMD)
 {
     CONTRACTL
@@ -506,18 +466,20 @@ public:
         m_slIL.DoPInvoke(m_slIL.GetDispatchCodeStream(), m_dwStubFlags, pTargetMD);
     }
 
-    virtual void EmitExceptionHandler(LocalDesc* pNativeReturnType, LocalDesc* pManagedReturnType,
-        ILCodeLabel** ppTryBeginLabel, ILCodeLabel** ppTryEndAndCatchBeginLabel, ILCodeLabel** ppCatchEndAndReturnLabel)
+    virtual void EmitExceptionHandler(LocalDesc* pNativeReturnType, LocalDesc* pManagedReturnType)
     {
 #ifdef FEATURE_COMINTEROP
         STANDARD_VM_CONTRACT;
 
         ILCodeStream* pcsExceptionHandler = m_slIL.NewCodeStream(ILStubLinker::kExceptionHandler);
-        *ppTryEndAndCatchBeginLabel = pcsExceptionHandler->NewCodeLabel(); // try ends at the same place the catch begins
-        *ppCatchEndAndReturnLabel = pcsExceptionHandler->NewCodeLabel();   // catch ends at the same place we resume afterwards
+        ILCodeLabel* pReturnLabel = pcsExceptionHandler->NewCodeLabel();
 
-        pcsExceptionHandler->EmitLEAVE(*ppCatchEndAndReturnLabel);
-        pcsExceptionHandler->EmitLabel(*ppTryEndAndCatchBeginLabel);
+        // End the outer try body with a leave to after the catch.
+        pcsExceptionHandler->EmitLEAVE(pReturnLabel);
+
+        // Close the outer try block and open the catch handler.
+        pcsExceptionHandler->EndTryBlock();
+        pcsExceptionHandler->BeginCatchBlock(pcsExceptionHandler->GetToken(g_pObjectClass));
 
         BYTE nativeReturnElemType = pNativeReturnType->ElementType[0];      // return type of the stub
         BYTE managedReturnElemType = pManagedReturnType->ElementType[0];    // return type of the mananged target
@@ -604,8 +566,9 @@ public:
             break;
         }
 
-        pcsExceptionHandler->EmitLEAVE(*ppCatchEndAndReturnLabel);
-        pcsExceptionHandler->EmitLabel(*ppCatchEndAndReturnLabel);
+        pcsExceptionHandler->EmitLEAVE(pReturnLabel);
+        pcsExceptionHandler->EndCatchBlock();
+        pcsExceptionHandler->EmitLabel(pReturnLabel);
         if (nativeReturnElemType != ELEMENT_TYPE_VOID)
         {
             _ASSERTE(retvalLocalNum != (DWORD)-1);
@@ -844,12 +807,9 @@ public:
             ConvertMethodDescSigToModuleIndependentSig(pStubMD);
         }
 
-        ILCodeLabel* pTryBeginLabel = nullptr;
-        ILCodeLabel* pTryEndAndCatchBeginLabel = nullptr;
-        ILCodeLabel* pCatchEndLabel = nullptr;
         if (hasTryCatchExceptionHandler)
         {
-            EmitExceptionHandler(&nativeReturnType, &managedReturnType, &pTryBeginLabel, &pTryEndAndCatchBeginLabel, &pCatchEndLabel);
+            EmitExceptionHandler(&nativeReturnType, &managedReturnType);
         }
 
         UINT   maxStack;
@@ -867,38 +827,30 @@ public:
         pbLocalSig = (BYTE *)pILHeader->LocalVarSig;
         _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
 
-        ILStubEHClause cleanupTryFinally{};
-        m_slIL.GetCleanupFinallyOffsets(&cleanupTryFinally);
-
-        ILStubEHClause tryCatchClause{};
-        if (hasTryCatchExceptionHandler)
-        {
-            tryCatchClause.kind = ILStubEHClause::kTypedCatch;
-            tryCatchClause.dwTryBeginOffset = pTryBeginLabel != nullptr ? (DWORD)pTryBeginLabel->GetCodeOffset() : 0;
-            tryCatchClause.dwHandlerBeginOffset = ((DWORD)pTryEndAndCatchBeginLabel->GetCodeOffset());
-            tryCatchClause.cbTryLength = tryCatchClause.dwHandlerBeginOffset - tryCatchClause.dwTryBeginOffset;
-            tryCatchClause.cbHandlerLength = ((DWORD)pCatchEndLabel->GetCodeOffset()) - tryCatchClause.dwHandlerBeginOffset;
-            tryCatchClause.dwTypeToken = pcsMarshal->GetToken(g_pObjectClass);
-        }
-
-        int nEHClauses = 0;
-
-        if (tryCatchClause.cbHandlerLength != 0)
-            nEHClauses++;
-
-        if (cleanupTryFinally.cbHandlerLength != 0)
-            nEHClauses++;
-
+        size_t nEHClauses = m_slIL.GetNumEHClauses();
         if (nEHClauses > 0)
         {
             COR_ILMETHOD_SECT_EH* pEHSect = pResolver->AllocEHSect(nEHClauses);
-            PopulateEHSect(pEHSect, nEHClauses, &cleanupTryFinally, &tryCatchClause);
+            m_slIL.WriteEHClauses(pEHSect);
         }
 
         m_slIL.GenerateCode(pbBuffer, cbCode);
         m_slIL.GetLocalSig(pbLocalSig, cbSig);
 
         pResolver->SetJitFlags(jitFlags);
+
+        // Extract resolved EH clause info for logging and ETW
+        ILStubEHClause cleanupTryFinally{};
+        ILStubEHClause tryCatchClause{};
+        for (size_t i = 0; i < nEHClauses; i++)
+        {
+            ILStubEHClause clause{};
+            m_slIL.GetEHClause(i, &clause);
+            if (clause.kind == ILStubEHClause::kFinally)
+                cleanupTryFinally = clause;
+            else if (clause.kind == ILStubEHClause::kTypedCatch)
+                tryCatchClause = clause;
+        }
 
 #ifdef LOGGING
         LOG((LF_STUBS, LL_INFO1000, "---------------------------------------------------------------------\n"));
@@ -1878,8 +1830,6 @@ PInvokeStubLinker::PInvokeStubLinker(
             MethodDesc* pTargetMD,
             int  iLCIDParamIdx)
      : ILStubLinker(pModule, signature, pTypeContext, pTargetMD, GetILStubLinkerFlagsForPInvokeStubFlags((PInvokeStubFlags)dwStubFlags)),
-    m_pCleanupFinallyBeginLabel(NULL),
-    m_pCleanupFinallyEndLabel(NULL),
     m_pSkipExceptionCleanupLabel(NULL),
     m_fHasCleanupCode(FALSE),
     m_fHasExceptionCleanupCode(FALSE),
@@ -2132,17 +2082,15 @@ BOOL PInvokeStubLinker::IsExceptionCleanupNeeded()
     return m_fHasExceptionCleanupCode;
 }
 
-void PInvokeStubLinker::InitCleanupCode()
+void PInvokeStubLinker::SetCleanupNeeded()
 {
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(NULL == m_pCleanupFinallyBeginLabel);
-    }
-    CONTRACTL_END;
+    WRAPPER_NO_CONTRACT;
 
-    m_pCleanupFinallyBeginLabel = NewCodeLabel();
-    m_pcsExceptionCleanup->EmitLabel(m_pCleanupFinallyBeginLabel);
+    if (!m_fHasCleanupCode)
+    {
+        m_fHasCleanupCode = TRUE;
+        m_pcsExceptionCleanup->BeginFinallyBlock();
+    }
 }
 
 void PInvokeStubLinker::InitExceptionCleanupCode()
@@ -2159,17 +2107,6 @@ void PInvokeStubLinker::InitExceptionCleanupCode()
     // we want to skip the entire exception cleanup if no exception has been thrown
     m_pSkipExceptionCleanupLabel = NewCodeLabel();
     EmitCheckForArgCleanup(m_pcsExceptionCleanup, CLEANUP_INDEX_ALL_DONE, BranchIfMarshaled, m_pSkipExceptionCleanupLabel);
-}
-
-void PInvokeStubLinker::SetCleanupNeeded()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (!m_fHasCleanupCode)
-    {
-        m_fHasCleanupCode = TRUE;
-        InitCleanupCode();
-    }
 }
 
 void PInvokeStubLinker::SetExceptionCleanupNeeded()
@@ -2249,8 +2186,19 @@ void PInvokeStubLinker::Begin(DWORD dwStubFlags)
         }
     }
 
-    m_pCleanupTryBeginLabel = NewCodeLabel();
-    m_pcsMarshal->EmitLabel(m_pCleanupTryBeginLabel);
+    bool hasTryCatchForHRESULT = SF_IsReverseCOMStub(dwStubFlags)
+                                    && !SF_IsFieldGetterStub(dwStubFlags)
+                                    && !SF_IsFieldSetterStub(dwStubFlags);
+
+    // If we have an outer try-catch for HRESULT conversion, begin the
+    // outer try first. The catch handler will be emitted later in
+    // EmitExceptionHandler.
+    if (hasTryCatchForHRESULT)
+    {
+        m_pcsSetup->BeginTryBlock();
+    }
+
+    m_pcsMarshal->BeginTryBlock();
 }
 
 void PInvokeStubLinker::End(DWORD dwStubFlags)
@@ -2305,8 +2253,8 @@ void PInvokeStubLinker::End(DWORD dwStubFlags)
     //
     if (IsCleanupNeeded())
     {
-        m_pCleanupFinallyEndLabel = NewCodeLabel();
-        m_pCleanupTryEndLabel = NewCodeLabel();
+        // Create a leave target label positioned outside the try block.
+        ILCodeLabel* pLeaveTarget = NewCodeLabel();
 
         if (IsExceptionCleanupNeeded())
         {
@@ -2314,19 +2262,11 @@ void PInvokeStubLinker::End(DWORD dwStubFlags)
             EmitSetArgMarshalIndex(m_pcsUnmarshal, CLEANUP_INDEX_ALL_DONE);
         }
 
-        // Emit a leave at the end of the try block.  If we have an outer try/catch, we need
-        // to leave to the beginning of the ExceptionHandler code stream, which follows the
-        // Cleanup code stream.  If we don't, we can just leave to the tail end of the
-        // Unmarshal code stream where we'll emit our RET.
-
-        ILCodeLabel* pLeaveTarget = m_pCleanupTryEndLabel;
-        if (hasTryCatchForHRESULT)
-        {
-            pLeaveTarget = m_pCleanupFinallyEndLabel;
-        }
-
+        // Emit a leave at the end of the try block.
         m_pcsUnmarshal->EmitLEAVE(pLeaveTarget);
-        m_pcsUnmarshal->EmitLabel(m_pCleanupTryEndLabel);
+
+        // End the try block.
+        m_pcsUnmarshal->EndTryBlock();
 
         // Emit a call to destroy the clean-up list if needed.
         if (IsCleanupWorkListSetup())
@@ -2335,9 +2275,28 @@ void PInvokeStubLinker::End(DWORD dwStubFlags)
             m_pcsCleanup->EmitCALL(METHOD__STUBHELPERS__DESTROY_CLEANUP_LIST, 1, 0);
         }
 
-        // Emit the endfinally.
+        // Emit the endfinally and close the finally block.
         m_pcsCleanup->EmitENDFINALLY();
-        m_pcsCleanup->EmitLabel(m_pCleanupFinallyEndLabel);
+        m_pcsCleanup->EndFinallyBlock();
+
+        // Position the leave target after the try-finally construct.
+        // If we have an outer try/catch, we leave to after the finally handler
+        // (where the exception handler code will follow).
+        // Otherwise, we leave to right after the try block where we'll emit our RET.
+        if (hasTryCatchForHRESULT)
+        {
+            m_pcsCleanup->EmitLabel(pLeaveTarget);
+        }
+        else
+        {
+            m_pcsUnmarshal->EmitLabel(pLeaveTarget);
+        }
+    }
+    else
+    {
+        // No cleanup needed - cancel the try block started in Begin().
+        _ASSERTE(m_buildingEHClauses.GetCount() > 0);
+        m_buildingEHClauses.SetCount(m_buildingEHClauses.GetCount() - 1);
     }
 
     if (IsExceptionCleanupNeeded())
@@ -2456,42 +2415,6 @@ void PInvokeStubLinker::EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwP
     pslILEmit->EmitLDLOC(dwPinnedLocal);
 
     pslILEmit->EmitCALL(METHOD__STUBHELPERS__LOG_PINNED_ARGUMENT, 2, 0);
-}
-
-#ifndef DACCESS_COMPILE
-void PInvokeStubLinker::GetCleanupFinallyOffsets(ILStubEHClause * pClause)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pClause));
-    }
-    CONTRACTL_END;
-
-    if (m_pCleanupFinallyEndLabel)
-    {
-        _ASSERTE(m_pCleanupFinallyBeginLabel);
-        _ASSERTE(m_pCleanupTryBeginLabel);
-        _ASSERTE(m_pCleanupTryEndLabel);
-
-        pClause->kind = ILStubEHClause::kFinally;
-        pClause->dwTryBeginOffset      = (DWORD)m_pCleanupTryBeginLabel->GetCodeOffset();
-        pClause->cbTryLength           = (DWORD)m_pCleanupTryEndLabel->GetCodeOffset() - pClause->dwTryBeginOffset;
-        pClause->dwHandlerBeginOffset  = (DWORD)m_pCleanupFinallyBeginLabel->GetCodeOffset();
-        pClause->cbHandlerLength       = (DWORD)m_pCleanupFinallyEndLabel->GetCodeOffset() - pClause->dwHandlerBeginOffset;
-    }
-}
-#endif // DACCESS_COMPILE
-
-void PInvokeStubLinker::ClearCode()
-{
-    WRAPPER_NO_CONTRACT;
-    ILStubLinker::ClearCode();
-
-    m_pCleanupTryBeginLabel = 0;
-    m_pCleanupTryEndLabel = 0;
-    m_pCleanupFinallyBeginLabel = 0;
-    m_pCleanupFinallyEndLabel = 0;
 }
 
 #ifdef PROFILING_SUPPORTED

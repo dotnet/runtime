@@ -775,6 +775,8 @@ public:
     size_t GetNumEHClauses();
     // Write out EH clauses. Number of items written out will be GetNumEHCLauses().
     void WriteEHClauses(COR_ILMETHOD_SECT_EH* sect);
+    // Get resolved EH clause info (must be called after Link()).
+    void GetEHClause(size_t index, ILStubEHClause* pClause);
 
     TokenLookupMap* GetTokenLookupMap() { LIMITED_METHOD_CONTRACT; return &m_tokenMap; }
 
@@ -878,6 +880,13 @@ protected:
     // We need this MethodDesc so we can reconstruct the generics
     // SigTypeContext info, if needed.
     MethodDesc * m_pMD;
+
+    // EH clause tracking is owned by the linker so that Begin/End calls
+    // can span different ILCodeStream instances (the PInvoke stub's
+    // try-finally, for example, begins on the Marshal stream and the
+    // handler ends on the Cleanup stream).
+    SArray<ILStubEHClauseBuilder> m_buildingEHClauses;
+    SArray<ILStubEHClauseBuilder> m_finishedEHClauses;
 };  // class ILStubLinker
 
 
@@ -1142,8 +1151,6 @@ protected:
     ILCodeStreamBuffer*           m_pqbILInstructions;
     UINT                          m_uCurInstrIdx;
     ILStubLinker::CodeStreamType  m_codeStreamType;       // Type of the ILCodeStream
-    SArray<ILStubEHClauseBuilder> m_buildingEHClauses;
-    SArray<ILStubEHClauseBuilder> m_finishedEHClauses;
 
 #ifndef TARGET_64BIT
     const static UINT32 SPECIAL_VALUE_NAN_64_ON_32 = 0xFFFFFFFF;

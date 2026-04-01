@@ -483,7 +483,6 @@ public:
     void    SetCleanupNeeded();
     void    SetExceptionCleanupNeeded();
     BOOL    IsCleanupWorkListSetup();
-    void    GetCleanupFinallyOffsets(ILStubEHClause * pClause);
 
     void    SetInteropParamExceptionInfo(UINT resID, UINT paramIdx);
     bool    HasInteropParamExceptionInfo();
@@ -491,8 +490,6 @@ public:
     {
         return m_targetHasThis == TRUE;
     }
-
-    void ClearCode();
 
     enum
     {
@@ -524,7 +521,6 @@ public:
 protected:
     BOOL            IsCleanupNeeded();
     BOOL            IsExceptionCleanupNeeded();
-    void            InitCleanupCode();
     void            InitExceptionCleanupCode();
 
 
@@ -538,10 +534,6 @@ protected:
     ILCodeStream*   m_pcsCleanup;
 
 
-    ILCodeLabel*        m_pCleanupTryBeginLabel;
-    ILCodeLabel*        m_pCleanupTryEndLabel;
-    ILCodeLabel*        m_pCleanupFinallyBeginLabel;
-    ILCodeLabel*        m_pCleanupFinallyEndLabel;
     ILCodeLabel*        m_pSkipExceptionCleanupLabel;
 
 #ifdef FEATURE_COMINTEROP
