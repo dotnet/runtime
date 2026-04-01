@@ -21,6 +21,14 @@ namespace Microsoft.Extensions.FileProviders
         private const int WaitTimeForTokenCallback = 10000;
 
         [Fact]
+        public void Constructor_DoesNotThrow_WhenRootDirectoryDoesNotExist()
+        {
+            string nonExistent = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+            using var provider = new PhysicalFileProvider(nonExistent);
+            Assert.Equal(nonExistent + Path.DirectorySeparatorChar, provider.Root);
+        }
+
+        [Fact]
         public void GetFileInfoReturnsNotFoundFileInfoForNullPath()
         {
             using (var provider = new PhysicalFileProvider(Path.GetTempPath()))
@@ -1178,31 +1186,25 @@ namespace Microsoft.Extensions.FileProviders
         public async Task TokenFiredForGlobbingPatternsPointingToSubDirectory()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
+            using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
+            using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
+            using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
             {
-                using (var fileSystemWatcher = new MockFileSystemWatcher(root.Path))
-                {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
-                    {
-                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
-                        {
-                            var subDirectoryName = Guid.NewGuid().ToString();
-                            var subSubDirectoryName = Guid.NewGuid().ToString();
-                            var fileName = Guid.NewGuid().ToString() + ".cshtml";
+                var subDirectoryName = "sub1";
+                var subSubDirectoryName = "sub2";
+                var fileName = "file.cshtml";
 
-                            root.CreateFolder(subDirectoryName);
-                            root.CreateFolder(Path.Combine(subDirectoryName, subSubDirectoryName));
-                            root.CreateFile(Path.Combine(subDirectoryName, subSubDirectoryName, fileName));
+                root.CreateFolder(subDirectoryName);
+                root.CreateFolder(Path.Combine(subDirectoryName, subSubDirectoryName));
+                root.CreateFile(Path.Combine(subDirectoryName, subSubDirectoryName, fileName));
 
-                            var pattern = string.Format(Path.Combine(subDirectoryName, "**", "*.cshtml"));
-                            var token = provider.Watch(pattern);
+                var pattern = Path.Combine(subDirectoryName, "**", "*.cshtml");
+                var token = provider.Watch(pattern);
 
-                            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, Path.Combine(root.Path, subDirectoryName, subSubDirectoryName), fileName));
-                            await Task.Delay(WaitTimeForTokenToFire);
+                fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, Path.Combine(root.Path, subDirectoryName, subSubDirectoryName), fileName));
+                await Task.Delay(WaitTimeForTokenToFire);
 
-                            Assert.True(token.HasChanged);
-                        }
-                    }
-                }
+                Assert.True(token.HasChanged);
             }
         }
 
