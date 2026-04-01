@@ -408,6 +408,22 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
+        public void CreateFileChangeToken_DoesNotThrow_WhenRootDeletedBeforeFirstWatch()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/107700:
+            // Root exists at construction time but is deleted before the first
+            // CreateFileChangeToken call. Previously this threw FileNotFoundException.
+            using var root = new TempDirectory(GetTestFilePath());
+
+            using var physicalFilesWatcher = CreateWatcher(root.Path, useActivePolling: false);
+
+            Directory.Delete(root.Path, recursive: true);
+
+            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("test.txt");
+            Assert.NotNull(token);
+        }
+
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task CreateFileChangeToken_RootDeletedAndRecreated_TokenFiresWhenFileCreated()
         {
