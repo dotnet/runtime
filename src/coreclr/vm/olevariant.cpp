@@ -4197,10 +4197,8 @@ void OleVariant::ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj)
     if (bstr == NULL)
         return;
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__CONVERT_TO_MANAGED);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(bstr);
-    CALL_MANAGED_METHOD_RETREF(*pStringObj, STRINGREF, args);
+    UnmanagedCallersOnlyCaller convertToManaged(METHOD__BSTRMARSHALER__CONVERT_TO_MANAGED_UCO);
+    convertToManaged.InvokeThrowing((INT_PTR)bstr, pStringObj);
 }
 
 BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
@@ -4217,20 +4215,13 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
     }
     CONTRACT_END;
 
-    // Initiatilize the return BSTR value to null.
-    BSTR bstr = NULL;
-
     if (*pStringObj == NULL)
     {
         RETURN NULL;
     }
 
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(nullptr);
-    CALL_MANAGED_METHOD(bstr, BSTR, args);
-    RETURN bstr;
+    UnmanagedCallersOnlyCaller convertToNative(METHOD__BSTRMARSHALER__CONVERT_TO_NATIVE_UCO);
+    RETURN (BSTR)convertToNative.InvokeThrowing_Ret<INT_PTR>(pStringObj);
 }
 
 extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOnStack obj, VARIANT * pOle)

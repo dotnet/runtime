@@ -41,13 +41,29 @@ internal partial class MockDescriptors
                 ]);
         }
 
-        internal TargetPointer AddModule(string? path = null, string? fileName = null)
+        internal TargetPointer AddModule(string? path = null, string? fileName = null, string? simpleName = null, byte[]? simpleNameBytes = null)
         {
             TargetTestHelpers helpers = _builder.TargetTestHelpers;
             Target.TypeInfo typeInfo = Types[DataType.Module];
             uint size = typeInfo.Size.Value;
             MockMemorySpace.HeapFragment module = _allocator.Allocate(size, "Module");
             _builder.AddHeapFragment(module);
+
+            byte[]? rawSimpleName = simpleName is not null ? Encoding.UTF8.GetBytes(simpleName) : simpleNameBytes;
+            if (rawSimpleName != null)
+            {
+                // Simple name data (UTF-8, null-terminated)
+                ulong simpleNameSize = (ulong)rawSimpleName.Length + 1;
+                MockMemorySpace.HeapFragment simpleNameFragment = _allocator.Allocate(simpleNameSize, "Module simple name");
+                rawSimpleName.AsSpan().CopyTo(simpleNameFragment.Data);
+                simpleNameFragment.Data[^1] = 0;
+                _builder.AddHeapFragment(simpleNameFragment);
+
+                // Pointer to simple name
+                helpers.WritePointer(
+                    module.Data.AsSpan().Slice(typeInfo.Fields[nameof(Data.Module.SimpleName)].Offset, helpers.PointerSize),
+                    simpleNameFragment.Address);
+            }
 
             if (path != null)
             {

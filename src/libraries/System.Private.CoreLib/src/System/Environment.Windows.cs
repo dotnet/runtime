@@ -141,7 +141,7 @@ namespace System
             return builder.ToString();
         }
 
-        private static unsafe OperatingSystem GetOSVersion()
+        private static OperatingSystem GetOSVersion()
         {
             if (Interop.NtDll.RtlGetVersionEx(out Interop.NtDll.RTL_OSVERSIONINFOEX osvi) != 0)
             {
@@ -150,9 +150,14 @@ namespace System
 
             var version = new Version((int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion, (int)osvi.dwBuildNumber, 0);
 
-            return osvi.szCSDVersion[0] != '\0' ?
-                new OperatingSystem(PlatformID.Win32NT, version, new string(&osvi.szCSDVersion[0])) :
-                new OperatingSystem(PlatformID.Win32NT, version);
+            if (osvi.szCSDVersion[0] != '\0')
+            {
+                ReadOnlySpan<char> csd = osvi.szCSDVersion;
+                int idx = csd.IndexOf('\0');
+                return new OperatingSystem(PlatformID.Win32NT, version, new string(idx >= 0 ? csd[..idx] : csd));
+            }
+
+            return new OperatingSystem(PlatformID.Win32NT, version);
         }
 
         private static string? s_systemDirectory;

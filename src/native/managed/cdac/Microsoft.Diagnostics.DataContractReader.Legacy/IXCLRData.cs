@@ -489,7 +489,7 @@ public unsafe partial interface IXCLRDataTask
     int GetName(uint bufLen, uint* nameLen, char* nameBuffer);
 
     [PreserveSig]
-    int GetLastExceptionState(/*IXCLRDataExceptionState*/ void** exception);
+    int GetLastExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception);
 }
 
 public enum ClrDataSourceType : uint
@@ -955,6 +955,25 @@ public unsafe partial interface IXCLRDataExceptionState
     int IsSameState2(uint flags, /*EXCEPTION_RECORD64*/ void* exRecord, uint contextSize, byte* cxRecord);
     [PreserveSig]
     int GetTask(DacComNullableByRef<IXCLRDataTask> task);
+}
+
+[Flags]
+public enum ClrDataValueFlag : uint
+{
+    DEFAULT = 0x00000000,
+    IS_PRIMITIVE = 0x00000001,
+    IS_VALUE_TYPE = 0x00000002,
+    IS_STRING = 0x00000004,
+    IS_ARRAY = 0x00000008,
+    IS_REFERENCE = 0x00000010,
+    IS_POINTER = 0x00000020,
+    IS_ENUM = 0x00000040,
+}
+
+public static class ClrDataVLocFlag
+{
+    public const uint CLRDATA_VLOC_MEMORY = 0x00;
+    public const uint CLRDATA_VLOC_REGISTER = 0x01;
 }
 
 [GeneratedComInterface]

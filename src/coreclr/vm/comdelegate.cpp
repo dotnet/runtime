@@ -1235,7 +1235,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
         // Since open instance delegates on value type methods require unboxed objects we cannot use the
         // virtual dispatch stub for them. On the other hand, virtual methods on value types don't need
         // to be dispatched because value types cannot be derived. So we treat them like non-virtual methods.
-        if (pTargetMethod->IsVirtual() && !pTargetMethod->GetMethodTable()->IsValueType())
+        if (!pTargetMethod->IsStatic() && pTargetMethod->IsVirtual() && !pTargetMethod->GetMethodTable()->IsValueType())
         {
             // Since this is an open delegate over a virtual method we cannot virtualize the call target now. So the shuffle thunk
             // needs to jump to another stub (this time provided by the VirtualStubManager) that will virtualize the call at
@@ -1246,7 +1246,6 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
         }
         else
         {
-            // <TODO> If VSD isn't compiled in this gives the wrong result for virtuals (we need run time virtualization). </TODO>
             // Reflection or the code in BindToMethodName will pass us the unboxing stub for non-static methods on value types. But
             // for open invocation on value type methods the actual reference will be passed so we need the unboxed method desc
             // instead.

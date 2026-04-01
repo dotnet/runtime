@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Globalization
 {
     public partial class TextInfo
     {
+        [RequiresUnsafe]
         private unsafe void NlsChangeCase(char* pSource, int pSourceLen, char* pResult, int pResultLen, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

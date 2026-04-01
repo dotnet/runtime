@@ -49,6 +49,9 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(ISignatureDecoder)] = new SignatureDecoderFactory(),
             [typeof(ISyncBlock)] = new SyncBlockFactory(),
             [typeof(IBuiltInCOM)] = new BuiltInCOMFactory(),
+            [typeof(IConditionalWeakTable)] = new ConditionalWeakTableFactory(),
+            [typeof(IAuxiliarySymbols)] = new AuxiliarySymbolsFactory(),
+            [typeof(IDebugger)] = new DebuggerFactory(),
         };
 
         foreach (IContractFactory<IContract> factory in additionalFactories)
@@ -75,5 +78,13 @@ internal sealed class CachingContractRegistry : ContractRegistry
 
         // Contract was already registered by someone else
         return (TContract)_contracts[typeof(TContract)];
+    }
+
+    public override void Flush()
+    {
+        foreach (IContract contract in _contracts.Values)
+        {
+            contract.Flush();
+        }
     }
 }

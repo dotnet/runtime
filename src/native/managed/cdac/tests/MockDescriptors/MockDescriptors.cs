@@ -70,6 +70,11 @@ internal partial class MockDescriptors
         ]
     };
 
+    private static readonly TypeFields ObjectHeaderFields = new TypeFields()
+    {
+        DataType = DataType.ObjectHeader,
+    };
+
     private static readonly TypeFields StringFields = new TypeFields()
     {
         DataType = DataType.String,
@@ -120,6 +125,7 @@ internal partial class MockDescriptors
             new(nameof(Data.SyncBlock.Lock), DataType.pointer),
             new(nameof(Data.SyncBlock.ThinLock), DataType.uint32),
             new(nameof(Data.SyncBlock.LinkNext), DataType.pointer),
+            new(nameof(Data.SyncBlock.HashCode), DataType.uint32),
         ]
     };
 
@@ -145,6 +151,7 @@ internal partial class MockDescriptors
             new(nameof(Data.Module.Flags), DataType.uint32),
             new(nameof(Data.Module.LoaderAllocator), DataType.pointer),
             new(nameof(Data.Module.DynamicMetadata), DataType.pointer),
+            new(nameof(Data.Module.SimpleName), DataType.pointer),
             new(nameof(Data.Module.Path), DataType.pointer),
             new(nameof(Data.Module.FileName), DataType.pointer),
             new(nameof(Data.Module.ReadyToRunInfo), DataType.pointer),
@@ -183,7 +190,14 @@ internal partial class MockDescriptors
         [
             new(nameof(Data.ExceptionInfo.PreviousNestedInfo), DataType.pointer),
             new(nameof(Data.ExceptionInfo.ThrownObjectHandle), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.ExceptionFlags), DataType.uint32),
+            new(nameof(Data.ExceptionInfo.StackLowBound), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.StackHighBound), DataType.pointer),
             new(nameof(Data.ExceptionInfo.ExceptionWatsonBucketTrackerBuckets), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.PassNumber), DataType.uint8),
+            new(nameof(Data.ExceptionInfo.CSFEHClause), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.CSFEnclosingClause), DataType.pointer),
+            new(nameof(Data.ExceptionInfo.CallerOfActualHandlerFrame), DataType.pointer),
         ]
     };
 
@@ -206,6 +220,8 @@ internal partial class MockDescriptors
             new(nameof(Data.Thread.ExceptionTracker), DataType.pointer),
             new(nameof(Data.Thread.ThreadLocalDataPtr), DataType.pointer),
             new(nameof(Data.Thread.UEWatsonBucketTrackerBuckets), DataType.pointer),
+            new(nameof(Data.Thread.DebuggerFilterContext), DataType.pointer),
+            new(nameof(Data.Thread.ProfilerFilterContext), DataType.pointer),
         ]
     };
 
@@ -239,12 +255,37 @@ internal partial class MockDescriptors
         Dictionary<DataType, Target.TypeInfo> types = new();
         foreach (var toAdd in typeFields)
         {
-            TargetTestHelpers.LayoutResult layout = GetLayout(helpers, toAdd);
-            types[toAdd.DataType] = new Target.TypeInfo()
+            if (toAdd.DataType == DataType.ObjectHeader)
             {
-                Fields = layout.Fields,
-                Size = layout.Stride,
-            };
+                List<TargetTestHelpers.Field> objectHeaderFields = new();
+                if (helpers.Arch.Is64Bit)
+                    objectHeaderFields.Add(new("Padding", DataType.uint32));
+                objectHeaderFields.Add(new(nameof(Data.ObjectHeader.SyncBlockValue), DataType.uint32));
+                TargetTestHelpers.Field[] fields = objectHeaderFields.ToArray();
+                TypeFields objectHeaderTypeFields = new TypeFields()
+                {
+                    DataType = DataType.ObjectHeader,
+                    Fields = fields,
+                };
+
+                TargetTestHelpers.LayoutResult layout = GetLayout(helpers, objectHeaderTypeFields);
+
+                types[toAdd.DataType] = new Target.TypeInfo()
+                {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+                };
+            }
+            else
+            {
+                TargetTestHelpers.LayoutResult layout = GetLayout(helpers, toAdd);
+                types[toAdd.DataType] = new Target.TypeInfo()
+                {
+                    Fields = layout.Fields,
+                    Size = layout.Stride,
+                };
+            }
+
         }
         return types;
 

@@ -1,0 +1,278 @@
+{
+  "skill_name": "issue-triage",
+  "evals": [
+    {
+      "id": 1,
+      "name": "bug-regression-stj",
+      "prompt": "Triage issue https://github.com/dotnet/runtime/issues/125237",
+      "expected_output": "Bug report with confirmed regression from .NET 8 to .NET 9+ in System.Text.Json. Should recommend KEEP with high priority. Should identify as regression and note the STJ area label is correct.",
+      "assertions": [
+        {
+          "name": "correct-classification",
+          "description": "Issue is classified as Bug report",
+          "type": "contains",
+          "check": "Type: Bug"
+        },
+        {
+          "name": "regression-detected",
+          "description": "Report identifies this as a regression",
+          "type": "contains_any",
+          "check": ["regression", "Confirmed regression"]
+        },
+        {
+          "name": "keep-recommendation",
+          "description": "Recommendation is KEEP (this is a valid, reproducible regression)",
+          "type": "contains",
+          "check": "KEEP"
+        },
+        {
+          "name": "area-label-correct",
+          "description": "Recognizes area-System.Text.Json is the correct label",
+          "type": "contains",
+          "check": "area-System.Text.Json"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "api-proposal-marshal",
+      "prompt": "Can you triage this issue for me? #125197",
+      "expected_output": "API proposal for MarshalContentsAttribute. Should classify as API proposal, assess merit, check for prior art in the marshalling/interop space, and provide a KEEP or NEEDS INFO recommendation.",
+      "assertions": [
+        {
+          "name": "correct-classification",
+          "description": "Issue is classified as API Proposal",
+          "type": "contains_any",
+          "check": ["API Proposal", "api-suggestion"]
+        },
+        {
+          "name": "has-prior-art",
+          "description": "Report includes prior art / ecosystem research",
+          "type": "contains_any",
+          "check": ["Prior Art", "Ecosystem"]
+        },
+        {
+          "name": "has-complexity-estimate",
+          "description": "Report includes a complexity estimate",
+          "type": "contains_any",
+          "check": ["Complexity:", "S |", "M |", "L |", "XL |"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "question-reveals-bug",
+      "prompt": "Triage issue 123951",
+      "expected_output": "Labeled as 'question' but actually describes a regression (AssemblyName accepted invalid names in .NET 10 but not .NET 8). The skill should recognize this is actually a bug, not a question, and flag the mislabeling.",
+      "assertions": [
+        {
+          "name": "mislabel-detected",
+          "description": "Report identifies that the 'question' label is wrong -- this is actually a bug",
+          "type": "contains_any",
+          "check": ["Mislabeled", "mislabel", "actually a bug", "should be bug", "reclassif"]
+        },
+        {
+          "name": "regression-noted",
+          "description": "Notes that this is a regression from .NET 8",
+          "type": "contains_any",
+          "check": ["regression", ".NET 8"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "question-dotnet-framework",
+      "prompt": "What do you think about this issue? https://github.com/dotnet/runtime/issues/123303",
+      "expected_output": "This is a .NET Framework question about Windows Services on ARM64. Should identify it as out of scope for dotnet/runtime (which tracks modern .NET), and recommend CLOSE or redirect to Developer Community.",
+      "assertions": [
+        {
+          "name": "framework-identified",
+          "description": "Report identifies this is a .NET Framework issue, not modern .NET",
+          "type": "contains_any",
+          "check": [".NET Framework", "Framework 4", "not .NET Core"]
+        },
+        {
+          "name": "close-recommendation",
+          "description": "Recommends CLOSE since this is .NET Framework",
+          "type": "contains",
+          "check": "CLOSE"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "enhancement-cdac",
+      "prompt": "Triage https://github.com/dotnet/runtime/issues/125164",
+      "expected_output": "Enhancement request for cDac IRuntimeTypeSystem APIs. Should classify as enhancement, assess feasibility, and provide a KEEP recommendation since it's from a team member addressing known limitations.",
+      "assertions": [
+        {
+          "name": "correct-classification",
+          "description": "Issue is classified as Enhancement",
+          "type": "contains_any",
+          "check": ["Enhancement", "enhancement"]
+        },
+        {
+          "name": "has-assessment",
+          "description": "Report includes an assessment section",
+          "type": "contains",
+          "check": "Assessment"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "question-framework-path",
+      "prompt": "Should we close this? #123136",
+      "expected_output": "Question about Path.GetInvalidPathChars in .NET Framework 4.7.2. Should identify this as a .NET Framework question and recommend CLOSE with redirect to Developer Community. Should also provide an answer explaining the behavior.",
+      "assertions": [
+        {
+          "name": "framework-identified",
+          "description": "Report identifies this as .NET Framework, not modern .NET",
+          "type": "contains_any",
+          "check": [".NET Framework", "Framework 4.7.2"]
+        },
+        {
+          "name": "close-recommendation",
+          "description": "Recommends CLOSE",
+          "type": "contains",
+          "check": "CLOSE"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "perf-regression-autofiler",
+      "prompt": "Triage this performance regression: https://github.com/dotnet/runtime/issues/123677",
+      "expected_output": "Automated performance regression filed by performanceautofiler bot. Should classify as performance regression, identify the component and severity, and provide a KEEP recommendation with the regression data analyzed.",
+      "assertions": [
+        {
+          "name": "correct-classification",
+          "description": "Issue is classified as Performance regression",
+          "type": "contains_any",
+          "check": ["Performance", "performance regression"]
+        },
+        {
+          "name": "has-label-check",
+          "description": "Report includes a label check section",
+          "type": "contains",
+          "check": "Label Check"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "mono-question-gc-safety",
+      "prompt": "Can you evaluate issue 122969 for me?",
+      "expected_output": "Detailed Mono interop/GC safety question. Should classify as question, note it's Mono-specific, provide a helpful answer about GC handle requirements, and recommend CLOSE (convert to Discussion) or answer inline.",
+      "assertions": [
+        {
+          "name": "correct-classification",
+          "description": "Issue is classified as Question",
+          "type": "contains_any",
+          "check": ["Question", "question", "support request"]
+        },
+        {
+          "name": "mono-identified",
+          "description": "Report identifies this as Mono-specific",
+          "type": "contains_any",
+          "check": ["Mono", "mono"]
+        },
+        {
+          "name": "has-answer",
+          "description": "Report includes an answer to the question",
+          "type": "contains",
+          "check": "Answer"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "bug-by-design-filesystemwatcher",
+      "prompt": "Triage issue https://github.com/dotnet/runtime/issues/121256",
+      "expected_output": "Bug report about FileSystemWatcher watching from root directory on macOS when launched via launchd. The behavior follows from documented defaults (CreateDefaultBuilder uses current directory as content root, launchd sets CWD to /). Should identify documented workarounds (UseContentRoot, SetCurrentDirectory, reloadConfigOnChange=false) and lean toward CLOSE as by-design or recommend as enhancement rather than bug.",
+      "assertions": [
+        {
+          "name": "workarounds-identified",
+          "description": "Report identifies available workarounds (UseContentRoot, SetCurrentDirectory, or reloadConfigOnChange)",
+          "type": "contains_any",
+          "check": ["UseContentRoot", "ContentRootPath", "SetCurrentDirectory", "reloadConfigOnChange", "workaround"]
+        },
+        {
+          "name": "by-design-or-enhancement",
+          "description": "Report recognizes this follows from documented default behavior rather than blindly confirming it as a bug",
+          "type": "contains_any",
+          "check": ["by design", "documented", "expected behavior", "default behavior", "enhancement", "intended behavior", "working as designed"]
+        },
+        {
+          "name": "not-uncritical-keep",
+          "description": "Report considers CLOSE or frames the issue as enhancement/improvement rather than a straightforward bug",
+          "type": "contains_any",
+          "check": ["CLOSE", "enhancement", "improvement", "by design", "documented default", "NEEDS INFO"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 10,
+      "name": "api-proposal-workaround-tradeoff",
+      "prompt": "Should we close this? https://github.com/dotnet/runtime/issues/69163",
+      "expected_output": "API proposal for ConfigurationBinder.GetRequiredValue. While the proposal has community support (34 upvotes), there is a trivial inline workaround (null-coalescing with throw). The skill should identify the existing workaround, evaluate it honestly, and weigh it against the proposal's merits. The recommendation may go either way, but the report must engage with both sides of the trade-off.",
+      "assertions": [
+        {
+          "name": "workaround-identified",
+          "description": "Report identifies the existing inline workaround",
+          "type": "contains_any",
+          "check": ["workaround", "throw", "null", "existing", "one-liner", "extension method"]
+        },
+        {
+          "name": "has-merit-evaluation",
+          "description": "Report includes merit evaluation weighing the proposal against existing solutions",
+          "type": "contains_any",
+          "check": ["merit", "bar", "existing", "workaround", "triviality", "Complexity"]
+        },
+        {
+          "name": "workaround-tradeoff-evaluated",
+          "description": "Report explicitly evaluates whether the workaround is sufficient or has limitations, not just mentions it",
+          "type": "contains_any",
+          "check": ["insufficient", "inadequate", "limitation", "sufficient", "covers the scenario", "fully adequate", "discipline", "error-prone", "trivial"]
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "api-proposal-niche-clear-close",
+      "prompt": "Triage https://github.com/dotnet/runtime/issues/85276",
+      "expected_output": "API proposal for a Func<TOptions> overload of Configure. Zero community reactions, niche use case, and the author's own code shows a working alternative pattern. The skill should recommend CLOSE or NEEDS INFO -- the proposal does not clear the BCL inclusion bar.",
+      "assertions": [
+        {
+          "name": "close-or-needs-info",
+          "description": "Report recommends CLOSE or NEEDS INFO for this niche proposal",
+          "type": "contains_any",
+          "check": ["CLOSE", "NEEDS INFO"]
+        },
+        {
+          "name": "workaround-exists",
+          "description": "Report identifies that a workaround exists (the author showed one in the issue)",
+          "type": "contains_any",
+          "check": ["workaround", "existing", "already", "alternative", "current approach"]
+        },
+        {
+          "name": "low-demand-noted",
+          "description": "Report notes the lack of community demand",
+          "type": "contains_any",
+          "check": ["reaction", "demand", "interest", "0", "zero", "no community", "limited"]
+        }
+      ],
+      "files": []
+    }
+  ]
+}

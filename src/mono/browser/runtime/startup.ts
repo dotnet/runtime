@@ -87,8 +87,8 @@ export function configureEmscriptenStartup (module: DotnetModuleInternal): void 
     }
     module.mainScriptUrlOrBlob = loaderHelpers.scriptUrl;// this is needed by worker threads
 
-    // these all could be overridden on DotnetModuleConfig, we are chaing them to async below, as opposed to emscripten
-    // when user set configSrc or config, we are running our default startup sequence.
+    // these all could be overridden on DotnetModuleConfig, we are chaining them to async below, as opposed to emscripten
+    // when the user sets config, we are running our default startup sequence.
     const userInstantiateWasm: undefined | ((imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any) = module.instantiateWasm;
     const userPreRun: ((module:EmscriptenModule) => void)[] = !module.preRun ? [] : typeof module.preRun === "function" ? [module.preRun] : module.preRun as any;
     const userpostRun: ((module:EmscriptenModule) => void)[] = !module.postRun ? [] : typeof module.postRun === "function" ? [module.postRun] : module.postRun as any;

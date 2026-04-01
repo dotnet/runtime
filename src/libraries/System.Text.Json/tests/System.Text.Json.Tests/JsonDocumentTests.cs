@@ -1978,10 +1978,15 @@ namespace System.Text.Json.Tests
                 Assert.False(root.TryGetProperty(new string('z', 512), out element));
                 Assert.Equal(default, element);
 
-                Assert.Throws<KeyNotFoundException>(() => root.GetProperty(NotPresent));
-                Assert.Throws<KeyNotFoundException>(() => root.GetProperty(NotPresent.AsSpan()));
-                Assert.Throws<KeyNotFoundException>(() => root.GetProperty(notPresentUtf8));
                 Assert.Throws<KeyNotFoundException>(() => root.GetProperty(new string('z', 512)));
+
+                KeyNotFoundException ex;
+                ex = Assert.Throws<KeyNotFoundException>(() => root.GetProperty(NotPresent));
+                Assert.Contains(NotPresent, ex.Message);
+                ex = Assert.Throws<KeyNotFoundException>(() => root.GetProperty(NotPresent.AsSpan()));
+                Assert.Contains(NotPresent, ex.Message);
+                ex = Assert.Throws<KeyNotFoundException>(() => root.GetProperty(notPresentUtf8));
+                Assert.Contains(NotPresent, ex.Message);
             }
         }
 
