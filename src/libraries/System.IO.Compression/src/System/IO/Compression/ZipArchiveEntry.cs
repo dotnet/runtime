@@ -30,6 +30,7 @@ namespace System.IO.Compression
         private long _uncompressedSize;
         private long _offsetOfLocalHeader;
         private long? _storedOffsetOfCompressedData;
+        private int? _storedDataDescriptorSize;
         private uint _crc32;
         // An array of buffers, each a maximum of MaxSingleBufferSize in size
         private byte[][]? _compressedBytes;
@@ -1013,24 +1014,37 @@ namespace System.IO.Compression
         /// is present, and the version-to-extract field is used to determine Zip64 format rather than
         /// the compressed/uncompressed sizes alone, because the "pretendStreaming" code path can produce
         /// a signature-less Zip64 descriptor even when sizes fit in 32 bits.
+        /// The result is cached since it cannot change for unchanged entries.
         /// </summary>
         internal int GetDataDescriptorSize()
         {
+            if (_storedDataDescriptorSize.HasValue)
+                return _storedDataDescriptorSize.Value;
+
             if ((_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
+            {
+                _storedDataDescriptorSize = 0;
                 return 0;
+            }
 
             long descriptorStart = GetOffsetOfCompressedData() + _compressedSize;
             long savedPosition = _archive.ArchiveStream.Position;
-            _archive.ArchiveStream.Seek(descriptorStart, SeekOrigin.Begin);
 
             bool hasSignature = false;
-            Span<byte> buffer = stackalloc byte[sizeof(uint)];
-            if (_archive.ArchiveStream.Read(buffer) == sizeof(uint))
+            try
             {
-                hasSignature = buffer.SequenceEqual(ZipLocalFileHeader.DataDescriptorSignatureConstantBytes);
-            }
+                _archive.ArchiveStream.Seek(descriptorStart, SeekOrigin.Begin);
 
-            _archive.ArchiveStream.Seek(savedPosition, SeekOrigin.Begin);
+                Span<byte> buffer = stackalloc byte[sizeof(uint)];
+                if (_archive.ArchiveStream.Read(buffer) == sizeof(uint))
+                {
+                    hasSignature = buffer.SequenceEqual(ZipLocalFileHeader.DataDescriptorSignatureConstantBytes);
+                }
+            }
+            finally
+            {
+                _archive.ArchiveStream.Seek(savedPosition, SeekOrigin.Begin);
+            }
 
             bool isZip64 = _versionToExtract >= ZipVersionNeededValues.Zip64;
 
@@ -1038,6 +1052,7 @@ namespace System.IO.Compression
             size += sizeof(uint); // CRC32
             size += isZip64 ? 2 * sizeof(long) : 2 * sizeof(uint);
 
+            _storedDataDescriptorSize = size;
             return size;
         }
 
@@ -1285,7 +1300,7 @@ namespace System.IO.Compression
 
                     // If we know that we need to update the file header (but don't need to load and update the data itself)
                     // then advance the position past the compressed data and any trailing data descriptor.
-                    if (_compressedSize != 0)
+                    if (_compressedSize != 0 || dataDescriptorSize != 0)
                     {
                         _archive.ArchiveStream.Seek(_compressedSize + dataDescriptorSize, SeekOrigin.Current);
                     }

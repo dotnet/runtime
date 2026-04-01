@@ -1358,21 +1358,36 @@ namespace System.IO.Compression.Tests
                 ZipArchiveEntry e = create.CreateEntry("original.txt");
                 Stream s = await OpenEntryStream(async, e);
                 byte[] originalBytes = Encoding.UTF8.GetBytes(originalContent);
-                s.Write(originalBytes, 0, originalBytes.Length);
+                if (async)
+                {
+                    await s.WriteAsync(originalBytes);
+                }
+                else
+                {
+                    s.Write(originalBytes, 0, originalBytes.Length);
+                }
                 await DisposeStream(async, s);
                 await DisposeZipArchive(async, create);
             }
 
             // Step 2: Open in Update mode and add a new entry without modifying existing ones.
             ms.Seek(0, SeekOrigin.Begin);
-            using (ZipArchive update = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true))
             {
+                ZipArchive update = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
                 Assert.Single(update.Entries);
                 ZipArchiveEntry added = update.CreateEntry("added.txt");
                 Stream addedStream = await OpenEntryStream(async, added);
                 byte[] addedBytes = Encoding.UTF8.GetBytes(addedContent);
-                addedStream.Write(addedBytes, 0, addedBytes.Length);
+                if (async)
+                {
+                    await addedStream.WriteAsync(addedBytes);
+                }
+                else
+                {
+                    addedStream.Write(addedBytes, 0, addedBytes.Length);
+                }
                 await DisposeStream(async, addedStream);
+                await DisposeZipArchive(async, update);
             }
 
             // Step 3: Re-open in Read mode and verify all entries are readable and intact.
@@ -1414,7 +1429,14 @@ namespace System.IO.Compression.Tests
                     ZipArchiveEntry e = create.CreateEntry($"file{i}.txt");
                     Stream s = await OpenEntryStream(async, e);
                     byte[] bytes = Encoding.UTF8.GetBytes(originalContents[i]);
-                    s.Write(bytes, 0, bytes.Length);
+                    if (async)
+                    {
+                        await s.WriteAsync(bytes);
+                    }
+                    else
+                    {
+                        s.Write(bytes, 0, bytes.Length);
+                    }
                     await DisposeStream(async, s);
                 }
                 await DisposeZipArchive(async, create);
@@ -1422,14 +1444,22 @@ namespace System.IO.Compression.Tests
 
             // Step 2: Open in Update mode and add a new entry.
             ms.Seek(0, SeekOrigin.Begin);
-            using (ZipArchive update = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true))
             {
+                ZipArchive update = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
                 Assert.Equal(3, update.Entries.Count);
                 ZipArchiveEntry added = update.CreateEntry("added.txt");
                 Stream addedStream = await OpenEntryStream(async, added);
                 byte[] addedBytes = Encoding.UTF8.GetBytes(addedContent);
-                addedStream.Write(addedBytes, 0, addedBytes.Length);
+                if (async)
+                {
+                    await addedStream.WriteAsync(addedBytes);
+                }
+                else
+                {
+                    addedStream.Write(addedBytes, 0, addedBytes.Length);
+                }
                 await DisposeStream(async, addedStream);
+                await DisposeZipArchive(async, update);
             }
 
             // Step 3: Verify all entries.

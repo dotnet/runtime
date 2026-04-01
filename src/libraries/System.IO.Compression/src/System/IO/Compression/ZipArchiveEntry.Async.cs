@@ -407,7 +407,7 @@ public partial class ZipArchiveEntry
 
                 // If we know that we need to update the file header (but don't need to load and update the data itself)
                 // then advance the position past the compressed data and any trailing data descriptor.
-                if (_compressedSize != 0)
+                if (_compressedSize != 0 || dataDescriptorSize != 0)
                 {
                     _archive.ArchiveStream.Seek(_compressedSize + dataDescriptorSize, SeekOrigin.Current);
                 }
