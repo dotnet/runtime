@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -31,6 +32,7 @@ namespace System.Diagnostics
         private bool _isRemoteMachine;
         private string _machineName;
         private ProcessInfo? _processInfo;
+        private string? _processName;
 
         private ProcessThreadCollection? _threads;
         private ProcessModuleCollection? _modules;
@@ -146,8 +148,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.BasePriority;
+                return GetProcessInfo().BasePriority;
             }
         }
 
@@ -255,6 +256,21 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets the friendly name of the process.</summary>
+        public string ProcessName
+        {
+            get
+            {
+                EnsureState(State.HaveNonExitedId);
+                string? processName = _processName ??= ProcessManager.GetProcessName(_processId, _machineName, ref _processInfo);
+                if (processName is null)
+                {
+                    ThrowNoProcessInfo();
+                }
+                return processName;
+            }
+        }
+
         /// <summary>
         /// Gets or sets the maximum allowable working set for the associated process.
         /// </summary>
@@ -320,8 +336,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.PoolNonPagedBytes;
+                return GetProcessInfo().PoolNonPagedBytes;
             }
         }
 
@@ -330,8 +345,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.PoolNonPagedBytes);
+                return unchecked((int)GetProcessInfo().PoolNonPagedBytes);
             }
         }
 
@@ -340,8 +354,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.PageFileBytes;
+                return GetProcessInfo().PageFileBytes;
             }
         }
 
@@ -350,8 +363,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.PageFileBytes);
+                return unchecked((int)GetProcessInfo().PageFileBytes);
             }
         }
 
@@ -360,8 +372,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.PoolPagedBytes;
+                return GetProcessInfo().PoolPagedBytes;
             }
         }
 
@@ -370,8 +381,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.PoolPagedBytes);
+                return unchecked((int)GetProcessInfo().PoolPagedBytes);
             }
         }
 
@@ -380,8 +390,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.PageFileBytesPeak;
+                return GetProcessInfo().PageFileBytesPeak;
             }
         }
 
@@ -390,8 +399,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.PageFileBytesPeak);
+                return unchecked((int)GetProcessInfo().PageFileBytesPeak);
             }
         }
 
@@ -399,8 +407,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.WorkingSetPeak;
+                return GetProcessInfo().WorkingSetPeak;
             }
         }
 
@@ -409,8 +416,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.WorkingSetPeak);
+                return unchecked((int)GetProcessInfo().WorkingSetPeak);
             }
         }
 
@@ -418,8 +424,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.VirtualBytesPeak;
+                return GetProcessInfo().VirtualBytesPeak;
             }
         }
 
@@ -428,8 +433,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.VirtualBytesPeak);
+                return unchecked((int)GetProcessInfo().VirtualBytesPeak);
             }
         }
 
@@ -493,8 +497,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.PrivateBytes;
+                return GetProcessInfo().PrivateBytes;
             }
         }
 
@@ -503,8 +506,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.PrivateBytes);
+                return unchecked((int)GetProcessInfo().PrivateBytes);
             }
         }
 
@@ -539,8 +541,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.SessionId;
+                return GetProcessInfo().SessionId;
             }
         }
 
@@ -589,12 +590,12 @@ namespace System.Diagnostics
             {
                 if (_threads == null)
                 {
-                    EnsureState(State.HaveProcessInfo);
-                    int count = _processInfo!._threadInfoList.Count;
+                    ProcessInfo processInfo = GetProcessInfo();
+                    int count = processInfo._threadInfoList.Count;
                     ProcessThread[] newThreadsArray = new ProcessThread[count];
                     for (int i = 0; i < count; i++)
                     {
-                        newThreadsArray[i] = new ProcessThread(_isRemoteMachine, _processId, (ThreadInfo)_processInfo._threadInfoList[i]);
+                        newThreadsArray[i] = new ProcessThread(_isRemoteMachine, _processId, (ThreadInfo)processInfo._threadInfoList[i]);
                     }
 
                     ProcessThreadCollection newThreads = new ProcessThreadCollection(newThreadsArray);
@@ -608,9 +609,9 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
+                ProcessInfo processInfo = GetProcessInfo();
                 EnsureHandleCountPopulated();
-                return _processInfo!.HandleCount;
+                return processInfo.HandleCount;
             }
         }
 
@@ -620,8 +621,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.VirtualBytes;
+                return GetProcessInfo().VirtualBytes;
             }
         }
 
@@ -630,8 +630,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.VirtualBytes);
+                return unchecked((int)GetProcessInfo().VirtualBytes);
             }
         }
 
@@ -743,8 +742,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.WorkingSet;
+                return GetProcessInfo().WorkingSet;
             }
         }
 
@@ -753,8 +751,7 @@ namespace System.Diagnostics
         {
             get
             {
-                EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo!.WorkingSet);
+                return unchecked((int)GetProcessInfo().WorkingSet);
             }
         }
 
@@ -971,22 +968,6 @@ namespace System.Diagnostics
                 throw new NotSupportedException(SR.NotSupportedRemote);
             }
 
-            if ((state & State.HaveProcessInfo) != (State)0)
-            {
-                if (_processInfo == null)
-                {
-                    if ((state & State.HaveNonExitedId) != State.HaveNonExitedId)
-                    {
-                        EnsureState(State.HaveNonExitedId);
-                    }
-                    _processInfo = ProcessManager.GetProcessInfo(_processId, _machineName);
-                    if (_processInfo == null)
-                    {
-                        throw new InvalidOperationException(SR.NoProcessInfo);
-                    }
-                }
-            }
-
             if ((state & State.Exited) != (State)0)
             {
                 if (!HasExited)
@@ -1178,6 +1159,7 @@ namespace System.Diagnostics
             _havePriorityClass = false;
             _haveExitTime = false;
             _havePriorityBoostEnabled = false;
+            _processName = null;
             RefreshCore();
         }
 
@@ -1490,16 +1472,13 @@ namespace System.Diagnostics
 
             try
             {
-                if (Associated)
+                // Avoid calling GetProcessName on platforms where it throws PlatformNotSupportedException.
+                if (Associated && ProcessManager.IsProcessNameSupported)
                 {
-                    _processInfo ??= ProcessManager.GetProcessInfo(_processId, _machineName);
-                    if (_processInfo is not null)
+                    string? processName = _processName ?? ProcessManager.GetProcessName(_processId, _machineName, ref _processInfo);
+                    if (processName is { Length: > 0 })
                     {
-                        string processName = _processInfo.ProcessName;
-                        if (processName.Length != 0)
-                        {
-                            result = $"{result} ({processName})";
-                        }
+                        result = $"{result} ({processName})";
                     }
                 }
             }
@@ -1857,9 +1836,27 @@ namespace System.Diagnostics
             HaveId = 0x1,
             IsLocal = 0x2,
             HaveNonExitedId = HaveId | 0x4,
-            HaveProcessInfo = 0x8,
             Exited = 0x10,
             Associated = 0x20,
         }
+
+        private ProcessInfo GetProcessInfo()
+        {
+            ProcessInfo? processInfo = _processInfo;
+            if (processInfo == null)
+            {
+                EnsureState(State.HaveNonExitedId);
+                _processInfo = processInfo = ProcessManager.GetProcessInfo(_processId, _machineName);
+                if (processInfo == null)
+                {
+                    ThrowNoProcessInfo();
+                }
+            }
+            return processInfo;
+        }
+
+        [DoesNotReturn]
+        private static void ThrowNoProcessInfo() =>
+            throw new InvalidOperationException(SR.NoProcessInfo);
     }
 }

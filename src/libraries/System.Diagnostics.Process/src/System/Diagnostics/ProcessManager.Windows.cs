@@ -116,28 +116,17 @@ namespace System.Diagnostics
             return null;
         }
 
-        /// <summary>Gets the process name for the specified process ID on the specified machine.</summary>
-        /// <param name="processId">The process ID.</param>
-        /// <param name="machineName">The machine name.</param>
-        /// <returns>The process name for the process if it could be found; otherwise, null.</returns>
-        public static string? GetProcessName(int processId, string machineName)
-        {
-            if (IsRemoteMachine(machineName))
-            {
-                // remote case: we take the hit of looping through all results
-                ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
-                foreach (ProcessInfo processInfo in processInfos)
-                {
-                    if (processInfo.ProcessId == processId)
-                    {
-                        return processInfo.ProcessName;
-                    }
-                }
-            }
-            else
-            {
-                // local case: do not use performance counter and also attempt to get the matching (by pid) process only
+        internal static bool IsProcessNameSupported => true;
 
+        internal static string? GetProcessName(int processId, string machineName, ref ProcessInfo? processInfo)
+        {
+            if (processInfo is not null)
+            {
+                return processInfo.ProcessName;
+            }
+
+            if (!IsRemoteMachine(machineName))
+            {
                 string? processName = Interop.Kernel32.GetProcessName((uint)processId);
                 if (processName is not null)
                 {
@@ -148,9 +137,9 @@ namespace System.Diagnostics
                 }
             }
 
-            return null;
+            processInfo = GetProcessInfo(processId, machineName);
+            return processInfo?.ProcessName;
         }
-
 
         /// <summary>Gets the IDs of all processes on the specified machine.</summary>
         /// <param name="machineName">The machine to examine.</param>
