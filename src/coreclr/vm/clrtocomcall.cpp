@@ -30,7 +30,7 @@ CLRToCOMCallInfo *CLRToCOMCall::PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, 
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(CheckPointer(pdwStubFlags, NULL_OK));
