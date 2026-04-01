@@ -6281,6 +6281,22 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AsinhDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void AsinhDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector512<double> actualResult = Vector512.Asinh(Vector512.Create(value));
+            AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AsinhSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void AsinhSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector512<float> actualResult = Vector512.Asinh(Vector512.Create(value));
+            AssertEqual(Vector512.Create(expectedResult), actualResult, Vector512.Create(variance));
+        }
+
+        [Theory]
         [MemberData(nameof(GenericMathTestMemberData.CosDouble), MemberType = typeof(GenericMathTestMemberData))]
         public void CosDoubleTest(double value, double expectedResult, double variance)
         {
