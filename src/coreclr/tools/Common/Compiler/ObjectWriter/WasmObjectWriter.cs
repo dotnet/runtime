@@ -735,9 +735,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
-        Dictionary<int, List<SymbolicRelocation>> _runtimeRelocations = new();
         Dictionary<uint, List<ushort>> _baseRelocMap = new();
-
         // We group webcil relocs into 4kb blocks, similar to PE
         const uint WebcilRelocPageSize = 0x1000;
 
