@@ -47,7 +47,6 @@ EXTERN _PreStubWorker@8:PROC
 EXTERN _TheUMEntryPrestubWorker@4:PROC
 
 ifdef FEATURE_COMINTEROP
-EXTERN _CLRToCOMWorker@8:PROC
 EXTERN _COMToCLRWorker@4:PROC
 endif
 
