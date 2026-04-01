@@ -171,12 +171,14 @@ For each reference found in step 3:
    | Distro | Queue name pattern | Image tag pattern |
    |--------|--------------------|-------------------|
    | Alpine | `Alpine.<ver-no-dots>.Amd64.Open` | `alpine-<ver>-helix-amd64` |
-   | Alpine (edge) | `Alpine.edge.Amd64.Open` | `alpine-edge-helix-amd64` |
+   | Alpine (edge) | `Alpine.edge.Amd64.Open` (casing varies by file; see note below) | `alpine-edge-helix-amd64` |
    | CentOS Stream | `Centos.<ver>.Amd64.Open` | `centos-stream-<ver>-helix-amd64` |
    | Debian | `Debian.<ver>.Amd64.Open` | `debian-<ver>-helix-amd64` |
    | Fedora | `Fedora.<ver>.Amd64.Open` | `fedora-<ver>-helix-amd64` |
    | openSUSE | `openSUSE.<ver>.Amd64.Open` | `opensuse-<ver>-helix-amd64` |
    | Ubuntu | `Ubuntu.<ver-no-dots>.Amd64.Open` | `ubuntu-<ver>-helix-amd64` |
+
+   For Alpine edge queues, the casing of `edge` is not consistent across the repo (`Alpine.edge.Amd64.Open` in `helix-platforms.yml` vs `Alpine.Edge.Amd64.Open` in `libraries/helix-queues-setup.yml`). When updating queue strings, **preserve the existing casing used in each file** rather than normalizing to a single pattern.
 
    AzureLinux (e.g. `AzureLinux.3.Amd64.Open`) appears as both a standalone VM queue and the primary host queue for container-based distros. It does not follow the container image pattern above.
 
@@ -190,7 +192,7 @@ After editing, verify:
 
 1. **No stale references remain:**
    ```bash
-   grep -rn "<old-version-pattern>" \
+   grep -rn -i "<old-version-pattern>" \
      eng/pipelines/helix-platforms.yml \
      eng/pipelines/libraries/helix-queues-setup.yml \
      eng/pipelines/coreclr/templates/helix-queues-setup.yml \
