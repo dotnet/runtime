@@ -1705,6 +1705,25 @@ struct FuncInfoDsc
     unsigned short funEHIndex; // index, into the ebd table, of innermost EH clause corresponding to this
                                // funclet. It is only valid if funKind field indicates this is a
                                // EH-related funclet: FUNC_HANDLER or FUNC_FILTER
+    BasicBlock*    funFirstBB; // First block of this function/funclet. Valid after funclets are created.
+    BasicBlock*    funLastBB;  // Last block of this function/funclet. Valid after funclets are created.
+
+    BasicBlock* GetStartBlock() const
+    {
+        assert(funFirstBB != nullptr);
+        return funFirstBB;
+    }
+
+    BasicBlock* GetLastBlock() const
+    {
+        assert(funLastBB != nullptr);
+        return funLastBB;
+    }
+
+    BasicBlockRangeList Blocks() const
+    {
+        return BasicBlockRangeList(GetStartBlock(), GetLastBlock());
+    }
 
 #if defined(TARGET_AMD64)
 
