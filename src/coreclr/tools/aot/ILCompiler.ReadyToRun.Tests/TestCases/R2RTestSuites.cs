@@ -411,7 +411,7 @@ public class R2RTestSuites
     /// Composite mode with runtime-async methods in both assemblies.
     /// Validates async variants exist in composite output.
     /// </summary>
-    [Fact(Skip = "Runtime-async methods are not generated in composite mode")]
+    [Fact]
     public void CompositeAsync()
     {
         var asyncCompositeLib = new CompiledAssembly
@@ -451,12 +451,12 @@ public class R2RTestSuites
     }
 
     /// <summary>
-    /// The full intersection: composite + runtime-async + cross-module inlining.
-    /// Async methods from AsyncCompositeLib are inlined into CompositeAsyncMain
-    /// within a composite image, exercising MutableModule token encoding for
-    /// cross-module async continuation layouts.
+    /// Composite + runtime-async + cross-module inlining.
+    /// Both assemblies are part of the composite image, so sync methods inline
+    /// across modules. Async methods produce [ASYNC] variants and continuation
+    /// layouts but are not traditionally inlined (await introduces async plumbing).
     /// </summary>
-    [Fact(Skip = "Runtime-async methods are not generated in composite mode")]
+    [Fact]
     public void CompositeAsyncCrossModuleInlining()
     {
         var asyncCompositeLib = new CompiledAssembly
@@ -491,7 +491,7 @@ public class R2RTestSuites
         {
             R2RAssert.HasManifestRef(reader, "AsyncCompositeLib");
             R2RAssert.HasAsyncVariant(reader, "CallCompositeAsync");
-            R2RAssert.HasInlinedMethod(reader, "CallCompositeAsync", "GetValueAsync");
+            R2RAssert.HasInlinedMethod(reader, "CallCompositeSync", "GetValueSync");
             R2RAssert.HasContinuationLayout(reader, "CallCompositeAsync");
         }
     }
@@ -618,7 +618,7 @@ public class R2RTestSuites
     /// Composite + runtime-async + cross-module devirtualization.
     /// Interface defined in AsyncInterfaceLib, call sites in CompositeAsyncDevirtMain.
     /// </summary>
-    [Fact(Skip = "Runtime-async methods are not generated in composite mode")]
+    [Fact]
     public void CompositeAsyncDevirtualize()
     {
         var asyncInterfaceLib = new CompiledAssembly
@@ -771,7 +771,7 @@ public class R2RTestSuites
     /// Composite + runtime-async + transitive (3 assemblies).
     /// Full combination of composite, async, and transitive references.
     /// </summary>
-    [Fact(Skip = "Runtime-async methods are not generated in composite mode")]
+    [Fact]
     public void CompositeAsyncTransitive()
     {
         var asyncExternalLib = new CompiledAssembly
@@ -827,9 +827,9 @@ public class R2RTestSuites
     /// <summary>
     /// Multi-step compilation with runtime-async in all assemblies.
     /// Step 1: Composite of async libs. Step 2: Non-composite consumer
-    /// with cross-module inlining of async methods.
+    /// that calls async methods from the composite lib.
     /// </summary>
-    [Fact(Skip = "Runtime-async methods are not generated in composite mode")]
+    [Fact]
     public void MultiStepCompositeAndNonCompositeAsync()
     {
         var asyncCompositeLib = new CompiledAssembly
@@ -850,7 +850,7 @@ public class R2RTestSuites
             AssemblyName = "MultiStepAsyncConsumer",
             SourceResourceNames =
             [
-                "RuntimeAsync/AsyncCrossModuleContinuation.cs",
+                "CrossModuleInlining/MultiStepAsyncConsumer.cs",
                 "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
             ],
             Features = { RuntimeAsyncFeature },
@@ -886,7 +886,7 @@ public class R2RTestSuites
                     Validate = reader =>
                     {
                         R2RAssert.HasManifestRef(reader, "AsyncCompositeLib");
-                        R2RAssert.HasAsyncVariant(reader, "CallCrossModuleCaptureRef");
+                        R2RAssert.HasAsyncVariant(reader, "ConsumeCompositeAsync");
                     },
                 },
             ]));
