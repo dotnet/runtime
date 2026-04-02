@@ -34,25 +34,12 @@ namespace System.Diagnostics
 
         /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
         /// <param name="processId">The process ID.</param>
-        /// <param name="machineName">The machine name.</param>
+        /// <param name="machineName">Unused on Unix since remote machines are not supported.</param>
         /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
-        public static ProcessInfo? GetProcessInfo(int processId, string machineName)
-        {
-            HandleRemoteMachineSupport(machineName);
-            return CreateProcessInfo(processId);
-        }
-
-        /// <summary>Gets the IDs of all processes on the specified machine.</summary>
-        /// <param name="machineName">The machine to examine.</param>
-        /// <returns>An array of process IDs from the specified machine.</returns>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public static int[] GetProcessIds(string machineName)
-        {
-            HandleRemoteMachineSupport(machineName);
-            return GetProcessIds();
-        }
+#pragma warning disable IDE0060
+        public static ProcessInfo? GetProcessInfo(int processId, string machineName) =>
+            CreateProcessInfo(processId);
+#pragma warning restore IDE0060
 
         /// <summary>Gets the ID of a process from a handle to the process.</summary>
         /// <param name="processHandle">The handle.</param>
