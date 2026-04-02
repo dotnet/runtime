@@ -1245,8 +1245,18 @@ namespace System.IO.Compression
                 if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
                 {
                     _everOpenedForWrite = true;
+                    // Capture data descriptor state before WriteLocalFileHeader clears bit 3 for seekable streams.
                     bool hadDataDescriptor = (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
                     WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite);
+
+                    // WriteLocalFileHeaderInitialize clears bit 3 for seekable streams, but in the metadata-only
+                    // path the data descriptor bytes remain in the file. Restore bit 3 so the local header and
+                    // central directory accurately indicate that a data descriptor follows the compressed data.
+                    if (hadDataDescriptor)
+                    {
+                        _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
+                        PatchLocalFileHeaderBitFlags();
+                    }
 
                     // If we know that we need to update the file header (but don't need to load and update the data itself)
                     // then advance the position past it.
@@ -1263,6 +1273,20 @@ namespace System.IO.Compression
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Seeks back to the general purpose bit flags field in the just-written local file header
+        /// and overwrites it with the current value of <see cref="_generalPurposeBitFlag"/>.
+        /// </summary>
+        private void PatchLocalFileHeaderBitFlags()
+        {
+            long savedPosition = _archive.ArchiveStream.Position;
+            _archive.ArchiveStream.Position = _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags;
+            Span<byte> flagBytes = stackalloc byte[sizeof(ushort)];
+            BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)_generalPurposeBitFlag);
+            _archive.ArchiveStream.Write(flagBytes);
+            _archive.ArchiveStream.Position = savedPosition;
         }
 
         /// <summary>

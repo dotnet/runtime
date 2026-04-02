@@ -401,8 +401,18 @@ public partial class ZipArchiveEntry
             if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
             {
                 _everOpenedForWrite = true;
+                // Capture data descriptor state before WriteLocalFileHeaderAsync clears bit 3 for seekable streams.
                 bool hadDataDescriptor = (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
                 await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, cancellationToken).ConfigureAwait(false);
+
+                // WriteLocalFileHeaderInitialize clears bit 3 for seekable streams, but in the metadata-only
+                // path the data descriptor bytes remain in the file. Restore bit 3 so the local header and
+                // central directory accurately indicate that a data descriptor follows the compressed data.
+                if (hadDataDescriptor)
+                {
+                    _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
+                    PatchLocalFileHeaderBitFlags();
+                }
 
                 // If we know that we need to update the file header (but don't need to load and update the data itself)
                 // then advance the position past it.
