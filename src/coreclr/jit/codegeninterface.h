@@ -286,18 +286,24 @@ private:
 public:
     void SetStackPointerReg(unsigned funcletIndex, regNumber reg)
     {
+        assert(funcletIndex < m_spRegs.size());
+        assert(reg != REG_NA);
         m_spRegs[funcletIndex] = reg;
     }
     void SetFramePointerReg(unsigned funcletIndex, regNumber reg)
     {
+        assert(funcletIndex < m_fpRegs.size());
+        assert(reg != REG_NA);
         m_fpRegs[funcletIndex] = reg;
     }
     regNumber GetStackPointerReg(unsigned funcletIndex) const
     {
+        assert(funcletIndex < m_spRegs.size());
         return m_spRegs[funcletIndex];
     }
     regNumber GetFramePointerReg(unsigned funcletIndex) const
     {
+        assert(funcletIndex < m_fpRegs.size());
         return m_fpRegs[funcletIndex];
     }
 #else  // HAS_FIXED_REGISTER_SET

@@ -214,8 +214,7 @@ NodeInternalRegistersTable* NodeInternalRegisters::GetOrCreateTable(unsigned fun
 }
 
 //------------------------------------------------------------------------
-// GetTable: get the internal register table for nodes in this funclet region
-//   or create it if it does not yet exist.
+// GetTable: get the internal register table for nodes in this funclet region.
 //
 // Parameters:
 //   funcletIndex - Index of the funclet

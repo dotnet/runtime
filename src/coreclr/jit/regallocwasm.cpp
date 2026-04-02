@@ -94,7 +94,7 @@ void WasmRegAlloc::IdentifyCandidates()
         }
     }
 
-    if (anyFrameLocals || m_compiler->compLocallocUsed)
+    if (anyFrameLocals || m_compiler->compLocallocUsed || (m_compiler->compFuncInfoCount > 1))
     {
         AllocateFramePointer();
     }
@@ -586,7 +586,7 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
 //------------------------------------------------------------------------
 // CollectReferencesForCatchArg: Collect virtual register references for a CATCH_ARG node.
 //
-// Rewrites SP references into PHYS_REGs.
+// Rewrites the CATCH_ARG node into a PHYS_REG that refers to the exception object.
 //
 // Arguments:
 //    catchArg - The CATCH_ARG node
@@ -867,7 +867,7 @@ void WasmRegAlloc::ResolveReferences()
             {
                 // TODO: add ABI information for funclets?
                 //
-                // All funclets have two intial arguments sp and fp.
+                // All funclets have two initial arguments: sp and fp.
                 //
                 WasmValueType argType = TypeToWasmValueType(TYP_I_IMPL);
 

@@ -97,7 +97,7 @@ class WasmRegAlloc : public RegAllocInterface
 
         // The meaning of these fields is borrowed (partially) from the C ABI for WASM. We define "the SP" to be the
         // local which is used to make calls - the stack on entry to callees. We term "the FP" to be the local which is
-        // used to access the fixed potion of the frame. For fixed-size frames (no localloc), these will be the same.
+        // used to access the fixed portion of the frame. For fixed-size frames (no localloc), these will be the same.
         //
         // In funclets FP will refer to the fixed portion of the parent frame. It will likely be in a different Wasm
         // local than the FP in the main function body. EX will refer to the exception object local for filter and catch
