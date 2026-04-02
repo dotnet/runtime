@@ -21,14 +21,19 @@ namespace System.Formats.Tar.Tests
         // realSize can be negative to produce an intentionally invalid archive (for negative-size tests).
         private static void WriteSparseEntry(TarWriter writer, string realName, long realSize, byte[] rawSparseData)
         {
+            // GNU.sparse.realsize is intentionally omitted here to avoid PaxTarEntry constructor
+            // validation (ReplaceNormalAttributesWithExtended rejects negative values). It is
+            // injected directly into the EA dictionary after construction so that:
+            //  (a) valid archives work correctly — the attribute is still written to the archive, and
+            //  (b) intentionally invalid archives (negative realsize) can be constructed for tests.
             var gnuSparseAttributes = new Dictionary<string, string>
             {
                 ["GNU.sparse.major"] = "1",
                 ["GNU.sparse.minor"] = "0",
                 ["GNU.sparse.name"] = realName,
-                ["GNU.sparse.realsize"] = realSize.ToString(),
             };
             var entry = new PaxTarEntry(TarEntryType.RegularFile, "GNUSparseFile.0/" + realName, gnuSparseAttributes);
+            ((Dictionary<string, string>)entry.ExtendedAttributes)["GNU.sparse.realsize"] = realSize.ToString();
             entry.DataStream = new MemoryStream(rawSparseData);
             writer.WriteEntry(entry);
         }
