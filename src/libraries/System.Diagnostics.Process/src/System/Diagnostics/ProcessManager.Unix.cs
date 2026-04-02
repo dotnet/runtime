@@ -89,6 +89,18 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
+        /// <param name="machineName">The target machine.</param>
+        /// <returns>An array of process infos, one per found process.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
+        {
+            ThrowIfRemoteMachine(machineName);
+            return GetProcessInfos(processNameFilter);
+        }
+
+        /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <remarks>On Unix, <paramref name="isRemoteMachine"/> and <paramref name="machineName"/> are unused since remote machines are not supported.</remarks>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         /// <param name="isRemoteMachine">Unused on Unix.</param>

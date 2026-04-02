@@ -17,7 +17,7 @@ namespace System.Diagnostics
         // Allows PerformanceCounterLib (and its dependencies) to be trimmed when remote machine
         // support is not used. s_getRemoteProcessInfos is only assigned in HandleRemoteMachineSupport,
         // which is only called from public APIs that accept a remote machine name.
-        private static Func<string, bool, ProcessInfo[]>? s_getRemoteProcessInfos;
+        private static Func<string, ProcessInfo[]>? s_getRemoteProcessInfos;
 
         /// <summary>
         /// Validates that the machine supports remote queries and initializes remote machine support.
@@ -109,7 +109,7 @@ namespace System.Diagnostics
                 return GetProcessInfos(processNameFilter);
             }
 
-            ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
+            ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName);
             if (string.IsNullOrEmpty(processNameFilter))
             {
                 return processInfos;
@@ -139,7 +139,7 @@ namespace System.Diagnostics
                 // HandleRemoteMachineSupport must have been called by the entry point that
                 // created this remote Process (GetProcesses, GetProcessById, GetProcessesByName).
                 Debug.Assert(s_getRemoteProcessInfos is not null);
-                ProcessInfo[] processInfos = s_getRemoteProcessInfos(machineName, true);
+                ProcessInfo[] processInfos = s_getRemoteProcessInfos(machineName);
                 foreach (ProcessInfo processInfo in processInfos)
                 {
                     if (processInfo.ProcessId == processId)
@@ -170,7 +170,7 @@ namespace System.Diagnostics
             if (IsRemoteMachine(machineName))
             {
                 // remote case: we take the hit of looping through all results
-                ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName, true);
+                ProcessInfo[] processInfos = s_getRemoteProcessInfos!(machineName);
                 foreach (ProcessInfo processInfo in processInfos)
                 {
                     if (processInfo.ProcessId == processId)
@@ -207,7 +207,7 @@ namespace System.Diagnostics
                 return GetProcessIds();
             }
 
-            ProcessInfo[] infos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
+            ProcessInfo[] infos = NtProcessManager.GetProcessInfos(machineName);
             int[] ids = new int[infos.Length];
             for (int i = 0; i < infos.Length; i++) ids[i] = infos[i].ProcessId;
             return ids;
@@ -409,15 +409,6 @@ namespace System.Diagnostics
             }
         }
 
-        public static int[] GetProcessIds(string machineName, bool isRemoteMachine)
-        {
-            ProcessInfo[] infos = GetProcessInfos(machineName, isRemoteMachine);
-            int[] ids = new int[infos.Length];
-            for (int i = 0; i < infos.Length; i++)
-                ids[i] = infos[i].ProcessId;
-            return ids;
-        }
-
         public static int[] GetProcessIds()
         {
             int[] processIds = ArrayPool<int>.Shared.Rent(256);
@@ -465,7 +456,7 @@ namespace System.Diagnostics
             return Interop.Kernel32.GetProcessId(processHandle);
         }
 
-        public static ProcessInfo[] GetProcessInfos(string machineName, bool isRemoteMachine)
+        public static ProcessInfo[] GetProcessInfos(string machineName)
         {
             try
             {
@@ -476,14 +467,7 @@ namespace System.Diagnostics
             }
             catch (Exception e)
             {
-                if (isRemoteMachine)
-                {
-                    throw new InvalidOperationException(SR.CouldntConnectToRemoteMachine, e);
-                }
-                else
-                {
-                    throw;
-                }
+                throw new InvalidOperationException(SR.CouldntConnectToRemoteMachine, e);
             }
         }
 
