@@ -656,13 +656,20 @@ namespace System.Runtime.CompilerServices
 
                     if (!task.HandleSuspended())
                     {
-                        RemoveRuntimeAsyncTask(task);
+                        if (nc != null)
+                        {
+                            RemoveRuntimeAsyncTask(task, nc);
+                        }
+                        else
+                        {
+                            RemoveRuntimeAsyncTask(task);
+                        }
                     }
                 }
             }
 
             [StackTraceHidden]
-            // NOTE, any changes done to this method needs to be replicate in InstrumentedDispatchContinuations as well.
+            // NOTE, any changes done to this method need to be replicated in InstrumentedDispatchContinuations as well.
             private unsafe void DispatchContinuations()
             {
                 if (AsyncInstrumentationHelper.InstrumentCheckPoint)
