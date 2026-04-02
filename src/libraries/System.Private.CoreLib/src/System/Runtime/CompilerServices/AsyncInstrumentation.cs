@@ -11,6 +11,7 @@ namespace System.Runtime.CompilerServices
     {
         public static bool IsSupported => Debugger.IsSupported || EventSource.IsSupported;
 
+        [Flags]
         public enum Flags
         {
             Disabled = 0x0,

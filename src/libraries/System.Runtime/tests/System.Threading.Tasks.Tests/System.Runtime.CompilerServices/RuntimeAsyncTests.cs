@@ -22,8 +22,8 @@ namespace System.Threading.Tasks.Tests
         private static readonly FieldInfo s_tplEventSourceLogField = GetCorLibClassStaticField("System.Threading.Tasks.TplEventSource", "Log");
         private static readonly FieldInfo s_activeFlagsField = GetCorLibClassStaticField("System.Runtime.CompilerServices.AsyncInstrumentation", "s_activeFlags");
 
-        private static object _debuggerLock = new object();
-        private static TestEventListener? _debuggerTplInstance;
+        private static readonly object s_debuggerLock = new object();
+        private static TestEventListener? s_debuggerTplInstance;
 
         // Tpl(0x20000) | Debugger(0x40000) | all event flags(0x7F)
         private const long EnabledInstrumentationFlags = 0x6007F;
@@ -32,7 +32,7 @@ namespace System.Threading.Tasks.Tests
         private static void AttachDebugger()
         {
             // Simulate a debugger attach to process, creating TPL event source session + setting s_asyncDebuggingEnabled.
-            lock (_debuggerLock)
+            lock (s_debuggerLock)
             {
                 // Touch TplEventSource.Log making sure provider is initialized.
                 s_tplEventSourceLogField.GetValue(null);
@@ -40,7 +40,7 @@ namespace System.Threading.Tasks.Tests
                 long flags = Convert.ToInt64(s_activeFlagsField.GetValue(null));
                 Assert.True(flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {DisabledInstrumentationFlags}");
 
-                _debuggerTplInstance = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose);
+                s_debuggerTplInstance = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose);
                 s_asyncDebuggingEnabledField.SetValue(null, true);
 
                 flags = Convert.ToInt64(s_activeFlagsField.GetValue(null));
@@ -66,11 +66,11 @@ namespace System.Threading.Tasks.Tests
         private static void DetachDebugger()
         {
             // Simulate a debugger detach from process.
-            lock (_debuggerLock)
+            lock (s_debuggerLock)
             {
                 s_asyncDebuggingEnabledField.SetValue(null, false);
-                _debuggerTplInstance?.Dispose();
-                _debuggerTplInstance = null;
+                s_debuggerTplInstance?.Dispose();
+                s_debuggerTplInstance = null;
 
                 long flags = Convert.ToInt64(s_activeFlagsField.GetValue(null));
                 Assert.True(flags == DisabledInstrumentationFlags, $"ActiveFlags equals {flags}, expected {DisabledInstrumentationFlags}");
