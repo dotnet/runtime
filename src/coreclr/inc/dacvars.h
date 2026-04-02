@@ -147,9 +147,9 @@ DEFINE_DACVAR(PTR_EEConfig, dac__g_pConfig, ::g_pConfig)
 
 DEFINE_DACVAR(CoreLibBinder, dac__g_CoreLib, ::g_CoreLib)
 
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_CODE_VERSIONING)
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 DEFINE_DACVAR(ProfControlBlock, dac__g_profControlBlock, ::g_profControlBlock)
-#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_CODE_VERSIONING)
+#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
 DEFINE_DACVAR(PTR_DWORD, dac__g_card_table, ::g_card_table)
 DEFINE_DACVAR(PTR_BYTE, dac__g_lowest_address, ::g_lowest_address)
