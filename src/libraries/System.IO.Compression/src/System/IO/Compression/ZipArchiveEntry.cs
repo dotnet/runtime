@@ -1247,6 +1247,10 @@ namespace System.IO.Compression
                     _everOpenedForWrite = true;
                     // Capture data descriptor state before WriteLocalFileHeader clears bit 3 for seekable streams.
                     bool hadDataDescriptor = (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
+                    // Capture whether the original entry used ZIP64 before WriteLocalFileHeader
+                    // potentially modifies offset/size state. This determines whether the data
+                    // descriptor uses 32-bit or 64-bit field sizes.
+                    bool wasZip64 = ShouldUseZIP64;
                     WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite);
 
                     // WriteLocalFileHeaderInitialize clears bit 3 for seekable streams, but in the metadata-only
@@ -1269,7 +1273,7 @@ namespace System.IO.Compression
                     // so that subsequent entries are written at the correct position.
                     if (hadDataDescriptor)
                     {
-                        SkipDataDescriptor();
+                        SkipDataDescriptor(wasZip64);
                     }
                 }
             }
@@ -1294,11 +1298,11 @@ namespace System.IO.Compression
         /// The data descriptor signature (0x08074B50) is optional per the ZIP spec, so we read the
         /// first 4 bytes to detect it and seek past the remaining fields accordingly.
         /// </summary>
-        private void SkipDataDescriptor()
+        private void SkipDataDescriptor(bool zip64)
         {
             Span<byte> signatureBuffer = stackalloc byte[sizeof(uint)];
             _archive.ArchiveStream.ReadExactly(signatureBuffer);
-            _archive.ArchiveStream.Seek(GetDataDescriptorSkipBytes(signatureBuffer), SeekOrigin.Current);
+            _archive.ArchiveStream.Seek(GetDataDescriptorSkipBytes(signatureBuffer, zip64), SeekOrigin.Current);
         }
 
         /// <summary>
@@ -1306,11 +1310,11 @@ namespace System.IO.Compression
         /// remaining bytes to seek past the data descriptor. Detects the optional signature
         /// and uses 32-bit or 64-bit field sizes as appropriate.
         /// </summary>
-        private int GetDataDescriptorSkipBytes(ReadOnlySpan<byte> leadingBytes)
+        private static int GetDataDescriptorSkipBytes(ReadOnlySpan<byte> leadingBytes, bool zip64)
         {
             bool hasSignature = leadingBytes.SequenceEqual(ZipLocalFileHeader.DataDescriptorSignatureConstantBytes);
 
-            return AreSizesTooLarge
+            return zip64
                 ? (hasSignature
                     ? ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.Crc32 + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.UncompressedSize
                     : ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.UncompressedSize)

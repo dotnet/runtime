@@ -403,6 +403,10 @@ public partial class ZipArchiveEntry
                 _everOpenedForWrite = true;
                 // Capture data descriptor state before WriteLocalFileHeaderAsync clears bit 3 for seekable streams.
                 bool hadDataDescriptor = (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
+                // Capture whether the original entry used ZIP64 before WriteLocalFileHeaderAsync
+                // potentially modifies offset/size state. This determines whether the data
+                // descriptor uses 32-bit or 64-bit field sizes.
+                bool wasZip64 = ShouldUseZIP64;
                 await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, cancellationToken).ConfigureAwait(false);
 
                 // WriteLocalFileHeaderInitialize clears bit 3 for seekable streams, but in the metadata-only
@@ -425,17 +429,17 @@ public partial class ZipArchiveEntry
                 // so that subsequent entries are written at the correct position.
                 if (hadDataDescriptor)
                 {
-                    await SkipDataDescriptorAsync(cancellationToken).ConfigureAwait(false);
+                    await SkipDataDescriptorAsync(wasZip64, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
     }
 
-    private async ValueTask SkipDataDescriptorAsync(CancellationToken cancellationToken)
+    private async ValueTask SkipDataDescriptorAsync(bool zip64, CancellationToken cancellationToken)
     {
         byte[] signatureBuffer = new byte[sizeof(uint)];
         await _archive.ArchiveStream.ReadExactlyAsync(signatureBuffer, cancellationToken).ConfigureAwait(false);
-        _archive.ArchiveStream.Seek(GetDataDescriptorSkipBytes(signatureBuffer), SeekOrigin.Current);
+        _archive.ArchiveStream.Seek(GetDataDescriptorSkipBytes(signatureBuffer, zip64), SeekOrigin.Current);
     }
 
     // Using _offsetOfLocalHeader, seeks back to where CRC and sizes should be in the header,
