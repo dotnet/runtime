@@ -2,7 +2,6 @@
 // Calls AsyncCompositeLib methods and has its own async methods,
 // exercising multi-step compilation (composite then non-composite)
 // with runtime-async in both steps.
-using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
