@@ -30,8 +30,7 @@ public interface ICodeVersions : IContract
 
     public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
     public virtual bool HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
-    public virtual NativeCodeVersionOptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle)
-        => throw new NotImplementedException();
+    public virtual NativeCodeVersionOptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 }
 
 public readonly struct ILCodeVersionHandle

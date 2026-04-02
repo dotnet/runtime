@@ -972,7 +972,7 @@ public unsafe partial interface ISOSDacInterface5
     int GetTieredVersions(
         ClrDataAddress methodDesc,
         int rejitId,
-        [In, MarshalUsing(CountElementName = nameof(cNativeCodeAddrs)), Out] DacpTieredVersionData[]? nativeCodeAddrs,
+        [In, Out, MarshalUsing(CountElementName = nameof(cNativeCodeAddrs))] DacpTieredVersionData[]? nativeCodeAddrs,
         int cNativeCodeAddrs,
         int* pcNativeCodeAddrs);
 };
