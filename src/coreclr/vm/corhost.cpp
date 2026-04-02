@@ -428,11 +428,11 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
         {
             GCX_COOP();
 
-            UnmanagedCallersOnlyCaller callEntryPoint(METHOD__ENVIRONMENT__CALL_ENTRY_POINT_UTF16_STRING_RET_INT);
+            UnmanagedCallersOnlyCaller executeInDefaultAppDomain(METHOD__ENVIRONMENT__EXECUTE_IN_DEFAULT_APP_DOMAIN);
             pMethodMD->EnsureActive();
             PCODE entryPoint = pMethodMD->GetSingleCallableAddrOfCode();
 
-            INT32 retval = callEntryPoint.InvokeThrowing_Ret<INT32>(
+            INT32 retval = executeInDefaultAppDomain.InvokeThrowing_Ret<INT32>(
                 static_cast<INT_PTR>(entryPoint),
                 pwzArgument);
 

@@ -178,10 +178,9 @@ class CallStackLogger
 
         MethodDesc* pMD = pCF->GetFunction();
 
-        // Skip CoreLib-internal bridge methods marked with [StackTraceHidden]
-        // (e.g. Environment.CallEntryPoint) so they don't appear in fatal
-        // stack overflow traces.
-        if (pMD != nullptr && pMD->GetModule()->IsSystem() && pMD->HasUnmanagedCallersOnlyAttribute())
+        // Skip Environment.CallEntryPoint so it doesn't appear in vanilla
+        // unhandled exception experiences.
+        if (pMD != nullptr && pMD->GetModule()->IsSystem() && strcmp(pMD->GetName(), "CallEntryPoint") == 0)
         {
             return SWA_CONTINUE;
         }

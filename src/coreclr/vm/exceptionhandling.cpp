@@ -3621,8 +3621,7 @@ static bool IsTopmostDebuggerU2MCatchHandlerFrame(Frame *pFrame)
 
 static bool IsRuntimeEntryPointMethod(MethodDesc* pMethodDesc)
 {
-    return (pMethodDesc == CoreLibBinder::GetMethod(METHOD__ENVIRONMENT__CALL_ENTRY_POINT)) ||
-           (pMethodDesc == CoreLibBinder::GetMethod(METHOD__ENVIRONMENT__CALL_ENTRY_POINT_UTF16_STRING_RET_INT));
+    return pMethodDesc == CoreLibBinder::GetMethod(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
 }
 
 static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)

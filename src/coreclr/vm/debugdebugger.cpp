@@ -193,6 +193,16 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
     //                       because we asked the stackwalker for it!
     MethodDesc* pFunc = pCf->GetFunction();
 
+    if (pFunc != nullptr && pFunc->GetModule()->IsSystem() && strcmp(pFunc->GetName(), "CallEntryPoint") == 0)
+    {
+        const char* typeNamespace = nullptr;
+        const char* typeName = pFunc->GetMethodTable()->GetFullyQualifiedNameInfo(&typeNamespace);
+        if (typeNamespace != nullptr && strcmp(typeNamespace, "System") == 0 && strcmp(typeName, "Environment") == 0)
+        {
+            return SWA_CONTINUE;
+        }
+    }
+
     DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
     if (pData->cElements >= pData->cElementsAllocated)
     {

@@ -176,7 +176,7 @@ namespace System
         [UnmanagedCallersOnly]
         [StackTraceHidden]
         [RequiresUnsafe]
-        internal static unsafe int CallEntryPointUtf16StringRetInt(IntPtr entryPoint, char* pArgument, Exception* pException)
+        internal static unsafe int ExecuteInDefaultAppDomain(IntPtr entryPoint, char* pArgument, Exception* pException)
         {
             try
             {
@@ -185,7 +185,7 @@ namespace System
             catch (Exception ex)
             {
                 *pException = ex;
-                return 1; // EXIT_FAILURE
+                return default;
             }
         }
     }
