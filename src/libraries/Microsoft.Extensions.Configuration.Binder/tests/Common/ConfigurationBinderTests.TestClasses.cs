@@ -1190,5 +1190,15 @@ namespace Microsoft.Extensions
             public NestedWithIEnumerable? Source { get; set; }
         }
         internal sealed record NestedWithIEnumerable(string Name, IEnumerable<string> Addresses);
+
+        public class ClassWithArrayConstructorParameter
+        {
+            public ClassWithArrayConstructorParameter(string[] arrayField = null)
+            {
+                ArrayField = arrayField ?? Array.Empty<string>();
+            }
+
+            public string[] ArrayField { get; }
+        }
     }
 }
