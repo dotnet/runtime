@@ -842,7 +842,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
             return CORDBG_E_MISSING_METADATA;
         }
 
-        MapViewHolder hMapView = MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0);
+        MapViewHolder hMapView{ MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0) };
         if (hMapView == NULL)
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't map view of file \"%s\" (GLE=%x)\n", pszFullPathName, GetLastError()));
