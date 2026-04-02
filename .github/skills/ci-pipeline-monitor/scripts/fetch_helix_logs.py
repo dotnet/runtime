@@ -37,7 +37,16 @@ def fetch_and_save(url, out_path):
     lines = text.strip().split('\n')
     total = len(lines)
 
-    # --- Extract exit code only (simple pattern match) ---
+    # --- Extract exit code ---
+    # Check for timeout first (process killed, no meaningful exit code)
+    if 'Command timed out' in text:
+        return {
+            'total_lines': total,
+            'exit_code': None,
+            'path': out_path,
+        }
+
+    # Collect exit codes from log lines
     exit_codes = []
     for line in lines:
         m = re.search(r'exit code[:\s]+(-?\d+)', line, re.IGNORECASE)
@@ -53,6 +62,13 @@ def fetch_and_save(url, out_path):
     # Prefer first non-zero exit code (actual test crash) over trailing
     # zero from XUnitLogChecker or Helix wrapper cleanup.
     exit_code = next((c for c in exit_codes if c != 0), exit_codes[-1] if exit_codes else None)
+
+    # Coreclr multi-test convention: App Exit Code 100 means test harness
+    # passed, but individual tests may have failed. The work item exits 0.
+    # Exit code 100 is not a failure signal — set -1 to indicate
+    # "has individual test failures, classify from error messages."
+    if exit_code == 100 and 'Command exited with 0' in text:
+        exit_code = -1
 
     return {
         'total_lines': total,

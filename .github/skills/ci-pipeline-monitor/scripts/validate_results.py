@@ -247,51 +247,56 @@ def main():
             WHERE tr.console_log_path IS NOT NULL AND tr.console_log_path != ''
             AND f.failure_category != 'infrastructure'
         """).fetchall()
-        # Compute shared_paths: console_log_path values used by multiple test_results rows
-        shared_paths = set()
-        path_counts = {}
-        for r in rows:
-            p = r["console_log_path"]
-            path_counts[p] = path_counts.get(p, 0) + 1
-        for p, c in path_counts.items():
-            if c > 1:
-                shared_paths.add(p)
-        skipped_shared = 0
+        # Validate once per unique console_log_path (shared logs are valid,
+        # just deduplicated by fetch_helix_logs.py).
+        validated_paths = {}  # path -> parsed exit_code
+        skipped = 0
         for r in rows:
             log_path = r["console_log_path"]
-            if log_path in shared_paths:
-                skipped_shared += 1
-                continue  # on-disk file was overwritten — can't validate
-            if not os.path.isfile(log_path):
+            db_exit = r["exit_code"]
+            # Skip rows with NULL (timeout) or -1 (coreclr multi-test) —
+            # no meaningful exit code to cross-check.
+            if db_exit is None or db_exit == -1:
+                skipped += 1
                 continue
-            with open(log_path, encoding="utf-8", errors="replace") as lf:
-                log_content = lf.read()
-            # Parse exit code from log using the same logic as fetch_helix_logs.py:
-            # collect all exit codes, prefer first non-zero (actual test exit)
-            # over trailing zero from XUnitLogChecker or Helix wrapper cleanup.
-            exit_codes = []
-            for line in log_content.split('\n'):
-                m = re.search(r'exit code[:\s]+(-?\d+)', line, re.IGNORECASE)
-                if m:
-                    exit_codes.append(int(m.group(1)))
-                m2 = re.search(r'_commandExitCode=(\d+)', line)
-                if m2:
-                    exit_codes.append(int(m2.group(1)))
-                m3 = re.search(r'Exit Code:(\d+)', line)
-                if m3:
-                    exit_codes.append(int(m3.group(1)))
-            if exit_codes:
-                log_exit = next((c for c in exit_codes if c != 0), exit_codes[-1])
-                db_exit = r["exit_code"]
-                if db_exit is not None and db_exit != log_exit:
-                    exit_mismatches.append(
-                        (r["id"], f"db={db_exit} log={log_exit}")
-                    )
-        verified = len(rows) - skipped_shared
+            # Parse log file once per unique path
+            if log_path not in validated_paths:
+                if not os.path.isfile(log_path):
+                    continue
+                with open(log_path, encoding="utf-8", errors="replace") as lf:
+                    log_content = lf.read()
+                # Same logic as fetch_helix_logs.py
+                if 'Command timed out' in log_content:
+                    validated_paths[log_path] = None
+                    continue
+                exit_codes = []
+                for line in log_content.split('\n'):
+                    m = re.search(r'exit code[:\s]+(-?\d+)', line, re.IGNORECASE)
+                    if m:
+                        exit_codes.append(int(m.group(1)))
+                    m2 = re.search(r'_commandExitCode=(\d+)', line)
+                    if m2:
+                        exit_codes.append(int(m2.group(1)))
+                    m3 = re.search(r'Exit Code:(\d+)', line)
+                    if m3:
+                        exit_codes.append(int(m3.group(1)))
+                if exit_codes:
+                    log_exit = next((c for c in exit_codes if c != 0), exit_codes[-1])
+                    if log_exit == 100 and 'Command exited with 0' in log_content:
+                        log_exit = -1
+                    validated_paths[log_path] = log_exit
+                else:
+                    validated_paths[log_path] = None
+            log_exit = validated_paths[log_path]
+            if log_exit is not None and db_exit != log_exit:
+                exit_mismatches.append(
+                    (r["id"], f"db={db_exit} log={log_exit}")
+                )
+        verified = len(rows) - skipped
         ok = check("exit_code matches console log",
                     len(exit_mismatches) == 0,
                     f"{len(exit_mismatches)} mismatches: {exit_mismatches[:5]}" if exit_mismatches
-                    else f"verified {verified} rows, skipped {skipped_shared} shared paths")
+                    else f"verified {verified} rows, skipped {skipped} (NULL/-1 exit codes)")
         if not ok:
             failures += 1
 
