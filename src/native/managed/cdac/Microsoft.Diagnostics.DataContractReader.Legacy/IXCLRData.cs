@@ -17,6 +17,11 @@ public struct CLRDataModuleExtent
     public uint /* CLRDataModuleExtentType */ type;
 }
 
+public struct DacpGetModuleAddress
+{
+    public ClrDataAddress ModulePtr;
+}
+
 public struct DacpGetModuleData
 {
     public uint IsDynamic;
