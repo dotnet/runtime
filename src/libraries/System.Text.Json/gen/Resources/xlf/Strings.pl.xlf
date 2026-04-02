@@ -94,12 +94,12 @@
       </trans-unit>
       <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeFormat">
         <source>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</source>
-        <target state="new">The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</target>
+        <target state="translated">Typ „{0}” został oznaczony adnotacją z atrybutem „JsonIgnoreAttribute” przy użyciu elementu „JsonIgnoreCondition.Always”, który jest nieprawidłowy w deklaracjach typu. Atrybut zostanie zignorowany.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeTitle">
         <source>'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</source>
-        <target state="new">'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</target>
+        <target state="translated">Element „JsonIgnoreCondition.Always” jest nieprawidłowy w adnotacjach „JsonIgnoreAttribute” na poziomie typu.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
