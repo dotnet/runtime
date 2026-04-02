@@ -14,7 +14,6 @@
 static char s_serverInPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
 static char s_serverOutPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
 
-// Unlinks the server-side named pipes. Signal-safe: no ASSERT or TRACE macros.
 static void AbortPipeServerImpl()
 {
     // IMPORTANT NOTE: This function must not call any signal unsafe functions
