@@ -253,6 +253,8 @@ public static partial class MountHelper
         if (!r)
         {
             int error = Marshal.GetLastWin32Error();
+            // Ignore expected cleanup errors: 4390 (ERROR_NOT_A_REPARSE_POINT),
+            // 3 (ERROR_PATH_NOT_FOUND), 2 (ERROR_FILE_NOT_FOUND)
             if (error != 4390 && error != 3 && error != 2)
                 throw new Exception(string.Format("Win32 error: {0}", error));
             Console.WriteLine(string.Format("Ignoring expected Win32 error {0} while unmounting {1}", error, mountPoint));
