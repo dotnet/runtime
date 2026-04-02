@@ -996,7 +996,7 @@ namespace System.Diagnostics
         }
     }
 
-        internal static class NtProcessInfoHelper
+    internal static class NtProcessInfoHelper
     {
         // Use a smaller buffer size on debug to ensure we hit the retry path.
         private const uint DefaultCachedBufferSize = 1024 *
