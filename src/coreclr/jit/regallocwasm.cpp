@@ -863,7 +863,7 @@ void WasmRegAlloc::ResolveReferences()
                 //
                 if ((varDsc != nullptr) && varDsc->lvIsRegArg && !varDsc->lvIsStructField)
                 {
-                    unsigned                     lclNum = m_compiler->lvaGetLclNum(varDsc);
+                    unsigned                     lclNum  = m_compiler->lvaGetLclNum(varDsc);
                     const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
                     assert(abiInfo.HasExactlyOneRegisterSegment());
                     physReg = abiInfo.Segment(0).GetRegister();
@@ -892,9 +892,9 @@ void WasmRegAlloc::ResolveReferences()
 
             if (physReg == REG_NA)
             {
-                WasmValueType type = WasmRegToType(virtReg);
+                WasmValueType type         = WasmRegToType(virtReg);
                 unsigned      physRegIndex = virtToPhysRegMap[static_cast<unsigned>(type)].Index++;
-                physReg = MakeWasmReg(physRegIndex, type);
+                physReg                    = MakeWasmReg(physRegIndex, type);
             }
 
             assert(genIsValidReg(physReg));
@@ -915,10 +915,6 @@ void WasmRegAlloc::ResolveReferences()
                 //
                 // TODO-WASM: this will lead to incorrect debug info in funclets. We may need to track per funclet
                 // assignments somewhere.
-                //
-                // TODO-WASM: we should reset this info as we switch funclets, so if there's a local only live
-                // in a funclet we don't report it as living in a reg in the main method.
-                // Seems like this entails walking the full set of tracked locals.
                 //
                 varDsc->SetRegNum(physReg);
                 varDsc->lvRegister = true;
@@ -944,7 +940,7 @@ void WasmRegAlloc::ResolveReferences()
         else
         {
             // Funclets always have SP and FP.
-            // 
+            //
             // We do not have lclVars for funclet params.
             // SP is the same physreg as in the main method.
             //
@@ -1044,6 +1040,21 @@ void WasmRegAlloc::ResolveReferences()
             if (physRegs.DeclaredCount != 0)
             {
                 decls->push_back({type, physRegs.DeclaredCount});
+            }
+        }
+
+        // If this is not the main method region, remove any local var assignments.
+        //
+        if (inFunclet)
+        {
+            for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
+            {
+                unsigned const   lclNum = m_compiler->lvaTrackedIndexToLclNum(varIndex);
+                LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+                if (varDsc->lvIsRegCandidate())
+                {
+                    varDsc->lvRegister = false;
+                }
             }
         }
     }

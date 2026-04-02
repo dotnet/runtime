@@ -273,9 +273,9 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     // Local sig for the funclet
     //
-    unsigned localsCount  = 0;
-    unsigned funcletIndex = m_compiler->compCurrFuncIdx;
-    FuncInfoDsc* const func = m_compiler->funGetFunc(funcletIndex);
+    unsigned           localsCount  = 0;
+    unsigned           funcletIndex = m_compiler->compCurrFuncIdx;
+    FuncInfoDsc* const func         = m_compiler->funGetFunc(funcletIndex);
     assert(funcletIndex > 0);
     assert(func->funWasmLocalDecls != nullptr);
     GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, func->funWasmLocalDecls->size());
