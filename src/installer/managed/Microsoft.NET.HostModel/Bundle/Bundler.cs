@@ -48,7 +48,8 @@ namespace Microsoft.NET.HostModel.Bundle
                        Version? targetFrameworkVersion = null,
                        bool diagnosticOutput = false,
                        string? appAssemblyName = null,
-                       bool macosCodesign = true)
+                       bool macosCodesign = true,
+                       string? runtimeIdentifier = null)
         {
             if (!string.IsNullOrEmpty(Path.GetDirectoryName(hostName)))
             {
@@ -57,7 +58,7 @@ namespace Microsoft.NET.HostModel.Bundle
             _tracer = new Trace(diagnosticOutput);
             _hostName = hostName;
             _outputDir = Path.GetFullPath(string.IsNullOrEmpty(outputDir) ? Environment.CurrentDirectory : outputDir);
-            _target = new TargetInfo(targetOS, targetArch, targetFrameworkVersion);
+            _target = new TargetInfo(targetOS, targetArch, targetFrameworkVersion, runtimeIdentifier);
 
             if (_target.BundleMajorVersion < 6 &&
                 (options & BundleOptions.EnableCompression) != 0)
