@@ -105,7 +105,7 @@ namespace ILCompiler.ObjectWriter
         {
             int pos = 0;
             buffer[pos++] = (byte)0x70; // element type: funcref 
-            buffer[pos++] = (byte)0; // table limits: flags (1 = has maximum)
+            buffer[pos++] = (byte)0; // table limits: flags (0 = min-only, 1 = min+max)
             pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), 1); // Requires 1 table entry
             return pos;
         }

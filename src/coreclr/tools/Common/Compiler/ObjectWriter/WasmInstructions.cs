@@ -543,7 +543,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     }
 
     // Represents a table.init expression.
-    // Binary encoding: 0xFC prefix + u32(12) sub-opcode + u32(dataSegmentIndex) + u32(memoryIndex)
+    // Binary encoding: 0xFC prefix + u32(12) sub-opcode + u32(elemidx) + u32(tableidx)
     class WasmTableInitExpr : WasmExpr
     {
         public readonly int ElemIndex;

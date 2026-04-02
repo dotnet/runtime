@@ -187,9 +187,13 @@ function libCoreRunFactory() {
                 const sizes = readPayloadSizeAndTableSize(wasmBytes);
                 payloadSize = sizes.payloadSize;
                 tableSize = sizes.tableSize;
-            } catch {
-                payloadSize = 0;
-                tableSize = 0;
+            } catch (e) {
+                console.error("Failed to read Webcil payload size from wasm data section:", e);
+                return false;
+            }
+            if (payloadSize === 0) {
+                console.error("Webcil payload size is 0; cannot load image");
+                return false;
             }
             wasmTable.grow(tableSize);
 

@@ -36,6 +36,7 @@ WebcilDecoder::WebcilDecoder()
       m_size(0),
       m_hasContents(FALSE),
       m_pHeader(NULL),
+      m_sections(NULL),
       m_pCorHeader(NULL)
 {
     LIMITED_METHOD_CONTRACT;
@@ -56,7 +57,7 @@ void WebcilDecoder::Init(void *flatBase, COUNT_T size)
     m_size = size;
     m_hasContents = (size > 0);
     m_pHeader = (m_hasContents && size >= sizeof(WebcilHeader)) ? (const WebcilHeader *)flatBase : NULL;
-    if (m_pHeader->VersionMajor >= 1)
+    if (m_pHeader != NULL && m_pHeader->VersionMajor >= 1)
     {
         // For version 1 and above, the section headers start after the larger header
         if (size < sizeof(WebcilHeader_1))
@@ -83,6 +84,7 @@ void WebcilDecoder::Reset()
     m_size = 0;
     m_hasContents = FALSE;
     m_pHeader = NULL;
+    m_sections = NULL;
     m_pCorHeader = NULL;
 }
 
@@ -144,7 +146,20 @@ BOOL WebcilDecoder::HasWebcilHeaders() const
     if (pHeader->CoffSections == 0 || pHeader->CoffSections > WEBCIL_MAX_SECTIONS)
         RETURN FALSE;
 
-    COUNT_T headerEnd = static_cast<COUNT_T>(((uint8_t*)m_sections - (uint8_t*)m_base)) + (COUNT_T)pHeader->CoffSections * sizeof(WebcilSectionHeader);
+    COUNT_T headerSize;
+    if (pHeader->VersionMajor == WEBCIL_VERSION_MAJOR_0)
+    {
+        headerSize = sizeof(WebcilHeader);
+    }
+    else
+    {
+        headerSize = sizeof(WebcilHeader_1);
+    }
+
+    if (m_size < headerSize)
+        RETURN FALSE;
+
+    COUNT_T headerEnd = headerSize + (COUNT_T)pHeader->CoffSections * sizeof(WebcilSectionHeader);
     if (m_size < headerEnd)
         RETURN FALSE;
 
@@ -854,15 +869,21 @@ void WebcilDecoder::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThi
 
     if (enumThis)
     {
-        const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-        DacEnumMemoryRegion(m_base, dac_cast<TADDR>(m_sections) - dac_cast<TADDR>(m_base));
+        if (m_sections != NULL)
+        {
+            DacEnumMemoryRegion(m_base, dac_cast<TADDR>(m_sections) - dac_cast<TADDR>(m_base));
+        }
+        else
+        {
+            DacEnumMemoryRegion(m_base, min(m_size, (COUNT_T)sizeof(WebcilHeader)));
+        }
     }
 
-    if (HasWebcilHeaders())
+    if (HasWebcilHeaders() && m_sections != NULL)
     {
         // Enumerate section headers
         const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-        DacEnumMemoryRegion(m_sections, sizeof(WebcilSectionHeader) * pHeader->CoffSections);
+        DacEnumMemoryRegion(dac_cast<TADDR>(m_sections), sizeof(WebcilSectionHeader) * pHeader->CoffSections);
 
         // Enumerate COR header if present
         if (m_pCorHeader != NULL)
