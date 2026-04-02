@@ -43,6 +43,7 @@ char* utf16_to_utf8(const wchar_t *srcstring)
 
     if (!nc)
     {
+        CoreClrFree(pszUTF8);
         return nullptr;
     }
 
@@ -81,9 +82,9 @@ wchar_t* utf8_to_utf16(const char *utf8)
 
     if (!nc)
     {
+        CoreClrFree(wszTextUTF16);
         return nullptr;
     }
-    //MultiByteToWideChar do not null terminate the string when cbMultiByte is not -1
     wszTextUTF16[nc] = '\0';
     return wszTextUTF16;
 }
@@ -150,6 +151,7 @@ extern "C" DLL_EXPORT BOOL __cdecl StringBuilderParameterInOut(/*[In,Out] String
         if (s[i] != pszTextutf8[i])
         {
             printf("[in] managed string do not match native string\n");
+            free_utf8_string(pszTextutf8);
             return FALSE;
         }
     }
@@ -228,6 +230,7 @@ extern "C" DLL_EXPORT BOOL __cdecl TestStructWithUtf8Field(struct FieldWithUtf8 
         if (pszNative[i] != pszManagedutf8[i])
         {
             printf("Native and managed string do not match.\n");
+            free_utf8_string(pszNative);
             return FALSE;
         }
     }
@@ -268,6 +271,7 @@ extern "C" DLL_EXPORT BOOL __cdecl StringParameterRef(/*ref*/ char **s, int inde
         if ((*s)[i] != pszTextutf8[i])
         {
             printf("[in] managed string do not match native string\n");
+            free_utf8_string(pszTextutf8);
             return FALSE;
         }
     }
