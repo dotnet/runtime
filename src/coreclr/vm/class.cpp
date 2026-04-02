@@ -614,30 +614,32 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Added pMD:%p for token 0x%08x\n",
         pNewMD, methodDef));
 
-    // For runtime-async task-returning methods, create the async call variant.
-    // This mirrors what MethodTableBuilder does in the second pass of its method enumeration loop.
+    // For runtime-async task-returning methods, compute the async variant signature and flags.
+    // These are used for both the type definition and any existing generic instantiations.
+    AsyncMethodFlags asyncVariantFlags = AsyncMethodFlags::None;
+    BYTE* pAsyncVariantSig = NULL;
+    ULONG cAsyncVariantSig = 0;
+
     if (isAsyncTaskReturning)
     {
-        AsyncMethodFlags asyncFlags = AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant;
+        asyncVariantFlags = AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant;
         if (returnsValueTask)
-            asyncFlags |= AsyncMethodFlags::IsAsyncVariantForValueTask;
-
-        // For IsMiAsync methods, the async variant has the real IL body (not a thunk).
-        // The task-returning variant above is the thunk.
+            asyncVariantFlags |= AsyncMethodFlags::IsAsyncVariantForValueTask;
 
         // Construct the async variant signature by stripping the Task/ValueTask wrapper.
-        ULONG cAsyncSig;
         BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
-                                   nullptr, &cAsyncSig);
+                                   nullptr, &cAsyncVariantSig);
 
         LoaderAllocator* pAllocator = pMT->GetLoaderAllocator();
-        BYTE* pNewSig = (BYTE*)(void*)pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cAsyncSig));
+        pAsyncVariantSig = (BYTE*)(void*)pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cAsyncVariantSig));
         BuildAsyncVariantSignature(returnKind, pMemberSignature, sigLen, offsetOfAsyncDetails,
-                                   pNewSig, &cAsyncSig);
+                                   pAsyncVariantSig, &cAsyncVariantSig);
 
+        // Create the async variant for the type definition.
+        // For IsMiAsync methods, the async variant has the real IL body (not a thunk).
         MethodDesc* pAsyncVariantMD;
         if (FAILED(hr = AddMethodDesc(pMT, methodDef, dwImplFlags, dwMemberAttrs,
-                                      asyncFlags, pNewSig, cAsyncSig, &pAsyncVariantMD)))
+                                      asyncVariantFlags, pAsyncVariantSig, cAsyncVariantSig, &pAsyncVariantMD)))
         {
             LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod failed to add async variant: 0x%08x\n", hr));
             return hr;
@@ -687,6 +689,26 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST,
                         W("Failed to add method to existing instantiated type instance"));
                     return E_FAIL;
+                }
+
+                // For async task-returning methods, also create the async variant for
+                // this instantiation. Without this, the thunk on the instantiation's
+                // MethodTable cannot find its async variant, causing crashes when the
+                // newly added async method is called on value type instantiations.
+                if (isAsyncTaskReturning)
+                {
+                    MethodDesc* pAsyncVariantMDUnused;
+                    if (FAILED(AddMethodDesc(pMTMaybe, methodDef, dwImplFlags, dwMemberAttrs,
+                                              asyncVariantFlags, pAsyncVariantSig, cAsyncVariantSig, &pAsyncVariantMDUnused)))
+                    {
+                        LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod failed to add async variant for instantiation: 0x%08x\n", hr));
+                        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST,
+                            W("Failed to add async variant to existing instantiated type instance"));
+                        return E_FAIL;
+                    }
+
+                    LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Added async variant pMD:%p for instantiation pMT:%p\n",
+                        pAsyncVariantMDUnused, pMTMaybe));
                 }
             }
         }
