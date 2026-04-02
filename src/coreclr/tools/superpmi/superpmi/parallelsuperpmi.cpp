@@ -11,9 +11,11 @@
 #include "fileio.h"
 #include <minipal/random.h>
 
-#ifdef TARGET_UNIX
-#include <fcntl.h>
 #include <signal.h>
+
+#ifdef TARGET_UNIX
+#include <errno.h>
+#include <fcntl.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <minipal/getexepath.h>
@@ -32,7 +34,7 @@ typedef HANDLE SpmiProcessHandle;
 
 #define MAX_LOG_LINE_SIZE 0x1000 // 4 KB
 
-volatile bool closeRequested = false; // global variable to communicate CTRL+C between threads.
+volatile sig_atomic_t closeRequested = 0; // global variable to communicate CTRL+C between threads.
 
 #ifndef TARGET_UNIX
 
@@ -70,52 +72,114 @@ bool StartProcess(char* commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE
     }
 
     *hProcess = pi.hProcess;
+    CloseHandle(pi.hThread);
     return true;
 }
 
 #else // TARGET_UNIX
 
-// Parse a command line string into an argv array for execv. The returned array
-// and its strings are heap-allocated and must be freed by the caller.
+// Parse a command line string into an argv array for execv. Supports single-quote,
+// double-quote, and backslash escaping. The returned array and its strings are
+// heap-allocated and must be freed by the caller.
 static char** ParseCommandLineToArgv(char* commandLine, int* argc)
 {
-    // Count tokens
-    int   count = 0;
-    char* p     = commandLine;
-    bool  inArg = false;
-    while (*p)
+    // First pass: count tokens so we know how big to make argv.
+    int  count        = 0;
+    bool inArg        = false;
+    bool inSingleQuote = false;
+    bool inDoubleQuote = false;
+    for (char* p = commandLine; *p != '\0'; ++p)
     {
-        if (*p == ' ' || *p == '\t')
+        char c = *p;
+        if (c == '\\' && !inSingleQuote)
+        {
+            if (*(p + 1) != '\0')
+                ++p; // skip escaped character
+            if (!inArg) { inArg = true; count++; }
+        }
+        else if (!inSingleQuote && c == '"')
+        {
+            inDoubleQuote = !inDoubleQuote;
+            if (!inArg) { inArg = true; count++; }
+        }
+        else if (!inDoubleQuote && c == '\'')
+        {
+            inSingleQuote = !inSingleQuote;
+            if (!inArg) { inArg = true; count++; }
+        }
+        else if (!inSingleQuote && !inDoubleQuote && (c == ' ' || c == '\t'))
         {
             inArg = false;
         }
-        else if (!inArg)
+        else
         {
-            inArg = true;
-            count++;
+            if (!inArg) { inArg = true; count++; }
         }
-        p++;
     }
 
-    char** argv = new char*[count + 1];
-    *argc       = count;
-    int idx     = 0;
-    p           = commandLine;
-    while (*p)
+    *argc          = count;
+    char** argv    = new char*[count + 1];
+    int    idx     = 0;
+
+    // Second pass: extract tokens.
+    inArg        = false;
+    inSingleQuote = false;
+    inDoubleQuote = false;
+    // Temporary buffer (upper-bound: length of the entire commandLine).
+    size_t cmdLen = strlen(commandLine);
+    char*  buf    = new char[cmdLen + 1];
+    int    bufLen = 0;
+
+    for (char* p = commandLine; ; ++p)
     {
-        while (*p == ' ' || *p == '\t')
-            p++;
-        if (*p == '\0')
-            break;
-        char*  start = p;
-        while (*p && *p != ' ' && *p != '\t')
-            p++;
-        size_t len   = (size_t)(p - start);
-        argv[idx]    = new char[len + 1];
-        memcpy(argv[idx], start, len);
-        argv[idx][len] = '\0';
-        idx++;
+        char c = *p;
+
+        if (c == '\0' || (!inSingleQuote && !inDoubleQuote && (c == ' ' || c == '\t')))
+        {
+            if (inArg)
+            {
+                buf[bufLen] = '\0';
+                argv[idx]   = new char[bufLen + 1];
+                memcpy(argv[idx], buf, bufLen + 1);
+                ++idx;
+                bufLen = 0;
+                inArg  = false;
+            }
+            if (c == '\0')
+                break;
+            continue;
+        }
+
+        inArg = true;
+
+        if (c == '\\' && !inSingleQuote)
+        {
+            char next = *(p + 1);
+            if (next != '\0')
+            {
+                buf[bufLen++] = next;
+                ++p;
+            }
+            else
+            {
+                buf[bufLen++] = c;
+            }
+        }
+        else if (!inSingleQuote && c == '"')
+        {
+            inDoubleQuote = !inDoubleQuote;
+        }
+        else if (!inDoubleQuote && c == '\'')
+        {
+            inSingleQuote = !inSingleQuote;
+        }
+        else
+        {
+            buf[bufLen++] = c;
+        }
     }
+
+    delete[] buf;
     argv[idx] = nullptr;
     return argv;
 }
@@ -397,13 +461,14 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
     // Since the child SuperPMI.exe processes share the same console
     // We don't need to kill them individually as they also receive the Ctrl-C
 
-    closeRequested = true; // set a flag to indicate we need to quit
+    closeRequested = 1; // set a flag to indicate we need to quit
     return TRUE;
 }
 #else // TARGET_UNIX
 static void PosixCtrlHandler(int signum)
 {
-    closeRequested = true;
+    (void)signum;
+    closeRequested = 1;
 }
 #endif // TARGET_UNIX
 
@@ -621,7 +686,11 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
 
 static bool RegisterCtrlHandler()
 {
-    signal(SIGINT, PosixCtrlHandler);
+    if (signal(SIGINT, PosixCtrlHandler) == SIG_ERR)
+    {
+        LogError("Failed to register SIGINT handler.");
+        return false;
+    }
     return true;
 }
 
@@ -669,6 +738,8 @@ static bool OpenWorkerOutputFiles(PerWorkerData& wd, int workerIndex)
     if (wd.hStdError == -1)
     {
         LogError("Unable to open '%s'. errno=%d", wd.stdErrorPath, errno);
+        close(wd.hStdOutput);
+        wd.hStdOutput = -1;
         return false;
     }
     return true;
@@ -687,7 +758,13 @@ static int* WaitForWorkerProcesses(SpmiProcessHandle* handles, int count)
     for (int i = 0; i < count; i++)
     {
         int status;
-        if (waitpid(handles[i], &status, 0) == -1)
+        pid_t result;
+        do
+        {
+            result = waitpid(handles[i], &status, 0);
+        } while (result == -1 && errno == EINTR);
+
+        if (result == -1)
         {
             LogError("waitpid failed for child %d: %s", i, strerror(errno));
             exitCodes[i] = -1;
@@ -787,6 +864,8 @@ static bool OpenWorkerOutputFiles(PerWorkerData& wd, int workerIndex)
     if (wd.hStdError == INVALID_HANDLE_VALUE)
     {
         LogError("Unable to open '%s'. GetLastError()=%u", wd.stdErrorPath, GetLastError());
+        CloseHandle(wd.hStdOutput);
+        wd.hStdOutput = INVALID_HANDLE_VALUE;
         return false;
     }
     return true;
@@ -801,7 +880,12 @@ static void CloseWorkerOutputFiles(PerWorkerData& wd)
 // Returns nullptr; exit codes are retrieved lazily via GetWorkerExitCode / GetExitCodeProcess.
 static int* WaitForWorkerProcesses(SpmiProcessHandle* handles, int count)
 {
-    WaitForMultipleObjects(count, handles, true, INFINITE);
+    DWORD waitResult = WaitForMultipleObjects((DWORD)count, handles, TRUE, INFINITE);
+    if (waitResult == WAIT_FAILED)
+    {
+        LogError("WaitForMultipleObjects failed. GetLastError()=%u", GetLastError());
+        return nullptr;
+    }
     return nullptr;
 }
 
