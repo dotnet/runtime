@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
@@ -37,38 +36,21 @@ namespace System.IO
         }
 
         public DirectoryNotFoundException(string? message, string? directoryPath)
-            : base(message)
+            : base(message ?? (directoryPath is not null
+                ? SR.Format(SR.IO_DirectoryNotFound_Path, directoryPath)
+                : SR.Arg_DirectoryNotFoundException))
         {
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;
             DirectoryPath = directoryPath;
         }
 
         public DirectoryNotFoundException(string? message, string? directoryPath, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? (directoryPath is not null
+                ? SR.Format(SR.IO_DirectoryNotFound_Path, directoryPath)
+                : SR.Arg_DirectoryNotFoundException), innerException)
         {
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;
             DirectoryPath = directoryPath;
-        }
-
-        public override string Message
-        {
-            get
-            {
-                SetMessageField();
-                Debug.Assert(_message != null, "_message was null after calling SetMessageField");
-                return _message;
-            }
-        }
-
-        private void SetMessageField()
-        {
-            if (_message is null)
-            {
-                if (DirectoryPath is null)
-                    _message = SR.Arg_DirectoryNotFoundException;
-                else
-                    _message = SR.Format(SR.IO_DirectoryNotFound_Path, DirectoryPath);
-            }
         }
 
         public string? DirectoryPath { get; }
@@ -94,7 +76,14 @@ namespace System.IO
         protected DirectoryNotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            DirectoryPath = info.GetString("DirectoryNotFound_DirectoryPath");
+            foreach (SerializationEntry entry in info)
+            {
+                if (entry.Name == "DirectoryNotFound_DirectoryPath")
+                {
+                    DirectoryPath = (string?)entry.Value;
+                    break;
+                }
+            }
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
