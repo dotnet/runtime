@@ -68,11 +68,20 @@ namespace System.Diagnostics
         /// <returns>true if the process is running; otherwise, false.</returns>
         public static bool IsProcessRunning(int processId, string machineName)
         {
+            if (IsRemoteMachine(machineName))
+            {
+                // Ensure the remote-machine delegate is initialized. GetProcessById will create a
+                // Process with this machine name, and the delegate must be set before that Process
+                // is used (e.g. via ToString() → GetProcessInfo).
+                EnsureRemoteMachineFuncs();
+                return Array.IndexOf(GetProcessIds(machineName), processId) >= 0;
+            }
+
             // Performance optimization for the local machine:
             // First try to OpenProcess by id, if valid handle is returned verify that process is running
             // When the attempt to open a handle fails due to lack of permissions enumerate all processes and compare ids
             // Attempt to open handle for Idle process (processId == 0) fails with ERROR_INVALID_PARAMETER
-            if (processId != 0 && !IsRemoteMachine(machineName))
+            if (processId != 0)
             {
                 using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION | ProcessOptions.SYNCHRONIZE, false, processId))
                 {
@@ -206,7 +215,6 @@ namespace System.Diagnostics
                 return GetProcessIds();
             }
 
-            EnsureRemoteMachineFuncs();
             ProcessInfo[] infos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
             int[] ids = new int[infos.Length];
             for (int i = 0; i < infos.Length; i++) ids[i] = infos[i].ProcessId;
