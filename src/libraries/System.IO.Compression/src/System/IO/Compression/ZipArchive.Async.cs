@@ -364,6 +364,12 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
             long nextFileOffset = 0;
             completeRewriteStartingOffset = startingOffset;
 
+            // Pre-compute EndOfLocalEntryData for each originally-in-archive entry.
+            // Since _entries is sorted by offset, the end of each entry's data (including any trailing
+            // data descriptor) is bounded by the start of the next entry or the central directory.
+            // This avoids seeking/reading the archive stream to determine data descriptor sizes.
+            WriteFileComputeEntryEndOffsets();
+
             entriesToWrite = new(_entries.Count);
             foreach (ZipArchiveEntry entry in _entries)
             {

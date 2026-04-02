@@ -771,8 +771,9 @@ namespace System.IO.Compression
             {
                 // Keep track of the expected position of the file entry after the final untouched file entry so that when the loop completes,
                 // we'll know which position to start writing new entries from.
-                // Include the data descriptor size if the entry has one (bit 3 set in general purpose bit flag).
-                nextFileOffset = Math.Max(nextFileOffset, entry.GetOffsetOfCompressedData() + entry.CompressedLength + entry.GetDataDescriptorSize());
+                // EndOfLocalEntryData includes the data descriptor (if any) because it was pre-computed from the
+                // next entry's offset or the central directory start, avoiding any stream seeks/reads.
+                nextFileOffset = Math.Max(nextFileOffset, entry.EndOfLocalEntryData);
             }
             // When calculating the starting offset to load the files from, only look at changed entries which are already in the archive.
             else
@@ -789,6 +790,35 @@ namespace System.IO.Compression
             if ((entry.Changes & (ChangeState.DynamicLengthMetadata | ChangeState.StoredData)) != 0)
             {
                 completeRewriteStartingOffset = Math.Min(completeRewriteStartingOffset, entry.OffsetOfLocalHeader);
+            }
+        }
+
+        /// <summary>
+        /// Pre-computes <see cref="ZipArchiveEntry.EndOfLocalEntryData"/> for each originally-in-archive entry.
+        /// Since <see cref="_entries"/> is sorted by local header offset, the end of each entry's data
+        /// (including any trailing data descriptor) is bounded by the next entry's local header offset,
+        /// or by <see cref="_centralDirectoryStart"/> for the last entry. This avoids needing to seek and
+        /// read the archive stream to determine data descriptor sizes.
+        /// </summary>
+        private void WriteFileComputeEntryEndOffsets()
+        {
+            ZipArchiveEntry? previousEntry = null;
+            foreach (ZipArchiveEntry entry in _entries)
+            {
+                if (!entry.OriginallyInArchive)
+                    continue;
+
+                if (previousEntry is not null)
+                {
+                    previousEntry.EndOfLocalEntryData = entry.OffsetOfLocalHeader;
+                }
+
+                previousEntry = entry;
+            }
+
+            if (previousEntry is not null)
+            {
+                previousEntry.EndOfLocalEntryData = _centralDirectoryStart;
             }
         }
 
@@ -832,6 +862,12 @@ namespace System.IO.Compression
                 long nextFileOffset = 0;
                 completeRewriteStartingOffset = startingOffset;
                 entriesToWrite = new(_entries.Count);
+
+                // Pre-compute EndOfLocalEntryData for each originally-in-archive entry.
+                // Since _entries is sorted by offset, the end of each entry's data (including any trailing
+                // data descriptor) is bounded by the start of the next entry or the central directory.
+                // This avoids seeking/reading the archive stream to determine data descriptor sizes.
+                WriteFileComputeEntryEndOffsets();
 
                 foreach (ZipArchiveEntry entry in _entries)
                 {

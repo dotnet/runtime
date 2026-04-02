@@ -30,7 +30,7 @@ namespace System.IO.Compression
         private long _uncompressedSize;
         private long _offsetOfLocalHeader;
         private long? _storedOffsetOfCompressedData;
-        private int? _storedDataDescriptorSize;
+        private long _endOfLocalEntryData;
         private uint _crc32;
         // An array of buffers, each a maximum of MaxSingleBufferSize in size
         private byte[][]? _compressedBytes;
@@ -1008,52 +1008,15 @@ namespace System.IO.Compression
         private bool AreSizesTooLarge => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
 
         /// <summary>
-        /// Returns the number of bytes occupied by the data descriptor following the compressed data,
-        /// or 0 if the entry does not use a data descriptor (bit 3 of the general purpose bit flag is not set).
-        /// The actual archive bytes are read to detect whether the optional 4-byte signature (0x08074B50)
-        /// is present, and the version-to-extract field is used to determine Zip64 format rather than
-        /// the compressed/uncompressed sizes alone, because the "pretendStreaming" code path can produce
-        /// a signature-less Zip64 descriptor even when sizes fit in 32 bits.
-        /// The result is cached since it cannot change for unchanged entries.
+        /// Stores the end-of-entry boundary offset (the position immediately after all entry data,
+        /// including any trailing data descriptor). This is set during the Update-mode write phase
+        /// using the next entry's local header offset or the central directory start offset, so that
+        /// no stream seeking or probing is needed to determine data descriptor sizes.
         /// </summary>
-        internal int GetDataDescriptorSize()
+        internal long EndOfLocalEntryData
         {
-            if (_storedDataDescriptorSize.HasValue)
-                return _storedDataDescriptorSize.Value;
-
-            if ((_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
-            {
-                _storedDataDescriptorSize = 0;
-                return 0;
-            }
-
-            long descriptorStart = GetOffsetOfCompressedData() + _compressedSize;
-            long savedPosition = _archive.ArchiveStream.Position;
-
-            bool hasSignature = false;
-            try
-            {
-                _archive.ArchiveStream.Seek(descriptorStart, SeekOrigin.Begin);
-
-                Span<byte> buffer = stackalloc byte[sizeof(uint)];
-                if (_archive.ArchiveStream.Read(buffer) == sizeof(uint))
-                {
-                    hasSignature = buffer.SequenceEqual(ZipLocalFileHeader.DataDescriptorSignatureConstantBytes);
-                }
-            }
-            finally
-            {
-                _archive.ArchiveStream.Seek(savedPosition, SeekOrigin.Begin);
-            }
-
-            bool isZip64 = _versionToExtract >= ZipVersionNeededValues.Zip64;
-
-            int size = hasSignature ? sizeof(uint) : 0;
-            size += sizeof(uint); // CRC32
-            size += isZip64 ? 2 * sizeof(long) : 2 * sizeof(uint);
-
-            _storedDataDescriptorSize = size;
-            return size;
+            get => _endOfLocalEntryData;
+            set => _endOfLocalEntryData = value;
         }
 
         private static CompressionLevel MapCompressionLevel(BitFlagValues generalPurposeBitFlag, ZipCompressionMethod compressionMethod)
@@ -1294,15 +1257,14 @@ namespace System.IO.Compression
                 if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
                 {
                     _everOpenedForWrite = true;
-                    // Capture the data descriptor size before WriteLocalFileHeader clears the DataDescriptor bit flag.
-                    int dataDescriptorSize = GetDataDescriptorSize();
                     WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite);
 
                     // If we know that we need to update the file header (but don't need to load and update the data itself)
-                    // then advance the position past the compressed data and any trailing data descriptor.
-                    if (_compressedSize != 0 || dataDescriptorSize != 0)
+                    // then advance the position past the compressed data and any trailing data descriptor
+                    // by seeking to the pre-computed end-of-entry boundary.
+                    if (_endOfLocalEntryData > _archive.ArchiveStream.Position)
                     {
-                        _archive.ArchiveStream.Seek(_compressedSize + dataDescriptorSize, SeekOrigin.Current);
+                        _archive.ArchiveStream.Seek(_endOfLocalEntryData, SeekOrigin.Begin);
                     }
                 }
             }
