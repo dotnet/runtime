@@ -52,7 +52,7 @@ namespace System.Diagnostics
         //support for threadpool based deferred execution
         private ISynchronizeInvoke? synchronizingObject;
         // the EventLog object that publicly exposes this instance.
-        private readonly EventLog parent;
+        private readonly EventLog? parent;
 
         private const string EventLogKey = "SYSTEM\\CurrentControlSet\\Services\\EventLog";
         private const string eventLogMutexName = "netfxeventlog.1.0";
@@ -102,7 +102,7 @@ namespace System.Diagnostics
             }
         }
 
-        public EventLogInternal(string logName, string machineName, string source, EventLog parent)
+        public EventLogInternal(string logName, string machineName, string source, EventLog? parent)
         {
             ArgumentNullException.ThrowIfNull(logName);
 
@@ -332,7 +332,7 @@ namespace System.Diagnostics
             {
                 string currentMachineName = this.machineName;
 
-                if (parent.ComponentDesignMode)
+                if (parent!.ComponentDesignMode)
                     this.boolFlags[Flag_monitoring] = value;
                 else
                 {
@@ -377,7 +377,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (this.synchronizingObject == null && parent.ComponentDesignMode)
+                if (this.synchronizingObject == null && parent!.ComponentDesignMode)
                 {
                     IDesignerHost? host = (IDesignerHost?)parent.ComponentGetService(typeof(IDesignerHost));
                     if (host != null)
@@ -418,7 +418,7 @@ namespace System.Diagnostics
 
 
                 info = new LogListeningInfo(
-                    handleOwner: new EventLogInternal(compLogName, compMachineName, string.Empty, parent: null! /* Special handling for EventLogInternals in listenerInfos; no parent is applicable */),
+                    handleOwner: new EventLogInternal(compLogName, compMachineName, string.Empty, parent: null),
                     waitHandle: new AutoResetEvent(false));
                 info.listeningComponents.Add(component);
 
@@ -1173,7 +1173,7 @@ namespace System.Diagnostics
 
         private void StartRaisingEvents(string currentMachineName, string currentLogName)
         {
-            if (!boolFlags[Flag_initializing] && !boolFlags[Flag_monitoring] && !parent.ComponentDesignMode)
+            if (!boolFlags[Flag_initializing] && !boolFlags[Flag_monitoring] && !parent!.ComponentDesignMode)
             {
                 StartListening(currentMachineName, currentLogName);
             }
@@ -1216,7 +1216,7 @@ namespace System.Diagnostics
 
         private void StopRaisingEvents(/*string currentMachineName,*/ string currentLogName)
         {
-            if (!boolFlags[Flag_initializing] && boolFlags[Flag_monitoring] && !parent.ComponentDesignMode)
+            if (!boolFlags[Flag_initializing] && boolFlags[Flag_monitoring] && !parent!.ComponentDesignMode)
             {
                 StopListening(currentLogName);
             }
