@@ -961,7 +961,7 @@ namespace System.Diagnostics
         {
             // When called on a running process, EnumProcessModules may fail with ERROR_PARTIAL_COPY
             // if the target process is not yet initialized or if the module list changes during the function call.
-            // We just try to avoid the race by retring 50 (an arbitrary number) times.
+            // We just try to avoid the race by retrying 50 (an arbitrary number) times.
             int i = 0;
             while (true)
             {
