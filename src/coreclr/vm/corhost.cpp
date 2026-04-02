@@ -335,7 +335,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions))
         {
             EX_TRY
-                DWORD retval = pAssembly->ExecuteMainMethod(&arguments, false /* propagateExceptions */);
+                DWORD retval = pAssembly->ExecuteMainMethod(&arguments, true /* captureException */);
                 if (pReturnValue)
                 {
                     *pReturnValue = retval;
@@ -344,7 +344,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
         }
         else
         {
-            DWORD retval = pAssembly->ExecuteMainMethod(&arguments, true /* propagateExceptions */);
+            DWORD retval = pAssembly->ExecuteMainMethod(&arguments, false /* captureException */);
             if (pReturnValue)
             {
                 *pReturnValue = retval;

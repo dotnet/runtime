@@ -1162,7 +1162,7 @@ struct Param
     CorEntryPointType EntryType;
     DWORD cCommandArgs;
     LPWSTR *wzArgs;
-    bool propagateExceptions;
+    bool captureException;
 } param;
 
 #if defined(TARGET_BROWSER)
@@ -1190,11 +1190,11 @@ static void RunMainInternal(Param* pParam)
     }
 
     UnmanagedCallersOnlyCaller callEntryPoint(METHOD__ENVIRONMENT__CALL_ENTRY_POINT);
-    callEntryPoint.InvokeUnhandled(
+    callEntryPoint.InvokeThrowing(
         static_cast<INT_PTR>(entryPoint),
         pArgument,
         pReturnValue,
-        CLR_BOOL_ARG(pParam->propagateExceptions));
+        CLR_BOOL_ARG(pParam->captureException));
 
     if (hasReturnValue)
     {
@@ -1216,7 +1216,7 @@ static void RunMainInternal(Param* pParam)
 HRESULT RunMain(MethodDesc *pFD ,
                 INT32 *piRetVal,
                 PTRARRAYREF *stringArgs /*=NULL*/,
-                bool propagateExceptions)
+                bool captureException)
 {
     STATIC_CONTRACT_THROWS;
     _ASSERTE(piRetVal);
@@ -1264,7 +1264,7 @@ HRESULT RunMain(MethodDesc *pFD ,
     param.EntryType = EntryType;
     param.cCommandArgs = cCommandArgs;
     param.wzArgs = wzArgs;
-    param.propagateExceptions = propagateExceptions;
+    param.captureException = captureException;
 
     EX_TRY_NOCATCH(Param *, pParam, &param)
     {
@@ -1328,7 +1328,7 @@ void RunManagedStartup()
     managedStartup.InvokeThrowing(s_wszDiagnosticStartupHookPaths);
 }
 
-INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, bool propagateExceptions)
+INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, bool captureException)
 {
     CONTRACTL
     {
@@ -1392,7 +1392,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, bool propagateExcepti
 
             RunManagedStartup();
 
-            hr = RunMain(pMeth, &iRetVal, stringArgs, propagateExceptions);
+            hr = RunMain(pMeth, &iRetVal, stringArgs, captureException);
 
             Thread::CleanUpForManagedThreadInNative(pThread);
         }

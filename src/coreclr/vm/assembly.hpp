@@ -355,7 +355,7 @@ public:
 
     //****************************************************************************************
     //
-    INT32 ExecuteMainMethod(PTRARRAYREF *stringArgs, bool propagateExceptions);
+    INT32 ExecuteMainMethod(PTRARRAYREF *stringArgs, bool captureException);
 
     //****************************************************************************************
 

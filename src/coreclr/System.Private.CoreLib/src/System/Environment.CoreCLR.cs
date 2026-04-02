@@ -138,15 +138,15 @@ namespace System
         [UnmanagedCallersOnly]
         [StackTraceHidden]
         [RequiresUnsafe]
-        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, int* pReturnValue, bool propagateExceptions)
+        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, int* pReturnValue, bool captureException, Exception* pException)
         {
             try
             {
-                if (pArgument != null)
+                if (pArgument is not null)
                 {
                     string[]? argument = *pArgument;
 
-                    if (pReturnValue != null)
+                    if (pReturnValue is not null)
                     {
                         *pReturnValue = ((delegate*<string[]?, int>)entryPoint)(argument);
                     }
@@ -157,7 +157,7 @@ namespace System
                 }
                 else
                 {
-                    if (pReturnValue != null)
+                    if (pReturnValue is not null)
                     {
                         *pReturnValue = ((delegate*<int>)entryPoint)();
                     }
@@ -167,8 +167,9 @@ namespace System
                     }
                 }
             }
-            catch (Exception) when (!propagateExceptions)
+            catch (Exception ex) when (captureException)
             {
+                *pException = ex;
             }
         }
 
