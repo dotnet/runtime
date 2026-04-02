@@ -3378,7 +3378,7 @@ namespace System.Runtime.Intrinsics
             TVectorDouble resultB = absx + absx * x2 * polyB;
 
             // For |x| > 4.0: log(|x| + sqrt(x^2+1))
-            TVectorDouble sqrtArg = absx * absx + TVectorDouble.One;
+            TVectorDouble sqrtArg = x2 + TVectorDouble.One;
             TVectorDouble resultLog = LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(absx + TVectorDouble.Sqrt(sqrtArg));
 
             // For |x| > 1/sqrt(eps): log(2) + log(|x|)
