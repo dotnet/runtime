@@ -923,7 +923,7 @@ namespace System.Numerics
                 BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign), quotient, out nuint rest);
 
                 remainder = dividend._sign < 0 ? -(long)rest : (long)rest;
-                BigInteger result = BigInteger(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
+                BigInteger result = new BigInteger(quotient, (dividend._sign < 0) ^ (divisor._sign < 0));
 
                 quotientBuffer.Dispose();
 
