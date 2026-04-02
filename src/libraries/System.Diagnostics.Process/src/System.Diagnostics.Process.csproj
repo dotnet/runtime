@@ -352,9 +352,6 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.ShellExecuteExW.cs"
              Link="Common\Interop\Windows\Shell32\Interop.ShellExecuteExW.cs" />
-    <Compile Include="System\Diagnostics\Process.Win32.cs" />
-    <Compile Include="System\Diagnostics\ProcessManager.Win32.cs" />
-    <Compile Include="System\Diagnostics\ProcessStartInfo.Win32.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'tvos'">
