@@ -23,6 +23,12 @@ namespace System.Diagnostics
         internal static void EnsureRemoteMachineFuncs() =>
             s_getRemoteProcessInfos ??= NtProcessManager.GetProcessInfos;
 
+        /// <summary>Gets process infos for each process on the local machine, without pulling in remote machine code.</summary>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
+        /// <returns>An array of process infos, one per found process.</returns>
+        internal static ProcessInfo[] GetLocalProcessInfos(string? processNameFilter) =>
+            NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
+
         /// <summary>Gets whether the process with the specified ID is currently running.</summary>
         /// <param name="processId">The process ID.</param>
         /// <returns>true if the process is running; otherwise, false.</returns>

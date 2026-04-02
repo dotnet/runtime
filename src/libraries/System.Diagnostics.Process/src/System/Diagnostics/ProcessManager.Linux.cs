@@ -20,7 +20,6 @@ namespace System.Diagnostics
         /// <returns>An array of process infos, one per found process.</returns>
         public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
         {
-            Debug.Assert(processNameFilter is null, "Not used on Linux");
             ThrowIfRemoteMachine(machineName);
 
             // Iterate through all process IDs to load information about each process
@@ -29,7 +28,8 @@ namespace System.Diagnostics
             foreach (int pid in pids)
             {
                 ProcessInfo? pi = CreateProcessInfo(pid);
-                if (pi != null)
+                if (pi != null &&
+                    (processNameFilter is null || string.Equals(pi.ProcessName, processNameFilter, StringComparison.OrdinalIgnoreCase)))
                 {
                     processes.Add(pi);
                 }

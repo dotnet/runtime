@@ -1071,7 +1071,16 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName)
         {
-            return GetProcessesByName(processName, ".");
+            // Avoid calling GetProcessesByName(processName, ".") so that the remote machine code path
+            // (reachable from the 2-arg overload on Windows) is not included when only local machine support is needed.
+            ProcessInfo[] processInfos = ProcessManager.GetLocalProcessInfos(processName);
+            Process[] processes = new Process[processInfos.Length];
+            for (int i = 0; i < processInfos.Length; i++)
+            {
+                ProcessInfo processInfo = processInfos[i];
+                processes[i] = new Process(".", false, processInfo.ProcessId, processInfo);
+            }
+            return processes;
         }
 
         /// <devdoc>
@@ -1085,7 +1094,16 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcesses()
         {
-            return GetProcesses(".");
+            // Avoid calling GetProcesses(".") so that the remote machine code path
+            // (reachable from the 1-arg overload on Windows) is not included when only local machine support is needed.
+            ProcessInfo[] processInfos = ProcessManager.GetLocalProcessInfos(processNameFilter: null);
+            Process[] processes = new Process[processInfos.Length];
+            for (int i = 0; i < processInfos.Length; i++)
+            {
+                ProcessInfo processInfo = processInfos[i];
+                processes[i] = new Process(".", false, processInfo.ProcessId, processInfo);
+            }
+            return processes;
         }
 
         /// <devdoc>
