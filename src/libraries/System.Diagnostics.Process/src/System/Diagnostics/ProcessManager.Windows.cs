@@ -20,7 +20,8 @@ namespace System.Diagnostics
         private static Func<string, ProcessInfo[]>? s_getRemoteProcessInfos;
 
         /// <summary>
-        /// Validates that the machine supports remote queries and initializes remote machine support.
+        /// Initializes remote machine support if necessary. This method should be called in all public
+        /// entrypoints with machineName argument.
         /// </summary>
         /// <param name="machineName">The target machine name.</param>
         /// <returns>true if the machine is remote; otherwise, false.</returns>
