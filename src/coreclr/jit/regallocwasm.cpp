@@ -1070,11 +1070,12 @@ void WasmRegAlloc::ResolveReferences()
             }
         }
 
-        assert(m_compiler->codeGen->WasmLocalsDecls[m_currentFunclet] == nullptr);
+        FuncInfoDsc* const currentFunc = m_compiler->funGetFunc(m_currentFunclet);
+        assert(currentFunc->funWasmLocalDecls == nullptr);
 
-        jitstd::vector<CodeGenInterface::WasmLocalsDecl>* decls = new (m_compiler->getAllocator(CMK_Codegen))
-            jitstd::vector<CodeGenInterface::WasmLocalsDecl>(m_compiler->getAllocator(CMK_Codegen));
-        m_compiler->codeGen->WasmLocalsDecls[m_currentFunclet] = decls;
+        jitstd::vector<FuncInfoDsc::WasmLocalsDecl>* decls = new (m_compiler->getAllocator(CMK_Codegen))
+            jitstd::vector<FuncInfoDsc::WasmLocalsDecl>(m_compiler->getAllocator(CMK_Codegen));
+        currentFunc->funWasmLocalDecls = decls;
 
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {

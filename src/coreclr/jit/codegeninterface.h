@@ -279,33 +279,11 @@ public:
 
 #if !HAS_FIXED_REGISTER_SET
 
-private:
-    jitstd::vector<regNumber> m_spRegs;
-    jitstd::vector<regNumber> m_fpRegs;
-
 public:
-    void SetStackPointerReg(unsigned funcletIndex, regNumber reg)
-    {
-        assert(funcletIndex < m_spRegs.size());
-        assert(reg != REG_NA);
-        m_spRegs[funcletIndex] = reg;
-    }
-    void SetFramePointerReg(unsigned funcletIndex, regNumber reg)
-    {
-        assert(funcletIndex < m_fpRegs.size());
-        assert(reg != REG_NA);
-        m_fpRegs[funcletIndex] = reg;
-    }
-    regNumber GetStackPointerReg(unsigned funcletIndex) const
-    {
-        assert(funcletIndex < m_spRegs.size());
-        return m_spRegs[funcletIndex];
-    }
-    regNumber GetFramePointerReg(unsigned funcletIndex) const
-    {
-        assert(funcletIndex < m_fpRegs.size());
-        return m_fpRegs[funcletIndex];
-    }
+    void      SetStackPointerReg(unsigned funcletIndex, regNumber reg);
+    void      SetFramePointerReg(unsigned funcletIndex, regNumber reg);
+    regNumber GetStackPointerReg(unsigned funcletIndex) const;
+    regNumber GetFramePointerReg(unsigned funcletIndex) const;
 #else  // HAS_FIXED_REGISTER_SET
     regNumber GetStackPointerReg() const
     {
@@ -410,18 +388,6 @@ public:
     }
 
 #endif // !DOUBLE_ALIGN
-
-#ifdef TARGET_WASM
-    struct WasmLocalsDecl
-    {
-        WasmValueType Type;
-        unsigned      Count;
-    };
-
-    // Per-funclet vectors of local declarations
-    //
-    jitstd::vector<jitstd::vector<WasmLocalsDecl>*> WasmLocalsDecls;
-#endif
 
 #ifdef DEBUG
     // The following is used to make sure the value of 'GetInterruptible()' isn't

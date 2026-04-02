@@ -49,10 +49,13 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
+    FuncInfoDsc* const func = m_compiler->funGetFunc(0);
+    assert(func->funWasmLocalDecls != nullptr);
+
     unsigned localsCount = 0;
     assert(m_compiler->compCurrFuncIdx == 0);
-    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, WasmLocalsDecls[0]->size());
-    for (WasmLocalsDecl& decl : *WasmLocalsDecls[0])
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, func->funWasmLocalDecls->size());
+    for (FuncInfoDsc::WasmLocalsDecl& decl : *func->funWasmLocalDecls)
     {
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
@@ -272,9 +275,11 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     //
     unsigned localsCount  = 0;
     unsigned funcletIndex = m_compiler->compCurrFuncIdx;
+    FuncInfoDsc* const func = m_compiler->funGetFunc(funcletIndex);
     assert(funcletIndex > 0);
-    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, WasmLocalsDecls[funcletIndex]->size());
-    for (WasmLocalsDecl& decl : *WasmLocalsDecls[funcletIndex])
+    assert(func->funWasmLocalDecls != nullptr);
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, func->funWasmLocalDecls->size());
+    for (FuncInfoDsc::WasmLocalsDecl& decl : *func->funWasmLocalDecls)
     {
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;

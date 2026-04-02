@@ -58,6 +58,34 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 #endif // JIT32_GCENCODER
 }
 
+#if !HAS_FIXED_REGISTER_SET
+void CodeGenInterface::SetStackPointerReg(unsigned funcletIndex, regNumber reg)
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    assert(reg != REG_NA);
+    m_compiler->compFuncInfos[funcletIndex].funStackPointerReg = reg;
+}
+
+void CodeGenInterface::SetFramePointerReg(unsigned funcletIndex, regNumber reg)
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    assert(reg != REG_NA);
+    m_compiler->compFuncInfos[funcletIndex].funFramePointerReg = reg;
+}
+
+regNumber CodeGenInterface::GetStackPointerReg(unsigned funcletIndex) const
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    return m_compiler->compFuncInfos[funcletIndex].funStackPointerReg;
+}
+
+regNumber CodeGenInterface::GetFramePointerReg(unsigned funcletIndex) const
+{
+    assert(funcletIndex < m_compiler->compFuncInfoCount);
+    return m_compiler->compFuncInfos[funcletIndex].funFramePointerReg;
+}
+#endif // !HAS_FIXED_REGISTER_SET
+
 CodeGenInterface* getCodeGenerator(Compiler* comp)
 {
     return new (comp, CMK_Codegen) CodeGen(comp);
@@ -406,11 +434,6 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
     , internalRegisters(theCompiler)
     , m_compiler(theCompiler)
     , treeLifeUpdater(nullptr)
-#ifdef TARGET_WASM
-    , m_spRegs(theCompiler->compFuncInfoCount, REG_NA, theCompiler->getAllocator(CMK_Codegen))
-    , m_fpRegs(theCompiler->compFuncInfoCount, REG_NA, theCompiler->getAllocator(CMK_Codegen))
-    , WasmLocalsDecls(theCompiler->compFuncInfoCount, nullptr, theCompiler->getAllocator(CMK_Codegen))
-#endif
 {
 }
 

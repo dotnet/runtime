@@ -90,6 +90,7 @@ class PerLoopInfo;         // defined in inductionvariableopts.cpp
 class RangeCheck;          // defined in rangecheck.h
 #ifdef TARGET_WASM
 class WasmInterval; // defined in fgwasm.h
+enum class WasmValueType : unsigned;
 #endif
 #ifdef DEBUG
 struct IndentStack;
@@ -1704,6 +1705,21 @@ struct FuncInfoDsc
     unsigned short funEHIndex; // index, into the ebd table, of innermost EH clause corresponding to this
                                // funclet. It is only valid if funKind field indicates this is a
                                // EH-related funclet: FUNC_HANDLER or FUNC_FILTER
+
+#if !HAS_FIXED_REGISTER_SET
+    regNumber funStackPointerReg;
+    regNumber funFramePointerReg;
+#endif
+
+#ifdef TARGET_WASM
+    struct WasmLocalsDecl
+    {
+        WasmValueType Type;
+        unsigned      Count;
+    };
+
+    jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
+#endif
 
 #if defined(TARGET_AMD64)
 
