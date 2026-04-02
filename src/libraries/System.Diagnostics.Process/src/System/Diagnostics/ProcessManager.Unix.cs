@@ -77,12 +77,5 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Gets process infos for each process on the local machine, without pulling in remote machine code.</summary>
-        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        internal static ProcessInfo[] GetLocalProcessInfos(string? processNameFilter) =>
-            GetProcessInfos(processNameFilter, ".");
     }
 }

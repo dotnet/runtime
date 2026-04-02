@@ -14,6 +14,16 @@ namespace System.Diagnostics
             throw new PlatformNotSupportedException();
         }
 
+        /// <summary>Gets process infos for each process on the local machine.</summary>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
+        /// <returns>An array of process infos, one per found process.</returns>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         /// <param name="machineName">The target machine.</param>
@@ -22,7 +32,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
         {
-            throw new PlatformNotSupportedException();
+            return GetProcessInfos(processNameFilter);
         }
 
         /// <summary>Gets an array of module infos for the specified process.</summary>

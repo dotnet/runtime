@@ -9,16 +9,13 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
-        /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <summary>Gets process infos for each process on the local machine.</summary>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
-        /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter)
         {
-            ThrowIfRemoteMachine(machineName);
-
             // Iterate through all process IDs to load information about each process
-            int[] pids = GetProcessIds(machineName);
+            int[] pids = GetProcessIds();
             var processes = new ArrayBuilder<ProcessInfo>(processNameFilter is null ? pids.Length : 0);
             foreach (int pid in pids)
             {
@@ -30,6 +27,16 @@ namespace System.Diagnostics
             }
 
             return processes.ToArray();
+        }
+
+        /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
+        /// <param name="machineName">The target machine.</param>
+        /// <returns>An array of process infos, one per found process.</returns>
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
+        {
+            ThrowIfRemoteMachine(machineName);
+            return GetProcessInfos(processNameFilter);
         }
 
         /// <summary>Gets an array of module infos for the specified process.</summary>

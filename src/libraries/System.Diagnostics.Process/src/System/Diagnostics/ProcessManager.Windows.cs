@@ -23,10 +23,10 @@ namespace System.Diagnostics
         internal static void EnsureRemoteMachineFuncs() =>
             s_getRemoteProcessInfos ??= NtProcessManager.GetProcessInfos;
 
-        /// <summary>Gets process infos for each process on the local machine, without pulling in remote machine code.</summary>
+        /// <summary>Gets process infos for each process on the local machine.</summary>
         /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         /// <returns>An array of process infos, one per found process.</returns>
-        internal static ProcessInfo[] GetLocalProcessInfos(string? processNameFilter) =>
+        internal static ProcessInfo[] GetProcessInfos(string? processNameFilter) =>
             NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
 
         /// <summary>Gets whether the process with the specified ID is currently running.</summary>
@@ -77,32 +77,7 @@ namespace System.Diagnostics
                 return Array.IndexOf(GetProcessIds(machineName), processId) >= 0;
             }
 
-            // Performance optimization for the local machine:
-            // First try to OpenProcess by id, if valid handle is returned verify that process is running
-            // When the attempt to open a handle fails due to lack of permissions enumerate all processes and compare ids
-            // Attempt to open handle for Idle process (processId == 0) fails with ERROR_INVALID_PARAMETER
-            if (processId != 0)
-            {
-                using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION | ProcessOptions.SYNCHRONIZE, false, processId))
-                {
-                    if (processHandle.IsInvalid)
-                    {
-                        int error = Marshal.GetLastWin32Error();
-                        if (error == Interop.Errors.ERROR_INVALID_PARAMETER)
-                        {
-                            Debug.Assert(processId != 0, "OpenProcess fails with ERROR_INVALID_PARAMETER for Idle Process");
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        bool signaled = false;
-                        return !HasExited(processHandle, ref signaled, out _);
-                    }
-                }
-            }
-
-            return Array.IndexOf(GetProcessIds(machineName), processId) >= 0;
+            return IsProcessRunning(processId);
         }
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
@@ -113,7 +88,7 @@ namespace System.Diagnostics
         {
             if (!IsRemoteMachine(machineName))
             {
-                return NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
+                return GetProcessInfos(processNameFilter);
             }
 
             EnsureRemoteMachineFuncs();
