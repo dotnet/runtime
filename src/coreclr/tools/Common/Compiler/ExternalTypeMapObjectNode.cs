@@ -50,6 +50,12 @@ namespace ILCompiler.DependencyAnalysis
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             ExternalTypeMapObjectNode otherNode = (ExternalTypeMapObjectNode)other;
+            if (_module is null || otherNode._module is null)
+            {
+                if (_module is null && otherNode._module is null)
+                    return 0;
+                throw new InvalidOperationException("Cannot compare ExternalTypeMapObjectNode instances when only one has a null module.");
+            }
             return comparer.Compare(_module, otherNode._module);
         }
 

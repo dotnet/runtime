@@ -52,6 +52,12 @@ namespace ILCompiler.DependencyAnalysis
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             ProxyTypeMapObjectNode otherNode = (ProxyTypeMapObjectNode)other;
+            if (_module is null || otherNode._module is null)
+            {
+                if (_module is null && otherNode._module is null)
+                    return 0;
+                throw new InvalidOperationException("Cannot compare ProxyTypeMapObjectNode instances when only one has a null module.");
+            }
             return comparer.Compare(_module, otherNode._module);
         }
 
