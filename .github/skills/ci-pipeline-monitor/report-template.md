@@ -116,7 +116,7 @@ Body (paste as-is into GitHub issue):
   - <failures.test_name>
   - <failures.test_name>
 ```
-List ALL failed test legs — never report only one when multiple failed.
+List ALL failed test legs. Cap test names at 5; show "... and N more" for the rest.
 
 **Error Message:**
 ```

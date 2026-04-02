@@ -300,13 +300,15 @@ class ReportGenerator:
             ):
                 out.append(f"- {ft['run_name']}")
 
-        # Unique test names
-        for tn_row in cur.execute(
+        # Unique test names (cap at 5)
+        test_names = [row["test_name"] for row in cur.execute(
             "SELECT DISTINCT test_name FROM failure_tests WHERE failure_id = ? ORDER BY test_name",
             (fail["id"],)
-        ):
-            tn = tn_row["test_name"]
+        )]
+        for tn in test_names[:5]:
             out.append(f"  - {tn}")
+        if len(test_names) > 5:
+            out.append(f"  - ... and {len(test_names) - 5} more")
         out.append("```")
         out.append("")
 
