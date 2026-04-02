@@ -1067,6 +1067,13 @@ DEFINE_METHOD(STUBHELPERS,          INVOKE_CONNECTION_POINT_PROVIDER_METHOD, Inv
 
 DEFINE_METHOD(STUBHELPERS,          CHECK_STRING_LENGTH,    CheckStringLength,          SM_Int_RetVoid)
 
+DEFINE_METHOD(STUBHELPERS,          LAYOUT_TYPE_CONVERT_TO_UNMANAGED, LayoutTypeConvertToUnmanaged, SM_PtrObj_PtrByte_PtrException_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          LAYOUT_TYPE_CONVERT_TO_MANAGED, LayoutTypeConvertToManaged, SM_PtrObj_PtrByte_PtrException_RetVoid)
+
+DEFINE_METHOD(STUBHELPERS,          NONBLITTABLE_STRUCTURE_ARRAY_CONVERT_TO_UNMANAGED, NonBlittableStructureArrayConvertToUnmanaged, NoSig)
+DEFINE_METHOD(STUBHELPERS,          NONBLITTABLE_STRUCTURE_ARRAY_CONVERT_TO_MANAGED,   NonBlittableStructureArrayConvertToManaged, NoSig)
+DEFINE_METHOD(STUBHELPERS,          NONBLITTABLE_STRUCTURE_ARRAY_FREE,                 NonBlittableStructureArrayFree, NoSig)
+
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(IDISPATCHHELPERS,      Interop,                IDispatchHelpers)
 DEFINE_METHOD(IDISPATCHHELPERS,     GET_DISPATCH_EX_PROPERTY_FLAGS, GetDispatchExPropertyFlags, SM_PtrPropertyInfo_PtrException_RetInt)
@@ -1150,7 +1157,7 @@ DEFINE_METHOD(INTERFACEMARSHALER,   CLEAR_NATIVE,           ClearNative,        
 
 
 DEFINE_CLASS(MNGD_SAFE_ARRAY_MARSHALER,  StubHelpers,                 MngdSafeArrayMarshaler)
-DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CREATE_MARSHALER,            CreateMarshaler,            SM_IntPtr_IntPtr_Int_Int_IntPtr_RetVoid)
+DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CREATE_MARSHALER,            CreateMarshaler,            SM_IntPtr_IntPtr_Int_Int_RetVoid)
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_SPACE_TO_NATIVE,     ConvertSpaceToNative,       SM_IntPtr_RefObj_IntPtr_RetVoid)
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertContentsToNative,    SM_IntPtr_RefObj_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_SPACE_TO_MANAGED,    ConvertSpaceToManaged,      SM_IntPtr_RefObj_IntPtr_RetVoid)
@@ -1181,7 +1188,7 @@ DEFINE_METHOD(VBBYVALSTRMARSHALER,  CONVERT_TO_MANAGED,     ConvertToManaged,   
 DEFINE_METHOD(VBBYVALSTRMARSHALER,  CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
 
 DEFINE_CLASS(MNGD_NATIVE_ARRAY_MARSHALER,  StubHelpers,                 MngdNativeArrayMarshaler)
-DEFINE_METHOD(MNGD_NATIVE_ARRAY_MARSHALER, CREATE_MARSHALER,            CreateMarshaler,            SM_IntPtr_IntPtr_Int_Bool_IntPtr_RetVoid)
+DEFINE_METHOD(MNGD_NATIVE_ARRAY_MARSHALER, CREATE_MARSHALER,            CreateMarshaler,            SM_IntPtr_IntPtr_Int_Bool_RetVoid)
 DEFINE_METHOD(MNGD_NATIVE_ARRAY_MARSHALER, CONVERT_SPACE_TO_NATIVE,     ConvertSpaceToNative,       SM_IntPtr_RefObj_IntPtr_RetVoid)
 DEFINE_METHOD(MNGD_NATIVE_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertContentsToNative,    SM_IntPtr_RefObj_IntPtr_RetVoid)
 DEFINE_METHOD(MNGD_NATIVE_ARRAY_MARSHALER, CONVERT_SPACE_TO_MANAGED,    ConvertSpaceToManaged,      SM_IntPtr_RefObj_IntPtr_Int_RetVoid)
@@ -1190,7 +1197,7 @@ DEFINE_METHOD(MNGD_NATIVE_ARRAY_MARSHALER, CLEAR_NATIVE,                ClearNat
 DEFINE_METHOD(MNGD_NATIVE_ARRAY_MARSHALER, CLEAR_NATIVE_CONTENTS,       ClearNativeContents,        SM_IntPtr_IntPtr_Int_RetVoid)
 
 DEFINE_CLASS(MNGD_FIXED_ARRAY_MARSHALER,  StubHelpers,                 MngdFixedArrayMarshaler)
-DEFINE_METHOD(MNGD_FIXED_ARRAY_MARSHALER, CREATE_MARSHALER,            CreateMarshaler,            SM_IntPtr_IntPtr_Int_Int_IntPtr_RetVoid)
+DEFINE_METHOD(MNGD_FIXED_ARRAY_MARSHALER, CREATE_MARSHALER,            CreateMarshaler,            SM_IntPtr_IntPtr_Int_Int_RetVoid)
 DEFINE_METHOD(MNGD_FIXED_ARRAY_MARSHALER, CONVERT_SPACE_TO_NATIVE,     ConvertSpaceToNative,       SM_IntPtr_RefObj_IntPtr_RetVoid)
 DEFINE_METHOD(MNGD_FIXED_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertContentsToNative,    SM_IntPtr_RefObj_IntPtr_RetVoid)
 DEFINE_METHOD(MNGD_FIXED_ARRAY_MARSHALER, CONVERT_SPACE_TO_MANAGED,    ConvertSpaceToManaged,      SM_IntPtr_RefObj_IntPtr_RetVoid)
@@ -1217,6 +1224,25 @@ DEFINE_CLASS(HANDLE_MARSHALER,           StubHelpers,                 HandleMars
 DEFINE_METHOD(HANDLE_MARSHALER,          CONVERT_SAFEHANDLE_TO_NATIVE,ConvertSafeHandleToNative,  SM_SafeHandle_RefCleanupWorkListElement_RetIntPtr)
 DEFINE_METHOD(HANDLE_MARSHALER,          THROW_SAFEHANDLE_FIELD_CHANGED, ThrowSafeHandleFieldChanged, SM_RetVoid)
 DEFINE_METHOD(HANDLE_MARSHALER,          THROW_CRITICALHANDLE_FIELD_CHANGED, ThrowCriticalHandleFieldChanged, SM_RetVoid)
+
+DEFINE_CLASS(STRUCTURE_MARSHALER,  StubHelpers,               StructureMarshaler`1)
+DEFINE_METHOD(STRUCTURE_MARSHALER, CONVERT_TO_MANAGED,        ConvertToManaged,       NoSig)
+DEFINE_METHOD(STRUCTURE_MARSHALER, CONVERT_TO_UNMANAGED,      ConvertToUnmanaged,     NoSig)
+DEFINE_METHOD(STRUCTURE_MARSHALER, CONVERT_TO_UNMANAGED_CORE, ConvertToUnmanagedCore, NoSig)
+DEFINE_METHOD(STRUCTURE_MARSHALER, FREE,                      Free,                   NoSig)
+DEFINE_METHOD(STRUCTURE_MARSHALER, FREE_CORE,                 FreeCore,               NoSig)
+
+DEFINE_CLASS(LAYOUTCLASS_MARSHALER,  StubHelpers,               LayoutClassMarshaler`1)
+DEFINE_METHOD(LAYOUTCLASS_MARSHALER, CONVERT_TO_MANAGED,        ConvertToManaged,       NoSig)
+DEFINE_METHOD(LAYOUTCLASS_MARSHALER, CONVERT_TO_UNMANAGED,      ConvertToUnmanaged,     NoSig)
+DEFINE_METHOD(LAYOUTCLASS_MARSHALER, CONVERT_TO_UNMANAGED_CORE, ConvertToUnmanagedCore, NoSig)
+DEFINE_METHOD(LAYOUTCLASS_MARSHALER, FREE,                      Free,                   NoSig)
+DEFINE_METHOD(LAYOUTCLASS_MARSHALER, FREE_CORE,                 FreeCore,               NoSig)
+
+DEFINE_CLASS(BOXEDLAYOUTTYPE_MARSHALER,  StubHelpers,               BoxedLayoutTypeMarshaler`1)
+DEFINE_METHOD(BOXEDLAYOUTTYPE_MARSHALER, CONVERT_TO_MANAGED,        ConvertToManaged,       NoSig)
+DEFINE_METHOD(BOXEDLAYOUTTYPE_MARSHALER, CONVERT_TO_UNMANAGED,      ConvertToUnmanaged,     NoSig)
+DEFINE_METHOD(BOXEDLAYOUTTYPE_MARSHALER, FREE,                      Free,                   NoSig)
 
 DEFINE_CLASS(COMVARIANT,            Marshalling,            ComVariant)
 
