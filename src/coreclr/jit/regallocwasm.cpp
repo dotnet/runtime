@@ -891,7 +891,7 @@ void WasmRegAlloc::ResolveReferences()
                 }
                 else if (virtReg == fpVirtReg)
                 {
-                    physReg = physReg = MakeWasmReg(1, TypeToWasmValueType(TYP_I_IMPL));
+                    physReg = MakeWasmReg(1, TypeToWasmValueType(TYP_I_IMPL));
                 }
             }
 
