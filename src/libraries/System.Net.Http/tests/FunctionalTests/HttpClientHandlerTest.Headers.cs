@@ -605,7 +605,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, "one\0two\0three\0", true)]
         public async Task SendAsync_InvalidCharactersInResponseHeader_ReplacedWithSpaces(bool testHttp11, string value, bool testTrailers)
         {
-            Assert.SkipUnless(testHttp11 && UseVersion == HttpVersion.Version11, "This case is not valid for HTTP 1.1");
+            Assert.SkipWhen(!testHttp11 && UseVersion == HttpVersion.Version11, "This case is not valid for HTTP 1.1");
 
             string expectedValue = value.Replace('\r', ' ').Replace('\n', ' ').Replace('\0', ' ');
             await LoopbackServerFactory.CreateClientAndServerAsync(

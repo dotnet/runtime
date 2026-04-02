@@ -691,7 +691,7 @@ namespace System.IO.Tests
         {
             StringBuilder testData = GetTestStringBuilder(testStringBuilderKind);
 
-            Assert.SkipUnless(isSynchronized && !PlatformDetection.IsMultithreadingSupported, nameof(PlatformDetection.IsMultithreadingSupported));
+            Assert.SkipUnless(isSynchronized || PlatformDetection.IsMultithreadingSupported, nameof(PlatformDetection.IsMultithreadingSupported));
 
             using (CharArrayTextWriter ctw = NewTextWriter)
             {
@@ -708,7 +708,7 @@ namespace System.IO.Tests
         {
             StringBuilder testData = GetTestStringBuilder(testStringBuilderKind);
 
-            Assert.SkipUnless(isSynchronized && !PlatformDetection.IsMultithreadingSupported, nameof(PlatformDetection.IsMultithreadingSupported));
+            Assert.SkipUnless(isSynchronized || PlatformDetection.IsMultithreadingSupported, nameof(PlatformDetection.IsMultithreadingSupported));
 
             using (CharArrayTextWriter ctw = NewTextWriter)
             {
