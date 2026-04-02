@@ -369,15 +369,20 @@ namespace ILCompiler.ObjectWriter
          }
 
         public const int WebcilSectionAlignment = 16;
-        private WebcilSegment BuildWebcilDataSegment()
-        {
-            WebcilSection[] webcilSections = _sections.OfType<WebcilSection>().ToArray();
 
+        /// <summary>
+        /// Assigns VirtualAddresses and related header fields to each webcil section based on the
+        /// total section count and each section's stream length. This can be called before all
+        /// sections have their final content as long as the section count is finalized, though
+        /// sections whose size changes later must come last they don't invalidate earlier VAs.
+        /// </summary>
+        private static void AssignWebcilSectionVirtualAddresses(WebcilSection[] webcilSections)
+        {
             uint sizeOfHeaders = (uint)WebcilEncoder.HeaderEncodeSize() + (uint)(webcilSections.Length * WebcilEncoder.SectionHeaderEncodeSize());
             uint pointerToRawData = (uint)AlignmentHelper.AlignUp((int)sizeOfHeaders, (int)WebcilSectionAlignment);
             uint virtualAddress = pointerToRawData;
 
-            for (int i = 0; i < webcilSections.Count(); i++)
+            for (int i = 0; i < webcilSections.Length; i++)
             {
                 WebcilSection webcilSection = webcilSections[i];
                 Debug.Assert(BitOperations.IsPow2(webcilSection.MinAlignment) && BitOperations.IsPow2(WebcilSectionAlignment) &&
@@ -401,6 +406,13 @@ namespace ILCompiler.ObjectWriter
                 pointerToRawData += alignedSectionSize;
                 virtualAddress += virtualSize;
             }
+        }
+
+        private WebcilSegment BuildWebcilDataSegment()
+        {
+            WebcilSection[] webcilSections = _sections.OfType<WebcilSection>().ToArray();
+
+            AssignWebcilSectionVirtualAddresses(webcilSections);
 
             // Populate the RVAs for the Cor header/size and debug directory/size, which are required for the runtime
             // to be able to load this segment.
@@ -640,13 +652,29 @@ namespace ILCompiler.ObjectWriter
         {
             Debug.Assert(outputFileStream.CanSeek, $"EmitObjectFile requires seekable output stream");
 
+            if (_pendingBaseRelocs.Count > 0)
+            {
+                GetOrCreateSection(WebcilRelocSection);
+            }
+
+            WebcilSection[] webcilSections = _sections.OfType<WebcilSection>().ToArray();
+            // At this point, our count of sections is final since we've determined if we have base relocs.
+            // This allows us to do an initial assignment of virtual addresses to our webcil sections,
+            // which is required for resolving file-level relocations whose RVA depends on the section VAs.
+            AssignWebcilSectionVirtualAddresses(webcilSections);
+
+            // We can now build our base relocs with the correct addresses
+            BuildBaseRelocMap();
+
             if (_baseRelocMap.Count > 0)
             {
                 EmitRelocSectionData();
             }
 
-            // Creating the webcil segment <- emitting relocs (we need to know the size of the relocs section)
-            _webcilSegment =  BuildWebcilDataSegment();
+            // Build the final webcil segment (re-assigns VAs with reloc section's real size). This must come last,
+            // since we must know if we have a reloc section as well as its final size to determine the segment layout.
+            _webcilSegment = BuildWebcilDataSegment();
+
             // Writing our memory import <- size of the webcil segment (for an accurate minimum size)
             WriteMemoryImport((ulong)_webcilSegment.GetFlatMappedSize());
             // Writing element counts <- imports being finalized.
@@ -740,6 +768,11 @@ namespace ILCompiler.ObjectWriter
         // We group webcil relocs into 4kb blocks, similar to PE
         const uint WebcilRelocPageSize = 0x1000;
 
+        // File-level relocations whose RVA computation is deferred until webcil section
+        // VirtualAddresses have been assigned.
+        private readonly record struct PendingBaseReloc(int SectionIndex, long Offset, RelocType FileRelocType);
+        private readonly List<PendingBaseReloc> _pendingBaseRelocs = new();
+
         private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             foreach (var reloc in relocationList)
@@ -749,32 +782,49 @@ namespace ILCompiler.ObjectWriter
                     _resolvableRelocations[sectionIndex] = resolvable = new List<SymbolicRelocation>();
                 }
                 // Unconditionally add the reloc to our resolvable list; we do some amount of relocation resolution
-                // for all relocation types
+                // for all relocation types.
                 resolvable.Add(reloc);
 
                 // A few relocation types (table indices and IMAGE_REL type relocs in Webcil) need
                 // an additional runtime reloc as well to add a base address.
+                // We defer the actual RVA computation to EmitObjectFile, where webcil section
+                // VirtualAddresses will have been assigned. Here we just record the raw info.
                 if (Relocation.GetFileRelocationType(reloc.Type) is RelocType fileRelocType &&
                     fileRelocType is not RelocType.IMAGE_REL_BASED_ABSOLUTE)
                 {
-                    WebcilSection webcilSection = _sections[sectionIndex] as WebcilSection;
-                    Debug.Assert(webcilSection is not null);
-                    // Gather file-level relocations that need to go into the webcil .reloc
-                    // section. We collect entries grouped by 4KB page into a map of
-                    // (page RVA -> list of (type<<12 | offsetInPage) WORD entries).
-                    // Note that this handling is logically the same as the implementation in the PE Object Writer.
-                    uint targetRva = webcilSection.Header.VirtualAddress + (uint)reloc.Offset;
-                    uint pageRva = targetRva & ~(WebcilRelocPageSize - 1);
-                    ushort offsetInPage = (ushort)(targetRva & (WebcilRelocPageSize - 1));
-                    ushort entry = (ushort)(((ushort)fileRelocType << 12) | offsetInPage);
-
-                    if (!_baseRelocMap.TryGetValue(pageRva, out List<ushort> list))
-                    {
-                        list = new List<ushort>();
-                        _baseRelocMap.Add(pageRva, list);
-                    }
-                    list.Add(entry);
+                    Debug.Assert(_sections[sectionIndex] is WebcilSection);
+                    _pendingBaseRelocs.Add(new PendingBaseReloc(sectionIndex, reloc.Offset, fileRelocType));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Processes the deferred file-level relocations after webcil section VirtualAddresses
+        /// have been assigned. Populates <see cref="_baseRelocMap"/> with page-grouped base reloc
+        /// entries, mirroring the PE base relocation format.
+        /// </summary>
+        private void BuildBaseRelocMap()
+        {
+            foreach (PendingBaseReloc pending in _pendingBaseRelocs)
+            {
+                Debug.Assert(_sections[pending.SectionIndex] is WebcilSection);
+                WebcilSection webcilSection = _sections[pending.SectionIndex] as WebcilSection;
+                // Gather file-level relocations that need to go into the webcil .reloc
+                // section. We collect entries grouped by 4KB page into a map of
+                // (page RVA -> list of (type<<12 | offsetInPage) WORD entries).
+                // Note that this handling is logically the same as the implementation in the PE Object Writer.
+                uint targetRva = webcilSection.Header.VirtualAddress + (uint)pending.Offset;
+                Debug.Assert(targetRva != 0); // this section should have been assigned a non-zero VirtualAddress at this point.
+                uint pageRva = targetRva & ~(WebcilRelocPageSize - 1);
+                ushort offsetInPage = (ushort)(targetRva & (WebcilRelocPageSize - 1));
+                ushort entry = (ushort)(((ushort)pending.FileRelocType << 12) | offsetInPage);
+
+                if (!_baseRelocMap.TryGetValue(pageRva, out List<ushort> list))
+                {
+                    list = new List<ushort>();
+                    _baseRelocMap.Add(pageRva, list);
+                }
+                list.Add(entry);
             }
         }
 
