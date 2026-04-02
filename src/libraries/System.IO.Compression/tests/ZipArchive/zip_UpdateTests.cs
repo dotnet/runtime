@@ -1476,8 +1476,8 @@ namespace System.IO.Compression.Tests
             // After update, we should have 4 local headers (3 original + 1 added)
             Assert.Equal(originalEntryCount + 1, localHeaderCount);
             // The original 3 entries should still have data descriptors
-            // (the bit flag and signature count should match for entries with data descriptors)
-            Assert.Equal(dataDescriptorCount, entriesWithDataDescriptorBit);
+            Assert.Equal(originalEntryCount, entriesWithDataDescriptorBit);
+            Assert.Equal(originalEntryCount, dataDescriptorCount);
 
             // Step 5: Reopen in Read mode and verify all entries are readable
             using (MemoryStream ms = new MemoryStream(updatedZipBytes))
@@ -1487,28 +1487,30 @@ namespace System.IO.Compression.Tests
 
                 for (int i = 0; i < originalEntryCount; i++)
                 {
-                    ZipArchiveEntry entry = readArchive.Entries[i];
+                    ZipArchiveEntry entry = readArchive.GetEntry($"entry{i}.bin");
+                    Assert.NotNull(entry);
                     byte[] expected = [.. entryData, (byte)i];
                     byte[] actual = new byte[expected.Length];
                     Stream rs = await OpenEntryStream(async, entry);
-                    int bytesRead = async
-                        ? await rs.ReadAsync(actual)
-                        : rs.Read(actual);
-                    Assert.Equal(expected.Length, bytesRead);
+                    if (async)
+                        await rs.ReadExactlyAsync(actual);
+                    else
+                        rs.ReadExactly(actual);
                     Assert.Equal(expected, actual);
                     await DisposeStream(async, rs);
                 }
 
                 // Verify the newly added entry
                 {
-                    ZipArchiveEntry entry = readArchive.Entries[originalEntryCount];
+                    ZipArchiveEntry entry = readArchive.GetEntry("added.bin");
+                    Assert.NotNull(entry);
                     byte[] expected = [.. entryData, 0xFF];
                     byte[] actual = new byte[expected.Length];
                     Stream rs = await OpenEntryStream(async, entry);
-                    int bytesRead = async
-                        ? await rs.ReadAsync(actual)
-                        : rs.Read(actual);
-                    Assert.Equal(expected.Length, bytesRead);
+                    if (async)
+                        await rs.ReadExactlyAsync(actual);
+                    else
+                        rs.ReadExactly(actual);
                     Assert.Equal(expected, actual);
                     await DisposeStream(async, rs);
                 }
