@@ -444,6 +444,21 @@ public struct DacpJitManagerInfo
     public ClrDataAddress ptrHeapList;
 };
 
+[StructLayout(LayoutKind.Explicit, Size = 0x18)]
+public struct DacpJitCodeHeapInfo
+{
+    public enum CodeHeapType : uint
+    {
+        CODEHEAP_LOADER = 0,
+        CODEHEAP_HOST,
+        CODEHEAP_UNKNOWN,
+    }
+    [FieldOffset(0)]    public CodeHeapType codeHeapType;
+    [FieldOffset(8)]    public ClrDataAddress LoaderHeap;    // valid when codeHeapType == CODEHEAP_LOADER
+    [FieldOffset(8)]    public ClrDataAddress baseAddr;      // valid when codeHeapType == CODEHEAP_HOST
+    [FieldOffset(0x10)] public ClrDataAddress currentAddr;  // valid when codeHeapType == CODEHEAP_HOST
+};
+
 public struct DacpSyncBlockData
 {
     public enum COMFlagsEnum : uint
@@ -519,7 +534,7 @@ public struct DACEHInfo
 public enum SOSStackSourceType : uint
 {
     SOS_StackSourceIP = 0,
-    SOS_StackSourceFrame = 1
+    SOS_StackSourceFrame = 1,
 }
 
 public struct SOSStackRefData
@@ -801,7 +816,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*VISITHEAP*/ void* pCallback);
     [PreserveSig]
-    int GetCodeHeapList(ClrDataAddress jitManager, uint count, /*struct DacpJitCodeHeapInfo*/ void* codeHeaps, uint* pNeeded);
+    int GetCodeHeapList(ClrDataAddress jitManager, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpJitCodeHeapInfo[]? codeHeaps, uint* pNeeded);
     [PreserveSig]
     int TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, /*VCSHeapType*/ int heaptype, /*VISITHEAP*/ void* pCallback);
 

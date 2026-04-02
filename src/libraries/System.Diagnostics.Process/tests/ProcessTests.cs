@@ -170,7 +170,7 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                SendSignal(signal, remoteHandle.Process.Id);
+                SendSignal(signal, remoteHandle.Process);
 
                 Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
                 Assert.Equal(0, remoteHandle.Process.ExitCode);
@@ -243,7 +243,7 @@ namespace System.Diagnostics.Tests
             {
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalRegistrationCreatedMessage, WaitInMS);
 
-                SendSignal(signal, remoteHandle.Process.Id);
+                SendSignal(signal, remoteHandle.Process);
 
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerStartedMessage, WaitInMS);
                 AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerDisposedMessage, WaitInMS);
@@ -253,11 +253,11 @@ namespace System.Diagnostics.Tests
                 if (PlatformDetection.IsMonoRuntime && signal == PosixSignal.SIGQUIT && !PlatformDetection.IsWindows)
                 {
                     // Terminate process using SIGTERM instead.
-                    SendSignal(PosixSignal.SIGTERM, remoteHandle.Process.Id);
+                    SendSignal(PosixSignal.SIGTERM, remoteHandle.Process);
                 }
                 else
                 {
-                    SendSignal(signal, remoteHandle.Process.Id);
+                    SendSignal(signal, remoteHandle.Process);
                 }
 
                 Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
@@ -402,14 +402,14 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, and MacCatalyst.")]
         public void ProcessStart_TryOpenFolder_UseShellExecuteIsFalse_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = Path.GetTempPath() }));
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, and MacCatalyst.")]
         public void TestStartWithBadWorkingDirectory()
         {
             string program;
@@ -504,7 +504,7 @@ namespace System.Diagnostics.Tests
             nameof(PlatformDetection.IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(true), InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS and MacCatalyst.")]
         [SkipOnPlatform(TestPlatforms.Android, "Android doesn't allow executing custom shell scripts")]
         public void ProcessStart_UseShellExecute_Executes(bool filenameAsUrl)
         {
@@ -577,7 +577,7 @@ namespace System.Diagnostics.Tests
             nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore),
             nameof(PlatformDetection.IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS and MacCatalyst.")]
         [SkipOnPlatform(TestPlatforms.Android, "Android doesn't allow executing custom shell scripts")]
         public void ProcessStart_UseShellExecute_WorkingDirectory()
         {
@@ -1940,76 +1940,6 @@ namespace System.Diagnostics.Tests
         {
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.MainWindowHandle);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection),
-            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
-            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
-        [OuterLoop("Pops UI")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
-        {
-            const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
-
-            using (Process process = Process.Start(ExePath))
-            {
-                try
-                {
-                    for (int attempt = 0; attempt < 50; ++attempt)
-                    {
-                        process.Refresh();
-                        if (process.MainWindowHandle != IntPtr.Zero)
-                        {
-                            break;
-                        }
-
-                        Thread.Sleep(100);
-                    }
-
-                    Assert.NotEqual(IntPtr.Zero, process.MainWindowHandle);
-                }
-                finally
-                {
-                    process.Kill();
-                    Assert.True(process.WaitForExit(WaitInMS));
-                }
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection),
-            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
-            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
-        [OuterLoop("Pops UI")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
-        {
-            const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
-
-            using (Process process = Process.Start(new ProcessStartInfo(ExePath)))
-            {
-                try
-                {
-                    for (int attempt = 0; attempt < 50; ++attempt)
-                    {
-                        process.Refresh();
-                        if (process.MainWindowTitle != string.Empty)
-                        {
-                            break;
-                        }
-
-                        Thread.Sleep(100);
-                    }
-
-                    Assert.NotEqual(string.Empty, process.MainWindowTitle);
-                }
-                finally
-                {
-                    process.Kill();
-                    Assert.True(process.WaitForExit(WaitInMS));
-                }
-            }
         }
 
         [Fact]

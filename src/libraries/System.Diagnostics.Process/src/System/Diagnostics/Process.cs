@@ -83,8 +83,6 @@ namespace System.Diagnostics
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
 
-        private static int s_cachedSerializationSwitch;
-
         /// <devdoc>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.Diagnostics.Process'/> class.
@@ -1227,6 +1225,9 @@ namespace System.Diagnostics
         /// <summary>Additional optional configuration hook after a process ID is set.</summary>
         partial void ConfigureAfterProcessIdSet();
 
+        /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
+        private const int StreamBufferSize = 4096;
+
         /// <devdoc>
         ///    <para>
         ///       Starts a process specified by the <see cref='System.Diagnostics.Process.StartInfo'/> property of this <see cref='System.Diagnostics.Process'/>
@@ -1244,44 +1245,148 @@ namespace System.Diagnostics
             Close();
 
             ProcessStartInfo startInfo = StartInfo;
-            if (startInfo.FileName.Length == 0)
+            startInfo.ThrowIfInvalid(out bool anyRedirection);
+
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
             {
-                throw new InvalidOperationException(SR.FileNameMissing);
-            }
-            if (startInfo.StandardInputEncoding != null && !startInfo.RedirectStandardInput)
-            {
-                throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
-            }
-            if (startInfo.StandardOutputEncoding != null && !startInfo.RedirectStandardOutput)
-            {
-                throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
-            }
-            if (startInfo.StandardErrorEncoding != null && !startInfo.RedirectStandardError)
-            {
-                throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
-            }
-            if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.HasArgumentList)
-            {
-                throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
-            }
-            if (startInfo.HasArgumentList)
-            {
-                int argumentCount = startInfo.ArgumentList.Count;
-                for (int i = 0; i < argumentCount; i++)
-                {
-                    if (startInfo.ArgumentList[i] is null)
-                    {
-                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
-                    }
-                }
+                throw new PlatformNotSupportedException();
             }
 
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
 
-            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref s_cachedSerializationSwitch);
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
 
-            return StartCore(startInfo);
+            SafeFileHandle? parentInputPipeHandle = null;
+            SafeFileHandle? parentOutputPipeHandle = null;
+            SafeFileHandle? parentErrorPipeHandle = null;
+
+            SafeFileHandle? childInputHandle = null;
+            SafeFileHandle? childOutputHandle = null;
+            SafeFileHandle? childErrorHandle = null;
+
+            try
+            {
+                if (!startInfo.UseShellExecute)
+                {
+                    // Windows supports creating non-inheritable pipe in atomic way.
+                    // When it comes to Unixes, it depends whether they support pipe2 sys-call or not.
+                    // If they don't, the pipe is created as inheritable and made non-inheritable with another sys-call.
+                    // Some process could be started in the meantime, so in order to prevent accidental handle inheritance,
+                    // a writer lock is used around the pipe creation code.
+
+                    bool requiresLock = anyRedirection && !ProcessUtils.SupportsAtomicNonInheritablePipeCreation;
+
+                    if (requiresLock)
+                    {
+                        ProcessUtils.s_processStartLock.EnterWriteLock();
+                    }
+
+                    try
+                    {
+                        if (startInfo.StandardInputHandle is not null)
+                        {
+                            childInputHandle = startInfo.StandardInputHandle;
+                        }
+                        else if (startInfo.RedirectStandardInput)
+                        {
+                            SafeFileHandle.CreateAnonymousPipe(out childInputHandle, out parentInputPipeHandle);
+                        }
+                        else if (ProcessUtils.PlatformSupportsConsole)
+                        {
+                            childInputHandle = Console.OpenStandardInputHandle();
+                        }
+
+                        if (startInfo.StandardOutputHandle is not null)
+                        {
+                            childOutputHandle = startInfo.StandardOutputHandle;
+                        }
+                        else if (startInfo.RedirectStandardOutput)
+                        {
+                            SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputHandle, asyncRead: OperatingSystem.IsWindows());
+                        }
+                        else if (ProcessUtils.PlatformSupportsConsole)
+                        {
+                            childOutputHandle = Console.OpenStandardOutputHandle();
+                        }
+
+                        if (startInfo.StandardErrorHandle is not null)
+                        {
+                            childErrorHandle = startInfo.StandardErrorHandle;
+                        }
+                        else if (startInfo.RedirectStandardError)
+                        {
+                            SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorHandle, asyncRead: OperatingSystem.IsWindows());
+                        }
+                        else if (ProcessUtils.PlatformSupportsConsole)
+                        {
+                            childErrorHandle = Console.OpenStandardErrorHandle();
+                        }
+                    }
+                    finally
+                    {
+                        if (requiresLock)
+                        {
+                            ProcessUtils.s_processStartLock.ExitWriteLock();
+                        }
+                    }
+                }
+
+                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle))
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                parentInputPipeHandle?.Dispose();
+                parentOutputPipeHandle?.Dispose();
+                parentErrorPipeHandle?.Dispose();
+
+                throw;
+            }
+            finally
+            {
+                // We MUST close the child handles, otherwise the parent
+                // process will not receive EOF when the child process closes its handles.
+                // It's OK to do it for handles returned by Console.OpenStandard*Handle APIs,
+                // because these handles are not owned and won't be closed by Dispose.
+                // We don't dispose handles that were passed in
+                // by the caller via StartInfo.StandardInputHandle/OutputHandle/ErrorHandle.
+                if (startInfo.StandardInputHandle is null)
+                {
+                    childInputHandle?.Dispose();
+                }
+                if (startInfo.StandardOutputHandle is null)
+                {
+                    childOutputHandle?.Dispose();
+                }
+                if (startInfo.StandardErrorHandle is null)
+                {
+                    childErrorHandle?.Dispose();
+                }
+            }
+
+            if (startInfo.RedirectStandardInput)
+            {
+                _standardInput = new StreamWriter(OpenStream(parentInputPipeHandle!, FileAccess.Write),
+                    startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
+                {
+                    AutoFlush = true
+                };
+            }
+            if (startInfo.RedirectStandardOutput)
+            {
+                _standardOutput = new StreamReader(OpenStream(parentOutputPipeHandle!, FileAccess.Read),
+                    startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+            if (startInfo.RedirectStandardError)
+            {
+                _standardError = new StreamReader(OpenStream(parentErrorPipeHandle!, FileAccess.Read),
+                    startInfo.StandardErrorEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+
+            return true;
         }
 
         /// <devdoc>
@@ -1313,7 +1418,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Process Start(string fileName, string arguments)
+        public static Process Start(string fileName, string? arguments)
         {
             // the underlying Start method can only return null on Windows platforms,
             // when the ProcessStartInfo.UseShellExecute property is set to true.
@@ -1738,13 +1843,6 @@ namespace System.Diagnostics
         private void CheckDisposed()
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-        }
-
-        private static Win32Exception CreateExceptionForErrorStartingProcess(string errorMessage, int errorCode, string fileName, string? workingDirectory)
-        {
-            string directoryForException = string.IsNullOrEmpty(workingDirectory) ? Directory.GetCurrentDirectory() : workingDirectory;
-            string msg = SR.Format(SR.ErrorStartingProcess, fileName, directoryForException, errorMessage);
-            return new Win32Exception(errorCode, msg);
         }
 
         /// <summary>

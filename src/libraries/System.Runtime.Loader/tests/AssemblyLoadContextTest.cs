@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Runtime.Loader.Tests
@@ -275,5 +276,55 @@ namespace System.Runtime.Loader.Tests
             Exception error = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyName(new AssemblyName("MyAssembly")));
             Assert.IsType<InvalidOperationException>(error.InnerException);
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
+        public static void InvalidCastException_DifferentALC_ShowsAssemblyInfo()
+        {
+            var alc = new AssemblyLoadContext("TestALC");
+            Assembly alcAssembly = alc.LoadFromAssemblyPath(typeof(AssemblyLoadContextTest).Assembly.Location);
+
+            Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName!, throwOnError: true)!;
+            object instance = Activator.CreateInstance(alcType)!;
+
+            // Cast directly to InvalidCastSharedType from the Default ALC.
+            var ice = Assert.Throws<InvalidCastException>(() =>
+            {
+                InvalidCastSharedType _ = (InvalidCastSharedType)instance;
+            });
+
+            // The message should report both ALC contexts for the same-named type.
+            Assert.Contains(nameof(InvalidCastSharedType), ice.Message);
+            Assert.Contains("Default", ice.Message);
+            Assert.Contains("TestALC", ice.Message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
+        public static void InvalidCastException_GenericTypeArg_DifferentALC_ShowsAssemblyInfo()
+        {
+            var alc = new AssemblyLoadContext("TestALC");
+            Assembly alcAssembly = alc.LoadFromAssemblyPath(typeof(AssemblyLoadContextTest).Assembly.Location);
+
+            // The outer type (StrongBox<T>) is from CoreLib (same in all contexts),
+            // but the generic argument comes from a different ALC.
+            Type alcType = alcAssembly.GetType(typeof(InvalidCastSharedType).FullName!, throwOnError: true)!;
+            Type boxType = typeof(StrongBox<>).MakeGenericType(alcType);
+            object instance = Activator.CreateInstance(boxType)!;
+
+            var ice = Assert.Throws<InvalidCastException>(() =>
+            {
+                StrongBox<InvalidCastSharedType> _ = (StrongBox<InvalidCastSharedType>)instance;
+            });
+
+            // The message should include the types with the differing generic argument types
+            // and the ALC context names.
+            Assert.Contains(nameof(StrongBox<InvalidCastSharedType>), ice.Message);
+            Assert.Contains($"generic argument '{typeof(InvalidCastSharedType).FullName}", ice.Message);
+            Assert.Contains("Default", ice.Message);
+            Assert.Contains("TestALC", ice.Message);
+        }
+    }
+
+    public class InvalidCastSharedType
+    {
     }
 }
