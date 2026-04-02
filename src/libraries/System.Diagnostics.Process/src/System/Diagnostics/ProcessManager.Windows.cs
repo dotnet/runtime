@@ -201,7 +201,8 @@ namespace System.Diagnostics
 
             ProcessInfo[] infos = NtProcessManager.GetProcessInfos(machineName);
             int[] ids = new int[infos.Length];
-            for (int i = 0; i < infos.Length; i++) ids[i] = infos[i].ProcessId;
+            for (int i = 0; i < infos.Length; i++)
+                ids[i] = infos[i].ProcessId;
             return ids;
         }
 
