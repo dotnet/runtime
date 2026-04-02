@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -1343,5 +1344,177 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        /// <summary>
+        /// Creates a zip archive via a non-seekable stream (which forces data descriptor / bit 3),
+        /// validates that data descriptor signatures are present and bit 3 is set in the raw bytes,
+        /// then reopens in Update mode, adds a new entry, and verifies the archive structure remains valid.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_DataDescriptorSignature_IsCorrectlyWrittenAndPreserved(bool async)
+        {
+            const uint LocalFileHeaderSignature = 0x04034b50;
+            const uint DataDescriptorSignature = 0x08074b50;
+            const ushort DataDescriptorBitFlag = 0x0008;
+
+            byte[] entryData = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+            int originalEntryCount = 3;
+
+            // Step 1: Create a zip using a non-seekable stream, which forces bit 3 (data descriptor)
+            byte[] zipBytes;
+            using (MemoryStream backing = new MemoryStream())
+            {
+                using (var nonSeekable = new WrappedStream(backing, canRead: false, canWrite: true, canSeek: false))
+                {
+                    ZipArchive createArchive = await CreateZipArchive(async, nonSeekable, ZipArchiveMode.Create);
+
+                    for (int i = 0; i < originalEntryCount; i++)
+                    {
+                        ZipArchiveEntry entry = createArchive.CreateEntry($"entry{i}.bin");
+                        Stream s = await OpenEntryStream(async, entry);
+                        if (async)
+                            await s.WriteAsync(entryData);
+                        else
+                            s.Write(entryData);
+                        s.WriteByte((byte)i);
+                        await DisposeStream(async, s);
+                    }
+
+                    await DisposeZipArchive(async, createArchive);
+                }
+
+                zipBytes = backing.ToArray();
+            }
+
+            // Step 2: Validate the raw bytes - verify bit 3 is set and data descriptor signatures exist
+            int dataDescriptorCount = 0;
+            int localHeaderCount = 0;
+            int offset = 0;
+
+            while (offset < zipBytes.Length - 4)
+            {
+                uint signature = BinaryPrimitives.ReadUInt32LittleEndian(zipBytes.AsSpan(offset));
+
+                if (signature == LocalFileHeaderSignature)
+                {
+                    localHeaderCount++;
+                    // General purpose bit flag is at offset 6 from the local file header signature
+                    ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(zipBytes.AsSpan(offset + 6));
+                    Assert.True((flags & DataDescriptorBitFlag) != 0,
+                        $"Bit 3 (data descriptor flag) should be set for entry created via non-seekable stream. Flags: 0x{flags:X4}");
+                    offset += 4;
+                }
+                else if (signature == DataDescriptorSignature)
+                {
+                    dataDescriptorCount++;
+                    offset += 4;
+                }
+                else
+                {
+                    offset++;
+                }
+            }
+
+            Assert.Equal(originalEntryCount, localHeaderCount);
+            Assert.Equal(originalEntryCount, dataDescriptorCount);
+
+            // Step 3: Reopen in Update mode and add a new entry
+            byte[] updatedZipBytes;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(zipBytes);
+                ms.Position = 0;
+
+                ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+                Assert.Equal(originalEntryCount, updateArchive.Entries.Count);
+
+                ZipArchiveEntry added = updateArchive.CreateEntry("added.bin");
+                Stream addedStream = await OpenEntryStream(async, added);
+                if (async)
+                    await addedStream.WriteAsync(entryData);
+                else
+                    addedStream.Write(entryData);
+                addedStream.WriteByte(0xFF);
+                await DisposeStream(async, addedStream);
+
+                await DisposeZipArchive(async, updateArchive);
+
+                updatedZipBytes = ms.ToArray();
+            }
+
+            // Step 4: Validate the updated archive - original entries should still have data descriptors
+            dataDescriptorCount = 0;
+            localHeaderCount = 0;
+            int entriesWithDataDescriptorBit = 0;
+            offset = 0;
+
+            while (offset < updatedZipBytes.Length - 4)
+            {
+                uint signature = BinaryPrimitives.ReadUInt32LittleEndian(updatedZipBytes.AsSpan(offset));
+
+                if (signature == LocalFileHeaderSignature)
+                {
+                    localHeaderCount++;
+                    ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(updatedZipBytes.AsSpan(offset + 6));
+                    if ((flags & DataDescriptorBitFlag) != 0)
+                    {
+                        entriesWithDataDescriptorBit++;
+                    }
+                    offset += 4;
+                }
+                else if (signature == DataDescriptorSignature)
+                {
+                    dataDescriptorCount++;
+                    offset += 4;
+                }
+                else
+                {
+                    offset++;
+                }
+            }
+
+            // After update, we should have 4 local headers (3 original + 1 added)
+            Assert.Equal(originalEntryCount + 1, localHeaderCount);
+            // The original 3 entries should still have data descriptors
+            // (the bit flag and signature count should match for entries with data descriptors)
+            Assert.Equal(dataDescriptorCount, entriesWithDataDescriptorBit);
+
+            // Step 5: Reopen in Read mode and verify all entries are readable
+            using (MemoryStream ms = new MemoryStream(updatedZipBytes))
+            {
+                ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+                Assert.Equal(originalEntryCount + 1, readArchive.Entries.Count);
+
+                for (int i = 0; i < originalEntryCount; i++)
+                {
+                    ZipArchiveEntry entry = readArchive.Entries[i];
+                    byte[] expected = [.. entryData, (byte)i];
+                    byte[] actual = new byte[expected.Length];
+                    Stream rs = await OpenEntryStream(async, entry);
+                    int bytesRead = async
+                        ? await rs.ReadAsync(actual)
+                        : rs.Read(actual);
+                    Assert.Equal(expected.Length, bytesRead);
+                    Assert.Equal(expected, actual);
+                    await DisposeStream(async, rs);
+                }
+
+                // Verify the newly added entry
+                {
+                    ZipArchiveEntry entry = readArchive.Entries[originalEntryCount];
+                    byte[] expected = [.. entryData, 0xFF];
+                    byte[] actual = new byte[expected.Length];
+                    Stream rs = await OpenEntryStream(async, entry);
+                    int bytesRead = async
+                        ? await rs.ReadAsync(actual)
+                        : rs.Read(actual);
+                    Assert.Equal(expected.Length, bytesRead);
+                    Assert.Equal(expected, actual);
+                    await DisposeStream(async, rs);
+                }
+
+                await DisposeZipArchive(async, readArchive);
+            }
+        }
     }
 }
