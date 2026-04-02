@@ -275,5 +275,41 @@ namespace System.Runtime.Loader.Tests
             Exception error = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyName(new AssemblyName("MyAssembly")));
             Assert.IsType<InvalidOperationException>(error.InnerException);
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsCoreCLR))]
+        public static void LoadFromAssemblyPath_MvidMismatch_ErrorMessageIncludesPathAndVersion()
+        {
+            string v1Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
+            string v2Path = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion2");
+
+            try
+            {
+                var alc = new AssemblyLoadContext("MvidMismatchTest");
+
+                Assembly loaded = alc.LoadFromAssemblyPath(v1Path);
+                Assert.Equal(new Version(1, 0, 0, 0), loaded.GetName().Version);
+
+                var ex = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyPath(v2Path));
+                Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade'", ex.Message);
+                Assert.Contains("'System.Runtime.Loader.Test.VersionDowngrade, Version=1.0.0.0", ex.Message);
+                Assert.Contains(v1Path, ex.Message);
+            }
+            finally
+            {
+                try { File.Delete(v1Path); } catch { }
+                try { File.Delete(v2Path); } catch { }
+            }
+        }
+
+        private static string ExtractEmbeddedAssembly(string name)
+        {
+            string tempPath = Path.Combine(Path.GetTempPath(), $"{Path.GetFileNameWithoutExtension(name)}_{Guid.NewGuid()}.dll");
+            using Stream resourceStream = typeof(AssemblyLoadContextTest).Assembly.GetManifestResourceStream($"{name}.dll");
+            Assert.NotNull(resourceStream);
+            using FileStream fileStream = File.Create(tempPath);
+            resourceStream.CopyTo(fileStream);
+
+            return tempPath;
+        }
     }
 }
