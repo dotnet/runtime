@@ -13167,15 +13167,13 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
 
         // If we're a reverse IL stub, we need to use the TrackTransitions variant
         // so we have the target MethodDesc entrypoint to tell the debugger about.
-        {
-            bool trackTransitions = ftn->IsILStub();
+        bool trackTransitions = ftn->IsILStub();
 #ifdef PROFILING_SUPPORTED
-            trackTransitions |= CORProfilerTrackTransitions();
+        trackTransitions |= CORProfilerTrackTransitions();
 #endif // PROFILING_SUPPORTED
-            if (trackTransitions)
-            {
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS);
-            }
+        if (trackTransitions)
+        {
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS);
         }
     }
 
