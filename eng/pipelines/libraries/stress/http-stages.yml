@@ -30,6 +30,7 @@ stages:
       displayName: Build HttpStress
 
     - bash: |
+        echo "test stress trigger"
         cd '$(httpStressProject)'
         export STRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
         export STRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
