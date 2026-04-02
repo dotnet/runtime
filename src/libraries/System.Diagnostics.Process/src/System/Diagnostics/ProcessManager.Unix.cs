@@ -71,8 +71,6 @@ namespace System.Diagnostics
         /// <param name="machineName">Unused on Unix.</param>
         /// <param name="isRemoteMachine">Unused on Unix.</param>
         /// <returns>An array of process infos, one per found process.</returns>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
 #pragma warning disable IDE0060
         public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName, bool isRemoteMachine) =>
             GetProcessInfos(processNameFilter);
