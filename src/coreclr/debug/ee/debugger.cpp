@@ -1698,9 +1698,10 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
 void Debugger::CleanupTransportSocket(void)
 {
 #if defined(TARGET_UNIX) && defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    if (g_pfnAbortTransportCallback != NULL)
+    void (*pfnCallback)(void) = VolatileLoad(&g_pfnAbortTransportCallback);
+    if (pfnCallback != NULL)
     {
-        g_pfnAbortTransportCallback();
+        pfnCallback();
     }
 #endif // TARGET_UNIX && FEATURE_DBGIPC_TRANSPORT_VM
 }

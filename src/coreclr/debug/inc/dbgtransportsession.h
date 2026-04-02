@@ -846,7 +846,7 @@ extern DbgTransportSession *g_pDbgTransport;
 // Callback set by TwoWayPipe::CreateServer() once server pipe names are initialized.
 // Called from Debugger::CleanupTransportSocket() to unlink the server pipes.
 // NULL until CreateServer() has been called.
-extern Volatile<void(*)(void)> g_pfnAbortTransportCallback;
+extern void (*g_pfnAbortTransportCallback)(void);
 #endif // HOST_UNIX
 #endif // !RIGHT_SIDE_COMPILE
 

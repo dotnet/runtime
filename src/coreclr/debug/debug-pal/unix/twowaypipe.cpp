@@ -28,7 +28,7 @@ static void AbortPipeServerImpl()
 }
 
 // Forward declaration - defined in dbgtransportsession.cpp.
-extern Volatile<void(*)(void)> g_pfnAbortTransportCallback;
+extern void (*g_pfnAbortTransportCallback)(void);
 
 // Creates a server side of the pipe.
 // Id is used to create pipes names and uniquely identify the pipe on the machine.
@@ -46,11 +46,11 @@ bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
     // the TwoWayPipe instance, which may be concurrently updated by the worker thread.
     // Only do this the first time CreateServer() is called; subsequent calls recreate the
     // pipe with the same names, so the static buffers remain valid.
-    if (g_pfnAbortTransportCallback == nullptr)
+    if (VolatileLoad(&g_pfnAbortTransportCallback) == nullptr)
     {
         memcpy(s_serverInPipeName, m_inPipeName, sizeof(s_serverInPipeName));
         memcpy(s_serverOutPipeName, m_outPipeName, sizeof(s_serverOutPipeName));
-        g_pfnAbortTransportCallback = AbortPipeServerImpl;
+        VolatileStore(&g_pfnAbortTransportCallback, static_cast<void(*)(void)>(AbortPipeServerImpl));
     }
 
     unlink(m_inPipeName);
