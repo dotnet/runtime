@@ -60,7 +60,7 @@ namespace ILCompiler.ReadyToRun
 
             header.Add(ReadyToRunSectionType.ExternalTypeMaps, new ExternalTypeMapObjectNode(this, importReferenceProvider));
             header.Add(ReadyToRunSectionType.ProxyTypeMaps, new ProxyTypeMapObjectNode(this, importReferenceProvider));
-            header.Add(ReadyToRunSectionType.TypeMapAssemblyTargets, new TypeMapAssemblyTargetsNode(assemblyTypeMaps, importReferenceProvider, triggeringModule));
+            header.Add(ReadyToRunSectionType.TypeMapAssemblyTargets, new TypeMapAssemblyTargetsNode(assemblyTypeMaps, importReferenceProvider));
         }
     }
 }
