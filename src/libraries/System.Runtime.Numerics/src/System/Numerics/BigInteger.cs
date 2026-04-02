@@ -3156,7 +3156,7 @@ namespace System.Numerics
                 return Zero;
             }
 
-            // For small values that fit in a uint, use the fast path
+            // For small values stored in _sign, use the fast path
             if (value._bits is null)
             {
                 return ulong.Log10((ulong)(uint)value._sign);

@@ -317,6 +317,30 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void Log10Int32Test()
+        {
+            Assert.Equal((BinaryIntegerWrapper<int>)0, BinaryIntegerHelper<BinaryIntegerWrapper<int>>.Log10((int)0));
+            Assert.Equal((BinaryIntegerWrapper<int>)0, BinaryIntegerHelper<BinaryIntegerWrapper<int>>.Log10((int)1));
+            Assert.Equal((BinaryIntegerWrapper<int>)0, BinaryIntegerHelper<BinaryIntegerWrapper<int>>.Log10((int)9));
+            Assert.Equal((BinaryIntegerWrapper<int>)1, BinaryIntegerHelper<BinaryIntegerWrapper<int>>.Log10((int)10));
+            Assert.Equal((BinaryIntegerWrapper<int>)2, BinaryIntegerHelper<BinaryIntegerWrapper<int>>.Log10((int)100));
+            Assert.Equal((BinaryIntegerWrapper<int>)9, BinaryIntegerHelper<BinaryIntegerWrapper<int>>.Log10(int.MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<BinaryIntegerWrapper<int>>.Log10(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<BinaryIntegerWrapper<int>>.Log10((int)(-1)));
+        }
+
+        [Fact]
+        public static void Log10UInt32Test()
+        {
+            Assert.Equal((BinaryIntegerWrapper<uint>)0, BinaryIntegerHelper<BinaryIntegerWrapper<uint>>.Log10((uint)0));
+            Assert.Equal((BinaryIntegerWrapper<uint>)0, BinaryIntegerHelper<BinaryIntegerWrapper<uint>>.Log10((uint)1));
+            Assert.Equal((BinaryIntegerWrapper<uint>)0, BinaryIntegerHelper<BinaryIntegerWrapper<uint>>.Log10((uint)9));
+            Assert.Equal((BinaryIntegerWrapper<uint>)1, BinaryIntegerHelper<BinaryIntegerWrapper<uint>>.Log10((uint)10));
+            Assert.Equal((BinaryIntegerWrapper<uint>)2, BinaryIntegerHelper<BinaryIntegerWrapper<uint>>.Log10((uint)100));
+            Assert.Equal((BinaryIntegerWrapper<uint>)9, BinaryIntegerHelper<BinaryIntegerWrapper<uint>>.Log10(uint.MaxValue));
+        }
+
+        [Fact]
         public static void RotateLeftInt32Test()
         {
             Assert.Equal((BinaryIntegerWrapper<int>)0x00000000, BinaryIntegerHelper<BinaryIntegerWrapper<int>>.RotateLeft((int)0x00000000, 1));

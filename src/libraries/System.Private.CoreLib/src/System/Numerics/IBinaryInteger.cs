@@ -277,8 +277,10 @@ namespace System.Numerics
                 ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
 
-            // Slow loop: repeatedly divide by 10
-            TSelf ten = TSelf.CreateChecked(10);
+            // Use long literal to ensure CreateChecked resolves through
+            // a known conversion path (e.g., long → int) rather than
+            // self-to-self which lacks a TryConvertFromChecked case.
+            TSelf ten = TSelf.CreateChecked(10L);
             TSelf result = TSelf.Zero;
 
             while (value >= ten)
