@@ -3,13 +3,15 @@
 
 using System.Runtime.InteropServices;
 
-namespace System.Text
+namespace System.Text;
+
+/// <summary>Provides downlevel polyfills for instance methods on <see cref="StringBuilder"/>.</summary>
+internal static class StringBuilderPolyfills
 {
-    /// <summary>Polyfills for StringBuilder.</summary>
-    internal static class StringBuilderExtensions
+    extension(StringBuilder stringBuilder)
     {
         /// <summary>Polyfill for StringBuilder.Append(ReadOnlySpan&lt;char&gt;) which is not available on .NET Standard 2.0.</summary>
-        public static unsafe StringBuilder Append(this StringBuilder stringBuilder, ReadOnlySpan<char> span)
+        public unsafe StringBuilder Append(ReadOnlySpan<char> span)
         {
             fixed (char* ptr = &MemoryMarshal.GetReference(span))
             {

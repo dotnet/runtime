@@ -6,12 +6,14 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.IO
+namespace System.IO;
+
+/// <summary>Provides downlevel polyfills for Memory-based instance methods on <see cref="Stream"/>.</summary>
+internal static class StreamMemoryPolyfills
 {
-    // Helpers to write Memory<byte> to Stream on netstandard 2.0
-    internal static class StreamExtensions
+    extension(Stream stream)
     {
-        public static ValueTask<int> ReadAsync(this Stream stream, Memory<byte> buffer, CancellationToken cancellationToken = default)
+        public ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))
             {
@@ -38,7 +40,7 @@ namespace System.IO
             }
         }
 
-        public static void Write(this Stream stream, ReadOnlyMemory<byte> buffer)
+        public void Write(ReadOnlyMemory<byte> buffer)
         {
             if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))
             {
@@ -59,7 +61,7 @@ namespace System.IO
             }
         }
 
-        public static ValueTask WriteAsync(this Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))
             {
@@ -72,23 +74,17 @@ namespace System.IO
                 return new ValueTask(FinishWriteAsync(stream.WriteAsync(sharedBuffer, 0, buffer.Length, cancellationToken), sharedBuffer));
             }
         }
+    }
 
-        private static async Task FinishWriteAsync(Task writeTask, byte[] localBuffer)
+    private static async Task FinishWriteAsync(Task writeTask, byte[] localBuffer)
+    {
+        try
         {
-            try
-            {
-                await writeTask.ConfigureAwait(false);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(localBuffer);
-            }
+            await writeTask.ConfigureAwait(false);
         }
-
-        public static Task CopyToAsync(this Stream source, Stream destination, CancellationToken cancellationToken = default)
+        finally
         {
-            const int DefaultBufferSize = 81920;
-            return source.CopyToAsync(destination, DefaultBufferSize, cancellationToken);
+            ArrayPool<byte>.Shared.Return(localBuffer);
         }
     }
 }
