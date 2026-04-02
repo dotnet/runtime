@@ -16,13 +16,11 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly TypeMapManager _manager;
         private readonly INativeFormatTypeReferenceProvider _externalReferences;
-        private readonly ModuleDesc _module;
 
-        public ExternalTypeMapObjectNode(TypeMapManager manager, INativeFormatTypeReferenceProvider externalReferences, ModuleDesc module = null)
+        public ExternalTypeMapObjectNode(TypeMapManager manager, INativeFormatTypeReferenceProvider externalReferences)
         {
             _manager = manager;
             _externalReferences = externalReferences;
-            _module = module;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -50,20 +48,17 @@ namespace ILCompiler.DependencyAnalysis
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             ExternalTypeMapObjectNode otherNode = (ExternalTypeMapObjectNode)other;
-            if (_module is null || otherNode._module is null)
-            {
-                if (_module is null && otherNode._module is null)
-                    return 0;
-                throw new InvalidOperationException("Cannot compare ExternalTypeMapObjectNode instances when only one has a null module.");
-            }
-            return comparer.Compare(_module, otherNode._module);
+            if (_manager.AssociatedModule is null)
+                return 0;
+
+            return comparer.Compare(_manager.AssociatedModule, otherNode._manager.AssociatedModule);
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__external_type_map__"u8);
-            if (_module is not null)
-                sb.Append(_module.Assembly.GetName().Name);
+            if (_manager.AssociatedModule is not null)
+                sb.Append(_manager.AssociatedModule.Assembly.GetName().Name);
         }
 
         public int Offset => 0;
