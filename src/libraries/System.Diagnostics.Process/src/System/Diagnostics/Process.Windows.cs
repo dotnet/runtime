@@ -18,6 +18,15 @@ namespace System.Diagnostics
     {
         private string? _processName;
 
+        private bool _haveMainWindow;
+        private IntPtr _mainWindowHandle;
+        private string? _mainWindowTitle;
+
+        private bool _haveResponding;
+        private bool _responding;
+
+        private bool _signaled;
+
         /// <summary>
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
@@ -412,8 +421,6 @@ namespace System.Diagnostics
             return new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
         }
 
-        private bool _signaled;
-
         /// <summary>Gets timing information for the current process.</summary>
         private ProcessThreadTimes GetProcessTimes()
         {
@@ -559,12 +566,6 @@ namespace System.Diagnostics
                 return _processName;
             }
         }
-        private bool _haveMainWindow;
-        private IntPtr _mainWindowHandle;
-        private string? _mainWindowTitle;
-
-        private bool _haveResponding;
-        private bool _responding;
 
         private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
         {

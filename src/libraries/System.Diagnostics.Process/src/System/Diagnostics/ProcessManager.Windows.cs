@@ -319,6 +319,7 @@ namespace System.Diagnostics
 
             return false;
         }
+
         public static IntPtr GetMainWindowHandle(int processId)
         {
             return MainWindowFinder.FindMainWindow(processId);
