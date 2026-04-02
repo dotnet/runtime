@@ -20,7 +20,6 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "LocalVariables";
 
-
     // ========== GetSize ==========
 
     [ConditionalTheory]

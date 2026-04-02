@@ -18,7 +18,6 @@ public class ComWrappersDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "ComWrappers";
 
-
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "ComWrappers cDAC support not available in .NET 10")]

@@ -16,7 +16,6 @@ public class LoaderDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
 
-
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     public void Loader_CanGetRootAssembly(TestConfiguration config)

@@ -21,7 +21,6 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "ExceptionHandlingInfo";
 
-
     /// <summary>
     /// Finds the CodeBlockHandle for the CrashInExceptionHandler method by walking
     /// the crashing thread's stack, resolving method names, then using the method's

@@ -16,7 +16,6 @@ public class ISOSDacInterface13Tests : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
 
-
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     public unsafe void GetLoaderAllocatorHeapNames_MatchExpectedOrder(TestConfiguration config)

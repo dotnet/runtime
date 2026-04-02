@@ -15,7 +15,6 @@ public class EcmaMetadataDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
 
-
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]

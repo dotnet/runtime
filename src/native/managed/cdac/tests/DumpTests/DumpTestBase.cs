@@ -200,11 +200,7 @@ public abstract class DumpTestBase : IDisposable
 
     /// <summary>
     /// Collects local symbol paths for ClrMD to resolve modules in the dump.
-    /// Checks two sources in order:
-    /// <list type="number">
-    ///   <item>A <c>symbols/</c> directory in the dump version directory (Helix and xplat dumps)</item>
-    ///   <item>Auto-detection from the repository artifact layout (local development fallback)</item>
-    /// </list>
+    /// Checks <c>symbols/</c> directories in the helix payload (Helix and xplat dumps)
     /// </summary>
     private static List<string> GetSymbolPaths(string debuggeeName, string versionDir)
     {
@@ -221,38 +217,6 @@ public abstract class DumpTestBase : IDisposable
             string debuggeeSymbols = Path.Combine(symbolsDir, "debuggees", debuggeeName);
             if (Directory.Exists(debuggeeSymbols))
                 paths.Add(debuggeeSymbols);
-        }
-
-        // Local development fallback: find testhost and debuggees from repo artifacts
-        if (paths.Count == 0)
-        {
-            string? repoRoot = FindRepoRoot();
-            if (repoRoot is not null)
-            {
-                string testhostBase = Path.Combine(repoRoot, "artifacts", "bin", "testhost");
-                if (Directory.Exists(testhostBase))
-                {
-                    foreach (string hostDir in Directory.GetDirectories(testhostBase, "net*"))
-                    {
-                        string sharedFxDir = Path.Combine(hostDir, "shared", "Microsoft.NETCore.App");
-                        if (Directory.Exists(sharedFxDir))
-                        {
-                            foreach (string versionPath in Directory.GetDirectories(sharedFxDir))
-                                paths.Add(versionPath);
-                        }
-                    }
-                }
-
-                string debuggeeBinBase = Path.Combine(repoRoot, "artifacts", "bin", "DumpTests", debuggeeName);
-                if (Directory.Exists(debuggeeBinBase))
-                {
-                    foreach (string configDir in Directory.GetDirectories(debuggeeBinBase))
-                    {
-                        foreach (string tfmDir in Directory.GetDirectories(configDir))
-                            paths.Add(tfmDir);
-                    }
-                }
-            }
         }
 
         return paths;

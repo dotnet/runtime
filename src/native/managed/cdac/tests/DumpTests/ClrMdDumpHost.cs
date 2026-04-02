@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using Microsoft.Diagnostics.Runtime;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -41,16 +42,12 @@ internal sealed class ClrMdDumpHost : IDisposable
     /// </param>
     public static ClrMdDumpHost Open(string dumpPath, IEnumerable<string>? additionalSymbolPaths = null)
     {
-        // Local paths first so they resolve before the network fallback.
-        string localPaths = additionalSymbolPaths is not null
+        string symbolPaths = additionalSymbolPaths is not null
             ? string.Join(";", additionalSymbolPaths.Where(p => !string.IsNullOrEmpty(p)))
             : string.Empty;
 
-        string symbolPaths = localPaths.Length > 0
-            ? localPaths + ";"
-            : string.Empty;
-
-        DataTarget dataTarget = DataTarget.LoadDump(dumpPath, new DataTargetOptions(SymbolPaths = symbolPaths));
+        DataTarget dataTarget = DataTarget.LoadDump(dumpPath);
+        dataTarget.SetSymbolPath(symbolPaths);
 
         return new ClrMdDumpHost(dumpPath, dataTarget);
     }
@@ -62,7 +59,39 @@ internal sealed class ClrMdDumpHost : IDisposable
     public int ReadFromTarget(ulong address, Span<byte> buffer)
     {
         int bytesRead = _dataTarget.DataReader.Read(address, buffer);
-        return bytesRead == buffer.Length ? 0 : -1;
+        if (bytesRead == buffer.Length)
+            return 0; // success
+
+        // If we couldn't read the full buffer, maybe it's in a PE image
+        ModuleInfo? info = GetModuleForAddress(address);
+        if (info is null || info.FileName is null)
+            return -1;
+
+        string? foundFile = _dataTarget.FileLocator?.FindPEImage(info.FileName, info.IndexTimeStamp, info.IndexFileSize, checkProperties: false);
+        if (foundFile is null)
+            return -1;
+
+        using FileStream fs = File.OpenRead(foundFile);
+        using PEReader peReader = new PEReader(fs);
+
+        int filled = 0;
+        ulong current = address;
+        while (filled < buffer.Length)
+        {
+            PEMemoryBlock block = peReader.GetSectionData((int)(current - info.ImageBase));
+            if (block.Length == 0)
+                return -1;
+
+            int toCopy = Math.Min(block.Length, buffer.Length - filled);
+            unsafe
+            {
+                new ReadOnlySpan<byte>(block.Pointer, toCopy).CopyTo(buffer.Slice(filled));
+            }
+            filled += toCopy;
+            current += (ulong)toCopy;
+        }
+
+        return 0;
     }
 
     /// <summary>
@@ -72,6 +101,16 @@ internal sealed class ClrMdDumpHost : IDisposable
     public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
     {
         return _dataTarget.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? 0 : -1;
+    }
+
+    private ModuleInfo? GetModuleForAddress(ulong address)
+    {
+        foreach (ModuleInfo module in _dataTarget.DataReader.EnumerateModules())
+        {
+            if (address >= module.ImageBase && address < module.ImageBase + module.FileSize)
+                return module;
+        }
+        return null;
     }
 
     /// <summary>

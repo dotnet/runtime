@@ -18,7 +18,6 @@ public class RCWCleanupListDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "RCWCleanupList";
 
-
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnOS(IncludeOnly = "windows", Reason = "BuiltInCOM contract is only available on Windows")]

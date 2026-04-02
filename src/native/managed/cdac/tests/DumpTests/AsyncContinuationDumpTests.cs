@@ -17,7 +17,6 @@ public class AsyncContinuationDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "AsyncContinuation";
 
-
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Continuation support is not available in .NET 10")]

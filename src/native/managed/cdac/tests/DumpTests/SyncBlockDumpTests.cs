@@ -15,7 +15,6 @@ public class SyncBlockDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "SyncBlock";
 
-
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     public void SyncBlockContract_CanFindHeldMonitor(TestConfiguration config)

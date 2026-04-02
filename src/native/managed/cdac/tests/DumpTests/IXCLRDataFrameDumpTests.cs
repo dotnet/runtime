@@ -17,7 +17,6 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "StackWalk";
 
-
     // ========== GetContext ==========
 
     [ConditionalTheory]
