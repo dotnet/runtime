@@ -1076,7 +1076,7 @@ namespace System.Diagnostics
             var processes = new List<Process>(processInfos.Length);
             foreach (ProcessInfo processInfo in processInfos)
             {
-                if (processName is null || string.Equals(processInfo.ProcessName, processName, StringComparison.OrdinalIgnoreCase))
+                if (string.IsNullOrEmpty(processName) || string.Equals(processInfo.ProcessName, processName, StringComparison.OrdinalIgnoreCase))
                 {
                     processes.Add(new Process(".", false, processInfo.ProcessId, processInfo));
                 }
