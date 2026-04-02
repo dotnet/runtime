@@ -44,7 +44,7 @@ DbgTransportSession *g_pDbgTransport = NULL;
 #ifdef HOST_UNIX
 // Callback set by TwoWayPipe::CreateServer() once server pipe names are initialized.
 // Called from Debugger::CleanupTransportSocket() to unlink the server pipes.
-void (*g_pfnAbortTransportCallback)(void) = nullptr;
+Volatile<void(*)(void)> g_pfnAbortTransportCallback;
 #endif // HOST_UNIX
 
 #include "ddmarshalutil.h"

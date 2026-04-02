@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <pal.h>
+#include "volatile.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -27,7 +28,7 @@ static void AbortPipeServerImpl()
 }
 
 // Forward declaration - defined in dbgtransportsession.cpp.
-extern void (*g_pfnAbortTransportCallback)(void);
+extern Volatile<void(*)(void)> g_pfnAbortTransportCallback;
 
 // Creates a server side of the pipe.
 // Id is used to create pipes names and uniquely identify the pipe on the machine.
