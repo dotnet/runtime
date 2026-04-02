@@ -858,7 +858,7 @@ TADDR WebcilDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
             return (TADDR)0;
         }
 
-        const WebcilSectionHeader *sections = (const WebcilSectionHeader *)(m_base + sizeof(WebcilHeader));
+        const WebcilSectionHeader *sections = m_sections;
         const WebcilSectionHeader *relocSection = &sections[sectionIndex];
 
         if (pSize != NULL)

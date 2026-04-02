@@ -247,7 +247,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     SSIZE_T delta = (SIZE_T) GetBase() - (SIZE_T) GetPreferredBase();
 
 #ifdef FEATURE_WEBCIL
-    SSIZE_T tableBaseDelta = m_tableBaseOffset;
+    SSIZE_T tableBaseDelta = GetTableBaseOffset();
 #endif // FEATURE_WEBCIL
 
     // Nothing to do - image is loaded at preferred base and no table base offset
