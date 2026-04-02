@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "pal_c.h" // for pal_char_t
+
 // Keep in sync with DotNetRootOptions.SearchLocation in HostWriter.cs
 // and fxr_resolver.h
 typedef enum
@@ -19,6 +21,10 @@ typedef enum
     search_location_global = 1 << 3,                // Registered and default global locations
 } fxr_search_location;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Try to find the path to hostfxr.
 // root_path: directory of the app
 // search: search location flags
@@ -27,10 +33,14 @@ typedef enum
 // out_fxr_path: receives a newly allocated string with the full path to the hostfxr library (caller must free)
 // On failure, *out_dotnet_root and *out_fxr_path are set to NULL.
 bool fxr_resolver_try_get_path(
-    const char* root_path,
+    const pal_char_t* root_path,
     fxr_search_location search,
-    const char* app_relative_dotnet_root,
-    char** out_dotnet_root,
-    char** out_fxr_path);
+    const pal_char_t* app_relative_dotnet_root,
+    pal_char_t** out_dotnet_root,
+    pal_char_t** out_fxr_path);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // FXR_RESOLVER_C_H

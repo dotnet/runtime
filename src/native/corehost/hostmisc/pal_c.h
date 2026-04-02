@@ -130,6 +130,42 @@ static inline bool pal_getenv(const pal_char_t* name, pal_char_t* recv, size_t r
 
 static inline int pal_xtoi(const pal_char_t* s) { return _wtoi(s); }
 
+// Convert a UTF-8 string to a pal_char_t (wchar_t) buffer.
+// Returns true on success; out_buf is NUL-terminated on success.
+static inline bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out_buf, size_t out_buf_len)
+{
+    if (out_buf_len == 0)
+        return false;
+    int needed = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+    if (needed <= 0 || (size_t)needed > out_buf_len)
+        return false;
+    return MultiByteToWideChar(CP_UTF8, 0, utf8, -1, out_buf, (int)out_buf_len) != 0;
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// pal function declarations (C equivalents of the C++ pal:: namespace)
+bool pal_get_own_executable_path(pal_char_t* recv, size_t recv_len);
+bool pal_fullpath(pal_char_t* path, size_t path_len);
+bool pal_file_exists(const pal_char_t* path);
+bool pal_directory_exists(const pal_char_t* path);
+bool pal_is_path_fully_qualified(const pal_char_t* path);
+bool pal_load_library(const pal_char_t* path, void** dll);
+void pal_unload_library(void* library);
+void* pal_get_symbol(void* library, const char* name);
+void pal_err_print_line(const pal_char_t* message);
+
+// Directory listing callback: called with each entry name, return true to continue
+typedef bool (*pal_readdir_callback_fn)(const pal_char_t* entry_name, void* context);
+void pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_fn callback, void* context);
+
+// Self-registered install location
+bool pal_get_dotnet_self_registered_dir(pal_char_t* recv, size_t recv_len);
+bool pal_get_default_installation_dir(pal_char_t* recv, size_t recv_len);
+const pal_char_t* pal_get_dotnet_self_registered_config_location(pal_char_t* buf, size_t buf_len);
+
 #ifdef __cplusplus
 }
 #endif
@@ -186,7 +222,7 @@ bool pal_getenv(const pal_char_t* name, pal_char_t* recv, size_t recv_len);
 int pal_xtoi(const pal_char_t* input);
 bool pal_load_library(const pal_char_t* path, void** dll);
 void pal_unload_library(void* library);
-void* pal_get_symbol(void* library, const pal_char_t* name);
+void* pal_get_symbol(void* library, const char* name);
 void pal_err_print_line(const pal_char_t* message);
 
 // Directory listing callback: called with each entry name, return true to continue

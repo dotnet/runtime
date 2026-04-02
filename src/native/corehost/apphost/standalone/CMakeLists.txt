@@ -3,35 +3,49 @@
 
 include_directories(..)
 
+set(SOURCES
+    ./apphost_main.c
+    ./apphost_hostfxr_resolver.c
+)
+
+set(HEADERS
+    ../../hostmisc/bundle_marker_c.h
+    ../../hostmisc/pal_c.h
+    ./apphost_hostfxr_resolver.h
+)
+
+add_compile_definitions(FEATURE_APPHOST)
+
 if(CLR_CMAKE_TARGET_WIN32)
-    # Windows: use existing C++ sources with C bundle_marker implementation
-    set(SOURCES
-        ../../hostmisc/bundle_marker.c
-        ./hostfxr_resolver.cpp
-        ../../corehost.cpp
-    )
+    # fxr_resolver.c uses dn-containers (dn_vector_t), build it here alongside the containers library
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
+    target_include_directories(dn-containers PRIVATE ${CLR_SRC_NATIVE_DIR})
+    target_include_directories(dn-containers-no-lto PRIVATE ${CLR_SRC_NATIVE_DIR})
 
-    set(HEADERS
-        ../../hostmisc/bundle_marker_c.h
-        ../../hostmisc/bundle_marker_c.h
-        ../../hostfxr_resolver.h
-    )
-
-    add_compile_definitions(UNICODE)
     list(APPEND SOURCES
+        ../../hostmisc/fxr_resolver.c
         ../apphost.windows.cpp)
-
     list(APPEND HEADERS
         ../apphost.windows.h)
 
-    list(APPEND SOURCES ${HEADERS})
+    add_compile_definitions(UNICODE)
+else()
+    # On non-Windows, fxr_resolver.c is compiled as part of hostmisc_c
+endif()
 
-    add_compile_definitions(FEATURE_APPHOST)
+list(APPEND SOURCES ${HEADERS})
 
-    add_executable(apphost ${SOURCES} ${RESOURCES})
+add_executable(apphost ${SOURCES} ${RESOURCES})
 
-    target_link_libraries(apphost PRIVATE hostmisc fxr_resolver)
-    target_link_libraries(apphost PRIVATE shell32)
+target_include_directories(apphost PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+
+target_link_libraries(apphost PRIVATE hostmisc_c)
+
+if(CLR_CMAKE_TARGET_WIN32)
+    target_link_libraries(apphost PRIVATE dn-containers shell32)
 
     # Disable manifest generation into the file .exe on Windows
     target_link_options(apphost PRIVATE "/MANIFEST:NO")
@@ -41,23 +55,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         target_link_options(apphost PRIVATE "/CETCOMPAT")
     endif()
 else()
-    # Non-Windows (Linux, macOS, etc.): use C sources only - no C++ in the apphost binary
-    set(SOURCES
-        ./apphost_main.c
-        ./apphost_hostfxr_resolver.c
-    )
-
-    add_compile_definitions(FEATURE_APPHOST)
-
-    add_executable(apphost ${SOURCES} ${RESOURCES})
-
-    target_include_directories(apphost PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/..
-        ${CMAKE_CURRENT_SOURCE_DIR}/../..)
-
-    target_link_libraries(apphost PRIVATE hostmisc_c dn-containers m)
-
+    target_link_libraries(apphost PRIVATE dn-containers m)
     disable_pax_mprotect(apphost)
 endif()
 

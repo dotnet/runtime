@@ -17,13 +17,15 @@
 // <search_location> \0 <app_relative_dotnet_placeholder>
 #define EMBED_DOTNET_SEARCH_FULL_UTF8    ("\0\0" EMBED_DOTNET_SEARCH_HI_PART_UTF8 EMBED_DOTNET_SEARCH_LO_PART_UTF8)
 
-// Get the .NET search options that should be used
-// Returns false if options are invalid
-static bool try_get_dotnet_search_options(fxr_search_location* out_search_location, char* out_app_relative_dotnet, size_t out_app_relative_dotnet_len)
+// Get the .NET search options that should be used.
+// Returns false if options are invalid.
+// out_app_relative_dotnet is a pal_char_t buffer that receives the app-relative dotnet path.
+static bool try_get_dotnet_search_options(fxr_search_location* out_search_location, pal_char_t* out_app_relative_dotnet, size_t out_app_relative_dotnet_len)
 {
     enum { EMBED_SIZE = 512 };
 
     // Contains the EMBED_DOTNET_SEARCH_FULL_UTF8 value at compile time or app-relative .NET path written by the SDK.
+    // Always a narrow UTF-8 string, regardless of platform.
     static char embed[EMBED_SIZE] = EMBED_DOTNET_SEARCH_FULL_UTF8;
 
     *out_search_location = (fxr_search_location)embed[0];
@@ -31,7 +33,7 @@ static bool try_get_dotnet_search_options(fxr_search_location* out_search_locati
     if ((*out_search_location & search_location_app_relative) == 0)
         return true;
 
-    // Get the embedded app-relative .NET path
+    // Get the embedded app-relative .NET path (always narrow UTF-8)
     const char* binding = &embed[2];
     size_t binding_len = strlen(binding);
 
@@ -39,7 +41,7 @@ static bool try_get_dotnet_search_options(fxr_search_location* out_search_locati
     enum { EMBED_APP_RELATIVE_DOTNET_MAX_SIZE = EMBED_SIZE - 3 }; // -2 for search location + null, -1 for null terminator
     if (binding_len > EMBED_APP_RELATIVE_DOTNET_MAX_SIZE)
     {
-        trace_error("The app-relative .NET path is longer than the max allowed length (%d)", EMBED_APP_RELATIVE_DOTNET_MAX_SIZE);
+        trace_error(_X("The app-relative .NET path is longer than the max allowed length (%d)"), EMBED_APP_RELATIVE_DOTNET_MAX_SIZE);
         return false;
     }
 
@@ -53,18 +55,27 @@ static bool try_get_dotnet_search_options(fxr_search_location* out_search_locati
             && memcmp(binding, hi_part, hi_len) == 0
             && memcmp(binding + hi_len, lo_part, lo_len) == 0))
     {
-        trace_error("The app-relative .NET path is not embedded.");
+        trace_error(_X("The app-relative .NET path is not embedded."));
         return false;
     }
 
+#if defined(_WIN32)
+    // Convert UTF-8 embedded path to wide string
+    if (!pal_utf8_to_palstr(binding, out_app_relative_dotnet, out_app_relative_dotnet_len))
+    {
+        trace_error(_X("The app-relative .NET path could not be retrieved from the executable image."));
+        return false;
+    }
+#else
     if (binding_len >= out_app_relative_dotnet_len)
     {
-        trace_error("The app-relative .NET path could not be retrieved from the executable image.");
+        trace_error(_X("The app-relative .NET path could not be retrieved from the executable image."));
         return false;
     }
-
     memcpy(out_app_relative_dotnet, binding, binding_len + 1);
-    trace_info("Embedded app-relative .NET path: '%s'", out_app_relative_dotnet);
+#endif
+
+    trace_info(_X("Embedded app-relative .NET path: '%s'"), out_app_relative_dotnet);
     return true;
 }
 
@@ -92,7 +103,7 @@ hostfxr_main_fn hostfxr_resolver_resolve_main_v1(const hostfxr_resolver_t* resol
     return (hostfxr_main_fn)pal_get_symbol(resolver->hostfxr_dll, "hostfxr_main");
 }
 
-void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const char* app_root)
+void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const pal_char_t* app_root)
 {
     resolver->hostfxr_dll = NULL;
     resolver->dotnet_root = NULL;
@@ -100,33 +111,33 @@ void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const char* app_root)
     resolver->status_code = Success;
 
     fxr_search_location search_loc = search_location_default;
-    char app_relative_dotnet[512];
-    app_relative_dotnet[0] = '\0';
+    pal_char_t app_relative_dotnet[512];
+    app_relative_dotnet[0] = _X('\0');
 
-    if (!try_get_dotnet_search_options(&search_loc, app_relative_dotnet, sizeof(app_relative_dotnet)))
+    if (!try_get_dotnet_search_options(&search_loc, app_relative_dotnet, ARRAY_SIZE(app_relative_dotnet)))
     {
         resolver->status_code = AppHostExeNotBoundFailure;
         return;
     }
 
-    trace_info(".NET root search location options: %d", search_loc);
+    trace_info(_X(".NET root search location options: %d"), search_loc);
 
-    char* app_relative_dotnet_path = NULL;
-    if (app_relative_dotnet[0] != '\0')
+    pal_char_t* app_relative_dotnet_path = NULL;
+    if (app_relative_dotnet[0] != _X('\0'))
     {
-        size_t root_len = strlen(app_root);
-        size_t rel_len = strlen(app_relative_dotnet);
+        size_t root_len = pal_strlen(app_root);
+        size_t rel_len = pal_strlen(app_relative_dotnet);
         size_t total = root_len + 1 + rel_len + 1;
-        app_relative_dotnet_path = (char*)malloc(total);
+        app_relative_dotnet_path = (pal_char_t*)malloc(total * sizeof(pal_char_t));
         if (app_relative_dotnet_path != NULL)
         {
-            snprintf(app_relative_dotnet_path, total, "%s", app_root);
+            pal_str_printf(app_relative_dotnet_path, total, _X("%s"), app_root);
             utils_append_path(app_relative_dotnet_path, total, app_relative_dotnet);
         }
     }
 
-    char* dotnet_root = NULL;
-    char* fxr_path = NULL;
+    pal_char_t* dotnet_root = NULL;
+    pal_char_t* fxr_path = NULL;
     if (!fxr_resolver_try_get_path(app_root, search_loc, app_relative_dotnet_path,
         &dotnet_root, &fxr_path))
     {
@@ -134,7 +145,7 @@ void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const char* app_root)
     }
     else if (!pal_is_path_fully_qualified(fxr_path))
     {
-        trace_error("Path to %s must be fully qualified: [%s]", LIBFXR_NAME, fxr_path);
+        trace_error(_X("Path to %s must be fully qualified: [%s]"), LIBFXR_NAME, fxr_path);
         free(dotnet_root);
         free(fxr_path);
         resolver->status_code = CoreHostLibMissingFailure;
@@ -147,7 +158,7 @@ void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const char* app_root)
     }
     else
     {
-        trace_error("The library %s was found, but loading it from %s failed", LIBFXR_NAME, fxr_path);
+        trace_error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, fxr_path);
         free(dotnet_root);
         free(fxr_path);
         resolver->status_code = CoreHostLibLoadFailure;

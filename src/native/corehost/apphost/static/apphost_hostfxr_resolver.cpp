@@ -53,30 +53,30 @@ extern "C" hostfxr_main_fn hostfxr_resolver_resolve_main_v1(const hostfxr_resolv
     return nullptr;
 }
 
-extern "C" void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const char* app_root)
+extern "C" void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const pal_char_t* app_root)
 {
     resolver->hostfxr_dll = nullptr;
     resolver->dotnet_root = nullptr;
     resolver->fxr_path = nullptr;
     resolver->status_code = Success;
 
-    if (app_root == nullptr || app_root[0] == '\0')
+    if (app_root == nullptr || app_root[0] == _X('\0'))
     {
-        trace_info("Application root path is empty. This shouldn't happen");
+        trace_info(_X("Application root path is empty. This shouldn't happen"));
         resolver->status_code = CoreHostLibMissingFailure;
         return;
     }
 
-    trace_info("Using internal fxr");
+    trace_info(_X("Using internal fxr"));
 
-    size_t root_len = strlen(app_root);
-    resolver->dotnet_root = static_cast<char*>(malloc(root_len + 1));
+    size_t root_len = pal_strlen(app_root);
+    resolver->dotnet_root = static_cast<pal_char_t*>(malloc((root_len + 1) * sizeof(pal_char_t)));
     if (resolver->dotnet_root != nullptr)
-        memcpy(resolver->dotnet_root, app_root, root_len + 1);
+        memcpy(resolver->dotnet_root, app_root, (root_len + 1) * sizeof(pal_char_t));
 
-    resolver->fxr_path = static_cast<char*>(malloc(root_len + 1));
+    resolver->fxr_path = static_cast<pal_char_t*>(malloc((root_len + 1) * sizeof(pal_char_t)));
     if (resolver->fxr_path != nullptr)
-        memcpy(resolver->fxr_path, app_root, root_len + 1);
+        memcpy(resolver->fxr_path, app_root, (root_len + 1) * sizeof(pal_char_t));
 }
 
 extern "C" void hostfxr_resolver_cleanup(hostfxr_resolver_t* resolver)

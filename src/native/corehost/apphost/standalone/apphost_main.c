@@ -52,11 +52,14 @@ static bool compare_memory_nooptimization(volatile const char* a, volatile const
     return true;
 }
 
-static bool is_exe_enabled_for_execution(char* app_dll, size_t app_dll_len)
+// app_dll receives the embedded DLL name as a pal_char_t string.
+// app_dll_len is the buffer size in pal_char_t characters.
+static bool is_exe_enabled_for_execution(pal_char_t* app_dll, size_t app_dll_len)
 {
     // Contains the EMBED_HASH_FULL_UTF8 value at compile time or the managed DLL name replaced by "dotnet build".
     // Must not be 'const' because strlen below could be determined at compile time (=64) instead of the actual
     // length of the string at runtime.
+    // Always narrow UTF-8, regardless of platform.
     static char embed[EMBED_MAX] = EMBED_HASH_FULL_UTF8;
 
     static const char hi_part[] = EMBED_HASH_HI_PART_UTF8;
@@ -66,38 +69,47 @@ static bool is_exe_enabled_for_execution(char* app_dll, size_t app_dll_len)
 
     if (binding_len >= app_dll_len)
     {
-        trace_error("The managed DLL bound to this executable could not be retrieved from the executable image.");
+        trace_error(_X("The managed DLL bound to this executable could not be retrieved from the executable image."));
         return false;
     }
-
-    memcpy(app_dll, embed, binding_len + 1);
 
     // Check if the path exceeds the max allowed size
     if (binding_len > EMBED_MAX - 1)
     {
-        trace_error("The managed DLL bound to this executable is longer than the max allowed length (%d)", EMBED_MAX - 1);
+        trace_error(_X("The managed DLL bound to this executable is longer than the max allowed length (%d)"), EMBED_MAX - 1);
         return false;
     }
 
-    // Check if the value is the same as the placeholder
+    // Check if the value is the same as the placeholder to detect unbound executables
     size_t hi_len = sizeof(hi_part) - 1;
     size_t lo_len = sizeof(lo_part) - 1;
     if (binding_len >= (hi_len + lo_len)
         && compare_memory_nooptimization(&embed[0], hi_part, hi_len)
         && compare_memory_nooptimization(&embed[hi_len], lo_part, lo_len))
     {
-        trace_error("This executable is not bound to a managed DLL to execute. The binding value is: '%s'", app_dll);
+        trace_error(_X("This executable is not bound to a managed DLL to execute. The binding value is: '%s'"), app_dll);
         return false;
     }
 
-    trace_info("The managed DLL bound to this executable is: '%s'", app_dll);
+#if defined(_WIN32)
+    // Convert embedded UTF-8 path to wide string
+    if (!pal_utf8_to_palstr(&embed[0], app_dll, app_dll_len))
+    {
+        trace_error(_X("The managed DLL bound to this executable could not be retrieved from the executable image."));
+        return false;
+    }
+#else
+    memcpy(app_dll, embed, binding_len + 1);
+#endif
+
+    trace_info(_X("The managed DLL bound to this executable is: '%s'"), app_dll);
     return true;
 }
 
-static void need_newer_framework_error(const char* dotnet_root, const char* host_path)
+static void need_newer_framework_error(const pal_char_t* dotnet_root, const pal_char_t* host_path)
 {
-    char download_url[1024];
-    utils_get_download_url(download_url, sizeof(download_url));
+    pal_char_t download_url[1024];
+    utils_get_download_url(download_url, ARRAY_SIZE(download_url));
 
     trace_error(
         MISSING_RUNTIME_ERROR_FORMAT,
@@ -140,68 +152,72 @@ static void propagate_error_writer_cleanup(propagate_error_writer_state_t* state
     }
 }
 
-static int exe_start(const int argc, const char* argv[])
+static int exe_start(const int argc, const pal_char_t* argv[])
 {
 #if defined(FEATURE_STATIC_HOST)
     extern void apphost_static_init(void);
     apphost_static_init();
 #endif
 
-    // Use realpath to find the path of the host, resolving any symlinks.
-    char* host_path = (char*)malloc(APPHOST_PATH_MAX);
+    // Use realpath/GetModuleFileName to find the path of the host, resolving any symlinks.
+    pal_char_t* host_path = (pal_char_t*)malloc(APPHOST_PATH_MAX * sizeof(pal_char_t));
     if (host_path == NULL)
         return CurrentHostFindFailure;
 
     if (!pal_get_own_executable_path(host_path, APPHOST_PATH_MAX) || !pal_fullpath(host_path, APPHOST_PATH_MAX))
     {
-        trace_error("Failed to resolve full path of the current executable [%s]", host_path);
+        trace_error(_X("Failed to resolve full path of the current executable [%s]"), host_path);
         free(host_path);
         return CurrentHostFindFailure;
     }
 
     bool requires_hostfxr_startupinfo_interface = false;
 
-    // FEATURE_APPHOST path
-    char embedded_app_name[EMBED_MAX];
-    if (!is_exe_enabled_for_execution(embedded_app_name, sizeof(embedded_app_name)))
+    // FEATURE_APPHOST path: read embedded DLL name
+    pal_char_t embedded_app_name[EMBED_MAX];
+    if (!is_exe_enabled_for_execution(embedded_app_name, ARRAY_SIZE(embedded_app_name)))
     {
         free(host_path);
         return AppHostExeNotBoundFailure;
     }
 
-    if (strchr(embedded_app_name, '/') != NULL)
+    if (pal_strchr(embedded_app_name, _X('/')) != NULL
+#if defined(_WIN32)
+        || pal_strchr(embedded_app_name, _X('\\')) != NULL
+#endif
+        )
     {
         requires_hostfxr_startupinfo_interface = true;
     }
 
-    char* app_dir = utils_get_directory_alloc(host_path);
+    pal_char_t* app_dir = utils_get_directory_alloc(host_path);
     if (app_dir == NULL)
     {
         free(host_path);
         return AppPathFindFailure;
     }
 
-    size_t dir_len = strlen(app_dir);
-    size_t name_len = strlen(embedded_app_name);
+    size_t dir_len = pal_strlen(app_dir);
+    size_t name_len = pal_strlen(embedded_app_name);
     size_t app_path_init = dir_len + name_len + 2; // dir + sep + name + NUL
     size_t app_path_len = app_path_init > APPHOST_PATH_MAX ? app_path_init : APPHOST_PATH_MAX;
-    char* app_path = (char*)malloc(app_path_len);
+    pal_char_t* app_path = (pal_char_t*)malloc(app_path_len * sizeof(pal_char_t));
     if (app_path == NULL)
     {
         free(app_dir);
         free(host_path);
         return AppPathFindFailure;
     }
-    snprintf(app_path, app_path_len, "%s", app_dir);
+    pal_str_printf(app_path, app_path_len, _X("%s"), app_dir);
     utils_append_path(app_path, app_path_len, embedded_app_name);
 
     if (bundle_marker_is_bundle())
     {
-        trace_info("Detected Single-File app bundle");
+        trace_info(_X("Detected Single-File app bundle"));
     }
     else if (!pal_fullpath(app_path, app_path_len))
     {
-        trace_error("The application to execute does not exist: '%s'.", app_path);
+        trace_error(_X("The application to execute does not exist: '%s'."), app_path);
         free(app_path);
         free(app_dir);
         free(host_path);
@@ -209,7 +225,7 @@ static int exe_start(const int argc, const char* argv[])
     }
 
     free(app_dir);
-    char* app_root = utils_get_directory_alloc(app_path);
+    pal_char_t* app_root = utils_get_directory_alloc(app_path);
     if (app_root == NULL)
     {
         free(app_path);
@@ -235,16 +251,16 @@ static int exe_start(const int argc, const char* argv[])
         hostfxr_main_bundle_startupinfo_fn hostfxr_main_bundle_startupinfo = hostfxr_resolver_resolve_main_bundle_startupinfo(&fxr);
         if (hostfxr_main_bundle_startupinfo != NULL)
         {
-            const char* host_path_cstr = host_path;
-            const char* dotnet_root_cstr = fxr.dotnet_root != NULL && fxr.dotnet_root[0] != '\0' ? fxr.dotnet_root : NULL;
-            const char* app_path_cstr = app_path[0] != '\0' ? app_path : NULL;
+            const pal_char_t* host_path_cstr = host_path;
+            const pal_char_t* dotnet_root_cstr = fxr.dotnet_root != NULL && fxr.dotnet_root[0] != _X('\0') ? fxr.dotnet_root : NULL;
+            const pal_char_t* app_path_cstr = app_path[0] != _X('\0') ? app_path : NULL;
             int64_t bundle_header_offset = bundle_marker_header_offset();
 
-            trace_info("Invoking fx resolver [%s] hostfxr_main_bundle_startupinfo", fxr.fxr_path);
-            trace_info("Host path: [%s]", host_path);
-            trace_info("Dotnet path: [%s]", fxr.dotnet_root != NULL ? fxr.dotnet_root : "");
-            trace_info("App path: [%s]", app_path);
-            trace_info("Bundle Header Offset: [%" PRId64 "]", bundle_header_offset);
+            trace_info(_X("Invoking fx resolver [%s] hostfxr_main_bundle_startupinfo"), fxr.fxr_path);
+            trace_info(_X("Host path: [%s]"), host_path);
+            trace_info(_X("Dotnet path: [%s]"), fxr.dotnet_root != NULL ? fxr.dotnet_root : _X(""));
+            trace_info(_X("App path: [%s]"), app_path);
+            trace_info(_X("Bundle Header Offset: [%" PRId64 "]"), bundle_header_offset);
 
             hostfxr_set_error_writer_fn set_error_writer = hostfxr_resolver_resolve_set_error_writer(&fxr);
             propagate_error_writer_state_t propagate_state;
@@ -254,8 +270,8 @@ static int exe_start(const int argc, const char* argv[])
         }
         else
         {
-            trace_error("The required library %s does not support single-file apps.", fxr.fxr_path);
-            need_newer_framework_error(fxr.dotnet_root != NULL ? fxr.dotnet_root : "", host_path);
+            trace_error(_X("The required library %s does not support single-file apps."), fxr.fxr_path);
+            need_newer_framework_error(fxr.dotnet_root != NULL ? fxr.dotnet_root : _X(""), host_path);
             rc = FrameworkMissingFailure;
         }
     }
@@ -264,14 +280,14 @@ static int exe_start(const int argc, const char* argv[])
         hostfxr_main_startupinfo_fn hostfxr_main_startupinfo = hostfxr_resolver_resolve_main_startupinfo(&fxr);
         if (hostfxr_main_startupinfo != NULL)
         {
-            const char* host_path_cstr = host_path;
-            const char* dotnet_root_cstr = fxr.dotnet_root != NULL && fxr.dotnet_root[0] != '\0' ? fxr.dotnet_root : NULL;
-            const char* app_path_cstr = app_path[0] != '\0' ? app_path : NULL;
+            const pal_char_t* host_path_cstr = host_path;
+            const pal_char_t* dotnet_root_cstr = fxr.dotnet_root != NULL && fxr.dotnet_root[0] != _X('\0') ? fxr.dotnet_root : NULL;
+            const pal_char_t* app_path_cstr = app_path[0] != _X('\0') ? app_path : NULL;
 
-            trace_info("Invoking fx resolver [%s] hostfxr_main_startupinfo", fxr.fxr_path);
-            trace_info("Host path: [%s]", host_path);
-            trace_info("Dotnet path: [%s]", fxr.dotnet_root != NULL ? fxr.dotnet_root : "");
-            trace_info("App path: [%s]", app_path);
+            trace_info(_X("Invoking fx resolver [%s] hostfxr_main_startupinfo"), fxr.fxr_path);
+            trace_info(_X("Host path: [%s]"), host_path);
+            trace_info(_X("Dotnet path: [%s]"), fxr.dotnet_root != NULL ? fxr.dotnet_root : _X(""));
+            trace_info(_X("App path: [%s]"), app_path);
 
             hostfxr_set_error_writer_fn set_error_writer = hostfxr_resolver_resolve_set_error_writer(&fxr);
             propagate_error_writer_state_t propagate_state;
@@ -281,7 +297,7 @@ static int exe_start(const int argc, const char* argv[])
 
             if (trace_get_error_writer() != NULL && rc == (int)FrameworkMissingFailure && set_error_writer == NULL)
             {
-                need_newer_framework_error(fxr.dotnet_root != NULL ? fxr.dotnet_root : "", host_path);
+                need_newer_framework_error(fxr.dotnet_root != NULL ? fxr.dotnet_root : _X(""), host_path);
             }
 
             propagate_error_writer_cleanup(&propagate_state);
@@ -291,12 +307,12 @@ static int exe_start(const int argc, const char* argv[])
         {
             if (requires_hostfxr_startupinfo_interface)
             {
-                trace_error("The required library %s does not support relative app dll paths.", fxr.fxr_path);
+                trace_error(_X("The required library %s does not support relative app dll paths."), fxr.fxr_path);
                 rc = CoreHostEntryPointFailure;
             }
             else
             {
-                trace_info("Invoking fx resolver [%s] v1", fxr.fxr_path);
+                trace_info(_X("Invoking fx resolver [%s] v1"), fxr.fxr_path);
 
                 // Previous corehost trace messages must be printed before calling trace::setup in hostfxr
                 trace_flush();
@@ -308,7 +324,7 @@ static int exe_start(const int argc, const char* argv[])
                 }
                 else
                 {
-                    trace_error("The required library %s does not contain the expected entry point.", fxr.fxr_path);
+                    trace_error(_X("The required library %s does not contain the expected entry point."), fxr.fxr_path);
                     rc = CoreHostEntryPointFailure;
                 }
             }
@@ -323,20 +339,24 @@ static int exe_start(const int argc, const char* argv[])
     return rc;
 }
 
-int main(const int argc, const char* argv[])
+#if defined(_WIN32)
+int __cdecl wmain(const int argc, const pal_char_t* argv[])
+#else
+int main(const int argc, const pal_char_t* argv[])
+#endif
 {
     trace_setup();
 
     if (trace_is_enabled())
     {
-        char version_desc[256];
-        utils_get_host_version_description(version_desc, sizeof(version_desc));
-        trace_info("--- Invoked apphost [version: %s] main = {", version_desc);
+        pal_char_t version_desc[256];
+        utils_get_host_version_description(version_desc, ARRAY_SIZE(version_desc));
+        trace_info(_X("--- Invoked apphost [version: %s] main = {"), version_desc);
         for (int i = 0; i < argc; ++i)
         {
-            trace_info("%s", argv[i]);
+            trace_info(_X("%s"), argv[i]);
         }
-        trace_info("}");
+        trace_info(_X("}"));
     }
 
 #if defined(_WIN32)

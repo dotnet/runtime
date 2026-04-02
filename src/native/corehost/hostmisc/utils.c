@@ -258,7 +258,7 @@ void utils_get_dotnet_root_env_var_for_arch(pal_char_t* out_name, size_t out_nam
 }
 
 // === Functions requiring OS-specific pal functions (pal_file_exists, pal_fullpath) ===
-#if !defined(_WIN32)
+// These functions are available on all platforms since Windows PAL is now implemented.
 
 bool utils_file_exists_in_dir(const pal_char_t* dir, const pal_char_t* file_name, pal_char_t* out_file_path, size_t out_path_len)
 {
@@ -369,5 +369,3 @@ bool utils_get_dotnet_root_from_env(pal_char_t* out_env_var_name, size_t env_var
 
     return false;
 }
-
-#endif // !_WIN32
