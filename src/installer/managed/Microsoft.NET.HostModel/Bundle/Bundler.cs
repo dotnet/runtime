@@ -45,7 +45,7 @@ namespace Microsoft.NET.HostModel.Bundle
                        BundleOptions options,
                        OSPlatform targetOS,
                        Architecture targetArch,
-                       Version? targetFrameworkVersion = null,
+                       Version targetFrameworkVersion,
                        bool diagnosticOutput = false,
                        string? appAssemblyName = null,
                        bool macosCodesign = true)

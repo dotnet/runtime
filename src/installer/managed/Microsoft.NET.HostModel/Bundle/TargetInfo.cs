@@ -31,11 +31,11 @@ namespace Microsoft.NET.HostModel.Bundle
         public readonly BundleOptions DefaultOptions;
         public readonly int AssemblyAlignment;
 
-        public TargetInfo(OSPlatform os, Architecture arch, Version? targetFrameworkVersion = null)
+        public TargetInfo(OSPlatform os, Architecture arch, Version targetFrameworkVersion)
         {
             OS = os;
             Arch = arch;
-            FrameworkVersion = targetFrameworkVersion ?? Environment.Version;
+            FrameworkVersion = targetFrameworkVersion;
 
             if (FrameworkVersion.Major >= 6)
             {
