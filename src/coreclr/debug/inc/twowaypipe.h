@@ -78,6 +78,13 @@ public:
     // and semaphores when the debugger detects the debuggee process  exited.
     void CleanupTargetProcess();
 
+#ifdef HOST_UNIX
+    // Unlinks the current server-side named pipes. Safe to call at any time,
+    // including from signal handlers or concurrently with the transport worker thread.
+    // Does nothing if CreateServer() has not been called yet.
+    static void AbortPipeServer();
+#endif // HOST_UNIX
+
 private:
 
     State m_state;
