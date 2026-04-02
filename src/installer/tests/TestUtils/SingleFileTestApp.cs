@@ -113,11 +113,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             var bundler = new Bundler(
                 Binaries.GetExeName(AppName),
                 bundleDirectory,
+                options,
                 RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? OSPlatform.Windows :
                     RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX :
                     OSPlatform.Linux,
                 RuntimeInformation.OSArchitecture,
-                options,
                 targetFrameworkVersion: bundleVersion,
                 macosCodesign: RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
 

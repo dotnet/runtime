@@ -42,9 +42,9 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public Bundler(string hostName,
                        string outputDir,
+                       BundleOptions options,
                        OSPlatform targetOS,
                        Architecture targetArch,
-                       BundleOptions options = BundleOptions.None,
                        Version? targetFrameworkVersion = null,
                        bool diagnosticOutput = false,
                        string? appAssemblyName = null,
