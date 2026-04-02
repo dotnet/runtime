@@ -423,13 +423,14 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             Assert.NotNull(token);
         }
 
-        [Fact]
-        public async Task CreateFileChangeToken_RootDeletedAndRecreated_TokenFiresWhenFileCreated()
+        [Theory]
+        [MemberData(nameof(WatcherModeData))]
+        public async Task CreateFileChangeToken_RootDeletedAndRecreated_TokenFiresWhenFileCreated(bool useActivePolling)
         {
             using var root = new TempDirectory(GetTestFilePath());
             string rootPath = root.Path;
 
-            using var physicalFilesWatcher = CreateWatcher(rootPath, useActivePolling: false);
+            using var physicalFilesWatcher = CreateWatcher(rootPath, useActivePolling);
 
             // On some platforms (e.g., Linux) the FSW does not fire OnError when the watched directory
             // is deleted (see https://github.com/dotnet/runtime/issues/126295), so we cannot wait

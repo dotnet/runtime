@@ -430,22 +430,20 @@ namespace Microsoft.Extensions.FileProviders
                 var fileLocation = Path.Combine(root.Path, fileName);
                 PollingFileChangeToken.PollingInterval = TimeSpan.FromMilliseconds(10);
 
-                // emptyRoot is not used for creating and modifying files,
+                var subdirectory = Path.Combine(root.Path, "subdir");
+                Directory.CreateDirectory(subdirectory);
+
+                // subdirectory is not used for creating and modifying files,
                 // but is passed into the MockFileSystemWatcher so FileSystemWatcher events aren't triggered
                 // during file changes in the test
-                using (var emptyRoot = new TempDirectory(GetTestFilePath()))
-                using (var fileSystemWatcher = new MockFileSystemWatcher(emptyRoot.Path))
+                using (var fileSystemWatcher = new MockFileSystemWatcher(subdirectory))
+                using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
+                using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
                 {
-                    using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: true))
-                    {
-                        using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
-                        {
-                            var token = provider.Watch(fileName);
-                            File.WriteAllText(fileLocation, "some-content");
-                            await Task.Delay(WaitTimeForTokenToFire);
-                            Assert.True(token.HasChanged);
-                        }
-                    }
+                    var token = provider.Watch(fileName);
+                    File.WriteAllText(fileLocation, "some-content");
+                    await Task.Delay(WaitTimeForTokenToFire);
+                    Assert.True(token.HasChanged);
                 }
             }
         }
