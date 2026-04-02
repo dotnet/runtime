@@ -41,11 +41,14 @@ bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
 
     // Keep a static copy so AbortPipeServerImpl() can unlink them without going through
     // the TwoWayPipe instance, which may be concurrently updated by the worker thread.
-    memcpy(s_serverInPipeName, m_inPipeName, sizeof(s_serverInPipeName));
-    memcpy(s_serverOutPipeName, m_outPipeName, sizeof(s_serverOutPipeName));
-
-    // Set the callback now that the static names are valid.
-    g_pfnAbortTransportCallback = AbortPipeServerImpl;
+    // Only do this the first time CreateServer() is called; subsequent calls recreate the
+    // pipe with the same names, so the static buffers remain valid.
+    if (g_pfnAbortTransportCallback == nullptr)
+    {
+        memcpy(s_serverInPipeName, m_inPipeName, sizeof(s_serverInPipeName));
+        memcpy(s_serverOutPipeName, m_outPipeName, sizeof(s_serverOutPipeName));
+        g_pfnAbortTransportCallback = AbortPipeServerImpl;
+    }
 
     unlink(m_inPipeName);
 
