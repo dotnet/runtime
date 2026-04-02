@@ -213,10 +213,7 @@ namespace Microsoft.Win32.SafeHandles
         // terminal to echo. We keep this configuration as long as there are children possibly using the terminal.
         // Handle can be null only for UseShellExecute or platforms that don't support Console.Open* methods like Android and MacCatalyst.
         private static bool UsesTerminal(SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
-            => ProcessUtils.PlatformSupportsConsole
-                && ((stdinHandle is not null && Interop.Sys.IsATty(stdinHandle))
-                || (stdoutHandle is not null && Interop.Sys.IsATty(stdoutHandle))
-                || (stderrHandle is not null && Interop.Sys.IsATty(stderrHandle)));
+            => ProcessUtils.IsTerminal(stdinHandle) || ProcessUtils.IsTerminal(stdoutHandle) || ProcessUtils.IsTerminal(stderrHandle);
 
         private static SafeProcessHandle ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
