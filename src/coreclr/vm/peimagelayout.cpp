@@ -210,6 +210,8 @@ void PEImageLayout::InitDecoders(void* data, COUNT_T size)
     {
         m_format = FORMAT_WEBCIL;
         m_webcilDecoder.Init(data, size);
+        if (HasBaseRelocations())
+            ApplyBaseRelocations(true);
         m_peDecoder.Init(data, size); // Initialize base/size/flags for cDAC
     }
     else

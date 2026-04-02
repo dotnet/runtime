@@ -579,7 +579,7 @@ inline IMAGE_COR_VTABLEFIXUP *PEImageLayout::GetVTableFixups(COUNT_T *pCount) co
 inline BOOL PEImageLayout::IsNativeMachineFormat() const
 {
     WRAPPER_NO_CONTRACT;
-    PE_OR_WEBCIL(IsNativeMachineFormat(), FALSE)
+    PE_OR_WEBCIL(IsNativeMachineFormat(), TRUE)
 }
 
 inline BOOL PEImageLayout::IsI386() const
@@ -634,13 +634,13 @@ inline BOOL PEImageLayout::IsComponentAssembly() const
 inline BOOL PEImageLayout::HasReadyToRunHeader() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    PE_OR_WEBCIL(HasReadyToRunHeader(), FALSE)
+    DECODER_DISPATCH(HasReadyToRunHeader())
 }
 
 inline READYTORUN_HEADER *PEImageLayout::GetReadyToRunHeader() const
 {
     WRAPPER_NO_CONTRACT;
-    PE_OR_WEBCIL(GetReadyToRunHeader(), NULL)
+    DECODER_DISPATCH(GetReadyToRunHeader())
 }
 
 inline BOOL PEImageLayout::HasNativeEntryPoint() const
