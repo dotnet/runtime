@@ -42,6 +42,38 @@ public struct JitManagerInfo
     public TargetPointer HeapListAddress;
 }
 
+public interface ICodeHeapInfo
+{
+}
+
+public sealed class LoaderCodeHeapInfo : ICodeHeapInfo
+{
+    public TargetPointer HeapAddress { get; }
+    public TargetPointer LoaderHeapAddress { get; }
+
+    public LoaderCodeHeapInfo(TargetPointer heapAddress, TargetPointer loaderHeapAddress)
+    {
+        HeapAddress = heapAddress;
+        LoaderHeapAddress = loaderHeapAddress;
+    }
+}
+
+public sealed class HostCodeHeapInfo : ICodeHeapInfo
+{
+    public TargetPointer HeapAddress { get; }
+    public TargetPointer BaseAddress { get; }
+    public TargetPointer CurrentAddress { get; }
+
+    public HostCodeHeapInfo(TargetPointer heapAddress, TargetPointer baseAddress, TargetPointer currentAddress)
+    {
+        HeapAddress = heapAddress;
+        BaseAddress = baseAddress;
+        CurrentAddress = currentAddress;
+    }
+}
+
+public sealed class UnknownCodeHeapInfo : ICodeHeapInfo {}
+
 public enum JitType : uint
 {
     Unknown = 0,
@@ -68,6 +100,7 @@ public interface IExecutionManager : IContract
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
+    IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager
