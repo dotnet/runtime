@@ -284,13 +284,13 @@ private:
     jitstd::vector<regNumber> m_fpRegs;
 
 public:
-    void SetStackPointerRegs(jitstd::vector<regNumber>& regs)
+    void SetStackPointerReg(unsigned funcletIndex, regNumber reg)
     {
-        m_spRegs = regs;
+        m_spRegs[funcletIndex] = reg;
     }
-    void SetFramePointerRegs(jitstd::vector<regNumber>& regs)
+    void SetFramePointerReg(unsigned funcletIndex, regNumber reg)
     {
-        m_fpRegs = regs;
+        m_fpRegs[funcletIndex] = reg;
     }
     regNumber GetStackPointerReg(unsigned funcletIndex) const
     {

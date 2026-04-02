@@ -75,25 +75,45 @@ struct VirtualRegReferences
 
 class WasmRegAlloc : public RegAllocInterface
 {
-    Compiler*             m_compiler;
-    CodeGenInterface*     m_codeGen;
-    BasicBlock*           m_currentBlock;
-    unsigned              m_currentFunclet;
-    VirtualRegStack       m_virtualRegs[static_cast<int>(WasmValueType::Count)];
-    unsigned              m_lastVirtualRegRefsCount = 0;
-    VirtualRegReferences* m_virtualRegRefs          = nullptr;
-    TemporaryRegStack     m_temporaryRegs[static_cast<int>(WasmValueType::Count)];
+    Compiler*         m_compiler;
+    CodeGenInterface* m_codeGen;
+    BasicBlock*       m_currentBlock;
+    unsigned          m_currentFunclet;
+    VirtualRegStack   m_virtualRegs[static_cast<int>(WasmValueType::Count)];
+    TemporaryRegStack m_temporaryRegs[static_cast<int>(WasmValueType::Count)];
 
-    // The meaning of these fields is borrowed (partially) from the C ABI for WASM. We define "the SP" to be the local
-    // which is used to make calls - the stack on entry to callees. We term "the FP" to be the local which is used to
-    // access the fixed potion of the frame. For fixed-size frames (no localloc), these will be the same.
+    // We need to allocate per funclet. This struct holds the per-funclet state.
     //
-    // These values are per funclet region. In funclets FP will differ from SP, and will likely differ from FP in the
-    // main function body.
-    //
-    jitstd::vector<regNumber> m_spRegs;
-    jitstd::vector<regNumber> m_fpRegs;
-    jitstd::vector<regNumber> m_exRegs;
+    struct PerRegionData
+    {
+        PerRegionData()
+            : m_spReg(REG_NA)
+            , m_fpReg(REG_NA)
+            , m_exReg(REG_NA)
+            , m_lastVirtualRegRefsCount(0)
+            , m_virtualRegRefs(nullptr)
+        {
+        }
+
+        // The meaning of these fields is borrowed (partially) from the C ABI for WASM. We define "the SP" to be the
+        // local which is used to make calls - the stack on entry to callees. We term "the FP" to be the local which is
+        // used to access the fixed potion of the frame. For fixed-size frames (no localloc), these will be the same.
+        //
+        // In funclets FP will refer to the fixed portion of the parent frame. It will likely be in a different Wasm
+        // local than the FP in the main function body. EX will refer to the exception object local for filter and catch
+        // funclets.
+        //
+        regNumber m_spReg;
+        regNumber m_fpReg;
+        regNumber m_exReg;
+
+        // Chunked list of virtual reg references in this region.
+        //
+        unsigned              m_lastVirtualRegRefsCount;
+        VirtualRegReferences* m_virtualRegRefs;
+    };
+
+    jitstd::vector<PerRegionData*> m_perRegionData;
 
 public:
     WasmRegAlloc(Compiler* compiler);

@@ -20,10 +20,12 @@ WasmRegAlloc::WasmRegAlloc(Compiler* compiler)
     , m_codeGen(compiler->codeGen)
     , m_currentBlock(nullptr)
     , m_currentFunclet(0)
-    , m_spRegs(compiler->getAllocator(CMK_LSRA))
-    , m_fpRegs(compiler->getAllocator(CMK_LSRA))
-    , m_exRegs(compiler->getAllocator(CMK_LSRA))
+    , m_perRegionData(compiler->compFuncInfoCount, nullptr, compiler->getAllocator(CMK_LSRA))
 {
+    for (unsigned i = 0; i < m_compiler->compFuncInfoCount; i++)
+    {
+        m_perRegionData[i] = new (compiler->getAllocator(CMK_LSRA)) PerRegionData();
+    }
 }
 
 PhaseStatus WasmRegAlloc::doRegisterAllocation()
@@ -92,7 +94,7 @@ void WasmRegAlloc::IdentifyCandidates()
         }
     }
 
-    if (anyFrameLocals || m_compiler->compLocallocUsed || (m_compiler->compFuncInfoCount > 1))
+    if (anyFrameLocals || m_compiler->compLocallocUsed)
     {
         AllocateFramePointer();
     }
@@ -148,14 +150,15 @@ void WasmRegAlloc::InitializeStackPointer()
 //
 void WasmRegAlloc::AllocateStackPointer()
 {
-
-    if (m_spRegs.size() == 0)
+    // This is the same virtual register in all regions
+    //
+    if (m_perRegionData[0]->m_spReg == REG_NA)
     {
         regNumber spReg = AllocateVirtualRegister(TYP_I_IMPL);
 
         for (unsigned i = 0; i < m_compiler->compFuncInfoCount; i++)
         {
-            m_spRegs.push_back(spReg);
+            m_perRegionData[i]->m_spReg = spReg;
         }
     }
 }
@@ -165,18 +168,21 @@ void WasmRegAlloc::AllocateStackPointer()
 //
 void WasmRegAlloc::AllocateFramePointer()
 {
-    assert(m_fpRegs.size() == 0);
-
     // FP is initialized with SP in the prolog, so ensure the latter is allocated.
     AllocateStackPointer();
 
-    // If we have funclets or localloc, we must have an FP.
-    bool const      needsFP = m_compiler->compLocallocUsed || (m_compiler->compFuncInfoCount > 1);
-    regNumber const fpReg   = needsFP ? AllocateVirtualRegister(TYP_I_IMPL) : m_spRegs[0];
+    regNumber const spReg = m_perRegionData[0]->m_spReg;
+    regNumber const fpReg = AllocateVirtualRegister(TYP_I_IMPL);
 
-    for (unsigned i = 0; i < m_compiler->compFuncInfoCount; i++)
+    // Main method can use SP for frame access, if there is no localloc.
+    //
+    m_perRegionData[0]->m_fpReg = m_compiler->compLocallocUsed ? fpReg : spReg;
+
+    // Funclets must always use FP for frame access
+    //
+    for (unsigned i = 1; i < m_compiler->compFuncInfoCount; i++)
     {
-        m_fpRegs.push_back(fpReg);
+        m_perRegionData[i]->m_fpReg = fpReg;
     }
 }
 
@@ -185,9 +191,7 @@ void WasmRegAlloc::AllocateFramePointer()
 //
 void WasmRegAlloc::AllocateExceptionPointer()
 {
-    assert(m_exRegs.size() == 0);
     regNumber exReg = REG_NA;
-    m_exRegs.resize(m_compiler->compFuncInfoCount, REG_NA);
 
     for (unsigned i = 0; i < m_compiler->compFuncInfoCount; i++)
     {
@@ -207,7 +211,7 @@ void WasmRegAlloc::AllocateExceptionPointer()
                 exReg = AllocateVirtualRegister(TYP_REF);
             }
 
-            m_exRegs[i] = exReg;
+            m_perRegionData[i]->m_exReg = exReg;
         }
     }
 }
@@ -574,7 +578,7 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
     if (lclVar->GetLclNum() == m_compiler->lvaWasmSpArg)
     {
         lclVar->ChangeOper(GT_PHYSREG);
-        lclVar->AsPhysReg()->gtSrcReg = m_spRegs[m_currentFunclet];
+        lclVar->AsPhysReg()->gtSrcReg = m_perRegionData[m_currentFunclet]->m_spReg;
         CollectReference(lclVar);
     }
 }
@@ -590,7 +594,7 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
 void WasmRegAlloc::CollectReferencesForCatchArg(GenTree* catchArg)
 {
     catchArg->ChangeOper(GT_PHYSREG);
-    catchArg->AsPhysReg()->gtSrcReg = m_exRegs[m_currentFunclet];
+    catchArg->AsPhysReg()->gtSrcReg = m_perRegionData[m_currentFunclet]->m_exReg;
     CollectReference(catchArg);
 }
 
@@ -664,22 +668,23 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 //
 void WasmRegAlloc::CollectReference(GenTree* node)
 {
-    VirtualRegReferences* refs = m_virtualRegRefs;
+    PerRegionData* const  data = m_perRegionData[m_currentFunclet];
+    VirtualRegReferences* refs = data->m_virtualRegRefs;
     if (refs == nullptr)
     {
-        refs             = new (m_compiler->getAllocator(CMK_LSRA_RefPosition)) VirtualRegReferences();
-        m_virtualRegRefs = refs;
+        refs                   = new (m_compiler->getAllocator(CMK_LSRA_RefPosition)) VirtualRegReferences();
+        data->m_virtualRegRefs = refs;
     }
-    else if (m_lastVirtualRegRefsCount == ARRAY_SIZE(refs->Nodes))
+    else if (data->m_lastVirtualRegRefsCount == ARRAY_SIZE(refs->Nodes))
     {
-        refs                      = new (m_compiler->getAllocator(CMK_LSRA_RefPosition)) VirtualRegReferences();
-        refs->Prev                = m_virtualRegRefs;
-        m_virtualRegRefs          = refs;
-        m_lastVirtualRegRefsCount = 0;
+        refs                            = new (m_compiler->getAllocator(CMK_LSRA_RefPosition)) VirtualRegReferences();
+        refs->Prev                      = data->m_virtualRegRefs;
+        data->m_virtualRegRefs          = refs;
+        data->m_lastVirtualRegRefsCount = 0;
     }
 
-    assert(m_lastVirtualRegRefsCount < ARRAY_SIZE(refs->Nodes));
-    refs->Nodes[m_lastVirtualRegRefsCount++] = node;
+    assert(data->m_lastVirtualRegRefsCount < ARRAY_SIZE(refs->Nodes));
+    refs->Nodes[data->m_lastVirtualRegRefsCount++] = node;
 }
 
 //------------------------------------------------------------------------
@@ -816,9 +821,10 @@ void WasmRegAlloc::ResolveReferences()
             physRegs.DeclaredCount    = virtRegs.Count();
         }
 
-        unsigned           indexBase = 0;
-        const FuncInfoDsc& funcInfo  = m_compiler->compFuncInfos[m_currentFunclet];
-        const bool         inFunclet = funcInfo.funKind != FuncKind::FUNC_ROOT;
+        unsigned             indexBase = 0;
+        const FuncInfoDsc&   funcInfo  = m_compiler->compFuncInfos[m_currentFunclet];
+        const bool           inFunclet = funcInfo.funKind != FuncKind::FUNC_ROOT;
+        PerRegionData* const data      = m_perRegionData[m_currentFunclet];
 
         switch (funcInfo.funKind)
         {
@@ -837,7 +843,7 @@ void WasmRegAlloc::ResolveReferences()
                             indexBase              = max(indexBase, argIndex + 1);
 
                             LclVarDsc* argVarDsc = m_compiler->lvaGetDesc(argLclNum);
-                            if ((argVarDsc->GetRegNum() == argReg) || (m_spRegs[0] == argReg))
+                            if ((argVarDsc->GetRegNum() == argReg) || (data->m_spReg == argReg))
                             {
                                 assert(abiInfo.HasExactlyOneRegisterSegment());
                                 virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
@@ -943,24 +949,22 @@ void WasmRegAlloc::ResolveReferences()
 
         // Allocate all our virtual registers to physical ones.
         //
-        regNumber spVirtReg = m_spRegs[m_currentFunclet];
-        regNumber exVirtReg = m_exRegs[m_currentFunclet];
+        regNumber spVirtReg = data->m_spReg;
+        regNumber exVirtReg = data->m_exReg;
 
         if (!inFunclet)
         {
             if (spVirtReg != REG_NA)
             {
-                m_spRegs[m_currentFunclet] = allocPhysReg(spVirtReg, m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg));
+                data->m_spReg = allocPhysReg(spVirtReg, m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg));
             }
 
-            if (m_fpRegs[m_currentFunclet] != REG_NA)
+            if (data->m_fpReg != REG_NA)
             {
-                m_fpRegs[m_currentFunclet] = (spVirtReg == m_fpRegs[m_currentFunclet])
-                                                 ? m_spRegs[m_currentFunclet]
-                                                 : allocPhysReg(m_fpRegs[m_currentFunclet], nullptr);
+                data->m_fpReg = (spVirtReg == data->m_fpReg) ? data->m_spReg : allocPhysReg(data->m_fpReg, nullptr);
             }
 
-            assert(m_exRegs[m_currentFunclet] == REG_NA);
+            assert(data->m_exReg == REG_NA);
         }
         else
         {
@@ -968,16 +972,16 @@ void WasmRegAlloc::ResolveReferences()
             // We do not have lclVars for funclet params.
             // SP is the same physreg as in the main method.
             //
-            assert(m_spRegs[m_currentFunclet] != REG_NA);
-            m_spRegs[m_currentFunclet] = MakeWasmReg(0, TypeToWasmValueType(TYP_I_IMPL));
-            assert(m_spRegs[0] == m_spRegs[m_currentFunclet]);
+            assert(data->m_spReg != REG_NA);
+            data->m_spReg = MakeWasmReg(0, TypeToWasmValueType(TYP_I_IMPL));
+            assert(data->m_spReg == m_perRegionData[0]->m_spReg);
 
-            assert(m_fpRegs[m_currentFunclet] != REG_NA);
-            m_fpRegs[m_currentFunclet] = MakeWasmReg(1, TypeToWasmValueType(TYP_I_IMPL));
+            assert(data->m_fpReg != REG_NA);
+            data->m_fpReg = MakeWasmReg(1, TypeToWasmValueType(TYP_I_IMPL));
 
-            if (m_exRegs[m_currentFunclet] != REG_NA)
+            if (data->m_exReg != REG_NA)
             {
-                m_exRegs[m_currentFunclet] = MakeWasmReg(2, TypeToWasmValueType(TYP_REF));
+                data->m_exReg = MakeWasmReg(2, TypeToWasmValueType(TYP_REF));
             }
         }
 
@@ -1006,8 +1010,8 @@ void WasmRegAlloc::ResolveReferences()
         }
 
         // Now remap all remaining virtual register references.
-        unsigned refsCount = m_lastVirtualRegRefsCount;
-        for (VirtualRegReferences* refs = m_virtualRegRefs; refs != nullptr; refs = refs->Prev)
+        unsigned refsCount = data->m_lastVirtualRegRefsCount;
+        for (VirtualRegReferences* refs = data->m_virtualRegRefs; refs != nullptr; refs = refs->Prev)
         {
             for (size_t i = 0; i < refsCount; i++)
             {
@@ -1018,12 +1022,12 @@ void WasmRegAlloc::ResolveReferences()
                     {
                         // Former CATCH_ARG -- should only see in funclets
                         assert(inFunclet);
-                        node->AsPhysReg()->gtSrcReg = m_exRegs[m_currentFunclet];
+                        node->AsPhysReg()->gtSrcReg = data->m_exReg;
                     }
                     else
                     {
                         assert(node->AsPhysReg()->gtSrcReg == spVirtReg);
-                        node->AsPhysReg()->gtSrcReg = m_spRegs[m_currentFunclet];
+                        node->AsPhysReg()->gtSrcReg = data->m_spReg;
                     }
 
                     assert(!genIsValidReg(node->GetRegNum())); // Currently we do not need to multi-use any PHYSREGs.
@@ -1090,47 +1094,39 @@ void WasmRegAlloc::ResolveReferences()
 //
 void WasmRegAlloc::PublishAllocationResults()
 {
+    bool usesFramePointer = false;
+
+    for (unsigned i = 0; i < m_compiler->compFuncInfoCount; i++)
+    {
+        PerRegionData* const data = m_perRegionData[i];
+
 #ifdef DEBUG
-    for (unsigned i = 0; i < m_spRegs.size(); i++)
-    {
         if (i == 0)
         {
-            JITDUMP("Allocated function SP into: %s\n", getRegName(m_spRegs[i]));
+            JITDUMP("Allocated function SP into: %s\n", getRegName(data->m_spReg));
+
+            if (data->m_fpReg != REG_NA)
+            {
+                JITDUMP("Allocated function FP into: %s\n", getRegName(data->m_fpReg));
+            }
         }
         else
         {
-            JITDUMP("Allocated Funclet %u SP into %s\n", i, getRegName(m_spRegs[i]));
+            JITDUMP("Allocated funclet %u SP into %s\n", i, getRegName(data->m_spReg));
+            JITDUMP("Allocated funclet %u FP into %s\n", i, getRegName(data->m_fpReg));
         }
-    }
-
-    for (unsigned i = 0; i < m_fpRegs.size(); i++)
-    {
-        if (i == 0)
-        {
-            JITDUMP("Allocated function FP into: %s\n", getRegName(m_fpRegs[i]));
-        }
-        else
-        {
-            JITDUMP("Allocated Funclet %u FP into %s\n", i, getRegName(m_fpRegs[i]));
-        }
-    }
-
 #endif // DEBUG
 
-    m_codeGen->SetStackPointerRegs(m_spRegs);
+        m_codeGen->SetStackPointerReg(i, data->m_spReg);
 
-    bool fpUsed = false;
-
-    if (m_fpRegs.size() != 0)
-    {
-        m_codeGen->SetFramePointerRegs(m_fpRegs);
-
-        // We can just check the method region to see if SP and FP differ
-        //
-        fpUsed = (m_fpRegs[0] != m_spRegs[0]);
+        if (data->m_fpReg != REG_NA)
+        {
+            m_codeGen->SetFramePointerReg(i, data->m_fpReg);
+            usesFramePointer |= (data->m_fpReg != data->m_spReg);
+        }
     }
 
-    m_codeGen->setFramePointerUsed(fpUsed);
+    m_codeGen->setFramePointerUsed(usesFramePointer);
 
     // We don't need to publish the exRegs for codegen; all references were in codegen
     // and all were converted to GT_PHYSREG.
