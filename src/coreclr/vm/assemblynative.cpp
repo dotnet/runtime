@@ -146,8 +146,8 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
-    StackSString loadedAssemblyName;
-    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly, &loadedAssemblyName);
+    ReleaseHolder<BINDER_SPACE::Assembly> pExistingAssembly;
+    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly, &pExistingAssembly);
 
     if (hr != S_OK)
     {
@@ -158,14 +158,27 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
             // Give a more specific message for the case when we found the assembly with the same name already loaded.
             // Show the assembly name, since we know the error is about the assembly name.
             StackSString errorString;
-            if (!loadedAssemblyName.IsEmpty())
+            if (pExistingAssembly != nullptr)
             {
-                // We have the loaded assembly's name - include it in the error message
+                // We have the existing assembly - extract its details for the error message
                 StackSString simpleName;
                 spec.GetName(simpleName);
+
+                PathString loadedAssemblyName;
+                pExistingAssembly->GetAssemblyName()->GetDisplayName(loadedAssemblyName, BINDER_SPACE::AssemblyName::INCLUDE_VERSION);
+                const SString& loadedAssemblyPath = pExistingAssembly->GetPEImage()->GetPath();
+
                 SString format;
-                format.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION);
-                errorString.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, simpleName, loadedAssemblyName);
+                if (!loadedAssemblyPath.IsEmpty())
+                {
+                    format.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION_AND_PATH);
+                    errorString.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, simpleName, loadedAssemblyName, loadedAssemblyPath);
+                }
+                else
+                {
+                    format.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION);
+                    errorString.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, simpleName, loadedAssemblyName);
+                }
             }
             else
             {

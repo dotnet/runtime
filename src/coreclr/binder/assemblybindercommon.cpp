@@ -1157,7 +1157,7 @@ HRESULT AssemblyBinderCommon::BindUsingPEImage(/* in */  AssemblyBinder* pBinder
                                                /* in */  PEImage            *pPEImage,
                                                /* in */  bool               excludeAppPaths,
                                                /* [retval] [out] */  Assembly **ppAssembly,
-                                               /* [out, optional] */ SString *pLoadedAssemblyNameForMvidMismatch)
+                                               /* [out, optional] */ Assembly **ppExistingAssemblyOnMvidMismatch)
 {
     HRESULT hr = E_FAIL;
 
@@ -1221,12 +1221,10 @@ Retry:
                 if (mvidMismatch)
                 {
                     // MVIDs do not match, so fail the load.
-                    // If caller wants the loaded assembly name for error message, provide it
-                    if (pLoadedAssemblyNameForMvidMismatch != nullptr)
+                    // If caller wants the existing assembly for error message, provide it
+                    if (ppExistingAssemblyOnMvidMismatch != nullptr)
                     {
-                        PathString loadedName;
-                        bindResult.GetAssembly()->GetAssemblyName()->GetDisplayName(loadedName, AssemblyName::INCLUDE_VERSION);
-                        pLoadedAssemblyNameForMvidMismatch->Set(loadedName);
+                        *ppExistingAssemblyOnMvidMismatch = bindResult.GetAssembly(TRUE /* fAddRef */);
                     }
                     IF_FAIL_GO(COR_E_FILELOAD);
                 }

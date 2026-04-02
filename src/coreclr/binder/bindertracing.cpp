@@ -233,9 +233,18 @@ namespace BinderTracing
             if (!loadedAssemblyName.IsEmpty())
             {
                 const SString& simpleName = m_assemblyNameObject->GetSimpleName();
+                const SString& loadedPath = inContextAttempt->AssemblyHolder->GetPEImage()->GetPath();
                 SString versionFormat;
-                versionFormat.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION);
-                details.FormatMessage(FORMAT_MESSAGE_FROM_STRING, versionFormat.GetUnicode(), 0, 0, simpleName, loadedAssemblyName);
+                if (!loadedPath.IsEmpty())
+                {
+                    versionFormat.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION_AND_PATH);
+                    details.FormatMessage(FORMAT_MESSAGE_FROM_STRING, versionFormat.GetUnicode(), 0, 0, simpleName, loadedAssemblyName, loadedPath);
+                }
+                else
+                {
+                    versionFormat.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION);
+                    details.FormatMessage(FORMAT_MESSAGE_FROM_STRING, versionFormat.GetUnicode(), 0, 0, simpleName, loadedAssemblyName);
+                }
             }
             else
             {

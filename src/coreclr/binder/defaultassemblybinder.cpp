@@ -113,7 +113,7 @@ Exit:;
 HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                  /* in */ bool excludeAppPaths,
                                                  /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly,
-                                                 /* [out, optional] */ SString *pLoadedAssemblyNameForMvidMismatch)
+                                                 /* [out, optional] */ BINDER_SPACE::Assembly **ppExistingAssemblyOnMvidMismatch)
 {
     HRESULT hr = S_OK;
 
@@ -159,7 +159,7 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             }
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly, pLoadedAssemblyNameForMvidMismatch);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly, ppExistingAssemblyOnMvidMismatch);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);

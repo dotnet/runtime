@@ -58,7 +58,7 @@ namespace BINDER_SPACE
                                         /* in */  PEImage            *pPEImage,
                                         /* in */  bool              excludeAppPaths,
                                         /* [retval] [out] */  Assembly **ppAssembly,
-                                        /* [out, optional] */ SString *pLoadedAssemblyNameForMvidMismatch = nullptr);
+                                        /* [out, optional] */ Assembly **ppExistingAssemblyOnMvidMismatch = nullptr);
 #endif // !defined(DACCESS_COMPILE)
 
         static HRESULT TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind);
