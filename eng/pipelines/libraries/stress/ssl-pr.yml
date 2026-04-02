@@ -1,13 +1,15 @@
 trigger: none
 
-schedules:
-- cron: "0 13 * * *" # 1PM UTC => 5 AM PST
-  displayName: SslStress nightly run
-  always: true
+pr:
   branches:
     include:
     - main
     - release/*.0
+  paths:
+    include:
+    - src/libraries/System.Net.Security/tests/StressTests/SslStress/**
+    - src/libraries/Common/tests/System/Net/StressTests/**
+    - eng/pipelines/libraries/stress/**
 
 variables:
   - template: ../variables.yml
