@@ -595,16 +595,16 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    enum WasmAbsheaptype : byte
+    enum WasmAbsHeapType : byte
     {
         Func = 0x70,
     }
 
     class WasmRefNullExpr : WasmExpr
     {
-        WasmAbsheaptype absheaptype;
+        WasmAbsHeapType absheaptype;
 
-        public WasmRefNullExpr(WasmAbsheaptype heapType) : base(WasmExprKind.RefNull)
+        public WasmRefNullExpr(WasmAbsHeapType heapType) : base(WasmExprKind.RefNull)
         {
             absheaptype = heapType;
         }
@@ -740,7 +740,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     }
     static class Ref
     {
-        public static WasmExpr NullFuncRef => new WasmRefNullExpr(WasmAbsheaptype.Func);
+        public static WasmExpr NullFuncRef => new WasmRefNullExpr(WasmAbsHeapType.Func);
     }
     static class Block
     {

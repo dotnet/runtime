@@ -110,7 +110,7 @@ namespace ILCompiler.ObjectWriter
             return pos;
         }
 
-        public override int EncodeSize() => 2 + (int)DwarfHelper.SizeOfULEB128(1);
+        public override int EncodeSize() => 2 + (int)DwarfHelper.SizeOfULEB128(1); // The 2 is the element type and table limit flags
         public override int EncodeRelocationCount() => 0;
         public override int EncodeRelocations(Span<Relocation> buffer) => 0;
     }
