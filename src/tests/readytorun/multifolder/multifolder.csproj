@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, CrossGenTest -->
+    <!-- Needed for CrossGenTest -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Running Crossgen2 under GCStress takes too long -->
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>

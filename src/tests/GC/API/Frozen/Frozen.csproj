@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible -->
+    <!-- Needed for CLRTestTargetUnsupported -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
     <CLRTestPriority>1</CLRTestPriority>

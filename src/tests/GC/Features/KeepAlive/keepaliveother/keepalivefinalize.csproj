@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, GC.WaitForPendingFinalizers -->
+    <!-- Needed for UnloadabilityIncompatible, GC.WaitForPendingFinalizers -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- This test tries to print to console from a finalizer after the static with stdout SafeHandle is finalized -->

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, CMakeProjectReference -->
+    <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ApplicationManifest>App.manifest</ApplicationManifest>
     <IsManagedCOMClient>true</IsManagedCOMClient>

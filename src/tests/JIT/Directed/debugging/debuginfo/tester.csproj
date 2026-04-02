@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, NativeAotIncompatible, CLRTestEnvironmentVariable -->
+    <!-- Needed for UnloadabilityIncompatible, NativeAotIncompatible, CLRTestEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>

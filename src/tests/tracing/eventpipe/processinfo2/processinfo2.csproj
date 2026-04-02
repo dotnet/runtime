@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, IlasmRoundTripIncompatible -->
+    <!-- Needed for UnloadabilityIncompatible, IlasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

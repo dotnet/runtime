@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, CrossGenTest -->
+    <!-- Needed for CLRTestTargetUnsupported, CrossGenTest -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Running Crossgen2 under GCStress takes too long -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>

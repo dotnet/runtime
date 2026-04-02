@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, Environment.Exit, GC.WaitForPendingFinalizers -->
+    <!-- Needed for Environment.Exit, GC.WaitForPendingFinalizers -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>

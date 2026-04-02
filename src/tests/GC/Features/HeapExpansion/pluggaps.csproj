@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, GC.WaitForPendingFinalizers -->
+    <!-- Needed for UnloadabilityIncompatible, GC.WaitForPendingFinalizers -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- This test timeouts (but completes if given a long time) if running with other tests in parallel -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
