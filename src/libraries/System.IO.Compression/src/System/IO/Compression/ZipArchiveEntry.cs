@@ -1245,7 +1245,6 @@ namespace System.IO.Compression
                 if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
                 {
                     _everOpenedForWrite = true;
-                    // Save whether the original entry had a data descriptor before WriteLocalFileHeader clears the bit.
                     bool hadDataDescriptor = (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
                     WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite);
 

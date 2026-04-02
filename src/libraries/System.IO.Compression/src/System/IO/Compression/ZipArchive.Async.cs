@@ -375,8 +375,8 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                 }
                 else
                 {
-                    // Compute the end offset of this entry: the start of the next original entry, or the central directory.
-                    // This correctly includes any trailing data descriptor bytes.
+                    // Compute the end offset of this entry: the start of the next original entry, or the central directory,
+                    // including any trailing data descriptor bytes.
                     long entryEndOffset = _centralDirectoryStart;
                     for (int j = i + 1; j < _entries.Count; j++)
                     {
