@@ -46,8 +46,6 @@ namespace System.Diagnostics
         /// <returns>true if the process is running; otherwise, false.</returns>
         public static bool IsProcessRunning(int processId)
         {
-            // Avoid calling IsProcessRunning(processId, ".") so that the remote machine code path
-            // is not included when only local machine support is needed.
             // Performance optimization: First try to OpenProcess by id.
             // Attempt to open handle for Idle process (processId == 0) fails with ERROR_INVALID_PARAMETER.
             if (processId != 0)
