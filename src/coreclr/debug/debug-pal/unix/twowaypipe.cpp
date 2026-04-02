@@ -46,7 +46,7 @@ bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
     // the TwoWayPipe instance, which may be concurrently updated by the worker thread.
     // Only do this the first time CreateServer() is called; subsequent calls recreate the
     // pipe with the same names, so the static buffers remain valid.
-    if (VolatileLoad(&g_pfnAbortTransportCallback) == nullptr)
+    if (g_pfnAbortTransportCallback == nullptr)
     {
         memcpy(s_serverInPipeName, m_inPipeName, sizeof(s_serverInPipeName));
         memcpy(s_serverOutPipeName, m_outPipeName, sizeof(s_serverOutPipeName));
