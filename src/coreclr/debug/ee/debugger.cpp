@@ -26,6 +26,7 @@
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
 #include "dbgtransportsession.h"
+#include "twowaypipe.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
 #ifdef TEST_DATA_CONSISTENCY
@@ -1698,9 +1699,9 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
 void Debugger::CleanupTransportSocket(void)
 {
 #if defined(TARGET_UNIX) && defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    if (g_pDbgTransport != NULL)
+    if (g_pfnAbortTransportCallback != NULL)
     {
-        g_pDbgTransport->AbortConnection();
+        g_pfnAbortTransportCallback();
     }
 #endif // TARGET_UNIX && FEATURE_DBGIPC_TRANSPORT_VM
 }

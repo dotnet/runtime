@@ -10,9 +10,23 @@
 #include <pal_assert.h>
 #include "twowaypipe.h"
 
-// Pipe names stored for AbortPipeServer(). Updated each time CreateServer() is called.
+// Pipe names stored for use in AbortPipeServerImpl(). Updated each time CreateServer() is called.
 static char s_serverInPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
 static char s_serverOutPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+
+// Unlinks the server-side named pipes. Signal-safe: no ASSERT or TRACE macros.
+static void AbortPipeServerImpl()
+{
+    // IMPORTANT NOTE: This function must not call any signal unsafe functions
+    // since it is called from signal handlers.
+    // That includes ASSERT and TRACE macros.
+    unlink(s_serverInPipeName);
+    unlink(s_serverOutPipeName);
+}
+
+// Callback set to AbortPipeServerImpl once CreateServer() has initialized the pipe names.
+// Declared in twowaypipe.h; called from Debugger::CleanupTransportSocket().
+void (*g_pfnAbortTransportCallback)(void) = nullptr;
 
 // Creates a server side of the pipe.
 // Id is used to create pipes names and uniquely identify the pipe on the machine.
@@ -26,10 +40,13 @@ bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
     PAL_GetTransportPipeName(m_inPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "in");
     PAL_GetTransportPipeName(m_outPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "out");
 
-    // Keep a static copy so AbortPipeServer() can unlink them without going through
+    // Keep a static copy so AbortPipeServerImpl() can unlink them without going through
     // the TwoWayPipe instance, which may be concurrently updated by the worker thread.
     memcpy(s_serverInPipeName, m_inPipeName, sizeof(s_serverInPipeName));
     memcpy(s_serverOutPipeName, m_outPipeName, sizeof(s_serverOutPipeName));
+
+    // Set the callback now that the static names are valid.
+    g_pfnAbortTransportCallback = AbortPipeServerImpl;
 
     unlink(m_inPipeName);
 
@@ -189,15 +206,4 @@ void TwoWayPipe::CleanupTargetProcess()
 {
     unlink(m_inPipeName);
     unlink(m_outPipeName);
-}
-
-// Unlinks the current server-side named pipes. Safe to call at any time,
-// including from signal handlers or concurrently with the transport worker thread.
-void TwoWayPipe::AbortPipeServer()
-{
-    // IMPORTANT NOTE: This function must not call any signal unsafe functions
-    // since it is called from signal handlers.
-    // That includes ASSERT and TRACE macros.
-    unlink(s_serverInPipeName);
-    unlink(s_serverOutPipeName);
 }

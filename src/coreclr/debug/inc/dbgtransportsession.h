@@ -375,11 +375,6 @@ public:
     // Used by debugger side (RS) to cleanup the target (LS) named pipes
     // and semaphores when the debugger detects the debuggee process  exited.
     void CleanupTargetProcess();
-#else
-    // Cleans up the named pipe connection so no tmp files are left behind. Does only
-    // the minimum and must be safe to call at any time. Called during PAL ExitProcess,
-    // TerminateProcess and for unhandled native exceptions and asserts.
-    void AbortConnection();
 #endif // RIGHT_SIDE_COMPILE
 
     LONG AddRef()

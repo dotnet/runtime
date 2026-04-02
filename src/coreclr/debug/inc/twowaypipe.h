@@ -78,13 +78,6 @@ public:
     // and semaphores when the debugger detects the debuggee process  exited.
     void CleanupTargetProcess();
 
-#ifdef HOST_UNIX
-    // Unlinks the current server-side named pipes. Safe to call at any time,
-    // including from signal handlers or concurrently with the transport worker thread.
-    // Does nothing if CreateServer() has not been called yet.
-    static void AbortPipeServer();
-#endif // HOST_UNIX
-
 private:
 
     State m_state;
@@ -109,3 +102,10 @@ private:
 };
 
 #endif //TwoWayPipe_H
+
+#ifdef HOST_UNIX
+// Callback set by TwoWayPipe::CreateServer() once server pipe names are initialized.
+// Can be called at any time (including from signal handlers) to unlink the server pipes.
+// NULL until CreateServer() has been called.
+extern void (*g_pfnAbortTransportCallback)(void);
+#endif // HOST_UNIX
