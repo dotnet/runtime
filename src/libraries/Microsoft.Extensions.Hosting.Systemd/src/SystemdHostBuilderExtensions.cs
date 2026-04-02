@@ -21,7 +21,12 @@ namespace Microsoft.Extensions.Hosting
         /// <remarks>
         ///   <para>
         ///     This is context aware and will only activate if it detects the process is running
-        ///     as a systemd Service.
+        ///     as a systemd Service or if <c>NOTIFY_SOCKET</c> is set.
+        ///   </para>
+        ///   <para>
+        ///     The console log formatter is enabled when the process is detected as a systemd service.
+        ///     The <see cref="SystemdLifetime"/> and <see cref="SystemdNotifier"/> are registered when
+        ///     <c>NOTIFY_SOCKET</c> is set or the process is detected as a systemd service.
         ///   </para>
         ///   <para>
         ///     The systemd service file must be configured with <c>Type=notify</c> to enable
@@ -60,7 +65,12 @@ namespace Microsoft.Extensions.Hosting
         /// <remarks>
         ///   <para>
         ///     This is context aware and will only activate if it detects the process is running
-        ///     as a systemd Service.
+        ///     as a systemd Service or if <c>NOTIFY_SOCKET</c> is set.
+        ///   </para>
+        ///   <para>
+        ///     The console log formatter is enabled when the process is detected as a systemd service.
+        ///     The <see cref="SystemdLifetime"/> and <see cref="SystemdNotifier"/> are registered when
+        ///     <c>NOTIFY_SOCKET</c> is set or the process is detected as a systemd service.
         ///   </para>
         ///   <para>
         ///     The systemd service file must be configured with <c>Type=notify</c> to enable
@@ -100,7 +110,8 @@ namespace Microsoft.Extensions.Hosting
 
         private static void AddSystemdLifetime(IServiceCollection services)
         {
-            // IsSystemdNotify() will never return true for android/browser/iOS/tvOS
+            // SystemdNotifier and SystemdLifetime are Unix-only; IsSystemdLifetime() ensures
+            // we only reach this code on platforms where systemd can run.
 #pragma warning disable CA1416 // Validate platform compatibility
             services.AddSingleton<ISystemdNotifier, SystemdNotifier>();
             services.AddSingleton<IHostLifetime, SystemdLifetime>();

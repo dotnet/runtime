@@ -31,9 +31,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
                 return false;
             }
 
-            // To support containerized systemd services, check if we're the main process (PID 1)
-            // and if there are systemd environment variables defined for notifying the service
-            // manager, or passing listen handles.
+            // Containerized systemd services: PID 1 with systemd notify/listen environment variables.
             int processId = Environment.ProcessId;
 
             // Preferred detection method: compare SYSTEMD_EXEC_PID to the current PID.
