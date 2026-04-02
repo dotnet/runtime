@@ -192,7 +192,13 @@ void WasmRegAlloc::AllocateExceptionPointer()
     for (unsigned i = 0; i < m_compiler->compFuncInfoCount; i++)
     {
         const FuncInfoDsc& funcInfo = m_compiler->compFuncInfos[i];
-        EHblkDsc* const    ehDsc    = m_compiler->ehGetDsc(funcInfo.funEHIndex);
+
+        if (funcInfo.funKind == FuncKind::FUNC_ROOT)
+        {
+            continue;
+        }
+
+        EHblkDsc* const ehDsc = m_compiler->ehGetDsc(funcInfo.funEHIndex);
 
         if (ehDsc->HasCatchHandler())
         {
@@ -812,12 +818,12 @@ void WasmRegAlloc::ResolveReferences()
 
         unsigned           indexBase = 0;
         const FuncInfoDsc& funcInfo  = m_compiler->compFuncInfos[m_currentFunclet];
+        const bool         inFunclet = funcInfo.funKind != FuncKind::FUNC_ROOT;
 
         switch (funcInfo.funKind)
         {
             case FuncKind::FUNC_ROOT:
             {
-                assert(m_currentFunclet == 0);
                 for (unsigned argLclNum = 0; argLclNum < m_compiler->info.compArgsCount; argLclNum++)
                 {
                     const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(argLclNum);
@@ -853,8 +859,6 @@ void WasmRegAlloc::ResolveReferences()
             case FuncKind::FUNC_HANDLER:
             case FuncKind::FUNC_FILTER:
             {
-                assert(m_currentFunclet > 0);
-
                 // TODO: add ABI information for funclets?
                 //
                 // All funclets have two intial arguments sp and fp.
@@ -926,11 +930,10 @@ void WasmRegAlloc::ResolveReferences()
 
                 // This is the location for the "first" def. In our case all defs share the same register.
                 //
-                // Note this holds even across funclets, since any local that is referred to in multiple funclets
-                // or in both funclets and the main method won't be a register candidate (we hope).
-                // (need to verify that if we have a local with two disjoint live ranges that doesn't cross a
-                // funclet boundary that we get this right).
+                // TODO-WASM: this may no longer hold with funclets. If a local has disjoint lifetimes that do not
+                // cross funclet boundaries, it may need to be allocated to different registers in different funclets.
                 //
+                // assert(!varDsc->lvRegister);
                 varDsc->SetRegNum(physReg);
                 varDsc->lvRegister = true;
                 varDsc->lvOnFrame  = false;
@@ -941,16 +944,41 @@ void WasmRegAlloc::ResolveReferences()
         // Allocate all our virtual registers to physical ones.
         //
         regNumber spVirtReg = m_spRegs[m_currentFunclet];
-        if (spVirtReg != REG_NA)
-        {
-            m_spRegs[m_currentFunclet] = allocPhysReg(spVirtReg, m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg));
-        }
+        regNumber exVirtReg = m_exRegs[m_currentFunclet];
 
-        if (m_fpRegs[m_currentFunclet] != REG_NA)
+        if (!inFunclet)
         {
-            m_fpRegs[m_currentFunclet] = (spVirtReg == m_fpRegs[m_currentFunclet])
-                                             ? m_spRegs[m_currentFunclet]
-                                             : allocPhysReg(m_fpRegs[m_currentFunclet], nullptr);
+            if (spVirtReg != REG_NA)
+            {
+                m_spRegs[m_currentFunclet] = allocPhysReg(spVirtReg, m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg));
+            }
+
+            if (m_fpRegs[m_currentFunclet] != REG_NA)
+            {
+                m_fpRegs[m_currentFunclet] = (spVirtReg == m_fpRegs[m_currentFunclet])
+                                                 ? m_spRegs[m_currentFunclet]
+                                                 : allocPhysReg(m_fpRegs[m_currentFunclet], nullptr);
+            }
+
+            assert(m_exRegs[m_currentFunclet] == REG_NA);
+        }
+        else
+        {
+            // Funclets always have SP and FP, and maybe EX.
+            // We do not have lclVars for funclet params.
+            // SP is the same physreg as in the main method.
+            //
+            assert(m_spRegs[m_currentFunclet] != REG_NA);
+            m_spRegs[m_currentFunclet] = MakeWasmReg(0, TypeToWasmValueType(TYP_I_IMPL));
+            assert(m_spRegs[0] == m_spRegs[m_currentFunclet]);
+
+            assert(m_fpRegs[m_currentFunclet] != REG_NA);
+            m_fpRegs[m_currentFunclet] = MakeWasmReg(1, TypeToWasmValueType(TYP_I_IMPL));
+
+            if (m_exRegs[m_currentFunclet] != REG_NA)
+            {
+                m_exRegs[m_currentFunclet] = MakeWasmReg(2, TypeToWasmValueType(TYP_REF));
+            }
         }
 
         for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
@@ -986,8 +1014,18 @@ void WasmRegAlloc::ResolveReferences()
                 GenTree* node = refs->Nodes[i];
                 if (node->OperIs(GT_PHYSREG))
                 {
-                    assert(node->AsPhysReg()->gtSrcReg == spVirtReg);
-                    node->AsPhysReg()->gtSrcReg = m_spRegs[m_currentFunclet];
+                    if (node->AsPhysReg()->gtSrcReg == exVirtReg)
+                    {
+                        // Former CATCH_ARG -- should only see in funclets
+                        assert(inFunclet);
+                        node->AsPhysReg()->gtSrcReg = m_exRegs[m_currentFunclet];
+                    }
+                    else
+                    {
+                        assert(node->AsPhysReg()->gtSrcReg == spVirtReg);
+                        node->AsPhysReg()->gtSrcReg = m_spRegs[m_currentFunclet];
+                    }
+
                     assert(!genIsValidReg(node->GetRegNum())); // Currently we do not need to multi-use any PHYSREGs.
                     continue;
                 }
@@ -1081,14 +1119,18 @@ void WasmRegAlloc::PublishAllocationResults()
 
     m_codeGen->SetStackPointerRegs(m_spRegs);
 
+    bool fpUsed = false;
+
     if (m_fpRegs.size() != 0)
     {
         m_codeGen->SetFramePointerRegs(m_fpRegs);
+
+        // We can just check the method region to see if SP and FP differ
+        //
+        fpUsed = (m_fpRegs[0] != m_spRegs[0]);
     }
-    else
-    {
-        m_codeGen->setFramePointerUsed(false);
-    }
+
+    m_codeGen->setFramePointerUsed(fpUsed);
 
     // We don't need to publish the exRegs for codegen; all references were in codegen
     // and all were converted to GT_PHYSREG.
