@@ -1195,7 +1195,7 @@ namespace Microsoft.Extensions
         {
             public ClassWithArrayConstructorParameter(string[] arrayField = null)
             {
-                ArrayField = arrayField ?? Array.Empty<string>();
+                ArrayField = arrayField;
             }
 
             public string[] ArrayField { get; }
