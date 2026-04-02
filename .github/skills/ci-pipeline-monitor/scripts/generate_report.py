@@ -57,10 +57,14 @@ class ReportGenerator:
     def _header(self, out):
         cur = self.conn.cursor()
         total = cur.execute("SELECT COUNT(*) FROM pipelines").fetchone()[0]
-        monitored = cur.execute(
-            "SELECT COUNT(*) FROM pipelines WHERE result != 'skipped'"
+        # Only private/skip pipelines are truly skipped; pipelines with
+        # 0 test failures are still "monitored" even though they got
+        # re-marked as skipped by extract_failed_tests.py.
+        truly_skipped = cur.execute(
+            "SELECT COUNT(*) FROM pipelines WHERE result = 'skipped' AND skip_reason = 'private'"
         ).fetchone()[0]
-        skipped = total - monitored
+        monitored = total - truly_skipped
+        skipped = truly_skipped
         passed = cur.execute(
             "SELECT COUNT(*) FROM pipelines WHERE result = 'succeeded'"
         ).fetchone()[0]
@@ -85,7 +89,11 @@ class ReportGenerator:
         failed_count = cur.execute(
             "SELECT COUNT(*) FROM pipelines WHERE result IN ('failed','partiallySucceeded')"
         ).fetchone()[0]
-        monitored = passed_count + failed_count
+        # Pipelines re-marked as skipped (0 test failures) are still monitored
+        skipped_0_tests = cur.execute(
+            "SELECT COUNT(*) FROM pipelines WHERE result = 'skipped' AND skip_reason != 'private'"
+        ).fetchone()[0]
+        monitored = passed_count + failed_count + skipped_0_tests
 
         out.append("=" * 80)
         out.append("Pipeline Summary")
@@ -117,8 +125,10 @@ class ReportGenerator:
             if p["build_id"]:
                 out.append(f"     https://dev.azure.com/{ADO_ORG}/{ADO_PROJECT}/_build/results?buildId={p['build_id']}")
 
-            # Unique test_names failing in this pipeline, with issue info
+            # Unique test_names failing in this pipeline, with issue info (cap at 5 per failure group)
             seen_tests = set()
+            group_counts = {}
+            group_info = {}
             for row in cur2.execute("""
                 SELECT DISTINCT ft.test_name, f.id as failure_id, f.github_issue_number, f.github_issue_url, f.summary
                 FROM failure_tests ft
@@ -131,12 +141,25 @@ class ReportGenerator:
                     continue
                 seen_tests.add(tn)
                 fid = row["failure_id"]
-                if row["github_issue_number"]:
-                    issue_url = row["github_issue_url"] or f"https://github.com/dotnet/runtime/issues/{row['github_issue_number']}"
-                    out.append(f"     - [{fid}] {tn} (#{row['github_issue_number']}, {issue_url})")
-                else:
-                    brief = (row["summary"] or "")[:80]
-                    out.append(f"     - [{fid}] [New] {tn} ({brief})" if brief else f"     - [{fid}] [New] {tn}")
+                group_counts[fid] = group_counts.get(fid, 0) + 1
+                if fid not in group_info:
+                    group_info[fid] = row
+                if group_counts[fid] <= 5:
+                    if row["github_issue_number"]:
+                        issue_url = row["github_issue_url"] or f"https://github.com/dotnet/runtime/issues/{row['github_issue_number']}"
+                        out.append(f"     - [{fid}] {tn} (#{row['github_issue_number']}, {issue_url})")
+                    else:
+                        brief = (row["summary"] or "")[:80]
+                        out.append(f"     - [{fid}] [New] {tn} ({brief})" if brief else f"     - [{fid}] [New] {tn}")
+            for fid, count in group_counts.items():
+                if count > 5:
+                    row = group_info[fid]
+                    remaining = count - 5
+                    if row["github_issue_number"]:
+                        issue_url = row["github_issue_url"] or f"https://github.com/dotnet/runtime/issues/{row['github_issue_number']}"
+                        out.append(f"     - [{fid}] ... and {remaining} more (#{row['github_issue_number']}, {issue_url})")
+                    else:
+                        out.append(f"     - [{fid}] [New] ... and {remaining} more")
             out.append("")
 
         # Skipped pipelines
